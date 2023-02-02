@@ -1,2 +1,2 @@
-# bootgly-php-framework-docs
+# Bootgly PHP Framework - Docs
 Documentation of Bootgly PHP Framework
