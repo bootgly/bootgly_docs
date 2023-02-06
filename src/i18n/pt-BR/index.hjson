@@ -1,0 +1,59 @@
+{
+  // Sections
+  _: {
+    home: {
+      texts: [
+        'Uma ',
+        'documentação alternativa ',
+        'do ',
+        'Desenvolvido por'
+      ]
+    }
+  },
+
+  footer: {
+    github: {
+      start: 'Comece esta página no ',
+      complete: 'Complete esta página no ',
+      edit: 'Edite esta página no '
+    },
+    progress: 'Progresso da tradução',
+    translations: 'Traduções disponíveis',
+    anchor: 'Navegação por âncoras',
+    of: 'de'
+  },
+  submenu: {
+    overview: 'Apresentação',
+    examples: 'Exemplos',
+    guides: 'Guias',
+    changelog: 'Changelog'
+  },
+  menu: {
+    search: 'Pesquisar',
+    home: 'Página inicial',
+    settings: 'Configurações',
+    changelog: 'Changelog',
+    sponsor: 'Patrocine',
+    _404: 'Erro 404 - Não encontrado'
+  },
+
+  system: {
+    support: 'Patrocine o Bootgly'
+  },
+  changelog: {},
+  settings: {
+    general: {
+      _: 'Configurações gerais',
+      language: { _: 'Idioma' }
+    },
+    appearance: {
+      _: 'Aparência',
+      background: { _: 'Cor de fundo' }
+    }
+  },
+
+  _a: ' e ',
+  _o: ' ou ',
+  _f: ' arquivos ',
+  _s: 'Código Fonte'
+}

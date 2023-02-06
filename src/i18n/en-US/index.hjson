@@ -1,0 +1,59 @@
+{
+  // Sections
+  _: {
+    home: {
+      texts: [
+        'The ',
+        'official documentation ',
+        'of ',
+        'Developed by'
+      ]
+    }
+  },
+
+  footer: {
+    github: {
+      start: 'Start this page on ',
+      complete: 'Complete this page on ',
+      edit: 'Edit this page on '
+    },
+    progress: 'Translation Progress',
+    translations: 'Available translations',
+    anchor: 'Anchor navigation',
+    of: 'of'
+  },
+  submenu: {
+    overview: 'Overview',
+    examples: 'Examples',
+    guides: 'Guides',
+    changelog: 'Changelog'
+  },
+  menu: {
+    search: 'Search',
+    home: 'Home',
+    settings: 'Settings',
+    changelog: 'Changelog',
+    sponsor: 'Sponsor',
+    _404: '404 Error - Not Found'
+  },
+
+  system: {
+    support: 'Sponsor Bootgly'
+  },
+  changelog: {},
+  settings: {
+    general: {
+      _: 'General Settings',
+      language: { _: 'Language' }
+    },
+    appearance: {
+      _: 'Appearance',
+      background: { _: 'Background Color' }
+    }
+  },
+
+  _a: ' and ',
+  _o: ' or ',
+  _f: ' files ',
+  _s: 'Source Code'
+}
