@@ -11,6 +11,8 @@
 
 Some features of this documentation are listed below!
 
+---
+
 ## ☑️ Compliances
 ### Contrast Checker 7+
 The World Wide Web Consortium (W3C) has developed the Web Content Accessibility Guidelines, better known as WCAG, for color contrast and text.
@@ -19,6 +21,8 @@ People who are color blind and have impaired vision can experience sensitivity a
 
 ### Material-design compliant
 A software that is "material design compliant" follows the guidelines set forth in Google's Material Design system, which provides a visual language and interaction design guidelines for creating consistent and user-friendly interfaces across different devices and platforms. Material Design defines the look, feel, and behavior of on-screen elements such as buttons, icons, text fields, and navigation elements. Adherence to these guidelines helps ensure that the software provides a visually appealing, consistent, and intuitive user experience.
+
+---
 
 ## 🚀 Features
 ### Internationalization with i18n
@@ -36,6 +40,8 @@ This documentation generates codes with Syntax highlighting from texts with mult
 
 ### Navigation using anchored links (RC)
 Anchor links work in hash and history mode and provide **faster navigation** and **better orientation** when navigating through subsections of documentation.
+
+---
 
 ## 📃 License
 Copyright (c) 2020-Present - Rodrigo Vieira (rodrigo@slayer.tech)
