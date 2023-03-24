@@ -47,6 +47,11 @@ q-page-container
           div.custom-caption.text-center.q-mt-sm
             .text-h6 Bootgly CLI - Progress component
             .text-subtitle1 Render 6x faster than Symfony / Laravel
+            .text-subtitle1
+              | Source code:
+              a.q-ml-xs.q-mr-xs(href="https://gist.github.com/rodrigoslayertech/5129f053a778e3b9b495fb2fceee94bb" target="_blank") Bootgly
+              | ,
+              a.q-ml-xs(href="https://gist.github.com/rodrigoslayertech/b12804d5a0c76adbf1c5272d8396618b" target="_blank") Symfony / Laravel
 
         q-carousel-slide(:name="2")
           .carrousel-container
