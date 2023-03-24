@@ -20,7 +20,6 @@ q-page-container
         v-model="slide", v-model:fullscreen="fullscreen"
         animated,
         swipeable,
-        arrows,
         navigation, navigation-position="bottom"
         infinite,
         :autoplay="autoplay",
@@ -32,45 +31,70 @@ q-page-container
           q-carousel-control(position="bottom-right", :offset="[24, 105]")
             q-btn(push, round, dense, color="white", text-color="primary", :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'", @click="fullscreen = !fullscreen")
 
-        q-carousel-slide(
-          :name="1",
-        )
-          div.carrousel-container
+        q-carousel-slide(:name="1")
+          .carrousel-container
+            q-scroll-area.fit
+              .column.no-wrap.q-gutter-md
+                .col-6
+                  q-img.rounded-borders(
+                    width="722"
+                    height="339"
+                    src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly-Progress-Bar-component.png"
+                  )
+                .col-6
+                  q-media-player(type="video", :sources="videos[0].sources")
+
+          div.custom-caption.text-center.q-mt-sm
+            .text-h6 Bootgly CLI - Progress component
+            .text-subtitle1 Render 6x faster than Symfony / Laravel
+
+        q-carousel-slide(:name="2")
+          .carrousel-container
+            q-scroll-area.fit
+              q-img.rounded-borders.col-12(
+                width="700"
+                height="530"
+                src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly_CLI-Table_component.png"
+              )
+          .custom-caption.text-center.q-mt-sm
+            .text-h6 Bootgly CLI - Table component
+            .text-subtitle1 API with DataSet abstraction
+
+        q-carousel-slide(:name="3")
+          .carrousel-container
             q-scroll-area.fit(dark)
               q-img.rounded-borders.col-12.full-height(
                 width="735"
                 height="1302"
                 src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly-HTTP-Server-Test-Suite5.png"
               )
-          div.custom-caption.text-center.q-mt-sm
-            div.text-h5 HTTP Server CLI - test cmd
-            div.text-subtitle1 Test Suites
-        q-carousel-slide(
-          :name="2",
-        )
-          div.carrousel-container
+          .custom-caption.text-center.q-mt-sm
+            .text-h6 HTTP Server CLI
+            .text-subtitle1 Test Suites
+
+        q-carousel-slide(:name="4")
+          .carrousel-container
             q-scroll-area.fit
               q-img.rounded-borders.col-12(
                 width="820"
                 height="355"
-                src="https://raw.githubusercontent.com/bootgly/.github/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-started.png"
+                src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-started.png"
               )
-            div.custom-caption.text-center.q-mt-sm
-              div.text-h5 HTTP Server CLI started
-              div.text-subtitle1 Initial output
-        q-carousel-slide(
-          :name="3",
-        )
-          div.carrousel-container
+            .custom-caption.text-center.q-mt-sm
+              .text-h6 HTTP Server CLI started
+              .text-subtitle1 Initial output
+
+        q-carousel-slide(:name="5")
+          .carrousel-container
             q-scroll-area.fit
               q-img.rounded-borders.col-12(
                 width="647"
                 height="204"
                 src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
               )
-          div.custom-caption.text-center.q-mt-sm
-            div.text-h5 HTTP Server CLI - Benchmark
-            div.text-subtitle1 My Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
+          .custom-caption.text-center.q-mt-sm
+            .text-h6 HTTP Server CLI - Benchmark
+            .text-subtitle1 My Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
 </template>
 
 <script>
@@ -81,7 +105,18 @@ export default {
     return {
       slide: ref(1),
       autoplay: ref(false),
-      fullscreen: ref(false)
+      fullscreen: ref(false),
+
+      videos: [
+        {
+          sources: [
+            {
+              src: 'https://github.com/bootgly/.github/raw/main/videos/bootgly-php-framework/Bootgly%20CLI%20-%20Progress%20with%20Bar%20component%20vs%20Symfony%20Console%20-%20ProgressBar%20Helper.mp4',
+              type: 'video/mp4'
+            }
+          ]
+        }
+      ]
     }
   }
 }
