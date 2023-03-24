@@ -3,7 +3,7 @@ q-layout(view="hHh LpR lFf")
   q-header(elevated)
     q-toolbar#toolbar(color="primary")
       q-btn.filled(flat icon="menu" aria-label="Toggle Menu" @click="toogleMenu")
-      q-toolbar-title
+      q-toolbar-title.text-center
         q-icon.q-mb-xs.q-mr-sm(:name="headerTitleIcon")
         | {{ headerTitleText }}
       q-btn.filled(flat icon="settings" aria-label="Configuration" @click="openSettingsDialog")
