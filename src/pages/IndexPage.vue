@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container
-  q-page#content(style="padding-bottom: 0")
+  q-page#content
     .text-center.q-pa-xs.q-pt-md
       h1 Bootgly PHP Framework Documentation
         span.q-ml-sm.text-negative (WIP)
@@ -28,8 +28,12 @@ q-page-container
         style="height: 100vh"
       )
         template(v-slot:control)
-            q-carousel-control(position="top-right", :offset="[18, 5]")
-              q-btn(push, round, dense, color="white", text-color="primary", :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'", @click="fullscreen = !fullscreen")
+          q-carousel-control(v-if="$q.platform.is.mobile" position="top-right", :offset="[18, 5]")
+            q-btn(
+              push, round, dense,
+              color="white", text-color="primary", :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'",
+              @click="fullscreen = !fullscreen"
+            )
 
         q-carousel-slide(:name="1")
           q-scroll-area.fit(dark)
@@ -43,14 +47,14 @@ q-page-container
               .col-6
                 q-media-player(type="video", :sources="videos[0].sources")
 
-            .custom-caption.text-center.q-mt-sm
+            .carrousel-caption
               .text-h6 Bootgly CLI - Progress component
               .text-subtitle1 Render 6x faster than Symfony / Laravel
               .text-subtitle1
                 | Source code:
-                a.q-ml-xs.q-mr-xs(href="https://github.com/bootgly/bootgly-php-framework/blob/main/projects/%40bootgly/cli/examples/terminal/components/progress-component-01.example.php" target="_blank") Bootgly
+                a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Bootgly
                 | ,
-                a.q-ml-xs(href="https://gist.github.com/rodrigoslayertech/b12804d5a0c76adbf1c5272d8396618b" target="_blank") Symfony / Laravel
+                a.q-ml-xs(:href="links[1]" target="_blank") Symfony / Laravel
 
         q-carousel-slide(:name="2")
           q-scroll-area.fit
@@ -60,7 +64,7 @@ q-page-container
               src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly_CLI-Table_component.png"
             )
 
-            .custom-caption.text-center.q-mt-sm
+            .carrousel-caption
               .text-h6 Bootgly CLI - Table component
               .text-subtitle1 API with DataSet abstraction
 
@@ -72,7 +76,7 @@ q-page-container
               src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly-HTTP-Server-Test-Suite5.png"
             )
 
-            .custom-caption.text-center.q-mt-sm
+            .carrousel-caption
               .text-h6 HTTP Server CLI
               .text-subtitle1 Test Suites
 
@@ -84,7 +88,7 @@ q-page-container
               src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-started.png"
             )
 
-            .custom-caption.text-center.q-mt-sm
+            .carrousel-caption
               .text-h6 HTTP Server CLI started
               .text-subtitle1 Initial output
 
@@ -96,21 +100,33 @@ q-page-container
               src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
             )
 
-            .custom-caption.text-center.q-mt-sm
+            .carrousel-caption
               .text-h6 HTTP Server CLI - Benchmark
               .text-subtitle1 My Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
 </template>
 
 <script>
+import { useQuasar } from 'quasar'
+
 import { ref } from 'vue'
 
 export default {
   setup () {
+    const $q = useQuasar()
+
+    // TODO make the Carrousel a custom component?
+
     return {
+      $q,
+
       slide: ref(1),
       autoplay: ref(false),
       fullscreen: ref(false),
 
+      links: [
+        'https://github.com/bootgly/bootgly-php-framework/blob/main/projects/%40bootgly/cli/examples/terminal/components/progress-component-01.example.php',
+        'https://gist.github.com/rodrigoslayertech/b12804d5a0c76adbf1c5272d8396618b'
+      ],
       videos: [
         {
           sources: [
@@ -135,6 +151,9 @@ export default {
 
 .q-carousel__navigation
   top: -5px
+.carrousel-caption
+  text-align: center
+  margin-top: 8px
 
 img.platform
   padding-top: 30px
