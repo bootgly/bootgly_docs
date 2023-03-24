@@ -15,7 +15,9 @@ q-page-container
         a(href="https://github.com/rodrigoslayertech/" target="_blank") @rodrigoslayertech
       hr
 
-    div.row.no-wrap.justify-center.items-center.content-center(style="max-width: 735px; margin: auto;")
+    div.row.no-wrap.justify-center.items-center.content-center(
+      style="max-width: 735px; margin: auto; height: calc(100vh + 45px)"
+    )
       q-carousel.col-12.text-center(
         v-model="slide", v-model:fullscreen="fullscreen"
         animated,
@@ -25,7 +27,7 @@ q-page-container
         :autoplay="autoplay",
         control-type="push", control-color="black"
         transition-prev="slide-right", transition-next="slide-left"
-        style="height: 100vh"
+        :height="fullscreen ? '100vh' : '100%'"
       )
         template(v-slot:control)
           q-carousel-control(v-if="$q.platform.is.mobile" position="top-right", :offset="[18, 5]")
@@ -36,32 +38,34 @@ q-page-container
             )
 
         q-carousel-slide(:name="1")
-          q-scroll-area.fit(dark)
-            .column.no-wrap.q-gutter-md
-              .col-6
+          //-q-scroll-area.fit(dark)
+          .column.no-wrap.q-gutter-md
+            .col-6
+              q-zoom
                 q-img.rounded-borders(
                   width="722"
                   height="339"
-                  src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly-Progress-Bar-component.png"
+                  src="images/Bootgly-Progress-Bar-component.png"
                 )
-              .col-6
-                q-media-player(type="video", :sources="videos[0].sources")
+            .col-6
+              q-media-player(type="video", :sources="videos[0].sources")
 
-            .carrousel-caption
-              .text-h6 Bootgly CLI - Progress component
-              .text-subtitle1 Render 6x faster than Symfony / Laravel
-              .text-subtitle1
-                | Source code:
-                a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Bootgly
-                | ,
-                a.q-ml-xs(:href="links[1]" target="_blank") Symfony / Laravel
+          .carrousel-caption
+            .text-h6 Bootgly CLI - Progress component
+            .text-subtitle1 Render 6x faster than Symfony / Laravel
+            .text-subtitle1
+              | Source code:
+              a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Bootgly
+              | ,
+              a.q-ml-xs(:href="links[1]" target="_blank") Symfony / Laravel
 
         q-carousel-slide(:name="2")
-          q-scroll-area.fit
+          //-q-scroll-area.fit
+          q-zoom
             q-img.rounded-borders.col-12(
               width="700"
               height="530"
-              src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly_CLI-Table_component.png"
+              src="images/Bootgly_CLI-Table_component.png"
             )
 
             .carrousel-caption
@@ -69,11 +73,12 @@ q-page-container
               .text-subtitle1 API with DataSet abstraction
 
         q-carousel-slide(:name="3")
-          q-scroll-area.fit(dark)
+          //-q-scroll-area.fit(dark)
+          q-zoom
             q-img.rounded-borders.col-12.full-height(
               width="735"
               height="1302"
-              src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Bootgly-HTTP-Server-Test-Suite5.png"
+              src="images/Bootgly-HTTP-Server-Test-Suite5.png"
             )
 
             .carrousel-caption
@@ -81,23 +86,25 @@ q-page-container
               .text-subtitle1 Test Suites
 
         q-carousel-slide(:name="4")
-          q-scroll-area.fit
+          //-q-scroll-area.fit
+          q-zoom
             q-img.rounded-borders.col-12(
               width="820"
               height="355"
-              src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-started.png"
+              src="images/Server-CLI-HTTP-started.png"
             )
 
-            .carrousel-caption
-              .text-h6 HTTP Server CLI started
-              .text-subtitle1 Initial output
+          .carrousel-caption
+            .text-h6 HTTP Server CLI started
+            .text-subtitle1 Initial output
 
         q-carousel-slide(:name="5")
-          q-scroll-area.fit
+          //-q-scroll-area.fit
+          q-zoom
             q-img.rounded-borders.col-12(
               width="647"
               height="204"
-              src="https://github.com/bootgly/.github/raw/main/screenshots/bootgly-php-framework/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
+              src="images/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
             )
 
             .carrousel-caption
@@ -131,7 +138,7 @@ export default {
         {
           sources: [
             {
-              src: 'https://github.com/bootgly/.github/raw/main/videos/bootgly-php-framework/Bootgly%20CLI%20-%20Progress%20with%20Bar%20component%20vs%20Symfony%20Console%20-%20ProgressBar%20Helper.mp4',
+              src: 'videos/Bootgly_CLI_-_Progress_with_Bar_component_vs_Symfony_Console_-_ProgressBar_Helper.mp4',
               type: 'video/mp4'
             }
           ]
@@ -146,14 +153,17 @@ export default {
 .q-carousel__navigation-inner
   padding-top: 7px
 .q-carousel__slides-container
-  height: calc(100% - 80px)
+  height: 100%
   padding-top: 30px
+.q-carousel__slide, .q-carousel .q-carousel--padding
+  padding-bottom: 0
 
 .q-carousel__navigation
   top: -5px
 .carrousel-caption
   text-align: center
   margin-top: 8px
+  margin-bottom: 8px
 
 img.platform
   padding-top: 30px
