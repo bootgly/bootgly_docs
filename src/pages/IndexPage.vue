@@ -38,30 +38,28 @@ q-page-container
             )
 
         q-carousel-slide(:name="1")
-          //-q-scroll-area.fit(dark)
-          .column.no-wrap.q-gutter-md
-            .col-6
-              q-zoom
+          q-scroll-area.fit(dark)
+            .column.no-wrap.q-gutter-md
+              .col-6
                 q-img.rounded-borders(
                   width="722"
                   height="339"
                   src="images/Bootgly-Progress-Bar-component.png"
                 )
-            .col-6
-              q-media-player(type="video", :sources="videos[0].sources")
+              .col-6
+                q-media-player(type="video", :sources="videos[0].sources")
 
-          .carrousel-caption
-            .text-h6 Bootgly CLI - Progress component
-            .text-subtitle1 Render 6x faster than Symfony / Laravel
-            .text-subtitle1
-              | Source code:
-              a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Bootgly
-              | ,
-              a.q-ml-xs(:href="links[1]" target="_blank") Symfony / Laravel
+            .carrousel-caption
+              .text-h6 Bootgly CLI - Progress component
+              .text-subtitle1 Render 6x faster than Symfony / Laravel
+              .text-subtitle1
+                | Source code:
+                a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Bootgly
+                | ,
+                a.q-ml-xs(:href="links[1]" target="_blank") Symfony / Laravel
 
         q-carousel-slide(:name="2")
-          //-q-scroll-area.fit
-          q-zoom
+          q-scroll-area.fit
             q-img.rounded-borders.col-12(
               width="700"
               height="530"
@@ -73,8 +71,7 @@ q-page-container
               .text-subtitle1 API with DataSet abstraction
 
         q-carousel-slide(:name="3")
-          //-q-scroll-area.fit(dark)
-          q-zoom
+          q-scroll-area.fit(dark)
             q-img.rounded-borders.col-12.full-height(
               width="735"
               height="1302"
@@ -86,21 +83,19 @@ q-page-container
               .text-subtitle1 Test Suites
 
         q-carousel-slide(:name="4")
-          //-q-scroll-area.fit
-          q-zoom
+          q-scroll-area.fit
             q-img.rounded-borders.col-12(
               width="820"
               height="355"
               src="images/Server-CLI-HTTP-started.png"
             )
 
-          .carrousel-caption
-            .text-h6 HTTP Server CLI started
-            .text-subtitle1 Initial output
+            .carrousel-caption
+              .text-h6 HTTP Server CLI started
+              .text-subtitle1 Initial output
 
         q-carousel-slide(:name="5")
-          //-q-scroll-area.fit
-          q-zoom
+          q-scroll-area.fit
             q-img.rounded-borders.col-12(
               width="647"
               height="204"

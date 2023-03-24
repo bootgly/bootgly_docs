@@ -1,4 +1,8 @@
-import './QZoom.styl'
+/*
+ * forked from https://github.com/quasarframework/app-extension-qzoom
+ * converted from Vue 2 to Vue 3 by Rodrigo Vieira
+ * author: Jeff Galbraith
+ */
 
 import {
   h,
@@ -9,8 +13,9 @@ import {
 import { useColorize } from 'q-colorize-mixin'
 
 import { dom } from 'quasar'
-
 const { offset } = dom
+
+import './QZoom.styl'
 
 // @
 export default {
@@ -97,6 +102,7 @@ export default {
       setTimeout(() => {
         resetTransition()
         removeClass(document.body, 'q-zoom__no-scroll')
+
         emit('restored')
       }, 400)
     }
@@ -114,6 +120,7 @@ export default {
 
       if (val >= 0.05 && val <= 10) {
         scaleValue.value = val
+
         emit('scale', scaleValue.value)
       }
     }
@@ -123,6 +130,7 @@ export default {
 
       if (val >= 50 && val <= 500) {
         scaleTextValue.value = val
+
         emit('scale-text', scaleTextValue.value)
       }
     }
@@ -158,6 +166,7 @@ export default {
     const onScroll = (e) => {
       if (isZoomed.value && props.restoreOnScroll) {
         hide()
+
         e.preventDefault()
       }
     }
@@ -167,6 +176,7 @@ export default {
         if (!props.noEscClose) {
           if (isZoomed.value) {
             hide()
+
             e.preventDefault()
           }
         }
