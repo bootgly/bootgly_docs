@@ -3,9 +3,7 @@
   _: {
     home: {
       texts: [
-        'Essa é a ',
-        'documentação oficial ',
-        'do ',
+        'Documentação oficial do ',
         'Desenvolvido por'
       ]
     }
