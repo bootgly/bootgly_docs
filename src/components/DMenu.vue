@@ -213,9 +213,9 @@ export default {
 
     getPageStatusText (status) {
       if (status === 'draft') {
-        return this.$t('menu.status.draft')
+        return this.$t('menu.status.draft._')
       } else {
-        return this.$t('menu.status.empty')
+        return this.$t('menu.status.empty._')
       }
     },
     getPageStatusColor (status) {
@@ -226,13 +226,10 @@ export default {
       }
     },
     getPageStatusTooltip (status) {
-      // TODO put text in i18n
-      if (status === 9) {
-        return ''
-      } else if (status === 6) {
-        return 'Documentation page is under constrution.'
+      if (status === 'draft') {
+        return this.$t('menu.status.draft.tooltip')
       } else {
-        return 'Documentation page is empty!'
+        return this.$t('menu.status.empty.tooltip')
       }
     },
 

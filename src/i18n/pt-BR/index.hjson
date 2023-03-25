@@ -39,8 +39,14 @@
     sponsor: 'Patrocine',
 
     status: {
-      empty: 'vazia',
-      draft: 'rascunho'
+      empty: {
+        _: 'vazia',
+        tooltip: 'Documentation page is empty!'
+      },
+      draft: {
+        _: 'rascunho',
+        tooltip: 'Documentation page is under constrution.'
+      }
     },
 
     settings: 'Configurações',

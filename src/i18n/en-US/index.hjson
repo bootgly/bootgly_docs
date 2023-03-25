@@ -39,8 +39,14 @@
     sponsor: 'Sponsor',
 
     status: {
-      empty: 'empty',
-      draft: 'draft'
+      empty: {
+        _: 'empty',
+        tooltip: 'Documentation page is empty!'
+      },
+      draft: {
+        _: 'draft',
+        tooltip: 'Documentation page is under constrution.'
+      }
     },
 
     settings: 'Settings',
