@@ -4,15 +4,16 @@ q-page-container
     .text-center.q-pa-xs.q-pt-md
       h1 Bootgly PHP Framework Documentation
         span.q-ml-sm.text-negative (WIP)
+
+      p.caption.text-negative
+        | {{ $t('_.home.texts[2]') }}
       p.caption
-        span
-          | {{ $t('_.home.texts[0]') }}
+        | {{ $t('_.home.texts[0]') }}
         a(href="https://github.com/bootgly/bootgly-php-framework/" target="_blank") Bootgly PHP Framework
         | !
       p.caption
-        span
         | {{ $t('_.home.texts[1]') }}
-        a(href="https://github.com/rodrigoslayertech/" target="_blank") @rodrigoslayertech
+        a(href="https://github.com/rodrigoslayertech/" target="_blank") Rodrigo Vieira
       hr
 
     div.row.no-wrap.justify-center.items-center.content-center(
@@ -25,10 +26,14 @@ q-page-container
         navigation, navigation-position="top"
         infinite,
         :autoplay="autoplay",
-        control-type="push", control-color="black"
+        control-type="push", control-color="primary"
         transition-prev="slide-right", transition-next="slide-left"
         :height="fullscreen ? '100vh' : '100%'"
       )
+        template(v-slot:navigation-icon="{ active, btnProps, onClick }")
+          q-btn(v-if="active" size="md" icon="radio_button_checked" color="primary" flat round dense @click="onClick")
+          q-btn(v-else size="sm" icon="radio_button_unchecked" color="black" flat round dense @click="onClick")
+
         template(v-slot:control)
           q-carousel-control(v-if="$q.platform.is.mobile" position="top-right", :offset="[18, 5]")
             q-btn(
@@ -104,7 +109,7 @@ q-page-container
 
             .carrousel-caption
               .text-h6 HTTP Server CLI - Benchmark
-              .text-subtitle1 My Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
+              .text-subtitle1 Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
 </template>
 
 <script>

@@ -4,7 +4,8 @@
     home: {
       texts: [
         'Documentação oficial do ',
-        'Desenvolvido por'
+        'Desenvolvido por ',
+        'Documentação em construção...'
       ]
     }
   },
