@@ -1,13 +1,12 @@
 
 const routes = [
-  /*
   {
     path: '/starting/introduction',
-    component: () => import('layouts/default'),
+    component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '0-starting/1-introduction',
       icon: 'grade',
-      status: 0,
+      status: 'empty',
 
       menu: {
         header: {
@@ -24,14 +23,13 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/0-starting/1-introduction/'),
+        component: () => import('pages/0-starting/1-introduction'),
         meta: {
           status: 0
         }
       }
     ]
   },
-  */
 
   {
     path: '/',

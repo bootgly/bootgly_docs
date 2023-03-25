@@ -56,8 +56,8 @@ q-scroll-area#menu.bg-grey-2(:visible="true")
         q-item-section(side)
           q-icon(v-if="item.meta.icon" :name="item.meta.icon")
         q-item-section {{ getMenuItemLabel(item, index) }}
-        q-item-section.page-status(side)
-          q-icon.float-right(size="xs" :name="getPageStatusIcon(item.meta.status)")
+        q-item-section.page-status(v-if="item.meta.status !== 'done'" side)
+          q-badge(:color="getPageStatusColor(item.meta.status)" text-color="white" :label="getPageStatusText(item.meta.status)")
           q-tooltip {{ getPageStatusTooltip(item.meta.status) }}
       q-separator(v-if="item.meta.menu.separator" :class="'separator' + item.meta.menu.separator")
 </template>
@@ -211,13 +211,18 @@ export default {
       }
     },
 
-    getPageStatusIcon (status) {
-      if (status === 9) {
-        return ''
-      } else if (status === 6) {
-        return 'fas fa-spinner'
+    getPageStatusText (status) {
+      if (status === 'draft') {
+        return this.$t('menu.status.draft')
       } else {
-        return 'fas fa-exclamation-circle'
+        return this.$t('menu.status.empty')
+      }
+    },
+    getPageStatusColor (status) {
+      if (status === 'draft') {
+        return 'orange'
+      } else {
+        return 'red'
       }
     },
     getPageStatusTooltip (status) {

@@ -1,5 +1,5 @@
 {
-  // Sections
+  // Pages
   _: {
     home: {
       texts: [
@@ -7,9 +7,18 @@
         'Desenvolvido por ',
         'Documentação em construção...'
       ]
+    },
+    about: {
+      _: 'Sobre'
+    },
+    starting: {
+      _: 'Iniciando',
+      introduction: {
+        _: 'Introducão'
+      }
     }
   },
-
+  // Page
   footer: {
     github: {
       start: 'Comece esta página no ',
@@ -21,33 +30,50 @@
     anchor: 'Navegação por âncoras',
     of: 'de'
   },
+
+  menu: {
+    search: 'Pesquisar',
+
+    home: 'Página inicial',
+    changelog: 'Changelog',
+    sponsor: 'Patrocine',
+
+    status: {
+      empty: 'vazia',
+      draft: 'rascunho'
+    },
+
+    settings: 'Configurações',
+
+    _404: 'Erro 404 - Não encontrado'
+  },
   submenu: {
     overview: 'Apresentação',
     examples: 'Exemplos',
     guides: 'Guias',
     changelog: 'Changelog'
   },
-  menu: {
-    search: 'Pesquisar',
-    home: 'Página inicial',
-    settings: 'Configurações',
-    changelog: 'Changelog',
-    sponsor: 'Patrocine',
-    _404: 'Erro 404 - Não encontrado'
-  },
 
+  // @
   system: {
+    documentation: 'Documentação',
     support: 'Patrocine o Bootgly'
   },
-  changelog: {},
+  changelog: {
+
+  },
   settings: {
     general: {
       _: 'Configurações gerais',
-      language: { _: 'Idioma' }
+      language: {
+        _: 'Idioma'
+      }
     },
     appearance: {
       _: 'Aparência',
-      background: { _: 'Cor de fundo' }
+      background: {
+        _: 'Cor de fundo'
+      }
     }
   },
 
