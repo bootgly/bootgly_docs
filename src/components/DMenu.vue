@@ -11,7 +11,7 @@ q-scroll-area#menu.bg-grey-2(:visible="true")
       img.q-mr-md(src="logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="75" height="75" style="float: right;")
     .col-7
       .text-weight-medium Bootgly v0.x.x
-      div Documentation
+      div {{ $t('system.documentation') }}
       q-btn.q-mt-xs.q-pl-sm.support(
         dense no-caps outline
         size="sm" :label="$t('system.support')" icon="fas fa-donate"
