@@ -41,11 +41,11 @@
     status: {
       empty: {
         _: 'vazia',
-        tooltip: 'Documentation page is empty!'
+        tooltip: 'Documentação está vazia!'
       },
       draft: {
         _: 'rascunho',
-        tooltip: 'Documentation page is under constrution.'
+        tooltip: 'Documentação está em construção.'
       }
     },
 
