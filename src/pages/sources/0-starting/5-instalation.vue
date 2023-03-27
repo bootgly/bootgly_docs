@@ -3,7 +3,7 @@ d-page
 </template>
 
 <script>
-import Overview from 'src/pages/sections/overview'
+import Overview from 'src/pages/resources/sections/overview'
 
 export default {
   mixins: [Overview]
