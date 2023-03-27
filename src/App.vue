@@ -1,6 +1,6 @@
 <template lang="pug">
 router-view
-q-dialog(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false")
+q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false")
   q-layout(view="Lhh lpR fff" container :class="$q.dark.isActive ? `bg-dark` : `bg-white`")
     q-header.bg-primary(elevated)
       q-toolbar.q-pr-none
@@ -13,51 +13,53 @@ q-dialog(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false
           q-item
             q-item-section
               q-item-label(header) {{ $t('settings.general._') }}
-          q-item
+          q-item(dense)
             q-item-section(avatar)
-              q-icon(name="language")
+              q-icon(name="language").q-pl-sm
             q-item-section
               q-select(
+                v-model="settings.general.language.default" :options="settings.general.language.options"
+                stack-label dense outlined
                 emit-value map-options
-                v-model="settings.general.language.default" :label="$t('settings.general.language._')" :options="settings.general.language.options"
+                :label="$t('settings.general.language._')"
+                behavior="menu"
                 @update:model-value="setLanguage")
                   template(v-slot:option="scope")
                     q-item(v-bind="scope.itemProps")
                       q-item-section(avatar)
-                        q-avatar
-                          q-img(:src="scope.opt.image" width="16px" height="16px")
+                        q-img(:src="scope.opt.image" width="16px" height="16px")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
                         //-q-item-label(caption) {{ scope.opt.description }}
                   template(v-slot:selected-item="scope")
-                    q-item(dense @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex")
+                    q-item(@remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex")
                       q-item-section(avatar)
-                        q-avatar
-                          q-img(:src="scope.opt.image" width="16px" height="16px")
+                        q-img(:src="scope.opt.image" width="24px" height="24px")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
-          q-separator
-          q-item
+          q-separator(spaced)
+          q-item(dense)
             q-item-section(avatar)
-              q-icon(name="format_color_fill")
+              q-icon(name="format_color_fill").q-pl-sm
             q-item-section
               q-select(
+                v-model="settings.general.background.default" :options="settings.general.background.options"
+                stack-label dense outlined
                 emit-value map-options
-                v-model="settings.general.background.default" :label="$t('settings.general.background._')" :options="settings.general.background.options"
+                :label="$t('settings.general.background._')"
+                behavior="menu"
                 @update:model-value="setBackground")
                   template(v-slot:option="scope")
                     q-item(v-bind="scope.itemProps")
                       q-item-section(avatar)
-                        q-avatar
-                          q-icon(:name="scope.opt.icon")
+                        q-icon(:name="scope.opt.icon")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
                         //-q-item-label(caption) {{ scope.opt.description }}
                   template(v-slot:selected-item="scope")
-                    q-item(dense @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex")
+                    q-item(@remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex")
                       q-item-section(avatar)
-                        q-avatar
-                          q-icon(:name="scope.opt.icon")
+                        q-icon(:name="scope.opt.icon")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
 </template>
@@ -152,3 +154,17 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+#settings
+  .q-select
+    .q-field__append, .q-field--dense .q-field__marginal
+      height: 63px !important
+
+    .q-item
+      padding: 8px 0
+      .q-item__section--side
+        padding-right: 12px
+      .q-item__section--avatar
+        min-width: 24px
+</style>

@@ -320,14 +320,19 @@ export default {
   // List
   .q-list
     padding: 8px 0
+    // List Item
+    .q-item
+      padding: 8px 12px
+      min-height: 45px
+    // List Item Section
+    .q-item.q-router-link--active
+      color: black
+      background: rgba(189, 189, 189, 0.7)
+      // List Item Section
+      .q-item__section--side:not(.q-item__section--avatar)
+          .q-icon
+            color: black
 
-  // List Item
-  .q-item
-    padding: 8px 12px
-    min-height: 45px
-  .q-item.q-router-link--active, .q-item--active
-    color: black
-    background: rgba(189,189,189,0.5)
   .page-status
     margin-right: 7px
 
