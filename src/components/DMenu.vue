@@ -58,7 +58,7 @@ q-scroll-area#menu.bg-grey-2(:visible="true")
         q-item-section {{ getMenuItemLabel(item, index) }}
         q-item-section.page-status(v-if="item.meta.status !== 'done'" side)
           q-badge(:color="getPageStatusColor(item.meta.status)" text-color="white" :label="getPageStatusText(item.meta.status)")
-          q-tooltip {{ getPageStatusTooltip(item.meta.status) }}
+          q-tooltip(:hide-delay="3") {{ getPageStatusTooltip(item.meta.status) }}
       q-separator(v-if="item.meta.menu.separator" :class="'separator' + item.meta.menu.separator")
 </template>
 

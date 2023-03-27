@@ -14,7 +14,9 @@ const routes = [
           name: 'starting'
         }
       },
-      layouts: {},
+      layouts: {
+        footer: true
+      },
       pages: {
         showcase: false
       }
@@ -23,7 +25,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/0-starting/1-introduction'),
+        component: () => import('pages/sources/0-starting/1-introduction'),
         meta: {
           status: 0
         }
@@ -45,7 +47,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/IndexPage'),
+        component: () => import('pages/BootPage'),
         meta: {
           icon: 'home',
           menu: 'home'

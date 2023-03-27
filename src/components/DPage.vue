@@ -18,7 +18,7 @@ q-page-container#page
 import DPageAnchor from 'components/DPageAnchor'
 import DPageNav from 'components/DPageNav'
 
-import Navigator from 'pages/navigator'
+import Navigator from 'pages/resources/navigator'
 
 export default {
   name: 'd-page',

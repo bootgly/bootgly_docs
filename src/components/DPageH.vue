@@ -3,7 +3,7 @@ div(:id="id" :class="stylize" @click="push(id)") {{ heading }}
 </template>
 
 <script>
-import Navigator from 'pages/navigator'
+import Navigator from 'pages/resources/navigator'
 
 export default {
   name: 'DPageH',

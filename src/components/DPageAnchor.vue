@@ -6,7 +6,7 @@ q-tree(default-expand-all :nodes="nodes" node-key="id" v-model:selected="selecte
 </template>
 
 <script>
-import Navigator from 'pages/navigator'
+import Navigator from 'pages/resources/navigator'
 
 export default {
   name: 'DPageAnchor',

@@ -2,11 +2,11 @@
 q-layout(view="hHh LpR lFf")
   q-header(elevated)
     q-toolbar#toolbar(color="primary")
-      q-btn.filled(flat icon="menu" aria-label="Toggle Menu" @click="toogleMenu")
+      q-btn.filled(square icon="menu" aria-label="Toggle Menu" @click="toogleMenu")
       q-toolbar-title.text-center
         q-icon.q-mb-xs.q-mr-sm(:name="headerTitleIcon")
         | {{ headerTitleText }}
-      q-btn.filled(flat icon="settings" aria-label="Configuration" @click="openSettingsDialog")
+      q-btn.filled(square icon="settings" aria-label="Configuration" @click="openSettingsDialog")
   q-drawer(elevated show-if-above side="left" v-model="layout.menu")
     d-menu
   router-view
