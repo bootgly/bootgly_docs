@@ -41,6 +41,10 @@ This documentation generates codes with Syntax highlighting from texts with mult
 ### Navigation using anchored links (RC)
 Anchor links work in hash and history mode and provide **faster navigation** and **better orientation** when navigating through subsections of documentation.
 
+### Support to dark mode (Beta)
+Dark mode, also known as night mode or dark theme. In dark mode, the background of the interface is usually black or dark gray, while the text and icons are displayed in white or light colors.
+The purpose of dark mode is to reduce eye strain and improve visual ergonomics, especially in low-light conditions. The high contrast between the dark background and light text makes it easier to read and navigate, while also reducing the amount of blue light emitted by the screen, which can disrupt sleep patterns.
+
 ---
 
 ## 📃 License
