@@ -14,7 +14,7 @@
     starting: {
       _: 'Iniciando',
       introduction: {
-        _: 'Introducão'
+        _: 'Introdução'
       }
     }
   },
