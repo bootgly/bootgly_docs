@@ -137,6 +137,7 @@ export default {
     if (locale === null) {
       locale = 'en-US'
       this.$q.localStorage.set('setting.language', locale)
+      this.settings.general.language.default = locale
     }
     this.$i18n.locale = locale
 
@@ -145,6 +146,7 @@ export default {
     if (dark === null) {
       dark = false
       this.$q.localStorage.set('setting.background', dark)
+      this.settings.general.background.default = dark
     }
     this.$q.dark.set(dark)
   }
