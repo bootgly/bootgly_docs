@@ -76,9 +76,6 @@
       _: 'General Settings',
       language: {
         _: 'Language'
-      },
-      background: {
-        _: 'Background color'
       }
     },
     appearance: {

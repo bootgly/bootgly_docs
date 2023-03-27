@@ -76,9 +76,6 @@
       _: 'Configurações gerais',
       language: {
         _: 'Idioma'
-      },
-      background: {
-        _: 'Cor de fundo'
       }
     },
     appearance: {

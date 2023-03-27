@@ -2,7 +2,7 @@
 router-view
 q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false")
   q-layout(view="Lhh lpR fff" container :class="$q.dark.isActive ? `bg-dark` : `bg-white`")
-    q-header.bg-primary(elevated)
+    q-header.d-header(elevated)
       q-toolbar.q-pr-none
         q-icon(name="settings" style="font-size: 1.5rem")
         q-toolbar-title {{ $t('menu.settings') }}
@@ -37,16 +37,22 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
                         q-img(:src="scope.opt.image" width="24px" height="24px")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
+
           q-separator(spaced)
+
+          q-item
+            q-item-section
+              q-item-label(header) {{ $t('settings.appearance._') }}
+
           q-item(dense)
             q-item-section(avatar)
               q-icon(name="format_color_fill").q-pl-sm
             q-item-section
               q-select(
-                v-model="settings.general.background.default" :options="settings.general.background.options"
+                v-model="settings.appearance.background.default" :options="settings.appearance.background.options"
                 stack-label dense outlined
                 emit-value map-options
-                :label="$t('settings.general.background._')"
+                :label="$t('settings.appearance.background._')"
                 behavior="menu"
                 @update:model-value="setBackground")
                   template(v-slot:option="scope")
@@ -87,7 +93,9 @@ export default {
                 value: 'pt-BR'
               }
             ]
-          },
+          }
+        },
+        appearance: {
           background: {
             default: this.$q.localStorage.getItem('setting.background'),
 

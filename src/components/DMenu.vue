@@ -5,17 +5,21 @@ transition(appear enter-active-class="animated zoomIn" leave-active-class="anima
       q-icon.q-ml-sm(name="search")
     template(v-slot:append)
       q-icon.cursor-pointer.clear(v-if="term" name="clear" @click="clearSearchTerm")
-q-scroll-area#menu(:visible="true" :class="$q.dark.isActive ? '': 'bg-grey-2'")
+q-scroll-area#menu(
+  :visible="true"
+  :class="$q.dark.isActive ? ``: `bg-grey-2`"
+)
   .row.flex-center(:class="$q.dark.isActive ? `bg-dark` : `bg-white`" style="height: 115px;")
     .col-5
-      img.q-mr-md(src="logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="75" height="75" style="float: right;")
+      img.q-mr-md(src="logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="85" height="85" style="float: right;")
     .col-7
-      .text-weight-medium Bootgly v0.x.x
-      div {{ $t('system.documentation') }}
-      q-btn.q-mt-xs.q-pl-sm.support(
-        dense no-caps outline
-        size="sm" :label="$t('system.support')" icon="fas fa-donate"
-        @click="openURL('https://github.com/sponsors/bootgly/')")
+      .text-weight-medium Bootgly PHP Framework
+      .text-caption.q-pt-xs {{ $t('system.documentation') }}
+      q-select.q-mr-md(
+        dense options-dense
+        v-model="version" :options="versions"
+      )
+
   q-separator.separator.list
   .row(:class="$q.dark.isActive ? `bg-dark` : `bg-white`")
     .col.text-center
@@ -78,7 +82,12 @@ export default {
       loaded: false,
 
       term: null,
-      matches: false
+      matches: false,
+
+      version: 'v0.x',
+      versions: [
+        'v0.x'
+      ]
     }
   },
   computed: {},
@@ -314,9 +323,6 @@ export default {
   width: 100%
   height: calc(100% - 50px)
 
-  // Support Button
-  .q-btn.support
-    color: #9c3700 // Contrast Checker - OK
   // List
   .q-list
     padding: 8px 0

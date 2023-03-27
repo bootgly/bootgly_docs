@@ -3,7 +3,7 @@ q-page-container
   q-page.content.q-pa-lg
     q-card
       q-card-section
-        .text-h6 v0.0.1
+        .text-h6 v0.1.0
       q-separator
       q-card-section
         p Short description
@@ -14,7 +14,7 @@ q-page-container
           li Item 2
           li Item 3
 
-        h2 ✨ New
+        h2 🆕 New
         ul
           li Item 1
           li Item 2

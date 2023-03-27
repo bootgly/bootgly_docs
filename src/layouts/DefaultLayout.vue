@@ -1,7 +1,7 @@
 <template lang="pug">
 q-layout(view="hHh LpR lFf")
-  q-header(elevated)
-    q-toolbar#toolbar(color="primary")
+  q-header.d-header.left-btn(elevated)
+    q-toolbar(color="primary")
       q-btn.filled(square icon="menu" aria-label="Toggle Menu" @click="toogleMenu")
       q-toolbar-title.text-center
         q-icon.q-mb-xs.q-mr-sm(:name="headerTitleIcon")
@@ -70,8 +70,15 @@ export default {
 
 <style lang="sass">
 // Header
-#toolbar
-  padding: 0
+.d-header
+  &.left-btn
+    .q-toolbar
+      padding: 0
+  .q-btn
+    border-radius: 0
+  .q-btn:before
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2), 0 0 2px rgba(0, 0, 0, 0.14), 0 0 1px -2px rgba(0, 0, 0, 0.12)
+    border-radius: 0
 
 .q-footer
   z-index: 999
