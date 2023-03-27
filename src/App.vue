@@ -6,7 +6,7 @@ q-dialog(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false
       q-toolbar.q-pr-none
         q-icon(name="settings" style="font-size: 1.5rem")
         q-toolbar-title {{ $t('menu.settings') }}
-        q-btn.filled(v-close-popup flat color="white" text-color="white" icon="close")
+        q-btn.filled(v-close-popup text-color="white" icon="close")
     q-page-container
       q-page
         q-list
@@ -21,6 +21,21 @@ q-dialog(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false
                 emit-value map-options
                 v-model="settings.general.language.default" :label="$t('settings.general.language._')" :options="settings.general.language.options"
                 @update:model-value="setLanguage")
+                  template(v-slot:option="scope")
+                    q-item(v-bind="scope.itemProps")
+                      q-item-section(avatar)
+                        q-avatar
+                          q-img(:src="scope.opt.image" width="16px" height="16px")
+                      q-item-section
+                        q-item-label {{ scope.opt.label }}
+                        //-q-item-label(caption) {{ scope.opt.description }}
+                  template(v-slot:selected-item="scope")
+                    q-item(dense @remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex")
+                      q-item-section(avatar)
+                        q-avatar
+                          q-img(:src="scope.opt.image" width="16px" height="16px")
+                      q-item-section
+                        q-item-label {{ scope.opt.label }}
           q-separator
 </template>
 
@@ -36,12 +51,12 @@ export default {
             default: this.$q.localStorage.getItem('setting.language'),
             options: [
               {
-                image: 'flags/united-states-of-america.png',
+                image: '/flags/united-states-of-america.png',
                 label: 'English (US)',
                 value: 'en-US'
               },
               {
-                image: 'flags/brazil.png',
+                image: '/flags/brazil.png',
                 label: 'Português (BR)',
                 value: 'pt-BR'
               }
