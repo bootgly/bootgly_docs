@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container
-  q-page#content
+  q-page.content
     .text-center.q-pa-xs.q-pt-md
       h1 Bootgly PHP Framework Documentation
         span.q-ml-sm.text-negative (WIP)
@@ -32,7 +32,7 @@ q-page-container
       )
         template(v-slot:navigation-icon="{ active, btnProps, onClick }")
           q-btn(v-if="active" size="md" icon="radio_button_checked" color="primary" flat round dense @click="onClick")
-          q-btn(v-else size="sm" icon="radio_button_unchecked" color="black" flat round dense @click="onClick")
+          q-btn(v-else size="sm" icon="radio_button_unchecked" flat round dense @click="onClick")
 
         template(v-slot:control)
           q-carousel-control(v-if="$q.platform.is.mobile" position="top-right", :offset="[18, 5]")

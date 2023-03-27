@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container
-  q-page#content.q-pa-lg
+  q-page.content.q-pa-lg
     h1 Support Bootgly Development
     p Are you tired of juggling multiple tools and solutions for your Web and CLI development projects? Look no further! We are excited to announce the development of a versatile PHP Full-Stack framework that will simplify and streamline the development process for both web and command-line interface (CLI) applications.
     p With its user-friendly interface and powerful features, this framework will help you create dynamic, high-performing applications in a fraction of the time. It is adaptable and scalable, making it an ideal choice for projects of any size or complexity.

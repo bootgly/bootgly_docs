@@ -5,8 +5,8 @@ transition(appear enter-active-class="animated zoomIn" leave-active-class="anima
       q-icon.q-ml-sm(name="search")
     template(v-slot:append)
       q-icon.cursor-pointer.clear(v-if="term" name="clear" @click="clearSearchTerm")
-q-scroll-area#menu.bg-grey-2(:visible="true")
-  .row.flex-center.bg-white(style="height: 115px;")
+q-scroll-area#menu(:visible="true" :class="$q.dark.isActive ? '': 'bg-grey-2'")
+  .row.flex-center(:class="$q.dark.isActive ? `bg-dark` : `bg-white`" style="height: 115px;")
     .col-5
       img.q-mr-md(src="logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="75" height="75" style="float: right;")
     .col-7
@@ -17,7 +17,7 @@ q-scroll-area#menu.bg-grey-2(:visible="true")
         size="sm" :label="$t('system.support')" icon="fas fa-donate"
         @click="openURL('https://github.com/sponsors/bootgly/')")
   q-separator.separator.list
-  .row.bg-white
+  .row(:class="$q.dark.isActive ? `bg-dark` : `bg-white`")
     .col.text-center
       q-btn-group(flat)
         q-btn(icon="fab fa-github" size="sm" @click="openURL('https://github.com/bootgly/bootgly-php-framework/')" aria-label="Bootgly Github")
@@ -45,19 +45,21 @@ q-scroll-area#menu.bg-grey-2(:visible="true")
   q-separator.separator.list
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter)
     template(v-for="(item, index) in items" :key="index")
-      q-item-section.label.header.sticky(v-if="item.meta.menu.header")
+      q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="$q.dark.isActive ? ``: `background-color: #f5f5f5!important`")
         q-item-label(header)
           q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
-          span {{ getMenuItemHeader(item) }}
+          | {{ getMenuItemHeader(item) }}
         q-separator.separator.partial
+
       q-item-section(v-if="item.meta.menu.subheader")
         q-item-label.label.subheader(header) {{ getMenuItemSubheader(item) }}
+
       q-item(:to="item.path" v-show="matches[index] || !matches")
         q-item-section(side)
           q-icon(v-if="item.meta.icon" :name="item.meta.icon")
         q-item-section {{ getMenuItemLabel(item, index) }}
         q-item-section.page-status(v-if="item.meta.status !== 'done'" side)
-          q-badge(:color="getPageStatusColor(item.meta.status)" text-color="white" :label="getPageStatusText(item.meta.status)")
+          q-badge(:color="getPageStatusColor(item.meta.status)" :label="getPageStatusText(item.meta.status)")
           q-tooltip(:hide-delay="3") {{ getPageStatusTooltip(item.meta.status) }}
       q-separator(v-if="item.meta.menu.separator" :class="'separator' + item.meta.menu.separator")
 </template>
@@ -326,8 +328,6 @@ export default {
   .q-item.q-router-link--active, .q-item--active
     color: black
     background: rgba(189,189,189,0.5)
-  .q-icon
-    color: #363636
   .page-status
     margin-right: 7px
 
@@ -350,7 +350,6 @@ export default {
         width: 100%
         top: -1px
         margin-bottom: 5px
-        background-color: #f5f5f5!important
         z-index: 2
         .separator
           margin: 0 auto

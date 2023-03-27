@@ -14,7 +14,10 @@
     starting: {
       _: 'Getting started',
       introduction: {
-        _: 'Introduction'
+        _: 'Introduction',
+        overview: {
+          _subsections_: '3'
+        }
       }
     }
   },
@@ -73,6 +76,9 @@
       _: 'General Settings',
       language: {
         _: 'Language'
+      },
+      background: {
+        _: 'Background color'
       }
     },
     appearance: {

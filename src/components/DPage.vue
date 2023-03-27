@@ -8,7 +8,7 @@ q-page-container#page
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
     d-page-anchor#anchor(v-if="nodes.length > 0" :nodes="nodes")
   q-page(style="min-height: calc(100vh - 118px)")
-    q-scroll-area#content(:class="main")
+    q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
       q-scroll-observer(v-if="nodes.length > 0" @scroll="scrolling" :debounce="200")
@@ -107,10 +107,10 @@ export default {
 </script>
 
 <style lang="sass">
-#content,
-#content > div.scroll
+.content,
+.content > div.scroll
   min-height: calc(100vh - 118px)
-#content:not(.no-padding) > div.scroll > div.q-scrollarea__content
+.content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 20px
 
 #submenu
@@ -138,9 +138,17 @@ export default {
 #submenu button
   border-radius: 0
   padding: 6px 12px
-#submenu a.active,
-#submenu button.active
-  background-color: #fff !important
-  color: #000
-  box-shadow: 0 10px 0 0 #fff
+
+body.body--light
+  #submenu a.active,
+  #submenu button.active
+    background-color: #fff !important
+    color: #000
+    box-shadow: 0 10px 0 0 #fff
+body.body--dark
+  #submenu a.active,
+  #submenu button.active
+    background-color: #000 !important
+    color: #fff
+    box-shadow: 0 10px 0 0 #000
 </style>

@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container
-  q-page#content.q-pa-lg
+  q-page.content.q-pa-lg
     q-card
       q-card-section
         .text-h6 v0.0.1

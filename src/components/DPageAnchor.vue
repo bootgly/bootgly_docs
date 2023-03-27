@@ -77,12 +77,20 @@ export default {
   .q-tree
     padding-top: 12px
     width: 100%
-  b
-    color: #1A496B
-    font-size: 15px
   .q-tree-node-header
     margin: 0
     border-radius: 0
   .q-tree__node--selected
     background-color: peachpuff
+
+body.body--light
+  #anchor
+    b
+      color: #1A496B
+      font-size: 15px
+body.body--dark
+  #anchor
+    b
+      color: #0094ff
+      font-size: 15px
 </style>
