@@ -7,7 +7,7 @@ q-page-container
     p Support this project and be a part of revolutionizing the way developers approach web and CLI development. Your sponsorship will provide significant benefits to the PHP development community and help bring this cutting-edge technology to life.
     p Don't miss this opportunity to support a project that has the potential to change the game for PHP developers everywhere. Get involved today and help shape the future direction of this exciting framework.
     q-btn-group(push)
-      q-btn(push label="Github Sponsor" icon="card_giftcard" @click="goGithubSponsor")
+      q-btn(push label="Github Sponsor" color="primary" icon="card_giftcard" @click="goGithubSponsor")
     br
     br
 

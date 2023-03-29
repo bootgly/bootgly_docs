@@ -16,8 +16,9 @@ q-scroll-area#menu(
       .text-weight-medium Bootgly PHP Framework
       .text-caption.q-pt-xs {{ $t('system.documentation') }}
       q-select.q-mr-md(
-        dense options-dense
         v-model="version" :options="versions"
+        dense options-dense
+        behavior="menu"
       )
 
   q-separator.separator.list

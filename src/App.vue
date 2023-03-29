@@ -22,12 +22,13 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
                 stack-label dense outlined
                 emit-value map-options
                 :label="$t('settings.general.language._')"
+                options-selected-class="bg-primary text-white"
                 behavior="menu"
                 @update:model-value="setLanguage")
                   template(v-slot:option="scope")
                     q-item(v-bind="scope.itemProps")
                       q-item-section(avatar)
-                        q-img(:src="scope.opt.image" width="16px" height="16px")
+                        q-img(:src="scope.opt.image" width="24px" height="24px")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
                         //-q-item-label(caption) {{ scope.opt.description }}
@@ -54,12 +55,13 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
                 emit-value map-options
                 :label="$t('settings.appearance.background._')"
                 behavior="menu"
+                options-selected-class="bg-primary text-white"
                 @update:model-value="setBackground")
                   template(v-slot:option="scope")
                     q-item(v-bind="scope.itemProps")
                       q-item-section(avatar)
                         q-icon(:name="scope.opt.icon")
-                      q-item-section
+                      q-item-section.text-weight-bold
                         q-item-label {{ scope.opt.label }}
                         //-q-item-label(caption) {{ scope.opt.description }}
                   template(v-slot:selected-item="scope")
@@ -168,11 +170,15 @@ export default {
   .q-select
     .q-field__append, .q-field--dense .q-field__marginal
       height: 63px !important
-
     .q-item
       padding: 8px 0
       .q-item__section--side
         padding-right: 12px
       .q-item__section--avatar
         min-width: 24px
+.q-menu
+  .q-item__section--side
+    padding-right: 12px
+  .q-item__section--avatar
+    min-width: 24px
 </style>

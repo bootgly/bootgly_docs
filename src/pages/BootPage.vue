@@ -52,7 +52,7 @@ q-page-container
                   src="images/Bootgly-Progress-Bar-component.png"
                 )
               .col-6
-                q-media-player(type="video", :sources="videos[0].sources" @playing="autoplay = false")
+                q-media-player.bg-black(type="video", :sources="videos[0].sources" @playing="autoplay = false")
 
             .carrousel-caption
               .text-h6 Bootgly CLI - Progress component
