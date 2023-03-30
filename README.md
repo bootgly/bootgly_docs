@@ -1,4 +1,4 @@
-# Documentation of Bootgly PHP Framework
+# Bootgly - Docs
 (WORKING IN PROGRESS)
 
 > The official documentation of Bootgly PHP Framework!
