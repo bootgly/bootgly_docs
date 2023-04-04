@@ -6,12 +6,12 @@ q-page-container#page
         q-btn(v-if="overview" @click="pRoute('/')" v-bind:class="pActive('/')" :label="$t('submenu.overview')" icon="pageview" no-caps flat)
         q-btn(v-if="showcase" @click="pRoute('/showcase')" v-bind:class="pActive('/showcase')" :label="$t('submenu.showcase')" icon="play_circle_filled" no-caps flat)
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
-    d-page-anchor#anchor(v-if="nodes.length > 0" :nodes="nodes")
+    d-page-anchor#anchor(v-if="headers.length > 0" :nodes="headers")
   q-page(style="min-height: calc(100vh - 118px)")
     q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
-      q-scroll-observer(v-if="nodes.length > 0" @scroll="scrolling" :debounce="200")
+      q-scroll-observer(v-if="headers.length > 0" @scroll="scrolling" :debounce="200")
 </template>
 
 <script>
@@ -28,7 +28,7 @@ export default {
   mixins: [Navigator],
 
   props: {
-    nodes: {
+    headers: {
       type: Array,
       default: Array
     },

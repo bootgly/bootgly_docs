@@ -1,4 +1,51 @@
 /* --- Docstation --- */
+// * Coloring
+// Light mode
+body.body--light
+  --q-primary: #655529 !important
+  --q-secondary: #000080 !important
+
+  --q-primary-background: #FFF !important
+
+  .content
+    p
+      // token
+      & > code
+        border: 1px solid #e6e6e6 !important
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
+    a
+      color: #34495e
+      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):hover
+        &:not(.button)
+          color: #286fa3
+          background-color: #cde3f3
+      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):not(.line)
+        color: #1b4a6c
+        border-bottom: 1px dotted #1b4a6c
+// Dark mode
+body.body--dark
+  --q-primary: #69562b !important
+  --q-secondary: #FFA07A !important
+  --q-negative: #fc001b !important
+
+  --q-primary-background: #FFF !important
+
+  .content
+    p
+      // token
+      & > code
+        border: 1px solid #e6e6e6
+        box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5)
+    a
+      color: #34495e
+      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):hover
+        &:not(.button)
+          color: #286fa3
+          background-color: #cde3f3
+      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):not(.line)
+        color: #3da6f3
+        border-bottom: 1px dotted #1b4a6c
+
 // * General
 .content
   --big-play-button-background: #000 !important
@@ -6,6 +53,8 @@
 
   p
     & > code
+      color: var(--q-primary) !important
+      background: var(--q-primary-background) !important
       padding: 3px 5px
       margin: 0 2px
       border-radius: 2px
@@ -62,15 +111,12 @@
       max-width: 100%
     strong
       font-weight: 600
-      color: #286fa3
     hr
       margin: 2em 0
       height: 2px
       background-color: #e5e5e5
       border: 0
       padding: 0
-    em
-      color: #57a0d6
     p
       word-spacing: 0.05em
     iframe
@@ -123,11 +169,6 @@
     ul ul,
     ul p
       margin: 0.6em 0
-    figure,
-    p,
-    ul,
-    ol
-      margin: 1.2em 0
     p,
     ul,
     ol
@@ -139,49 +180,6 @@
     table td
       padding: 10px 10px
 
-// * Coloring
-// Light mode
-body.body--light
-  --q-primary: #655529 !important
-  --q-secondary: #000080 !important
-
-  .content
-    p
-      & > code
-        color: #286fa3
-        border: 1px solid #e6e6e6
-        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
-    a
-      color: #34495e
-      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):hover
-        &:not(.button)
-          color: #286fa3
-          background-color: #cde3f3
-      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):not(.line)
-        color: #1b4a6c
-        border-bottom: 1px dotted #1b4a6c
-// Dark mode
-body.body--dark
-  --q-primary: #69562B !important
-  --q-secondary: #FFA07A !important
-
-  --q-negative: #fc001b !important
-
-  .content
-    p
-      & > code
-        color: #286fa3
-        border: 1px solid #e6e6e6
-        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
-    a
-      color: #34495e
-      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):hover
-        &:not(.button)
-          color: #286fa3
-          background-color: #cde3f3
-      &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):not(.line)
-        color: #3da6f3
-        border-bottom: 1px dotted #1b4a6c
 
 
 /* --- Quasar --- */
