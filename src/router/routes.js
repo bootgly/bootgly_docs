@@ -1,17 +1,17 @@
 
 const routes = [
   {
-    path: '/starting/introduction',
+    path: '/about/introduction',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '0-starting/1-introduction',
+      dir: '0-about/1-introduction',
       icon: 'grade',
       status: 'empty',
 
       menu: {
         header: {
           icon: 'contact_support',
-          name: 'starting'
+          name: 'about'
         }
       },
       layouts: {
@@ -25,7 +25,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/0-starting/1-introduction'),
+        component: () => import('pages/sources/0-about/1-introduction'),
         meta: {
           status: 0
         }

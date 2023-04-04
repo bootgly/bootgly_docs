@@ -50,7 +50,7 @@ q-scroll-area#menu(
   q-separator.separator.list
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter)
     template(v-for="(item, index) in items" :key="index")
-      q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="$q.dark.isActive ? ``: `background-color: #f5f5f5!important`")
+      q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()")
         q-item-label(header)
           q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
           | {{ getMenuItemHeader(item) }}
@@ -188,6 +188,9 @@ export default {
       return true
     },
 
+    getMenuItemHeaderBackground () {
+      return this.$q.dark.isActive ? '' : 'background-color: #f5f5f5!important'
+    },
     getMenuItemHeader (item) {
       const path = `_.${item.meta.menu.header.name}._`
 

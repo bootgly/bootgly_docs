@@ -9,14 +9,28 @@
       ]
     },
     about: {
-      _: 'About'
-    },
-    starting: {
-      _: 'Getting started',
+      _: 'About',
       introduction: {
         _: 'Introduction',
         overview: {
-          _subsections_: '3'
+          _subsections_: '3',
+
+          headers: [
+            'Header 2',
+            'Header 3',
+            'Header 4',
+            'Header 5',
+            'Header 6',
+          ],
+
+          paragraphs: [
+            '''
+            Bootgly is a PHP framework designed to build Apps and APIs for the Web and the Command Line (CLI).
+
+            It is probably the first PHP Framework with the codebase **focused on interfaces** in its organizational structure.
+            You can also see some unusual or even unseen code design patterns!
+            '''
+          ],
         }
       }
     }

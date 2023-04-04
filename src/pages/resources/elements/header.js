@@ -22,7 +22,8 @@ export default {
   methods: {
     registerAnchor (id) {
       const Anchor = document.getElementById(id)
-      if (typeof Anchor === 'object') {
+
+      if (Anchor !== null && typeof Anchor === 'object') {
         const anchors = this.$store.state.page.anchors
 
         if (!anchors[Anchor.id]) {

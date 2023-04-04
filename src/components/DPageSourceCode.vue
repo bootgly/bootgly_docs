@@ -180,8 +180,6 @@ article.source-code
 .language-css .token.string,
 .style .token.string
   color: #9a6e3a
-  /* This background color was intended by the author of this theme. */
-  background: hsla(0, 0%, 100%, .5)
 
 .token.atrule,
 .token.attr-value,
