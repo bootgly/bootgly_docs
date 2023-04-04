@@ -34,12 +34,5 @@ export default {
 
 h1
   font-size: 2.1rem
-  font-weight: 600
-  color: #286fa3
   margin: 0 0 0.7em
-
-h1:hover:after
-  content: ' #'
-  color: #286fa3
-  font-weight: bold
 </style>

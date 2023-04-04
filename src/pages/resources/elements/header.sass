@@ -1,8 +1,30 @@
+// * Coloring
+// Light mode
+body.body--light
+  h1, h2, h3, h4, h5, h6
+    color: black
+
+    &:hover
+      color: #595959
+    &:hover:after
+      color: #69562b
+// Dark mode
+body.body--dark
+  h1, h2, h3, h4, h5, h6
+    color: white
+
+    &:hover
+      color: #969696
+    &:hover:after
+      color: #B19248
+
+// * General
 h1, h2, h3, h4, h5, h6
-  color: #286fa3
+  font-weight: 600
   padding: 6px
   cursor: pointer
   user-select: none
 
-  &:hover
-    color: #4e9bd4
+  &:hover:after
+    content: ' #'
+    font-weight: bold

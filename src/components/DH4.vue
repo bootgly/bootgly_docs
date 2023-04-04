@@ -32,12 +32,4 @@ export default {
 <style lang="sass">
 h4
   font-size: 1.25rem
-  font-weight: 600
-  color: #286fa3
-  user-select: none
-
-h4:hover:after
-  content: ' #'
-  color: #286fa3
-  font-weight: bold
 </style>
