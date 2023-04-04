@@ -47,7 +47,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/BootPage'),
+        component: () => import('pages/sources/BootPage'),
         meta: {
           icon: 'home',
           menu: 'home'
@@ -55,7 +55,7 @@ const routes = [
       },
       {
         path: '/changelog',
-        component: () => import('pages/ChangelogPage'),
+        component: () => import('pages/sources/ChangelogPage'),
         meta: {
           icon: 'assignment',
           menu: 'changelog'
@@ -63,7 +63,7 @@ const routes = [
       },
       {
         path: '/sponsor',
-        component: () => import('pages/SponsorPage'),
+        component: () => import('pages/sources/SponsorPage'),
         meta: {
           icon: 'favorite',
           menu: 'sponsor'
@@ -71,7 +71,7 @@ const routes = [
       },
       {
         path: '*',
-        component: () => import('pages/404Page'),
+        component: () => import('pages/sources/404Page'),
         meta: {
           menu: '_404'
         }
