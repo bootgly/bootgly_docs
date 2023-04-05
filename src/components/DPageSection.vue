@@ -47,13 +47,19 @@ export default {
         return
       }
 
-      const Markdown = new MarkdownIt()
-
       const texts = this.$t(`_.${absolute}.texts[${this.id}]`)
 
-      const parsed = Markdown.parse(texts)
+      const Markdown = new MarkdownIt()
+      const tokens = Markdown.parse(texts)
+      tokens.map(token => {
+        if (token.type === 'inline') {
+          token.content = Markdown.renderInline(token.content)
+        }
 
-      this.tokens = parsed
+        return token
+      })
+
+      this.tokens = tokens
     }
   },
 
