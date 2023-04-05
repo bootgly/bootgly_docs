@@ -1,6 +1,6 @@
 <template lang="pug">
 section
-  template(v-for="token in tokens")
+  template(v-for="token in tokenized")
     p(
       v-if="token.type === 'inline'"
       v-html="token.content"
@@ -39,8 +39,8 @@ export default {
       parsed: false
     }
   },
-  methods: {
-    parse () {
+  computed: {
+    tokenized () {
       const absolute = this.$store.state.i18n.absolute
 
       if (!absolute) {
@@ -59,12 +59,8 @@ export default {
         return token
       })
 
-      this.tokens = tokens
+      return tokens
     }
-  },
-
-  mounted () {
-    this.parse()
   }
 }
 </script>
