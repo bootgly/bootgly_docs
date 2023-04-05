@@ -27,6 +27,9 @@
             ```php
             <?php
             echo 'Testando o novo code highlight da Documentação do Bootgly.';
+            function test () {
+
+            };
             ```
             '''
           ],
