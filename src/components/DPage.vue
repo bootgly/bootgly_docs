@@ -1,17 +1,29 @@
 <template lang="pug">
 q-page-container#page
   q-toolbar#submenu.bg-grey-8.text-white
-    q-toolbar-title.toolbar-title.text-center
+    q-toolbar-title.toolbar-container
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
-        q-btn(v-if="overview" @click="pRoute('/')" v-bind:class="pActive('/')" :label="$t('submenu.overview')" icon="pageview" no-caps flat)
-        q-btn(v-if="showcase" @click="pRoute('/showcase')" v-bind:class="pActive('/showcase')" :label="$t('submenu.showcase')" icon="play_circle_filled" no-caps flat)
+        q-btn(v-if="overview"
+          no-caps flat
+          v-bind:class="pActive('/')"
+          :label="$t('submenu.overview')" icon="pageview"
+          @click="pRoute('/')"
+        )
+        q-btn(v-if="samples"
+          no-caps flat
+          v-bind:class="pActive('/samples')"
+          :label="$t('submenu.samples')" icon="play_circle_filled"
+          @click="pRoute('/samples')"
+        )
+
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
     d-page-anchor#anchor(v-if="headers.length > 0" :nodes="headers")
+
   q-page(style="min-height: calc(100vh - 118px)")
     q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
-      q-scroll-observer(v-if="headers.length > 0" @scroll="scrolling" :debounce="200")
+      q-scroll-observer(v-if="headers.length > 0" @scroll="scrolling" :debounce="300")
 </template>
 
 <script>
@@ -21,10 +33,13 @@ import DPageNav from 'components/DPageNav'
 import Navigator from 'pages/resources/navigator'
 
 export default {
-  name: 'd-page',
+  name: 'DPage',
+
   components: {
-    DPageAnchor, DPageNav
+    DPageAnchor,
+    DPageNav
   },
+
   mixins: [Navigator],
 
   props: {
@@ -37,13 +52,14 @@ export default {
       default: false
     }
   },
+
   computed: {
     overview () {
       return this.$route.matched[0].path
     },
-    showcase () {
-      if (this.$route.matched[0].meta.pages.showcase !== false) {
-        return this.overview + '/showcase'
+    samples () {
+      if (this.$route.matched[0].meta.pages.samples !== false) {
+        return this.overview + '/samples'
       }
       return false
     },
@@ -61,8 +77,8 @@ export default {
       let classes = ''
 
       switch (this.$store.state.page.relative) {
-        case '/showcase':
-          classes = 'showcase'
+        case '/samples':
+          classes = 'samples'
           break
         default:
           classes = 'overview'
@@ -71,6 +87,7 @@ export default {
       return classes
     }
   },
+
   methods: {
     pActive (relative) {
       if (relative === '/' && (this.$store.state.page.relative === relative || this.$store.state.page.relative === '')) {
@@ -91,7 +108,7 @@ export default {
       }
 
       if (relative === to) {
-        if (to !== '/showcase') {
+        if (to !== '/samples') {
           return this.push('0')
         } else {
           return this.push('1')
@@ -119,7 +136,7 @@ export default {
   box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px rgba(0,0,0,0.14), 0 1px 6px rgba(0,0,0,0.12)
   overflow: visible
 
-  .toolbar-title
+  .toolbar-container
     overflow: visible
   .q-btn-group
     box-shadow: none
@@ -139,12 +156,15 @@ export default {
   border-radius: 0
   padding: 6px 12px
 
+// * Coloring
+// Light
 body.body--light
   #submenu a.active,
   #submenu button.active
     background-color: #fff !important
     color: #000
     box-shadow: 0 10px 0 0 #fff
+// Dark
 body.body--dark
   #submenu a.active,
   #submenu button.active

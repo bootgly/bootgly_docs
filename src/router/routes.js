@@ -18,16 +18,54 @@ const routes = [
         footer: true
       },
       pages: {
-        showcase: false
+        samples: true
       }
     },
 
     children: [
       {
         path: '',
-        component: () => import('pages/sources/0-about/1-introduction'),
+        component: () => import('pages/sources/default/OverviewPage'),
         meta: {
-          status: 0
+          status: 0,
+          anchors: [
+            {
+              id: 0
+              /*
+              children: [
+                {
+                  id: 1
+                },
+                {
+                  id: 2
+                }
+              ]
+              */
+            }
+          ]
+        }
+      },
+
+      {
+        path: 'samples',
+        component: () => import('pages/sources/default/SamplesPage'),
+        meta: {
+          status: 0,
+          anchors: [
+            {
+              id: 0
+              /*
+              children: [
+                {
+                  id: 1
+                },
+                {
+                  id: 2
+                }
+              ]
+              */
+            }
+          ]
         }
       }
     ]
@@ -53,6 +91,7 @@ const routes = [
           menu: 'home'
         }
       },
+
       {
         path: '/changelog',
         component: () => import('pages/sources/ChangelogPage'),
@@ -69,6 +108,7 @@ const routes = [
           menu: 'sponsor'
         }
       },
+
       {
         path: '*',
         component: () => import('pages/sources/404Page'),

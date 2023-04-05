@@ -7,9 +7,10 @@ import DH3 from 'src/components/DH3'
 import DH4 from 'src/components/DH4'
 import DH5 from 'src/components/DH5'
 import DH6 from 'src/components/DH6'
-// Paragraphs
-import DP from 'src/components/DP'
-// Source Codes
+
+// Sections
+import DPageSection from 'src/components/DPageSection'
+// -> Source Codes
 import DPageSourceCode from 'src/components/DPageSourceCode'
 
 // @ Mixins
@@ -25,9 +26,9 @@ export default {
     DH4,
     DH5,
     DH6,
-    // Paragraphs
-    DP,
-    // Source Codes
+    // Sections
+    DPageSection,
+    // -> Source Codes
     DPageSourceCode
   },
   mixins: [Translation]

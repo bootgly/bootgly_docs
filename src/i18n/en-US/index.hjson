@@ -1,5 +1,5 @@
 {
-  // Pages
+  // @ Pages
   _: {
     home: {
       texts: [
@@ -15,15 +15,9 @@
         overview: {
           _subsections_: '3',
 
-          headers: [
-            'Header 2',
-            'Header 3',
-            'Header 4',
-            'Header 5',
-            'Header 6',
-          ],
+          headers: [],
 
-          paragraphs: [
+          texts: [
             '''
             Bootgly is a PHP framework designed to build Apps and APIs for the Web and the Command Line (CLI).
 
@@ -35,7 +29,8 @@
       }
     }
   },
-  // Page
+
+  // @ Page
   footer: {
     github: {
       start: 'Start this page on ',
@@ -71,9 +66,14 @@
     _404: '404 Error - Not Found'
   },
   submenu: {
-    overview: 'Overview',
-    examples: 'Examples',
     guides: 'Guides',
+    manuals: 'Manuals',
+    references: 'References',
+
+    overview: 'Overview',
+    samples: 'Samples',
+    versus: 'Versus',
+
     changelog: 'Changelog'
   },
 

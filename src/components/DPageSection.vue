@@ -1,16 +1,17 @@
 <template lang="pug">
-main(v-html="render()")
+section(v-html="render()")
 </template>
 
 <script>
 import MarkdownIt from 'markdown-it'
+import Prism from 'prismjs'
 
 export default {
-  name: 'DP',
+  name: 'DPageSection',
 
   props: {
     id: {
-      type: String,
+      type: Number,
       required: false
     }
   },
@@ -30,13 +31,19 @@ export default {
       }
 
       let paragraphs = ''
-      const Markdown = new MarkdownIt()
+      const Markdown = new MarkdownIt({
+        highlight: function (code, lang) {
+          if (lang && Prism.languages[lang]) {
+            return Prism.highlight(code, Prism.languages[lang], lang)
+          }
 
-      if (this.id) {
-        const paragraph = this.$t(`_.${absolute}.paragraphs[${this.id}]`)
+          return code
+        }
+      })
 
-        paragraphs = Markdown.render(paragraph)
-      }
+      const paragraph = this.$t(`_.${absolute}.texts[${this.id}]`)
+
+      paragraphs = Markdown.render(paragraph)
 
       return paragraphs
     }

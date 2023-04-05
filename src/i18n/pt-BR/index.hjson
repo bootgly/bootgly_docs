@@ -1,5 +1,5 @@
 {
-  // Pages
+  // @ Pages
   _: {
     home: {
       texts: [
@@ -15,12 +15,9 @@
         overview: {
           _subsections_: '3',
 
-          headers: [
-            'Containers',
-            'Código fonte'
-          ],
+          headers: [],
 
-          paragraphs: [
+          texts: [
             '''
             Bootgly é um framework em PHP projetado para construir Apps e APIs para a Web e para a Linha de Comando (CLI).
 
@@ -32,7 +29,8 @@
       }
     }
   },
-  // Page
+
+  // @ Page
   footer: {
     github: {
       start: 'Comece esta página no ',
@@ -68,9 +66,14 @@
     _404: 'Erro 404 - Não encontrado'
   },
   submenu: {
-    overview: 'Apresentação',
-    examples: 'Exemplos',
     guides: 'Guias',
+    manuals: 'Manuais',
+    references: 'Referências',
+
+    overview: 'Apresentação',
+    samples: 'Exemplos',
+    versus: 'Comparação',
+
     changelog: 'Changelog'
   },
 

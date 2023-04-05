@@ -118,14 +118,14 @@ export default {
           }
           // ! Search in Page content
           if (this.matches[index] === false) {
-            // ? Search in Page texts (overview, showcases?, changelog?)
+            // ? Search in Page texts (overview, sampless?, changelog?)
             // * Search in current language
             this.matches[index] = this.searchTermInI18nTexts(route.path, term, locale)
             // * Fallback to search in en-US
             if (this.matches[index] === false && locale !== 'en-US') {
               this.matches[index] = this.searchTermInI18nTexts(route.path, term, 'en-US')
             }
-            // ? Search in Page codes (overview, showcases?)
+            // ? Search in Page codes (overview, sampless?)
             // * Search in current language
             if (this.matches[index] === false) {
               this.matches[index] = this.searchTermInI18nCodes(route.path, term, locale)
