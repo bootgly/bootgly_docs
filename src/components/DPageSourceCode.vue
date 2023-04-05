@@ -1,13 +1,13 @@
 <template lang="pug">
-article.source-code(v-if="index")
-  .content.code.white
+.source-code
+  .code.white
     .lines(v-if="lines")
       template(v-for="(line, index) in lines" :key="index")
         a.line(:href="`${$store.state.page.base}#${anchor}${line}`" :id="`${anchor}${line}`")
           i.fa.fa-link(aria-hidden="true" data-hidden="true")
           span {{ line }}
     pre
-      code(:class="`language-${language}`" v-html="code")
+      code(:class="`language-${language}`" v-html="highlighted")
 </template>
 
 <script>
@@ -24,6 +24,10 @@ export default {
     language: {
       type: String,
       default: 'html'
+    },
+    text: {
+      type: String,
+      required: true
     }
   },
 
@@ -32,16 +36,19 @@ export default {
       return this.printToLetter(this.index + 1)
     },
     lines () {
-      const lines = this.text.split(/\r\n|\r|\n/).length
-      return lines
+      const splited = this.text.split(/\r\n|\n/)
+      const lines = splited.length
+
+      return lines - 1
     },
-    code () {
-      if (this.text) {
-        const code = Prism.highlight(this.text, Prism.languages[this.language], this.language)
-        return code
-      } else {
+    highlighted () {
+      if (!this.text) {
         return ''
       }
+
+      const highlighted = Prism.highlight(this.text, Prism.languages[this.language], this.language)
+
+      return highlighted
     }
   },
 
@@ -67,29 +74,15 @@ export default {
 
       return result
     }
-  },
-
-  // @ Events
-  beforeCreate () {
-    if (this.index) {
-      const pathbase = this.$store.state.i18n.base
-      const path = `_.${pathbase}.overview.codes[${this.index}]`
-
-      if (pathbase.length > 0 && (this.$te(path) || this.$te(path, 'en-US'))) {
-        this.text = this.$tm(path)
-      } else {
-        this.text = ''
-      }
-    }
   }
 }
 </script>
 
 <style lang="sass">
-article.source-code
+.source-code
   box-shadow: 0 1px 1px rgb(0 0 0 / 13%)
 
-  .content
+  .code
     font-family: "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "Andale Mono", "Lucida Console", Monospace
     border: 1px solid #ddd
     border-bottom: 1px solid #ccc

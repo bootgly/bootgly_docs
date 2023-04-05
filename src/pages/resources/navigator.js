@@ -1,4 +1,5 @@
 import { scroll } from 'quasar'
+
 const { getScrollTarget, setVerticalScrollPosition } = scroll
 
 export default {

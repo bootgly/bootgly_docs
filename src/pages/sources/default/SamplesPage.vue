@@ -22,6 +22,7 @@ export default {
       texts: []
     }
   },
+
   mounted () {
     // Meta
     this.anchors = this.$route.meta.anchors

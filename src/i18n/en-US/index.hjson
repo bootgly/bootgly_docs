@@ -23,6 +23,12 @@
 
             It is probably the first PHP Framework with the codebase **focused on interfaces** in its organizational structure.
             You can also see some unusual or even unseen code design patterns!
+
+            ```js
+            function test () {
+              console.log('Testing the new code highlight in Bootgly Docs.')
+            }
+            ```
             '''
           ],
         }

@@ -1,52 +1,64 @@
 <template lang="pug">
-section(v-html="render()")
+section
+  template(v-for="token in tokens")
+    p(
+      v-if="token.type === 'inline'"
+      v-html="token.content"
+    )
+    d-page-source-code(
+      v-else-if="token.tag === 'code'"
+      :index="this.id"
+      :language="token.info"
+      :text="token.content"
+    )
 </template>
 
 <script>
 import MarkdownIt from 'markdown-it'
-import Prism from 'prismjs'
+
+import DPageSourceCode from './DPageSourceCode.vue'
 
 export default {
   name: 'DPageSection',
+  components: {
+    DPageSourceCode
+  },
 
   props: {
     id: {
       type: Number,
-      required: false
+      required: true
     }
   },
 
   data () {
     return {
-      rendered: false,
-      paragraphs: []
+      // Data
+      tokens: [],
+      // Meta
+      parsed: false
     }
   },
   methods: {
-    render () {
+    parse () {
       const absolute = this.$store.state.i18n.absolute
 
       if (!absolute) {
         return
       }
 
-      let paragraphs = ''
-      const Markdown = new MarkdownIt({
-        highlight: function (code, lang) {
-          if (lang && Prism.languages[lang]) {
-            return Prism.highlight(code, Prism.languages[lang], lang)
-          }
+      const Markdown = new MarkdownIt()
 
-          return code
-        }
-      })
+      const texts = this.$t(`_.${absolute}.texts[${this.id}]`)
 
-      const paragraph = this.$t(`_.${absolute}.texts[${this.id}]`)
+      const parsed = Markdown.parse(texts)
 
-      paragraphs = Markdown.render(paragraph)
-
-      return paragraphs
+      this.tokens = parsed
     }
+  },
+
+  mounted () {
+    this.parse()
   }
 }
 </script>
@@ -56,6 +68,9 @@ export default {
   p
     line-height: 1em
 
-  &.overview
-    word-spacing: 0.05em
+    &.overview
+      word-spacing: 0.05em
+
+  .source-code
+    margin: 0 0 16px
 </style>

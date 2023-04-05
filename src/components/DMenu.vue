@@ -73,7 +73,7 @@ q-scroll-area#menu(
 import { openURL, scroll } from 'quasar'
 const { getScrollTarget, setVerticalScrollPosition } = scroll
 
-import menu from 'src/i18n/menu.hjson'
+import tags from 'src/i18n/tags.hjson'
 
 export default {
   name: 'DMenu',
@@ -109,30 +109,26 @@ export default {
         for (const [index, route] of this.items.entries()) {
           // ! Search in Menu item label
           // TODO
-          // ! Search in i18n/menu.hjson
-          // * Search in current language
-          this.matches[index] = menu[locale][index].indexOf(term) !== -1
-          // * Fallback to search in en-US
-          if (this.matches[index] === false && locale !== 'en-US') {
-            this.matches[index] = menu['en-US'][index].indexOf(term) !== -1
+
+          // @ Search in i18n/tags.json
+          // Current language
+          this.matches[index] = false
+          if (tags[locale].length > 0) {
+            this.matches[index] = tags[locale][index].indexOf(term) !== -1
+            // en-US fallback
+            if (this.matches[index] === false && locale !== 'en-US') {
+              this.matches[index] = tags['en-US'][index].indexOf(term) !== -1
+            }
           }
-          // ! Search in Page content
+
+          // @ Search in Page content
           if (this.matches[index] === false) {
-            // ? Search in Page texts (overview, sampless?, changelog?)
-            // * Search in current language
+            // ? Search in Page texts (overview, samples?, changelog?)
+            // Current language
             this.matches[index] = this.searchTermInI18nTexts(route.path, term, locale)
-            // * Fallback to search in en-US
+            // en-US fallback
             if (this.matches[index] === false && locale !== 'en-US') {
               this.matches[index] = this.searchTermInI18nTexts(route.path, term, 'en-US')
-            }
-            // ? Search in Page codes (overview, sampless?)
-            // * Search in current language
-            if (this.matches[index] === false) {
-              this.matches[index] = this.searchTermInI18nCodes(route.path, term, locale)
-            }
-            // * Fallback to search in en-US
-            if (this.matches[index] === false && locale !== 'en-US') {
-              this.matches[index] = this.searchTermInI18nCodes(route.path, term, 'en-US')
             }
           }
         }
@@ -141,7 +137,8 @@ export default {
       }
     },
     searchTermInI18nTexts (route, term, locale, subpage = 'overview') {
-      const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.texts` // TODO replace with global solution
+      // TODO replace with global solution
+      const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.texts`
 
       // * Search in page texts (i18n)
       let texts = null
@@ -153,27 +150,6 @@ export default {
       if (texts && Object.keys(texts).length) {
         for (const text of texts) {
           if (text.toLowerCase().includes(term)) {
-            found = true
-            break
-          }
-        }
-      }
-
-      return found
-    },
-    searchTermInI18nCodes (route, term, locale, subpage = 'overview') {
-      const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.codes` // TODO replace with global solution
-
-      // * Search in page codes (i18n)
-      let codes = null
-      if (this.$te(path, locale)) {
-        codes = this.$tm(path, locale)
-      }
-
-      let found = false
-      if (codes && Object.keys(codes).length) {
-        for (const code of codes) {
-          if (code.toLowerCase().includes(term)) {
             found = true
             break
           }

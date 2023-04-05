@@ -17,7 +17,7 @@ const routes = [
       layouts: {
         footer: true
       },
-      pages: {
+      subpages: {
         samples: true
       }
     },

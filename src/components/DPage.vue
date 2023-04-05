@@ -58,7 +58,7 @@ export default {
       return this.$route.matched[0].path
     },
     samples () {
-      if (this.$route.matched[0].meta.pages.samples !== false) {
+      if (this.$route.matched[0].meta.subpages.samples !== false) {
         return this.overview + '/samples'
       }
       return false

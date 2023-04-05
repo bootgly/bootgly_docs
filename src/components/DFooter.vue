@@ -1,6 +1,6 @@
 <template lang="pug">
 q-toolbar#d-footer.bg-dark.text-white
-  q-btn.q-mr-sm(v-if="relative" flat dense no-caps :color="color" @click="openURL(`${base}${relative}/index.vue`)")
+  //-q-btn.q-mr-sm(v-if="relative" flat dense no-caps :color="color" @click="openURL(`${base}${relative}/index.vue`)")
     q-icon(:name="icon" size="20px")
     .gt-xs
       span.hm(v-if="status === 9") {{ $t('footer.github.edit') }}
@@ -35,9 +35,10 @@ export default {
       default: 1
     }
   },
+
   data () {
     return {
-      base: 'https://github.com/slowaways/quasar-documentation-pp/blob/master/src/pages/'
+      base: 'https://github.com/bootgly/-docs/blob/master/src/pages/'
     }
   },
   computed: {
