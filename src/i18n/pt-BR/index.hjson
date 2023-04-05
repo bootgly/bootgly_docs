@@ -24,7 +24,7 @@
             Provavelmente é o primeiro Frameowork PHP com o código base **focado em interfaces** em sua estrutura organizacional.
             Também é possível ver alguns padrões de design de código incomuns ou até inéditos!
 
-            ```js
+            ```php
             <?php
             echo 'Testing the new code highlight in Bootgly Docs.';
             ```

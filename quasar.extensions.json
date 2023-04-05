@@ -1,6 +1,3 @@
 {
-  "@quasar/qmarkdown": {
-    "import_md": true
-  },
   "@quasar/qmediaplayer": {}
 }
