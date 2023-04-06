@@ -14,7 +14,6 @@
     "@quasar/extras": "^1.13.5",
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
-    "pinia": "^2.0.11",
     "q-colorize-mixin": "^2.0.0-alpha.5",
     "quasar": "^2.6.5",
     "vue": "^3.0.0",
