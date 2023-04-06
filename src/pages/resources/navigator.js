@@ -14,7 +14,8 @@ export default {
       if (typeof id === 'number') {
         id = '' + id
         const Anchor = document.getElementById(id)
-        if (typeof Anchor === 'object') {
+
+        if (Anchor !== null && typeof Anchor === 'object') {
           const target = getScrollTarget(Anchor)
           const offset = Anchor.offsetTop - Anchor.scrollHeight
           const duration = 300
@@ -35,14 +36,14 @@ export default {
             window.scrollTo(0, offset + 78 + additional)
           }
 
-          if (select) {
-            this.select(id)
-          }
-
           setTimeout(() => {
             this.$store.commit('page/setScrolling', true)
           }, 600)
         }
+      }
+
+      if (select) {
+        this.select(id)
       }
     },
     select (id) {
