@@ -64,7 +64,11 @@ q-scroll-area#menu(
           q-icon(v-if="item.meta.icon" :name="item.meta.icon")
         q-item-section {{ getMenuItemLabel(item, index) }}
         q-item-section.page-status(v-if="item.meta.status !== 'done'" side)
-          q-badge(:color="getPageStatusColor(item.meta.status)" :label="getPageStatusText(item.meta.status)")
+          q-badge(
+            :text-color="getPageStatusTextColor(item.meta.status)"
+            :color="getPageStatusColor(item.meta.status)"
+            :label="getPageStatusText(item.meta.status)"
+          )
           q-tooltip(:hide-delay="3") {{ getPageStatusTooltip(item.meta.status) }}
       q-separator(v-if="item.meta.menu.separator" :class="'separator' + item.meta.menu.separator")
 </template>
@@ -207,6 +211,13 @@ export default {
         return this.$t('menu.status.draft._')
       } else {
         return this.$t('menu.status.empty._')
+      }
+    },
+    getPageStatusTextColor (status) {
+      if (status === 'draft') {
+        return 'dark'
+      } else {
+        return 'red'
       }
     },
     getPageStatusColor (status) {
