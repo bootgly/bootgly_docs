@@ -1,5 +1,5 @@
 <template lang="pug">
-h3(:id="id" @click="push(id)") {{ heading }}
+h3(:id="id" @click="push(id)") {{ value }}
 </template>
 
 <script>
@@ -20,11 +20,15 @@ export default {
     id: {
       type: String,
       required: true
+    },
+    value: {
+      type: String,
+      required: true
     }
   },
 
   mounted () {
-    this.registerAnchor(this.$el.id)
+    this.registerAnchor(this.id, this.value)
   }
 }
 </script>
@@ -32,7 +36,7 @@ export default {
 <style lang="sass">
 h3
   font-size: 1.5rem
-  margin: 1.2em 0 0.9em
+  margin: 1.0em 0 0.7em
 
   &:first-child
     margin-top: 0

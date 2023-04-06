@@ -24,7 +24,7 @@ export default {
   },
 
   mounted () {
-    this.registerAnchor(this.$el.id)
+    this.registerAnchor(this.id)
   }
 }
 </script>

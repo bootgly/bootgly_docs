@@ -1,5 +1,5 @@
 <template lang="pug">
-h2(:id="id" @click="push(id)") {{ heading }}
+h2(:id="id" @click="push(id)") {{ value }}
 </template>
 
 <script>
@@ -20,11 +20,15 @@ export default {
     id: {
       type: String,
       required: true
+    },
+    value: {
+      type: String,
+      required: true
     }
   },
 
   mounted () {
-    this.registerAnchor(this.$el.id)
+    this.registerAnchor(this.id, this.value)
   }
 }
 </script>
