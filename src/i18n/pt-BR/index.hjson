@@ -10,29 +10,29 @@
     },
     about: {
       _: 'Sobre',
+
       introduction: {
         _: 'Introdução',
         overview: {
           _subsections_: '3',
-
-          headers: [],
 
           texts: [
             '''
             Bootgly é um framework em PHP projetado para construir Apps e APIs para a Web e para a Linha de Comando (CLI).
 
             Provavelmente é o primeiro Frameowork PHP com o código base **focado em interfaces** em sua estrutura organizacional.
-            Também é possível ver alguns padrões de design de código incomuns ou até inéditos!
-
-            ```php
-            <?php
-            echo 'Testando o novo code highlight da Documentação do Bootgly.';
-            function test () {
-
-            };
-            ```
-            '''
+            ''',
           ],
+        }
+      },
+      directory-structure: {
+        _: 'Estrutura de diretórios',
+        overview: {
+          texts: [
+            '''
+            TODO
+            '''
+          ]
         }
       }
     }

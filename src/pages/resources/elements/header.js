@@ -20,7 +20,7 @@ export default {
   },
 
   methods: {
-    registerAnchor (id) {
+    registerAnchor (id, value) {
       const Anchor = document.getElementById(id)
 
       if (Anchor !== null && typeof Anchor === 'object') {
@@ -29,6 +29,14 @@ export default {
         if (!anchors[Anchor.id]) {
           this.$store.commit('page/setAnchors', Anchor.offsetTop - Anchor.scrollHeight + 33)
         }
+      }
+
+      if (id !== 0 && id !== '0') {
+        this.$store.commit('page/setNode', {
+          id,
+          label: value,
+          children: []
+        })
       }
     }
   }

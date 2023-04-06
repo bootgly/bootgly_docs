@@ -1,8 +1,17 @@
 <template lang="pug">
-q-tree(default-expand-all :nodes="nodes" node-key="id" v-model:selected="selected" v-bind:class="stylize")
+q-tree(
+  v-model:selected="selected"
+  v-model:expanded="expanded"
+  default-expand-all
+  :class="stylize"
+  :nodes="nodes"
+  node-key="id"
+)
   template(v-slot:default-header="props")
-    b(v-if="props.node.id") {{ $t(`_.${$store.state.i18n.absolute}.headers[${props.node.id - 1}]`) }}
-    b(v-else) {{ $t(`_.${$store.state.i18n.base}._`) }}
+    b(v-if="props.node.label")
+      | {{ props.node.label }}
+    b(v-else)
+      | {{ $t(`_.${$store.state.i18n.base}._`) }}
 </template>
 
 <script>
@@ -10,15 +19,19 @@ import Navigator from 'pages/resources/navigator'
 
 export default {
   name: 'DPageAnchor',
+
   mixins: [Navigator],
 
-  props: {
-    nodes: {
-      type: Array,
-      required: true
+  data () {
+    return {
+      expanded: [0]
     }
   },
   computed: {
+    nodes () {
+      const nodes = this.$store.getters['page/nodes']
+      return nodes
+    },
     selected: {
       get () {
         let anchor = this.$store.state.page.anchor

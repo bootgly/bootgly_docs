@@ -12,14 +12,8 @@ nav
 export default {
   name: 'DPageNav',
 
-  data () {
-    return {
-      prev: this._prev(),
-      next: this._next()
-    }
-  },
-  methods: {
-    _prev () {
+  computed: {
+    prev () {
       const base = this.$store.state.page.base
       const routes = this.$router.options.routes.slice(0, -1)
 
@@ -33,7 +27,7 @@ export default {
 
       return ''
     },
-    _next () {
+    next () {
       const base = this.$store.state.page.base
       const routes = this.$router.options.routes.slice(0, -1)
 

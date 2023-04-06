@@ -1,11 +1,10 @@
 <template lang="pug">
-d-page(:headers="anchors")
+d-page
   header
     d-h1(id="0")
 
   main
     template(v-for="(paragraph, id) in texts")
-      d-h1(:id="id" v-if="id !== 0")
       d-page-section(:id="id")
 </template>
 
@@ -15,23 +14,39 @@ import Overview from 'src/pages/resources/subpages/overview'
 export default {
   mixins: [Overview],
 
-  data () {
-    return {
-      anchors: [],
-      headers: [],
-      texts: []
+  computed: {
+    headers () {
+      const absolute = this.$store.state.i18n.absolute
+
+      return this.$tm(`_.${absolute}.headers`)
+    },
+    texts () {
+      const absolute = this.$store.state.i18n.absolute
+
+      return this.$tm(`_.${absolute}.texts`)
     }
   },
 
-  mounted () {
-    // Meta
-    this.anchors = this.$route.meta.anchors
-    // i18n
-    // const relative = this.$store.state.i18n.relative
-    const absolute = this.$store.state.i18n.absolute
+  // @ Events
+  // Vue
+  created () {
+    // console.log('OverviewPage - created!')
 
-    this.headers = this.$tm(`_.${absolute}.headers`)
-    this.texts = this.$tm(`_.${absolute}.texts`)
+    this.$store.commit('page/resetNodes')
+  },
+  mounted () {
+    // console.log('OverviewPage - mounted!')
+  },
+  beforeUpdate () {
+    // console.log('OverviewPage - beforeUpdate!')
+  },
+  updated () {
+    // console.log('OverviewPage - updated!!')
+  },
+  // Vue Router
+  beforeRouteLeave () {
+    // console.log('OverviewPage - beforeRouteLeave!')
+    this.$store.commit('page/resetNodes')
   }
 }
 </script>

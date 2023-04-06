@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container#page
-  q-toolbar#submenu.bg-grey-8.text-white
+  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (samples)")
     q-toolbar-title.toolbar-container
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
         q-btn(v-if="overview"
@@ -16,14 +16,14 @@ q-page-container#page
           @click="pRoute('/samples')"
         )
 
-  q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
-    d-page-anchor#anchor(v-if="headers.length > 0" :nodes="headers")
-
   q-page(style="min-height: calc(100vh - 118px)")
     q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
-      q-scroll-observer(v-if="headers.length > 0" @scroll="scrolling" :debounce="300")
+      q-scroll-observer(v-if="nodes.length > 0" @scroll="scrolling" :debounce="300")
+
+  q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
+    d-page-anchor#anchor(v-if="nodes.length > 0" :nodes="nodes")
 </template>
 
 <script>
@@ -43,10 +43,6 @@ export default {
   mixins: [Navigator],
 
   props: {
-    headers: {
-      type: Array,
-      default: Array
-    },
     disableNav: {
       type: Boolean,
       default: false
@@ -54,6 +50,11 @@ export default {
   },
 
   computed: {
+    nodes () {
+      const nodes = this.$store.state.page.nodes
+      return nodes
+    },
+
     overview () {
       return this.$route.matched[0].path
     },

@@ -5,8 +5,8 @@ const routes = [
     component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '0-about/1-introduction',
-      icon: 'grade',
-      status: 'empty',
+      icon: 'play_arrow',
+      status: 'draft',
 
       menu: {
         header: {
@@ -18,7 +18,42 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: true
+        samples: false
+      }
+    },
+
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      },
+
+      {
+        path: 'samples',
+        component: () => import('pages/sources/default/SamplesPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/about/directory-structure',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '0-about/2-directory-structure',
+      icon: 'account_tree',
+      status: 'draft',
+
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
       }
     },
 
