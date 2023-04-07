@@ -20,7 +20,7 @@ export default {
   },
 
   methods: {
-    registerAnchor (id, value) {
+    registerAnchor (id) {
       // console.log('registerAnchor: ', id, value)
 
       const Anchor = document.getElementById(id)
@@ -31,14 +31,6 @@ export default {
         if (!anchors[Anchor.id]) {
           this.$store.commit('page/setAnchors', Anchor.offsetTop - Anchor.scrollHeight + 33)
         }
-      }
-
-      if (id !== 0 && id !== '0') {
-        this.$store.commit('page/setNode', {
-          id,
-          label: value,
-          children: []
-        })
       }
     }
   }

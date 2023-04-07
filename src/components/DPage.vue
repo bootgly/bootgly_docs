@@ -16,7 +16,7 @@ q-page-container#page
           @click="pRoute('/samples')"
         )
 
-  q-page(style="min-height: calc(100vh - 118px)")
+  q-page(style="min-height: calc(100vh - 80px)")
     q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
@@ -127,7 +127,7 @@ export default {
 <style lang="sass">
 .content,
 .content > div.scroll
-  min-height: calc(100vh - 118px)
+  min-height: calc(100vh - 80px)
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 20px
 

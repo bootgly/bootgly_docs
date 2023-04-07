@@ -28,7 +28,13 @@ export default {
   },
 
   mounted () {
-    this.registerAnchor(this.id, this.value)
+    this.$store.commit('page/setNode', {
+      id: this.id,
+      label: this.value,
+      children: []
+    })
+
+    this.registerAnchor(this.id)
   }
 }
 </script>
