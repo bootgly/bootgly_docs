@@ -41,14 +41,16 @@ const routes = [
     ]
   },
   {
-    path: '/about/directory-structure',
+    path: '/about/structure/directory',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '0-about/2-directory-structure',
       icon: 'account_tree',
       status: 'draft',
 
-      menu: {},
+      menu: {
+        subheader: 'about.structure'
+      },
       layouts: {
         footer: true
       },

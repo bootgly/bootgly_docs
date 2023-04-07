@@ -26,6 +26,10 @@ section
       :id="this.id + 6"
       :value="token.content"
     )
+    li(
+      v-else-if="token.tag === 'li'"
+      v-html="token.content"
+    )
     p(
       v-else-if="token.tag === 'p'"
       v-html="token.content"
@@ -87,12 +91,22 @@ export default {
       const Markdown = new MarkdownIt()
       let tokens = Markdown.parse(texts)
       // @ map
+      let level = 0
       let tag = ''
       tokens.map((token) => {
-        switch (token.type) {
-          case 'heading_open':
-          case 'paragraph_open':
-            tag = token.tag
+        if (token.type === 'bullet_list_open') {
+          level++
+        }
+
+        if (level === 0) {
+          switch (token.type) {
+            case 'heading_open':
+            case 'paragraph_open':
+            case 'list_item_open':
+              tag = token.tag
+          }
+        } else if (level === 1 && token.type === 'list_item_open') {
+          tag = token.tag
         }
 
         if (token.type === 'inline') {
@@ -100,22 +114,30 @@ export default {
           token.tag = tag
         }
 
+        if (token.type === 'bullet_list_close') {
+          level--
+        }
+
         return token
       })
-      // @ filter
+      // @ Clean open tags
       tokens = tokens.filter((value) => {
         switch (value.type) {
           case 'heading_open':
           case 'heading_close':
           case 'paragraph_open':
           case 'paragraph_close':
+          case 'bullet_list_open':
+          case 'bullet_list_close':
+          case 'list_item_open':
+          case 'list_item_close':
             return false
         }
 
         return true
       })
 
-      // console.log(tokens)
+      console.log(tokens)
 
       return tokens
     }

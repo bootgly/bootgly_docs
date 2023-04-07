@@ -310,6 +310,11 @@ export default {
 </script>
 
 <style lang="sass">
+body.body--dark
+  --d-menu-subheader-txt-color: #a8a8a8
+body.body--light
+  --d-menu-subheader-txt-color: #363636
+
 #menu
   width: 100%
   height: calc(100% - 50px)
@@ -335,7 +340,7 @@ export default {
 
   // List Item Label
   .label
-    color: #363636
+    color: var(--d-menu-subheader-txt-color)
 
     &.header
       text-align: center
