@@ -48,27 +48,27 @@
 
               ![Dir Structure](images/bootgly_php_framework-directory_structure.png)
 
-              ## Pasta '@' - Artefatos e metadados
+              ## Pasta para artefatos e metadados
               É uma pasta global de metadados e artefatos que podem ser usados em seus "@Workables".
 
               É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados gerais, documentação, scripts e outros arquivos gerais específicos da pasta onde essa pasta foi colocada.
 
-              ## Pasta '@Bootables'
+              ## Pasta 'Bootables'
               A pasta "Bootables" é projetada para conter tudo relacionado à **inicialização do framework**.
 
               Isso inclue códigos abstratos, códigos base, códigos do núcleo, enfim, tudo o que é necessário para configurar o ambiente de desenvolvimento ou produção dos projetos que está utilizando o Bootgly PHP Framework.
 
               Essa separação ajuda a manter os arquivos de inicialização organizados em um local central, facilitando a configuração e o gerenciamento dos ambientes de implantação.
 
-              ## Pasta '@Features'
+              ## Pasta 'Features'
               A pasta "Features" é destinada a conter os arquivos relacionados às **funcionalidades específicas do framework**.
 
               Isso pode incluir arquivos de código-fonte para interfaces, módulos, nós, plataformas, e outros artefatos de desenvolvimento específicos de cada funcionalidade oferecida pelo Bootgly PHP Framework.
 
               Organizar os arquivos dessa forma permite que os desenvolvedores encontrem facilmente os arquivos relevantes para uma determinada funcionalidade, tornando a manutenção e o desenvolvimento mais eficientes.
 
-              ## Pasta '@Workables'
-              Por fim, a pasta "@Workables" é projetada para conter **tudo o que é desenvolvido através do framework**.
+              ## Pasta 'Workables'
+              Por fim, a pasta "Workables" é projetada para conter **tudo o que é desenvolvido através do framework**.
 
               Essa pasta deve incluir projetos específicos, pastas de código-fonte, arquivos de configuração, entre outros recursos relacionados aos projetos que são construídos utilizando o framework.
               Por exemplo, pode conter pastas de projetos específicos ou pastas para recursos públicos como imagens, arquivos CSS ou JavaScript.
