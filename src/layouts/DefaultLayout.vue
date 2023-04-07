@@ -7,9 +7,12 @@ q-layout(view="lHh lpR lFr")
         q-icon.q-mb-xs.q-mr-sm(:name="headerTitleIcon")
         | {{ headerTitleText }}
       q-btn.filled(square icon="settings" aria-label="Configuration" @click="openSettingsDialog")
+
   q-drawer(elevated show-if-above side="left" v-model="layout.menu")
     d-menu
+
   router-view
+
   q-footer(elevated v-if="this.$route.matched[0].meta.layouts.footer !== false" v-model="this.$store.state.layout.footer")
     d-footer(:status="$route.meta.status")
 </template>

@@ -133,6 +133,7 @@ export default {
     // Language
     setLanguage (language) {
       this.$q.localStorage.set('setting.language', language)
+      this.$store.commit('page/resetNodes')
       this.$i18n.locale = language
     },
 

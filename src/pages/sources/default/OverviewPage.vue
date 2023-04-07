@@ -32,13 +32,15 @@ export default {
   created () {
     // console.log('OverviewPage - created!')
 
-    this.$store.commit('page/resetNodes')
+    // this.$store.commit('page/resetNodes')
   },
   mounted () {
     // console.log('OverviewPage - mounted!')
   },
   beforeUpdate () {
     // console.log('OverviewPage - beforeUpdate!')
+
+    // this.$store.commit('page/resetNodes')
   },
   updated () {
     // console.log('OverviewPage - updated!!')
@@ -46,6 +48,7 @@ export default {
   // Vue Router
   beforeRouteLeave () {
     // console.log('OverviewPage - beforeRouteLeave!')
+
     this.$store.commit('page/resetNodes')
   }
 }

@@ -3,27 +3,27 @@ section
   template(v-for="token in tokenized")
     d-h2(
       v-if="token.tag === 'h2'"
-      :id="this.id + 2"
+      :id="this.id + token.map[0]"
       :value="token.content"
     )
     d-h3(
       v-else-if="token.tag === 'h3'"
-      :id="this.id + 3"
+      :id="this.id + token.map[0]"
       :value="token.content"
     )
     d-h4(
       v-else-if="token.tag === 'h4'"
-      :id="this.id + 4"
+      :id="this.id + token.map[0]"
       :value="token.content"
     )
     d-h5(
       v-else-if="token.tag === 'h5'"
-      :id="this.id + 5"
+      :id="this.id + token.map[0]"
       :value="token.content"
     )
     d-h6(
       v-else-if="token.tag === 'h6'"
-      :id="this.id + 6"
+      :id="this.id + token.map[0]"
       :value="token.content"
     )
     li(
@@ -137,7 +137,7 @@ export default {
         return true
       })
 
-      console.log(tokens)
+      // console.log(tokens)
 
       return tokens
     }

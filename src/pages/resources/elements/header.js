@@ -21,6 +21,8 @@ export default {
 
   methods: {
     registerAnchor (id, value) {
+      // console.log('registerAnchor: ', id, value)
+
       const Anchor = document.getElementById(id)
 
       if (Anchor !== null && typeof Anchor === 'object') {
