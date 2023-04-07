@@ -49,7 +49,7 @@
               ![Dir Structure](images/bootgly_php_framework-directory_structure.png)
 
               ## Pasta para artefatos e metadados
-              É uma pasta global de metadados e artefatos que podem ser usados em seus "@Workables".
+              É uma pasta global de metadados e artefatos que podem ser usados em seus "Workables".
 
               É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados gerais, documentação, scripts e outros arquivos gerais específicos da pasta onde essa pasta foi colocada.
 

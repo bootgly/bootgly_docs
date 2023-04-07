@@ -66,7 +66,7 @@
               Organizing files in this way allows developers to easily find files relevant to a particular functionality, making maintenance and development more efficient.
 
               ## 'Workables' folder
-              Finally, the "@Workables" folder is designed to contain **everything that is developed through of the framework**.
+              Finally, the "Workables" folder is designed to contain **everything that is developed through of the framework**.
 
               This folder should include specific projects, source folders, configuration files, and other resources related to the projects that are built using the Bootgly PHP Framework.
               For example, it can contain folders for specific projects or folders for public resources such as images, CSS files, or JavaScript.
