@@ -5,6 +5,7 @@ export const setAnchors = (state, val) => {
   if (val === false) {
     state.anchors = []
   } else {
+    // index: position
     state.anchors.push(val)
   }
 }

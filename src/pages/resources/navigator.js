@@ -7,39 +7,21 @@ export default {
     anchor (id, select = true) {
       this.$store.commit('page/setScrolling', false)
 
-      if (typeof id === 'string') {
-        id = Number(id.replace(/^\D+/g, ''))
-      }
+      // Convert to string
+      id = '' + id
 
-      if (typeof id === 'number') {
-        id = '' + id
-        const Anchor = document.getElementById(id)
+      const Anchor = document.getElementById(id)
 
-        if (Anchor !== null && typeof Anchor === 'object') {
-          const target = getScrollTarget(Anchor)
-          const offset = Anchor.offsetTop - Anchor.scrollHeight
-          const duration = 300
+      if (Anchor !== null && typeof Anchor === 'object') {
+        const target = getScrollTarget(Anchor)
+        const offset = Anchor.offsetTop - 40
+        const duration = 300
 
-          if (this.$q.platform.is.desktop) {
-            setVerticalScrollPosition(target, offset + 33, duration)
-          } else {
-            let additional = 0
-            if (this.$q.screen.lt.lg) {
-              const Anchors = document.getElementById('anchor')
-              additional = Anchors.offsetHeight
+        setVerticalScrollPosition(target, offset + 33, duration)
 
-              if (additional > 0) {
-                additional += 20
-              }
-            }
-
-            window.scrollTo(0, offset + 78 + additional)
-          }
-
-          setTimeout(() => {
-            this.$store.commit('page/setScrolling', true)
-          }, 600)
-        }
+        setTimeout(() => {
+          this.$store.commit('page/setScrolling', true)
+        }, 600)
       }
 
       if (select) {
@@ -50,28 +32,23 @@ export default {
       this.$store.commit('page/setAnchor', Number(id))
     },
     scrolling (scroll) {
-      // console.log(this.$store.state.page.scrolling, scroll.position)
+      const scrolling = this.$store.state.page.scrolling
 
-      if (this.$store.state.page.scrolling && scroll.position.top > 5) {
-        const position = scroll.position.top + 60
-        const anchors = this.$store.state.page.anchors
-        let additional = 0
+      if (!scrolling) {
+        return
+      }
 
-        if (this.$store.state.page.relative !== '') {
-          additional = 1
-        }
+      const position = scroll.position.top
 
-        for (let i = 0; i < anchors.length; i++) {
-          if (anchors[i] >= position) {
-            this.select(i - 1 + additional)
-            this.push(i - 1 + additional, false)
-            break
-          }
+      const anchors = this.$store.state.page.anchors
+      const nodes = this.$store.state.page.nodes
 
-          if (typeof anchors[i + 1] === 'undefined' && position >= anchors[i]) {
-            this.select(i + additional)
-            this.push(i + additional, false)
-          }
+      for (let i = 0; i < anchors.length; i++) {
+        const id = (i > 0) ? (nodes[0].children[i - 1].id) : (0)
+
+        if (position >= anchors[i]) {
+          this.select(id)
+          this.push(id, false)
         }
       }
     },

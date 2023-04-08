@@ -26,7 +26,7 @@ export default {
       const Anchor = document.getElementById(id)
 
       if (Anchor !== null && typeof Anchor === 'object') {
-        this.$store.commit('page/setAnchors', Anchor.offsetTop - Anchor.scrollHeight + 33)
+        this.$store.commit('page/setAnchors', Anchor.offsetTop)
       }
 
       if (id !== 0 && id !== '0') {

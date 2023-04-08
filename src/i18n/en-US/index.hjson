@@ -42,7 +42,7 @@
           overview: {
             texts: [
               '''
-              The Bootgly PHP Framework has been very organized since its foundation and provides a solid framework for building efficient and scalable PHP code.
+              The Bootgly PHP Framework has been very organized since its foundation and provides a solid framework for building your codes.
 
               A key part of this framework is its root folder's directory organization, which has been carefully designed to ensure a clear and efficient organization to separate everything from the Framework itself from everything that was produced with it.
 
