@@ -51,12 +51,14 @@
               ## Pasta para artefatos e metadados
               É uma pasta global de metadados e artefatos que podem ser usados em seus "Workables".
 
-              É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados gerais, documentação, scripts e outros arquivos gerais específicos da pasta onde essa pasta foi colocada.
+              É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados gerais, documentação, autoloaders e outros arquivos gerais específicos de contexto local.
+
+              Por ser uma pasta global, você pode criar essa pasta em seus projetos produzidos com o Bootgly.
 
               ## Pastas 'Bootables'
               A pasta "Bootables" é projetada para conter tudo relacionado à **inicialização do framework**.
 
-              Isso inclue códigos abstratos, códigos base, códigos do núcleo, enfim, tudo o que é necessário para configurar o ambiente de desenvolvimento ou produção dos projetos que está utilizando o Bootgly PHP Framework.
+              Isso inclue códigos abstratos, códigos base, códigos do núcleo, enfim, tudo o que é necessário para inicializar o ambiente de desenvolvimento ou produção dos projetos que está utilizando o Bootgly PHP Framework.
 
               Essa separação ajuda a manter os arquivos de inicialização organizados em um local central, facilitando a configuração e o gerenciamento dos ambientes de implantação.
 

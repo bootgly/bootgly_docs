@@ -50,11 +50,13 @@
 
               ## Artifacts / Metadata folder
               It`s a global folder of metadata and artifacts that can be used in its workables.
-              It is a place intended to store relevant information about the project, such as configuration files, general metadata files, documentation, scripts, and other general files specific to the folder where this folder was placed.
+              It is a place intended to store relevant information about the project, such as configuration files, general metadata files, documentation, autoloaders and other general files specific to the local context.
+
+              Because it's a global folder, you can create this folder in your projects produced with Bootgly.
 
               ## 'Bootables' folders
               The "Bootables" folder is designed to contain everything related to the **initialization of the framework**.
-              This includes abstract codes, base codes, core codes, in short, everything that is needed to configure the development or production environment of the projects that is using the Bootgly PHP Framework.
+              This includes abstract codes, base codes, core codes, in short, everything that is needed to boot the development or production environment of the projects that is using the Bootgly PHP Framework.
 
               This separation helps keep the startup files organized in a central location, making it easier to configure and manage deployment environments.
 

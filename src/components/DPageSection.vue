@@ -26,10 +26,20 @@ section
       :id="this.id + token.map[0]"
       :value="token.content"
     )
-    li(
-      v-else-if="token.tag === 'li'"
-      v-html="token.content"
+    ul(
+      v-else-if="token.tag === 'ul'"
     )
+      li(
+        v-for="item in token.children"
+        v-html="item.content"
+      )
+    ol(
+      v-else-if="token.tag === 'ol'"
+    )
+      li(
+        v-for="item in token.children"
+        v-html="item.content"
+      )
     p(
       v-else-if="token.tag === 'p'"
       v-html="token.content"
@@ -37,8 +47,8 @@ section
     d-page-source-code(
       v-else-if="token.tag === 'code'"
       :index="this.id"
-      :language="token.info"
       :text="token.content"
+      :language="token.info"
     )
 </template>
 
@@ -89,55 +99,68 @@ export default {
       const texts = this.$t(`_.${absolute}.texts[${this.id}]`)
 
       const Markdown = new MarkdownIt()
-      let tokens = Markdown.parse(texts)
+      const parsed = Markdown.parse(texts)
       // @ map
+      const tokens = []
       let level = 0
       let tag = ''
-      tokens.map((token) => {
-        if (token.type === 'bullet_list_open') {
+      const children = []
+      parsed.forEach((element) => {
+        if (element.type === 'bullet_list_open' || element.type === 'ordered_list_open') {
           level++
         }
 
+        if (element.type === 'inline') {
+          element.content = Markdown.renderInline(element.content)
+        }
+
         if (level === 0) {
-          switch (token.type) {
+          switch (element.type) {
             case 'heading_open':
             case 'paragraph_open':
             case 'list_item_open':
-              tag = token.tag
+              tag = element.tag
           }
-        } else if (level === 1 && token.type === 'list_item_open') {
-          tag = token.tag
+
+          if (element.type === 'inline') {
+            tokens.push({
+              tag,
+              map: element.map,
+              content: element.content,
+              info: element.info,
+              children
+            })
+          }
+        } else if (level === 1) {
+          switch (element.type) {
+            case 'list_item_open':
+              tag = element.tag
+              break
+            case 'bullet_list_open':
+              tokens.push({
+                tag: 'ul',
+                children
+              })
+              break
+            case 'ordered_list_open':
+              tokens.push({
+                tag: 'ol',
+                children
+              })
+              break
+            case 'inline':
+              // TODO support to level > 1
+              tokens[tokens.length - 1].children.push({
+                tag,
+                content: element.content
+              })
+          }
         }
 
-        if (token.type === 'inline') {
-          token.content = Markdown.renderInline(token.content)
-          token.tag = tag
-        }
-
-        if (token.type === 'bullet_list_close') {
+        if (element.type === 'bullet_list_close') {
           level--
         }
-
-        return token
       })
-      // @ Clean open tags
-      tokens = tokens.filter((value) => {
-        switch (value.type) {
-          case 'heading_open':
-          case 'heading_close':
-          case 'paragraph_open':
-          case 'paragraph_close':
-          case 'bullet_list_open':
-          case 'bullet_list_close':
-          case 'list_item_open':
-          case 'list_item_close':
-            return false
-        }
-
-        return true
-      })
-
-      // console.log(tokens)
 
       return tokens
     }
