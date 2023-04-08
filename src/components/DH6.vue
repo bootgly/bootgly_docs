@@ -48,8 +48,5 @@ export default {
 </script>
 
 <style lang="sass">
-h6
-  font-size: 1.06rem
-  line-height: 1.06rem
-  margin: 0.3em 0 0.1em
+
 </style>

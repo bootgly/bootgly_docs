@@ -48,13 +48,5 @@ export default {
 </script>
 
 <style lang="sass">
-h3
-  font-size: 1.5rem
-  line-height: 1.5rem
-  margin: 1em 0 0.7em
 
-  &:first-child
-    margin-top: 0
-  &:before
-    content: '# '
 </style>

@@ -8,11 +8,19 @@ body.body--light
   --q-primary-background: #FFF !important
 
   .content
+    h1, h2, h3, h4, h5, h6
+      color: black
+
+      &:hover
+        color: #595959
+      &:hover:after
+        color: #69562b
     p
       // token
       & > code
         border: 1px solid #e6e6e6 !important
         box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
+
     a
       color: #34495e
       &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):hover
@@ -31,11 +39,19 @@ body.body--dark
   --q-primary-background: #FFF !important
 
   .content
+    h1, h2, h3, h4, h5, h6
+      color: white
+
+      &:hover
+        color: #969696
+      &:hover:after
+        color: #B19248
     p
       // token
       & > code
         border: 1px solid #e6e6e6
         box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5)
+
     a
       color: #34495e
       &:not([data-scroll]):not(.search-result):not(.support-button):not(.header-link):hover
@@ -51,6 +67,47 @@ body.body--dark
   --big-play-button-background: #000 !important
   --big-play-button-background-dark: #000 !important
 
+  h1, h2, h3, h4, h5, h6
+    font-weight: 600
+    padding: 6px
+    cursor: pointer
+    user-select: none
+
+    &:hover:after
+      content: ' #'
+      font-weight: bold
+
+  h1
+    font-size: 2rem
+    line-height: 2rem
+    margin: 0 0 0.7em
+  h2
+    font-size: 1.7rem
+    line-height: 1.7rem
+    margin: 1.35em 0 0.7em
+    border-bottom: 1px solid #ddd
+  h3
+    font-size: 1.5rem
+    line-height: 1.5rem
+    margin: 1em 0 0.7em
+
+    &:first-child
+      margin-top: 0
+    &:before
+      content: '# '
+  h4
+    font-size: 1.25rem
+    line-height: 1.25rem
+  h5
+    font-size: 1.12rem
+    line-height: 1.12rem
+    margin: 0.5em 0 0.3em
+    margin: 0
+  h6
+    font-size: 1.06rem
+    line-height: 1.06rem
+    margin: 0.3em 0 0.1em
+
   p
     & > code
       color: var(--q-primary) !important
@@ -61,6 +118,7 @@ body.body--dark
       white-space: pre-wrap
       display: inline-block
       line-height: 1em
+
   a
     text-decoration: none
     outline: 0

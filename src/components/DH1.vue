@@ -30,10 +30,5 @@ export default {
 </script>
 
 <style lang="sass">
-@import 'pages/resources/elements/header.sass'
 
-h1
-  font-size: 2rem
-  line-height: 2rem
-  margin: 0 0 0.7em
 </style>
