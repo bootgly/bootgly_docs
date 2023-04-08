@@ -330,6 +330,7 @@ body.body--light
     .q-item.q-router-link--active
       color: black
       background: rgba(189, 189, 189, 0.7)
+      font-weight: 500
       // List Item Section
       .q-item__section--side:not(.q-item__section--avatar)
           .q-icon

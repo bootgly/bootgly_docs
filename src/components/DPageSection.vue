@@ -28,18 +28,16 @@ section
     )
     ul(
       v-else-if="token.tag === 'ul'"
+      v-html="token.content"
     )
-      li(
-        v-for="item in token.children"
-        v-html="item.content"
-      )
     ol(
       v-else-if="token.tag === 'ol'"
+      v-html="token.content"
     )
-      li(
-        v-for="item in token.children"
-        v-html="item.content"
-      )
+    table(
+      v-else-if="token.tag === 'table'"
+      v-html="token.content"
+    )
     p(
       v-else-if="token.tag === 'p'"
       v-html="token.content"
@@ -106,8 +104,11 @@ export default {
       let tag = ''
       const children = []
       parsed.forEach((element) => {
-        if (element.type === 'bullet_list_open' || element.type === 'ordered_list_open') {
-          level++
+        switch (element.type) {
+          case 'bullet_list_open':
+          case 'ordered_list_open':
+          case 'table_open':
+            level++
         }
 
         if (element.type === 'inline') {
@@ -132,35 +133,84 @@ export default {
             })
           }
         } else if (level === 1) {
+          const parent = tokens[tokens.length - 1]
+
           switch (element.type) {
-            case 'list_item_open':
-              tag = element.tag
-              break
             case 'bullet_list_open':
               tokens.push({
                 tag: 'ul',
-                children
+                content: ''
               })
               break
             case 'ordered_list_open':
               tokens.push({
                 tag: 'ol',
-                children
+                content: ''
               })
               break
+            case 'table_open':
+              tokens.push({
+                tag: 'table',
+                content: ''
+              })
+              break
+
+            case 'list_item_open':
+              parent.content += '<li>'
+              break
+
+            case 'thead_open':
+              parent.content += '<thead>'
+              break
+            case 'tbody_open':
+              parent.content += '<tbody>'
+              break
+            case 'tr_open':
+              parent.content += '<tr>'
+              break
+            case 'th_open':
+              parent.content += '<th>'
+              break
+            case 'td_open':
+              parent.content += '<td>'
+              break
+
             case 'inline':
               // TODO support to level > 1
-              tokens[tokens.length - 1].children.push({
-                tag,
-                content: element.content
-              })
+              parent.content += element.content
+              break
+
+            case 'list_item_close':
+              parent.content += '</li>'
+              break
+
+            case 'thead_close':
+              parent.content += '</thead>'
+              break
+            case 'tbody_close':
+              parent.content += '</tbody>'
+              break
+            case 'tr_close':
+              parent.content += '</tr>'
+              break
+            case 'th_close':
+              parent.content += '</th>'
+              break
+            case 'td_close':
+              parent.content += '</td>'
+              break
           }
         }
 
-        if (element.type === 'bullet_list_close') {
-          level--
+        switch (element.type) {
+          case 'bullet_list_close':
+          case 'ordered_list_close':
+          case 'table_close':
+            level--
         }
       })
+
+      // console.log(parsed, tokens)
 
       return tokens
     }
