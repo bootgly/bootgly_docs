@@ -8,7 +8,7 @@ const HJSON = require('hjson')
 const loaderUtils = require('loader-utils')
 
 module.exports = function (source) {
-  source = source.replace(/(?<!')[@|](?!')/gm, "{'$0'}")
+  source = source.replace(/(?<!')[@|](?![':.])/gm, "{'$0'}")
 
   this.cacheable && this.cacheable()
 
