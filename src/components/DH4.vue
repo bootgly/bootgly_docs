@@ -27,12 +27,20 @@ export default {
     }
   },
 
+  // @ Events
+  created () {
+    // console.log('DH4 - created!')
+  },
   mounted () {
-    this.$store.commit('page/setNode', {
-      id: this.id,
-      label: this.value,
-      children: []
-    })
+    // console.log('DH4 - mounted!')
+
+    this.registerAnchor(this.id)
+  },
+  beforeUpdate () {
+    // console.log('DH4 - beforeUpdate!')
+  },
+  updated () {
+    // console.log('DH4 - updated!')
 
     this.registerAnchor(this.id)
   }
@@ -42,5 +50,6 @@ export default {
 <style lang="sass">
 h4
   font-size: 1.25rem
+  line-height: 1.25rem
   margin: 0
 </style>

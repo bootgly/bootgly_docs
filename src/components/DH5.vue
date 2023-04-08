@@ -27,12 +27,20 @@ export default {
     }
   },
 
+  // @ Events
+  created () {
+    // console.log('DH5 - created!')
+  },
   mounted () {
-    this.$store.commit('page/setNode', {
-      id: this.id,
-      label: this.value,
-      children: []
-    })
+    // console.log('DH5 - mounted!')
+
+    this.registerAnchor(this.id)
+  },
+  beforeUpdate () {
+    // console.log('DH5 - beforeUpdate!')
+  },
+  updated () {
+    // console.log('DH5 - updated!')
 
     this.registerAnchor(this.id)
   }
@@ -42,5 +50,6 @@ export default {
 <style lang="sass">
 h5
   font-size: 1.12rem
+  line-height: 1.12rem
   margin: 0.5em 0 0.3em
 </style>

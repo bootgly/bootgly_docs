@@ -27,12 +27,20 @@ export default {
     }
   },
 
+  // @ Events
+  created () {
+    // console.log('DH3 - created!')
+  },
   mounted () {
-    this.$store.commit('page/setNode', {
-      id: this.id,
-      label: this.value,
-      children: []
-    })
+    // console.log('DH3 - mounted!')
+
+    this.registerAnchor(this.id)
+  },
+  beforeUpdate () {
+    // console.log('DH3 - beforeUpdate!')
+  },
+  updated () {
+    // console.log('DH3 - updated!')
 
     this.registerAnchor(this.id)
   }
@@ -42,7 +50,8 @@ export default {
 <style lang="sass">
 h3
   font-size: 1.5rem
-  margin: 1.0em 0 0.7em
+  line-height: 1.5rem
+  margin: 1em 0 0.7em
 
   &:first-child
     margin-top: 0
