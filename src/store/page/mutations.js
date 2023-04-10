@@ -9,6 +9,7 @@ export const setAnchors = (state, val) => {
     state.anchors.push(val)
   }
 }
+
 export const resetNodes = (state) => {
   state.nodes = [
     {

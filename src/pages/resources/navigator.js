@@ -13,11 +13,10 @@ export default {
       const Anchor = document.getElementById(id)
 
       if (Anchor !== null && typeof Anchor === 'object') {
-        const target = getScrollTarget(Anchor)
-        const offset = Anchor.offsetTop - 40
-        const duration = 300
+        const ScrollTarget = getScrollTarget(Anchor)
+        const AnchorOffsetTop = Anchor.offsetTop - 40
 
-        setVerticalScrollPosition(target, offset + 33, duration)
+        setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
 
         setTimeout(() => {
           this.$store.commit('page/setScrolling', true)

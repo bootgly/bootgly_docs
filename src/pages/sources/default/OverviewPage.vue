@@ -36,7 +36,6 @@ export default {
   },
   mounted () {
     // console.log('OverviewPage - mounted!')
-    // TODO register all anchors here
   },
   beforeUpdate () {
     // console.log('OverviewPage - beforeUpdate!')
