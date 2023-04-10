@@ -1,13 +1,15 @@
-# Bootgly - Docs
-(WORKING IN PROGRESS)
-
-> The official documentation of Bootgly PHP Framework!
-
-<!---
 <p align="center">
-  <img src="src/assets/screenshot/general.png" width="600" height="600" />
+  <img src="https://github.com/bootgly/.github/raw/main/favicon-temp1-128.png" alt="bootgly-logo" width="120px" height="120px"/>
 </p>
--->
+<h1 align="center">Bootgly - Docs (WIP)</h1>
+<p align="center">
+  <i>The official documentation of Bootgly.</i>
+</p>
+<p align="center">
+  <a href="https://packagist.org/packages/bootgly/bootgly-php-framework">
+    <img alt="Bootgly License" src="https://img.shields.io/github/license/bootgly/-docs"/>
+  </a>
+</p>
 
 Some features of this documentation are listed below!
 
