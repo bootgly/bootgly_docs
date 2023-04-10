@@ -44,7 +44,8 @@ export default {
       const nodes = this.$store.state.page.nodes
 
       for (let i = 0; i < anchors.length; i++) {
-        const id = (i > 0) ? (nodes[0].children[i - 1].id) : (0)
+        const children = nodes[0].children[i - 1]
+        const id = (i > 0 && children !== undefined) ? (children.id) : (0)
 
         if (position >= anchors[i]) {
           this.select(id)
