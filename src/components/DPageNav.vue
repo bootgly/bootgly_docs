@@ -1,9 +1,13 @@
 <template lang="pug">
 nav
-  router-link(v-if="prev" :to="`${prev}`")
+  router-link.link.float-left(v-if="prev" :to="`${prev}`")
+    div.text-caption
+      | {{ $t('nav.prev') }}
     q-icon(name="navigate_before")
     span {{ $t(`_${prev.replace(/_$/, '').replace(/\//g, '.')}._`) }}
-  router-link.float-right(v-if="next" :to="`${next}`")
+  router-link.link.float-right(v-if="next" :to="`${next}`")
+    div.text-caption
+      | {{ $t('nav.next') }}
     span {{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}
     q-icon(name="navigate_next")
 </template>
@@ -53,4 +57,7 @@ nav
   border-top: 3px solid #e0e0e0
   &:first-child
     margin-top: calc(100vh - 200px)
+  .link
+    border: 1px solid #e0e0e0
+    padding: 20px !important
 </style>

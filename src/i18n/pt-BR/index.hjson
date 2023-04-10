@@ -167,6 +167,10 @@
   },
 
   // @ Page
+  nav: {
+    prev: 'Página anterior',
+    next: 'Próxima página'
+  },
   footer: {
     github: {
       start: 'Comece esta página no ',

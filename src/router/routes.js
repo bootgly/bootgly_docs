@@ -200,7 +200,7 @@ const routes = [
     component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '01-CLI/01-Terminal/02-Output/11-components/Alert',
-      icon: 'add_alert',
+      icon: 'notification_important',
       status: 'empty',
       menu: {
         subheader: 'CLI.Terminal.components'
