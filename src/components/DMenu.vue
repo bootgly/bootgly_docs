@@ -5,6 +5,7 @@ transition(appear enter-active-class="animated zoomIn" leave-active-class="anima
       q-icon.q-ml-sm(name="search")
     template(v-slot:append)
       q-icon.cursor-pointer.clear(v-if="term" name="clear" @click="clearSearchTerm")
+
 q-scroll-area#menu(
   :visible="true"
   :class="$q.dark.isActive ? ``: `bg-grey-2`"
@@ -34,6 +35,7 @@ q-scroll-area#menu(
         q-btn(icon="fas fa-at" size="sm" @click="openURL('mailto:public@bootgly.com')" aria-label="Bootgly Public Email")
           q-tooltip Email
   q-separator.separator.list
+
   q-list(no-border link inset-delimiter)
     q-item(to="/" exact)
       q-item-section(side)
@@ -48,14 +50,17 @@ q-scroll-area#menu(
         q-icon(name="favorite" color="red")
       q-item-section {{ $t('menu.sponsor') }}
   q-separator.separator.list
+
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter)
     template(v-for="(item, index) in items" :key="index")
+      // Menu Separator - Header
       q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()")
         q-item-label(header)
           q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
           | {{ getMenuItemHeader(item) }}
         q-separator.separator.partial
 
+      // Menu Separator - Subheader
       q-item-section(v-if="item.meta.menu.subheader")
         q-item-label.label.subheader(header) {{ getMenuItemSubheader(item) }}
 
@@ -70,6 +75,8 @@ q-scroll-area#menu(
             :label="getPageStatusText(item.meta.status)"
           )
           q-tooltip(:hide-delay="3") {{ getPageStatusTooltip(item.meta.status) }}
+
+      // Menu Separator
       q-separator(v-if="item.meta.menu.separator" :class="'separator' + item.meta.menu.separator")
 </template>
 
@@ -217,7 +224,7 @@ export default {
       if (status === 'draft') {
         return 'dark'
       } else {
-        return 'red'
+        return 'white'
       }
     },
     getPageStatusColor (status) {
@@ -258,7 +265,7 @@ export default {
   beforeCreate () {
     // console.log('DMenu - beforeCreate()!')
 
-    const routes = this.$router.options.routes.slice(0, -1) // Delete last route
+    const routes = this.$router.options.routes.slice(0, -2) // Delete last 2 routes
     const items = []
 
     for (const [index, route] of routes.entries()) {

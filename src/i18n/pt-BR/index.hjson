@@ -81,7 +81,79 @@
           }
         }
       }
-    }
+    },
+    CLI: {
+      _: 'CLI',
+      Terminal: {
+        _: 'Terminal',
+        Input: {
+          _: 'Input',
+          overview: {
+            texts: [
+              '''
+
+              '''
+            ],
+          },
+        },
+        Output: {
+          _: 'Output',
+          Cursor: {
+            _: 'Cursor',
+            overview: {
+              texts: [
+                '''
+
+                '''
+              ],
+            },
+          },
+          Text: {
+            _: 'Text',
+            overview: {
+              texts: [
+                '''
+
+                '''
+              ],
+            },
+          },
+          Viewport: {
+            _: 'Viewport',
+            overview: {
+              texts: [
+                '''
+
+                '''
+              ],
+            },
+          },
+          components: {
+            _: 'Terminal componentes',
+            Progress: {
+              _: 'Progress',
+              overview: {
+                texts: [
+                  '''
+
+                  '''
+                ],
+              },
+            },
+            Table: {
+              _: 'Table',
+              overview: {
+                texts: [
+                  '''
+
+                  '''
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
   },
 
   // @ Page
@@ -107,11 +179,11 @@
     status: {
       empty: {
         _: 'vazia',
-        tooltip: 'Documentação está vazia!'
+        tooltip: 'Esta página está vazia!'
       },
       draft: {
         _: 'rascunho',
-        tooltip: 'Documentação está em construção.'
+        tooltip: 'Esta página está em construção.'
       }
     },
 

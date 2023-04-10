@@ -4,10 +4,9 @@ const routes = [
     path: '/about/introduction',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '0-about/1-introduction',
+      dir: '01-about/01-introduction',
       icon: 'play_arrow',
       status: 'draft',
-
       menu: {
         header: {
           icon: 'contact_support',
@@ -21,19 +20,10 @@ const routes = [
         samples: false
       }
     },
-
     children: [
       {
         path: '',
         component: () => import('pages/sources/default/OverviewPage'),
-        meta: {
-          status: 0
-        }
-      },
-
-      {
-        path: 'samples',
-        component: () => import('pages/sources/default/SamplesPage'),
         meta: {
           status: 0
         }
@@ -44,10 +34,9 @@ const routes = [
     path: '/about/structure/directory',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '0-about/2-directory-structure',
+      dir: '01-about/02-directory-structure',
       icon: 'account_tree',
       status: 'draft',
-
       menu: {
         subheader: 'about.structure'
       },
@@ -58,51 +47,199 @@ const routes = [
         samples: false
       }
     },
-
     children: [
       {
         path: '',
         component: () => import('pages/sources/default/OverviewPage'),
         meta: {
-          status: 0,
-          anchors: [
-            {
-              id: 0
-              /*
-              children: [
-                {
-                  id: 1
-                },
-                {
-                  id: 2
-                }
-              ]
-              */
-            }
-          ]
+          status: 0
+        }
+      }
+    ]
+  },
+
+  {
+    path: '/CLI/Terminal/Input',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/01-Input',
+      icon: 'input',
+      status: 'empty',
+      menu: {
+        header: {
+          icon: 'terminal',
+          name: 'CLI'
         }
       },
-
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
       {
-        path: 'samples',
-        component: () => import('pages/sources/default/SamplesPage'),
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
         meta: {
-          status: 0,
-          anchors: [
-            {
-              id: 0
-              /*
-              children: [
-                {
-                  id: 1
-                },
-                {
-                  id: 2
-                }
-              ]
-              */
-            }
-          ]
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/CLI/Terminal/Output',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/01-Input',
+      icon: 'output',
+      status: 'empty',
+      menu: {
+        separator: true
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/CLI/Terminal/Output/Cursor',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/01-Cursor',
+      icon: 'mouse',
+      status: 'empty',
+      menu: {
+        subheader: 'CLI.Terminal.Output'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/CLI/Terminal/Output/Text',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/02-Text',
+      icon: 'text_fields',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/CLI/Terminal/Output/Viewport',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/03-Viewport',
+      icon: 'wysiwyg',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/CLI/Terminal/Output/components/Progress',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/11-components/01-Progress',
+      icon: 'downloading',
+      status: 'empty',
+      menu: {
+        subheader: 'CLI.Terminal.Output.components'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/CLI/Terminal/Output/components/Table',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/11-components/01-Table',
+      icon: 'table_chart',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
         }
       }
     ]
@@ -118,7 +255,6 @@ const routes = [
       },
       pages: {}
     },
-
     children: [
       {
         path: '',
@@ -128,7 +264,6 @@ const routes = [
           menu: 'home'
         }
       },
-
       {
         path: '/changelog',
         component: () => import('pages/sources/ChangelogPage'),
@@ -144,14 +279,20 @@ const routes = [
           icon: 'favorite',
           menu: 'sponsor'
         }
-      },
+      }
+    ]
+  },
 
+  {
+    path: '/(.*)*',
+    component: () => import('layouts/SystemLayout'),
+    meta: {
+      menu: {}
+    },
+    children: [
       {
-        path: '*',
-        component: () => import('pages/sources/404Page'),
-        meta: {
-          menu: '_404'
-        }
+        path: '',
+        component: () => import('pages/sources/404Page')
       }
     ]
   }

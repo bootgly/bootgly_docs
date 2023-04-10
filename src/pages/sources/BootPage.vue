@@ -19,7 +19,7 @@ q-page-container
     div.row.no-wrap.justify-center.items-center.content-center(
       style="max-width: 735px; margin: auto; height: calc(100vh + 45px)"
     )
-      q-carousel.col-12.text-center(
+      q-carousel.content.col-12.text-center(
         v-model="slide", v-model:fullscreen="fullscreen"
         animated,
         swipeable,
