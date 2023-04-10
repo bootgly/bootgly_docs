@@ -83,11 +83,11 @@
       }
     },
     CLI: {
-      _: 'CLI',
+      _: 'Bootgly CLI',
       Terminal: {
         _: 'Terminal',
         Input: {
-          _: 'Input',
+          _: 'Terminal Input',
           overview: {
             texts: [
               '''
@@ -97,7 +97,7 @@
           },
         },
         Output: {
-          _: 'Output',
+          _: 'Terminal Output',
           Cursor: {
             _: 'Cursor',
             overview: {
@@ -128,27 +128,27 @@
               ],
             },
           },
-          components: {
-            _: 'Terminal componentes',
-            Progress: {
-              _: 'Progress',
-              overview: {
-                texts: [
-                  '''
+        },
+        components: {
+          _: 'Terminal componentes',
+          Progress: {
+            _: 'Progress',
+            overview: {
+              texts: [
+                '''
 
-                  '''
-                ],
-              },
+                '''
+              ],
             },
-            Table: {
-              _: 'Table',
-              overview: {
-                texts: [
-                  '''
+          },
+          Table: {
+            _: 'Table',
+            overview: {
+              texts: [
+                '''
 
-                  '''
-                ],
-              },
+                '''
+              ],
             },
           },
         },

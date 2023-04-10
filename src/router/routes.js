@@ -193,14 +193,14 @@ const routes = [
     ]
   },
   {
-    path: '/CLI/Terminal/Output/components/Progress',
+    path: '/CLI/Terminal/components/Progress',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '01-CLI/01-Terminal/02-Output/11-components/01-Progress',
       icon: 'downloading',
       status: 'empty',
       menu: {
-        subheader: 'CLI.Terminal.Output.components'
+        subheader: 'CLI.Terminal.components'
       },
       layouts: {
         footer: true
@@ -220,7 +220,7 @@ const routes = [
     ]
   },
   {
-    path: '/CLI/Terminal/Output/components/Table',
+    path: '/CLI/Terminal/components/Table',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '01-CLI/01-Terminal/02-Output/11-components/01-Table',
