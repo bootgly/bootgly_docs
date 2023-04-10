@@ -9,7 +9,7 @@
       ]
     },
     about: {
-      _: 'Sobre',
+      _: 'Sobre Bootgly',
 
       introduction: {
         _: 'Introdução',
@@ -131,6 +131,16 @@
         },
         components: {
           _: 'Terminal componentes',
+          Alert: {
+            _: 'Alert',
+            overview: {
+              texts: [
+                '''
+
+                '''
+              ],
+            },
+          },
           Progress: {
             _: 'Progress',
             overview: {

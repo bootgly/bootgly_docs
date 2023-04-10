@@ -174,7 +174,9 @@ const routes = [
       dir: '01-CLI/01-Terminal/02-Output/03-Viewport',
       icon: 'wysiwyg',
       status: 'empty',
-      menu: {},
+      menu: {
+        separator: true
+      },
       layouts: {
         footer: true
       },
@@ -192,12 +194,13 @@ const routes = [
       }
     ]
   },
+
   {
-    path: '/CLI/Terminal/components/Progress',
+    path: '/CLI/Terminal/components/Alert',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/11-components/01-Progress',
-      icon: 'downloading',
+      dir: '01-CLI/01-Terminal/02-Output/11-components/Alert',
+      icon: 'add_alert',
       status: 'empty',
       menu: {
         subheader: 'CLI.Terminal.components'
@@ -220,10 +223,35 @@ const routes = [
     ]
   },
   {
+    path: '/CLI/Terminal/components/Progress',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/11-components/Progress',
+      icon: 'downloading',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
     path: '/CLI/Terminal/components/Table',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/11-components/01-Table',
+      dir: '01-CLI/01-Terminal/02-Output/11-components/Table',
       icon: 'table_chart',
       status: 'empty',
       menu: {},
