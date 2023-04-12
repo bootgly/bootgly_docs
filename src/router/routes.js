@@ -223,6 +223,31 @@ const routes = [
     ]
   },
   {
+    path: '/CLI/Terminal/components/Menu',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/02-Output/11-components/Menu',
+      icon: 'menu',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
     path: '/CLI/Terminal/components/Progress',
     component: () => import('layouts/DefaultLayout'),
     meta: {

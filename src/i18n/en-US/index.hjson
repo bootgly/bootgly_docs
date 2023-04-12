@@ -139,6 +139,16 @@
               ],
             },
           },
+          Menu: {
+            _: 'Menu',
+            overview: {
+              texts: [
+                '''
+
+                '''
+              ],
+            },
+          },
           Progress: {
             _: 'Progress',
             overview: {
