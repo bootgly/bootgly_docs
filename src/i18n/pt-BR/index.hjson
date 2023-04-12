@@ -44,7 +44,7 @@
               '''
               O Bootgly PHP Framework é muito organizado desde a sua fundação e oferece uma estrutura sólida para a construção de seus códigos.
 
-              Uma parte fundamental dessa estrutura é a organização de diretórios da sua pasta raiz, que foi projetada cuidadosamente para garantir uma organização clara e eficiente para separar tudo o que é do Framework em si, de tudo o que foi produzido com ele.
+              Uma parte fundamental dessa estrutura é a organização de diretórios da sua pasta raiz, que foi projetada cuidadosamente para garantir uma organização clara e eficiente em ordem crescente de dependências. Esse padrão foi criado para separar tudo o que é do Framework em si, de tudo o que foi produzido através dele.
 
               ![Dir Structure](images/bootgly_php_framework-directory_structure.png)
 
