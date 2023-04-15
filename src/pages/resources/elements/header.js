@@ -23,14 +23,14 @@ export default {
     registerAnchor (id) {
       // console.log('registerAnchor: ', id)
 
-      window.addEventListener('load', () => {
+      if (document.readyState === 'complete') {
         const Anchor = document.getElementById(id)
         if (Anchor !== null && typeof Anchor === 'object') {
           const AnchorOffsetTop = Anchor.offsetTop
 
           this.$store.commit('page/setAnchors', AnchorOffsetTop)
         }
-      })
+      }
 
       if (id !== 0 && id !== '0') {
         this.$store.commit('page/setNode', {
