@@ -167,10 +167,11 @@ export default {
 
     // Background
     let dark = this.$q.localStorage.getItem('setting.background')
+    console.log('dark: ', dark)
     if (dark === null) {
       dark = false
       this.$q.localStorage.set('setting.background', dark)
-      this.settings.general.background.default = dark
+      this.settings.appearance.background.default = dark
     }
     this.$q.dark.set(dark)
   }
