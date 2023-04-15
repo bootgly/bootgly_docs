@@ -31,16 +31,22 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
                         q-img(
                           no-spinner
                           :src="scope.opt.image"
-                          width="24px"
-                          height="24px"
+                          width="24px" height="24px"
                         )
                       q-item-section
                         q-item-label {{ scope.opt.label }}
                         //-q-item-label(caption) {{ scope.opt.description }}
                   template(v-slot:selected-item="scope")
-                    q-item(@remove="scope.removeAtIndex(scope.index)" :tabindex="scope.tabindex")
+                    q-item(
+                      @remove="scope.removeAtIndex(scope.index)"
+                      :tabindex="scope.tabindex"
+                    )
                       q-item-section(avatar)
-                        q-img(:src="scope.opt.image" width="24px" height="24px")
+                        q-img(
+                          no-spinner
+                          :src="scope.opt.image"
+                          width="24px" height="24px"
+                        )
                       q-item-section
                         q-item-label {{ scope.opt.label }}
 
