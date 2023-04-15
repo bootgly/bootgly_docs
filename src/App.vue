@@ -28,7 +28,12 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
                   template(v-slot:option="scope")
                     q-item(v-bind="scope.itemProps")
                       q-item-section(avatar)
-                        q-img(:src="scope.opt.image" width="24px" height="24px")
+                        q-img(
+                          no-spinner
+                          :src="scope.opt.image"
+                          width="24px"
+                          height="24px"
+                        )
                       q-item-section
                         q-item-label {{ scope.opt.label }}
                         //-q-item-label(caption) {{ scope.opt.description }}

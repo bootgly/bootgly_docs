@@ -176,7 +176,7 @@ export default {
     },
 
     getMenuItemHeaderBackground () {
-      return this.$q.dark.isActive ? '' : 'background-color: #f5f5f5!important'
+      return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
     },
     getMenuItemHeader (item) {
       const path = `_.${item.meta.menu.header.name}._`
