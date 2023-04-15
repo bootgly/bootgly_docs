@@ -172,6 +172,45 @@
         },
       },
     },
+    Web: {
+      _: 'Bootgly Web',
+      interfaces: {
+        _: 'interfaces',
+        TCP_Client: {
+          _: 'TCP Client',
+          overview: {
+            texts: [
+              '''
+
+              '''
+            ],
+          },
+        },
+        TCP_Server: {
+          _: 'TCP Server',
+          overview: {
+            texts: [
+              '''
+
+              '''
+            ],
+          },
+        },
+      },
+      nodes: {
+        _: 'nodes',
+        HTTP_Server: {
+          _: 'HTTP Server',
+          overview: {
+            texts: [
+              '''
+
+              '''
+            ],
+          },
+        },
+      },
+    },
   },
 
   // @ Page

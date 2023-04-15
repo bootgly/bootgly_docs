@@ -297,6 +297,89 @@ const routes = [
       }
     ]
   },
+  {
+    path: '/Web/interfaces/TCP_Client',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '02-Web/interfaces/TCP_Client',
+      icon: 'desktop_windows',
+      status: 'empty',
+      menu: {
+        header: {
+          icon: 'language',
+          name: 'Web'
+        },
+        subheader: 'Web.interfaces'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/Web/interfaces/TCP_Server',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '02-Web/interfaces/TCP_Server',
+      icon: 'dns',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
+    path: '/Web/nodes/HTTP_Server',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '02-Web/nodes/HTTP_Server',
+      icon: 'dns', // device_hub?
+      status: 'empty',
+      menu: {
+        subheader: 'Web.nodes'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
 
   {
     path: '/',
