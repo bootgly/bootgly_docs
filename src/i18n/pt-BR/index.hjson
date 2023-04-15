@@ -95,6 +95,16 @@
               '''
             ],
           },
+          Mouse: {
+            _: 'Mouse',
+            overview: {
+              texts: [
+                '''
+
+                '''
+              ],
+            },
+          },
         },
         Output: {
           _: 'Terminal Output',

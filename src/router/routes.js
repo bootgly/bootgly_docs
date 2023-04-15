@@ -116,11 +116,38 @@ const routes = [
     ]
   },
   {
+    path: '/CLI/Terminal/Input/Mouse',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      dir: '01-CLI/01-Terminal/01-Input/01-Mouse',
+      icon: 'mouse',
+      status: 'empty',
+      menu: {
+        subheader: 'CLI.Terminal.Input'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: '',
+        component: () => import('pages/sources/default/OverviewPage'),
+        meta: {
+          status: 0
+        }
+      }
+    ]
+  },
+  {
     path: '/CLI/Terminal/Output/Cursor',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       dir: '01-CLI/01-Terminal/02-Output/01-Cursor',
-      icon: 'mouse',
+      icon: 'fas fa-i-cursor',
       status: 'empty',
       menu: {
         subheader: 'CLI.Terminal.Output'
