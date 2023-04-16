@@ -45,7 +45,7 @@ export default {
         return anchor
       },
       set (value) {
-        this.push(value)
+        this.navigate(value)
       }
     },
     stylize () {
@@ -79,7 +79,7 @@ export default {
   beforeUnmount () {
     this.$store.commit('layout/setMetaToggle', false)
     this.$store.commit('page/setAnchor', 0)
-    this.$store.commit('page/setAnchors', false)
+    this.$store.commit('page/resetAnchors')
     this.$store.commit('page/setScrolling', false)
   }
 }

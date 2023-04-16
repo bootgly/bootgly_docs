@@ -167,7 +167,6 @@ export default {
 
     // Background
     let dark = this.$q.localStorage.getItem('setting.background')
-    console.log('dark: ', dark)
     if (dark === null) {
       dark = false
       this.$q.localStorage.set('setting.background', dark)

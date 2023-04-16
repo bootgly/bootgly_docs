@@ -66,7 +66,7 @@ export default {
       }
     })
 
-    this.$store.commit('page/setAnchors', false)
+    this.$store.commit('page/resetAnchors')
   }
 }
 </script>

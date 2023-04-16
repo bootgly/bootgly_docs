@@ -217,16 +217,21 @@ export default {
   },
   // @ Events
   created () {
-    // console.log('DPageSection - created!')
+    // console.log('DPageSection.created!')
+  },
+
+  beforeMount () {
+    // console.log('DPageSection.beforeMount!')
   },
   mounted () {
-    // console.log('DPageSection - mounted!!')
+    // console.log('DPageSection.mounted!')
   },
+
   beforeUpdate () {
-    // console.log('DPageSection - beforeUpdate!')
+    // console.log('DPageSection.beforeUpdate!')
   },
   updated () {
-    // console.log('DPageSection - updated!')
+    // console.log('DPageSection.updated!')
   }
 }
 </script>

@@ -1,19 +1,15 @@
 <template lang="pug">
-h1(:id="id" @click="push(id)") {{ heading }}
+h1(:id="id" @click="navigate(id)" v-html="heading")
 </template>
 
 <script>
 import Navigator from 'pages/resources/navigator'
 
-import Header from 'pages/resources/elements/header'
-
 export default {
   name: 'DH1',
 
   mixins: [
-    Navigator,
-
-    Header
+    Navigator
   ],
 
   props: {
@@ -22,9 +18,37 @@ export default {
       required: true
     }
   },
+  computed: {
+    heading () {
+      const base = this.$store.state.i18n.base
+      const absolute = this.$store.state.i18n.absolute
 
+      let h = ''
+      if (base && absolute) {
+        if (this.id === '0') {
+          h = this.$t(`_.${base}._`)
+        } else {
+          h = this.$t(`_.${absolute}.headers[${this.id - 1}]`)
+        }
+      } else {
+        // TODO exception?
+      }
+
+      return h
+    }
+  },
+
+  // @ Events
   mounted () {
-    this.registerAnchor(this.id)
+    // console.log('DH1.mounted!')
+
+    this.register()
+  },
+
+  updated () {
+    // console.log('DH1.mounted!')
+
+    this.register()
   }
 }
 </script>

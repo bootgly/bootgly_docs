@@ -1,19 +1,15 @@
 <template lang="pug">
-h6(:id="id" @click="push(id)") {{ value }}
+h6(:id="id" @click="navigate(id)" v-html="value")
 </template>
 
 <script>
 import Navigator from 'pages/resources/navigator'
 
-import Header from 'pages/resources/elements/header'
-
 export default {
   name: 'DH6',
 
   mixins: [
-    Navigator,
-
-    Header
+    Navigator
   ],
 
   props: {
@@ -30,19 +26,29 @@ export default {
   // @ Events
   created () {
     // console.log('DH6 - created!')
-  },
-  mounted () {
-    // console.log('DH6 - mounted!')
 
-    this.registerAnchor(this.id)
+    window.addEventListener('onLoad', () => {
+      this.register()
+    })
   },
+
+  mounted () {
+    // console.log('DH6.mounted!')
+
+    this.register()
+
+    this.index()
+  },
+
   beforeUpdate () {
     // console.log('DH6 - beforeUpdate!')
   },
   updated () {
-    // console.log('DH6 - updated!')
+    // console.log('DH6.mounted!')
 
-    this.registerAnchor(this.id)
+    this.register()
+
+    this.index()
   }
 }
 </script>

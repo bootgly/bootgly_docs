@@ -4,6 +4,22 @@ const { getScrollTarget, setVerticalScrollPosition } = scroll
 
 export default {
   methods: {
+    // @ Boot
+    register () {
+      // console.log('anchor.register(id): ', this.id)
+
+      this.$store.commit('page/pushAnchors', this.id)
+    },
+    index () {
+      // console.log('index: ', this.id)
+
+      this.$store.commit('page/pushNodes', {
+        id: this.id,
+        label: this.value,
+        children: []
+      })
+    },
+
     anchor (id, select = true) {
       this.$store.commit('page/setScrolling', false)
 
@@ -37,23 +53,27 @@ export default {
         return
       }
 
-      const position = scroll.position.top
+      const scrollPositionTop = scroll.position.top + 50
 
       const anchors = this.$store.state.page.anchors
-      const nodes = this.$store.state.page.nodes
 
       for (let i = 0; i < anchors.length; i++) {
-        const children = nodes[0].children[i - 1]
-        const id = (i > 0 && children !== undefined) ? (children.id) : (0)
+        const anchorId = anchors[i]
 
-        if (position >= anchors[i]) {
-          this.select(id)
-          this.push(id, false)
+        const Anchor = document.getElementById(anchorId)
+        let AnchorOffsetTop = 20
+        if (Anchor !== null && typeof Anchor === 'object') {
+          AnchorOffsetTop = Anchor.offsetTop
+        }
+
+        if (scrollPositionTop >= AnchorOffsetTop) {
+          this.select(anchorId)
+          this.navigate(anchorId, false)
         }
       }
     },
 
-    push (value, anchor = true) {
+    navigate (value, anchor = true) {
       if (anchor) {
         if (('#' + value) === this.$route.hash) {
           this.anchor(value)
@@ -65,7 +85,6 @@ export default {
       }
 
       this.$router.push(this.$route.path + '#' + value)
-      // TODO Prevent moving to the top on mobile devices by changing routes
 
       if (anchor) {
         if (this.$q.platform.is.desktop) {
