@@ -39,6 +39,7 @@
     "prismjs": "^1.27.0",
     "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
+    "raw-loader": "^4.0.2",
     "stylus": "^0.57.0",
     "stylus-loader": "^6.2.0"
   },

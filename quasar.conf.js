@@ -93,6 +93,13 @@ module.exports = configure(function (ctx) {
           test: /\.pug$/,
           loader: 'pug-plain-loader'
         })
+
+        cfg.module.rules.push({
+          test: /\.md$/,
+          use: [
+            'raw-loader'
+          ]
+        })
       }
     },
 
