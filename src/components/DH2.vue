@@ -3,7 +3,7 @@ h2(:id="id" @click="navigate(id)" v-html="value")
 </template>
 
 <script>
-import Navigator from 'pages/resources/navigator'
+import Navigator from 'pages/bootables/navigator'
 
 export default {
   name: 'DH2',
@@ -14,7 +14,7 @@ export default {
 
   props: {
     id: {
-      type: String,
+      type: Number,
       required: true
     },
     value: {

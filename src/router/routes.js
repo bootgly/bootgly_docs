@@ -23,7 +23,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -50,7 +50,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -81,7 +81,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -108,7 +108,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -135,7 +135,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -162,7 +162,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -187,7 +187,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -214,7 +214,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -242,7 +242,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -267,7 +267,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -292,7 +292,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -317,7 +317,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -348,7 +348,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -373,7 +373,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }
@@ -400,7 +400,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/default/OverviewPage'),
+        component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
         }

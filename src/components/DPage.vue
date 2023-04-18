@@ -30,7 +30,7 @@ q-page-container#page
 import DPageAnchor from 'components/DPageAnchor'
 import DPageNav from 'components/DPageNav'
 
-import Navigator from 'pages/resources/navigator'
+import Navigator from 'pages/bootables/navigator'
 
 export default {
   name: 'DPage',

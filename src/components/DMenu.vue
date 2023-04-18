@@ -149,22 +149,17 @@ export default {
     },
     searchTermInI18nTexts (route, term, locale, subpage = 'overview') {
       // TODO replace with global solution
-      const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.texts`
+      const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
 
       // * Search in page texts (i18n)
-      let texts = null
+      let source = null
       if (this.$te(path, locale)) {
-        texts = this.$tm(path, locale)
+        source = this.$tm(path, locale)
       }
 
       let found = false
-      if (texts && Object.keys(texts).length) {
-        for (const text of texts) {
-          if (text.toLowerCase().includes(term)) {
-            found = true
-            break
-          }
-        }
+      if (source.toLowerCase().includes(term)) {
+        found = true
       }
 
       return found

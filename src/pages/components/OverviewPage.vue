@@ -4,28 +4,14 @@ d-page
     d-h1(id="0")
 
   main
-    template(v-for="(paragraph, id) in texts")
-      d-page-section(:id="id")
+    d-page-section(:id="0")
 </template>
 
 <script>
-import Overview from 'src/pages/resources/subpages/overview'
+import Overview from 'src/pages/bootables/subpages/overview'
 
 export default {
   mixins: [Overview],
-
-  computed: {
-    headers () {
-      const absolute = this.$store.state.i18n.absolute
-
-      return this.$tm(`_.${absolute}.headers`)
-    },
-    texts () {
-      const absolute = this.$store.state.i18n.absolute
-
-      return this.$tm(`_.${absolute}.texts`)
-    }
-  },
 
   // @ Events
   // Vue

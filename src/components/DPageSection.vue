@@ -94,10 +94,10 @@ export default {
         return
       }
 
-      const texts = this.$t(`_.${absolute}.texts[${this.id}]`)
+      const source = this.$t(`_.${absolute}.source`)
 
       const Markdown = new MarkdownIt()
-      const parsed = Markdown.parse(texts)
+      const parsed = Markdown.parse(source)
       // @ map
       const tokens = []
       let level = 0

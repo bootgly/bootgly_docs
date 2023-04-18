@@ -9,7 +9,7 @@ d-page(:headers="anchors")
 </template>
 
 <script>
-import Samples from 'src/pages/resources/subpages/samples'
+import Samples from 'src/pages/bootables/subpages/samples'
 
 export default {
   mixins: [Samples],
