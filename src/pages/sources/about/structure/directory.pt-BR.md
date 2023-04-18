@@ -5,7 +5,7 @@ Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pa
 ![Dir Structure](images/bootgly_php_framework-directory_structure.png)
 
 ## Pasta global {'@'}
-A pasta "@" é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
+A pasta {'@'} é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
 
 É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados, loaders e outros arquivos gerais específicos de contexto local de onde essa pasta se encontra.
 
