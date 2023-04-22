@@ -64,7 +64,7 @@ q-scroll-area#menu(
       q-item-section(v-if="item.meta.menu.subheader")
         q-item-label.label.subheader(header) {{ getMenuItemSubheader(item) }}
 
-      q-item(:to="item.path" v-show="matches[index] || !matches")
+      q-item(:to="item.path + '/overview'" v-show="matches[index] || !matches")
         q-item-section(side)
           q-icon(v-if="item.meta.icon" :name="item.meta.icon")
         q-item-section {{ getMenuItemLabel(item, index) }}

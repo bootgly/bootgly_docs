@@ -1,6 +1,6 @@
 <template lang="pug">
 q-toolbar#d-footer.bg-dark.text-white
-  //-q-btn.q-mr-sm(v-if="relative" flat dense no-caps :color="color" @click="openURL(`${base}${relative}/index.vue`)")
+  q-btn.q-mr-sm(v-if="relative" flat dense no-caps :color="color" @click="openURL(url)")
     q-icon(:name="icon" size="20px")
     .gt-xs
       span.hm(v-if="status === 9") {{ $t('footer.github.edit') }}
@@ -38,10 +38,13 @@ export default {
 
   data () {
     return {
-      base: 'https://github.com/bootgly/-docs/blob/master/src/pages/'
+      base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/sources/'
     }
   },
   computed: {
+    url () {
+      return `${this.base}${this.relative}.${this.$q.lang.isoName}.md`
+    },
     relative () {
       return this.$route.matched[0].meta.dir + this.$store.state.page.relative
     },

@@ -1,10 +1,10 @@
 
 const routes = [
   {
-    path: '/about/introduction',
+    path: '/about',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-about/01-introduction',
+      dir: 'about',
       icon: 'play_arrow',
       status: 'draft',
       menu: {
@@ -22,7 +22,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -34,7 +34,7 @@ const routes = [
     path: '/about/structure/directory',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-about/02-directory-structure',
+      dir: 'about/structure/directory',
       icon: 'account_tree',
       status: 'draft',
       menu: {
@@ -49,7 +49,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -62,7 +62,7 @@ const routes = [
     path: '/CLI/Terminal/Input',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/01-Input',
+      dir: 'CLI/Terminal/Input',
       icon: 'input',
       status: 'empty',
       menu: {
@@ -80,7 +80,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -92,7 +92,7 @@ const routes = [
     path: '/CLI/Terminal/Output',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/01-Input',
+      dir: 'CLI/Terminal/Output',
       icon: 'output',
       status: 'empty',
       menu: {
@@ -107,7 +107,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -119,7 +119,7 @@ const routes = [
     path: '/CLI/Terminal/Input/Mouse',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/01-Input/01-Mouse',
+      dir: 'CLI/Terminal/Input/Mouse',
       icon: 'mouse',
       status: 'empty',
       menu: {
@@ -134,7 +134,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -146,7 +146,7 @@ const routes = [
     path: '/CLI/Terminal/Output/Cursor',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/01-Cursor',
+      dir: 'CLI/Terminal/Output/Cursor',
       icon: 'fas fa-i-cursor',
       status: 'empty',
       menu: {
@@ -161,7 +161,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -173,7 +173,7 @@ const routes = [
     path: '/CLI/Terminal/Output/Text',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/02-Text',
+      dir: 'CLI/Terminal/Output/Text',
       icon: 'text_fields',
       status: 'empty',
       menu: {},
@@ -186,7 +186,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -198,7 +198,7 @@ const routes = [
     path: '/CLI/Terminal/Output/Viewport',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/03-Viewport',
+      dir: 'CLI/Terminal/Output/Viewport',
       icon: 'wysiwyg',
       status: 'empty',
       menu: {
@@ -213,7 +213,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -226,7 +226,7 @@ const routes = [
     path: '/CLI/Terminal/components/Alert',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/11-components/Alert',
+      dir: 'CLI/Terminal/Output/components/Alert',
       icon: 'notification_important',
       status: 'empty',
       menu: {
@@ -241,7 +241,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -253,7 +253,7 @@ const routes = [
     path: '/CLI/Terminal/components/Menu',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/11-components/Menu',
+      dir: 'CLI/Terminal/Output/components/Menu',
       icon: 'menu',
       status: 'empty',
       menu: {},
@@ -266,7 +266,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -278,7 +278,7 @@ const routes = [
     path: '/CLI/Terminal/components/Progress',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/11-components/Progress',
+      dir: 'CLI/Terminal/Output/components/Progress',
       icon: 'downloading',
       status: 'empty',
       menu: {},
@@ -291,7 +291,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -303,7 +303,7 @@ const routes = [
     path: '/CLI/Terminal/components/Table',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '01-CLI/01-Terminal/02-Output/11-components/Table',
+      dir: 'CLI/Terminal/Output/components/Table',
       icon: 'table_chart',
       status: 'empty',
       menu: {},
@@ -316,7 +316,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -328,7 +328,7 @@ const routes = [
     path: '/Web/interfaces/TCP_Client',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '02-Web/interfaces/TCP_Client',
+      dir: 'Web/interfaces/TCP_Client',
       icon: 'desktop_windows',
       status: 'empty',
       menu: {
@@ -347,7 +347,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -359,7 +359,7 @@ const routes = [
     path: '/Web/interfaces/TCP_Server',
     component: () => import('layouts/DefaultLayout'),
     meta: {
-      dir: '02-Web/interfaces/TCP_Server',
+      dir: 'Web/interfaces/TCP_Server',
       icon: 'dns',
       status: 'empty',
       menu: {},
@@ -372,7 +372,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0
@@ -399,7 +399,7 @@ const routes = [
     },
     children: [
       {
-        path: '',
+        path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
           status: 0

@@ -1,18 +1,21 @@
-import enUS from './en-US/index.hjson'
-import ptBR from './pt-BR/index.hjson'
+const langs = [
+  'en-US',
+  'pt-BR'
+]
+const i18n = {}
 
 function load (page, lang) {
-  return require(`pages/sources/${page}.${lang}.md`).default
+  return require(`pages/sources/${page}/overview.${lang}.md`).default
 }
 
-// TODO dinamically
-enUS._.about.introduction.overview.source = load('about/introduction', 'en-US')
-enUS._.about.structure.directory.overview.source = load('about/structure/directory', 'en-US')
+langs.forEach((lang) => {
+  i18n[lang] = require(`./${lang}/index.hjson`)
 
-ptBR._.about.introduction.overview.source = load('about/introduction', 'pt-BR')
-ptBR._.about.structure.directory.overview.source = load('about/structure/directory', 'pt-BR')
+  const pages = i18n[lang]._
 
-export default {
-  'en-US': enUS,
-  'pt-BR': ptBR
-}
+  // TODO dinamically using Vue Router Routes
+  pages.about.overview.source = load('about', lang)
+  pages.about.structure.directory.overview.source = load('about/structure/directory', lang)
+})
+
+export default i18n

@@ -1,11 +1,11 @@
 <template lang="pug">
 nav
-  router-link.link.float-left(v-if="prev" :to="`${prev}`")
+  router-link.link.float-left(v-if="prev" :to="`${prev}/overview`")
     div.text-caption
       | {{ $t('nav.prev') }}
     q-icon(name="navigate_before")
     span {{ $t(`_${prev.replace(/_$/, '').replace(/\//g, '.')}._`) }}
-  router-link.link.float-right(v-if="next" :to="`${next}`")
+  router-link.link.float-right(v-if="next" :to="`${next}/overview`")
     div.text-caption
       | {{ $t('nav.next') }}
     span {{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}

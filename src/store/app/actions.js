@@ -1,5 +1,6 @@
 export function configureLanguage ({ commit, state }, routeMatched) { // TODO refactor
   // Route
+  console.log(routeMatched)
   const firstRoutePath = routeMatched[0].path
   const secondRoutePath = routeMatched[1].path
 

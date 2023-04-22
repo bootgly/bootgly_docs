@@ -11,13 +11,11 @@
 
     about: {
       _: 'About Bootgly',
-      introduction: {
-        _: 'Introduction',
-        overview: {
-          _subsections_: '3',
-          source: ''
-        }
+      overview: {
+        _subsections_: '3',
+        source: ''
       },
+
       structure: {
         _: 'Structure',
         directory: {
@@ -47,6 +45,9 @@
         },
         Output: {
           _: 'Terminal Output',
+          overview: {
+            source: ''
+          },
           Cursor: {
             _: 'Cursor',
             overview: {
