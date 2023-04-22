@@ -73,29 +73,17 @@ export default {
       // i18n
       // |-> paths
       const i18nPathAbsolute = this.$store.state.i18n.absolute
-      const i18nPath = `_.${i18nPathAbsolute}._updated_`
-
-      let currentLastUpdated = null
-      if (this.$te(i18nPath)) {
-        currentLastUpdated = this.$t(i18nPath)
-      }
-      let fallbackLastUpdated = null
-      if (this.$te(i18nPath, 'en-US')) {
-        fallbackLastUpdated = this.$t(i18nPath, 'en-US')
-      }
 
       // Subsections
       let translationPercent = '?'
 
-      if (this.$i18n.locale === 'en-US' || (currentLastUpdated && fallbackLastUpdated && currentLastUpdated !== fallbackLastUpdated)) {
-        const totalSubsections = Number(this.$t(`_.${i18nPathAbsolute}._subsections_`))
+      const subsectionsTotal = this.$tm(`_.${i18nPathAbsolute}._subsections_.total`)
 
-        if (!isNaN(totalSubsections)) {
-          const currentHeaders = this.$tm(`_.${i18nPathAbsolute}.headers`).length
+      if (!isNaN(subsectionsTotal)) {
+        const subsectionsDone = Number(this.$tm(`_.${i18nPathAbsolute}._subsections_.done`))
 
-          if (!isNaN(currentHeaders)) {
-            translationPercent = ~~((currentHeaders / totalSubsections) * 100)
-          }
+        if (!isNaN(subsectionsDone)) {
+          translationPercent = ~~((subsectionsDone / subsectionsTotal) * 100)
         }
       }
 
@@ -105,24 +93,26 @@ export default {
       // i18n
       // |-> paths
       const i18nPathAbsolute = this.$store.state.i18n.absolute
-      const i18nPath = `_.${i18nPathAbsolute}._updated_`
+      const i18nPath = `_.${i18nPathAbsolute}._translations_.available`
 
       // Get # of i18n locales available
       const i18nLocales = Object.keys(this.$i18n.messages)
       // Get page last updated status of default language
       let fallbackLastUpdated = null
       if (this.$te(i18nPath, 'en-US')) {
-        fallbackLastUpdated = this.$t(i18nPath, 'en-US')
+        fallbackLastUpdated = this.$tm(i18nPath, 'en-US')
       }
 
       // Set page content locales available
-      let i18nLocalesAvailable = 1
+      let i18nLocalesAvailable = 0
       if (fallbackLastUpdated) {
         for (let i = 0; i < i18nLocales.length; i++) {
           if (this.$t(i18nPath, i18nLocales[i]) !== fallbackLastUpdated) {
             i18nLocalesAvailable++
           }
         }
+      } else {
+        i18nLocalesAvailable = 1
       }
 
       return `${i18nLocalesAvailable} ${this.$t('footer.of')} ${i18nLocales.length}`

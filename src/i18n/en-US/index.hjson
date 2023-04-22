@@ -12,7 +12,13 @@
     about: {
       _: 'About Bootgly',
       overview: {
-        _subsections_: '3',
+        _subsections_: {
+          total: 3,
+          done: 1
+        },
+        _translations_: {
+          available: 1
+        },
         source: ''
       },
 
@@ -21,7 +27,10 @@
         directory: {
           _: 'Directory Structure',
           overview: {
-            _subsections_: '4',
+            _subsections_: {
+              total: 4,
+              done: 4
+            },
             source: ''
           }
         }
