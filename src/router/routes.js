@@ -25,7 +25,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'draft'
         }
       }
     ]
@@ -52,7 +52,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'draft'
         }
       }
     ]
@@ -83,7 +83,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -110,7 +110,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -137,7 +137,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -164,7 +164,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -189,7 +189,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -216,7 +216,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -244,7 +244,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -269,7 +269,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -294,7 +294,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -319,7 +319,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -350,7 +350,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -375,7 +375,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]
@@ -402,7 +402,7 @@ const routes = [
         path: 'overview',
         component: () => import('pages/components/OverviewPage'),
         meta: {
-          status: 0
+          status: 'empty'
         }
       }
     ]

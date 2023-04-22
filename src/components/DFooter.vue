@@ -3,20 +3,23 @@ q-toolbar#d-footer.bg-dark.text-white
   q-btn.q-mr-sm(v-if="relative" flat dense no-caps :color="color" @click="openURL(url)")
     q-icon(:name="icon" size="20px")
     .gt-xs
-      span.hm(v-if="status === 9") {{ $t('footer.github.edit') }}
-      span.hm(v-else-if="status === 6") {{ $t('footer.github.complete') }}
-      span.hm(v-else) {{ $t('footer.github.start') }}
+      span.hm(v-if="status === 'completed'") {{ $t('footer.github.edit') }}
+      span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
+      span.hm(v-else-if="status === 'empty'") {{ $t('footer.github.start') }}
       q-icon(name="fab fa-github" size="20px")
+
   q-chip.languages-progress.q-mr-sm.q-ml-none(dense square)
     q-icon.q-mr-xs(name="translate" size="20px")
     span
       | {{ $i18n.locale }}:
       b {{ ' ' + progress }}
     q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.progress') }}
+
   q-chip.languages-available.q-mr-sm.q-ml-none(dense square)
     q-icon.q-mr-xs(name="language" size="20px")
     span {{ '#' + languages }}
     q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.translations') }}
+
   q-chip.anchor-toggle.q-mr-none.q-ml-none(dense square v-if="metaToggle")
     q-icon.q-mr-xs(name="link" size="20px")
     q-toggle(v-model="layoutMeta" checked-icon="visibility" unchecked-icon="visibility_off" aria-label="Toggle Visibility Anchor")
@@ -31,8 +34,8 @@ export default {
 
   props: {
     status: {
-      type: Number,
-      default: 1
+      type: String,
+      default: 'empty'
     }
   },
 
@@ -43,24 +46,24 @@ export default {
   },
   computed: {
     url () {
-      return `${this.base}${this.relative}.${this.$q.lang.isoName}.md`
+      return `${this.base}${this.relative}.${this.$i18n.locale}.md`
     },
     relative () {
       return this.$route.matched[0].meta.dir + this.$store.state.page.relative
     },
     color () {
-      if (this.status === 9) {
+      if (this.status === 'completed') {
         return 'white'
-      } else if (this.status === 6) {
+      } else if (this.status === 'draft') {
         return 'warning'
       } else {
         return 'red-6'
       }
     },
     icon () {
-      if (this.status === 9) {
+      if (this.status === 'completed') {
         return 'edit'
-      } else if (this.status === 6) {
+      } else if (this.status === 'draft') {
         return 'border_color'
       } else {
         return 'note_add'
