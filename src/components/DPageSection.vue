@@ -98,6 +98,7 @@ export default {
 
       const Markdown = new MarkdownIt()
       const parsed = Markdown.parse(source)
+
       // @ map
       const tokens = []
       let level = 0
@@ -111,11 +112,13 @@ export default {
             level++
         }
 
+        // Render
         if (element.type === 'inline') {
           element.content = Markdown.renderInline(element.content)
         }
 
         if (level === 0) {
+          // Prepare
           switch (element.type) {
             case 'heading_open':
             case 'paragraph_open':
@@ -123,14 +126,24 @@ export default {
               tag = element.tag
           }
 
-          if (element.type === 'inline') {
-            tokens.push({
-              tag,
-              map: element.map,
-              content: element.content,
-              info: element.info,
-              children
-            })
+          // Push
+          switch (element.type) {
+            case 'inline':
+              tokens.push({
+                tag,
+                map: element.map,
+                content: element.content,
+                info: element.info,
+                children
+              })
+
+              break
+            case 'fence':
+              tokens.push({
+                tag: element.tag,
+                content: element.content,
+                info: element.info
+              })
           }
         } else if (level === 1) {
           const parent = tokens[tokens.length - 1]
@@ -239,7 +252,7 @@ export default {
 <style lang="sass">
 .content
   p
-    line-height: 1em
+    line-height: 1.5em
 
     &.overview
       word-spacing: 0.05em
