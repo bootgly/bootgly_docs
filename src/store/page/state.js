@@ -6,8 +6,11 @@ export default {
       children: []
     }
   ],
+  nodesExpanded: [0],
+
   anchor: 0,
   anchors: [],
+
   scrolling: false,
 
   base: '',

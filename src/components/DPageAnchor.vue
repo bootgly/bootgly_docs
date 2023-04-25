@@ -22,15 +22,14 @@ export default {
 
   mixins: [Navigator],
 
-  data () {
-    return {
-      expanded: [0]
-    }
-  },
   computed: {
     nodes () {
       const nodes = this.$store.getters['page/nodes']
       return nodes
+    },
+    expanded () {
+      const nodesExpanded = this.$store.getters['page/nodesExpanded']
+      return nodesExpanded
     },
     selected: {
       get () {

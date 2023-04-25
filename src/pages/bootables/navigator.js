@@ -10,12 +10,13 @@ export default {
 
       this.$store.commit('page/pushAnchors', this.id)
     },
-    index () {
+    index (child = false) {
       // console.log('index: ', this.id)
 
       this.$store.commit('page/pushNodes', {
         id: this.id,
         label: this.value,
+        child,
         children: []
       })
     },
@@ -45,6 +46,7 @@ export default {
     },
     select (id) {
       this.$store.commit('page/setAnchor', Number(id))
+      this.$store.commit('page/pushNodesExpanded', Number(id))
     },
     scrolling (scroll) {
       const scrolling = this.$store.state.page.scrolling

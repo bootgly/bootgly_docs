@@ -5,3 +5,6 @@ export const anchors = state => {
 export const nodes = state => {
   return state.nodes
 }
+export const nodesExpanded = state => {
+  return state.nodesExpanded
+}

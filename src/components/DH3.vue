@@ -33,7 +33,7 @@ export default {
 
     this.register()
 
-    this.index()
+    this.index(true)
   },
 
   beforeUpdate () {
@@ -44,7 +44,7 @@ export default {
 
     this.register()
 
-    this.index()
+    this.index(true)
   }
 }
 </script>
