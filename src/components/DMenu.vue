@@ -36,7 +36,7 @@ q-scroll-area#menu(
           q-tooltip Email
   q-separator.separator.list
 
-  q-list(no-border link inset-delimiter)
+  q-list(no-border link inset-delimiter role="list")
     q-item(to="/" exact)
       q-item-section(side)
         q-icon(name="home")
@@ -51,7 +51,7 @@ q-scroll-area#menu(
       q-item-section {{ $t('menu.sponsor') }}
   q-separator.separator.list
 
-  q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter)
+  q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter role="list")
     template(v-for="(item, index) in items" :key="index")
       // Menu Separator - Header
       q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()")
