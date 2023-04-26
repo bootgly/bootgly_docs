@@ -53,14 +53,14 @@ q-scroll-area#menu(
 
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter role="list")
     template(v-for="(item, index) in items" :key="index")
-      // Menu Separator - Header
-      q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()")
+      //- Menu Separator - Header
+      q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()" role="listitem")
         q-item-label(header)
           q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
           | {{ getMenuItemHeader(item) }}
-        q-separator.separator.partial
+        q-separator.separator.partial(role="separator")
 
-      // Menu Separator - Subheader
+      //- Menu Separator - Subheader
       q-item-section(v-if="item.meta.menu.subheader")
         q-item-label.label.subheader(header) {{ getMenuItemSubheader(item) }}
 
@@ -76,8 +76,9 @@ q-scroll-area#menu(
           )
           q-tooltip(:hide-delay="3") {{ getPageStatusTooltip(item.meta.status) }}
 
-      // Menu Separator
-      q-separator(v-if="item.meta.menu.separator" :class="'separator' + item.meta.menu.separator")
+      //- Menu Separator
+      li(v-if="item.meta.menu.separator" role="listitem")
+        q-separator(:class="'separator' + item.meta.menu.separator" role="separator")
 </template>
 
 <script>
@@ -374,6 +375,8 @@ body.body--light
       color: #363636
 
   // List Item Separator
+  li
+    display: block
   .separator
     &.list
       height: 3px
