@@ -35,6 +35,7 @@
     "hjson": "^3.2.2",
     "hjson-loader": "^1.0.0",
     "markdown-it": "^13.0.1",
+    "markdown-it-attrs": "^4.1.6",
     "os": "^0.1.2",
     "prismjs": "^1.27.0",
     "pug": "^3.0.2",

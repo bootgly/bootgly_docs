@@ -56,6 +56,7 @@ section
 
 <script>
 import MarkdownIt from 'markdown-it'
+import attrs from 'markdown-it-attrs'
 
 import DH2 from './DH2.vue'
 import DH3 from './DH3.vue'
@@ -101,6 +102,12 @@ export default {
       const source = this.$t(`_.${absolute}.source`)
 
       const Markdown = new MarkdownIt()
+      Markdown.use(attrs, {
+        leftDelimiter: ':',
+        rightDelimiter: ';',
+        allowedAttributes: [] // empty array = all attributes are allowed
+      })
+
       const parsed = Markdown.parse(source)
 
       // @ map
@@ -227,7 +234,7 @@ export default {
         }
       })
 
-      // console.log(parsed, tokens)
+      console.log(parsed, tokens)
 
       return tokens
     }
