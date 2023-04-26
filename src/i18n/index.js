@@ -15,9 +15,13 @@ function load (page, lang) {
   const required = require(`pages/sources/${page}/overview.${lang}.md`)
   const result = String(required.default)
 
-  const regex = /(?<!')[@|](?![':.])/gm
-  const source = result.replace(regex, function (match) {
-    return `{'${match}'}`
+  const regex = /(.{0,2})([@|])(.{0,2})/gm
+  const source = result.replace(regex, function (match, p1, p2, p3) {
+    if (match !== "{'" + p2 + "'}") {
+      return p1 + "{'" + p2 + "'}" + p3
+    }
+
+    return match
   })
 
   return source
