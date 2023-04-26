@@ -1,6 +1,6 @@
 <template lang="pug">
 section
-  template(v-for="token in tokenized")
+  template(v-for="(token, index) in tokenized" v-key="index")
     d-h2(
       v-if="token.tag === 'h2'"
       :id="this.id + token.map[0]"
@@ -48,7 +48,7 @@ section
 
     d-page-source-code(
       v-else-if="token.tag === 'code'"
-      :index="this.id"
+      :index="this.id + index"
       :text="token.content"
       :language="token.info"
     )

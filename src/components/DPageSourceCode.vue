@@ -3,7 +3,7 @@
   .code(:class="coloring")
     .lines(v-if="lines")
       template(v-for="(line, index) in lines" :key="index")
-        a.line(:href="`${$store.state.page.base}#${anchor}${line}`" :id="`${anchor}${line}`")
+        a.line(:href="href+line" :id="`${anchor}${line}`")
           i.fa.fa-link(aria-hidden="true" data-hidden="true")
           span {{ line }}
     pre
@@ -36,6 +36,9 @@ export default {
   },
 
   computed: {
+    href () {
+      return `${this.$store.state.page.absolute}#${this.anchor}`
+    },
     coloring () {
       return this.$q.dark.isActive ? 'dark' : 'white'
     },
@@ -66,18 +69,10 @@ export default {
       const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
       let result = ''
 
-      let charIndex = number % alphabet.length
-      let quotient = number / alphabet.length
-
-      if (charIndex - 1 === -1) {
-        charIndex = alphabet.length
-        quotient--
-      }
-
-      result = alphabet.charAt(charIndex - 1)
-
-      if (quotient >= 1) {
-        return this.printToLetter(parseInt(quotient)) + result
+      while (number > 0) {
+        const charIndex = (number - 1) % 26
+        result = alphabet.charAt(charIndex) + result
+        number = Math.floor((number - 1) / 26)
       }
 
       return result
