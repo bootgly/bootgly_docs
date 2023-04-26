@@ -84,6 +84,7 @@ export default {
 <style lang="sass">
 .source-code
   box-shadow: 0 1px 1px rgb(0 0 0 / 13%)
+  max-width: calc(100vw - 40px)
 
   .code
     font-family: "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "Andale Mono", "Lucida Console", Monospace
