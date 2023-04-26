@@ -1,10 +1,10 @@
 # Classe Output
 
-A classe `Output` é responsável por gerenciar a saída de dados no terminal.
+A classe `Output` é responsável por lidar com a saída de dados no terminal. Através dela, podemos escrever textos coloridos e formatados, posicionar o cursor em determinada linha e coluna, expandir ou contrair linhas no terminal, dentre outras funcionalidades.
 
 ## Instância
 
-Para usar a classe `Output`, primeiro é necessário acessar a classe `CLI` e, em seguida, acessar a classe `Terminal` através de sua propriedade estática `$Terminal`. Com isso, pode-se acessar a classe `Output` através de sua propriedade `$Output`:
+Para utilizar a instância corretamente, é necessário acessá-la através da classe `CLI`:
 
 ```php
 use Bootgly\CLI;
@@ -12,78 +12,89 @@ use Bootgly\CLI;
 $Output = CLI::$Terminal->Output;
 ```
 
-## Configuração
+## Configurações
 
-### stream
-
-Propriedade que indica o stream de saída. Por padrão, é configurado para `STDOUT`.
+Aqui estão as principais propriedades da classe `Output`.
 
 ### wait
 
-Tempo de espera em microssegundos para o método `write()`.
+Indica o tempo a ser aguardado antes de escrever os linhas no terminal. Por padrão, o valor é `-1` (sem delay). Caso queira adicionar um delay à cada escrita, pode alterá-lo para outro valor em microssegundos.
 
 ### waiting
 
-Tempo de espera em microssegundos para o método `writing()`.
-
-### written
-
-Quantidade de caracteres escritos.
+Indica o tempo a ser aguardado entre cada caractere escrito no Terminal quando se utiliza o método `reading`. Por padrão, o valor é `30000` (30 milissegundos).
 
 ## Uso
 
-### Escrevendo dados
+Aqui estão os principais métodos da classe `Output`.
+
+### Escrever na saída
 
 ```php
-writing(string $data) : Output
+write (string $data, int $times = 1) : self
 ```
 
-Escreve uma string no terminal.
+Este método escreve no terminal o texto fornecido no primeiro parâmetro "$data". Se o segundo parâmetro "$times" for definido, ele repetirá a escrita "n" vezes.
 
-### Adicionando quebra de linha
+### Escrevendo na saída
 
 ```php
-append(string $data) : Output
+writing (string $data) : self
 ```
 
-Adiciona uma string e uma quebra de linha no final.
+Este método escreve um caractere de cada vez do texto fornecido no parâmetro "$data", adicionando uma espera definida pela propriedade "$waiting" entre cada caractere escrito. É uma forma de escrita animada na saída do Terminal.
 
-### Limpar o terminal
+### Acrescentar string na saída
 
 ```php
-clear() : bool
+append (string $data) : self
 ```
 
-Limpa todo o conteúdo do terminal.
+Este método é semelhante ao `write`, mas adiciona uma quebra de linha após a escrita.
 
-### Expandindo o terminal
+### Limpar saída
 
 ```php
-expand(int $lines) : Output
+clear() : true
 ```
 
-Expande o terminal em determinado número de linhas.
+Este método limpa o texto de toda a saída do terminal.
 
-### Escapando caracteres
+### Escapar na saída
 
 ```php
-escape(string $data) : Output
+escape (string $data) : self
 ```
 
-Adiciona um código ANSI a uma string.
+Este método precede o dado passado por argumento com o código de escape ANSI.
 
-### Escapando caracteres de meta caracteres
+### Metaescapar
 
 ```php
-metaescape(string $data) : Output
+metaescape (string $data) : self
 ```
 
-Escapa caracteres em uma string para serem interpretados corretamente como comandos no shell.
+Este método utiliza o "escapeshellcmd()" no texto fornecido no parâmetro "$data".
 
-### Codificação para exibição de caracteres especiais
+### Metaencodar
 
 ```php
-render(string $data) : Output
+metaencode (string $data) : self
 ```
 
-Renderiza uma string para permitir a exibição correta de caracteres especiais.
+Este método transforma o valor passado em um JSON já codificado, enviando a string JSON para a saída do terminal.
+
+### Renderizar
+
+```php
+render (string $data) : self
+```
+
+Este método executa o método estático "render()" da classe `Escaped` e envia para o terminal o resultado.
+Ele é utilizado com os tokens de template para códigos escapados.
+
+Exemplo:
+
+```php
+$Output->render('@#green: Esse texto será apresentado pelo terminal na cor verde.');
+```
