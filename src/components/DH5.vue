@@ -3,7 +3,7 @@ h5(:id="id" @click="navigate(id)" v-html="value")
 </template>
 
 <script>
-import Navigator from 'pages/bootables/navigator'
+import Navigator from 'components/navigator'
 
 export default {
   name: 'DH5',

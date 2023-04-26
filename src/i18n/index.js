@@ -12,7 +12,7 @@ const paths = [
 ]
 
 function load (page, lang) {
-  const required = require(`pages/sources/${page}/overview.${lang}.md`)
+  const required = require(`pages/${page}/overview.${lang}.md`)
   const result = String(required.default)
 
   const regex = /(.{0,2})([@|])(.{0,2})/gm

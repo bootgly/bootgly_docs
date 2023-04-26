@@ -406,15 +406,24 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/BootPage'),
+        component: () => import('pages/@/BootPage'),
         meta: {
           icon: 'home',
           menu: 'home'
         }
       },
+
       {
         path: '/changelog',
-        component: () => import('pages/sources/ChangelogPage'),
+        component: () => import('pages/@/ChangelogPage'),
+        meta: {
+          icon: 'assignment',
+          menu: 'changelog'
+        }
+      },
+      {
+        path: '/roadmap',
+        component: () => import('pages/@/RoadmapPage'),
         meta: {
           icon: 'assignment',
           menu: 'changelog'
@@ -422,7 +431,7 @@ const routes = [
       },
       {
         path: '/sponsor',
-        component: () => import('pages/sources/SponsorPage'),
+        component: () => import('pages/@/SponsorPage'),
         meta: {
           icon: 'favorite',
           menu: 'sponsor'
@@ -440,7 +449,7 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('pages/sources/404Page')
+        component: () => import('pages/@/404Page')
       }
     ]
   }

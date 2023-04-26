@@ -15,7 +15,7 @@ q-tree(
 </template>
 
 <script>
-import Navigator from 'pages/bootables/navigator'
+import Navigator from 'components/navigator'
 
 export default {
   name: 'DPageAnchor',

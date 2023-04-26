@@ -8,7 +8,7 @@ d-page
 </template>
 
 <script>
-import Subpages from 'src/pages/bootables/subpages'
+import Subpages from 'src/components/subpages'
 
 export default {
   name: 'DSubpage',

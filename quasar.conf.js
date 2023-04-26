@@ -11,7 +11,6 @@
 const ESLintPlugin = require('eslint-webpack-plugin')
 
 const { configure } = require('quasar/wrappers')
-const path = require('path')
 
 module.exports = configure(function (ctx) {
   return {
@@ -82,11 +81,7 @@ module.exports = configure(function (ctx) {
       extendWebpack (cfg) {
         cfg.module.rules.push({
           test: /\.hjson$/,
-          use: [
-            {
-              loader: path.resolve('src/boot/loaders/hjson')
-            }
-          ]
+          loader: 'hjson-loader'
         })
 
         cfg.module.rules.push({

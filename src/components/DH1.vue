@@ -3,7 +3,7 @@ h1(:id="id" @click="navigate(id)" v-html="heading")
 </template>
 
 <script>
-import Navigator from 'pages/bootables/navigator'
+import Navigator from 'components/navigator'
 
 export default {
   name: 'DH1',
