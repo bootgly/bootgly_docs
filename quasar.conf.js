@@ -174,13 +174,14 @@ module.exports = configure(function (ctx) {
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#ffffff',
-        theme_color: '#027be3',
+        theme_color: '#655529',
         icons: [
           {
             src: 'images/icons/favicon-temp1-128x128.png',
             sizes: '128x128',
             type: 'image/png'
-          },
+          }
+          /*
           {
             src: 'images/icons/favicon-temp1-192x192.png',
             sizes: '192x192',
@@ -201,6 +202,7 @@ module.exports = configure(function (ctx) {
             sizes: '512x512',
             type: 'image/png'
           }
+          */
         ]
       }
     },
