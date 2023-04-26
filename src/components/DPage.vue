@@ -20,10 +20,10 @@ q-page-container#page
     q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
-      q-scroll-observer(v-if="nodes.length > 0" @scroll="scrolling" :debounce="300")
+      q-scroll-observer(@scroll="scrolling" :debounce="300")
 
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
-    d-page-anchor#anchor(v-if="nodes.length > 0" :nodes="nodes")
+    d-page-anchor#anchor
 </template>
 
 <script>
@@ -50,11 +50,6 @@ export default {
   },
 
   computed: {
-    nodes () {
-      const nodes = this.$store.state.page.nodes
-      return nodes
-    },
-
     overview () {
       return this.$route.matched[0].path
     },

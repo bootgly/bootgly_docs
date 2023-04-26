@@ -1,5 +1,6 @@
 <template lang="pug">
 router-view
+
 q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false")
   q-layout(view="Lhh lpR fff" container :class="$q.dark.isActive ? `bg-dark` : `bg-white`")
     q-header.d-header(elevated)
@@ -145,6 +146,7 @@ export default {
     setLanguage (language) {
       this.$q.localStorage.set('setting.language', language)
       this.$store.commit('page/resetNodes')
+      this.$store.commit('page/resetNodesExpanded')
       this.$i18n.locale = language
     },
 

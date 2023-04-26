@@ -14,7 +14,7 @@ export default {
 
   props: {
     id: {
-      type: String,
+      type: Number,
       required: true
     }
   },
@@ -25,11 +25,7 @@ export default {
 
       let h = ''
       if (base && absolute) {
-        if (this.id === '0') {
-          h = this.$t(`_.${base}._`)
-        } else {
-          h = this.$t(`_.${absolute}.headers[${this.id - 1}]`)
-        }
+        h = this.$t(`_.${base}._`)
       } else {
         // TODO exception?
       }
@@ -42,13 +38,13 @@ export default {
   mounted () {
     // console.log('DH1.mounted!')
 
-    this.register()
+    this.register(this.id)
   },
 
   updated () {
     // console.log('DH1.mounted!')
 
-    this.register()
+    this.register(this.id)
   }
 }
 </script>

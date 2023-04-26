@@ -26,6 +26,7 @@ section
       :id="this.id + token.map[0]"
       :value="token.content"
     )
+
     ul(
       v-else-if="token.tag === 'ul'"
       v-html="token.content"
@@ -34,14 +35,17 @@ section
       v-else-if="token.tag === 'ol'"
       v-html="token.content"
     )
+
     table(
       v-else-if="token.tag === 'table'"
       v-html="token.content"
     )
+
     p(
       v-else-if="token.tag === 'p'"
       v-html="token.content"
     )
+
     d-page-source-code(
       v-else-if="token.tag === 'code'"
       :index="this.id"
@@ -245,6 +249,13 @@ export default {
   },
   updated () {
     // console.log('DPageSection.updated!')
+  },
+
+  beforeUnmount () {
+    // console.log('DPageSection.beforeUnmount!')
+  },
+  unmount () {
+    // console.log('DPageSection.unmount!')
   }
 }
 </script>

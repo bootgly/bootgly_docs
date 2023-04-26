@@ -24,16 +24,21 @@ export default {
   },
 
   // @ Events
+  beforeCreated () {
+    // console.log(`DH3 ${this.value} beforeCreated!`)
+  },
   created () {
-    // console.log('DH3 - created!')
+    // console.log(`DH3 ${this.value} created!`)
   },
 
+  beforeMount () {
+    // console.log(`DH3 ${this.value} mounted!`)
+  },
   mounted () {
-    // console.log('DH3.mounted!')
+    // console.log(`DH3 ${this.value} mounted!`)
 
-    this.register()
-
-    this.index(true)
+    this.register(this.id)
+    this.index(this.id, true)
   },
 
   beforeUpdate () {
@@ -42,9 +47,8 @@ export default {
   updated () {
     // console.log('DH3.mounted!')
 
-    this.register()
-
-    this.index(true)
+    this.register(this.id)
+    this.index(this.id, true)
   }
 }
 </script>

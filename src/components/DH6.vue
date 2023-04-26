@@ -26,18 +26,13 @@ export default {
   // @ Events
   created () {
     // console.log('DH6 - created!')
-
-    window.addEventListener('onLoad', () => {
-      this.register()
-    })
   },
 
   mounted () {
     // console.log('DH6.mounted!')
 
-    this.register()
-
-    this.index()
+    this.register(this.id)
+    this.index(this.id)
   },
 
   beforeUpdate () {
@@ -46,9 +41,8 @@ export default {
   updated () {
     // console.log('DH6.mounted!')
 
-    this.register()
-
-    this.index()
+    this.register(this.id)
+    this.index(this.id)
   }
 }
 </script>

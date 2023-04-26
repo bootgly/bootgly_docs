@@ -75,10 +75,16 @@ export default {
       }, 500)
     }
   },
+
   beforeUnmount () {
+    // console.log('DPageAnchor beforeUnmount!')
+
     this.$store.commit('layout/setMetaToggle', false)
-    this.$store.commit('page/setAnchor', 0)
+
+    this.$store.commit('page/resetAnchor')
     this.$store.commit('page/resetAnchors')
+    this.$store.commit('page/resetNodes')
+
     this.$store.commit('page/setScrolling', false)
   }
 }

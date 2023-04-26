@@ -43,6 +43,10 @@
         Input: {
           _: 'Terminal Input',
           overview: {
+            _subsections_: {
+              total: 3,
+              done: 0
+            },
             source: ''
           },
           Mouse: {

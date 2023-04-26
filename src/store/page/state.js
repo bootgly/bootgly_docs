@@ -1,15 +1,15 @@
 export default {
+  anchor: 0,
+
+  anchors: [],
+
   nodes: [
     {
       id: 0,
-
       children: []
     }
   ],
   nodesExpanded: [0],
-
-  anchor: 0,
-  anchors: [],
 
   scrolling: false,
 

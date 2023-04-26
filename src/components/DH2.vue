@@ -24,16 +24,21 @@ export default {
   },
 
   // @ Events
+  beforeCreated () {
+    // console.log(`DH2 ${this.value} beforeCreated!`)
+  },
   created () {
-    // console.log('DH2 - created!')
+    // console.log(`DH2 ${this.value} created!`)
   },
 
+  beforeMount () {
+    // console.log(`DH2 ${this.value} mounted!`)
+  },
   mounted () {
-    // console.log('DH2.mounted!')
+    // console.log(`DH2 ${this.value} mounted!`)
 
-    this.register()
-
-    this.index()
+    this.register(this.id)
+    this.index(this.id)
   },
 
   beforeUpdate () {
@@ -42,9 +47,8 @@ export default {
   updated () {
     // console.log('DH2.mounted!')
 
-    this.register()
-
-    this.index()
+    this.register(this.id)
+    this.index(this.id)
   }
 }
 </script>

@@ -5,16 +5,16 @@ const { getScrollTarget, setVerticalScrollPosition } = scroll
 export default {
   methods: {
     // @ Boot
-    register () {
-      // console.log('anchor.register(id): ', this.id)
+    register (id) {
+      // console.log('Anchor register: ', id)
 
-      this.$store.commit('page/pushAnchors', this.id)
+      this.$store.commit('page/pushAnchors', id)
     },
-    index (child = false) {
-      // console.log('index: ', this.id)
+    index (id, child = false) {
+      // console.log('Node index: ', id)
 
       this.$store.commit('page/pushNodes', {
-        id: this.id,
+        id,
         label: this.value,
         child,
         children: []
@@ -61,6 +61,11 @@ export default {
 
       for (let i = 0; i < anchors.length; i++) {
         const anchorId = anchors[i]
+
+        // TODO fix bug with this related
+        if (anchorId === 0) {
+          continue
+        }
 
         const Anchor = document.getElementById(anchorId)
         let AnchorOffsetTop = 20

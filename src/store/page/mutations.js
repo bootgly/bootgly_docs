@@ -1,7 +1,11 @@
+export const resetAnchor = (state) => {
+  state.anchor = 0
+}
 export const setAnchor = (state, val) => {
   state.anchor = val
 }
-export const resetAnchors = (state, val) => {
+
+export const resetAnchors = (state) => {
   state.anchors = []
 }
 export const pushAnchors = (state, value) => {
@@ -32,12 +36,15 @@ export const pushNodes = (state, node) => {
     }
 
     const children = state.nodes[0].children
-    if (node.child) {
+    if (node.child && children.length) {
       children.at(-1).children.push(value)
     } else {
       state.nodes[0].children.push(value)
     }
   }
+}
+export const resetNodesExpanded = (state) => {
+  state.nodesExpanded = [0]
 }
 export const pushNodesExpanded = (state, nodeId) => {
   state.nodesExpanded.push(nodeId)
