@@ -1,6 +1,6 @@
-# Input
+# Terminal Input
 
-A classe `Input` é responsável por prover métodos para lidar com a entrada de dados do terminal. Ela é utilizada internamente pela classe `Terminal`, que por sua vez é acessada pela classe `CLI`.
+A classe `Input` é responsável por prover métodos para lidar com a entrada de dados no Terminal. Ela é utilizada internamente pela classe `Terminal`, que por sua vez é acessada pela classe `CLI`.
 
 ## Instância
 
@@ -12,7 +12,7 @@ use Bootgly\CLI;
 $Input = CLI::$Terminal->Input;
 ```
 
-## Configuração
+## Configurações
 
 ```php
 configure (bool $blocking = true, bool $canonical = true, bool $echo = true) : Input
@@ -26,7 +26,7 @@ A classe `Input` pode ser configurada através do método `configure()`, que rec
 
 ### Modo bloqueante
 
-O modo `blocking` define se o fluxo de processamento do loop de leitura deve esperar ou não a leitura de dados do usuário antes de continuar. Caso a leitura seja bloqueante, o fluxo do loop é parado até que o usuário tenha feito alguma entrada de dados no terminal.
+O modo `blocking` define se o fluxo de processamento do loop de leitura deve esperar ou não a leitura de dados do usuário antes de continuar. Caso a leitura seja bloqueante, o fluxo do loop é parado até que o usuário tenha feito alguma entrada de dados no Terminal.
 
 ### Modo canonical
 

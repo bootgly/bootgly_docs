@@ -97,12 +97,12 @@ export default {
 
             options: [
               {
-                image: '/flags/united-states-of-america.png',
+                image: '/images/flags/united-states-of-america.png',
                 label: 'English (US)',
                 value: 'en-US'
               },
               {
-                image: '/flags/brazil.png',
+                image: '/images/flags/brazil.png',
                 label: 'Português (BR)',
                 value: 'pt-BR'
               }

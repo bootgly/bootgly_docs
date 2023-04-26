@@ -49,7 +49,8 @@ export default {
       return `${this.base}${this.relative}.${this.$i18n.locale}.md`
     },
     relative () {
-      return this.$route.matched[0].meta.dir + this.$store.state.page.relative
+      const path = this.$route.path
+      return path
     },
     color () {
       if (this.status === 'completed') {

@@ -22,7 +22,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
         }
@@ -48,7 +48,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
         }
@@ -78,7 +78,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
         }
@@ -104,7 +104,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
         }
@@ -130,7 +130,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -156,7 +156,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -180,7 +180,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -206,7 +206,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -233,7 +233,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -257,7 +257,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -281,7 +281,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -305,7 +305,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -335,7 +335,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -359,7 +359,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }
@@ -385,7 +385,7 @@ const routes = [
     children: [
       {
         path: 'overview',
-        component: () => import('pages/components/OverviewPage'),
+        component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
         }

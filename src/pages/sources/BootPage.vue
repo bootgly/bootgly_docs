@@ -49,7 +49,7 @@ q-page-container
                 q-img.rounded-borders(
                   width="722"
                   height="339"
-                  src="images/Bootgly-Progress-Bar-component.png"
+                  src="images/pages/Bootgly-Progress-Bar-component.png"
                 )
               .col-6
                 q-media-player.bg-black(type="video", :sources="videos[0].sources" @playing="autoplay = false")
@@ -66,50 +66,49 @@ q-page-container
         q-carousel-slide(:name="2")
           q-scroll-area.fit
             q-img.rounded-borders.col-12(
+              width="647"
+              height="204"
+              src="images/pages/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
+            )
+
+            .carrousel-caption
+              .text-h6 HTTP Server CLI - Benchmark
+              .text-subtitle1 Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
+        q-carousel-slide(:name="3")
+          q-scroll-area.fit
+            q-img.rounded-borders.col-12(
               width="700"
               height="530"
-              src="images/Bootgly_CLI-Table_component.png"
+              src="images/pages/Bootgly_CLI-Table_component.png"
             )
 
             .carrousel-caption
               .text-h6 Bootgly CLI - Table component
               .text-subtitle1 API with DataSet abstraction
 
-        q-carousel-slide(:name="3")
+        q-carousel-slide(:name="4")
           q-scroll-area.fit(dark)
             q-img.rounded-borders.col-12.full-height(
               width="735"
               height="1302"
-              src="images/Bootgly-HTTP-Server-Test-Suite5.png"
+              src="images/pages/Bootgly-HTTP-Server-Test-Suite5.png"
             )
 
             .carrousel-caption
               .text-h6 HTTP Server CLI
               .text-subtitle1 Test Suites
 
-        q-carousel-slide(:name="4")
+        q-carousel-slide(:name="5")
           q-scroll-area.fit
             q-img.rounded-borders.col-12(
               width="820"
               height="355"
-              src="images/Server-CLI-HTTP-started.png"
+              src="images/pages/Server-CLI-HTTP-started.png"
             )
 
             .carrousel-caption
               .text-h6 HTTP Server CLI started
               .text-subtitle1 Initial output
-
-        q-carousel-slide(:name="5")
-          q-scroll-area.fit
-            q-img.rounded-borders.col-12(
-              width="647"
-              height="204"
-              src="images/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
-            )
-
-            .carrousel-caption
-              .text-h6 HTTP Server CLI - Benchmark
-              .text-subtitle1 Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
 </template>
 
 <script>
@@ -138,7 +137,7 @@ export default {
         {
           sources: [
             {
-              src: 'videos/Bootgly_CLI_-_Progress_with_Bar_component_vs_Symfony_Console_-_ProgressBar_Helper.mp4',
+              src: 'videos/pages/Bootgly_CLI_-_Progress_with_Bar_component_vs_Symfony_Console_-_ProgressBar_Helper.mp4',
               type: 'video/mp4'
             }
           ]

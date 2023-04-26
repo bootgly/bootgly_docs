@@ -12,7 +12,7 @@ q-scroll-area#menu(
 )
   .row.flex-center(:class="$q.dark.isActive ? `bg-dark` : `bg-white`" style="height: 115px;")
     .col-5
-      img.q-mr-md(src="logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="85" height="85" style="float: right;")
+      img.q-mr-md(src="/images/logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="85" height="85" style="float: right;")
     .col-7
       .text-weight-medium Bootgly PHP Framework
       .text-caption.q-pt-xs {{ $t('system.documentation') }}

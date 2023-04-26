@@ -20,16 +20,23 @@ import Navigator from 'pages/bootables/navigator'
 export default {
   name: 'DPageAnchor',
 
-  mixins: [Navigator],
+  mixins: [
+    Navigator
+  ],
 
   computed: {
     nodes () {
       const nodes = this.$store.getters['page/nodes']
       return nodes
     },
-    expanded () {
-      const nodesExpanded = this.$store.getters['page/nodesExpanded']
-      return nodesExpanded
+    expanded: {
+      get () {
+        const nodesExpanded = this.$store.getters['page/nodesExpanded']
+        return nodesExpanded
+      },
+      set (value) {
+        console.log(value)
+      }
     },
     selected: {
       get () {
