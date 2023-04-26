@@ -68,8 +68,8 @@ export default {
       this.$store.commit('page/setScrolling', true)
     }, 1000)
 
-    const id = this.$route.hash.replace(/^\D+/g, '')
-    if (id === (Number(id) + '')) {
+    const id = this.$route.hash.replace(/^#+/g, '')
+    if (id) {
       setTimeout(() => {
         this.anchor(id)
       }, 500)

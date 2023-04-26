@@ -3,9 +3,9 @@
   .code(:class="coloring")
     .lines(v-if="lines")
       template(v-for="(line, index) in lines" :key="index")
-        a.line(:href="href+line" :id="`${anchor}${line}`")
+        a.line(:href="href+line")
           i.fa.fa-link(aria-hidden="true" data-hidden="true")
-          span {{ line }}
+          span(:id="`${anchor}${line}`") {{ line }}
     pre
       code(:class="`language-${language}`" v-html="highlighted")
 </template>

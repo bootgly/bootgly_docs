@@ -9,7 +9,7 @@
       ]
     },
 
-    about: {
+    Bootgly: {
       _: 'About Bootgly',
       overview: {
         _subsections_: {

@@ -5,8 +5,8 @@ const langs = [
 const i18n = {}
 
 const paths = [
-  'about',
-  'about/structure/directory',
+  'Bootgly',
+  'Bootgly/structure/directory',
   'CLI/Terminal/Input',
   'CLI/Terminal/Output'
 ]
@@ -33,8 +33,8 @@ langs.forEach((lang) => {
   const _ = i18n[lang]._
 
   // TODO dinamically using Vue Router Routes
-  _.about.overview.source = load(paths[0], lang)
-  _.about.structure.directory.overview.source = load(paths[1], lang)
+  _.Bootgly.overview.source = load(paths[0], lang)
+  _.Bootgly.structure.directory.overview.source = load(paths[1], lang)
   _.CLI.Terminal.Input.overview.source = load(paths[2], lang)
   _.CLI.Terminal.Output.overview.source = load(paths[3], lang)
 })

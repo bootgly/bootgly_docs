@@ -31,7 +31,7 @@ export default {
 
       if (Anchor !== null && typeof Anchor === 'object') {
         const ScrollTarget = getScrollTarget(Anchor)
-        const AnchorOffsetTop = Anchor.offsetTop - 40
+        const AnchorOffsetTop = Anchor.offsetTop
 
         setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
 
@@ -75,7 +75,7 @@ export default {
 
         if (scrollPositionTop >= AnchorOffsetTop) {
           this.select(anchorId)
-          this.navigate(anchorId, false)
+          // this.navigate(anchorId, false)
         }
       }
     },

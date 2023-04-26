@@ -1,7 +1,7 @@
 
 const routes = [
   {
-    path: '/about',
+    path: '/Bootgly',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'play_arrow',
@@ -9,7 +9,7 @@ const routes = [
       menu: {
         header: {
           icon: 'contact_support',
-          name: 'about'
+          name: 'Bootgly'
         }
       },
       layouts: {
@@ -30,13 +30,13 @@ const routes = [
     ]
   },
   {
-    path: '/about/structure/directory',
+    path: '/Bootgly/structure/directory',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'account_tree',
       status: 'draft',
       menu: {
-        subheader: 'about.structure'
+        subheader: 'Bootgly.structure'
       },
       layouts: {
         footer: true
