@@ -12,7 +12,7 @@ use Bootgly\CLI;
 $Input = CLI::$Terminal->Input;
 ```
 
-## Settings
+## Configuration
 
 ```php
 configure (bool $blocking = true, bool $canonical = true, bool $echo = true) : Input
