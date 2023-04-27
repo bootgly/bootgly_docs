@@ -1,7 +1,7 @@
 
 const routes = [
   {
-    path: '/Bootgly/what',
+    path: '/Bootgly/about/what',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'play_arrow',
@@ -10,7 +10,8 @@ const routes = [
         header: {
           icon: 'contact_support',
           name: 'Bootgly'
-        }
+        },
+        subheader: 'Bootgly.about'
       },
       layouts: {
         footer: true
@@ -30,7 +31,7 @@ const routes = [
     ]
   },
   {
-    path: '/Bootgly/why',
+    path: '/Bootgly/about/why',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'question_mark',
@@ -53,14 +54,15 @@ const routes = [
       }
     ]
   },
+
   {
-    path: '/Bootgly/structure/directory',
+    path: '/Bootgly/basic/directory_structure',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'account_tree',
       status: 'draft',
       menu: {
-        subheader: 'Bootgly.structure'
+        subheader: 'Bootgly.basic'
       },
       layouts: {
         footer: true

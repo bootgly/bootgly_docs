@@ -10,40 +10,46 @@
     },
 
     Bootgly: {
-      _: 'Sobre o Bootgly',
+      _: 'Bootgly',
 
-      what: {
-        _: 'O que é Bootgly?',
+      about: {
+        _: 'Sobre',
 
-        overview: {
-          _subsections_: {
-            total: 3,
-            done: 1
+        what: {
+          _: 'O que é Bootgly?',
+
+          overview: {
+            _subsections_: {
+              total: 3,
+              done: 1
+            },
+            _translations_: {
+              available: 1
+            },
+            source: ''
           },
-          _translations_: {
-            available: 1
-          },
-          source: ''
+        }
+
+        why: {
+          _: 'Por quê Bootgly?',
+
+          overview: {
+            _subsections_: {
+              total: 1,
+              done: 1
+            },
+            _translations_: {
+              available: 1
+            },
+            source: ''
+          }
         },
       }
 
-      why: {
-        _: 'Por quê Bootgly?',
+      basic: {
+        _: 'Básico',
 
-        overview: {
-          _subsections_: {
-            total: 1,
-            done: 1
-          },
-          _translations_: {
-            available: 1
-          },
-          source: ''
-        }
-      },
-      structure: {
-        _: 'Estrutura',
-        directory: {
+        directory_structure: {
           _: 'Estrutura de diretórios',
           overview: {
             _subsections_: {
