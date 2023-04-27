@@ -18,6 +18,8 @@ body.body--light
     p
       // token
       & > code
+        color: var(--q-primary) !important
+        background: var(--q-primary-background) !important
         border: 1px solid #e6e6e6 !important
         box-shadow: 0 1px 1px rgba(0, 0, 0, 0.125)
 
@@ -33,6 +35,7 @@ body.body--light
 // Dark mode
 body.body--dark
   --q-primary: #69562b !important
+  --q-primary-in-dark-bg: #C1A667 !important
   --q-secondary: #FFA07A !important
   --q-negative: #fc001b !important
 
@@ -40,7 +43,7 @@ body.body--dark
 
   .content
     h1, h2, h3, h4, h5, h6
-      color: white
+      color: #ebebeb
 
       &:hover
         color: #969696
@@ -49,6 +52,8 @@ body.body--dark
     p
       // token
       & > code
+        color: var(--q-primary-in-dark-bg) !important
+        background: var(--q-dark) !important
         border: 1px solid #e6e6e6
         box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5)
 
@@ -110,8 +115,6 @@ body.body--dark
 
   p
     & > code
-      color: var(--q-primary) !important
-      background: var(--q-primary-background) !important
       padding: 3px 5px
       margin: 0 2px
       border-radius: 2px
