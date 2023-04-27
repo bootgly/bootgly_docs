@@ -72,7 +72,11 @@ q-scroll-area#menu(
       q-item-section(v-if="item.meta.menu.subheader")
         q-item-label.label.subheader(header) {{ getMenuItemSubheader(item) }}
 
-      q-item(:to="item.path + '/overview'" v-show="matches[index] || !matches")
+      q-item(
+        :to="item.path + '/overview'"
+        :active="item.path + subpage === $route.fullPath"
+        v-show="matches[index] || !matches"
+      )
         q-item-section(side)
           q-icon(v-if="item.meta.icon" :name="item.meta.icon")
         q-item-section {{ getMenuItemLabel(item, index) }}
@@ -111,7 +115,16 @@ export default {
       ]
     }
   },
-  computed: {},
+  computed: {
+    subpage () {
+      const parent = this.$route.matched[0]?.path
+      const child = this.$route.matched[1]?.path
+
+      const subpage = child.substring(parent.length)
+
+      return subpage
+    }
+  },
 
   methods: {
     openURL,
@@ -179,6 +192,7 @@ export default {
       return true
     },
 
+    // * Item
     getMenuItemHeaderBackground () {
       return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
     },
