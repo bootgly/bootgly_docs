@@ -17,10 +17,15 @@ q-page-container#page
         )
 
   q-page(style="min-height: calc(100vh - 80px)")
-    q-scroll-area.content(:class="main")
+    q-scroll-area.content(:class="main" ref="pageScrollArea")
       slot
       d-page-nav(v-if="!disableNav")
       q-scroll-observer(@scroll="scrolling" :debounce="300")
+    q-page-sticky(position="bottom-right" :offset="[18, 18]")
+        q-btn.rotate-90(
+          round :aria-label="$t('system.backToTop')"
+          color="primary" icon="arrow_back" @click="backToTop"
+        )
 
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
     d-page-anchor#anchor
@@ -114,6 +119,10 @@ export default {
       this.$router.push(path)
 
       return true
+    },
+    backToTop () {
+      this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 300)
+      this.$store.commit('page/setAnchor', 0)
     }
   }
 }
