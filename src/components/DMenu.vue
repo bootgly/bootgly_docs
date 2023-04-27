@@ -74,7 +74,7 @@ q-scroll-area#menu(
 
       q-item(
         :to="item.path + '/overview'"
-        :active="item.path + subpage === $route.fullPath"
+        :active="item.path + subpage === $route.path"
         v-show="matches[index] || !matches"
       )
         q-item-section(side)
