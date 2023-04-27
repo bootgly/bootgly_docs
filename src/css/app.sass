@@ -39,16 +39,23 @@ body.body--dark
   --q-secondary: #FFA07A !important
   --q-negative: #fc001b !important
 
+  --q-light-in-dark-1: #ababab
+  --q-light-in-dark-2: #c9c9c9
+
   --q-primary-background: #FFF !important
+
+  color: var(--q-light-in-dark-1)
 
   .content
     h1, h2, h3, h4, h5, h6
-      color: #ebebeb
+      color: var(--q-light-in-dark-1)
 
       &:hover
         color: #969696
       &:hover:after
         color: #B19248
+    section
+      color: var(--q-light-in-dark-2)
     p
       // token
       & > code
