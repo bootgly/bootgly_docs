@@ -115,7 +115,7 @@ export default {
         min-height: 19px
         white-space: nowrap
         padding: 0 3px
-        color: rgba(27, 31, 35, 0.5) !important
+        color: #565555 !important
 
         &:hover
           i
@@ -192,12 +192,12 @@ export default {
 
       .token.function,
       .token.class-name
-        color: #DD4A68
+        color: #9a3449
 
       .token.regex,
       .token.important,
       .token.variable
-        color: #e90
+        color: #7b4f00
 
       .token.important,
       .token.bold
