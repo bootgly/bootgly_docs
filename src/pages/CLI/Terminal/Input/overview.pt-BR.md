@@ -40,7 +40,7 @@ O modo `echo` trata a exibição do que o usuário digita na tela. Quando esse m
 
 ## Uso
 
-### Ler de dados com read()
+### Ler dados com read()
 
 ```php
 read(int $length) : string | false
@@ -54,7 +54,10 @@ O método `read()` é responsável por ler os dados digitados pelo usuário. Ele
 reading(\Closure $CAPI, \Closure $SAPI)
 ```
 
-A classe `Input` também possui um método chamado `reading()`, que é utilizada para interagir com o usuário em tempo real. Esse método recebe duas funções de callback:
+A classe `Input` também possui um método chamado `reading()`, que é utilizada para interagir com o usuário em tempo real.
+No Bootgly se o nome do método estiver usando o gerúndio, é sinal que o método implementa um loop dentro dele.
+
+Esse método recebe duas funções de callback:
 
 - `$CAPI`, que é a função de entrada (API do Client);
 - `$SAPI`, que é a função de saída (API do Servidor);

@@ -234,7 +234,7 @@ export default {
         }
       })
 
-      console.log(parsed, tokens)
+      // console.log(parsed, tokens)
 
       return tokens
     }

@@ -40,8 +40,10 @@
       _: 'Bootgly CLI',
       Terminal: {
         _: 'Terminal',
+
         Input: {
           _: 'Terminal Input',
+
           overview: {
             _subsections_: {
               total: 3,
@@ -49,6 +51,14 @@
             },
             source: ''
           },
+          samples: {
+            _subsections_: {
+              total: 0,
+              done: 0
+            },
+            source: ''
+          },
+
           Mouse: {
             _: 'Mouse',
             overview: {

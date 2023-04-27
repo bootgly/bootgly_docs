@@ -35,7 +35,7 @@ export default {
         return nodesExpanded
       },
       set (value) {
-        console.log(value)
+        // console.log(value)
       }
     },
     selected: {

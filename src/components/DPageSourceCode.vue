@@ -57,7 +57,13 @@ export default {
         return ''
       }
 
-      const highlighted = Prism.highlight(this.text, Prism.languages[this.language], this.language)
+      const text = this.text.replace(/&#123;/g, '{').replace(/&#125;/g, '}').replace(/&amp;/g, '&')
+
+      const highlighted = Prism.highlight(
+        text,
+        Prism.languages[this.language],
+        this.language
+      )
 
       return highlighted
     }

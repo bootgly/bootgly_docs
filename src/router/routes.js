@@ -72,12 +72,19 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        samples: true
       }
     },
     children: [
       {
         path: 'overview',
+        component: () => import('components/DSubpage'),
+        meta: {
+          status: 'draft'
+        }
+      },
+      {
+        path: 'samples',
         component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'

@@ -4,6 +4,11 @@ const langs = [
 ]
 const i18n = {}
 
+const subpages = [
+  'overview',
+  'samples',
+  'versus'
+]
 const paths = [
   'Bootgly',
   'Bootgly/structure/directory',
@@ -11,32 +16,46 @@ const paths = [
   'CLI/Terminal/Output'
 ]
 
-function load (page, lang) {
-  const required = require(`pages/${page}/overview.${lang}.md`)
-  const result = String(required.default)
+function filter (source) {
+  const regex1 = /{/gm
+  const regex2 = /}/gm
+  const regex3 = /([@|])+/gm
 
-  const regex = /(.{0,2})([@|])(.{0,2})/gm
-  const source = result.replace(regex, function (match, p1, p2, p3) {
-    if (match !== "{'" + p2 + "'}") {
-      return p1 + "{'" + p2 + "'}" + p3
-    }
+  source = source
+    .replace(regex1, '&#123;')
+    .replace(regex2, '&#125;')
+    .replace(regex3, "{'$&'}")
 
-    return match
-  })
+  return source
+}
+function load (page, subpage, lang) {
+  const markdown = require(`pages/${page}/${subpage}.${lang}.md`)
+
+  const content = String(markdown.default)
+
+  const source = filter(content)
 
   return source
 }
 
+// TODO dinamically using Vue Router Routes
 langs.forEach((lang) => {
   i18n[lang] = require(`./${lang}/index.hjson`)
 
   const _ = i18n[lang]._
 
-  // TODO dinamically using Vue Router Routes
-  _.Bootgly.overview.source = load(paths[0], lang)
-  _.Bootgly.structure.directory.overview.source = load(paths[1], lang)
-  _.CLI.Terminal.Input.overview.source = load(paths[2], lang)
-  _.CLI.Terminal.Output.overview.source = load(paths[3], lang)
+  subpages.forEach((subpage) => {
+    switch (subpage) {
+      case 'overview':
+        _.Bootgly.overview.source = load(paths[0], subpage, lang)
+        _.Bootgly.structure.directory.overview.source = load(paths[1], subpage, lang)
+        _.CLI.Terminal.Input.overview.source = load(paths[2], subpage, lang)
+        _.CLI.Terminal.Output.overview.source = load(paths[3], subpage, lang)
+        break
+      case 'samples':
+        _.CLI.Terminal.Input.samples.source = load(paths[2], subpage, lang)
+    }
+  })
 })
 
 export default i18n

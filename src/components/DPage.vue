@@ -5,9 +5,9 @@ q-page-container#page
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
         q-btn(v-if="overview"
           no-caps flat
-          v-bind:class="pActive('/')"
+          v-bind:class="pActive('/overview')"
           :label="$t('submenu.overview')" icon="pageview"
-          @click="pRoute('/')"
+          @click="pRoute('/overview')"
         )
         q-btn(v-if="samples"
           no-caps flat
@@ -16,7 +16,7 @@ q-page-container#page
           @click="pRoute('/samples')"
         )
 
-  q-page(style="min-height: calc(100vh - 80px)")
+  q-page(style="min-height: calc(100vh - 118px)")
     q-scroll-area.content(:class="main" ref="pageScrollArea")
       slot
       d-page-nav(v-if="!disableNav")
@@ -131,7 +131,7 @@ export default {
 <style lang="sass">
 .content,
 .content > div.scroll
-  min-height: calc(100vh - 80px)
+  min-height: calc(100vh - 118px)
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 20px
 
