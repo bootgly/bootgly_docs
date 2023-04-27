@@ -46,7 +46,7 @@ O modo `echo` trata a exibição do que o usuário digita na tela. Quando esse m
 ### Ler dados com read()
 
 ```php
-read(int $length) : string | false
+read (int $length) : string | false
 ```
 
 O método `read()` é responsável por ler os dados digitados pelo usuário. Ele recebe como parâmetro um inteiro que representa a quantidade máxima de bytes que devem ser lidos. O valor retornado pode ser uma string com os dados digitados ou `false` caso ocorra algum erro na operação.
@@ -54,7 +54,7 @@ O método `read()` é responsável por ler os dados digitados pelo usuário. Ele
 ### Lendo dados com reading()
 
 ```php
-reading(\Closure $CAPI, \Closure $SAPI)
+reading (\Closure $CAPI, \Closure $SAPI)
 ```
 
 A classe `Input` também possui um método chamado `reading()`, que é utilizada para interagir com o usuário em tempo real.

@@ -26,6 +26,12 @@ Ao usar o Input dessa forma, você configura o Terminal para receber os dados de
 
 Utilize um loop para processar a entrada de dados (veja exemplo abaixo).
 
+Para resetar todas as configurações do Terminal para o padrão, basta chamar o configure sem passar nenhum argumento:
+
+```php
+$Input->configure();
+```
+
 ## Uso
 
 ### Lendo dados com reading()
