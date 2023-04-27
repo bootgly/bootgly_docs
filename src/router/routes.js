@@ -425,8 +425,8 @@ const routes = [
         path: '/roadmap',
         component: () => import('pages/@/RoadmapPage'),
         meta: {
-          icon: 'assignment',
-          menu: 'changelog'
+          icon: 'playlist_add_check_circle',
+          menu: 'roadmap'
         }
       },
       {

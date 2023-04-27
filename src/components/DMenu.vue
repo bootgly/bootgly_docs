@@ -41,10 +41,18 @@ q-scroll-area#menu(
       q-item-section(side)
         q-icon(name="home")
       q-item-section {{ $t('menu.home') }}
+
+    li(role="listitem")
+      q-separator(role="separator")
+
     q-item(to="/changelog")
       q-item-section(side)
         q-icon(name="assignment")
       q-item-section {{ $t('menu.changelog') }}
+    q-item(to="/roadmap")
+      q-item-section(side)
+        q-icon(name="playlist_add_check_circle")
+      q-item-section {{ $t('menu.roadmap') }}
     q-item(to="/sponsor")
       q-item-section(side)
         q-icon(name="favorite" color="red")

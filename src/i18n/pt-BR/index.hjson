@@ -156,6 +156,7 @@
 
     home: 'Página inicial',
     changelog: 'Changelog',
+    roadmap: 'Roadmap',
     sponsor: 'Patrocine',
 
     status: {
@@ -188,7 +189,8 @@
   // @
   system: {
     documentation: 'Documentação',
-    support: 'Patrocine o Bootgly'
+    support: 'Patrocine o Bootgly',
+    backToTop: 'Voltar para o topo'
   },
   changelog: {
 

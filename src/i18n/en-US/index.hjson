@@ -160,6 +160,7 @@
 
     home: 'Home',
     changelog: 'Changelog',
+    roadmap: 'Roadmap',
     sponsor: 'Sponsor',
 
     status: {
@@ -192,7 +193,8 @@
   // @
   system: {
     documentation: 'Documentation',
-    support: 'Sponsor Bootgly'
+    support: 'Sponsor Bootgly',
+    backToTop: 'Back to top'
   },
   changelog: {
 
