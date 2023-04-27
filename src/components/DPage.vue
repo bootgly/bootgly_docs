@@ -17,11 +17,11 @@ q-page-container#page
         )
 
   q-page(style="min-height: calc(100vh - 118px)")
-    q-scroll-area.content(:class="main" ref="pageScrollArea")
+    q-scroll-area.content(:class="main")
       slot
       d-page-nav(v-if="!disableNav")
       q-scroll-observer(@scroll="scrolling" :debounce="300")
-    q-page-sticky(position="bottom-right" :offset="[18, 18]")
+    //-q-page-sticky(v-if="showBackToTop" position="bottom-right" :offset="[18, 18]")
         q-btn.rotate-90(
           round :aria-label="$t('system.backToTop')"
           color="primary" icon="arrow_back" @click="backToTop"
@@ -119,11 +119,13 @@ export default {
       this.$router.push(path)
 
       return true
-    },
+    }
+    /*
     backToTop () {
       this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 300)
       this.$store.commit('page/setAnchor', 0)
     }
+    */
   }
 }
 </script>

@@ -48,6 +48,7 @@ $Input->reading(
    CAPI: function ($read, $write) // Client Input { $read, $write }
    use ($Output)
    {
+      // * Config
       $expire = true;
       $timeout = 20; // total timeout in seconds since client was started
       // @ Mode
