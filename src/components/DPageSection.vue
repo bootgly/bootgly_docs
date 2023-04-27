@@ -270,7 +270,7 @@ export default {
 <style lang="sass">
 .content
   p
-    line-height: 1.5em
+    line-height: 1.6em
 
     &.overview
       word-spacing: 0.05em

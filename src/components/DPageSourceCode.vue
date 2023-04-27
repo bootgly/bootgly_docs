@@ -106,16 +106,13 @@ export default {
       float: left
       -webkit-user-select: none
       user-select: none
-      background-color: #fafafa
 
       a
         display: block
-        border-color: #f0f0f0
         font-size: 90% !important
         min-height: 19px
         white-space: nowrap
         padding: 0 3px
-        color: #565555 !important
 
         &:hover
           i
@@ -149,6 +146,15 @@ export default {
         padding: 0
 
     &.white
+      .lines
+        background-color: #fafafa
+        a
+          border-color: #f0f0f0
+          color: #565555 !important
+        a:hover
+          border-color: #f0f0f0
+          color: #565555 !important
+
       .token.comment,
       .token.prolog,
       .token.doctype,
@@ -207,7 +213,17 @@ export default {
 
       .token.entity
         cursor: help
+
     &.dark
+      .lines
+          background-color: #000
+          a
+            border-color: #f0f0f0
+            color: #969696 !important
+          a:hover
+            border-color: #f0f0f0
+            background-color: transparent !important
+
       // TODO Andromeda Colorized
       .token.comment,
       .token.prolog,
