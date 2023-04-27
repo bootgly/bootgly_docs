@@ -195,7 +195,7 @@
 
     overview: 'Overview',
     samples: 'Samples',
-    versus: 'Versus',
+    versus: 'Vs',
 
     changelog: 'Changelog'
   },

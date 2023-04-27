@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container#page
-  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (samples)")
+  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (samples || vs)")
     q-toolbar-title.toolbar-container
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
         q-btn(v-if="overview"
@@ -14,6 +14,12 @@ q-page-container#page
           v-bind:class="pActive('/samples')"
           :label="$t('submenu.samples')" icon="play_circle_filled"
           @click="pRoute('/samples')"
+        )
+        q-btn(v-if="vs"
+          no-caps flat
+          v-bind:class="pActive('/vs')"
+          :label="$t('submenu.versus')" icon="compare"
+          @click="pRoute('/vs')"
         )
 
   q-page(style="min-height: calc(100vh - 118px)")
@@ -61,6 +67,12 @@ export default {
     samples () {
       if (this.$route.matched[0].meta.subpages.samples !== false) {
         return this.overview + '/samples'
+      }
+      return false
+    },
+    vs () {
+      if (this.$route.matched[0].meta.subpages.vs !== false) {
+        return this.overview + '/vs'
       }
       return false
     },
