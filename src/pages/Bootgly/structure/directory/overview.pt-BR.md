@@ -4,7 +4,7 @@ Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pa
 
 ![Dir Structure](images/pages/Bootgly/Bootgly-directory_structure.png)
 
-## Pasta global {'@'}
+## Pasta global @
 
 A pasta {'@'} é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
 

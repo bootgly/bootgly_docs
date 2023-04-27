@@ -10,7 +10,8 @@
     },
 
     Bootgly: {
-      _: 'About Bootgly',
+      _: 'What is Bootgly?',
+
       overview: {
         _subsections_: {
           total: 3,
@@ -22,6 +23,20 @@
         source: ''
       },
 
+      why: {
+        _: 'Why Bootgly?',
+
+        overview: {
+          _subsections_: {
+            total: 1,
+            done: 1
+          },
+          _translations_: {
+            available: 1
+          },
+          source: ''
+        }
+      },
       structure: {
         _: 'Structure',
         directory: {

@@ -30,6 +30,30 @@ const routes = [
     ]
   },
   {
+    path: '/Bootgly/why',
+    component: () => import('layouts/DefaultLayout'),
+    meta: {
+      icon: 'question_mark',
+      status: 'draft',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        samples: false
+      }
+    },
+    children: [
+      {
+        path: 'overview',
+        component: () => import('components/DSubpage'),
+        meta: {
+          status: 'draft'
+        }
+      }
+    ]
+  },
+  {
     path: '/Bootgly/structure/directory',
     component: () => import('layouts/DefaultLayout'),
     meta: {

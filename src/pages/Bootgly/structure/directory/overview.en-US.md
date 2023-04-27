@@ -1,36 +1,37 @@
-The Bootgly PHP Framework has been very organized since its foundation and provides a solid framework for building your codes.
+The Bootgly PHP Framework has been very organized since its inception and offers a solid structure for building your code.
 
-A key part of this framework is its root folder's directory organization, which has been carefully designed to ensure a clear and efficient organization to separate everything from the Framework itself from everything that was produced with it.
+A fundamental part of this structure is the arrangement of directories in its root folder, which has been carefully designed to ensure clear and efficient organization in increasing order of dependencies. One of the reasons for this pattern is to separate everything that belongs to the Framework itself from everything that was produced through it.
 
 ![Dir Structure](images/pages/Bootgly/Bootgly-directory_structure.png)
 
-## Artifacts / Metadata folder
+## Global folder @
 
-It`s a global folder of metadata and artifacts that can be used in its workables.
-It is a place intended to store relevant information about the project, such as configuration files, general metadata files, documentation, autoloaders and other general files specific to the local context.
+The `@` folder is a global folder for artifacts and metadata. It can be found in Bootgly directories.
 
-Because it's a global folder, you can create this folder in your projects produced with Bootgly.
+It is a location intended to store relevant information about the project, such as configuration files, metadata files, and other general files specific to the local context where this folder is located.
+
+As a global folder, you can create it in your projects produced with Bootgly.
 
 ## 'Bootables' folders
 
-The "Bootables" folder is designed to contain everything related to the **initialization of the framework**.
-This includes abstract codes, base codes, core codes, in short, everything that is needed to boot the development or production environment of the projects that is using the Bootgly PHP Framework.
+The 'Bootables' folders are designed to contain everything related to **Bootgly initialization**.
 
-This separation helps keep the startup files organized in a central location, making it easier to configure and manage deployment environments.
+It includes the `abstract/`, `base/`, `core/` folders and contains everything needed to initialize the minimum of the Bootgly PHP Framework or some dependency that is indirectly used.
+
+This separation helps keep initialization files organized in a central location, and also allows the use of primary Bootgly dependencies in projects that do not use the Framework in its entirety.
 
 ## 'Features' folders
 
-The "Features" folder is intended to contain the files related to the **specific functionalities of framework**.
+The 'Features' folders are intended for all content related to **specific Framework functionalities** and they are: `interfaces/`, `modules/`, `nodes/`.
 
-This may include source code files for interfaces, modules, nodes, platforms, and other development artifacts specific to each functionality offered by the Bootgly PHP Framework.
+It contains dependencies that are directly used by the developer who uses Bootgly.
 
-Organizing files in this way allows developers to easily find files relevant to a particular functionality, making maintenance and development more efficient.
+Organizing in this way facilitates learning for contributors and helps in the maintenance and development of Bootgly by separating the main features from the "boot".
 
 ## 'Workables' folders
 
-Finally, the "Workables" folder is designed to contain **everything that is developed through of the framework**.
+Finally, the 'Workables' folders are designed to contain **everything developed through Bootgly** and they are work folders.
 
-This folder should include specific projects, source folders, configuration files, and other resources related to the projects that are built using the Bootgly PHP Framework.
-For example, it can contain folders for specific projects or folders for public resources such as images, CSS files, or JavaScript.
+These folders should include specific projects, source code folders for Apps, APIs, project configuration and boot files, among other resources related to projects built using the Bootgly PHP Framework. Additionally, it can contain public and static files for the web such as images, CSS or JavaScript files.
 
-This separation allows developers to organize and manage work-in-progress artifacts, keeping them separate from the other framework directories and making it easier to share resources between different projects.
+This separation allows developers to organize and manage work artifacts in progress, keeping them separate from other Framework directories and facilitating the sharing of resources between different projects.
