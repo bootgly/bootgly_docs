@@ -65,13 +65,15 @@ export default {
       return this.$route.matched[0].path
     },
     samples () {
-      if (this.$route.matched[0].meta.subpages.samples !== false) {
+      const samples = this.$route.matched[0].meta.subpages.samples
+      if (samples === true) {
         return this.overview + '/samples'
       }
       return false
     },
     vs () {
-      if (this.$route.matched[0].meta.subpages.vs !== false) {
+      const vs = this.$route.matched[0].meta.subpages.vs
+      if (vs === true) {
         return this.overview + '/vs'
       }
       return false
