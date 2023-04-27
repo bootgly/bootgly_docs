@@ -20,9 +20,12 @@ configure (bool $blocking = true, bool $canonical = true, bool $echo = true) : I
 
 A classe `Input` pode ser configurada através do método `configure()`, que recebe três parâmetros booleanos para definir as configurações de entrada do terminal:
 
-- `bool $blocking`: define se a entrada deve ser bloqueante ou não;
-- `bool $canonical`: define se deve usar ou não o modo canonical de processamento da entrada. Em geral, o modo canonical permite que a entrada seja lida uma linha por vez. Quando o usuário pressiona Enter, todo o conteúdo digitado é retornado;
-- `bool $echo`: define se deve exibir o que o usuário digita na tela ou não.
+- `bool $blocking`:
+define se a entrada deve ser bloqueante ou não;
+- `bool $canonical`:
+define se deve usar ou não o modo canonical de processamento da entrada. Em geral, o modo canonical permite que a entrada seja lida uma linha por vez. Quando o usuário pressiona Enter, todo o conteúdo digitado é retornado;
+- `bool $echo`:
+define se deve exibir o que o usuário digita na tela ou não.
 
 ### Modo bloqueante
 

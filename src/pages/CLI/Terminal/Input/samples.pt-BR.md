@@ -1,10 +1,10 @@
 # Terminal Input - Samples
 
-A classe `Input` é responsável por prover métodos para lidar com a entrada de dados no Terminal. Ela é utilizada internamente pela classe `Terminal`, que por sua vez é acessada pela classe `CLI`.
+Aqui você encontra exemplos de uso da classe `Input` do `Terminal`.
 
 ## Instância
 
-Para utilizar a classe `Input`, é necessário acessá-la através da classe `CLI`, como demonstrado abaixo:
+Para utilizar a classe `Input`, é necessário acessá-la através da classe `CLI`, como demonstrado no exemplo abaixo:
 
 ```php
 use Bootgly\CLI;
@@ -14,7 +14,17 @@ $Input = CLI::$Terminal->Input;
 
 ## Configurações
 
-...
+Exemplos de configurações:
+
+### Modo blocking, canonical e echo desabilitados
+
+```php
+$Input->configure(blocking: false, canonical: false, echo: false);
+```
+
+Ao usar o Input dessa forma, você configura o Terminal para receber os dados de forma automática conforme eles vão sendo digitado pelo usuário. Cada caractere é recebido e já colocado na entrada sem passar por um buffer.
+
+Utilize um loop para processar a entrada de dados (veja exemplo abaixo).
 
 ## Uso
 
