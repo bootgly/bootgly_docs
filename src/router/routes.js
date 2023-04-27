@@ -1,7 +1,7 @@
 
 const routes = [
   {
-    path: '/Bootgly',
+    path: '/Bootgly/what',
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'play_arrow',

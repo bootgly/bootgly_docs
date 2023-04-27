@@ -10,7 +10,7 @@ const subpages = [
   'versus'
 ]
 const paths = [
-  'Bootgly',
+  'Bootgly/what',
   'Bootgly/why',
   'Bootgly/structure/directory',
   'CLI/Terminal/Input',
@@ -48,7 +48,7 @@ langs.forEach((lang) => {
   subpages.forEach((subpage) => {
     switch (subpage) {
       case 'overview':
-        _.Bootgly.overview.source = load(paths[0], subpage, lang)
+        _.Bootgly.what.overview.source = load(paths[0], subpage, lang)
         _.Bootgly.why.overview.source = load(paths[1], subpage, lang)
         _.Bootgly.structure.directory.overview.source = load(paths[2], subpage, lang)
         _.CLI.Terminal.Input.overview.source = load(paths[3], subpage, lang)

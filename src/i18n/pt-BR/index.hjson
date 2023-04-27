@@ -10,15 +10,22 @@
     },
 
     Bootgly: {
-      _: 'O que é Bootgly?',
+      _: 'Sobre o Bootgly',
 
-      overview: {
-        _subsections_: {
-          total: 3,
-          done: 1
+      what: {
+        _: 'O que é Bootgly?',
+
+        overview: {
+          _subsections_: {
+            total: 3,
+            done: 1
+          },
+          _translations_: {
+            available: 1
+          },
+          source: ''
         },
-        source: '',
-      },
+      }
 
       why: {
         _: 'Por quê Bootgly?',
