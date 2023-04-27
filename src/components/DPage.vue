@@ -95,8 +95,17 @@ export default {
         case '/samples':
           classes = 'samples'
           break
+        case '/vs':
+          classes = 'vs'
+          break
         default:
           classes = 'overview'
+      }
+
+      if (this.samples || this.vs) {
+        classes += ' with-submenu'
+      } else {
+        classes += ' without-submenu'
       }
 
       return classes
@@ -145,9 +154,14 @@ export default {
 </script>
 
 <style lang="sass">
-.content,
-.content > div.scroll
+.content.with-submenu,
+.content.with-submenu > div.scroll
   min-height: calc(100vh - 118px)
+
+.content.without-submenu,
+.content.without-submenu > div.scroll
+  min-height: calc(100vh - 80px)
+
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 20px
 
