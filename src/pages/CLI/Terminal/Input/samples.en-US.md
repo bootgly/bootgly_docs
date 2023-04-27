@@ -1,10 +1,10 @@
-# Terminal Input - Samples
+# Terminal Input - Examples
 
-A classe `Input` é responsável por prover métodos para lidar com a entrada de dados no Terminal. Ela é utilizada internamente pela classe `Terminal`, que por sua vez é acessada pela classe `CLI`.
+Here you can find examples of `Input` class usage.
 
-## Instância
+## Instance
 
-Para utilizar a classe `Input`, é necessário acessá-la através da classe `CLI`, como demonstrado abaixo:
+To use the `Input` class, you need to access it through the `CLI` class, as demonstrated in the example below:
 
 ```php
 use Bootgly\CLI;
@@ -12,21 +12,41 @@ use Bootgly\CLI;
 $Input = CLI::$Terminal->Input;
 ```
 
-## Configurações
+## Configuration
 
-...
+`configure()` examples:
 
-## Uso
+### Blocking, canonical and echo modes disabled
 
-### Lendo dados com reading()
+```php
+$Input->configure(blocking: false, canonical: false, echo: false);
+```
+
+When using Input in this way, you configure the Terminal to receive the data automatically as they are typed by the user. Each character is received and already sent to input without going through a buffer.
+
+Use a loop to process the data input (see example below).
+
+To reset all Terminal settings to the default, just call configure without passing any arguments:
+
+```php
+$Input->configure();
+```
+
+## Use
+
+### Reading data with reading()
 
 ```php
 reading(\Closure $CAPI, \Closure $SAPI)
 ```
 
-Exemplo de uma implementação do método `reading`:
+Example of a `reading` method implementation:
 
 ```php
+<?php
+namespace Bootgly\CLI;
+
+
 use Bootgly\CLI;
 
 
@@ -162,4 +182,7 @@ $Input->reading(
       $Output->write(data: "Closing Server...`\n\n");
    }
 );
+
+echo "Bye...\n";
+sleep(3);
 ```
