@@ -8,7 +8,7 @@ O ponto chave do Bootgly é integração como base para eficiência, performance
 
 Entendemos que um Framework é algo base, e como tal, não deve haver muitos pacotes de terceiros em sua composição porque quanto maior a dependência externa, menos integrado e frágil pode ficar o projeto como um todo, gerando alguns problemas:
 
-1. Notificações e correções de bugs e vulnerabilidades de pacotes de terceiros pode diminuir o tempo de reação de lançamentos de patchs;
+1. Notificações e correções de bugs e vulnerabilidades de pacotes de terceiros podem diminuir o tempo de reação de lançamentos de patchs;
 2. No médio ou longo prazo, as dependências externas podem atrasar a implementação de novos recursos e melhorias devido a limitações que podem existir na API do pacote de terceiro;
 3. A dependência de pacotes de terceiros aumenta a curva de aprendizado para iniciantes e para potenciais contribuintes do código fonte porque força o aprendizado de projetos externos com autores e estilos de código diferentes.
 

@@ -54,7 +54,6 @@ const routes = [
       }
     ]
   },
-
   {
     path: '/Bootgly/basic/directory_structure',
     component: () => import('layouts/DefaultLayout'),

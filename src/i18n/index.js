@@ -3,23 +3,7 @@ const langs = [
   'pt-BR'
 ]
 const i18n = {}
-
-const subpages = [
-  'overview',
-  'samples',
-  'versus'
-]
-const paths = [
-  // Bootgly
-  'Bootgly/about/what',
-  'Bootgly/about/why',
-
-  'Bootgly/basic/directory_structure',
-
-  // Bootgly CLI
-  'CLI/Terminal/Input',
-  'CLI/Terminal/Output'
-]
+import pages from 'pages'
 
 function filter (source) {
   const regex1 = /{/gm
@@ -33,8 +17,8 @@ function filter (source) {
 
   return source
 }
-function load (page, subpage, lang) {
-  const markdown = require(`pages/${page}/${subpage}.${lang}.md`)
+function load (path, subpage, lang) {
+  const markdown = require(`pages/${path}/${subpage}.${lang}.md`)
 
   const content = String(markdown.default)
 
@@ -43,29 +27,28 @@ function load (page, subpage, lang) {
   return source
 }
 
-// TODO dinamically using Vue Router Routes
-langs.forEach((lang) => {
+for (const lang of langs) {
   i18n[lang] = require(`./${lang}/index.hjson`)
 
   const _ = i18n[lang]._
 
-  subpages.forEach((subpage) => {
-    switch (subpage) {
-      case 'overview':
-        // Bootgly
-        _.Bootgly.about.what.overview.source = load(paths[0], subpage, lang)
-        _.Bootgly.about.why.overview.source = load(paths[1], subpage, lang)
-        _.Bootgly.basic.directory_structure.overview.source = load(paths[2], subpage, lang)
+  for (const [path, metadata] of Object.entries(pages)) {
+    const dirs = path.split('/')
+    const page = dirs.reduce((accumulator, current) => {
+      return accumulator[current]
+    }, _)
 
-        // Bootgly CLI
-        _.CLI.Terminal.Input.overview.source = load(paths[3], subpage, lang)
-        _.CLI.Terminal.Output.overview.source = load(paths[4], subpage, lang)
-        break
-      case 'samples':
-        // Bootgly CLI
-        _.CLI.Terminal.Input.samples.source = load(paths[3], subpage, lang)
+    // Overview
+    page.overview.source = load(path, 'overview', lang)
+    // Samples
+    if (metadata.subpages.samples === true) {
+      page.samples.source = load(path, 'samples', lang)
     }
-  })
-})
+    // Vs
+    if (metadata.subpages.vs === true) {
+      page.vs.source = load(path, 'vs', lang)
+    }
+  }
+}
 
 export default i18n
