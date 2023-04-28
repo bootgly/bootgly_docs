@@ -1,3 +1,4 @@
+/* eslint-disable quote-props */
 export default {
   // Bootgly
   'Bootgly/about/what': {

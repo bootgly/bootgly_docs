@@ -250,9 +250,7 @@
     support: 'Sponsor Bootgly',
     backToTop: 'Back to top'
   },
-  changelog: {
-
-  },
+  changelog: {},
   settings: {
     general: {
       _: 'General Settings',

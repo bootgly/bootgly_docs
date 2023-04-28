@@ -113,19 +113,21 @@ body.body--light
     b
       color: #1A496B
 
-    .q-tree__node--selected
-      background-color: var(--q-primary)
+    .q-tree__node-header
+      &.q-tree__node--selected
+        background-color: var(--q-primary)
 
-      b
-        color: white
+        b, i
+          color: white !important
 body.body--dark
   #anchor
     b
       color: #42B0FF
 
-    .q-tree__node--selected
-      background-color: var(--q-primary)
+    .q-tree__node-header
+      &.q-tree__node--selected
+        background-color: var(--q-primary)
 
-      b
-        color: white
+        b, i
+          color: white !important
 </style>

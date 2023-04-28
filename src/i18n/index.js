@@ -33,8 +33,17 @@ for (const lang of langs) {
   const _ = i18n[lang]._
 
   for (const [path, metadata] of Object.entries(pages)) {
+    if (metadata.page === false) {
+      continue
+    }
+
     const dirs = path.split('/')
     const page = dirs.reduce((accumulator, current) => {
+      // Create object if not exists
+      if (!accumulator[current]) {
+        accumulator[current] = {}
+      }
+
       return accumulator[current]
     }, _)
 

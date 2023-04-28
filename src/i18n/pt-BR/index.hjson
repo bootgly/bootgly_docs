@@ -249,9 +249,7 @@
     support: 'Patrocine o Bootgly',
     backToTop: 'Voltar para o topo'
   },
-  changelog: {
-
-  },
+  changelog: {},
   settings: {
     general: {
       _: 'Configurações gerais',
