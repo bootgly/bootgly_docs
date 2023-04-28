@@ -1,12 +1,14 @@
+# Estrutura de diretórios
+
 O Bootgly PHP Framework é muito organizado desde a sua fundação e oferece uma estrutura sólida para a construção de seus códigos.
 
 Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pasta raiz, que foi projetada cuidadosamente para garantir uma organização clara e eficiente em ordem crescente de dependências. Um dos motivos desse padrão é separar tudo o que é do Framework em si, de tudo o que foi produzido através dele.
 
-![Dir Structure](images/pages/Bootgly/Bootgly-directory_structure.png)
+![Dir Structure](images/pages/Bootgly/basic/directory_structure.png)
 
 ## Pasta global @
 
-A pasta {'@'} é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
+A pasta `@` é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
 
 É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados e outros arquivos gerais específicos do contexto local de onde essa pasta se encontra.
 
@@ -22,7 +24,7 @@ Essa separação ajuda a manter os arquivos de inicialização organizados em um
 
 ## Pastas 'Features'
 
-As pastas "Features" é destinada a todo conteúdo relacionado às **funcionalidades específicas do Framework** e elas são: `interfaces/`, `modules/`, `nodes/`.
+As pastas "Features" é destinada a todo conteúdo relacionado às **funcionalidades específicas do Framework** e elas são: `interfaces/`, `modules/`, `nodes/`, `platforms/` e `plugins/`.
 
 Nela contém dependências que são utilizadas diretamente pelo desenvolvedor que usa o Bootgly.
 

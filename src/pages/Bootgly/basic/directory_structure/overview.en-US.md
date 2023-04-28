@@ -1,8 +1,10 @@
+# Estrutura de diretórios
+
 The Bootgly PHP Framework has been very organized since its inception and offers a solid structure for building your code.
 
 A fundamental part of this structure is the arrangement of directories in its root folder, which has been carefully designed to ensure clear and efficient organization in increasing order of dependencies. One of the reasons for this pattern is to separate everything that belongs to the Framework itself from everything that was produced through it.
 
-![Dir Structure](images/pages/Bootgly/Bootgly-directory_structure.png)
+![Dir Structure](images/pages/Bootgly/basic/directory_structure.png)
 
 ## Global folder @
 
@@ -22,7 +24,7 @@ This separation helps keep initialization files organized in a central location,
 
 ## 'Features' folders
 
-The 'Features' folders are intended for all content related to **specific Framework functionalities** and they are: `interfaces/`, `modules/`, `nodes/`.
+The 'Features' folders are intended for all content related to **specific Framework functionalities** and they are: `interfaces/`, `modules/`, `nodes/`, `platforms/` and `plugins/`.
 
 It contains dependencies that are directly used by the developer who uses Bootgly.
 
