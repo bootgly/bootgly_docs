@@ -7,23 +7,23 @@ q-page-container#page
           no-caps flat
           v-bind:class="pActive('/overview')"
           :label="$t('submenu.overview')" icon="pageview"
-          @click="pRoute('/overview')"
+          @click="subroute('/overview')"
         )
         q-btn(v-if="samples"
           no-caps flat
           v-bind:class="pActive('/samples')"
           :label="$t('submenu.samples')" icon="play_circle_filled"
-          @click="pRoute('/samples')"
+          @click="subroute('/samples')"
         )
         q-btn(v-if="vs"
           no-caps flat
           v-bind:class="pActive('/vs')"
           :label="$t('submenu.versus')" icon="compare"
-          @click="pRoute('/vs')"
+          @click="subroute('/vs')"
         )
 
   q-page(style="min-height: calc(100vh - 118px)")
-    q-scroll-area.content(:class="main")
+    q-scroll-area.content(:class="main" ref="pageScrollArea")
       slot
       d-page-nav(v-if="!disableNav")
       q-scroll-observer(@scroll="scrolling" :debounce="300")
@@ -51,7 +51,9 @@ export default {
     DPageNav
   },
 
-  mixins: [Navigator],
+  mixins: [
+    Navigator
+  ],
 
   props: {
     disableNav: {
@@ -122,7 +124,7 @@ export default {
 
       return null
     },
-    pRoute (to) {
+    subroute (to) {
       const base = '/' + this.$store.state.page.base
       const relative = this.$store.state.page.relative
       let path = base
@@ -142,13 +144,34 @@ export default {
       this.$router.push(path)
 
       return true
+    },
+    resetScroll () {
+      const pageScrollArea = this.$refs.pageScrollArea
+
+      if (pageScrollArea !== null) {
+        this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 0)
+      }
     }
+    // @ Events
+
     /*
     backToTop () {
       this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 300)
       this.$store.commit('page/setAnchor', 0)
     }
     */
+  },
+  // @ Events
+  mounted () {
+    this.$router.beforeEach((to, from, next) => {
+      this.resetScroll()
+
+      this.$store.commit('page/resetAnchor')
+      this.$store.commit('page/resetAnchors')
+      this.$store.commit('page/resetNodes')
+
+      next()
+    })
   }
 }
 </script>

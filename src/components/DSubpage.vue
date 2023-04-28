@@ -28,48 +28,6 @@ export default {
 
       return hash >>> 0
     }
-  },
-
-  // @ Events
-  // Vue
-  created () {
-    // console.log('OverviewPage created!')
-  },
-
-  beforeMount () {
-    // console.log('OverviewPage beforeMount!')
-  },
-  mounted () {
-    // console.log('OverviewPage mounted!')
-  },
-
-  beforeUpdate () {
-    // console.log('OverviewPage beforeUpdate!')
-  },
-  updated () {
-    // console.log('OverviewPage updated!')
-  },
-
-  beforeUnmount () {
-    // console.log('OverviewPage beforeUnmount!')
-  },
-  unmounted () {
-    // console.log('OverviewPage unmounted!')
-  },
-
-  // Vue Router
-  beforeRouteEnter () {
-    // console.log('OverviewPage beforeRouteEnter!')
-  },
-  beforeRouteLeave () {
-    // console.log('OverviewPage beforeRouteLeave!')
-
-    this.$store.commit('page/resetAnchor')
-    this.$store.commit('page/resetAnchors')
-    this.$store.commit('page/resetNodes')
-  },
-  beforeRouteUpdate () {
-    // console.log('OverviewPage beforeRouteUpdate!')
   }
 }
 </script>
