@@ -166,9 +166,11 @@ export default {
     this.$router.beforeEach((to, from, next) => {
       this.resetScroll()
 
-      this.$store.commit('page/resetAnchor')
-      this.$store.commit('page/resetAnchors')
-      this.$store.commit('page/resetNodes')
+      if (to.hash === '') {
+        this.$store.commit('page/resetAnchor')
+        this.$store.commit('page/resetAnchors')
+        this.$store.commit('page/resetNodes')
+      }
 
       next()
     })
