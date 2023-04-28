@@ -105,17 +105,27 @@ export default {
   .q-tree-node-header
     margin: 0
     border-radius: 0
-  .q-tree__node--selected
-    background-color: peachpuff
+  b
+    font-size: 15px
 
 body.body--light
   #anchor
     b
       color: #1A496B
-      font-size: 15px
+
+    .q-tree__node--selected
+      background-color: var(--q-primary)
+
+      b
+        color: white
 body.body--dark
   #anchor
     b
-      color: #0094ff
-      font-size: 15px
+      color: #42B0FF
+
+    .q-tree__node--selected
+      background-color: var(--q-primary)
+
+      b
+        color: white
 </style>
