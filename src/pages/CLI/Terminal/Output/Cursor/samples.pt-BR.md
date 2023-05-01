@@ -2,9 +2,7 @@
 
 Segue abaixo exemplos de uso da classe Cursor do Terminal Output.
 
-## Exemplos
-
-### Movimentos básicos
+## Movimentos básicos
 
 Exemplo com `up()`:
 
@@ -32,7 +30,7 @@ Exemplo com `left()`:
 $Cursor->left(columns: 5);   // Move o cursor cinco colunas para a esquerda
 ```
 
-### Movimentos absolutos
+## Movimentos absolutos
 
 Exemplos:
 
@@ -42,7 +40,7 @@ $Cursor->moveTo(column: 10);          // Move o cursor para a coluna 10
 $Cursor->moveTo(line: 5, column: 10); // Move o cursor para a coordenada (5,10)
 ```
 
-### Memorizando posições
+## Memorizando posições
 
 Exemplos:
 
@@ -54,7 +52,7 @@ $Cursor->save();   // Salva a posição atual do cursor
 $Cursor->restore();   // Restaura a última posição salva do cursor
 ```
 
-### Relatando posição
+## Relatando posição
 
 Exemplo:
 
@@ -64,7 +62,7 @@ $Cursor->report(); // Emite a posição atual do cursor
 $Cursor->position; // Returna a posição atual do cursor. [0 => row, 1 => column]
 ```
 
-### Alterando aparência
+## Alterando aparência
 
 Exemplos:
 
@@ -75,7 +73,7 @@ $Cursor->shape('bar');       // Muda o formato do cursor para barrinha
 $Cursor->shape();            // Muda o formato do cursor para o padrão
 ```
 
-### Alterando a visibilidade
+## Alterando a visibilidade
 
 Exemplos:
 
