@@ -107,6 +107,9 @@
             overview: {
               source: ''
             },
+            samples: {
+              source: ''
+            },
           },
           Text: {
             _: 'Text',

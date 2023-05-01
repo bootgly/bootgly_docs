@@ -174,7 +174,7 @@ const routes = [
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'fas fa-i-cursor',
-      status: 'empty',
+      status: 'draft',
       menu: {
         subheader: 'CLI.Terminal.Output'
       },
@@ -182,7 +182,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        samples: true
       }
     },
     children: [
@@ -190,7 +190,14 @@ const routes = [
         path: 'overview',
         component: () => import('components/DSubpage'),
         meta: {
-          status: 'empty'
+          status: 'draft'
+        }
+      },
+      {
+        path: 'samples',
+        component: () => import('components/DSubpage'),
+        meta: {
+          status: 'draft'
         }
       }
     ]

@@ -20,5 +20,10 @@ export default {
   },
   'CLI/Terminal/Output': {
     subpages: {}
+  },
+  'CLI/Terminal/Output/Cursor': {
+    subpages: {
+      samples: true
+    }
   }
 }
