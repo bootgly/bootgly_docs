@@ -41,7 +41,7 @@ export default {
 
   data () {
     return {
-      base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/sources/'
+      base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/'
     }
   },
   computed: {
