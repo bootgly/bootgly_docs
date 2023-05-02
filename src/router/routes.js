@@ -221,7 +221,7 @@ const routes = [
         path: 'overview',
         component: () => import('components/DSubpage'),
         meta: {
-          status: 'empty'
+          status: 'draft'
         }
       },
       {

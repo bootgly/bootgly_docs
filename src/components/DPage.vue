@@ -145,7 +145,7 @@ export default {
 
       return true
     },
-    resetScroll () {
+    resetPageScroll () {
       const pageScrollArea = this.$refs.pageScrollArea
 
       if (pageScrollArea !== null) {
@@ -164,9 +164,9 @@ export default {
   // @ Events
   mounted () {
     this.$router.beforeEach((to, from, next) => {
-      this.resetScroll()
+      this.resetPageScroll()
 
-      if (to.hash === '') {
+      if (to.hash === '' && from.path !== to.path) {
         this.$store.commit('page/resetAnchor')
         this.$store.commit('page/resetAnchors')
         this.$store.commit('page/resetNodes')
