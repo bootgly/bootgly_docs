@@ -207,7 +207,7 @@ const routes = [
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'text_fields',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       layouts: {
         footer: true
@@ -222,6 +222,13 @@ const routes = [
         component: () => import('components/DSubpage'),
         meta: {
           status: 'empty'
+        }
+      },
+      {
+        path: 'samples',
+        component: () => import('components/DSubpage'),
+        meta: {
+          status: 'draft'
         }
       }
     ]

@@ -25,5 +25,10 @@ export default {
     subpages: {
       samples: true
     }
+  },
+  'CLI/Terminal/Output/Text': {
+    subpages: {
+      samples: true
+    }
   }
 }
