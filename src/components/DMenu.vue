@@ -156,7 +156,7 @@ export default {
 
           // @ Search in Page content
           if (this.matches[index] === false) {
-            // ? Search in Page texts (overview, samples?, changelog?)
+            // ? Search in Page texts (overview, showcases?, changelog?)
             // Current language
             this.matches[index] = this.searchTermInI18nTexts(route.path, term, locale)
             // en-US fallback
@@ -169,19 +169,31 @@ export default {
         this.matches = false
       }
     },
-    searchTermInI18nTexts (route, term, locale, subpage = 'overview') {
-      // TODO replace with global solution
-      const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
+    searchTermInI18nTexts (route, term, locale) {
+      // TODO use global constants
+      const subpages = [
+        'overview',
+        'samples',
+        'vs'
+      ]
 
-      // * Search in page texts (i18n)
       let source = null
-      if (this.$te(path, locale)) {
-        source = this.$tm(path, locale)
-      }
-
       let found = false
-      if (source.toLowerCase().includes(term)) {
-        found = true
+      for (const subpage of subpages) {
+        // TODO replace with global solution
+        const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
+
+        // * Search in page texts (i18n)
+        source = null
+        const msgExists = this.$te(path, locale)
+        if (msgExists) {
+          source = this.$tm(path, locale)
+        }
+
+        if (msgExists && source.toLowerCase().includes(term)) {
+          found = true
+          break
+        }
       }
 
       return found
