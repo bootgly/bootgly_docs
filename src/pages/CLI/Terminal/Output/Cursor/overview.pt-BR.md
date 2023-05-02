@@ -82,7 +82,7 @@ Emite a posição atual do cursor. É possível conhecer a posição atual do cu
 shape(? string $style = '@user') : self
 ```
 
-Altera o formato do cursor. Os estilos disponíveis são: "block" (bloco), "underline" (sublinhado) e "bar" (barrinha). É possível definir um formato personalizado através do parâmetro opcional.
+Altera o formato do cursor. Os estilos disponíveis são: "block" (bloco), "underline" (sublinhado) e "bar" (barrinha).
 
 ### Alterando a visibilidade
 
