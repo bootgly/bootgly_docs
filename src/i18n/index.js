@@ -49,9 +49,9 @@ for (const lang of langs) {
 
     // Overview
     page.overview.source = load(path, 'overview', lang)
-    // Samples
-    if (metadata.subpages.samples === true) {
-      page.samples.source = load(path, 'samples', lang)
+    // showcase
+    if (metadata.subpages.showcase === true) {
+      page.showcase.source = load(path, 'showcase', lang)
     }
     // Vs
     if (metadata.subpages.vs === true) {

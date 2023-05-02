@@ -78,7 +78,7 @@
             },
             source: ''
           },
-          samples: {
+          showcase: {
             _subsections_: {
               total: 0,
               done: 0
@@ -107,7 +107,7 @@
             overview: {
               source: ''
             },
-            samples: {
+            showcase: {
               source: ''
             },
           },
@@ -117,7 +117,7 @@
             overview: {
               source: ''
             },
-            samples: {
+            showcase: {
               source: ''
             },
           },
@@ -243,7 +243,7 @@
     references: 'Referências',
 
     overview: 'Apresentação',
-    samples: 'Exemplos',
+    showcase: 'Demonstração',
     versus: 'Vs',
 
     changelog: 'Changelog'

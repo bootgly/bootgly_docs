@@ -173,7 +173,7 @@ export default {
       // TODO use global constants
       const subpages = [
         'overview',
-        'samples',
+        'showcase',
         'vs'
       ]
 

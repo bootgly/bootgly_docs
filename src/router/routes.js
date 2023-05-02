@@ -17,7 +17,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -41,7 +41,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -67,7 +67,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -97,7 +97,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: true
+        showcase: true
       }
     },
     children: [
@@ -109,7 +109,7 @@ const routes = [
         }
       },
       {
-        path: 'samples',
+        path: 'showcase',
         component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
@@ -130,7 +130,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -156,7 +156,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -182,7 +182,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: true
+        showcase: true
       }
     },
     children: [
@@ -194,7 +194,7 @@ const routes = [
         }
       },
       {
-        path: 'samples',
+        path: 'showcase',
         component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
@@ -213,7 +213,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -225,7 +225,7 @@ const routes = [
         }
       },
       {
-        path: 'samples',
+        path: 'showcase',
         component: () => import('components/DSubpage'),
         meta: {
           status: 'draft'
@@ -246,7 +246,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -273,7 +273,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -297,7 +297,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -321,7 +321,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -345,7 +345,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -375,7 +375,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -399,7 +399,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [
@@ -425,7 +425,7 @@ const routes = [
         footer: true
       },
       subpages: {
-        samples: false
+        showcase: false
       }
     },
     children: [

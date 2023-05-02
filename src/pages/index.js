@@ -15,7 +15,7 @@ export default {
   // Bootgly CLI
   'CLI/Terminal/Input': {
     subpages: {
-      samples: true
+      showcase: true
     }
   },
   'CLI/Terminal/Output': {
@@ -23,12 +23,12 @@ export default {
   },
   'CLI/Terminal/Output/Cursor': {
     subpages: {
-      samples: true
+      showcase: true
     }
   },
   'CLI/Terminal/Output/Text': {
     subpages: {
-      samples: true
+      showcase: true
     }
   }
 }

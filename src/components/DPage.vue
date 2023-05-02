@@ -1,6 +1,6 @@
 <template lang="pug">
 q-page-container#page
-  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (samples || vs)")
+  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (showcase || vs)")
     q-toolbar-title.toolbar-container
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
         q-btn(v-if="overview"
@@ -9,11 +9,11 @@ q-page-container#page
           :label="$t('submenu.overview')" icon="pageview"
           @click="subroute('/overview')"
         )
-        q-btn(v-if="samples"
+        q-btn(v-if="showcase"
           no-caps flat
-          v-bind:class="pActive('/samples')"
-          :label="$t('submenu.samples')" icon="play_circle_filled"
-          @click="subroute('/samples')"
+          v-bind:class="pActive('/showcase')"
+          :label="$t('submenu.showcase')" icon="play_circle_filled"
+          @click="subroute('/showcase')"
         )
         q-btn(v-if="vs"
           no-caps flat
@@ -22,7 +22,7 @@ q-page-container#page
           @click="subroute('/vs')"
         )
 
-  q-page(style="min-height: calc(100vh - 118px)")
+  q-page(style="min-height: calc(100vh - 115px)")
     q-scroll-area.content(:class="main" ref="pageScrollArea")
       slot
       d-page-nav(v-if="!disableNav")
@@ -66,10 +66,10 @@ export default {
     overview () {
       return this.$route.matched[0].path
     },
-    samples () {
-      const samples = this.$route.matched[0].meta.subpages.samples
-      if (samples === true) {
-        return this.overview + '/samples'
+    showcase () {
+      const showcase = this.$route.matched[0].meta.subpages.showcase
+      if (showcase === true) {
+        return this.overview + '/showcase'
       }
       return false
     },
@@ -94,8 +94,8 @@ export default {
       let classes = ''
 
       switch (this.$store.state.page.relative) {
-        case '/samples':
-          classes = 'samples'
+        case '/showcase':
+          classes = 'showcase'
           break
         case '/vs':
           classes = 'vs'
@@ -104,7 +104,7 @@ export default {
           classes = 'overview'
       }
 
-      if (this.samples || this.vs) {
+      if (this.showcase || this.vs) {
         classes += ' with-submenu'
       } else {
         classes += ' without-submenu'
@@ -134,7 +134,7 @@ export default {
       }
 
       if (relative === to) {
-        if (to !== '/samples') {
+        if (to !== '/showcase') {
           return this.push('0')
         } else {
           return this.push('1')
@@ -181,7 +181,7 @@ export default {
 <style lang="sass">
 .content.with-submenu,
 .content.with-submenu > div.scroll
-  min-height: calc(100vh - 118px)
+  min-height: calc(100vh - 115px)
 
 .content.without-submenu,
 .content.without-submenu > div.scroll
@@ -196,6 +196,8 @@ export default {
   box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px rgba(0,0,0,0.14), 0 1px 6px rgba(0,0,0,0.12)
   overflow: visible
 
+  .on-left
+    margin-right: 5px
   .toolbar-container
     overflow: visible
   .q-btn-group

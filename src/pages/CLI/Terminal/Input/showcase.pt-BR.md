@@ -1,4 +1,4 @@
-# Terminal Input - Samples
+# Terminal Input - showcase
 
 Aqui você encontra exemplos de uso da classe `Input` do `Terminal`.
 
