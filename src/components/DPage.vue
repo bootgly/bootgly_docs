@@ -179,6 +179,9 @@ export default {
 </script>
 
 <style lang="sass">
+#page
+  padding-bottom: 30px !important
+
 .content.with-submenu,
 .content.with-submenu > div.scroll
   min-height: calc(100vh - 115px)
