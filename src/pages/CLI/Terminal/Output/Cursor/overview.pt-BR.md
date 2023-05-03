@@ -49,7 +49,7 @@ Move o cursor para a esquerda no número de colunas especificado.
 ### Movimentos absolutos
 
 ```php
-moveTo (? int $line = null, ? int $column = null): self
+moveTo (? int $line = null, ? int $column = null) : self
 ```
 
 Move o cursor para um posição absoluta na tela do terminal. Se apenas a linha for informada, o cursor se move apenas nesta linha. Se apenas a coluna for informada, o cursor se move apenas nesta coluna. Se ambas forem informadas, o cursor se move para a coordenada especificada.
@@ -57,13 +57,13 @@ Move o cursor para um posição absoluta na tela do terminal. Se apenas a linha 
 ### Memorizando posições
 
 ```php
-save() : self
+save () : self
 ```
 
 Salva a posição atual do cursor para poder ser recuperada posteriormente através do método `restore()`.
 
 ```php
-restore() : self
+restore () : self
 ```
 
 Restaura a posição do cursor previamente salva através do método `save()`.
@@ -71,7 +71,7 @@ Restaura a posição do cursor previamente salva através do método `save()`.
 ### Relatando posição
 
 ```php
-report() : self
+report () : self
 ```
 
 Emite a posição atual do cursor. É possível conhecer a posição atual do cursor através da propriedade `position`.
@@ -79,7 +79,7 @@ Emite a posição atual do cursor. É possível conhecer a posição atual do cu
 ### Alterando aparência
 
 ```php
-shape(? string $style = '@user') : self
+shape (? string $style = '@user') : self
 ```
 
 Altera o formato do cursor. Os estilos disponíveis são: "block" (bloco), "underline" (sublinhado) e "bar" (barrinha).
@@ -87,19 +87,19 @@ Altera o formato do cursor. Os estilos disponíveis são: "block" (bloco), "unde
 ### Alterando a visibilidade
 
 ```php
-blink(bool $status) : self
+blink (bool $status) : self
 ```
 
 Ativa ou desativa o movimento intermitente do cursor.
 
 ```php
-show() : self
+show () : self
 ```
 
 Torna o cursor visível.
 
 ```php
-hide() : self
+hide () : self
 ```
 
 Torna o cursor invisível.

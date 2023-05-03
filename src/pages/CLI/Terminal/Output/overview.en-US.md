@@ -1,6 +1,6 @@
 # Output Class
 
-The `Output` class is responsible for handling data output to the terminal. Through it, we can write colored and formatted texts, position the cursor on a certain line and column, expand or contract lines in the terminal, among other functionalities.
+The `Output` class is responsible for handling data output to the Terminal. Through it, we can write colored and formatted texts, position the cursor on a certain line and column, expand or contract lines in the Terminal, among other functionalities.
 
 ## Instance
 
@@ -16,13 +16,18 @@ $Output = CLI::$Terminal->Output;
 
 Here are the main properties of the `Output` class.
 
-### wait
+### wait property
 
-Indicates the time to wait before writing the lines to the terminal. By default, the value is `-1` (no delay). If you want to add a delay to each write, you can change it to another value in microseconds.
+Indicates the time to wait after each write with the `write()` method. By default, the value is `-1` (no delay). If you want to add a delay, you can change it to another value in microseconds.
 
-### waiting
+```php
+// Sets the wait time between each write with write() to 1000 microseconds
+$Output->wait = 1000;
+```
 
-Indicates the time to wait between each character written to the Terminal when using the `reading` method. By default, the value is `30000` (30 milliseconds).
+### waiting property
+
+Indicates the time to wait between each character written to the Terminal Output when using the `reading()` method. By default, the value is `30000` (30 milliseconds).
 
 ## Usage
 
@@ -34,7 +39,7 @@ Here are the main methods of the `Output` class.
 write (string $data, int $times = 1) : self
 ```
 
-This method writes the text provided in the first parameter "$data" to the terminal. If the second parameter "$times" is defined, it will repeat the writing "n" times.
+This method writes the text provided in the first parameter "$data" to the Terminal. If the second parameter "$times" is defined, it will repeat the writing "n" times.
 
 ### Writing to output
 
@@ -50,7 +55,7 @@ This method writes one character at a time from the text provided in the "$data"
 append (string $data) : self
 ```
 
-This method is similar to `write`, but adds a line break after writing.
+This method is similar to 'write', but adds a line break at the end of the written string.
 
 ### Clear output
 
@@ -58,7 +63,7 @@ This method is similar to `write`, but adds a line break after writing.
 clear() : true
 ```
 
-This method clears the text from the entire terminal output.
+This method clears the text from the entire Terminal output.
 
 ### Escape to output
 
@@ -66,7 +71,7 @@ This method clears the text from the entire terminal output.
 escape (string $data) : self
 ```
 
-This method precedes the data passed as an argument with the ANSI escape code.
+This method precedes the data passed as an argument with the ANSI escape code `\e[`.
 
 ### Metaescape
 
@@ -74,7 +79,7 @@ This method precedes the data passed as an argument with the ANSI escape code.
 metaescape (string $data) : self
 ```
 
-This method uses "escapeshellcmd()" on the text provided in the "$data" parameter.
+This method uses `escapeshellcmd()` on the text provided in the "$data" parameter.
 
 ### Metaencode
 
@@ -82,7 +87,7 @@ This method uses "escapeshellcmd()" on the text provided in the "$data" paramete
 metaencode (string $data) : self
 ```
 
-This method transforms the passed value into an already encoded JSON, sending the JSON string to the terminal output.
+This method transforms the passed value into an already encoded JSON, sending the JSON string to the Terminal output.
 
 ### Render
 
@@ -90,10 +95,10 @@ This method transforms the passed value into an already encoded JSON, sending th
 render (string $data) : self
 ```
 
-This method executes the static "render()" method of the `Escaped` class and sends the result to the terminal. It is used with template tokens for escaped codes.
+This method executes the static `render()` method of the `Escaped` class and sends the result to the Terminal. It is used with template tokens for escaped codes.
 
 Example:
 
 ```php
-$Output->render('@#green: This text will be presented by the terminal in green color.');
+$Output->render('@#green: This text will be presented by the Terminal in green color.');
 ```

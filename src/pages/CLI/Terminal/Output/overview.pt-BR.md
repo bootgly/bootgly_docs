@@ -1,6 +1,6 @@
 # Classe Output
 
-A classe `Output` é responsável por lidar com a saída de dados no terminal. Através dela, podemos escrever textos coloridos e formatados, posicionar o cursor em determinada linha e coluna, expandir ou contrair linhas no terminal, dentre outras funcionalidades.
+A classe `Output` é responsável por lidar com a saída de dados no Terminal. Através dela, podemos escrever textos coloridos e formatados, posicionar o cursor em determinada linha e coluna, expandir ou contrair linhas no Terminal, dentre outras funcionalidades.
 
 ## Instância
 
@@ -16,11 +16,16 @@ $Output = CLI::$Terminal->Output;
 
 Aqui estão as principais propriedades da classe `Output`.
 
-### wait
+### Propriedade wait
 
-Indica o tempo a ser aguardado antes de escrever os linhas no terminal. Por padrão, o valor é `-1` (sem delay). Caso queira adicionar um delay à cada escrita, pode alterá-lo para outro valor em microssegundos.
+Indica o tempo a ser aguardado após cada escrita com o método `write()`. Por padrão, o valor é `-1` (sem delay). Caso queira adicionar um delay, pode alterá-lo para outro valor em microssegundos.
 
-### waiting
+```php
+// Define o tempo de espera entre cada escrita com write() para 1000 microsegundos
+$Output->wait = 1000;
+```
+
+### Propriedade waiting
 
 Indica o tempo a ser aguardado entre cada caractere escrito no Terminal quando se utiliza o método `reading`. Por padrão, o valor é `30000` (30 milissegundos).
 
@@ -34,7 +39,7 @@ Aqui estão os principais métodos da classe `Output`.
 write (string $data, int $times = 1) : self
 ```
 
-Este método escreve no terminal o texto fornecido no primeiro parâmetro "$data". Se o segundo parâmetro "$times" for definido, ele repetirá a escrita "n" vezes.
+Este método escreve no Terminal o texto fornecido no primeiro parâmetro "$data". Se o segundo parâmetro "$times" for definido, ele repetirá a escrita "n" vezes.
 
 ### Escrevendo na saída
 
@@ -50,7 +55,7 @@ Este método escreve um caractere de cada vez do texto fornecido no parâmetro "
 append (string $data) : self
 ```
 
-Este método é semelhante ao `write`, mas adiciona uma quebra de linha após a escrita.
+Este método é semelhante ao `write`, mas adiciona uma quebra de linha no final da string escrita.
 
 ### Limpar saída
 
@@ -58,7 +63,7 @@ Este método é semelhante ao `write`, mas adiciona uma quebra de linha após a 
 clear() : true
 ```
 
-Este método limpa o texto de toda a saída do terminal.
+Este método limpa o texto de toda a saída do Terminal.
 
 ### Escapar na saída
 
@@ -66,7 +71,7 @@ Este método limpa o texto de toda a saída do terminal.
 escape (string $data) : self
 ```
 
-Este método precede o dado passado por argumento com o código de escape ANSI.
+Este método precede o dado passado por argumento com o código de escape ANSI `\e[`.
 
 ### Metaescapar
 
@@ -74,7 +79,7 @@ Este método precede o dado passado por argumento com o código de escape ANSI.
 metaescape (string $data) : self
 ```
 
-Este método utiliza o "escapeshellcmd()" no texto fornecido no parâmetro "$data".
+Este método utiliza o `escapeshellcmd()` no texto fornecido no parâmetro "$data".
 
 ### Metaencodar
 
@@ -82,7 +87,7 @@ Este método utiliza o "escapeshellcmd()" no texto fornecido no parâmetro "$dat
 metaencode (string $data) : self
 ```
 
-Este método transforma o valor passado em um JSON já codificado, enviando a string JSON para a saída do terminal.
+Este método transforma o valor passado em um JSON já codificado, enviando a string JSON para a saída do Terminal.
 
 ### Renderizar
 
@@ -90,11 +95,11 @@ Este método transforma o valor passado em um JSON já codificado, enviando a st
 render (string $data) : self
 ```
 
-Este método executa o método estático "render()" da classe `Escaped` e envia para o terminal o resultado.
+Este método executa o método estático `render()` da classe `Escaped` e envia para o Terminal o resultado.
 Ele é utilizado com os tokens de template para códigos escapados.
 
 Exemplo:
 
 ```php
-$Output->render('@#green: Esse texto será apresentado pelo terminal na cor verde.');
+$Output->render('@#green: Esse texto será apresentado pelo Terminal na cor verde.');
 ```

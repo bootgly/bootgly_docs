@@ -69,9 +69,3 @@ O callback `CAPI` deve chamar a função de leitura `read()` assim que houver en
 O callback `SAPI` deve ler o que o cliente envia e processar esses dados exibindo o conteúdo na tela ou não.
 
 Este método cria uma interface básica local Client <-> Servidor, mas não possui implementação para roteamento de recursos, por isso no Bootgly ele é considerado uma interface somente, e não um node.
-
-### O dado $stream
-
-Representa o recurso stream do PHP que é utilizado pelo `Input` para gerenciar a entrada de dados do usuário.
-
-Esta propriedade é utilizada nos argumentos de construção da classe Input, mas você não precisa se preocupar por passar o recurso na construção da classe porque por padrão é passado o recurso `STDIN` que é a entrada padrão do terminal no modo CLI.
