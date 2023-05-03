@@ -34,3 +34,6 @@ yarn.lock
 *.ntvs*
 *.njsproj
 *.sln
+
+# Non-public markdown files
+_*.md
