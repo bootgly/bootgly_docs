@@ -30,5 +30,10 @@ export default {
     subpages: {
       showcase: true
     }
+  },
+  'CLI/Terminal/Output/Viewport': {
+    subpages: {
+      showcase: true
+    }
   }
 }

@@ -1,4 +1,4 @@
-# Classe Output\Text
+# Terminal Output\Text
 
 Output\Text é uma classe que permite a formatação de texto na saída padrão (`STDOUT`) da linha de comando, utilizando cores, estilos e modificando o conteúdo exibido. Esta classe é utilizada internamente pela classe Output para formatar as mensagens antes de serem enviadas ao Terminal.
 
@@ -15,15 +15,20 @@ $Text = $Output->Text;
 
 ## Configurações
 
-### Colors
+Esta classe não possui configurações adicionais.
+
+### Conjunto de cores
 
 Um objeto do tipo `Text\Colors` armazena qual tipo de cor será usado e fornece acesso aos métodos `set` e `get` para alterá-lo ou acessá-lo. É possível definir a cor usando os valores predefinidos `DEFAULT_COLORS` ou `BRIGHT_COLORS`.
 
 ```php
-// Definindo bright colors
+// Definindo configurações para usar cores brilhantes na saída do Terminal
 $Text->Colors::Bright->set();
 
-// Obtendo o valor atual de Colors
+// Definindo configurações para usar cores padrão na saída do Terminal
+$Text->Colors::Default->set();
+
+// Obtendo o valor atual das definições do conjunto de cores
 $colors = $Text->Colors->get();
 ```
 
@@ -35,12 +40,12 @@ $colors = $Text->Colors->get();
 colorize ([ int|string $foreground = 'default' [, int|string $background = 'default' ]]) : Output
 ```
 
-Este método define a cor do próximo texto a ser exibido.
-Aceita as seguintes cores são aceitas por parâmetro:
-`black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white` e `default` (Reseta para cor padrão do Terminal do usuário).
-Além disso, você pode definir cores customizadas passando um número entre 0 e 255.
+Este método define a cor dos próximos textos a serem exibidos na saída do Terminal.
+As seguintes cores são aceitas por parâmetro:
+`black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white` e `default` (reseta para cor padrão do Terminal).
+Além disso, você pode definir cores customizadas passando um número entre `0` e `255`.
 
-Os números de 0 a 255 referem-se aos códigos de cores ANSI, que são usados para especificar cores no terminal. Esses códigos de cores são uma convenção padrão e são suportados por muitos terminais diferentes.
+Os números de `0` a `255` referem-se aos códigos de cores ANSI, que são usados para especificar cores no terminal. Esses códigos de cores são uma convenção padrão e são suportados por muitos terminais diferentes.
 
 Os primeiros 16 códigos de cores são predefinidos e têm significados específicos. Por exemplo, o código de cor `0` é preto, o código de cor `1` é vermelho e o código de cor `2` é verde. Os códigos de cores restantes, de `16` a `255`, são personalizáveis e podem ser usados para criar cores personalizadas.
 
@@ -49,6 +54,8 @@ Cada código de cor de `16` a `255` é composto por uma combinação de três va
 Exemplo:
 
 ```php
+$Text->Colors::Bright->set();
+
 // Definindo a cor do texto para vermelho brilhante com fundo amarelo claro
 $Text->colorize(foreground: 'red', background: 'yellow');
 ```
@@ -107,7 +114,7 @@ Exemplo:
 $Text->delete(lines: 2);
 ```
 
-### Apagando Caracteres
+### Apagando caracteres
 
 ```php
 erase (int $characters = 1) : Output
@@ -122,7 +129,7 @@ Exemplo:
 $Text->erase(characters: 10);
 ```
 
-### Inserindo Linhas e Espaços
+### Inserindo linhas e espaços
 
 ```php
 insert (? int $lines = null, ? int $spaces = null) : Output
@@ -140,7 +147,7 @@ Exemplo:
 $Text->insert(lines: 3, spaces: 5);
 ```
 
-### Limpando o Display
+### Limpando o display
 
 ```php
 clear ([ bool $up = false [, bool $down = false ]]) : Output
@@ -165,7 +172,7 @@ $Text->clear(up: true, down: true);
 $Text->clear();
 ```
 
-### Removendo Caracteres
+### Removendo caracteres
 
 ```php
 trim ([ bool $left = false [, bool $right = false ]]) : Output

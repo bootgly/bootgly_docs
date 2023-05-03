@@ -127,6 +127,9 @@
             overview: {
               source: ''
             },
+            showcase: {
+              source: ''
+            },
           },
         },
         components: {

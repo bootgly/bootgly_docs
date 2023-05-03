@@ -238,7 +238,7 @@ const routes = [
     component: () => import('layouts/DefaultLayout'),
     meta: {
       icon: 'wysiwyg',
-      status: 'empty',
+      status: 'draft',
       menu: {
         separator: true
       },
@@ -254,7 +254,14 @@ const routes = [
         path: 'overview',
         component: () => import('components/DSubpage'),
         meta: {
-          status: 'empty'
+          status: 'draft'
+        }
+      },
+      {
+        path: 'showcase',
+        component: () => import('components/DSubpage'),
+        meta: {
+          status: 'draft'
         }
       }
     ]
