@@ -41,13 +41,37 @@ for (const lang of langs) {
     const _ = dirs.reduce((accumulator, current) => {
       let node = accumulator[current]
 
-      // Create object if not exists
-      if (!node) {
-        node = {}
+      // Set object if not exists
+      if (node === undefined) {
+        accumulator[current] = {}
+
+        node = accumulator[current]
       }
 
-      if (!node._) {
+      // Set title if not exists
+      if (node._ === undefined) {
         node._ = data[lang]?.title || data['*']?.title
+      }
+
+      if (config === null) {
+        return node
+      }
+
+      // Set subpages sources if not exists
+      if (node.overview === undefined) {
+        node.overview = {
+          source: ''
+        }
+      }
+      if (config.subpages.showcase && node.showcase === undefined) {
+        node.showcase = {
+          source: ''
+        }
+      }
+      if (config.subpages.vs && node.vs === undefined) {
+        node.vs = {
+          source: ''
+        }
       }
 
       return node

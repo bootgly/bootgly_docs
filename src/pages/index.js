@@ -1,7 +1,7 @@
 export default [
   // Bootgly
   {
-    path: '/Bootgly/',
+    path: '/Bootgly',
     config: null,
     data: {
       '*': {
@@ -139,6 +139,25 @@ export default [
     data: {
       '*': {
         title: 'Interfaces'
+      }
+    }
+  },
+  {
+    path: '/Bootgly/concepts/nodes',
+    config: {
+      icon: 'device_hub',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Nodes'
       }
     }
   },
