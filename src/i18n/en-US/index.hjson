@@ -60,6 +60,19 @@
             source: ''
           }
         }
+      },
+
+      concepts: {
+        _: 'Concepts',
+
+        interfaces: {
+          _: 'Interfaces',
+
+          overview: {
+            _subsections_: {},
+            source: ''
+          }
+        }
       }
     },
     CLI: {

@@ -30,32 +30,46 @@ function load (path, subpage, lang) {
 for (const lang of langs) {
   i18n[lang] = require(`./${lang}/index.hjson`)
 
-  const _ = i18n[lang]._
+  for (const page of pages) {
+    const path = page.path.slice(1)
+    const config = page.config
+    // const data = page.data
 
-  for (const [path, metadata] of Object.entries(pages)) {
-    if (metadata.page === false) {
+    // ---
+
+    const dirs = path.split('/')
+    const _ = dirs.reduce((accumulator, current) => {
+      let node = accumulator[current]
+
+      // Create object if not exists
+      if (!node) {
+        node = {}
+      }
+
+      /*
+      if (!node._) {
+        node._ = data?.title
+      }
+      */
+
+      return node
+    }, i18n[lang]._)
+
+    // ---
+
+    if (config === null || config.status === 'empty') {
       continue
     }
 
-    const dirs = path.split('/')
-    const page = dirs.reduce((accumulator, current) => {
-      // Create object if not exists
-      if (!accumulator[current]) {
-        accumulator[current] = {}
-      }
-
-      return accumulator[current]
-    }, _)
-
     // Overview
-    page.overview.source = load(path, 'overview', lang)
+    _.overview.source = load(path, 'overview', lang)
     // showcase
-    if (metadata.subpages.showcase === true) {
-      page.showcase.source = load(path, 'showcase', lang)
+    if (config.subpages.showcase === true) {
+      _.showcase.source = load(path, 'showcase', lang)
     }
     // Vs
-    if (metadata.subpages.vs === true) {
-      page.vs.source = load(path, 'vs', lang)
+    if (config.subpages.vs === true) {
+      _.vs.source = load(path, 'vs', lang)
     }
   }
 }

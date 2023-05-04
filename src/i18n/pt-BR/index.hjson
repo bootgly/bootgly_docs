@@ -60,8 +60,22 @@
             source: ''
           }
         }
-      }
+      },
+
+      concepts: {
+        _: 'Conceitos',
+
+        interfaces: {
+          _: 'Interfaces',
+
+          overview: {
+            _subsections_: {},
+            source: ''
+          }
+        }
+      },
     },
+
     CLI: {
       _: 'Bootgly CLI',
 
