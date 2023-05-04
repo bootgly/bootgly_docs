@@ -2,8 +2,7 @@
 import pages from 'pages'
 
 const pagesRoutes = []
-for (const page of pages) {
-  const path = page.path
+for (const [path, page] of Object.entries(pages)) {
   const config = page.config
 
   if (config === null) {

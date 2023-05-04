@@ -1,7 +1,6 @@
-export default [
+export default {
   // Bootgly
-  {
-    path: '/Bootgly',
+  '/Bootgly': {
     config: null,
     data: {
       '*': {
@@ -9,8 +8,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Bootgly/about',
+  '/Bootgly/about': {
     config: null,
     data: {
       'en-US': {
@@ -21,8 +19,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Bootgly/about/what',
+  '/Bootgly/about/what': {
     config: {
       icon: 'play_arrow',
       status: 'draft',
@@ -49,8 +46,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Bootgly/about/why',
+  '/Bootgly/about/why': {
     config: {
       icon: 'question_mark',
       status: 'draft',
@@ -72,8 +68,7 @@ export default [
     }
   },
 
-  {
-    path: '/Bootgly/basic',
+  '/Bootgly/basic': {
     config: null,
     data: {
       'en-US': {
@@ -84,8 +79,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Bootgly/basic/directory_structure',
+  '/Bootgly/basic/directory_structure': {
     config: {
       icon: 'account_tree',
       status: 'draft',
@@ -109,8 +103,7 @@ export default [
     }
   },
 
-  {
-    path: '/Bootgly/concepts',
+  '/Bootgly/concepts': {
     config: null,
     data: {
       'en-US': {
@@ -121,8 +114,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Bootgly/concepts/interfaces',
+  '/Bootgly/concepts/interfaces': {
     config: {
       icon: 'link',
       status: 'empty',
@@ -142,8 +134,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Bootgly/concepts/nodes',
+  '/Bootgly/concepts/nodes': {
     config: {
       icon: 'device_hub',
       status: 'empty',
@@ -162,8 +153,7 @@ export default [
     }
   },
   // CLI
-  {
-    path: '/CLI',
+  '/CLI': {
     config: null,
     data: {
       '*': {
@@ -171,8 +161,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal',
+  '/CLI/Terminal': {
     config: null,
     data: {
       '*': {
@@ -180,8 +169,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/Input',
+  '/CLI/Terminal/Input': {
     config: {
       icon: 'input',
       status: 'draft',
@@ -204,8 +192,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/Output',
+  '/CLI/Terminal/Output': {
     config: {
       icon: 'output',
       status: 'draft',
@@ -225,8 +212,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/Input/Mouse',
+  '/CLI/Terminal/Input/Mouse': {
     config: {
       icon: 'mouse',
       status: 'empty',
@@ -246,8 +232,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/Output/Cursor',
+  '/CLI/Terminal/Output/Cursor': {
     config: {
       icon: 'fas fa-i-cursor',
       status: 'draft',
@@ -267,8 +252,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/Output/Text',
+  '/CLI/Terminal/Output/Text': {
     config: {
       icon: 'text_fields',
       status: 'draft',
@@ -286,8 +270,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/Output/Viewport',
+  '/CLI/Terminal/Output/Viewport': {
     config: {
       icon: 'wysiwyg',
       status: 'draft',
@@ -308,17 +291,7 @@ export default [
     }
   },
 
-  {
-    path: '/CLI/Terminal',
-    config: null,
-    data: {
-      '*': {
-        title: 'Terminal'
-      }
-    }
-  },
-  {
-    path: '/CLI/Terminal/components',
+  '/CLI/Terminal/components': {
     config: null,
     data: {
       '*': {
@@ -326,8 +299,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/components/Alert',
+  '/CLI/Terminal/components/Alert': {
     config: {
       icon: 'notification_important',
       status: 'draft',
@@ -347,8 +319,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/components/Menu',
+  '/CLI/Terminal/components/Menu': {
     config: {
       icon: 'menu',
       status: 'draft',
@@ -366,11 +337,10 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/components/Progress',
+  '/CLI/Terminal/components/Progress': {
     config: {
       icon: 'downloading',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       layouts: {
         footer: true
@@ -385,8 +355,7 @@ export default [
       }
     }
   },
-  {
-    path: '/CLI/Terminal/components/Table',
+  '/CLI/Terminal/components/Table': {
     config: {
       icon: 'table_chart',
       status: 'empty',
@@ -405,8 +374,7 @@ export default [
     }
   },
   // Web
-  {
-    path: '/Web',
+  '/Web': {
     config: null,
     data: {
       '*': {
@@ -414,8 +382,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Web/interfaces',
+  '/Web/interfaces': {
     config: null,
     data: {
       '*': {
@@ -423,8 +390,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Web/interfaces/TCP_Client',
+  '/Web/interfaces/TCP_Client': {
     config: {
       icon: 'desktop_windows',
       status: 'empty',
@@ -448,8 +414,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Web/interfaces/TCP_Server',
+  '/Web/interfaces/TCP_Server': {
     config: {
       icon: 'dns',
       status: 'empty',
@@ -467,8 +432,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Web/nodes',
+  '/Web/nodes': {
     config: null,
     data: {
       '*': {
@@ -476,8 +440,7 @@ export default [
       }
     }
   },
-  {
-    path: '/Web/nodes/HTTP_Server',
+  '/Web/nodes/HTTP_Server': {
     config: {
       icon: 'dns', // device_hub?
       status: 'empty',
@@ -497,4 +460,4 @@ export default [
       }
     }
   }
-]
+}

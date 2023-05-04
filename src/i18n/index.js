@@ -30,8 +30,8 @@ function load (path, subpage, lang) {
 for (const lang of langs) {
   i18n[lang] = require(`./${lang}/index.hjson`)
 
-  for (const page of pages) {
-    const path = page.path.slice(1)
+  for (const [key, page] of Object.entries(pages)) {
+    const path = key.slice(1)
     const config = page.config
     const data = page.data
 
