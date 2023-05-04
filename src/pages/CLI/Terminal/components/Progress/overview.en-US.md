@@ -80,14 +80,21 @@ Each token must start with the character `@` and end with the character `;`.
 
 Below is what each token represents:
 
-- `@described;`: last description called by the `describe()` method.
-- `@current;`: current amount of the ongoing operation.
-- `@total;`: total amount of the ongoing operation.
-- `@percent;`: current percentage achieved of the ongoing operation.
-- `@elapesed;`: elapsed time of the ongoing operation.
-- `@eta;`: is an acronym for "estimated time of arrival" which is the estimated time to complete the operation.
-- `@rate;`: data rate of the operation per second.
-- `@bar;`: Progress component's Bar subcomponent.
+`@described;`: last description called by the `describe()` method.
+
+`@current;`: current amount of the ongoing operation.
+
+`@total;`: total amount of the ongoing operation.
+
+`@percent;`: current percentage achieved of the ongoing operation.
+
+`@elapesed;`: elapsed time of the ongoing operation.
+
+`@eta;`: is an acronym for "estimated time of arrival" which is the estimated time to complete the operation.
+
+`@rate;`: data rate of the operation per second.
+
+`@bar;`: Progress component's Bar subcomponent.
 
 ## Usage
 

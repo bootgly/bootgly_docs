@@ -145,9 +145,14 @@ export default {
     // Language
     setLanguage (language) {
       this.$q.localStorage.set('setting.language', language)
+
+      this.$store.commit('page/resetAnchor')
+      this.$store.commit('page/resetAnchors')
       this.$store.commit('page/resetNodes')
-      this.$store.commit('page/resetNodesExpanded')
+
       this.$i18n.locale = language
+
+      this.$router.go()
     },
 
     // Background
