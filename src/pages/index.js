@@ -346,7 +346,7 @@ export default {
         footer: true
       },
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {

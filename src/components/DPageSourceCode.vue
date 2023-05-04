@@ -248,7 +248,7 @@ export default {
       .token.tag,
       .token.symbol,
       .token.deleted
-        color: #905
+        color: #FF66BA
 
       .token.selector,
       .token.attr-name,
