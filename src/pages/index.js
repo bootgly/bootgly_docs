@@ -4,7 +4,21 @@ export default [
     path: '/Bootgly/',
     config: null,
     data: {
-      title: 'Bootgly'
+      '*': {
+        title: 'Bootgly'
+      }
+    }
+  },
+  {
+    path: '/Bootgly/about',
+    config: null,
+    data: {
+      'en-US': {
+        title: 'About'
+      },
+      'pt-BR': {
+        title: 'Sobre'
+      }
     }
   },
   {
@@ -25,6 +39,14 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      'en-US': {
+        title: 'What is Bootgly?'
+      },
+      'pt-BR': {
+        title: 'O que é Bootgly?'
+      }
     }
   },
   {
@@ -38,6 +60,27 @@ export default [
       },
       subpages: {
         showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Why Bootgly?'
+      },
+      'pt-BR': {
+        title: 'Por quê Bootgly?'
+      }
+    }
+  },
+
+  {
+    path: '/Bootgly/basic',
+    config: null,
+    data: {
+      'en-US': {
+        title: 'Basic'
+      },
+      'pt-BR': {
+        title: 'Básico'
       }
     }
   },
@@ -55,6 +98,27 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      'en-US': {
+        title: 'Directory Structure'
+      },
+      'pt-BR': {
+        title: 'Estrutura de diretórios'
+      }
+    }
+  },
+
+  {
+    path: '/Bootgly/concepts',
+    config: null,
+    data: {
+      'en-US': {
+        title: 'Concepts'
+      },
+      'pt-BR': {
+        title: 'Conceitos'
+      }
     }
   },
   {
@@ -71,9 +135,32 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'Interfaces'
+      }
     }
   },
   // CLI
+  {
+    path: '/CLI',
+    config: null,
+    data: {
+      '*': {
+        title: 'Bootgly CLI'
+      }
+    }
+  },
+  {
+    path: '/CLI/Terminal',
+    config: null,
+    data: {
+      '*': {
+        title: 'Terminal'
+      }
+    }
+  },
   {
     path: '/CLI/Terminal/Input',
     config: {
@@ -91,6 +178,11 @@ export default [
       subpages: {
         showcase: true
       }
+    },
+    data: {
+      '*': {
+        title: 'Terminal Input'
+      }
     }
   },
   {
@@ -106,6 +198,11 @@ export default [
       },
       subpages: {
         showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Terminal Output'
       }
     }
   },
@@ -123,6 +220,11 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'Mouse'
+      }
     }
   },
   {
@@ -139,6 +241,11 @@ export default [
       subpages: {
         showcase: true
       }
+    },
+    data: {
+      '*': {
+        title: 'Cursor'
+      }
     }
   },
   {
@@ -152,6 +259,11 @@ export default [
       },
       subpages: {
         showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Text'
       }
     }
   },
@@ -169,6 +281,30 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'Viewport'
+      }
+    }
+  },
+
+  {
+    path: '/CLI/Terminal',
+    config: null,
+    data: {
+      '*': {
+        title: 'Terminal'
+      }
+    }
+  },
+  {
+    path: '/CLI/Terminal/components',
+    config: null,
+    data: {
+      '*': {
+        title: 'Terminal components'
+      }
     }
   },
   {
@@ -185,6 +321,11 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'Alert'
+      }
     }
   },
   {
@@ -198,6 +339,11 @@ export default [
       },
       subpages: {
         showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Menu'
       }
     }
   },
@@ -213,6 +359,11 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'Progress'
+      }
     }
   },
   {
@@ -227,9 +378,32 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'Table'
+      }
     }
   },
   // Web
+  {
+    path: '/Web',
+    config: null,
+    data: {
+      '*': {
+        title: 'Bootgly Web'
+      }
+    }
+  },
+  {
+    path: '/Web/interfaces',
+    config: null,
+    data: {
+      '*': {
+        title: 'interfaces'
+      }
+    }
+  },
   {
     path: '/Web/interfaces/TCP_Client',
     config: {
@@ -248,6 +422,11 @@ export default [
       subpages: {
         showcase: false
       }
+    },
+    data: {
+      '*': {
+        title: 'TCP Client'
+      }
     }
   },
   {
@@ -261,6 +440,20 @@ export default [
       },
       subpages: {
         showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Server'
+      }
+    }
+  },
+  {
+    path: '/Web/nodes',
+    config: null,
+    data: {
+      '*': {
+        title: 'nodes'
       }
     }
   },
@@ -277,6 +470,11 @@ export default [
       },
       subpages: {
         showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Server'
       }
     }
   }

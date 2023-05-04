@@ -10,14 +10,8 @@
     },
 
     Bootgly: {
-      _: 'Bootgly',
-
       about: {
-        _: 'Sobre',
-
         what: {
-          _: 'O que é Bootgly?',
-
           overview: {
             _subsections_: {
               total: 3,
@@ -31,8 +25,6 @@
         }
 
         why: {
-          _: 'Por quê Bootgly?',
-
           overview: {
             _subsections_: {
               total: 1,
@@ -44,14 +36,10 @@
             source: ''
           }
         },
-      }
+      },
 
       basic: {
-        _: 'Básico',
-
         directory_structure: {
-          _: 'Estrutura de diretórios',
-
           overview: {
             _subsections_: {
               total: 4,
@@ -63,11 +51,7 @@
       },
 
       concepts: {
-        _: 'Conceitos',
-
         interfaces: {
-          _: 'Interfaces',
-
           overview: {
             _subsections_: {},
             source: ''
@@ -77,14 +61,8 @@
     },
 
     CLI: {
-      _: 'Bootgly CLI',
-
       Terminal: {
-        _: 'Terminal',
-
         Input: {
-          _: 'Terminal Input',
-
           overview: {
             _subsections_: {
               total: 3,
@@ -101,23 +79,17 @@
           },
 
           Mouse: {
-            _: 'Mouse',
-
             overview: {
               source: ''
             },
           },
         },
         Output: {
-          _: 'Terminal Output',
-
           overview: {
             source: ''
           },
 
           Cursor: {
-            _: 'Cursor',
-
             overview: {
               source: ''
             },
@@ -126,8 +98,6 @@
             },
           },
           Text: {
-            _: 'Text',
-
             overview: {
               source: ''
             },
@@ -136,8 +106,6 @@
             },
           },
           Viewport: {
-            _: 'Viewport',
-
             overview: {
               source: ''
             },
@@ -147,32 +115,22 @@
           },
         },
         components: {
-          _: 'Terminal components',
-
           Alert: {
-            _: 'Alert',
-
             overview: {
               source: ''
             },
           },
           Menu: {
-            _: 'Menu',
-
             overview: {
               source: ''
             },
           },
           Progress: {
-            _: 'Progress',
-
             overview: {
               source: ''
             },
           },
           Table: {
-            _: 'Table',
-
             overview: {
               source: ''
             },
@@ -181,31 +139,20 @@
       },
     },
     Web: {
-      _: 'Bootgly Web',
-
       interfaces: {
-        _: 'interfaces',
-
         TCP_Client: {
-          _: 'TCP Client',
-
           overview: {
             source: ''
           },
         },
         TCP_Server: {
-          _: 'TCP Server',
-
           overview: {
             source: ''
           },
         },
       },
       nodes: {
-        _: 'nodes',
-
         HTTP_Server: {
-          _: 'HTTP Server',
           overview: {
             source: ''
           },

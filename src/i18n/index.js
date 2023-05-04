@@ -33,7 +33,7 @@ for (const lang of langs) {
   for (const page of pages) {
     const path = page.path.slice(1)
     const config = page.config
-    // const data = page.data
+    const data = page.data
 
     // ---
 
@@ -46,11 +46,9 @@ for (const lang of langs) {
         node = {}
       }
 
-      /*
       if (!node._) {
-        node._ = data?.title
+        node._ = data[lang]?.title || data['*']?.title
       }
-      */
 
       return node
     }, i18n[lang]._)
