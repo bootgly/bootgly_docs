@@ -311,7 +311,7 @@ export default [
     path: '/CLI/Terminal/components/Alert',
     config: {
       icon: 'notification_important',
-      status: 'empty',
+      status: 'draft',
       menu: {
         subheader: 'CLI.Terminal.components'
       },
@@ -332,7 +332,7 @@ export default [
     path: '/CLI/Terminal/components/Menu',
     config: {
       icon: 'menu',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       layouts: {
         footer: true

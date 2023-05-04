@@ -31,8 +31,9 @@ export default {
   mounted () {
     // console.log('DH4.mounted!')
 
-    this.register(this.id)
-    this.index(this.id)
+    // this.register(this.id)
+
+    // this.index(this.id)
   },
 
   beforeUpdate () {
@@ -41,8 +42,9 @@ export default {
   updated () {
     // console.log('DH4.mounted!')
 
-    this.register(this.id)
-    this.index(this.id)
+    // this.register(this.id)
+
+    // this.index(this.id)
   }
 }
 </script>

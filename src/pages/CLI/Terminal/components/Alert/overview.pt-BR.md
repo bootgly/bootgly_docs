@@ -1,6 +1,6 @@
 # Classe Alert
 
-A classe Alert é responsável por exibir alertas coloridos na terminal.
+A classe Alert é responsável por exibir alertas coloridos no Terminal.
 
 ## Instância
 
@@ -8,8 +8,10 @@ Para utilizar a classe Alert, é necessário instanciar um objeto da própria cl
 
 ```php
 use Bootgly\CLI;
+use Bootgly\CLI\Terminal\components\Alert\Alert;
 
 $Output = CLI::$Terminal->Output;
+
 $Alert = new Alert($Output);
 ```
 
@@ -24,10 +26,8 @@ O tipo de alerta que será exibido. Pode ser do tipo "DEFAULT", "SUCCESS", "ATTE
 Exemplo:
 
 ```php
-use Bootgly\CLI;
-
 // Definindo o tipo do alerta para SUCCESS
-$Alert->Type::Success->set();
+$Alert->Type::SUCCESS->set();
 ```
 
 ### width
@@ -37,8 +37,6 @@ A largura em caracteres do alerta que será exibido.
 Exemplo:
 
 ```php
-use Bootgly\CLI;
-
 // Definindo a largura do alerta para 100 caracteres
 $Alert->width = 100;
 ```
@@ -59,11 +57,13 @@ Exemplo:
 
 ```php
 use Bootgly\CLI;
+use Bootgly\CLI\Terminal\components\Alert\Alert;
 
 $Output = CLI::$Terminal->Output;
+
 $Alert = new Alert($Output);
 
-$Alert->Type::Success->set(); // define o tipo de alerta como success
+$Alert->Type::SUCCESS->set(); // define o tipo de alerta como success
 $Alert->width = 60; // define a largura do alerta como 60 caracteres
 
 $message = 'Este é um alerta de sucesso!';
