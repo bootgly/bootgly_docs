@@ -358,7 +358,7 @@ export default {
   '/CLI/Terminal/components/Table': {
     config: {
       icon: 'table_chart',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       layouts: {
         footer: true

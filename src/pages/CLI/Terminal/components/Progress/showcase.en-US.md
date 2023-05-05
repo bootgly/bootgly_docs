@@ -20,7 +20,7 @@ $Output->render(<<<OUTPUT
 /* @*:
  * @#green: Bootgly CLI Terminal - Progress component @;
  * @#yellow: @@ Demo - Example #1 @;
- * {$location}
+ * projects/@bootgly/cli/examples/terminal/components/Progress-01.example.php
  */\n\n
 OUTPUT);
 
@@ -72,8 +72,6 @@ $Progress->finish();
 
 ## Indetermined state
 
-`@bootgly/cli/examples/terminal/components/Progress-02.example.php`
-
 ```php
 <?php
 namespace Bootgly\CLI;
@@ -88,7 +86,7 @@ $Output->render(<<<OUTPUT
 /* @*:
  * @#green: Bootgly CLI Terminal - Progress component @;
  * @#yellow: @@ Demo - Example #2: Indeterminate state @;
- * {$location}
+ * projects/@bootgly/cli/examples/terminal/components/Progress-02.example.php
  */\n\n
 OUTPUT);
 
