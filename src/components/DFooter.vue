@@ -1,6 +1,6 @@
 <template lang="pug">
 q-toolbar#d-footer.bg-dark.text-white
-  q-btn.q-mr-sm(v-if="relative" flat dense no-caps :color="color" @click="openURL(url)")
+  q-btn.q-mr-sm(flat dense no-caps :color="color" @click="openURL(url)")
     q-icon(:name="icon" size="20px")
     .gt-xs
       span.hm(v-if="status === 'completed'") {{ $t('footer.github.edit') }}
@@ -32,25 +32,24 @@ import { openURL } from 'quasar'
 export default {
   name: 'DFooter',
 
-  props: {
-    status: {
-      type: String,
-      default: 'empty'
-    }
-  },
-
   data () {
     return {
       base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/'
     }
   },
   computed: {
-    url () {
-      return `${this.base}${this.relative}.${this.$i18n.locale}.md`
-    },
-    relative () {
+    // $Route
+    path () {
       const path = this.$route.path
       return path
+    },
+    // meta
+    status () {
+      return this.$route.meta.status
+    },
+
+    url () {
+      return `${this.base}${this.path}.${this.$i18n.locale}.md`
     },
     color () {
       if (this.status === 'completed') {
@@ -70,21 +69,23 @@ export default {
         return 'note_add'
       }
     },
+
     progress () {
       // i18n
       // |-> paths
       const i18nPathAbsolute = this.$store.state.i18n.absolute
 
-      // Subsections
+      // Sections
+      const sections = `_.${i18nPathAbsolute}._sections`
+
+      const sectionsCount = this.$tm(`${sections}.count`)
+
       let translationPercent = '?'
 
-      const subsectionsTotal = this.$tm(`_.${i18nPathAbsolute}._subsections_.total`)
-
-      if (!isNaN(subsectionsTotal)) {
-        const subsectionsDone = Number(this.$tm(`_.${i18nPathAbsolute}._subsections_.done`))
-
+      if (!isNaN(sectionsCount)) {
+        const subsectionsDone = this.$tm(`${sections}.done`)
         if (!isNaN(subsectionsDone)) {
-          translationPercent = ~~((subsectionsDone / subsectionsTotal) * 100)
+          translationPercent = ~~((subsectionsDone / sectionsCount) * 100)
         }
       }
 
@@ -94,21 +95,23 @@ export default {
       // i18n
       // |-> paths
       const i18nPathAbsolute = this.$store.state.i18n.absolute
-      const i18nPath = `_.${i18nPathAbsolute}._translations_.available`
+
+      // translations
+      const translations = `_.${i18nPathAbsolute}._translations`
 
       // Get # of i18n locales available
       const i18nLocales = Object.keys(this.$i18n.messages)
       // Get page last updated status of default language
       let fallbackLastUpdated = null
-      if (this.$te(i18nPath, 'en-US')) {
-        fallbackLastUpdated = this.$tm(i18nPath, 'en-US')
+      if (this.$te(translations, 'en-US')) {
+        fallbackLastUpdated = this.$tm(translations, 'en-US')
       }
 
       // Set page content locales available
       let i18nLocalesAvailable = 0
       if (fallbackLastUpdated) {
         for (let i = 0; i < i18nLocales.length; i++) {
-          if (this.$t(i18nPath, i18nLocales[i]) !== fallbackLastUpdated) {
+          if (this.$t(translations, i18nLocales[i]) !== fallbackLastUpdated) {
             i18nLocalesAvailable++
           }
         }

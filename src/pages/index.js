@@ -44,6 +44,18 @@ export default {
       'pt-BR': {
         title: 'O que é Bootgly?'
       }
+    },
+    meta: {
+      'en-US': {
+        overview: {
+          _translations: 2,
+          _sections: {
+            count: 2,
+            done: 2
+          }
+        }
+      },
+      'pt-BR': {}
     }
   },
   '/Bootgly/about/why': {

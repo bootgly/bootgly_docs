@@ -4,8 +4,6 @@ Here we have two examples that are also present as a file in the Bootgly CLI dem
 
 ## Determined state
 
-`@bootgly/cli/examples/terminal/components/Progress-01.example.php`
-
 ```php
 <?php
 namespace Bootgly\CLI;
