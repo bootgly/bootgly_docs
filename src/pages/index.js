@@ -405,7 +405,7 @@ export default {
   '/Web/interfaces/TCP_Client': {
     config: {
       icon: 'desktop_windows',
-      status: 'empty',
+      status: 'draft',
       menu: {
         header: {
           icon: 'language',

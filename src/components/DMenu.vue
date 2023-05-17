@@ -65,12 +65,13 @@ q-scroll-area#menu(
       q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()" role="listitem")
         q-item-label(header)
           q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
-          | {{ getMenuItemHeader(item) }}
+          | {{ getMenuItemHeader(item.meta) }}
         q-separator.separator.partial(role="separator")
 
       //- Menu Separator - Subheader
       q-item-section(v-if="item.meta.menu.subheader")
-        q-item-label.label.subheader(header) {{ getMenuItemSubheader(item) }}
+        q-item-label.label.subheader(header)
+          | {{ getMenuItemSubheader(item.meta) }}
 
       q-item(
         :to="item.path + '/overview'"
@@ -208,8 +209,9 @@ export default {
     getMenuItemHeaderBackground () {
       return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
     },
-    getMenuItemHeader (item) {
-      const path = `_.${item.meta.menu.header.name}._`
+    getMenuItemHeader (meta) {
+      console.log(meta)
+      const path = `_.${meta.toppage}.${meta.menu.header.name}._`
 
       if (this.$te(path)) {
         return this.$t(path)
@@ -217,8 +219,8 @@ export default {
         return this.$t(path, 'en-US')
       }
     },
-    getMenuItemSubheader (item) {
-      const path = `_.${item.meta.menu.subheader}._`
+    getMenuItemSubheader (meta) {
+      const path = `_.${meta.toppage}.${meta.menu.subheader}._`
 
       if (this.$te(path)) {
         return this.$t(path)
@@ -301,11 +303,7 @@ export default {
     for (const [index, route] of routes.entries()) {
       items[index] = Object.freeze({
         path: route.path,
-        meta: {
-          icon: route.meta.icon,
-          menu: route.meta.menu,
-          status: route.meta.status
-        }
+        meta: route.meta
       })
     }
 

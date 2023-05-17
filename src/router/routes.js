@@ -1,3 +1,4 @@
+const toppage = 'manual'
 
 import pages from 'pages'
 
@@ -9,6 +10,7 @@ for (const [path, page] of Object.entries(pages)) {
     continue
   }
 
+  // @ Construct children
   const children = [
     {
       path: 'overview',
@@ -37,10 +39,14 @@ for (const [path, page] of Object.entries(pages)) {
     })
   }
 
+  // @ Push route to pageRoutes
   pagesRoutes.push({
-    path,
+    path: '/' + toppage + path,
     component: () => import('layouts/DefaultLayout'),
-    meta: config,
+    meta: {
+      ...config,
+      toppage
+    },
     children
   })
 }

@@ -3,6 +3,8 @@ const langs = [
   'pt-BR'
 ]
 const i18n = {}
+// TEMP
+const toppage = 'manual'
 // @ Import pages
 // boot
 import boot from 'pages/boot'
@@ -21,8 +23,8 @@ function filter (source) {
 
   return source
 }
-function load (path, subpage, lang) {
-  const markdown = require(`pages/${path}/${subpage}.${lang}.md`)
+function load (toppage, path, subpage, lang) {
+  const markdown = require(`pages/${toppage}/${path}/${subpage}.${lang}.md`)
 
   const content = String(markdown.default)
 
@@ -59,6 +61,7 @@ for (const lang of langs) {
       // @ Set metadata
       // title
       if (node._ === undefined) {
+        // node._ = {}
         node._ = data[lang]?.title || data['*']?.title
       }
 
@@ -90,7 +93,7 @@ for (const lang of langs) {
       }
 
       return node
-    }, i18n[lang]._)
+    }, i18n[lang]._[toppage])
 
     // ---
 
@@ -98,15 +101,16 @@ for (const lang of langs) {
       continue
     }
 
+    // @ Subpages
     // Overview
-    _.overview.source = load(path, 'overview', lang)
+    _.overview.source = load(toppage, path, 'overview', lang)
     // showcase
     if (config.subpages.showcase === true) {
-      _.showcase.source = load(path, 'showcase', lang)
+      _.showcase.source = load(toppage, path, 'showcase', lang)
     }
     // Vs
     if (config.subpages.vs === true) {
-      _.vs.source = load(path, 'vs', lang)
+      _.vs.source = load(toppage, path, 'vs', lang)
     }
   }
 }

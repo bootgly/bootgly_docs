@@ -7,7 +7,11 @@
         'Developed by ',
         'Documentation under construction...'
       ]
-    }
+    },
+
+    API: {}
+    guides: {}
+    manual: {}
   },
 
   // @ Page
