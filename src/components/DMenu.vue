@@ -210,7 +210,6 @@ export default {
       return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
     },
     getMenuItemHeader (meta) {
-      console.log(meta)
       const path = `_.${meta.toppage}.${meta.menu.header.name}._`
 
       if (this.$te(path)) {
