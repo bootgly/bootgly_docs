@@ -15,3 +15,5 @@ Entendemos que um Framework é algo base, e como tal, não deve haver muitos pac
 O Bootgly tem essa política de **dependência mínima** à pacotes de terceiros, permitindo um desenvolvimento mais seguro, com o máximo de integração entre os componentes internos, favorecendo a rápida implementação de novos recursos e melhorias, e fazendo com que o código base seja de fácil entendimento.
 
 Com essa visão, muitos recursos do Bootgly são built-in e são totalmente integrados com o Framework em si, permitindo assim uma integração completa com possibilidade de rápida extensão das suas funcionalidades.
+
+A grande desvantagem dessa abordagem é que os lançamentos se tornam mais demorados.

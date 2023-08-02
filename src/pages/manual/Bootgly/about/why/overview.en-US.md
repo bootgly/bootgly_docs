@@ -15,3 +15,5 @@ We understand that a Framework is something base, and as such, there should not 
 Bootgly has this policy of **minimum dependency** to third party packages, allowing more secure development, with the maximum integration between internal components, favoring the rapid implementation of new features and improvements, and making the code base easy to understand.
 
 With this view, many Bootgly features are built-in and are fully integrated with the Framework itself, thus allowing complete integration with the possibility of rapid extension of its capabilities.
+
+The big downside to this approach is that launches become more time-consuming.
