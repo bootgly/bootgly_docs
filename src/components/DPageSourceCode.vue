@@ -16,6 +16,7 @@ import Prism from 'prismjs'
 import 'prismjs/components/prism-markup-templating' // dependency for prism-php extension
 // PHP
 import 'prismjs/components/prism-php'
+import 'prismjs/components/prism-bash'
 
 export default {
   name: 'DPageSourceCode',
