@@ -1,6 +1,6 @@
 # Git repositories
 
-Os repositórios do Bootgly possuem um padrão de nomes associados à sua arquitetura de software I2P. Existem 4 tipos de repositóris:
+Os repositórios do Bootgly possuem um padrão de nomes associados à sua arquitetura de software I2P. Existem 4 tipos de repositórios:
 
 - Repositórios de projeto
 - Repositórios bootáveis

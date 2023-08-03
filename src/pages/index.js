@@ -203,24 +203,6 @@ export default {
       }
     }
   },
-  '/Bootgly/concepts/interfaces': {
-    config: {
-      icon: 'link',
-      status: 'empty',
-      menu: {},
-      layouts: {
-        footer: true
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Interfaces'
-      }
-    }
-  },
 
   '/Bootgly/essential': {
     config: null,
