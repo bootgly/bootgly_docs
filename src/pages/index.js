@@ -91,13 +91,34 @@ export default {
       }
     }
   },
-  '/Bootgly/basic/directory_structure': {
+  '/Bootgly/basic/architecture': {
     config: {
-      icon: 'account_tree',
+      icon: 'developer_board',
       status: 'draft',
       menu: {
         subheader: 'Bootgly.basic'
       },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Architecture'
+      },
+      'pt-BR': {
+        title: 'Arquitetura'
+      }
+    }
+  },
+  '/Bootgly/basic/directory_structure': {
+    config: {
+      icon: 'account_tree',
+      status: 'empty',
+      menu: {},
       layouts: {
         footer: true
       },
@@ -126,9 +147,9 @@ export default {
       }
     }
   },
-  '/Bootgly/concepts/interfaces': {
+  '/Bootgly/concepts/autoload-system': {
     config: {
-      icon: 'link',
+      icon: 'flag',
       status: 'empty',
       menu: {
         subheader: 'Bootgly.concepts'
@@ -142,13 +163,13 @@ export default {
     },
     data: {
       '*': {
-        title: 'Interfaces'
+        title: 'Autoload system'
       }
     }
   },
-  '/Bootgly/concepts/nodes': {
+  '/Bootgly/concepts/bootstrap-files': {
     config: {
-      icon: 'device_hub',
+      icon: 'post_add',
       status: 'empty',
       menu: {},
       layouts: {
@@ -160,7 +181,99 @@ export default {
     },
     data: {
       '*': {
-        title: 'Nodes'
+        title: 'Bootstrap files'
+      }
+    }
+  },
+  '/Bootgly/concepts/github-repositories': {
+    config: {
+      icon: 'archive',
+      status: 'draft',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Git repositories'
+      }
+    }
+  },
+  '/Bootgly/concepts/interfaces': {
+    config: {
+      icon: 'link',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Interfaces'
+      }
+    }
+  },
+
+  '/Bootgly/essential': {
+    config: null,
+    data: {
+      'en-US': {
+        title: 'Essential'
+      },
+      'pt-BR': {
+        title: 'Essencial'
+      }
+    }
+  },
+  '/Bootgly/essential/get-starting': {
+    config: {
+      icon: 'star',
+      status: 'draft',
+      menu: {
+        subheader: 'Bootgly.essential'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Get starting'
+      },
+      'pt-BR': {
+        title: 'Começando'
+      }
+    }
+  },
+  '/Bootgly/essential/projects': {
+    config: {
+      icon: 'create_new_folder',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Projects'
+      },
+      'pt-BR': {
+        title: 'Projetos'
       }
     }
   },
