@@ -1,5 +1,5 @@
 <template lang="pug">
-q-page-container#page
+q-page-container#page-container
   q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (showcase || vs)")
     q-toolbar-title.toolbar-container
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
@@ -22,7 +22,7 @@ q-page-container#page
           @click="subroute('/vs')"
         )
 
-  q-page(style="min-height: calc(100vh - 115px)")
+  q-page#page
     q-scroll-area.content(:class="main" ref="pageScrollArea")
       slot
       d-page-nav(v-if="!disableNav")
@@ -179,7 +179,7 @@ export default {
 </script>
 
 <style lang="sass">
-#page
+#page-container
   padding-bottom: 30px !important
 
 .content.with-submenu,
@@ -192,6 +192,11 @@ export default {
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 20px
+
+#page
+  min-height: calc(100vh - 115px)
+  max-width: 1440px
+  margin: auto
 
 #submenu
   min-height: 36px
