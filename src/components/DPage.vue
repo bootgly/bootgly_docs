@@ -24,7 +24,8 @@ q-page-container#page-container
 
   q-page#page
     q-scroll-area.content(:class="main" ref="pageScrollArea")
-      slot
+      #scroll-container
+        slot
       d-page-nav(v-if="!disableNav")
       q-scroll-observer(@scroll="scrolling" :debounce="300")
     //-q-page-sticky(v-if="showBackToTop" position="bottom-right" :offset="[18, 18]")
@@ -180,7 +181,7 @@ export default {
 
 <style lang="sass">
 #page-container
-  padding-bottom: 30px !important
+  padding-bottom: 0 !important
 
 .content.with-submenu,
 .content.with-submenu > div.scroll
@@ -194,7 +195,9 @@ export default {
   padding: 20px
 
 #page
-  min-height: calc(100vh - 115px)
+  min-height: calc(100vh - 115px) !important
+
+#scroll-container
   max-width: 1440px
   margin: auto
 
