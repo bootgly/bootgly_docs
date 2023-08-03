@@ -385,16 +385,16 @@ export default {
       }
     }
   },
-  // Web
-  '/Web': {
+  // WPI
+  '/WPI': {
     config: null,
     data: {
       '*': {
-        title: 'Bootgly Web'
+        title: 'Bootgly WPI'
       }
     }
   },
-  '/Web/interfaces': {
+  '/WPI/interfaces': {
     config: null,
     data: {
       '*': {
@@ -402,16 +402,16 @@ export default {
       }
     }
   },
-  '/Web/interfaces/TCP_Client': {
+  '/WPI/interfaces/TCP_Client': {
     config: {
       icon: 'desktop_windows',
       status: 'empty',
       menu: {
         header: {
           icon: 'language',
-          name: 'Web'
+          name: 'WPI'
         },
-        subheader: 'Web.interfaces'
+        subheader: 'WPI.interfaces'
       },
       layouts: {
         footer: true
@@ -426,7 +426,7 @@ export default {
       }
     }
   },
-  '/Web/interfaces/TCP_Server': {
+  '/WPI/interfaces/TCP_Server': {
     config: {
       icon: 'dns',
       status: 'empty',
@@ -444,7 +444,7 @@ export default {
       }
     }
   },
-  '/Web/nodes': {
+  '/WPI/nodes': {
     config: null,
     data: {
       '*': {
@@ -452,12 +452,12 @@ export default {
       }
     }
   },
-  '/Web/nodes/HTTP_Server': {
+  '/WPI/nodes/HTTP_Server': {
     config: {
       icon: 'dns', // device_hub?
       status: 'empty',
       menu: {
-        subheader: 'Web.nodes'
+        subheader: 'WPI.nodes'
       },
       layouts: {
         footer: true
