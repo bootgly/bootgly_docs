@@ -117,7 +117,7 @@ export default {
   '/Bootgly/basic/directory_structure': {
     config: {
       icon: 'account_tree',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       layouts: {
         footer: true
@@ -170,7 +170,7 @@ export default {
   '/Bootgly/concepts/bootstrap-files': {
     config: {
       icon: 'post_add',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       layouts: {
         footer: true

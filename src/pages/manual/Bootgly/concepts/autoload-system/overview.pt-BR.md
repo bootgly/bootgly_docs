@@ -27,8 +27,8 @@ spl_autoload_register (function (string $class) {
 });
 ```
 
-## Substituição e Extensão de Componentes
+## Extensão e Substituição de Componentes
 
-Uma característica poderosa do Bootgly é permitir que os desenvolvedores facilmente substituam ou estendam componentes do core do framework e seu sistema de autoload não poderia deixar de contribuir com isso. Ao carregar as classes, o sistema de autoload primeiro verifica se o arquivo existe no diretório de trabalho, e se uma classe com o mesmo namespace for encontrada no diretório de trabalho, ela será carregada em vez da classe do core que está na sua pasta raiz.
+Uma característica poderosa do Bootgly é permitir que os desenvolvedores facilmente estendam ou até substituam componentes do core do framework e seu sistema de autoload não poderia deixar de contribuir com isso. Ao carregar as classes, o sistema de autoload primeiro verifica se o arquivo existe no diretório de trabalho, e se uma classe com o mesmo namespace for encontrada no diretório de trabalho, ela será carregada em vez da classe do core que está na sua pasta raiz.
 
 Essa funcionalidade é particularmente útil ao desenvolver projetos com o Bootgly Framework, pois os desenvolvedores podem personalizar e ajustar partes específicas do framework sem modificar diretamente os arquivos principais do Bootgly.
