@@ -25,7 +25,7 @@ Esses repositórios possuem o seguinte padrão em seu nome: `[a-z]-*`.
 
 Todos os repositório bootáveis possuem um `-` (traço) como separador:
 
-- [bootgly-cli](https://github.com/bootgly/bootgly-console)
+- [bootgly-console](https://github.com/bootgly/bootgly-console)
 - [bootgly-web](https://github.com/bootgly/bootgly-web)
 
 ## Repositórios templates

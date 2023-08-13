@@ -1,5 +1,5 @@
 <template lang="pug">
-nav
+nav#d-page-nav
   router-link.link.float-left(v-if="prev" :to="`${prev}/overview`")
     div.text-caption
       | {{ $t('nav.prev') }}
@@ -49,15 +49,18 @@ export default {
 }
 </script>
 
-<style lang="sass" scoped>
-nav
+<style lang="sass">
+#d-page-nav
   display: inline-block
   width: 100%
   min-height: 36px
   margin-top: 15px
+  margin-bottom: 30px
   border-top: 3px solid #e0e0e0
+
   &:first-child
     margin-top: calc(100vh - 200px)
+
   .link
     margin-top: 20px
     border: 1px solid #e0e0e0
