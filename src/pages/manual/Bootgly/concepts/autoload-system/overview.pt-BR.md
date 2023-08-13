@@ -6,11 +6,26 @@ O sistema de autoload pode trabalhar com até dois diretórios base diferentes: 
 
 ## Diretório raiz vs diretório de trabalho
 
-O diretório raiz, definido pela constante `BOOTGLY_ROOT_DIR` é onde a **plataforma Bootgly se encontra**. Já o diretório de trabalho, é **onde você desenvolve seus projetos** com o Bootgly e em geral terá um caminho diferente do diretório raiz do Bootgly.
+O diretório raiz, definido pela constante `BOOTGLY_ROOT_DIR` é onde a **plataforma Bootgly se encontra**. Já o diretório de trabalho, definido pela constante `BOOTGLY_WORKING_DIR` é **onde você desenvolve seus projetos** com o Bootgly e em geral terá um caminho diferente do diretório raiz do Bootgly.
 
 Se você está utilizando um starter kit para começar a desenvolver seus projetos e você utilizou o `Composer` para gerenciar as suas dependências, o diretório raiz do Bootgly terá o caminho relativo `@imports/bootgly/bootgly/`. Já se você utilizou o `git submodules` pra gerenciar as dependências do Bootgly e quer deixar o `Composer` pra depois, o diretório raiz do Bootgly terá o caminho relativo `Bootgly/Bootgly`.
 
 Você ainda tem a opção de somente utilizar a plataforma base do Bootgly e aí terá que utilizar as interfaces CLI e WPI para desenvolver seus apps e APIs e nesse caso os diretórios raiz e de trabalho do Bootgly serão o mesmo, já que os arquivos que incluem o `autoload.php` estarão na mesma pasta que o arquivo `autoload.php`!
+
+Pra ficar menos teórico, aqui está o código fonte com a lógica do autoload de classes `spl_autoload_register` do Bootgly:
+
+```php
+spl_autoload_register (function (string $class) {
+   $paths = explode('\\', $class);
+   $file = implode('/', $paths) . '.php';
+
+   $included = @include(BOOTGLY_WORKING_DIR . $file);
+
+   if ($included === false && BOOTGLY_ROOT_DIR !== BOOTGLY_WORKING_DIR) {
+      @include(BOOTGLY_ROOT_DIR . $file);
+   }
+});
+```
 
 ## Substituição e Extensão de Componentes
 
