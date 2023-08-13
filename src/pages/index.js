@@ -150,7 +150,7 @@ export default {
   '/Bootgly/concepts/autoload-system': {
     config: {
       icon: 'flag',
-      status: 'empty',
+      status: 'draft',
       menu: {
         subheader: 'Bootgly.concepts'
       },
