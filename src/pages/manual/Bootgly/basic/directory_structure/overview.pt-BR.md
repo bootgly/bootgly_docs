@@ -4,7 +4,7 @@ O Bootgly PHP Framework é muito organizado desde a sua fundação e oferece uma
 
 Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pasta raiz, que foi projetada cuidadosamente para garantir uma organização clara e eficiente em ordem crescente de dependências. Um dos motivos desse padrão é separar tudo o que é do Framework em si, de tudo o que foi produzido através dele.
 
-![Dir Structure](images/pages/Bootgly/basic/directory_structure-bootgly.png)
+![Dir Structure](images/pages/Bootgly/basic/directory_structure-bootgly2.png)
 
 ## Pasta global @/
 
