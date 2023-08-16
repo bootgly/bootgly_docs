@@ -55,7 +55,7 @@ export default {
   width: 100%
   min-height: 36px
   margin-top: 15px
-  margin-bottom: 30px
+  margin-bottom: 40px
   border-top: 3px solid #e0e0e0
 
   &:first-child
