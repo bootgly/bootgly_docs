@@ -66,14 +66,15 @@ q-page-container
         q-carousel-slide(:name="2")
           q-scroll-area.fit
             q-img.rounded-borders.col-12(
-              width="647"
-              height="204"
-              src="images/pages/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
+              width="831"
+              height="670"
+              src="images/pages/Bootgly_WPI_-_HTTP_Server_CLI.png"
             )
 
             .carrousel-caption
-              .text-h6 HTTP Server CLI - Benchmark
-              .text-subtitle1 Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
+              .text-h6 HTTP Server CLI started
+              .text-subtitle1 Initial output
+
         q-carousel-slide(:name="3")
           q-scroll-area.fit
             q-img.rounded-borders.col-12(
@@ -87,6 +88,18 @@ q-page-container
               .text-subtitle1 API with DataSet abstraction
 
         q-carousel-slide(:name="4")
+          q-scroll-area.fit
+            q-img.rounded-borders.col-12(
+              width="647"
+              height="204"
+              src="images/pages/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
+            )
+
+            .carrousel-caption
+              .text-h6 HTTP Server CLI - Benchmark
+              .text-subtitle1 Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
+
+        q-carousel-slide(:name="5")
           q-scroll-area.fit(dark)
             q-img.rounded-borders.col-12.full-height(
               width="735"
@@ -97,18 +110,6 @@ q-page-container
             .carrousel-caption
               .text-h6 HTTP Server CLI
               .text-subtitle1 Test Suites
-
-        q-carousel-slide(:name="5")
-          q-scroll-area.fit
-            q-img.rounded-borders.col-12(
-              width="831"
-              height="670"
-              src="images/pages/Bootgly_WPI_-_HTTP_Server_CLI.png"
-            )
-
-            .carrousel-caption
-              .text-h6 HTTP Server CLI started
-              .text-subtitle1 Initial output
 </template>
 
 <script>
