@@ -101,9 +101,9 @@ q-page-container
         q-carousel-slide(:name="5")
           q-scroll-area.fit
             q-img.rounded-borders.col-12(
-              width="820"
-              height="355"
-              src="images/pages/Server-CLI-HTTP-started.png"
+              width="831"
+              height="670"
+              src="images/pages/Bootgly_WPI_-_HTTP_Server_CLI.png"
             )
 
             .carrousel-caption
