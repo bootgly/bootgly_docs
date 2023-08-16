@@ -1,7 +1,7 @@
 <template lang="pug">
 .source-code
   .code(:class="coloring")
-    .lines(v-if="lines")
+    .lines(v-if="lines && lines > 1")
       template(v-for="(line, index) in lines" :key="index")
         a.line(:href="href+line")
           i.fa.fa-link(aria-hidden="true" data-hidden="true")
