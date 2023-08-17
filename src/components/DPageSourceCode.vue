@@ -143,7 +143,6 @@ export default {
       > code
         display: block
         font-size: 90%
-        min-width: 100%
         padding: 0
 
     &.white
