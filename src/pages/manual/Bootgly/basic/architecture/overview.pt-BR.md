@@ -4,7 +4,9 @@ O Bootgly introduziu um jeito novo de desenvolver frameworks utilizando uma arqu
 
 ## Interfaces
 
-O conceito de "Interfaces" no Bootgly possuem um significado bem claro e definido. Interface é tudo o que conecta dois sistemas distintos, permitindo que eles se comuniquem, interajam ou troquem informações entre si.
+O conceito de "Interfaces" no Bootgly possuem um significado bem claro e definido:
+
+> "Interface é tudo o que conecta dois sistemas distintos, permitindo que eles se comuniquem, interajam ou troquem informações entre si."
 
 No Bootgly, as interfaces iniciais são:
 
