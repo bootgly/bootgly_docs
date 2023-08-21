@@ -11,7 +11,7 @@ O conceito de "Interfaces" no Bootgly possuem um significado bem claro e definid
 No Bootgly, as interfaces iniciais são:
 
 - ABI (Abstract Bootable Interface)
-- ACI (Abstract Core Interface)
+- ACI (Abstract Common Interface)
 - ADI (Abstract Data Interface)
 
 - API (Application Programming Interface) -> API para Bootgly (platforma)
