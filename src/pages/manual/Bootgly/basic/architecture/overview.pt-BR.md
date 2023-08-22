@@ -1,10 +1,12 @@
 # Arquitetura
 
-O Bootgly introduziu um jeito novo de desenvolver frameworks utilizando uma arquitetura própria chamada de I2P (Interface-to-Platform)...
+O Bootgly introduziu um jeito novo de desenvolver frameworks utilizando uma arquitetura própria chamada de `I2P (Interface-to-Platform)`.
+
+Na arquitetura I2P, tudo começa com interfaces, que posteriormente dão origem a plataformas.
 
 ## Interfaces
 
-O conceito de "Interfaces" no Bootgly possuem um significado bem claro e definido:
+O conceito de "Interfaces" no Bootgly possui um significado bem claro e definido:
 
 > "Interface é tudo o que conecta dois sistemas distintos, permitindo que eles se comuniquem, interajam ou troquem informações entre si."
 
@@ -27,18 +29,18 @@ O termo "interface" pode ser usado para se referir a qualquer coisa que une duas
 
 Por exemplo, um sistema operacional possui uma interface de usuário (UI) que permite que os usuários interajam com o sistema. Esta interface é projetada para ser usada por pessoas, e oferece uma maneira padronizada para acessar diferentes recursos e funcionalidades do sistema. Aqui temos a seguinte interface:
 
-`pessoa <-UI-> sistema`.
+`pessoa <-UI-> sistema`
 
 Do mesmo modo, um programa no Front-end pode ter uma interface de programação de aplicativos (API) que permite que outra aplicação no Back-end se comunique com ele. Aqui podemos ter a seguinte interface:
 
-`app (client) <-API-> (server) database`.
+`app (client) <-API-> (server) database`
 
 ## Plataformas
 
 No Bootgly, existem as **plataformas bases** e as **plataformas de trabalho**.
 
-As `plataformas bases` contém um conjunto de Interfaces iniciais e as `plataformas de trabalho` são constituídas por pelo menos uma Interface que existe em uma outra `plataforma base`.
+> As _plataformas bases_ contém um conjunto de Interfaces iniciais e as _plataformas de trabalho_ são constituídas por pelo menos uma Interface que existe em uma _plataforma base_.
 
-As `plataformas de trabalho` podem conter subinterfaces e/ou podem conter "workables" (trabalháveis).
+As _plataformas de trabalho_ podem conter outras interfaces e/ou os chamados "workables" (trabalháveis).
 
-Por exemplo, na `plataforma Web` existe uma Interface chamada `API` que representa uma API Web e existe um `workable` chamado de `App` que contém as dependências necessárias para formalizar um applicativo dentro do Bootgly.
+Por exemplo, na _plataforma Web_ existe uma Interface chamada `API` que representa uma API Web e existe um `workable` chamado de `App` que contém as dependências necessárias para formalizar um applicativo dentro do Bootgly.

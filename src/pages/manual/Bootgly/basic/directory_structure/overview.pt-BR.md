@@ -10,7 +10,7 @@ Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pa
 
 A pasta `@/` é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
 
-É um local destinado a armazenar informações relevantes sobre o projeto, como arquivos de configuração, arquivos de metadados e outros arquivos gerais específicos do contexto local de onde essa pasta se encontra.
+É um local destinado a armazenar informações relevantes como arquivos de configuração, arquivos de metadados e outros arquivos gerais específicos do contexto local de onde essa pasta se encontra.
 
 Por ser uma pasta global, você pode criá-la em seus projetos produzidos com o Bootgly.
 
