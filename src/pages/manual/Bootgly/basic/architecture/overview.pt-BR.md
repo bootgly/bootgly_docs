@@ -1,6 +1,6 @@
 # Arquitetura
 
-O Bootgly introduziu um jeito novo de desenvolver frameworks utilizando uma arquitetura própria chamada de `I2P (Interface-to-Platform)`.
+O Bootgly introduziu um jeito novo de desenvolver frameworks utilizando uma arquitetura própria chamada de **I2P (Interface-to-Platform)**.
 
 Na arquitetura I2P, tudo começa com interfaces, que posteriormente dão origem a plataformas.
 
@@ -37,19 +37,7 @@ No Bootgly, as interfaces iniciais são:
 - CLI (Command Line Interface)
 - WPI (Web Programming Interface)
 
-A interface `ABI` (Abstract Bootable Interface) reúne _tudo o que é "bootável"_, em um contexto relacionado à inicialização ou carregamento inicial de componentes e contém abstrações que são mais voltadas ao SO (Sistema Operacional).
-
-A interface `ACI` (Abstract Common Interface) reúne _tudo o que é comum_ em softwares: um Debugger, Events, Logs, Tests, etc.
-
-A interface `ADI` (Abstract Data Interface) reúne _tudo relacionado a dados_ e essa interface terá muitas implementações e poderá dar origem a uma outra plataforma no futuro.
-
-A interface `API` (Application Programming Interface) _reúne o que é intríseco do Bootgly_ e seu ambiente: classe Project, classe Environment, etc.
-
-A interface `CLI` (Command Line Interface) é uma interface para interagir com um computador ou sistema operacional por meio de texto e comandos digitados em uma _linha de comando_. Ela é utilizada para construção da _plataforma Console_.
-
-A interface `WPI` (Web Programming Interface) é uma interface que _representa a Web em um nível mais base_ onde se define implementações de protocolos por exemplo, e nela deve conter clientes e servidores bases como um TCP Server/Client, um UDP Server/Client, um HTTP Server/Client e etc. Ela é utilizada para construção da _plataforma Web_.
-
-Na próxima página você poderá ver como as pastas das Interfaces estão estruturadas na plataforma base Bootgly.
+Na próxima página você poderá ver como as pastas das Interfaces estão estruturadas na plataforma base Bootgly e o que cada uma delas representa.
 
 ## Plataformas
 
@@ -67,4 +55,4 @@ No Bootgly as atuais plataformas são:
 - Console (plataforma da interface CLI)
 - Web (plataforma da interface WPI)
 
-No futuro pode surgir uma outra interface chamada de "GUI" (Graphical User Interface) que poderá dar origem a uma outra plataforma chamada de "Graphical" que servirá pra construções de aplicações gráficas utilizando o PHP, como já existe em outros frameworks.
+No futuro poderá surgir uma outra interface chamada de "GUI" (Graphical User Interface), que poderá dar origem a uma outra plataforma chamada de "Graphical", que servirá pra construções de aplicações gráficas utilizando o PHP.
