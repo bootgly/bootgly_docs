@@ -12,5 +12,5 @@ Nosso objetivo é ajudar a criar aplicativos/APIs de forma fácil e rápida para
 - Altamente eficiente
 - Alta performance
 - Versatilidade
-- APIs fáceis de entender
+- Code APIs fáceis de entender
 - Escalável

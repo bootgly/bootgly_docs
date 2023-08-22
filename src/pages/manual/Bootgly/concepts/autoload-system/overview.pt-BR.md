@@ -12,7 +12,7 @@ Se você está utilizando um starter kit para começar a desenvolver seus projet
 
 Você ainda tem a opção de somente utilizar a plataforma base do Bootgly e aí terá que utilizar as interfaces CLI e WPI para desenvolver seus apps e APIs e nesse caso os diretórios raiz e de trabalho do Bootgly serão o mesmo, já que os arquivos que incluem o `autoload.php` estarão na mesma pasta que o arquivo `autoload.php`!
 
-Pra ficar menos teórico, aqui está o código fonte com a lógica do autoload de classes `spl_autoload_register` do Bootgly:
+Para ficar menos teórico, aqui está o código fonte com a lógica do autoload de classes `spl_autoload_register` do Bootgly:
 
 ```php
 spl_autoload_register (function (string $class) {

@@ -12,5 +12,5 @@ Our goal is to help you build high-quality, scalable Web and CLI apps/APIs quick
 - High efficiency
 - High performance
 - Versatile
-- Easy-to-understand APIs
+- Easy-to-understand Code APIs
 - Scalable

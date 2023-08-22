@@ -45,7 +45,7 @@ No Bootgly, existem as **plataformas bases** e as **plataformas de trabalho**.
 
 > As _plataformas bases_ contém um conjunto de Interfaces iniciais e as _plataformas de trabalho_ são constituídas por pelo menos uma Interface que existe em uma _plataforma base_.
 
-As _plataformas de trabalho_ podem conter outras interfaces e/ou os chamados "workables" (trabalháveis).
+As _plataformas de trabalho_ podem conter outras interfaces e os chamados "workables" (trabalháveis).
 
 Por exemplo, na _plataforma Web_ existe uma Interface chamada `API` que representa uma API Web e existe um `workable` chamado de `App` que contém as dependências necessárias para formalizar um applicativo Web dentro do Bootgly.
 

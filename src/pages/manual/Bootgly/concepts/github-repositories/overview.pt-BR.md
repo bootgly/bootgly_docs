@@ -11,7 +11,7 @@ Os repositórios do Bootgly possuem um padrão de nomes associados à sua arquit
 
 Os repositórios de projeto são os principais e servem como base para outros repositórios.
 
-Eles possuem a seguinte sintaxe: `[a-z]`.
+Eles possuem a seguinte sintaxe: `^[a-z]+$`.
 
 Repositórios de projeto não possuem separadores:
 
@@ -21,7 +21,7 @@ Repositórios de projeto não possuem separadores:
 
 Os repositórios bootáveis são os submódulos do Bootgly e servem para estender suas funcionalidades adicionando outras plataformas ao Bootgly.
 
-Esses repositórios possuem o seguinte padrão em seu nome: `[a-z]-*`.
+Esses repositórios possuem o seguinte padrão em seu nome: `^[a-z]+-[a-z]+$`.
 
 Todos os repositório bootáveis possuem um `-` (traço) como separador:
 
@@ -32,7 +32,7 @@ Todos os repositório bootáveis possuem um `-` (traço) como separador:
 
 Os repositórios templates do Bootgly funcionam como starter kits e servem para ajudar a prover uma estrutura inicial para o desenvolvimento baseado em alguma plataforma.
 
-Esses repositórios possuem o seguinte padrão em seu nome: `[a-z].*`.
+Esses repositórios possuem o seguinte padrão em seu nome: `^[a-z]+.[a-z]+$`.
 
 Todos os repositório templates possuem um `.` (ponto) como separador:
 
@@ -43,7 +43,7 @@ Todos os repositório templates possuem um `.` (ponto) como separador:
 
 Os repositórios extensão servem para armazenar informações adicionais sobre os projetos como Awesome Lists, Documentações e etc.
 
-Eles possuem o seguinte padrão em seu nome: `[a-z]_*`.
+Eles possuem o seguinte padrão em seu nome: `^[a-z]+_[a-z]+$`.
 
 Todos os repositórios extensão possuem um `_` (underline) como separador:
 
