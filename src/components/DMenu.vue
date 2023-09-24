@@ -45,18 +45,24 @@ q-scroll-area#menu(
     li(role="listitem")
       q-separator(role="separator")
 
-    q-item(to="/changelog")
+    q-item(href="https://github.com/bootgly/bootgly/releases/" target="_blank")
       q-item-section(side)
         q-icon(name="assignment")
       q-item-section {{ $t('menu.changelog') }}
-    q-item(to="/roadmap")
+      q-item-section(side)
+        q-icon(name="open_in_new" size="xs")
+    q-item(href="https://github.com/bootgly/bootgly/milestones" target="_blank")
       q-item-section(side)
         q-icon(name="playlist_add_check_circle")
       q-item-section {{ $t('menu.roadmap') }}
-    q-item(to="/sponsor")
+      q-item-section(side)
+        q-icon(name="open_in_new" size="xs")
+    q-item(href="https://github.com/sponsors/bootgly/" target="_blank")
       q-item-section(side)
         q-icon(name="favorite" color="red")
       q-item-section {{ $t('menu.sponsor') }}
+      q-item-section(side)
+        q-icon(name="open_in_new" size="xs")
   q-separator.separator.list
 
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter role="list")
