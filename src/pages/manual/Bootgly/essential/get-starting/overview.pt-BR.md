@@ -1,4 +1,4 @@
-# Bootstrap (autoload)
+# Começando
 
 Para começar a utilizar o Bootgly a partir de um starter kit, você deverá utilizar um dos repositórios templates do Bootgly:
 
