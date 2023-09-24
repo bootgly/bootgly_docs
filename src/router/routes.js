@@ -72,31 +72,6 @@ const routes = [
           icon: 'home',
           menu: 'home'
         }
-      },
-
-      {
-        path: '/changelog',
-        component: () => import('pages/@/ChangelogPage'),
-        meta: {
-          icon: 'assignment',
-          menu: 'changelog'
-        }
-      },
-      {
-        path: '/roadmap',
-        component: () => import('pages/@/RoadmapPage'),
-        meta: {
-          icon: 'playlist_add_check_circle',
-          menu: 'roadmap'
-        }
-      },
-      {
-        path: '/sponsor',
-        component: () => import('pages/@/SponsorPage'),
-        meta: {
-          icon: 'favorite',
-          menu: 'sponsor'
-        }
       }
     ]
   },
