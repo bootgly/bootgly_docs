@@ -51,11 +51,11 @@ export default {
 
 <style lang="sass">
 #d-page-nav
-  display: inline-block
+  max-width: 1200px
+  display: block
   width: 100%
   min-height: 36px
-  margin-top: 15px
-  margin-bottom: 40px
+  margin: 15px auto 40px auto
   border-top: 3px solid #e0e0e0
 
   &:first-child

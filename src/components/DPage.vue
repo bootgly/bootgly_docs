@@ -198,7 +198,7 @@ export default {
   min-height: calc(100vh - 115px) !important
 
 #scroll-container
-  max-width: 1440px
+  max-width: 1200px
   margin: auto
 
 #submenu
