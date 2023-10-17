@@ -145,7 +145,7 @@ export default {
       $q,
 
       slide: ref(0),
-      autoplay: ref(80000),
+      autoplay: ref(10000),
       fullscreen: ref(false),
 
       links: [
