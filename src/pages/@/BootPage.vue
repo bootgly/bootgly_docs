@@ -56,7 +56,7 @@ q-page-container
               .text-h6 Bootgly Template Engine vs Laravel Blade
               .text-subtitle1 foreach in Bootgly is 9x faster than in Blade.
               .text-subtitle1
-                | Source code coming soon to the Bootgly repository on Github.
+                | Source code coming soon to the Bootgly Benchmark repository on Github.
         q-carousel-slide(:name="1")
           q-scroll-area.fit(dark)
             .column.no-wrap.q-gutter-md
