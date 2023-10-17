@@ -47,8 +47,8 @@ q-page-container
             .column.no-wrap.q-gutter-md
               .col-12
                 q-img.rounded-borders(
-                  width="722"
-                  height="339"
+                  width="644"
+                  height="770"
                   src="images/pages/Bootgly_Template_Engine-vs-Laravel_Blade.benchmark.jpg"
                 )
 
@@ -117,14 +117,14 @@ q-page-container
         q-carousel-slide(:name="5")
           q-scroll-area.fit(dark)
             q-img.rounded-borders.col-12.full-height(
-              width="735"
-              height="1302"
-              src="images/pages/Bootgly-HTTP-Server-Test-Suite5.png"
+              width="760"
+              height="1440"
+              src="images/pages/Bootgly_test_command-Suite_filter_by_argument.png"
             )
 
             .carrousel-caption
-              .text-h6 HTTP Server CLI
-              .text-subtitle1 Test Suites
+              .text-h6 Bootgly CLI - test command output
+              .text-subtitle1 Using argument to filter the suite to be tested
 </template>
 
 <script>
