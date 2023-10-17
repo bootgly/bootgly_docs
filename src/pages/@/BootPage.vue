@@ -125,6 +125,18 @@ q-page-container
             .carrousel-caption
               .text-h6 Bootgly CLI - test command output
               .text-subtitle1 Using argument to filter the suite to be tested
+
+        q-carousel-slide(:name="6")
+          q-scroll-area.fit(dark)
+            q-img.rounded-borders.col-12.full-height(
+              width="1118"
+              height="456"
+              src="images/pages/Bootgly_Debugging-Exception_reporting_with_file_content_highlighted.png"
+            )
+
+            .carrousel-caption
+              .text-h6 Bootgly Debugging - Exception reporting
+              .text-subtitle1 With file content highlighted and stack trace
 </template>
 
 <script>
