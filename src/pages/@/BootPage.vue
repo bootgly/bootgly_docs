@@ -42,6 +42,21 @@ q-page-container
               @click="fullscreen = !fullscreen"
             )
 
+        q-carousel-slide(:name="0")
+          q-scroll-area.fit(dark)
+            .column.no-wrap.q-gutter-md
+              .col-12
+                q-img.rounded-borders(
+                  width="722"
+                  height="339"
+                  src="images/pages/Bootgly_Template_Engine-vs-Laravel_Blade.benchmark.jpg"
+                )
+
+            .carrousel-caption
+              .text-h6 Bootgly Template Engine vs Laravel Blade
+              .text-subtitle1 foreach in Bootgly is 9x faster than in Blade.
+              .text-subtitle1
+                | Source code coming soon to the Bootgly repository on Github.
         q-carousel-slide(:name="1")
           q-scroll-area.fit(dark)
             .column.no-wrap.q-gutter-md
@@ -126,7 +141,7 @@ export default {
     return {
       $q,
 
-      slide: ref(1),
+      slide: ref(0),
       autoplay: ref(8000),
       fullscreen: ref(false),
 
