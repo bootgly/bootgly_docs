@@ -259,6 +259,48 @@ export default {
       }
     }
   },
+  '/Bootgly/essential/debugging': {
+    config: {
+      icon: 'bug_report',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Debugging'
+      },
+      'pt-BR': {
+        title: 'Debugando'
+      }
+    }
+  },
+  '/Bootgly/essential/testing': {
+    config: {
+      icon: 'science',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Testing'
+      },
+      'pt-BR': {
+        title: 'Testando'
+      }
+    }
+  },
   // CLI
   '/CLI': {
     config: null,
