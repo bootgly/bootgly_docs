@@ -38,6 +38,7 @@
     changelog: 'Changelog',
     roadmap: 'Roadmap',
     sponsor: 'Patrocine',
+    explore: 'Explorar',
 
     status: {
       empty: {

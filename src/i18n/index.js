@@ -35,7 +35,7 @@ function load (toppage, path, subpage, lang) {
 
 // @ Iterate langs
 for (const lang of langs) {
-  i18n[lang] = require(`./${lang}/index.hjson`)
+  i18n[lang] = require(`./languages/${lang}.hjson`)
 
   // @ Iterate pages
   for (const [key, page] of Object.entries(pages)) {
