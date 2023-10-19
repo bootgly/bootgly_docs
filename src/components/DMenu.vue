@@ -63,6 +63,18 @@ q-scroll-area#menu(
       q-item-section {{ $t('menu.sponsor') }}
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
+
+    li(role="listitem")
+      q-separator(role="separator" spaced)
+      q-item-section(side).q-ml-md {{ $t('menu.explore') }}
+
+    q-item(href="https://github.com/bootgly/bootgly_awesome/" target="_blank")
+      //-q-item-section(side)
+        q-icon(name="github")
+      q-item-section 🤯 Awesome List
+      q-item-section(side)
+        q-icon(name="open_in_new" size="xs")
+
   q-separator.separator.list
 
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter role="list")
