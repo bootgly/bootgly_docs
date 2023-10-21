@@ -78,6 +78,14 @@ q-scroll-area#menu(
   q-separator.separator.list
 
   q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter role="list")
+    //-q-expansion-item.shadow-1(
+      v-if="1"
+      expand-separator
+      default-opened
+      icon="contact_support"
+      label="Bootgly"
+      caption="Base platform")
+      .inset-shadow(style="width: 100%; height: 12px;")
     template(v-for="(item, index) in items" :key="index")
       //- Menu Separator - Header
       q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()" role="listitem")
@@ -318,6 +326,7 @@ export default {
     const items = []
 
     for (const [index, route] of routes.entries()) {
+      console.log(route)
       items[index] = Object.freeze({
         path: route.path,
         meta: route.meta
@@ -367,6 +376,19 @@ body.body--dark
 body.body--light
   --d-menu-subheader-txt-color: #363636
 
+.sticky
+  position: sticky
+  position: -webkit-sticky
+  position: -moz-sticky
+  position: -ms-sticky
+  position: -o-sticky
+  width: 100%
+  top: -1px
+  margin-bottom: 5px
+  z-index: 2
+  .separator
+    margin: 0 auto
+
 #menu
   width: 100%
   height: calc(100% - 50px)
@@ -401,18 +423,6 @@ body.body--light
       > div
         padding-bottom: 7px
         padding-top: 10px
-      &.sticky
-        position: sticky
-        position: -webkit-sticky
-        position: -moz-sticky
-        position: -ms-sticky
-        position: -o-sticky
-        width: 100%
-        top: -1px
-        margin-bottom: 5px
-        z-index: 2
-        .separator
-          margin: 0 auto
 
       .q-icon
         padding-right: 5px

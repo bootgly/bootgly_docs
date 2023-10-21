@@ -6,6 +6,9 @@ export default {
       '*': {
         title: 'Bootgly'
       }
+    },
+    meta: {
+      expanding: true
     }
   },
   '/Bootgly/about': {
