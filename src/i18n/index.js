@@ -24,7 +24,7 @@ function filter (source) {
   return source
 }
 function load (toppage, path, subpage, lang) {
-  const markdown = require(`pages/${toppage}/${path}/${subpage}.${lang}.md`)
+  const markdown = require(`pages/${toppage}/${path}.${subpage}.${lang}.md`)
 
   const content = String(markdown.default)
 

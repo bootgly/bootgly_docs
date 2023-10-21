@@ -25,7 +25,7 @@ export default {
   '/Bootgly/about/what': {
     config: {
       icon: 'play_arrow',
-      status: 'draft',
+      status: 'done',
       menu: {
         header: {
           icon: 'contact_support',
@@ -64,7 +64,7 @@ export default {
   '/Bootgly/about/why': {
     config: {
       icon: 'question_mark',
-      status: 'draft',
+      status: 'done',
       menu: {},
       layouts: {
         footer: true
@@ -97,7 +97,7 @@ export default {
   '/Bootgly/basic/architecture': {
     config: {
       icon: 'developer_board',
-      status: 'draft',
+      status: 'done',
       menu: {
         subheader: 'Bootgly.basic'
       },

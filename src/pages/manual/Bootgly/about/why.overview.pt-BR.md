@@ -16,4 +16,4 @@ O Bootgly tem essa política de **dependência mínima** à pacotes de terceiros
 
 Com essa visão, muitos recursos do Bootgly são `built-in` e são totalmente integrados com o Framework em si, permitindo assim, uma integração completa com possibilidade de rápida extensão das suas funcionalidades.
 
-A grande desvantagem dessa abordagem é que os lançamentos podem de tornar mais demorados.
+A grande desvantagem dessa abordagem é que os lançamentos podem se tornar mais demorados.
