@@ -3,7 +3,7 @@ q-toolbar#d-footer.bg-dark.text-white
   q-btn.q-mr-sm(flat dense no-caps :color="color" @click="openURL(url)")
     q-icon(:name="icon" size="20px")
     .gt-xs
-      span.hm(v-if="status === 'completed'") {{ $t('footer.github.edit') }}
+      span.hm(v-if="status === 'done'") {{ $t('footer.github.edit') }}
       span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
       span.hm(v-else-if="status === 'empty'") {{ $t('footer.github.start') }}
       q-icon(name="fab fa-github" size="20px")
@@ -52,7 +52,7 @@ export default {
       return `${this.base}${this.path}.${this.$i18n.locale}.md`
     },
     color () {
-      if (this.status === 'completed') {
+      if (this.status === 'done') {
         return 'white'
       } else if (this.status === 'draft') {
         return 'warning'
@@ -61,7 +61,7 @@ export default {
       }
     },
     icon () {
-      if (this.status === 'completed') {
+      if (this.status === 'done') {
         return 'edit'
       } else if (this.status === 'draft') {
         return 'border_color'
