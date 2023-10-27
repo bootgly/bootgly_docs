@@ -14,18 +14,18 @@ q-layout(view="lHh LpR lFf")
   router-view
 
   q-footer(elevated v-if="this.$route.matched[0].meta.layouts.footer !== false" v-model="this.$store.state.layout.footer")
-    d-footer
+    d-page-footer
 </template>
 
 <script>
 import DMenu from 'components/DMenu'
-import DFooter from 'components/DFooter'
+import DPageFooter from 'components/DPageFooter'
 
 export default {
   name: 'LayoutDefault',
 
   components: {
-    DMenu, DFooter
+    DMenu, DPageFooter
   },
 
   data () {

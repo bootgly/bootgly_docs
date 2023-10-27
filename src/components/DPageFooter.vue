@@ -30,7 +30,7 @@ q-toolbar#d-footer.bg-dark.text-white
 import { openURL } from 'quasar'
 
 export default {
-  name: 'DFooter',
+  name: 'DPageFooter',
 
   data () {
     return {
@@ -40,7 +40,8 @@ export default {
   computed: {
     // $Route
     path () {
-      const path = this.$route.path
+      let path = this.$route.path
+      path = path.replace(/\/([^/]*)$/, '.$1')
       return path
     },
     // meta
@@ -49,7 +50,11 @@ export default {
     },
 
     url () {
-      return `${this.base}${this.path}.${this.$i18n.locale}.md`
+      const base = this.base
+      const path = this.path
+      const locale = this.$i18n.locale
+
+      return `${base}${path}.${locale}.md`
     },
     color () {
       if (this.status === 'done') {

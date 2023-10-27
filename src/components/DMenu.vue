@@ -326,7 +326,6 @@ export default {
     const items = []
 
     for (const [index, route] of routes.entries()) {
-      console.log(route)
       items[index] = Object.freeze({
         path: route.path,
         meta: route.meta
