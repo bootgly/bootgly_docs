@@ -9,7 +9,27 @@ Por enquanto a utilização do Composer é opcional e você poderá utilizar som
 
 ## Templating
 
-Segue abaixo tutoriais para baixar um starter kit somente utilizando o Git / Github ou Composer.
+Segue abaixo tutoriais para baixar um starter kit somente utilizando o Composer ou o Git/Github.
+
+### Usando Composer
+
+Se você precisa do Composer para compor alguma dependência externa, utilize o comando `create-project` para baixar e já instalar todas as dependências:
+
+#### Bootgly Console
+
+Se você quer desenvolver apenas para o CLI, baixe o starter kit do Console:
+
+```bash
+composer create-project bootgly/bootgly.console bootgly.console
+```
+
+#### Bootgly Web
+
+Se você quer desenvolver para o CLI e para a Web, baixe o starter kit da Web que já vem com o Console junto:
+
+```bash
+composer create-project bootgly/bootgly.web bootgly.web
+```
 
 ### Usando Git
 
@@ -21,27 +41,7 @@ Se você não pretende utilizar o Composer ainda, dê o comando abaixo no seu te
 git submodule update --init --recursive
 ```
 
-### Usando Composer
-
-Se você precisa do Composer para compor alguma dependência externa, utilize o comando `create-project` para baixar e já instalar todas as dependências:
-
-#### Bootgly Console
-
-Se você quer somente desenvolver para o CLI baixe o starter kit do Console:
-
-```bash
-composer create-project bootgly/bootgly.console bootgly.console
-```
-
-#### Bootgly Web
-
-Se você quer desenvolver para o CLI e para a Web baixe o starter kit da Web que já vem com o Console junto:
-
-```bash
-composer create-project bootgly/bootgly.web bootgly.web
-```
-
-## Teste o Bootgly CLI
+## Execute o Bootgly CLI
 
 Para se certificar que tudo foi carregado corretamente, ainda no terminal, mude o diretório de trabalho para a pasta que foi gerada e utilize o comando abaixo para executar a tela inicial do Bootgly CLI:
 

@@ -38,7 +38,7 @@ A interface `WPI` (Web Programming Interface) é uma interface que _representa a
 
 As pastas recursos obrigatoriamente começam com letra minúscula e já é bem conhecida em qualquer projeto de programação. No Bootgly essas pastas simplesmente foram "formalizadas"!
 
-Essas pastas recurso são utilizadas para armazenadas recursos padronizados por alguma classe "Resource", por exemplo, uma classe chamada "Scripts" poderá padronizar uma pasta "scripts/" que servirá para armazenar scripts do Bootgly. Uma classe chamada "Tests" poderá formalizar uma pasta recurso chamada "tests/" que servirá para armazenar os arquivos para testes no Bootgly, e assim por diante!
+Essas pastas recurso são utilizadas para armazenar recursos padronizados por pela interface `Resources` que se encontra na interface `ABI`. Por exemplo, uma classe chamada "Scripts" poderá padronizar uma pasta "scripts/" que servirá para armazenar scripts do Bootgly. Uma classe chamada "Tests" poderá formalizar uma pasta recurso chamada "tests/" que servirá para armazenar os arquivos para testes no Bootgly, e assim por diante!
 
 A pasta `projects/` será utilizada por usuários desenvolvedores para armazenar os seus projetos desenvolvidos a partir do Bootgly como APIs, Apps, etc. Essa pasta só deve ser criada na pasta raiz.
 

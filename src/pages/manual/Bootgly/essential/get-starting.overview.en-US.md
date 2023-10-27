@@ -27,7 +27,7 @@ If you need Composer to compose some external dependency, use the `create-projec
 
 #### Bootgly Console
 
-If you only want to develop for the CLI download the Console starter kit:
+If you only want to develop only for the CLI, download the Console starter kit:
 
 ```bash
 composer create-project bootgly/bootgly.console bootgly.console
@@ -35,15 +35,15 @@ composer create-project bootgly/bootgly.console bootgly.console
 
 #### Bootgly Web
 
-If you want to develop for the CLI and for the Web download the Web starter kit that already comes with the Console together:
+If you want to develop for the CLI and for the Web, download the Web starter kit that already comes with the Console together:
 
 ```bash
 composer create-project bootgly/bootgly.web bootgly.web
 ```
 
-## Test the Bootgly CLI
+## Execute the Bootgly CLI
 
-To make sure everything was loaded correctly, still in the terminal, change the working directory to the folder that was generated and use the command below to execute the initial screen of Bootgly CLI:
+To make sure everything was loaded correctly, in the terminal, change the working directory to the folder that was generated and use the command below to execute the initial screen of Bootgly CLI:
 
 ```bash
 php bootgly

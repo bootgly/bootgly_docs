@@ -38,7 +38,7 @@ The `WPI` interface (Web Programming Interface) is an interface that _represents
 
 Resource folders must start with a lowercase letter and are well known in any programming project. In Bootgly these folders have simply been "formalized"!
 
-These resource folders are used to store resources standardized by some "Resource" class, for example, a class called "Scripts" could standardize a "scripts/" folder that will serve to store Bootgly scripts. A class called "Tests" could formalize a resource folder called "tests/" that will serve to store the test files for Bootgly, and so on!
+"These resource folders are used to store standardized resources by the `Resources` interface found in the `ABI` interface. For example, a class called 'Scripts' may standardize a 'scripts/' folder that will be used to store Bootgly scripts. A class called 'Tests' may formalize a resource folder called 'tests/' to store files for testing in Bootgly, and so on!"
 
 The `projects/` folder will be used by developer users to store their projects developed from Bootgly such as APIs, Apps, etc. This folder should only be created in the root folder.
 
