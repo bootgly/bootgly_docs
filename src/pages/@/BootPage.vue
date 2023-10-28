@@ -69,10 +69,7 @@ q-page-container
           .text-h6 Bootgly CLI - Progress component
           .text-subtitle1 Render 6x faster than Symfony / Laravel
           .text-subtitle1
-            | Source code:
-            a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Bootgly
-            | ,
-            a.q-ml-xs(:href="links[1]" target="_blank") Symfony / Laravel
+            a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
 
       q-carousel-slide(:name="2")
         q-img.rounded-borders.col-12(
@@ -149,8 +146,7 @@ export default {
       fullscreen: ref(false),
 
       links: [
-        'https://github.com/bootgly/bootgly-php-framework/blob/main/projects/%40bootgly/cli/examples/terminal/components/progress-component-01.example.php',
-        'https://gist.github.com/rodrigoslayertech/b12804d5a0c76adbf1c5272d8396618b'
+        'https://github.com/bootgly/bootgly_benchmarks/tree/main/progress_bar'
       ],
       videos: [
         {
