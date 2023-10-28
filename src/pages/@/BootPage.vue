@@ -67,7 +67,7 @@ q-page-container
 
         .carrousel-caption
           .text-h6 Bootgly CLI - Progress component
-          .text-subtitle1 Render 6x faster than Symfony / Laravel
+          .text-subtitle1 Render ≈7x faster than Symfony / Laravel
           .text-subtitle1
             a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
 
