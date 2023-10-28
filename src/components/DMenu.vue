@@ -74,6 +74,12 @@ q-scroll-area#menu(
       q-item-section 🤯 Awesome List
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
+    q-item(href="https://github.com/bootgly/bootgly_benchmarks/" target="_blank")
+      //-q-item-section(side)
+        q-icon(name="github")
+      q-item-section ⏱️ Bootgly Benchmarks (WIP)
+      q-item-section(side)
+        q-icon(name="open_in_new" size="xs")
 
   q-separator.separator.list
 
