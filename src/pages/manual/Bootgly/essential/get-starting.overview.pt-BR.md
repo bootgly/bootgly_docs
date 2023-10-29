@@ -5,19 +5,19 @@ Para começar a utilizar o Bootgly a partir de um starter kit, você deverá uti
 - [bootgly.cli](https://github.com/bootgly/bootgly.cli)
 - [bootgly.web](https://github.com/bootgly/bootgly.web)
 
-Por enquanto a utilização do Composer é opcional e você poderá utilizar somente o Git para compor os submódulos "bootáveis" do Bootgly.
+Por enquanto, a utilização do Composer é opcional e você poderá utilizar somente o Git para compor os submódulos "bootáveis" do Bootgly e já começar a desenvolver!
 
 ## Templating
 
-Segue abaixo tutoriais para baixar um starter kit somente utilizando o Composer ou o Git/Github.
+Segue abaixo tutoriais para baixar o boilerplate utilizando o Composer ou o Git/Github.
 
-### Usando Composer
+### Utilizando o Composer
 
-Se você precisa do Composer para compor alguma dependência externa, utilize o comando `create-project` para baixar e já instalar todas as dependências:
+Se você precisa do Composer para compor alguma dependência externa ou possui uma preferência por ele, dê o comando `create-project` para baixar e já instalar todas as dependências:
 
 #### Bootgly Console
 
-Se você quer desenvolver apenas para o CLI, baixe o starter kit do Console:
+Se você quer desenvolver apenas para o CLI, baixe o skeleton do Console:
 
 ```bash
 composer create-project bootgly/bootgly.console bootgly.console
@@ -25,17 +25,17 @@ composer create-project bootgly/bootgly.console bootgly.console
 
 #### Bootgly Web
 
-Se você quer desenvolver para o CLI e para a Web, baixe o starter kit da Web que já vem com o Console junto:
+Se você quer desenvolver para o CLI e para a Web, baixe o starter kit da Web, que já vem com o Console junto:
 
 ```bash
 composer create-project bootgly/bootgly.web bootgly.web
 ```
 
-### Usando Git
+### Utilizando o Git submodule
 
-Comece utilizando o `Github Templating` para criar outro repositórios a partir de um template (modelo) ou faça um `clone` diretamente de algum repositório template.
+Comece utilizando o `Github Templating` para criar outro repositório a partir do repositório template (modelo) e depois faça um `git clone` do repositório gerado.
 
-Se você não pretende utilizar o Composer ainda, dê o comando abaixo no seu terminal para baixar os submódulos que estão listados no arquivo `.gitmodules`:
+Se você não pretende utilizar o Composer ainda, apenas dê o comando abaixo no seu terminal para baixar recursivamente os submódulos que estão listados no arquivo `.gitmodules` do repositório modelo:
 
 ```bash
 git submodule update --init --recursive
