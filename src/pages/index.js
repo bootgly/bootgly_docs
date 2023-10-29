@@ -471,6 +471,24 @@ export default {
       }
     }
   },
+  '/CLI/Terminal/components/Field': {
+    config: {
+      icon: 'crop_square',
+      status: 'draft',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Field'
+      }
+    }
+  },
   '/CLI/Terminal/components/Menu': {
     config: {
       icon: 'menu',
@@ -534,15 +552,15 @@ export default {
       }
     }
   },
-  '/WPI/interfaces': {
+  '/WPI/Interfaces': {
     config: null,
     data: {
       '*': {
-        title: 'interfaces'
+        title: 'Interfaces'
       }
     }
   },
-  '/WPI/interfaces/TCP_Client': {
+  '/WPI/Interfaces/TCP_Client': {
     config: {
       icon: 'desktop_windows',
       status: 'empty',
@@ -551,7 +569,7 @@ export default {
           icon: 'language',
           name: 'WPI'
         },
-        subheader: 'WPI.interfaces'
+        subheader: 'WPI.Interfaces'
       },
       layouts: {
         footer: true
@@ -566,7 +584,7 @@ export default {
       }
     }
   },
-  '/WPI/interfaces/TCP_Server': {
+  '/WPI/Interfaces/TCP_Server': {
     config: {
       icon: 'dns',
       status: 'empty',
@@ -584,20 +602,48 @@ export default {
       }
     }
   },
-  '/WPI/nodes': {
+  '/WPI/Modules': {
     config: null,
     data: {
       '*': {
-        title: 'nodes'
+        title: 'Modules'
       }
     }
   },
-  '/WPI/nodes/HTTP_Server': {
+  '/WPI/Modules/HTTP_Server_Router': {
+    config: {
+      icon: 'settings_ethernet',
+      status: 'draft',
+      menu: {
+        subheader: 'WPI.Modules'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Server Router'
+      }
+    }
+  },
+  '/WPI/Nodes': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Nodes'
+      }
+    }
+  },
+  '/WPI/Nodes/HTTP_Server': {
     config: {
       icon: 'dns', // device_hub?
       status: 'empty',
       menu: {
-        subheader: 'WPI.nodes'
+        subheader: 'WPI.Nodes'
       },
       layouts: {
         footer: true
