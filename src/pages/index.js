@@ -556,7 +556,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'Interfaces'
+        title: 'WPI Interfaces'
       }
     }
   },
@@ -606,7 +606,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'Modules'
+        title: 'WPI Modules'
       }
     }
   },
@@ -634,7 +634,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'Nodes'
+        title: 'WPI Nodes'
       }
     }
   },
