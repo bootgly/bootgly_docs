@@ -218,7 +218,7 @@ export default {
       }
     }
   },
-  '/Bootgly/essential/get-starting': {
+  '/Bootgly/essential/getting-started': {
     config: {
       icon: 'star',
       status: 'draft',
@@ -234,7 +234,7 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Get starting'
+        title: 'Getting started'
       },
       'pt-BR': {
         title: 'Começando'

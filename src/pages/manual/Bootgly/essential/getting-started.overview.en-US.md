@@ -1,4 +1,4 @@
-# Get starting
+# Getting started
 
 To start using Bootgly from a starter kit, you should use one of Bootgly's template repositories:
 
