@@ -6,6 +6,7 @@
         a.line(:href="href+line")
           i.fa.fa-link(aria-hidden="true" data-hidden="true")
           span(:id="`${anchor}${line}`") {{ line }}
+    .language {{ language }}
     pre
       code(:class="`language-${language}`" v-html="highlighted")
 </template>
@@ -94,6 +95,7 @@ export default {
   max-width: calc(100vw - 40px)
 
   .code
+    position: relative
     font-family: "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "Andale Mono", "Lucida Console", Monospace
     border: 1px solid #ddd
     border-bottom: 1px solid #ccc
@@ -102,7 +104,7 @@ export default {
     padding: 0
 
     .lines
-      padding: 10px 5px
+      padding: 12px 5px 8px 5px
       text-align: right
       float: left
       -webkit-user-select: none
@@ -124,6 +126,12 @@ export default {
           margin-top: 3px
           margin-right: 5px
           visibility: hidden
+
+    .language
+      position: absolute
+      right: 5px
+      top: 3px
+      color: gray
 
     pre
       display: flex
