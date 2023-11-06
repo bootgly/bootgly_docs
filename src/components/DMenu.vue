@@ -71,7 +71,7 @@ q-scroll-area#menu(
     q-item(href="https://github.com/bootgly/bootgly_awesome/" target="_blank")
       //-q-item-section(side)
         q-icon(name="github")
-      q-item-section 🤯 Awesome List
+      q-item-section 🤯 Bootgly Awesome
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
     q-item(href="https://github.com/bootgly/bootgly_benchmarks/" target="_blank")
@@ -97,7 +97,7 @@ q-scroll-area#menu(
       q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()" role="listitem")
         q-item-label(header)
           q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
-          | {{ getMenuItemHeader(item.meta) }}
+          | {{ getMenuItemHeaderLabel(item.meta) }}
         q-separator.separator.partial(role="separator")
 
       //- Menu Separator - Subheader
@@ -123,7 +123,10 @@ q-scroll-area#menu(
 
       //- Menu Separator
       li(v-if="item.meta.menu.separator" role="listitem")
-        q-separator(:class="'separator' + item.meta.menu.separator" role="separator")
+        q-separator(
+          :class="'separator' + (item.meta.menu.separator === true ? '' : item.meta.menu.separator)"
+          role="separator"
+        )
 </template>
 
 <script>
@@ -241,14 +244,20 @@ export default {
     getMenuItemHeaderBackground () {
       return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
     },
-    getMenuItemHeader (meta) {
-      const path = `_.${meta.toppage}.${meta.menu.header.name}._`
+    getMenuItemHeaderLabel (meta) {
+      const label = meta.menu.header.label
 
-      if (this.$te(path)) {
-        return this.$t(path)
-      } else {
+      if (label[0] === '.') { // Node path
+        const path = `_.${meta.toppage}${label}._`
+
+        if (this.$te(path)) {
+          return this.$t(path)
+        }
+
         return this.$t(path, 'en-US')
       }
+
+      return label // String raw
     },
     getMenuItemSubheader (meta) {
       const path = `_.${meta.toppage}.${meta.menu.subheader}._`
@@ -409,7 +418,6 @@ body.body--light
     .q-item.q-router-link--active
       color: black
       background: rgba(189, 189, 189, 0.7)
-      font-weight: 500
       // List Item Section
       .q-item__section--side:not(.q-item__section--avatar)
           .q-icon
@@ -442,6 +450,7 @@ body.body--light
   li
     display: block
   .separator
+    margin: 5px 0
     &.list
       height: 3px
       margin: 0
