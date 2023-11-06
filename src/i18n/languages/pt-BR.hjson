@@ -38,7 +38,7 @@
     changelog: 'Changelog',
     roadmap: 'Roadmap',
     sponsor: 'Patrocine',
-    explore: 'Explore repositórios',
+    explore: 'Explore repositórios no GitHub',
 
     status: {
       empty: {

@@ -29,7 +29,7 @@ export default {
       menu: {
         header: {
           icon: 'contact_support',
-          name: 'Bootgly'
+          label: '.Bootgly'
         },
         subheader: 'Bootgly.about'
       },
@@ -304,12 +304,29 @@ export default {
       }
     }
   },
+
   // CLI
   '/CLI': {
-    config: null,
+    config: {
+      icon: 'terminal',
+      status: 'draft',
+      menu: {
+        header: {
+          icon: 'terminal',
+          label: 'Bootgly CLI'
+        },
+        separator: true
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
     data: {
       '*': {
-        title: 'Bootgly CLI'
+        title: 'Command Line Interface'
       }
     }
   },
@@ -325,12 +342,7 @@ export default {
     config: {
       icon: 'input',
       status: 'draft',
-      menu: {
-        header: {
-          icon: 'terminal',
-          name: 'CLI'
-        }
-      },
+      menu: {},
       layouts: {
         footer: true
       },
@@ -545,10 +557,26 @@ export default {
   },
   // WPI
   '/WPI': {
-    config: null,
+    config: {
+      icon: 'language',
+      status: 'draft',
+      menu: {
+        header: {
+          icon: 'language',
+          label: 'Bootgly WPI'
+        },
+        separator: true
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
     data: {
       '*': {
-        title: 'Bootgly WPI'
+        title: 'Web Programming Interface'
       }
     }
   },
@@ -565,10 +593,6 @@ export default {
       icon: 'desktop_windows',
       status: 'empty',
       menu: {
-        header: {
-          icon: 'language',
-          name: 'WPI'
-        },
         subheader: 'WPI.Interfaces'
       },
       layouts: {
