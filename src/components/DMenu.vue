@@ -260,7 +260,8 @@ export default {
       return label // String raw
     },
     getMenuItemSubheader (meta) {
-      const path = `_.${meta.toppage}.${meta.menu.subheader}._`
+      const subheader = meta.menu.subheader
+      const path = `_.${meta.toppage}${subheader}._`
 
       if (this.$te(path)) {
         return this.$t(path)

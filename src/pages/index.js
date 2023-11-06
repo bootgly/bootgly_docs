@@ -31,7 +31,7 @@ export default {
           icon: 'contact_support',
           label: '.Bootgly'
         },
-        subheader: 'Bootgly.about'
+        subheader: '.Bootgly.about'
       },
       layouts: {
         footer: true
@@ -99,7 +99,7 @@ export default {
       icon: 'developer_board',
       status: 'done',
       menu: {
-        subheader: 'Bootgly.basic'
+        subheader: '.Bootgly.basic'
       },
       layouts: {
         footer: true
@@ -155,7 +155,7 @@ export default {
       icon: 'flag',
       status: 'draft',
       menu: {
-        subheader: 'Bootgly.concepts'
+        subheader: '.Bootgly.concepts'
       },
       layouts: {
         footer: true
@@ -223,7 +223,7 @@ export default {
       icon: 'star',
       status: 'draft',
       menu: {
-        subheader: 'Bootgly.essential'
+        subheader: '.Bootgly.essential'
       },
       layouts: {
         footer: true
@@ -381,7 +381,7 @@ export default {
       icon: 'mouse',
       status: 'empty',
       menu: {
-        subheader: 'CLI.Terminal.Input'
+        subheader: '.CLI.Terminal.Input'
       },
       layouts: {
         footer: true
@@ -401,7 +401,7 @@ export default {
       icon: 'fas fa-i-cursor',
       status: 'draft',
       menu: {
-        subheader: 'CLI.Terminal.Output'
+        subheader: '.CLI.Terminal.Output'
       },
       layouts: {
         footer: true
@@ -468,7 +468,7 @@ export default {
       icon: 'notification_important',
       status: 'draft',
       menu: {
-        subheader: 'CLI.Terminal.components'
+        subheader: '.CLI.Terminal.components'
       },
       layouts: {
         footer: true
@@ -593,7 +593,7 @@ export default {
       icon: 'desktop_windows',
       status: 'empty',
       menu: {
-        subheader: 'WPI.Interfaces'
+        subheader: '.WPI.Interfaces'
       },
       layouts: {
         footer: true
@@ -639,7 +639,7 @@ export default {
       icon: 'settings_ethernet',
       status: 'draft',
       menu: {
-        subheader: 'WPI.Modules'
+        subheader: '.WPI.Modules'
       },
       layouts: {
         footer: true
@@ -667,7 +667,7 @@ export default {
       icon: 'dns', // device_hub?
       status: 'empty',
       menu: {
-        subheader: 'WPI.Nodes'
+        subheader: '.WPI.Nodes'
       },
       layouts: {
         footer: true
