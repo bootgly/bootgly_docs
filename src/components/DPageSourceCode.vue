@@ -132,6 +132,7 @@ export default {
       right: 5px
       top: 3px
       color: gray
+      user-select: none
 
     pre
       display: flex
@@ -180,6 +181,7 @@ export default {
       .token.boolean,
       .token.number,
       .token.constant,
+      .token.class-name
       .token.symbol,
       .token.deleted
         color: #905
@@ -204,8 +206,7 @@ export default {
       .token.keyword
         color: #07a
 
-      .token.function,
-      .token.class-name
+      .token.function
         color: #9a3449
 
       .token.regex,
@@ -251,6 +252,9 @@ export default {
         color: #f39c12 // Orange
       .token.number
         color: #f39c12 // Orange
+
+      .token.class-name
+        color: #ff68bc
       .token.constant
         color: #ff68bc
       .token.tag,
@@ -278,8 +282,7 @@ export default {
       .token.keyword
         color: #c74ded // Purple
 
-      .token.function,
-      .token.class-name
+      .token.function
         color: #FFE66D
 
       .token.regex,

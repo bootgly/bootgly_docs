@@ -555,6 +555,7 @@ export default {
       }
     }
   },
+
   // WPI
   '/WPI': {
     config: {
@@ -580,20 +581,20 @@ export default {
       }
     }
   },
-  '/WPI/Interfaces': {
+  '/WPI/TCP': {
     config: null,
     data: {
       '*': {
-        title: 'WPI Interfaces'
+        title: 'TCP'
       }
     }
   },
-  '/WPI/Interfaces/TCP_Client': {
+  '/WPI/TCP/TCP_Client': {
     config: {
       icon: 'desktop_windows',
       status: 'empty',
       menu: {
-        subheader: '.WPI.Interfaces'
+        subheader: '.WPI.TCP'
       },
       layouts: {
         footer: true
@@ -608,7 +609,7 @@ export default {
       }
     }
   },
-  '/WPI/Interfaces/TCP_Server': {
+  '/WPI/TCP/TCP_Server': {
     config: {
       icon: 'dns',
       status: 'empty',
@@ -626,48 +627,21 @@ export default {
       }
     }
   },
-  '/WPI/Modules': {
+  '/WPI/HTTP': {
     config: null,
     data: {
       '*': {
-        title: 'WPI Modules'
+        title: 'HTTP'
       }
     }
   },
-  '/WPI/Modules/HTTP_Server_Router': {
-    config: {
-      icon: 'settings_ethernet',
-      status: 'draft',
-      menu: {
-        subheader: '.WPI.Modules'
-      },
-      layouts: {
-        footer: true
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'HTTP Server Router'
-      }
-    }
-  },
-  '/WPI/Nodes': {
-    config: null,
-    data: {
-      '*': {
-        title: 'WPI Nodes'
-      }
-    }
-  },
-  '/WPI/Nodes/HTTP_Server': {
+  '/WPI/HTTP/HTTP_Server': {
     config: {
       icon: 'dns', // device_hub?
       status: 'empty',
       menu: {
-        subheader: '.WPI.Nodes'
+        subheader: '.WPI.HTTP',
+        separator: true
       },
       layouts: {
         footer: true
@@ -679,6 +653,62 @@ export default {
     data: {
       '*': {
         title: 'HTTP Server'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_Request': {
+    config: {
+      icon: 'last_page',
+      status: 'draft',
+      menu: {
+        subheader: '.WPI.HTTP.HTTP_Server'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Request'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_Response': {
+    config: {
+      icon: 'first_page',
+      status: 'draft',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Response'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_Router': {
+    config: {
+      icon: 'alt_route',
+      status: 'draft',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Routing'
       }
     }
   }
