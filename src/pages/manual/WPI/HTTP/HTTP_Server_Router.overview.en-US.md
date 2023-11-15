@@ -53,7 +53,7 @@ yield $Router->route('/', function (Request $Request, Response $Response) {
 }, GET);
 ```
 
-> You should use `yield` (Generator) if you define more than one route. This ensures consistency and performance in HTTP Responses under the hood due.
+> You should use `yield` (Generator) if you define more than one route. This ensures consistency and performance in HTTP Responses under the hood.
 
 ## Route Callbacks
 

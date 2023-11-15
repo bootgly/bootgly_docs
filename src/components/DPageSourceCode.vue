@@ -181,7 +181,7 @@ export default {
       .token.boolean,
       .token.number,
       .token.constant,
-      .token.class-name
+      .token.class-name,
       .token.symbol,
       .token.deleted
         color: #905
