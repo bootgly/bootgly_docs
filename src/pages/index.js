@@ -636,6 +636,14 @@ export default {
     }
   },
   '/WPI/HTTP/HTTP_Server': {
+    config: null,
+    data: {
+      '*': {
+        title: 'HTTP Server'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Servers': {
     config: {
       icon: 'dns', // device_hub?
       status: 'empty',
@@ -652,7 +660,27 @@ export default {
     },
     data: {
       '*': {
-        title: 'HTTP Server'
+        title: 'HTTP Servers'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI': {
+    config: {
+      icon: 'dns', // device_hub?
+      status: 'empty',
+      menu: {
+        separator: true
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Server CLI'
       }
     }
   },
