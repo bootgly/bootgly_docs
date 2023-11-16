@@ -483,7 +483,7 @@ export default {
       }
     }
   },
-  '/CLI/Terminal/components/Field': {
+  '/CLI/Terminal/components/Fieldset': {
     config: {
       icon: 'crop_square',
       status: 'draft',
@@ -497,7 +497,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Field'
+        title: 'Fieldset'
       }
     }
   },
