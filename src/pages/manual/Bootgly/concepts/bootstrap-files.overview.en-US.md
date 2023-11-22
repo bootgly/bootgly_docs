@@ -8,4 +8,4 @@ In addition to the main bootstrap files, there are other files that are used to 
 
 ## Boot Files for Bootgly Platforms
 
-In addition to the bootstrap files in the resources folder, there are also `boot files` to initialize Bootgly Platforms. These files are located in the `projects/` resource directory and follow the pattern: `*.boot.php`. For example, to boot the base Platform, the boot file is located at `projects/Bootgly.boot.php`. To boot the Command Line Interface (CLI), the boot file is located at `projects/Bootgly/CLI.boot.php`, and so on.
+In addition to the bootstrap files in the resources dir, there are also `boot files` to initialize Bootgly Platforms. These files are located in the `projects/` resource directory and follow the pattern: `*.boot.php`. For example, to boot the base Platform, the boot file is located at `projects/Bootgly.boot.php`. To boot the Command Line Interface (CLI), the boot file is located at `projects/Bootgly/CLI.boot.php`, and so on.

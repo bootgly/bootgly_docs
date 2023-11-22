@@ -120,7 +120,7 @@ export default {
   '/Bootgly/basic/directory_structure': {
     config: {
       icon: 'account_tree',
-      status: 'draft',
+      status: 'done',
       menu: {},
       layouts: {
         footer: true
@@ -153,7 +153,7 @@ export default {
   '/Bootgly/concepts/autoload-system': {
     config: {
       icon: 'flag',
-      status: 'draft',
+      status: 'done',
       menu: {
         subheader: '.Bootgly.concepts'
       },
@@ -173,7 +173,7 @@ export default {
   '/Bootgly/concepts/bootstrap-files': {
     config: {
       icon: 'post_add',
-      status: 'draft',
+      status: 'done',
       menu: {},
       layouts: {
         footer: true
@@ -191,7 +191,7 @@ export default {
   '/Bootgly/concepts/github-repositories': {
     config: {
       icon: 'archive',
-      status: 'draft',
+      status: 'done',
       menu: {},
       layouts: {
         footer: true

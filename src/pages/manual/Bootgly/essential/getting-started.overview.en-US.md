@@ -2,7 +2,7 @@
 
 To start using Bootgly from a starter kit, you should use one of Bootgly's template repositories:
 
-- [bootgly.cli](https://github.com/bootgly/bootgly.cli)
+- [bootgly.console](https://github.com/bootgly/bootgly.console)
 - [bootgly.web](https://github.com/bootgly/bootgly.web)
 
 For now, the use of Composer is optional and you can use only Git to compose the "bootable" submodules of Bootgly.
