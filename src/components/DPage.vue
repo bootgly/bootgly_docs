@@ -192,7 +192,7 @@ export default {
   min-height: calc(100vh - 80px)
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
-  padding: 20px
+  padding: 15px
 
 #page
   min-height: calc(100vh - 115px) !important
