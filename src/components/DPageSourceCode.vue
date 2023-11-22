@@ -128,10 +128,11 @@ export default {
           visibility: hidden
 
     .language
-      position: absolute
-      right: 5px
-      top: 3px
       color: gray
+      padding: 3px 5px
+      position: absolute
+      right: 0
+      top: 0
       user-select: none
 
     pre
@@ -155,6 +156,8 @@ export default {
         padding: 0
 
     &.white
+      .language
+        background-color: white
       .lines
         background-color: #fafafa
         a
@@ -224,14 +227,16 @@ export default {
         cursor: help
 
     &.dark
+      .language
+        background-color: #000
       .lines
-          background-color: #000
-          a
-            border-color: #f0f0f0
-            color: #969696 !important
-          a:hover
-            border-color: #f0f0f0
-            background-color: transparent !important
+        background-color: #000
+        a
+          border-color: #f0f0f0
+          color: #969696 !important
+        a:hover
+          border-color: #f0f0f0
+          background-color: transparent !important
 
       // TODO Andromeda Colorized
       .token.comment,
