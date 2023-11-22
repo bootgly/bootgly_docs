@@ -128,11 +128,14 @@ export default {
           visibility: hidden
 
     .language
+      border-color: #ddd
+      border-style: solid
+      border-width: 1px 1px 0px 1px
       color: gray
       padding: 3px 5px
       position: absolute
-      right: 0
-      top: 0
+      right: -1px
+      top: -28px
       user-select: none
 
     pre
