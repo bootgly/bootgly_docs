@@ -1,6 +1,6 @@
 # Começando
 
-Para começar a utilizar o Bootgly a partir de um starter kit, você deverá utilizar um dos repositórios templates do Bootgly:
+Para começar a utilizar o Bootgly a partir de um starter kit, você deverá utilizar um dos [repositórios templates](/manual/Bootgly/concepts/github-repositories/overview) do Bootgly:
 
 - [bootgly.console](https://github.com/bootgly/bootgly.console)
 - [bootgly.web](https://github.com/bootgly/bootgly.web)

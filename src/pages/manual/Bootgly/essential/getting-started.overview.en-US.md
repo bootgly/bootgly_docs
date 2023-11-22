@@ -1,6 +1,6 @@
 # Getting started
 
-To start using Bootgly from a starter kit, you should use one of Bootgly's template repositories:
+To start using Bootgly from a starter kit, you should use one of [Bootgly's template](/manual/Bootgly/concepts/github-repositories/overview) repositories:
 
 - [bootgly.console](https://github.com/bootgly/bootgly.console)
 - [bootgly.web](https://github.com/bootgly/bootgly.web)
@@ -10,16 +10,6 @@ For now, the use of Composer is optional and you can use only Git to compose the
 ## Templating
 
 Here are tutorials to download a starter kit using only Git/Github or Composer.
-
-### Using Git
-
-Start by using `Github Templating` to create other repositories from a template or make a `clone` directly from some template repository.
-
-If you do not intend to use Composer yet, run the command below in your terminal to download the submodules that are listed in the `.gitmodules` file:
-
-```bash
-git submodule update --init --recursive
-```
 
 ### Using Composer
 
@@ -39,6 +29,16 @@ If you want to develop for the CLI and for the Web, download the Web starter kit
 
 ```bash
 composer create-project bootgly/bootgly.web bootgly.web
+```
+
+### Using Git
+
+Start by using `Github Templating` to create other repositories from a template or make a `clone` directly from some template repository.
+
+If you do not intend to use Composer yet, run the command below in your terminal to download the submodules that are listed in the `.gitmodules` file:
+
+```bash
+git submodule update --init --recursive
 ```
 
 ## Execute the Bootgly CLI

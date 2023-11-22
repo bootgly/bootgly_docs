@@ -66,7 +66,7 @@ q-page-container
             q-media-player.bg-black(type="video", :sources="videos[0].sources" @playing="autoplay = false")
 
         .carrousel-caption
-          .text-h6 Bootgly CLI - Progress component
+          .text-h6 Bootgly CLI - UI Progress component
           .text-subtitle1 Render ≈7x faster than Symfony / Laravel
           .text-subtitle1
             a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
@@ -146,7 +146,7 @@ export default {
       fullscreen: ref(false),
 
       links: [
-        'https://github.com/bootgly/bootgly_benchmarks/tree/main/progress_bar'
+        'https://github.com/bootgly/bootgly_benchmarks/tree/main/Progress_Bar'
       ],
       videos: [
         {
