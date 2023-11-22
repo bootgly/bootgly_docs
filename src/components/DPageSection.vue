@@ -274,7 +274,4 @@ export default {
 
     &.overview
       word-spacing: 0.05em
-
-  .source-code
-    margin: 0 0 16px
 </style>

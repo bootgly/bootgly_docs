@@ -93,6 +93,7 @@ export default {
 .source-code
   box-shadow: 0 1px 1px rgb(0 0 0 / 13%)
   max-width: calc(100vw - 40px)
+  margin: 32px 0 16px
 
   .code
     position: relative
@@ -135,7 +136,7 @@ export default {
       padding: 3px 5px
       position: absolute
       right: -1px
-      top: -28px
+      top: -27px
       user-select: none
 
     pre
