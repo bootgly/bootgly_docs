@@ -9,6 +9,7 @@
         :color="copyBtnColor"
         :icon="copyBtnIcon"
         @click="copyCode"
+        aria-label="Copy code"
       )
 
   .code(:class="coloring")
@@ -144,11 +145,12 @@ export default {
 .source-code
   box-shadow: 0 1px 1px rgb(0 0 0 / 13%)
   max-width: calc(100vw - 40px)
-  margin: 16px 0 16px
+  margin: 14px 0 16px
 
   .info
     display: flex
     flex-direction: row-reverse
+    height: 21px
 
     .copy
       border-color: #ddd
@@ -159,13 +161,16 @@ export default {
       user-select: none
 
       button
-        padding: 6px
+        padding: 4px 4px 3px
+        position: relative
+        top: -1px
     .language
+      font-size: 13px
       border-color: #ddd
       border-style: solid
       border-width: 1px 1px 0 1px
       color: gray
-      padding: 3px 5px
+      padding: 0 5px 0
       user-select: none
 
   .code
