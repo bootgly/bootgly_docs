@@ -6,9 +6,17 @@
         a.line(:href="href+line")
           i.fa.fa-link(aria-hidden="true" data-hidden="true")
           span(:id="`${anchor}${line}`") {{ line }}
+    .copy
+      q-btn(
+        flat square dense size="xs"
+        :disable="copyBtnDisabled"
+        :color="copyBtnColor"
+        :icon="copyBtnIcon"
+        @click="copyCode"
+      )
     .language {{ language }}
     pre
-      code(:class="`language-${language}`" v-html="highlighted")
+      code(:class="`language-${language}`" v-html="highlighted" ref="code")
 </template>
 
 <script>
@@ -37,6 +45,13 @@ export default {
     }
   },
 
+  data () {
+    return {
+      copyBtnDisabled: false,
+      copyBtnColor: null,
+      copyBtnIcon: 'content_copy'
+    }
+  },
   computed: {
     href () {
       return `${this.$store.state.page.absolute}#${this.anchor}`
@@ -72,6 +87,40 @@ export default {
   },
 
   methods: {
+    copyCode () {
+      const code = this.$refs.code
+
+      if (code) {
+        // Creates a Range object
+        const range = document.createRange()
+
+        // Select the text of the element
+        range.selectNodeContents(code)
+
+        // Create a selection
+        const selection = window.getSelection()
+        selection.removeAllRanges()
+        selection.addRange(range)
+
+        try {
+          document.execCommand('copy')
+
+          this.copyBtnDisabled = true
+          this.copyBtnColor = 'positive'
+          this.copyBtnIcon = 'done'
+
+          setInterval(() => {
+            this.copyBtnDisabled = false
+            this.copyBtnColor = null
+            this.copyBtnIcon = 'content_copy'
+          }, 3000)
+        } catch (err) {
+          console.error('Error copying text: ', err)
+        } finally {
+          selection.removeAllRanges()
+        }
+      }
+    },
     // TODO move to library/utils
     printToLetter (number) {
       const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -128,6 +177,19 @@ export default {
           margin-right: 5px
           visibility: hidden
 
+    .copy
+      border-color: #ddd
+      border-style: solid
+      border-width: 1px 1px 0px 1px
+      color: gray
+      padding: 0
+      position: absolute
+      right: 35px
+      top: -27px
+      user-select: none
+
+      button
+        padding: 6px
     .language
       border-color: #ddd
       border-style: solid
