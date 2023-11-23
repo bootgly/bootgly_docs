@@ -360,9 +360,7 @@ export default {
     config: {
       icon: 'output',
       status: 'draft',
-      menu: {
-        separator: true
-      },
+      menu: {},
       layouts: {
         footer: true
       },
@@ -376,9 +374,29 @@ export default {
       }
     }
   },
-  '/CLI/Terminal/Input/Mouse': {
+  '/CLI/Terminal/Reporting': {
     config: {
-      icon: 'mouse',
+      icon: 'report',
+      status: 'empty',
+      menu: {
+        separator: true
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Terminal Reporting'
+      }
+    }
+  },
+  '/CLI/Terminal/Input/Keystrokes': {
+    config: {
+      icon: 'keyboard',
       status: 'empty',
       menu: {
         subheader: '.CLI.Terminal.Input'
@@ -392,7 +410,25 @@ export default {
     },
     data: {
       '*': {
-        title: 'Mouse'
+        title: 'Keystrokes'
+      }
+    }
+  },
+  '/CLI/Terminal/Input/Mousestrokes': {
+    config: {
+      icon: 'mouse',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Mousestrokes'
       }
     }
   },
@@ -451,6 +487,26 @@ export default {
     data: {
       '*': {
         title: 'Viewport'
+      }
+    }
+  },
+  '/CLI/Terminal/Reporting/Mouse': {
+    config: {
+      icon: 'mouse',
+      status: 'empty',
+      menu: {
+        subheader: '.CLI.Terminal.Reporting'
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Mouse'
       }
     }
   },
