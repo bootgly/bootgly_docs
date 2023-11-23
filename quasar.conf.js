@@ -103,7 +103,7 @@ module.exports = configure(function (ctx) {
       server: {
         type: 'http'
       },
-      port: 8081,
+      port: 8181,
       open: false // opens browser window automatically
     },
 

@@ -48,4 +48,5 @@ They have the following pattern in their name: `^[a-z]+_[a-z]+$`.
 All extension repositories have a `_` (underscore) as a separator:
 
 - [bootgly_awesome](https://github.com/bootgly/bootgly_awesome)
+- [bootgly_benchmarks](https://github.com/bootgly/bootgly_benchmarks)
 - [bootgly_docs](https://github.com/bootgly/bootgly_docs)

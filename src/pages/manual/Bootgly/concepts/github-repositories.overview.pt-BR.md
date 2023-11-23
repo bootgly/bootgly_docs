@@ -48,4 +48,5 @@ Eles possuem o seguinte padrão em seu nome: `^[a-z]+_[a-z]+$`.
 Todos os repositórios extensão possuem um `_` (underline) como separador:
 
 - [bootgly_awesome](https://github.com/bootgly/bootgly_awesome)
+- [bootgly_benchmarks](https://github.com/bootgly/bootgly_benchmarks)
 - [bootgly_docs](https://github.com/bootgly/bootgly_docs)

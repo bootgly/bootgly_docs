@@ -11,7 +11,7 @@ Por enquanto, a utilização do Composer é opcional e você poderá utilizar so
 
 Segue abaixo tutoriais para baixar o boilerplate utilizando o Composer ou o Git/Github.
 
-### Utilizando o Composer
+### Opção 1): Utilizando o Composer
 
 Se você precisa do Composer para compor alguma dependência externa ou possui uma preferência por ele, dê o comando `create-project` para baixar e já instalar todas as dependências:
 
@@ -25,13 +25,13 @@ composer create-project bootgly/bootgly.console bootgly.console
 
 #### Bootgly Web
 
-Se você quer desenvolver para o CLI e para a Web, baixe o starter kit da Web, que já vem com o Console junto:
+Se você quer desenvolver para o CLI e para o WPI, baixe o starter kit da Web, que já vem com o Console junto:
 
 ```bash
 composer create-project bootgly/bootgly.web bootgly.web
 ```
 
-### Utilizando o Git submodule
+### Opção 2): Utilizando o Git submodule
 
 Comece utilizando o `Github Templating` para criar outro repositório a partir do repositório template (modelo) e depois faça um `git clone` do repositório gerado.
 

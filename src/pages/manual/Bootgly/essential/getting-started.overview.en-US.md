@@ -11,7 +11,7 @@ For now, the use of Composer is optional and you can use only Git to compose the
 
 Here are tutorials to download a starter kit using only Git/Github or Composer.
 
-### Using Composer
+### Option 1): Using Composer
 
 If you need Composer to compose some external dependency, use the `create-project` command to download and already install all the dependencies:
 
@@ -31,7 +31,7 @@ If you want to develop for the CLI and for the Web, download the Web starter kit
 composer create-project bootgly/bootgly.web bootgly.web
 ```
 
-### Using Git
+### Option 2): Using Git
 
 Start by using `Github Templating` to create other repositories from a template or make a `clone` directly from some template repository.
 
