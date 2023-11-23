@@ -1,11 +1,7 @@
 <template lang="pug">
 .source-code
-  .code(:class="coloring")
-    .lines(v-if="lines && lines > 1")
-      template(v-for="(line, index) in lines" :key="index")
-        a.line(:href="href+line")
-          i.fa.fa-link(aria-hidden="true" data-hidden="true")
-          span(:id="`${anchor}${line}`") {{ line }}
+  .info
+    .language {{ language }}
     .copy
       q-btn(
         flat square dense size="xs"
@@ -14,7 +10,13 @@
         :icon="copyBtnIcon"
         @click="copyCode"
       )
-    .language {{ language }}
+
+  .code(:class="coloring")
+    .lines(v-if="lines && lines > 1")
+      template(v-for="(line, index) in lines" :key="index")
+        a.line(:href="href+line")
+          i.fa.fa-link(aria-hidden="true" data-hidden="true")
+          span(:id="`${anchor}${line}`") {{ line }}
     pre
       code(:class="`language-${language}`" v-html="highlighted" ref="code")
 </template>
@@ -142,7 +144,29 @@ export default {
 .source-code
   box-shadow: 0 1px 1px rgb(0 0 0 / 13%)
   max-width: calc(100vw - 40px)
-  margin: 32px 0 16px
+  margin: 16px 0 16px
+
+  .info
+    display: flex
+    flex-direction: row-reverse
+
+    .copy
+      border-color: #ddd
+      border-style: solid
+      border-width: 1px 0 0 1px
+      color: gray
+      padding: 0
+      user-select: none
+
+      button
+        padding: 6px
+    .language
+      border-color: #ddd
+      border-style: solid
+      border-width: 1px 1px 0 1px
+      color: gray
+      padding: 3px 5px
+      user-select: none
 
   .code
     position: relative
@@ -172,34 +196,11 @@ export default {
             visibility: visible
 
         i
+          font-size: 10px
           float: left
-          margin-top: 3px
-          margin-right: 5px
+          margin-top: 4px
+          margin-right: 4px
           visibility: hidden
-
-    .copy
-      border-color: #ddd
-      border-style: solid
-      border-width: 1px 1px 0px 1px
-      color: gray
-      padding: 0
-      position: absolute
-      right: 35px
-      top: -27px
-      user-select: none
-
-      button
-        padding: 6px
-    .language
-      border-color: #ddd
-      border-style: solid
-      border-width: 1px 1px 0px 1px
-      color: gray
-      padding: 3px 5px
-      position: absolute
-      right: -1px
-      top: -27px
-      user-select: none
 
     pre
       display: flex
