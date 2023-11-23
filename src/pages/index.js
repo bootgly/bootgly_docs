@@ -474,9 +474,7 @@ export default {
     config: {
       icon: 'wysiwyg',
       status: 'draft',
-      menu: {
-        separator: true
-      },
+      menu: {},
       layouts: {
         footer: true
       },
@@ -495,7 +493,8 @@ export default {
       icon: 'mouse',
       status: 'empty',
       menu: {
-        subheader: '.CLI.Terminal.Reporting'
+        subheader: '.CLI.Terminal.Reporting',
+        separator: true
       },
       layouts: {
         footer: true
@@ -511,20 +510,20 @@ export default {
     }
   },
 
-  '/CLI/Terminal/components': {
+  '/CLI/UI': {
     config: null,
     data: {
       '*': {
-        title: 'Terminal components'
+        title: 'UI components'
       }
     }
   },
-  '/CLI/Terminal/components/Alert': {
+  '/CLI/UI/Alert': {
     config: {
       icon: 'notification_important',
       status: 'draft',
       menu: {
-        subheader: '.CLI.Terminal.components'
+        subheader: '.CLI.UI'
       },
       layouts: {
         footer: true
@@ -539,7 +538,7 @@ export default {
       }
     }
   },
-  '/CLI/Terminal/components/Fieldset': {
+  '/CLI/UI/Fieldset': {
     config: {
       icon: 'crop_square',
       status: 'draft',
@@ -557,7 +556,7 @@ export default {
       }
     }
   },
-  '/CLI/Terminal/components/Menu': {
+  '/CLI/UI/Menu': {
     config: {
       icon: 'menu',
       status: 'draft',
@@ -575,7 +574,7 @@ export default {
       }
     }
   },
-  '/CLI/Terminal/components/Progress': {
+  '/CLI/UI/Progress': {
     config: {
       icon: 'downloading',
       status: 'draft',
@@ -593,7 +592,7 @@ export default {
       }
     }
   },
-  '/CLI/Terminal/components/Table': {
+  '/CLI/UI/Table': {
     config: {
       icon: 'table_chart',
       status: 'draft',
