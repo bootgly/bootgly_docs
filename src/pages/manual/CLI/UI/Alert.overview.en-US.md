@@ -20,15 +20,26 @@ $Alert = new Alert($Output);
 
 The Alert class can be configured with the following options:
 
-### Type
+### Style
 
-The type of alert to be displayed. Can be of type "DEFAULT", "SUCCESS", "ATTENTION" or "FAILURE".
+The style of alert to be displayed. Can be "Default" or "Fullcolor".
 
 Example:
 
 ```php
-// Setting the alert type to SUCCESS
-$Alert->Type::SUCCESS->set();
+// Setting the alert style to Fullcolor
+$Alert->Style::Fullcolor->set();
+```
+
+### Type
+
+The type of alert to be displayed. Can be "Default", "Success", "Attention" or "Failure".
+
+Example:
+
+```php
+// Setting the alert type to Success
+$Alert->Type::Success->set();
 ```
 
 ### width
@@ -44,30 +55,12 @@ $Alert->width = 100;
 
 ## Usage
 
-### emit
+### Setting the alert message
 
-The `emit` method is used to display an alert on the screen. It takes as parameter the message that should be displayed in the alert.
-
-Method header:
-
-```php
-emit (string $message) : void
-```
+The `message` property is used to set the message that should be displayed in the alert.
 
 Example:
 
 ```php
-use Bootgly\CLI;
-use Bootgly\CLI\UI\Alert\Alert;
-
-$Output = CLI::$Terminal->Output;
-
-$Alert = new Alert($Output);
-
-$Alert->Type::SUCCESS->set(); // set the alert type to success
-$Alert->width = 60; // set the alert width to 60 characters
-
-$message = 'This is a success alert!';
-
-$Alert->emit(message: $message); // call the method to display the alert
+$Alert->message = 'This is a success alert!';
 ```

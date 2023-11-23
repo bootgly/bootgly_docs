@@ -150,7 +150,7 @@ export default {
   .info
     display: flex
     flex-direction: row-reverse
-    height: 21px
+    height: 22px
 
     .copy
       border-color: #ddd
