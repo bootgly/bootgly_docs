@@ -2,7 +2,11 @@
 router-view
 
 q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? true : false")
-  q-layout(view="Lhh lpR fff" container :class="$q.dark.isActive ? `bg-dark` : `bg-white`")
+  q-layout(
+    view="Lhh lpR fff"
+    container
+    :class="$q.dark.isActive ? `bg-dark` : `bg-white`"
+    :style="$q.platform.is.mobile ? `` : `max-height: 450px`")
     q-header.d-header(elevated)
       q-toolbar.q-pr-none
         q-icon(name="settings" style="font-size: 1.5rem")
@@ -40,14 +44,12 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
                   template(v-slot:selected-item="scope")
                     q-item(
                       @remove="scope.removeAtIndex(scope.index)"
-                      :tabindex="scope.tabindex"
-                    )
+                      :tabindex="scope.tabindex")
                       q-item-section(avatar)
                         q-img(
                           no-spinner
                           :src="scope.opt.image"
-                          width="24px" height="24px"
-                        )
+                          width="24px" height="24px")
                       q-item-section
                         q-item-label {{ scope.opt.label }}
 

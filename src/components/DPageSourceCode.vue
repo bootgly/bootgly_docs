@@ -183,7 +183,7 @@ export default {
     padding: 0
 
     .lines
-      padding: 12px 5px 8px 5px
+      padding: 10px 5px 8px 5px
       text-align: right
       float: left
       -webkit-user-select: none
@@ -209,16 +209,11 @@ export default {
 
     pre
       display: flex
-
       margin: 0
       border: 0
       padding: 10px
-
       white-space: pre
       word-wrap: normal
-
-      line-height: 19px
-
       overflow: auto
       overflow-y: hidden
 
