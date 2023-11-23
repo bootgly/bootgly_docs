@@ -8,7 +8,7 @@ To use the component, it is necessary to create an instance passing as parameter
 
 ```php
 use Bootgly\CLI;
-use Bootgly\CLI\Terminal\components\Menu\Menu;
+use Bootgly\CLI\UI\Menu\Menu;
 
 $Input = CLI::$Terminal->Input;
 $Output = CLI::$Terminal->Output;

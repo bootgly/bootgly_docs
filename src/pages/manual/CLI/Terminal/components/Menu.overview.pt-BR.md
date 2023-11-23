@@ -8,7 +8,7 @@ Para utilizar o componente, é necessário criar uma instância passando como pa
 
 ```php
 use Bootgly\CLI;
-use Bootgly\CLI\Terminal\components\Menu\Menu;
+use Bootgly\CLI\UI\Menu\Menu;
 
 $Input = CLI::$Terminal->Input;
 $Output = CLI::$Terminal->Output;

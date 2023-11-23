@@ -9,7 +9,7 @@ To use the Alert class, it is necessary to instantiate an object of the same cla
 
 ```php
 use Bootgly\CLI;
-use Bootgly\CLI\Terminal\components\Alert\Alert;
+use Bootgly\CLI\UI\Alert\Alert;
 
 $Output = CLI::$Terminal->Output;
 
@@ -58,7 +58,7 @@ Example:
 
 ```php
 use Bootgly\CLI;
-use Bootgly\CLI\Terminal\components\Alert\Alert;
+use Bootgly\CLI\UI\Alert\Alert;
 
 $Output = CLI::$Terminal->Output;
 

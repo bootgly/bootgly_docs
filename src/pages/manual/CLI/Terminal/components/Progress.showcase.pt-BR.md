@@ -9,7 +9,7 @@ Aqui nós temos dois exemplo que também estão presentes como arquivo na demo d
 namespace Bootgly\CLI;
 
 use Bootgly\CLI;
-use Bootgly\CLI\Terminal\components\Progress\Progress;
+use Bootgly\CLI\UI\Progress\Progress;
 
 $Output = CLI::$Terminal->Output;
 $Output->reset();
@@ -75,7 +75,7 @@ $Progress->finish();
 namespace Bootgly\CLI;
 
 use Bootgly\CLI;
-use Bootgly\CLI\Terminal\components\Progress\Progress;
+use Bootgly\CLI\UI\Progress\Progress;
 
 $Output = CLI::$Terminal->Output;
 $Output->reset();
