@@ -248,7 +248,7 @@ export default {
       const label = meta.menu.header.label
 
       if (label[0] === '.') { // Node path
-        const path = `_.${meta.toppage}${label}._`
+        const path = `_.${meta.type}${label}._`
 
         if (this.$te(path)) {
           return this.$t(path)
@@ -261,7 +261,7 @@ export default {
     },
     getMenuItemSubheader (meta) {
       const subheader = meta.menu.subheader
-      const path = `_.${meta.toppage}${subheader}._`
+      const path = `_.${meta.type}${subheader}._`
 
       if (this.$te(path)) {
         return this.$t(path)

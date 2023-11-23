@@ -1,4 +1,28 @@
 export default {
+  '/getting-started': {
+    config: {
+      icon: 'flag',
+      status: 'draft',
+      type: 'guide',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Getting started'
+      },
+      'pt-BR': {
+        title: 'Começando'
+      }
+    }
+  },
+
+  // manual
   // Bootgly
   '/Bootgly': {
     config: null,
@@ -152,7 +176,7 @@ export default {
   },
   '/Bootgly/concepts/autoload-system': {
     config: {
-      icon: 'flag',
+      icon: 'cached',
       status: 'done',
       menu: {
         subheader: '.Bootgly.concepts'
@@ -218,34 +242,13 @@ export default {
       }
     }
   },
-  '/Bootgly/essential/getting-started': {
-    config: {
-      icon: 'star',
-      status: 'draft',
-      menu: {
-        subheader: '.Bootgly.essential'
-      },
-      layouts: {
-        footer: true
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Getting started'
-      },
-      'pt-BR': {
-        title: 'Começando'
-      }
-    }
-  },
   '/Bootgly/essential/projects': {
     config: {
       icon: 'create_new_folder',
       status: 'empty',
-      menu: {},
+      menu: {
+        subheader: '.Bootgly.essential'
+      },
       layouts: {
         footer: true
       },
@@ -330,6 +333,7 @@ export default {
       }
     }
   },
+
   '/CLI/Terminal': {
     config: null,
     data: {

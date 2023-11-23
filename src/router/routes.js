@@ -1,14 +1,13 @@
-const toppage = 'manual'
-
 import pages from 'pages'
 
 const pagesRoutes = []
 for (const [path, page] of Object.entries(pages)) {
   const config = page.config
-
   if (config === null) {
     continue
   }
+
+  const topPage = config.type ?? 'manual'
 
   // @ Construct children
   const children = [
@@ -41,11 +40,11 @@ for (const [path, page] of Object.entries(pages)) {
 
   // @ Push route to pageRoutes
   pagesRoutes.push({
-    path: '/' + toppage + path,
+    path: '/' + topPage + path,
     component: () => import('layouts/DefaultLayout'),
     meta: {
       ...config,
-      toppage
+      type: topPage
     },
     children
   })
