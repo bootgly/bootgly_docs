@@ -334,14 +334,63 @@ export default {
     }
   },
 
+  '/CLI/Commands': {
+    config: {
+      icon: 'keyboard_command_key',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Commands'
+      }
+    }
+  },
+  '/CLI/Scripts': {
+    config: {
+      icon: 'description',
+      status: 'empty',
+      menu: {},
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Scripts'
+      }
+    }
+  },
   '/CLI/Terminal': {
-    config: null,
+    config: {
+      icon: 'terminal',
+      status: 'empty',
+      menu: {
+        separator: true
+      },
+      layouts: {
+        footer: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
     data: {
       '*': {
         title: 'Terminal'
       }
     }
   },
+
   '/CLI/Terminal/Input': {
     config: {
       icon: 'input',
