@@ -6,17 +6,17 @@ Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pa
 
 ![Dir Structure](images/pages/Bootgly/basic/directory_structure-bootgly3.png)
 
-## Pasta global @/
+## Diretório global @/
 
-A pasta `@/` é uma pasta global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
+O diretório `@/` é um diretório global para artefatos e metadados. Ela pode ser encontrada em diretórios do Bootgly.
 
-É um local destinado a armazenar informações relevantes como arquivos de configuração, arquivos de metadados e outros arquivos gerais específicos do contexto local de onde essa pasta se encontra.
+É um local destinado a armazenar informações relevantes como arquivos de configuração, arquivos de metadados e outros arquivos gerais específicos do contexto local de onde esse diretório se encontra.
 
-Por ser uma pasta global, você pode criá-la em seus projetos produzidos com o Bootgly.
+Por ser um diretório global, você pode criá-la em seus projetos produzidos com o Bootgly.
 
-## Pastas de classes e namespaces
+## Diretórios para Classes/Namespaces
 
-Em projetos e repositórios Bootgly, o primeiro nó de um namespace começa com letra maíuscula e deve ser colocada direto dentro da pasta raiz. Você deve estar acostumado em ver o código fonte dentro da pasta `src/` que fica na pasta raiz de um projeto, mas devido ao sistema de autoloader do Bootgly, o código fonte é carregado com um padrão próprio, simples e eficiente e não deve ser colocado dentro da pasta `src/` porque ela deveria ser considerada uma pasta recurso (ver seção "Pastas recurso").
+Em projetos e repositórios Bootgly, o primeiro nó de um namespace começa com letra maíuscula e deve ser colocada direto dentro do diretório raiz. Você deve estar acostumado em ver o código fonte dentro do diretório `src/` que fica na raiz de um projeto, mas devido ao sistema de autoloader do Bootgly, o código fonte é carregado com um padrão próprio e único e por isso não deve ser colocado dentro do diretório `src/` porque no Bootgly, esse diretório deveria ser considerada uma diretório recurso (ver seção "Diretórios de recursos").
 
 ### Interfaces
 
@@ -34,18 +34,18 @@ A interface `CLI` (Command Line Interface) é uma interface para interagir com u
 
 A interface `WPI` (Web Programming Interface) é uma interface que _representa a Web em um nível mais base_ onde se define implementações de protocolos por exemplo, e nela deve conter clientes e servidores bases como um TCP Server/Client, um UDP Server/Client, um HTTP Server/Client e etc. Ela é utilizada para construção da _plataforma Web_.
 
-## Pastas recurso
+## Diretórios de recursos
 
-As pastas recursos obrigatoriamente começam com letra minúscula e já é bem conhecida em qualquer projeto de programação. No Bootgly essas pastas simplesmente foram "formalizadas"!
+Os diretórios de recursos obrigatoriamente começam com letra minúscula e já é bem conhecida em qualquer projeto de programação. No Bootgly eles foram simplesmente "formalizados"!
 
-Essas pastas recurso são utilizadas para armazenar recursos padronizados por pela interface `Resources` que se encontra na interface `ABI`. Por exemplo, uma classe chamada "Scripts" poderá padronizar uma pasta "scripts/" que servirá para armazenar scripts do Bootgly. Uma classe chamada "Tests" poderá formalizar uma pasta recurso chamada "tests/" que servirá para armazenar os arquivos para testes no Bootgly, e assim por diante!
+Esses diretórios recurso são utilizadas para armazenar recursos padronizados pela interface `Resources` que se encontra na interface `ABI`. Por exemplo, uma classe chamada "Scripts" poderá padronizar diretórios "scripts/" que servirá para armazenar scripts do Bootgly. Uma classe chamada "Tests" poderá formalizar diretórios "tests/" que servirá para armazenar os arquivos para testes no Bootgly, e assim por diante! Confira abaixo os diretórios recurso principais do Bootgly.
 
-A pasta `projects/` será utilizada por usuários desenvolvedores para armazenar os seus projetos desenvolvidos a partir do Bootgly como APIs, Apps, etc. Essa pasta só deve ser criada na pasta raiz.
+O diretório `projects/` será utilizada por usuários desenvolvedores para armazenar os seus projetos desenvolvidos a partir do Bootgly. Nele deve ser encontrado Apps, APIs, etc. Este diretório só deve existir dentro do diretório raiz.
 
-A pasta `public/` servirá para armazenar arquivos da Web e só deve ser colocada na pasta raiz.
+O diretório `public/` servirá para armazenar arquivos da Web e só deve ser existir dentro do diretório raiz.
 
-A pasta `scripts/` armazena os scripts para o CLI/Console e só deve ser colocada na pasta raiz.
+O diretório `scripts/` armazena os scripts para o CLI/Console e só deve ser existir dentro do diretório raiz.
 
-As pastas `tests/` armazenam arquivos de bootstrap de testes e arquivos que definem um "test case". Essas pastas devem ser criadas no mesmo namespace do que está sendo testado.
+O diretório `tests/` armazenam arquivos de bootstrap de testes e arquivos que definem um "test case". Esses diretórios devem ser criados no mesmo namespace do que está sendo testado.
 
-A pasta `workdata/` contém dados gerados, coletados ou utilizados no ambiente de trabalho, como arquivos de cache, de logs, arquivos temporários, informações sobre projetos, tarefas, etc.
+O diretório `workdata/` contém dados gerados, coletados ou utilizados no ambiente de trabalho, como arquivos de cache, de logs, arquivos temporários, informações sobre projetos, tarefas, etc.
