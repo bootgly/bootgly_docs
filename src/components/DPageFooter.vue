@@ -1,6 +1,6 @@
 <template lang="pug">
 q-toolbar#d-footer.bg-dark.text-white
-  q-btn.q-mr-sm(flat dense no-caps :color="color" @click="openURL(url)")
+  q-btn.q-mr-sm(flat dense no-caps :color="color" @click="openURL(url)" aria-label="Edit page on Github")
     q-icon(:name="icon" size="20px")
     .gt-xs
       span.hm(v-if="status === 'done'") {{ $t('footer.github.edit') }}
