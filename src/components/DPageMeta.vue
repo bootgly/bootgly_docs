@@ -1,57 +1,52 @@
 <template lang="pug">
-q-toolbar#d-footer.bg-dark.text-white
-  q-btn.q-mr-sm(flat dense no-caps :color="color" @click="openURL(url)" aria-label="Edit page on Github")
-    q-icon(:name="icon" size="20px")
-    .gt-xs
+#d-page-meta
+  #d-page-edit
+    q-btn(flat dense no-caps :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
       span.hm(v-if="status === 'done'") {{ $t('footer.github.edit') }}
       span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
       span.hm(v-else-if="status === 'empty'") {{ $t('footer.github.start') }}
-      q-icon(name="fab fa-github" size="20px")
+      q-icon.q-ml-sm(name="fab fa-github" size="20px")
+  #d-page-translation
+    q-chip.languages-progress.q-mr-xs.q-ml-none(dense square)
+      q-icon.q-mr-xs(name="translate" size="20px")
+      span {{ $i18n.locale }}:
+        b {{ ' ' + progress }}
+      q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.progress') }}
 
-  q-chip.languages-progress.q-mr-sm.q-ml-none(dense square)
-    q-icon.q-mr-xs(name="translate" size="20px")
-    span
-      | {{ $i18n.locale }}:
-      b {{ ' ' + progress }}
-    q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.progress') }}
+    q-chip.languages-available.q-ma-none(dense square)
+      q-icon.q-mr-xs(name="language" size="20px")
+      span {{ '#' + languages }}
+      q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.translations') }}
 
-  q-chip.languages-available.q-mr-sm.q-ml-none(dense square)
-    q-icon.q-mr-xs(name="language" size="20px")
-    span {{ '#' + languages }}
-    q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.translations') }}
-
-  q-chip.anchor-toggle.q-mr-none.q-ml-none(dense square v-if="metaToggle")
-    q-icon.q-mr-xs(name="link" size="20px")
-    q-toggle(v-model="layoutMeta" checked-icon="visibility" unchecked-icon="visibility_off" aria-label="Toggle Visibility Anchor")
-    q-tooltip(v-if="$q.platform.is.desktop" anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('footer.anchor') }}
+  nav#d-page-nav
+    router-link.link.float-left(v-if="prev" :to="`${prev}/overview`")
+      div.text-caption
+        | {{ $t('nav.prev') }}
+      q-icon(name="navigate_before")
+      span {{ $t(`_${prev.replace(/_$/, '').replace(/\//g, '.')}._`) }}
+    router-link.link.float-right(v-if="next" :to="`${next}/overview`")
+      div.text-caption
+        | {{ $t('nav.next') }}
+      span {{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}
+      q-icon(name="navigate_next")
 </template>
 
 <script>
 import { openURL } from 'quasar'
 
 export default {
-  name: 'DPageFooter',
+  name: 'DPageMeta',
 
-  data () {
-    return {
-      base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/'
-    }
-  },
   computed: {
-    // $Route
-    path () {
-      let path = this.$route.path
-      path = path.replace(/\/([^/]*)$/, '.$1')
-      return path
-    },
-    // meta
+    // Edit
     status () {
       return this.$route.meta.status
     },
-
-    url () {
+    URL () {
       const base = this.base
-      const path = this.path
+
+      const path = this.$route.path.replace(/\/([^/]*)$/, '.$1')
+
       const locale = this.$i18n.locale
 
       return `${base}${path}.${locale}.md`
@@ -75,6 +70,7 @@ export default {
       }
     },
 
+    // Translation
     progress () {
       // i18n
       // |-> paths
@@ -127,20 +123,34 @@ export default {
       return `${i18nLocalesAvailable} ${this.$t('footer.of')} ${i18nLocales.length}`
     },
 
-    metaToggle () {
-      return this.$store.state.layout.metaToggle
-    },
-    layoutMeta: {
-      get () {
-        return this.$store.state.layout.meta
-      },
-      set (value) {
-        if (this.$q.platform.is.desktop) {
-          // this.$store.commit('layout/setLeft', !value)
-        }
+    // Navigation
+    prev () {
+      const base = this.$store.state.page.base
+      const routes = this.$router.options.routes.slice(0, -2)
 
-        this.$store.commit('layout/setMeta', value)
+      for (let i = 0; i < routes.length; i++) {
+        if ('/' + base === routes[i].path) {
+          if (i > 0) {
+            return routes[i - 1].path
+          }
+        }
       }
+
+      return ''
+    },
+    next () {
+      const base = this.$store.state.page.base
+      const routes = this.$router.options.routes.slice(0, -2)
+
+      for (let i = 0; i < routes.length; i++) {
+        if ('/' + base === routes[i].path) {
+          if (typeof routes[i + 1] !== 'undefined') {
+            return routes[i + 1].path
+          }
+        }
+      }
+
+      return ''
     }
   },
 
@@ -151,23 +161,27 @@ export default {
 </script>
 
 <style lang="sass">
-#d-footer
-  &.q-toolbar
-    min-height: 30px
-  span
-    &.hm
-      margin: 0 5px
+#d-page-meta
+  max-width: 1200px
+  display: block
+  width: 100%
+  min-height: 36px
+  margin: 15px auto 40px auto
+  border-top: 3px solid #e0e0e0
 
-  .anchor-toggle
-    position: absolute
-    height: 22px
-    top: 1px
-    right: 12px
+  #d-page-edit
+    display: inline-block
+    margin-top: 20px
+  #d-page-translation
+    float: right
+    margin-top: 20px
 
-  .q-toggle-handle
-    height: 20px
+  #d-page-nav
+    &:first-child
+      margin-top: calc(100vh - 200px)
 
-  @media only screen and (max-width: 374px)
-    .languages-available
-      display: none
+    .link
+      margin-top: 20px
+      border: 1px solid #e0e0e0
+      padding: 15px !important
 </style>

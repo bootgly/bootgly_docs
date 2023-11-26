@@ -12,20 +12,16 @@ q-layout(view="lHh LpR lFf")
     d-menu
 
   router-view
-
-  q-footer(elevated v-if="this.$route.matched[0].meta.layouts.footer !== false" v-model="this.$store.state.layout.footer")
-    d-page-footer
 </template>
 
 <script>
 import DMenu from 'components/DMenu'
-import DPageFooter from 'components/DPageFooter'
 
 export default {
   name: 'LayoutDefault',
 
   components: {
-    DMenu, DPageFooter
+    DMenu
   },
 
   data () {
@@ -82,7 +78,4 @@ export default {
   .q-btn:before
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.2), 0 0 2px rgba(0, 0, 0, 0.14), 0 0 1px -2px rgba(0, 0, 0, 0.12)
     border-radius: 0
-
-.q-footer
-  z-index: 999
 </style>

@@ -183,7 +183,7 @@ export default {
     padding: 0
 
     .lines
-      padding: 12px 5px 8px 5px
+      padding: 11px 5px 8px 5px
       text-align: right
       float: left
       -webkit-user-select: none

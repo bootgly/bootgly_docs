@@ -1,38 +1,36 @@
 <template lang="pug">
 q-page-container#page-container
-  q-toolbar#submenu.bg-grey-8.text-white(v-if="overview && (showcase || vs)")
+  q-toolbar#submenu.bg-grey-8.text-white
     q-toolbar-title.toolbar-container
       q-btn-group(v-bind:class="$q.screen.lt.md ? 'mobile' : null")
-        q-btn(v-if="overview"
+        q-btn(v-if="overview && (showcase || vs)"
           no-caps flat
           v-bind:class="pActive('/overview')"
           :label="$t('submenu.overview')" icon="pageview"
-          @click="subroute('/overview')"
-        )
+          @click="subroute('/overview')")
         q-btn(v-if="showcase"
           no-caps flat
           v-bind:class="pActive('/showcase')"
           :label="$t('submenu.showcase')" icon="play_circle_filled"
-          @click="subroute('/showcase')"
-        )
+          @click="subroute('/showcase')")
         q-btn(v-if="vs"
           no-caps flat
           v-bind:class="pActive('/vs')"
           :label="$t('submenu.versus')" icon="compare"
-          @click="subroute('/vs')"
-        )
+          @click="subroute('/vs')")
+    q-btn(@click="toggleSectionsTree" icon="account_tree")
 
   q-page#page
     q-scroll-area.content(:class="main" ref="pageScrollArea")
       #scroll-container
         slot
-      d-page-nav(v-if="!disableNav")
+      d-page-meta(v-if="!disableNav")
       q-scroll-observer(@scroll="scrolling" :debounce="300")
-    //-q-page-sticky(v-if="showBackToTop" position="bottom-right" :offset="[18, 18]")
-        q-btn.rotate-90(
-          round :aria-label="$t('system.backToTop')"
-          color="primary" icon="arrow_back" @click="backToTop"
-        )
+      //-q-page-sticky(v-if="getScrollPositionTop > 1" position="right" :offset="[18, 0]")
+        q-btn(
+          round push
+          :aria-label="$t('system.backToTop')" color="primary" icon="arrow_upward"
+          @click="backToTop")
 
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
     d-page-anchor#anchor
@@ -40,7 +38,7 @@ q-page-container#page-container
 
 <script>
 import DPageAnchor from 'components/DPageAnchor'
-import DPageNav from 'components/DPageNav'
+import DPageMeta from 'components/DPageMeta'
 
 import Navigator from 'components/navigator'
 
@@ -49,7 +47,7 @@ export default {
 
   components: {
     DPageAnchor,
-    DPageNav
+    DPageMeta
   },
 
   mixins: [
@@ -105,17 +103,14 @@ export default {
           classes = 'overview'
       }
 
-      if (this.showcase || this.vs) {
-        classes += ' with-submenu'
-      } else {
-        classes += ' without-submenu'
-      }
-
       return classes
     }
   },
 
   methods: {
+    toggleSectionsTree () {
+      this.layoutMeta = !this.layoutMeta
+    },
     pActive (relative) {
       if (relative === '/' && (this.$store.state.page.relative === relative || this.$store.state.page.relative === '')) {
         return 'active'
@@ -153,7 +148,6 @@ export default {
         this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 0)
       }
     }
-    // @ Events
 
     /*
     backToTop () {
@@ -183,19 +177,15 @@ export default {
 #page-container
   padding-bottom: 0 !important
 
-.content.with-submenu,
-.content.with-submenu > div.scroll
-  min-height: calc(100vh - 115px)
-
-.content.without-submenu,
-.content.without-submenu > div.scroll
-  min-height: calc(100vh - 80px)
+.content,
+.content > div.scroll
+  min-height: calc(100vh - 86px)
 
 .content:not(.no-padding) > div.scroll > div.q-scrollarea__content
   padding: 15px
 
 #page
-  min-height: calc(100vh - 115px) !important
+  min-height: calc(100vh - 86px) !important
 
 #scroll-container
   max-width: 1200px
