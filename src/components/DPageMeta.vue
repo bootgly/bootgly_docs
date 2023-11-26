@@ -37,6 +37,11 @@ import { openURL } from 'quasar'
 export default {
   name: 'DPageMeta',
 
+  data () {
+    return {
+      base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/'
+    }
+  },
   computed: {
     // Edit
     status () {
