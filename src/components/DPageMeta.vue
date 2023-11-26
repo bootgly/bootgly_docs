@@ -7,7 +7,7 @@
       span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
       span.hm(v-else-if="status === 'empty'") {{ $t('footer.github.start') }}
   #d-page-translation
-    q-chip.languages-progress.q-mr-none.q-ml-none(dense square)
+    q-chip.languages-progress.q-mr-xs.q-ml-none(dense square)
       q-icon.q-mr-xs(name="translate" size="20px")
       span {{ $i18n.locale }}:
         b {{ ' ' + progress }}
