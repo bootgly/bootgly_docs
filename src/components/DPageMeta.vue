@@ -1,7 +1,7 @@
 <template lang="pug">
 #d-page-meta
   #d-page-edit
-    q-btn(flat dense no-caps :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
+    q-btn(dense no-caps :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
       q-icon.q-mr-xs(name="fab fa-github" size="20px")
       span.hm(v-if="status === 'done'") {{ $t('footer.github.edit') }}
       span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
