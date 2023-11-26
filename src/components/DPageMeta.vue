@@ -2,12 +2,12 @@
 #d-page-meta
   #d-page-edit
     q-btn(flat dense no-caps :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
+      q-icon.q-mr-xs(name="fab fa-github" size="20px")
       span.hm(v-if="status === 'done'") {{ $t('footer.github.edit') }}
       span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
       span.hm(v-else-if="status === 'empty'") {{ $t('footer.github.start') }}
-      q-icon.q-ml-sm(name="fab fa-github" size="20px")
   #d-page-translation
-    q-chip.languages-progress.q-mr-xs.q-ml-none(dense square)
+    q-chip.languages-progress.q-mr-none.q-ml-none(dense square)
       q-icon.q-mr-xs(name="translate" size="20px")
       span {{ $i18n.locale }}:
         b {{ ' ' + progress }}
@@ -120,7 +120,7 @@ export default {
         i18nLocalesAvailable = 1
       }
 
-      return `${i18nLocalesAvailable} ${this.$t('footer.of')} ${i18nLocales.length}`
+      return `${i18nLocalesAvailable}/${i18nLocales.length}`
     },
 
     // Navigation

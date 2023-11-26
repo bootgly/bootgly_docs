@@ -21,9 +21,9 @@
   },
   footer: {
     github: {
-      start: 'Comece esta página no ',
-      complete: 'Complete esta página no ',
-      edit: 'Edite esta página no '
+      start: 'Comece esta página',
+      complete: 'Complete esta página',
+      edit: 'Edite esta página'
     },
     progress: 'Progresso da tradução',
     translations: 'Traduções disponíveis',
