@@ -12,7 +12,7 @@ q-dialog#settings(v-model="toogleDialog" :maximized="$q.platform.is.mobile ? tru
         q-icon(name="settings" style="font-size: 1.5rem")
         q-toolbar-title {{ $t('menu.settings') }}
         q-btn.filled(v-close-popup text-color="white" icon="close")
-    q-page-container.content
+    q-page-container
       q-page
         q-list
           q-item
