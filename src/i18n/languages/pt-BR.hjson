@@ -14,21 +14,22 @@
     manual: {}
   },
 
-  // @ Page
-  nav: {
-    prev: 'Página anterior',
-    next: 'Próxima página'
-  },
-  footer: {
-    github: {
-      start: 'Comece esta página',
-      complete: 'Complete esta página',
-      edit: 'Edite esta página'
+  page: {
+    edit: {
+      github: {
+        start: 'Comece esta página',
+        complete: 'Complete esta página',
+        edit: 'Edite esta página'
+      },
+      progress: 'Progresso da tradução',
+      translations: 'Traduções disponíveis',
+      anchor: 'Navegação por âncoras',
+      of: 'de'
     },
-    progress: 'Progresso da tradução',
-    translations: 'Traduções disponíveis',
-    anchor: 'Navegação por âncoras',
-    of: 'de'
+    nav: {
+      prev: 'Página anterior',
+      next: 'Próxima página'
+    }
   },
 
   menu: {

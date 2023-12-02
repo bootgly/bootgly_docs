@@ -15,20 +15,22 @@
   },
 
   // @ Page
-  nav: {
-    prev: 'Previous page',
-    next: 'Next page'
-  },
-  footer: {
-    github: {
-      start: 'Start this page',
-      complete: 'Complete this page',
-      edit: 'Edit this page'
+  page: {
+    edit: {
+      github: {
+        start: 'Start this page',
+        complete: 'Complete this page',
+        edit: 'Edit this page'
+      },
+      progress: 'Translation Progress',
+      translations: 'Available translations',
+      anchor: 'Anchor navigation',
+      of: 'of'
     },
-    progress: 'Translation Progress',
-    translations: 'Available translations',
-    anchor: 'Anchor navigation',
-    of: 'of'
+    nav: {
+      prev: 'Previous page',
+      next: 'Next page'
+    }
   },
 
   menu: {
