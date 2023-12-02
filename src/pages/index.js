@@ -5,9 +5,6 @@ export default {
       status: 'draft',
       type: 'guide',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -57,9 +54,6 @@ export default {
         },
         subheader: '.Bootgly.about'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -75,11 +69,11 @@ export default {
     meta: {
       'en-US': {
         overview: {
-          _translations: 2,
           _sections: {
             count: 2,
             done: 2
-          }
+          },
+          _translations: 2
         }
       },
       'pt-BR': {}
@@ -90,9 +84,6 @@ export default {
       icon: 'question_mark',
       status: 'done',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -125,9 +116,6 @@ export default {
       menu: {
         subheader: '.Bootgly.basic'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -146,9 +134,6 @@ export default {
       icon: 'account_tree',
       status: 'done',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -181,9 +166,6 @@ export default {
       menu: {
         subheader: '.Bootgly.concepts'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -199,9 +181,6 @@ export default {
       icon: 'post_add',
       status: 'done',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -217,9 +196,6 @@ export default {
       icon: 'archive',
       status: 'done',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -249,9 +225,6 @@ export default {
       menu: {
         subheader: '.Bootgly.essential'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -270,9 +243,6 @@ export default {
       icon: 'bug_report',
       status: 'empty',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -291,9 +261,6 @@ export default {
       icon: 'science',
       status: 'empty',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -320,9 +287,6 @@ export default {
         },
         separator: true
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -339,9 +303,6 @@ export default {
       icon: 'keyboard_command_key',
       status: 'empty',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -357,9 +318,6 @@ export default {
       icon: 'description',
       status: 'empty',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -377,9 +335,6 @@ export default {
       menu: {
         separator: true
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -396,9 +351,6 @@ export default {
       icon: 'input',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: true
       }
@@ -414,9 +366,6 @@ export default {
       icon: 'output',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -433,9 +382,6 @@ export default {
       status: 'empty',
       menu: {
         separator: true
-      },
-      layouts: {
-        footer: true
       },
       subpages: {
         showcase: false
@@ -454,9 +400,6 @@ export default {
       menu: {
         subheader: '.CLI.Terminal.Input'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -472,9 +415,6 @@ export default {
       icon: 'mouse',
       status: 'empty',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -492,9 +432,6 @@ export default {
       menu: {
         subheader: '.CLI.Terminal.Output'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: true
       }
@@ -510,9 +447,6 @@ export default {
       icon: 'text_fields',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -528,9 +462,6 @@ export default {
       icon: 'wysiwyg',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -548,9 +479,6 @@ export default {
       menu: {
         subheader: '.CLI.Terminal.Reporting',
         separator: true
-      },
-      layouts: {
-        footer: true
       },
       subpages: {
         showcase: false
@@ -578,9 +506,6 @@ export default {
       menu: {
         subheader: '.CLI.UI'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -596,9 +521,6 @@ export default {
       icon: 'crop_square',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -614,9 +536,6 @@ export default {
       icon: 'menu',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -632,9 +551,6 @@ export default {
       icon: 'downloading',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: true
       }
@@ -650,9 +566,6 @@ export default {
       icon: 'table_chart',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -675,9 +588,6 @@ export default {
           label: 'Bootgly WPI'
         },
         separator: true
-      },
-      layouts: {
-        footer: true
       },
       subpages: {
         showcase: false
@@ -704,9 +614,6 @@ export default {
       menu: {
         subheader: '.WPI.TCP'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -722,9 +629,6 @@ export default {
       icon: 'dns',
       status: 'empty',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -759,9 +663,6 @@ export default {
         subheader: '.WPI.HTTP',
         separator: true
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -778,9 +679,6 @@ export default {
       status: 'empty',
       menu: {
         separator: true
-      },
-      layouts: {
-        footer: true
       },
       subpages: {
         showcase: false
@@ -799,9 +697,6 @@ export default {
       menu: {
         subheader: '.WPI.HTTP.HTTP_Server'
       },
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -817,9 +712,6 @@ export default {
       icon: 'first_page',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
@@ -835,9 +727,6 @@ export default {
       icon: 'alt_route',
       status: 'draft',
       menu: {},
-      layouts: {
-        footer: true
-      },
       subpages: {
         showcase: false
       }
