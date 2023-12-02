@@ -1,13 +1,13 @@
 <template lang="pug">
 #d-page-meta
   #d-page-edit
-    q-btn(flat dense no-caps :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
+    q-btn(dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
       q-icon.q-mr-xs(name="fab fa-github" size="20px")
       span.hm(v-if="status === 'done'") {{ $t('footer.github.edit') }}
       span.hm(v-else-if="status === 'draft'") {{ $t('footer.github.complete') }}
       span.hm(v-else-if="status === 'empty'") {{ $t('footer.github.start') }}
   #d-page-translation
-    q-chip.languages-progress.q-mr-none.q-ml-none(dense square)
+    q-chip.languages-progress.q-mr-xs.q-ml-none(dense square)
       q-icon.q-mr-xs(name="translate" size="20px")
       span {{ $i18n.locale }}:
         b {{ ' ' + progress }}
