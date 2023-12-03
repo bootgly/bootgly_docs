@@ -705,6 +705,18 @@ export default {
       '*': {
         title: 'Request'
       }
+    },
+    meta: {
+      'en-US': {
+        overview: {
+          _sections: {
+            count: 11,
+            done: null
+          },
+          _translations: 1
+        }
+      },
+      'pt-BR': {}
     }
   },
   '/WPI/HTTP/HTTP_Server_Response': {
