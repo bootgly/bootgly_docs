@@ -1,30 +1,31 @@
 <template lang="pug">
 #d-page-meta
-  #d-page-edit
-    q-btn(dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
-      q-icon.q-mr-xs(name="fab fa-github" size="20px")
-      span.hm(v-if="status === 'done'") {{ $t('page.edit.github.edit') }}
-      span.hm(v-else-if="status === 'draft'") {{ $t('page.edit.github.complete') }}
-      span.hm(v-else-if="status === 'empty'") {{ $t('page.edit.github.start') }}
-  #d-page-translation
-    q-chip.languages-progress.q-mr-xs.q-ml-none(dense square)
-      q-icon.q-mr-xs(name="translate" size="20px")
-      span {{ $i18n.locale }}:
-        b {{ ' ' + progress }}
-      q-tooltip(anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('page.edit.progress') }}
+  .row.justify-between.q-mt-lg
+    #d-page-edit.col
+      q-btn(dense no-caps text-color="black" :color="color" @click="openURL(URL)" aria-label="Edit page on Github")
+        q-icon.q-mr-xs(name="fab fa-github" size="20px")
+        span.hm(v-if="status === 'done'") {{ $t('page.edit.github.edit') }}
+        span.hm(v-else-if="status === 'draft'") {{ $t('page.edit.github.complete') }}
+        span.hm(v-else-if="status === 'empty'") {{ $t('page.edit.github.start') }}
+    #d-page-translation.col-auto
+      q-chip.languages-progress.q-mr-xs.q-ml-none(dense square)
+        q-icon.q-mr-xs(name="translate" size="20px")
+        span {{ $i18n.locale }}:
+          b {{ ' ' + progress }}
+        q-tooltip(anchor="top middle" self="bottom middle" :offset="[10, 10]") {{ $t('page.edit.progress') }}
 
-    q-chip.languages-available.q-ma-none(dense square)
-      q-icon.q-mr-xs(name="language" size="20px")
-      span {{ '#' + languages }}
-      q-tooltip(anchor="top end" self="bottom end" :offset="[10, 10]") {{ $t('page.edit.translations') }}
+      q-chip.languages-available.q-ma-none(dense square)
+        q-icon.q-mr-xs(name="language" size="20px")
+        span {{ '#' + languages }}
+        q-tooltip(anchor="top end" self="bottom end" :offset="[10, 10]") {{ $t('page.edit.translations') }}
 
-  nav#d-page-nav
-    router-link.link.float-left(v-if="prev" :to="`${prev}/overview`")
+  nav#d-page-nav.row
+    router-link.link.col(v-if="prev" :to="`${prev}/overview`")
       div.text-caption
         | {{ $t('page.nav.prev') }}
       q-icon(name="navigate_before")
       span {{ $t(`_${prev.replace(/_$/, '').replace(/\//g, '.')}._`) }}
-    router-link.link.float-right(v-if="next" :to="`${next}/overview`")
+    router-link.link.col(v-if="next" :to="`${next}/overview`")
       div.text-caption
         | {{ $t('page.nav.next') }}
       span {{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}
@@ -171,15 +172,10 @@ export default {
   display: block
   width: 100%
   min-height: 36px
-  margin: 15px auto 40px auto
+  margin: 24px auto 40px auto
   border-top: 3px solid #e0e0e0
 
-  #d-page-edit
-    display: inline-block
-    margin-top: 20px
   #d-page-translation
-    float: right
-    margin-top: 20px
     .q-chip
       padding: 16px 0.4em
       margin-top: 0
