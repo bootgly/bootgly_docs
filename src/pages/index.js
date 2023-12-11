@@ -36,10 +36,10 @@ export default {
     config: null,
     data: {
       'en-US': {
-        title: 'About'
+        title: 'Bootgly - About'
       },
       'pt-BR': {
-        title: 'Sobre'
+        title: 'Bootgly - Sobre'
       }
     }
   },
@@ -102,10 +102,10 @@ export default {
     config: null,
     data: {
       'en-US': {
-        title: 'Basic'
+        title: 'Bootgly - Basic'
       },
       'pt-BR': {
-        title: 'Básico'
+        title: 'Bootgly - Básico'
       }
     }
   },
@@ -152,10 +152,10 @@ export default {
     config: null,
     data: {
       'en-US': {
-        title: 'Concepts'
+        title: 'Bootgly - Concepts'
       },
       'pt-BR': {
-        title: 'Conceitos'
+        title: 'Bootgly - Conceitos'
       }
     }
   },
@@ -211,10 +211,10 @@ export default {
     config: null,
     data: {
       'en-US': {
-        title: 'Essential'
+        title: 'Bootgly - Essential'
       },
       'pt-BR': {
-        title: 'Essencial'
+        title: 'Bootgly - Essencial'
       }
     }
   },
@@ -357,7 +357,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Terminal Input'
+        title: 'CLI Terminal Input'
       }
     }
   },
@@ -372,7 +372,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Terminal Output'
+        title: 'CLI Terminal Output'
       }
     }
   },
@@ -389,7 +389,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Terminal Reporting'
+        title: 'CLI Terminal Reporting'
       }
     }
   },
@@ -495,7 +495,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'UI components'
+        title: 'CLI UI components'
       }
     }
   },
@@ -603,7 +603,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'TCP'
+        title: 'WPI TCP'
       }
     }
   },
@@ -643,7 +643,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'HTTP'
+        title: 'WPI HTTP'
       }
     }
   },
@@ -651,7 +651,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'HTTP Server'
+        title: 'WPI HTTP Server'
       }
     }
   },
