@@ -41,14 +41,7 @@ q-page-container
           )
 
       q-carousel-slide(:name="0")
-        .column.no-wrap.q-gutter-md
-          .col-12
-            q-img.rounded-borders(
-              width="644"
-              height="770"
-              src="images/pages/Bootgly_Template_Engine-vs-Laravel_Blade.benchmark.jpg"
-            )
-
+        q-img.col-12rounded-borders(width="644" height="770" :src="images[0].src")
         .carrousel-caption
           .text-h6 Bootgly Template Engine vs Laravel Blade
           .text-subtitle1 foreach in Bootgly is 9x faster than in Blade.
@@ -57,14 +50,9 @@ q-page-container
       q-carousel-slide(:name="1")
         .column.no-wrap.q-gutter-md
           .col-6
-            q-img.rounded-borders(
-              width="722"
-              height="339"
-              src="images/pages/Bootgly-Progress-Bar-component.png"
-            )
+            q-img.rounded-borders(width="610" height="262" :src="images[1].src")
           .col-6
             q-media-player.bg-black(type="video", :sources="videos[0].sources" @playing="autoplay = false")
-
         .carrousel-caption
           .text-h6 Bootgly CLI - UI Progress component
           .text-subtitle1 Render ≈7x faster than Symfony / Laravel
@@ -72,55 +60,31 @@ q-page-container
             a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
 
       q-carousel-slide(:name="2")
-        q-img.rounded-borders.col-12(
-          width="831"
-          height="670"
-          src="images/pages/Bootgly_WPI_-_HTTP_Server_CLI.png"
-        )
-
+        q-img.rounded-borders.col-12(width="734" height="543" :src="images[2].src")
         .carrousel-caption
           .text-h6 HTTP Server CLI started
           .text-subtitle1 Initial output
 
       q-carousel-slide(:name="3")
-        q-img.rounded-borders.col-12(
-          width="700"
-          height="530"
-          src="images/pages/Bootgly_CLI-Table_component.png"
-        )
-
+        q-img.rounded-borders.col-12(width="537" height="553" :src="images[3].src")
         .carrousel-caption
           .text-h6 Bootgly CLI - Table component
           .text-subtitle1 API with DataSet abstraction
 
       q-carousel-slide(:name="4")
-        q-img.rounded-borders.col-12(
-          width="647"
-          height="204"
-          src="images/pages/Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png"
-        )
-
+        q-img.rounded-borders.col-12(width="588" height="231" :src="images[4].src")
         .carrousel-caption
           .text-h6 HTTP Server CLI - Benchmark
           .text-subtitle1 Benchmark results using Ryzen 9 3900X (24 CPUs) on WSL2 - Simple 'Hello World!'
 
       q-carousel-slide(:name="5")
-        q-img.rounded-borders.col-12.full-height(
-          width="760"
-          height="1440"
-          src="images/pages/Bootgly_test_command-Suite_filter_by_argument.png"
-        )
-
+        q-img.rounded-borders.col-12(width="682" height="1418" :src="images[5].src")
         .carrousel-caption
           .text-h6 Bootgly CLI - test command output
           .text-subtitle1 Using argument to filter the suite to be tested
 
       q-carousel-slide(:name="6")
-        q-img.rounded-borders.col-12.full-height(
-          width="1118"
-          height="456"
-          src="images/pages/Bootgly_Debugging-Exception_reporting_with_file_content_highlighted.png"
-        )
+        q-img.rounded-borders.col-12(width="831" height="578" :src="images[6].src")
 
         .carrousel-caption
           .text-h6 Bootgly Debugging - Exception reporting
@@ -147,6 +111,29 @@ export default {
 
       links: [
         'https://github.com/bootgly/bootgly_benchmarks/tree/main/Progress_Bar'
+      ],
+      images: [
+        { // 1 - OK
+          src: 'images/pages/@/1-Bootgly_Template_Engine-vs-Laravel_Blade.benchmark.jpg'
+        },
+        { // 2 - OK
+          src: 'images/pages/@/2-Bootgly-CLI-UI-Progress_component.png'
+        },
+        { // 3 - OK
+          src: 'images/pages/@/3-Bootgly-CLI.png'
+        },
+        { // 4 - OK
+          src: 'images/pages/@/4-Bootgly_CLI-UI-Table_component.png'
+        },
+        { // 5 - OK
+          src: 'images/pages/@/5-Server-CLI-HTTP-Benchmark-Ryzen-9-3900X-WSL2.png'
+        },
+        { // 6 - OK
+          src: 'images/pages/@/6-Bootgly_test_command-Suite_filter_by_argument.png'
+        },
+        { // 7 - OK
+          src: 'images/pages/@/7-Bootgly_Debugging-Exception_reporting_with_file_content_highlighted.png'
+        }
       ],
       videos: [
         {
