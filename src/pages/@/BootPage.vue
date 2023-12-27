@@ -60,7 +60,7 @@ q-page-container
             a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
 
       q-carousel-slide(:name="2")
-        q-img.rounded-borders.col-12(width="734" height="543" :src="images[2].src")
+        q-img.rounded-borders.col-12(width="834" height="829" :src="images[2].src")
         .carrousel-caption
           .text-h6 HTTP Server CLI started
           .text-subtitle1 Initial output
@@ -120,7 +120,7 @@ export default {
           src: 'images/pages/@/2-Bootgly-CLI-UI-Progress_component.png'
         },
         { // 3 - OK
-          src: 'images/pages/@/3-Bootgly-CLI.png'
+          src: 'images/pages/@/3-Bootgly-WPI-Nodes-HTTP-Server-CLI.png'
         },
         { // 4 - OK
           src: 'images/pages/@/4-Bootgly_CLI-UI-Table_component.png'
