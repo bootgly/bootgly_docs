@@ -231,13 +231,13 @@ body.body--light
 body.body--dark
   #submenu a.active,
   #submenu button.active
-    background-color: #000 !important
+    background-color: var(--q-dark-page) !important
     color: #fff
-    box-shadow: 0 10px 0 0 #000
+    box-shadow: 0 10px 0 0 var(--q-dark-page)
 
 body.mobile.body--dark
   .q-drawer--right
-    background: rgba(0, 0, 0, 0.7)
+    background: rgba(18, 0, 0, 0.7)
 body.mobile
   .q-drawer--right
     background: rgba(255, 255, 255, 0.7)
