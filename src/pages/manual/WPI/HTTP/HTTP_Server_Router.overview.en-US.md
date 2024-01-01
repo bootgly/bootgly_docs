@@ -19,7 +19,7 @@ route (string $route, callable $handler, null|string|array $methods = null) : fa
 
 ## Basic usage
 
-### HTTP Server Bridge
+### HTTP Server (with external SAPI: Apache, NGinx, LiteSpeed, etc.)
 
 ```php
 use Bootgly\WPI\Nodes\HTTP\Server\Bridge\Request;

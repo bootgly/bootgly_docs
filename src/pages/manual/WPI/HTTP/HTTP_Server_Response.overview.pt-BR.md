@@ -11,7 +11,7 @@ A seguir estão os métodos fornecidos pela interface `Response` com exemplos de
 ### Construtor
 
 ```php
-public function __construct (int $code = 200, ?array $headers = null, string $body = '');
+public function __construct (int $code = 200, ? array $headers = null, string $body = '');
 ```
 
 **Parâmetros:**
