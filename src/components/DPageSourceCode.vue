@@ -1,6 +1,6 @@
 <template lang="pug">
 .source-code
-  .info
+  .info(v-if="lines && lines > 1")
     .language {{ language }}
     .copy
       q-btn(
