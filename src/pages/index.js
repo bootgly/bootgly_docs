@@ -599,46 +599,6 @@ export default {
       }
     }
   },
-  '/WPI/TCP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'WPI TCP'
-      }
-    }
-  },
-  '/WPI/TCP/TCP_Client': {
-    config: {
-      icon: 'desktop_windows',
-      status: 'empty',
-      menu: {
-        subheader: '.WPI.TCP'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'TCP Client'
-      }
-    }
-  },
-  '/WPI/TCP/TCP_Server': {
-    config: {
-      icon: 'dns',
-      status: 'empty',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'TCP Server'
-      }
-    }
-  },
   '/WPI/HTTP': {
     config: null,
     data: {
@@ -746,6 +706,46 @@ export default {
     data: {
       '*': {
         title: 'Routing'
+      }
+    }
+  },
+  '/WPI/TCP': {
+    config: null,
+    data: {
+      '*': {
+        title: 'WPI TCP'
+      }
+    }
+  },
+  '/WPI/TCP/TCP_Client': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'empty',
+      menu: {
+        subheader: '.WPI.TCP'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Client'
+      }
+    }
+  },
+  '/WPI/TCP/TCP_Server': {
+    config: {
+      icon: 'dns',
+      status: 'empty',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Server'
       }
     }
   }
