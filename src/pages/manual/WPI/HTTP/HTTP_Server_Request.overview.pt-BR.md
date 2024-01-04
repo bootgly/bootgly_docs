@@ -94,6 +94,22 @@ $Request->protocol; // 'HTTP/1.1'
 
 ## Cabeçalho HTTP
 
+`headers`: Cabeçalhos HTTP em Array.
+
+```php
+$Request->headers;
+/*
+Array (
+  User-Agent] => BootglyHTTPClient/1.0
+  [Accept] => */*,
+  [Set-Cookie] => Array (
+    [0] => user_id=123; Expires=Wed, 21 Oct 2024 07:28:00 GMT
+    [1] => session_token=abc; HttpOnly
+  )
+)
+*/
+```
+
 `Header`: A classe Header.
 
 ```php
@@ -126,18 +142,18 @@ $Request->subdomain; // 'v1.docs'
 $Request->subdomains; // Array ( [0] => 'docs' [1] => 'v1' )
 ```
 
-### Autorização (Basic)
+### Basic Authentication
 
 `username`: O nome de usuário fornecido na autenticação básica.
 
 ```php
-$Request->username; // 'boot'
+$Request->username; // 'bootgly'
 ```
 
 `password`: A senha fornecida na autenticação básica.
 
 ```php
-$Request->password; // 'gly'
+$Request->password; // 'example123'
 ```
 
 ### Aceitação de Idioma
