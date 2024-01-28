@@ -16,7 +16,7 @@ body.body--light
       &:hover:after
         color: #69562b
     // token
-    code
+    code:not(pre > code)
       color: var(--q-primary) !important
       background: var(--q-primary-background) !important
       border: 1px solid #e6e6e6 !important
@@ -56,7 +56,7 @@ body.body--dark
     section
       color: var(--q-light-in-dark-2)
     // token
-    code
+    code:not(pre > code)
       color: var(--q-primary-in-dark-bg) !important
       background: var(--q-dark) !important
       border: 1px solid #e6e6e6
@@ -118,7 +118,7 @@ body.body--dark
     line-height: 1.06rem
     margin: 0.3em 0 0.1em
 
-  code
+  code:not(pre > code)
     padding: 3px 5px
     margin: 0 2px
     border-radius: 2px
