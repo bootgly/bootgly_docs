@@ -8,7 +8,7 @@ To use the `Fieldset` class, you need to access an instance of the `Output` clas
 
 ```php
 use Bootgly\CLI;
-use Bootgly\CLI\UI\Alert\Fieldset;
+use Bootgly\CLI\UI\Fieldset\Fieldset;
 
 $Output = CLI::$Terminal->Output;
 
