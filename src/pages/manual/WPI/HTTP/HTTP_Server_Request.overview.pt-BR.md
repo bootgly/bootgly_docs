@@ -113,7 +113,7 @@ Array (
 `Header`: A classe Header.
 
 ```php
-$Request->Header->{'X-Requested-With'}; // Obter valor do cabeçalho X-Requested-With
+$Request->Raw->Header->{'X-Requested-With'}; // Obter valor do cabeçalho X-Requested-With
 ```
 
 ### Informações do Host
