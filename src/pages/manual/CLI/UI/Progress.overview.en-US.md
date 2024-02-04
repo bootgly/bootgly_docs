@@ -8,6 +8,7 @@ To use the class, first you need to create an instance of it:
 
 ```php
 use Bootgly\CLI;
+use Bootgly\CLI\UI\Progress\Progress;
 
 $Output = CLI::$Terminal->Output;
 
