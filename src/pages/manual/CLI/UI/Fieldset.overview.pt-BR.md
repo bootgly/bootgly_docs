@@ -87,6 +87,7 @@ Aqui está um exemplo completo de uso da classe `Fieldset`, do início ao fim:
 
 ```php
 use Bootgly\CLI;
+use Bootgly\CLI\UI\Fieldset\Fieldset;
 
 $Output = CLI::$Terminal->Output;
 
