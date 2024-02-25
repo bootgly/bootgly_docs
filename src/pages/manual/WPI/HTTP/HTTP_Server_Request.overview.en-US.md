@@ -204,7 +204,29 @@ $Request->time; // 1586496524
 $Request->secure; // true
 ```
 
-### HTTP Basic Authentication
+## HTTP Basic Authentication
+
+```php
+public function authenticate () : object|null;
+```
+
+This method is responsible for extracting and decoding authorization credentials from an HTTP Request. It checks if the credentials are provided in the Basic Authentication format and, if so, extracts the username and password.
+
+### Example of use
+
+```php
+$Credentials = $Request->authenticate();
+
+if ($Credentials !== null) {
+    $username = $Credentials->username;
+    $password = $Credentials->password;
+
+    // Use the username and password to authenticate the client
+    // ...
+}
+```
+
+### Generated metadata
 
 `username`: The username provided in basic authentication.
 
@@ -218,7 +240,61 @@ $Request->username; // 'bootgly'
 $Request->password; // 'example123'
 ```
 
-### HTTP Content Negotiation
+## HTTP Content Negotiation
+
+```php
+public function negotiate (int $with = self::ACCEPTS_TYPES) : array;
+```
+
+The negotiate method is responsible for parsing the client's HTTP request headers and negotiating preferences regarding media types, languages, charsets, and encodings.
+
+The negotiate method checks the relevant HTTP request header (such as `Accept`, `Accept-Language`, `Accept-Charset`, or `Accept-Encoding`) to retrieve the client's preferences. It then parses the values using regular expressions to extract the items and their respective qualities (if specified). The results are sorted by quality and returned as an array.
+
+If the request header is empty or cannot be parsed, the method returns an empty array.
+
+### Exemplo de uso
+
+```php
+// Assume a client makes a request to the server
+// and the server receives the request object
+
+// Negotiate the client's preferred language
+$preferred_languages = $Request->negotiate(Request::ACCEPTS_LANGUAGES);
+
+// Determine the best language to use based on server-supported languages
+$available_languages = ['en', 'fr', 'de']; // Assume these are the languages the server supports
+
+$selected_language = '';
+foreach ($preferred_languages as $language => $quality) {
+  if ( in_array($language, $available_languages) ) {
+    $selected_language = $language;
+    break;
+  }
+}
+
+// Set the response language
+if ( ! empty($selected_language) ) {
+  // Set the response headers to indicate the selected language
+  $Response->Header->set('Content-Language: ' . $selected_language);
+}
+
+// Now, the server can generate a response in the selected language
+// and send it back to the client
+// ...
+```
+
+### Parâmetros
+
+#### $with (opcional)
+
+An integer indicating the type of negotiation to be performed. Possible values are:
+
+- `self::ACCEPTS_TYPES`: Negotiate media types (default).
+- `self::ACCEPTS_LANGUAGES`: Negotiate languages.
+- `self::ACCEPTS_CHARSETS`: Negotiate charsets.
+- `self::ACCEPTS_ENCODINGS`: Negotiate encodings.
+
+### Generated / availables metadata
 
 `types`: The MIME type preferred by the HTTP Client in order of relevance.
 
@@ -268,7 +344,12 @@ $Request->encodings; // Array ( [0] => 'gzip' [1] => 'deflate' )
 $Request->encoding; // 'gzip'
 ```
 
-### HTTP Caching Specification
+### Notes
+
+- This method is useful for servers that wish to provide content tailored to the client's preferences, such as sending the correct version of an image file based on the format accepted by the user's browser.
+- Make sure to use the return values of this method according to your application's business logic, such as selecting the best response format based on the client's preferences.
+
+## HTTP Caching Specification
 
 `fresh`: Flag indicating if the request is to be considered fresh.
 

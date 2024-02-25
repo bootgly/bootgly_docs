@@ -204,7 +204,29 @@ $Request->time; // 1586496524
 $Request->secure; // true
 ```
 
-### HTTP Basic Authentication
+## HTTP Basic Authentication
+
+```php
+public function authenticate () : object|null;
+```
+
+Este método é responsável por extrair e decodificar as credenciais de autorização de uma Requisição HTTP por parte de um Client HTTP. Ele verifica se as credenciais são fornecidas no formato Basic Authentication e, se sim, extrai o nome de usuário e a senha.
+
+### Exemplo de uso
+
+```php
+$Credentials = $Request->authenticate();
+
+if ($Credentials !== null) {
+    $username = $Credentials->username;
+    $password = $Credentials->password;
+
+    // Use o nome de usuário e senha para autenticar o cliente
+    // ...
+}
+```
+
+### Metadados gerados
 
 `username`: O nome de usuário fornecido na autenticação básica.
 
@@ -218,7 +240,61 @@ $Request->username; // 'bootgly'
 $Request->password; // 'example123'
 ```
 
-### HTTP Content Negotiation
+## HTTP Content Negotiation
+
+```php
+public function negotiate (int $with = self::ACCEPTS_TYPES) : array;
+```
+
+O método negotiate é responsável por analisar os cabeçalhos de Requisição HTTP do Cliente e negociar as preferências em relação a tipos de mídia, idiomas, conjuntos de caracteres e codificações.
+
+Este método verifica o cabeçalho de requisição HTTP relevante (como `Accept`, `Accept-Language`, `Accept-Charset`, ou `Accept-Encoding`) para obter as preferências do cliente. Em seguida, analisa os valores usando expressões regulares para extrair os itens e suas respectivas qualidades (se especificadas). Os resultados são classificados de acordo com a qualidade e retornados como um array.
+
+Se o cabeçalho de requisição estiver vazio ou não puder ser analisado, o método retornará um array vazio.
+
+### Exemplos de uso
+
+```php
+// Suponha que um cliente faça uma requisição ao servidor
+// e o servidor receba o objeto de requisição
+
+// Negocia o idioma preferido do cliente
+$preferred_languages = $Request->negotiate(Request::ACCEPTS_LANGUAGES);
+
+// Determina o melhor idioma a ser usado com base nos idiomas suportados pelo servidor
+$available_languages = ['en', 'fr', 'de']; // Suponha que esses são os idiomas suportados pelo servidor
+
+$selected_language = '';
+foreach ($preferred_languages as $language => $quality) {
+  if ( in_array($language, $available_languages) ) {
+    $selected_language = $language;
+    break;
+  }
+}
+
+// Define o idioma da resposta
+if ( ! empty($selected_language) ) {
+  // Define os cabeçalhos de resposta para indicar o idioma selecionado
+  $Response->Header->set('Content-Language', $selected_language);
+}
+
+// Agora, o servidor pode gerar uma resposta no idioma selecionado
+// e enviá-la de volta ao cliente
+// ...
+```
+
+### Parâmetros
+
+#### $with (opcional)
+
+Um inteiro que indica o tipo de negociação a ser realizada. Os valores possíveis são:
+
+- `self::ACCEPTS_TYPES`: Negociar tipos de mídia (padrão).
+- `self::ACCEPTS_LANGUAGES`: Negociar idiomas.
+- `self::ACCEPTS_CHARSETS`: Negociar conjuntos de caracteres.
+- `self::ACCEPTS_ENCODINGS`: Negociar codificações.
+
+### Metadados gerados / acessíveis
 
 `types`: Os MIME types preferidos pelo Cliente HTTP em ordem de relevância.
 
@@ -268,7 +344,12 @@ $Request->encodings; // Array ( [0] => 'gzip' [1] => 'deflate' )
 $Request->encoding; // 'gzip'
 ```
 
-### HTTP Caching Specification
+### Observações
+
+- Este método é útil para servidores que desejam fornecer conteúdo adaptado às preferências do cliente, como enviar a versão correta de um arquivo de imagem com base no formato aceito pelo navegador do usuário.
+- Certifique-se de usar os valores de retorno deste método de acordo com a lógica de negócios de sua aplicação, como selecionar o melhor formato de resposta com base nas preferências do cliente.
+
+## HTTP Caching Specification
 
 `fresh`: Sinalizador indicando se a requisição deve ser considerada fresca.
 
