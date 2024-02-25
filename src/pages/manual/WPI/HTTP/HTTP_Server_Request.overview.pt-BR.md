@@ -349,7 +349,52 @@ $Request->encoding; // 'gzip'
 - Este método é útil para servidores que desejam fornecer conteúdo adaptado às preferências do cliente, como enviar a versão correta de um arquivo de imagem com base no formato aceito pelo navegador do usuário.
 - Certifique-se de usar os valores de retorno deste método de acordo com a lógica de negócios de sua aplicação, como selecionar o melhor formato de resposta com base nas preferências do cliente.
 
-## HTTP Caching Specification
+## HTTP Caching
+
+```php
+public function freshen () : bool;
+```
+
+O método freshen é responsável por determinar se uma requisição do cliente é considerada "fresca" ou não, com base em determinados cabeçalhos e configurações de cache. Isso é útil para decidir se é necessário fornecer uma resposta completamente nova ou se uma resposta em cache pode ser utilizada.
+
+### Retorno
+
+- Retorna `true` se a requisição é considerada fresca e pode ser atendida com uma resposta em `cache`.
+- Retorna `false` se a requisição não é considerada fresca e `uma nova resposta` deve ser gerada.
+
+### Critérios de avaliação
+
+- A requisição deve ser do tipo `GET` ou `HEAD`. Outros tipos de requisição não são considerados frescos.
+- O cabeçalho `Cache-Control` não deve conter a diretiva `no-cache`, indicando que a resposta não deve ser servida a partir do cache.
+- O cabeçalho `If-None-Match` (ETag) é verificado em relação ao ETag da resposta armazenada em cache. Se os ETags coincidirem, a resposta em cache é considerada válida.
+- O cabeçalho `If-Modified-Since` é comparado com o cabeçalho `Last-Modified` da resposta em cache. Se a data de modificação da resposta for mais recente do que a data especificada no cabeçalho `If-Modified-Since`, a resposta em cache é considerada válida.
+
+### Exemplo com Last-Modified
+
+```php
+// Suponha que a solicitação do cliente HTTP chegue assim...:
+
+/*
+GET / HTTP/1.1
+Host: lab.bootgly.com:8080
+User-Agent: insomnia/2023.4.0
+If-Modified-Since: Fri, 14 Jul 2023 09:00:00 GMT
+Accept: text/html
+
+...
+*/
+
+$Response->Header->set('Last-Modified', 'Fri, 14 Jul 2023 08:00:00 GMT');
+
+if ($Request->fresh) {
+   return $Response(code: 304); // Da segunda resposta em diante o return é aqui
+}
+else {
+   return $Response(body: 'test')->send(); // Na primeira resposta o return é aqui
+}
+```
+
+### Metadados gerados
 
 `fresh`: Sinalizador indicando se a requisição deve ser considerada fresca.
 
@@ -362,5 +407,3 @@ $Request->fresh; // true
 ```php
 $Request->stale; // false
 ```
-
-Essas propriedades acessíveis são fundamentais para o comportamento da classe Request HTTP e fornecem uma API robusta para o desenvolvimento conveniente de aplicações web.

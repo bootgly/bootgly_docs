@@ -252,7 +252,7 @@ The negotiate method checks the relevant HTTP request header (such as `Accept`, 
 
 If the request header is empty or cannot be parsed, the method returns an empty array.
 
-### Exemplo de uso
+### Example of use
 
 ```php
 // Assume a client makes a request to the server
@@ -283,7 +283,7 @@ if ( ! empty($selected_language) ) {
 // ...
 ```
 
-### Parâmetros
+### Parameters
 
 #### $with (opcional)
 
@@ -349,7 +349,52 @@ $Request->encoding; // 'gzip'
 - This method is useful for servers that wish to provide content tailored to the client's preferences, such as sending the correct version of an image file based on the format accepted by the user's browser.
 - Make sure to use the return values of this method according to your application's business logic, such as selecting the best response format based on the client's preferences.
 
-## HTTP Caching Specification
+## HTTP Caching
+
+```php
+public function freshen () : bool;
+```
+
+The freshen() method is responsible for determining whether a client request is considered "fresh" or not, based on certain headers and cache settings. This is useful for deciding whether to provide a completely new response or if a cached response can be used.
+
+### Return
+
+- Returns true if the request is considered fresh and can be served with a `cached` response.
+- Returns false if the request is not considered fresh, and a `new response` should be generated.
+
+### Evaluation Criteria
+
+- The request must be of type `GET` or `HEAD`. Other request types are not considered fresh.
+- The `Cache-Control` header should not contain the `no-cache` directive, indicating that the response should not be served from the cache.
+- The `If-None-Match` (ETag) header is checked against the ETag of the cached response. If the ETags match, the cached response is considered valid.
+- The `If-Modified-Since` header is compared with the `Last-Modified` header of the cached response. If the modification date of the response is more recent than the date specified in the `If-Modified-Since` header, the cached response is considered valid.
+
+### Example with Last-Modified
+
+```php
+// Suppose the HTTP client request arrives like this...:
+
+/*
+GET / HTTP/1.1
+Host: lab.bootgly.com:8080
+User-Agent: insomnia/2023.4.0
+If-Modified-Since: Fri, 14 Jul 2023 09:00:00 GMT
+Accept: text/html
+
+...
+*/
+
+$Response->Header->set('Last-Modified', 'Fri, 14 Jul 2023 08:00:00 GMT');
+
+if ($Request->fresh) {
+   return $Response(code: 304); // First onward is here
+}
+else {
+   return $Response(body: 'test')->send(); // First Response here
+}
+```
+
+### Metadados gerados
 
 `fresh`: Flag indicating if the request is to be considered fresh.
 
@@ -362,5 +407,3 @@ $Request->fresh; // true
 ```php
 $Request->stale; // false
 ```
-
-These accessible properties are integral to the behavior of the HTTP Request class and provide a robust API for the convenient development of web applications.
