@@ -2,11 +2,7 @@
 
 This class represents an HTTP request made to a web server. It provides a concise structure to access common request parameters such as headers, URI, query strings, and body content. This documentation outlines the accessible properties within the class, providing PHP examples for each.
 
-This page is formatted to show the Code API of the Request class.
-
-## Properties
-
-### Connection
+## Connection
 
 `address`: The IP address from which the request originated.
 
@@ -26,7 +22,7 @@ $Request->port; // '52252'
 $Request->scheme; // 'https'
 ```
 
-### HTTP
+## HTTP
 
 `method`: The HTTP method used for the request.
 
@@ -46,7 +42,7 @@ $Request->URI; // '/test/foo?query=abc&query2=xyz'
 $Request->protocol; // 'HTTP/1.1'
 ```
 
-- Resource
+### Resource
 
 `URL`: The URL (Uniform Resource Locator) path part of the URI. Still based on the above context of a URI on HTTP Servers in Bootgly and as a URL is a subset of a URI, in Bootgly a URL (locator) is the path where the resource is located, without the query string:
 
@@ -60,7 +56,7 @@ $Request->URL; // '/test/foo'
 $Request->URN; // 'foo'
 ```
 
-- Query
+### Query
 
 `query`: The query string portion of the URI.
 
@@ -74,7 +70,7 @@ $Request->query; // 'query=abc&query2=xyz'
 $Request->queries; // Array ( [query] => abc [query2] => xyz )
 ```
 
-### HTTP Header
+## HTTP Header
 
 `Header`: The Header class.
 
@@ -98,7 +94,7 @@ Array (
 */
 ```
 
-#### Host Information
+### Host Information
 
 `host`: The fully qualified domain name of the server.
 
@@ -124,7 +120,7 @@ $Request->subdomain; // 'v1.docs'
 $Request->subdomains; // Array ( [0] => 'docs' [1] => 'v1' )
 ```
 
-#### Cookies
+### Cookies
 
 `Cookies`: The class that represents the HTTP Header Cookies of the request.
 
@@ -138,7 +134,7 @@ $Request->Header->Cookies;
 $Request->cookies; // Array ( [cookie_name] => cookie_value )
 ```
 
-### HTTP Body
+## HTTP Body
 
 `Body`: The class that represents the HTTP Body of the request.
 
@@ -146,7 +142,7 @@ $Request->cookies; // Array ( [cookie_name] => cookie_value )
 $Request->Body;
 ```
 
-#### Input Data
+### Input
 
 `input`: The raw input content data from the request.
 
@@ -160,7 +156,7 @@ $Request->input; // Raw input content data as string
 $Request->inputs; // Array ( [input_key] => input_value )
 ```
 
-#### POST Data
+### POST
 
 `post`: An associative array of POST data
 
@@ -168,7 +164,7 @@ $Request->inputs; // Array ( [input_key] => input_value )
 $Request->post; // Array ( [post_key] => post_value )
 ```
 
-##### Files
+### Files
 
 `files`: An associative array of files uploaded through the request.
 
@@ -176,7 +172,7 @@ $Request->post; // Array ( [post_key] => post_value )
 $Request->files; // Array ( [file_name] => file_attributes )
 ```
 
-### Metadata
+## Metadata
 
 `raw`: The raw HTTP request data.
 
@@ -208,7 +204,7 @@ $Request->time; // 1586496524
 $Request->secure; // true
 ```
 
-#### HTTP Basic Authentication
+### HTTP Basic Authentication
 
 `username`: The username provided in basic authentication.
 
@@ -222,7 +218,7 @@ $Request->username; // 'bootgly'
 $Request->password; // 'example123'
 ```
 
-#### HTTP Content Negotiation
+### HTTP Content Negotiation
 
 `types`: The MIME type preferred by the HTTP Client in order of relevance.
 
@@ -272,7 +268,7 @@ $Request->encodings; // Array ( [0] => 'gzip' [1] => 'deflate' )
 $Request->encoding; // 'gzip'
 ```
 
-#### HTTP Caching Specification
+### HTTP Caching Specification
 
 `fresh`: Flag indicating if the request is to be considered fresh.
 

@@ -2,11 +2,7 @@
 
 Esta classe representa uma requisição HTTP feita a um servidor web. Ela fornece uma estrutura concisa para acessar parâmetros comuns de requisição, tais como cabeçalhos, URI, strings de consulta e conteúdo do corpo. Esta documentação descreve as propriedades acessíveis dentro da classe, fornecendo exemplos em PHP para cada uma.
 
-Esta página está formatada para mostrar a API de Código da classe Request.
-
-## Propriedades
-
-### Conexão
+## Conexão
 
 `address`: O endereço IP de onde a requisição se originou.
 
@@ -26,7 +22,7 @@ $Request->port; // '52252'
 $Request->scheme; // 'https'
 ```
 
-### HTTP
+## HTTP
 
 `method`: O método HTTP usado para a requisição.
 
@@ -46,7 +42,7 @@ $Request->URI; // '/test/foo?query=abc&query2=xyz'
 $Request->protocol; // 'HTTP/1.1'
 ```
 
-- Resource
+### Resource
 
 `URL`: A parte do caminho da URL da URI. Ainda baseado no contexto acima de uma URI em Servidores HTTP no Bootgly e como uma URL é um subconjunto de uma URI, no Bootgly uma URL (localizador) é o caminho onde o recurso está localizado, sem a string de consulta:
 
@@ -60,7 +56,7 @@ $Request->URL; // '/test/foo'
 $Request->URN; // 'foo'
 ```
 
-- Query
+### Query
 
 `query`: A parte da string de consulta da URI.
 
@@ -74,7 +70,7 @@ $Request->query; // 'query=abc&query2=xyz'
 $Request->queries; // Array ( [query] => abc [query2] => xyz )
 ```
 
-### Cabeçalho HTTP
+## Cabeçalho HTTP
 
 `Header`: A classe Header da Requisição.
 
@@ -98,7 +94,7 @@ Array (
 */
 ```
 
-#### Informações do Host
+### Informações do Host
 
 `host`: O nome de domínio totalmente qualificado do servidor.
 
@@ -124,7 +120,7 @@ $Request->subdomain; // 'v1.docs'
 $Request->subdomains; // Array ( [0] => 'docs' [1] => 'v1' )
 ```
 
-#### Cookies
+### Cookies
 
 `Cookies`: A classe que representa os Cookies de cabeçalho HTTP da solicitação.
 
@@ -138,7 +134,7 @@ $Request->Header->Cookies;
 $Request->cookies; // Array ( [nome_do_cookie] => valor_do_cookie )
 ```
 
-### Corpo HTTP
+## Corpo HTTP
 
 `Body`: A classe que representa o corpo da Requisição HTTP.
 
@@ -146,7 +142,7 @@ $Request->cookies; // Array ( [nome_do_cookie] => valor_do_cookie )
 $Request->Body;
 ```
 
-#### Dados de Entrada
+### Entrada
 
 `input`: Os dados brutos do conteúdo de entrada da requisição.
 
@@ -160,7 +156,7 @@ $Request->input; // Dados brutos do conteúdo de entrada como string
 $Request->inputs; // Array ( [chave_entrada] => valor_entrada )
 ```
 
-#### Dados POST
+### POST
 
 `post`: Um array associativo de dados POST
 
@@ -168,7 +164,7 @@ $Request->inputs; // Array ( [chave_entrada] => valor_entrada )
 $Request->post; // Array ( [chave_post] => valor_post )
 ```
 
-##### Arquivos
+### Arquivos
 
 `files`: Um array associativo de arquivos enviados através da requisição.
 
@@ -176,7 +172,7 @@ $Request->post; // Array ( [chave_post] => valor_post )
 $Request->files; // Array ( [nome_do_arquivo] => atributos_do_arquivo )
 ```
 
-### Metadados
+## Metadados
 
 `raw`: Os dados brutos da requisição HTTP.
 
@@ -208,7 +204,7 @@ $Request->time; // 1586496524
 $Request->secure; // true
 ```
 
-#### HTTP Basic Authentication
+### HTTP Basic Authentication
 
 `username`: O nome de usuário fornecido na autenticação básica.
 
@@ -222,7 +218,7 @@ $Request->username; // 'bootgly'
 $Request->password; // 'example123'
 ```
 
-#### HTTP Content Negotiation
+### HTTP Content Negotiation
 
 `types`: Os MIME types preferidos pelo Cliente HTTP em ordem de relevância.
 
@@ -272,7 +268,7 @@ $Request->encodings; // Array ( [0] => 'gzip' [1] => 'deflate' )
 $Request->encoding; // 'gzip'
 ```
 
-#### HTTP Caching Specification
+### HTTP Caching Specification
 
 `fresh`: Sinalizador indicando se a requisição deve ser considerada fresca.
 
