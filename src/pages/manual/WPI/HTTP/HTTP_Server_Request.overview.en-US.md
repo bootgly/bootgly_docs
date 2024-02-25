@@ -4,7 +4,9 @@ This class represents an HTTP request made to a web server. It provides a concis
 
 This page is formatted to show the Code API of the Request class.
 
-## Address
+## Properties
+
+### Connection
 
 `address`: The IP address from which the request originated.
 
@@ -12,15 +14,11 @@ This page is formatted to show the Code API of the Request class.
 $Request->address; // '127.0.0.1'
 ```
 
-## Port
-
 `port`: The port number through which the request was transmitted.
 
 ```php
 $Request->port; // '52252'
 ```
-
-## Scheme
 
 `scheme`: The protocol scheme, either `http` or `https`.
 
@@ -28,17 +26,7 @@ $Request->port; // '52252'
 $Request->scheme; // 'https'
 ```
 
-## HTTP
-
-### raw
-
-`raw`: The raw HTTP request data.
-
-```php
-$Request->raw; // HTTP request data as string
-```
-
-### method
+### HTTP
 
 `method`: The HTTP method used for the request.
 
@@ -46,12 +34,30 @@ $Request->raw; // HTTP request data as string
 $Request->method; // 'GET'
 ```
 
-### URI
-
 `URI`: The Uniform Resource Identifier of the request. In the context of an HTTP Server, a URI will always have a scheme `http` or `https`, the domain and port will always be the same for the same Virtual Host (VHost). Therefore, a URI (identifier) in Bootgly is always everything that comes after the `domain:port` without the anchor/fragment (#):
 
 ```php
 $Request->URI; // '/test/foo?query=abc&query2=xyz'
+```
+
+`protocol`: The protocol version used in the request, usually HTTP/1.1.
+
+```php
+$Request->protocol; // 'HTTP/1.1'
+```
+
+- Resource
+
+`URL`: The URL (Uniform Resource Locator) path part of the URI. Still based on the above context of a URI on HTTP Servers in Bootgly and as a URL is a subset of a URI, in Bootgly a URL (locator) is the path where the resource is located, without the query string:
+
+```php
+$Request->URL; // '/test/foo'
+```
+
+`URN`: The URN (Uniform Resource Name) last path part of the URL. Based on the above context of a URL, a URN (name) is the last part (node) of a URL path and identifies the name of the resource. Obviously, this semantics only remains if its use in practice follows this same pattern.
+
+```php
+$Request->URN; // 'foo'
 ```
 
 - Query
@@ -68,31 +74,13 @@ $Request->query; // 'query=abc&query2=xyz'
 $Request->queries; // Array ( [query] => abc [query2] => xyz )
 ```
 
-#### URL
+### HTTP Header
 
-`URL`: The URL (Uniform Resource Locator) path part of the URI. Still based on the above context of a URI on HTTP Servers in Bootgly and as a URL is a subset of a URI, in Bootgly a URL (locator) is the path where the resource is located, without the query string:
-
-```php
-$Request->URL; // '/test/foo'
-```
-
-#### URN
-
-`URN`: The URN (Uniform Resource Name) last path part of the URL. Based on the above context of a URL, a URN (name) is the last part (node) of a URL path and identifies the name of the resource. Obviously, this semantics only remains if its use in practice follows this same pattern.
+`Header`: The Header class.
 
 ```php
-$Request->URN; // 'foo'
+$Request->Header->get('X-Requested-With'); // Get value of X-Requested-With Header
 ```
-
-### protocol
-
-`protocol`: The protocol version used in the request, usually HTTP/1.1.
-
-```php
-$Request->protocol; // 'HTTP/1.1'
-```
-
-## HTTP Header
 
 `headers`: The HTTP Headers in array.
 
@@ -110,13 +98,7 @@ Array (
 */
 ```
 
-`Header`: The Header class.
-
-```php
-$Request->Raw->Header->{'X-Requested-With'}; // Get value of X-Requested-With Header
-```
-
-### Host Information
+#### Host Information
 
 `host`: The fully qualified domain name of the server.
 
@@ -142,29 +124,13 @@ $Request->subdomain; // 'v1.docs'
 $Request->subdomains; // Array ( [0] => 'docs' [1] => 'v1' )
 ```
 
-### Basic Authentication
+#### Cookies
 
-`username`: The username provided in basic authentication.
-
-```php
-$Request->username; // 'bootgly'
-```
-
-`password`: The password provided in basic authentication.
+`Cookies`: The class that represents the HTTP Header Cookies of the request.
 
 ```php
-$Request->password; // 'example123'
+$Request->Header->Cookies;
 ```
-
-### Accept-Language
-
-`language`: The preferred language set in the request header.
-
-```php
-$Request->language; // 'pt-BR'
-```
-
-### Cookies
 
 `cookies`: An array of cookies sent with the request.
 
@@ -172,9 +138,15 @@ $Request->language; // 'pt-BR'
 $Request->cookies; // Array ( [cookie_name] => cookie_value )
 ```
 
-## HTTP Content
+### HTTP Body
 
-### Input Data
+`Body`: The class that represents the HTTP Body of the request.
+
+```php
+$Request->Body;
+```
+
+#### Input Data
 
 `input`: The raw input content data from the request.
 
@@ -188,7 +160,7 @@ $Request->input; // Raw input content data as string
 $Request->inputs; // Array ( [input_key] => input_value )
 ```
 
-### POST Data
+#### POST Data
 
 `post`: An associative array of POST data
 
@@ -196,7 +168,7 @@ $Request->inputs; // Array ( [input_key] => input_value )
 $Request->post; // Array ( [post_key] => post_value )
 ```
 
-#### Files
+##### Files
 
 `files`: An associative array of files uploaded through the request.
 
@@ -204,7 +176,13 @@ $Request->post; // Array ( [post_key] => post_value )
 $Request->files; // Array ( [file_name] => file_attributes )
 ```
 
-## Metadata
+### Metadata
+
+`raw`: The raw HTTP request data.
+
+```php
+$Request->raw; // HTTP request data as string
+```
 
 `on`: The date on which the request was created.
 
@@ -224,13 +202,77 @@ $Request->at; // '17:16:18'
 $Request->time; // 1586496524
 ```
 
-## Others
-
 `secure`: Indicates if the request was made over HTTPS.
 
 ```php
 $Request->secure; // true
 ```
+
+#### HTTP Basic Authentication
+
+`username`: The username provided in basic authentication.
+
+```php
+$Request->username; // 'bootgly'
+```
+
+`password`: The password provided in basic authentication.
+
+```php
+$Request->password; // 'example123'
+```
+
+#### HTTP Content Negotiation
+
+`types`: The MIME type preferred by the HTTP Client in order of relevance.
+
+```php
+$Request->types; // Array ( [0] => 'text/html' [1] => 'text/plain' )
+```
+
+`type`: The MIME type most preferred by the HTTP Client.
+
+```php
+$Request->type; // 'text/html'
+```
+
+`languages`: The languages preferred by the HTTP Client in order of relevance.
+
+```php
+$Request->languages; // Array ( [0] => 'en-US' [1] => 'pt-BR' )
+```
+
+`language`: The language most preferred by the HTTP Client.
+
+```php
+$Request->language; // 'en-US'
+```
+
+`charsets`: The charsets preferred by the HTTP Client in order of relevance.
+
+```php
+$Request->charsets; // Array ( [0] => 'UTF-8' [1] => 'ISO-8859-15' )
+```
+
+`charset`: The charset most preferred by the HTTP Client.
+
+```php
+$Request->charset; // 'UTF-8'
+```
+
+`encodings`: The encodings preferred by the HTTP Client in order of relevance.
+
+```php
+$Request->encodings; // Array ( [0] => 'gzip' [1] => 'deflate' )
+```
+
+`encoding`: The encoding most preferred by the HTTP Client.
+
+```php
+$Request->encoding; // 'gzip'
+```
+
+#### HTTP Caching Specification
 
 `fresh`: Flag indicating if the request is to be considered fresh.
 
