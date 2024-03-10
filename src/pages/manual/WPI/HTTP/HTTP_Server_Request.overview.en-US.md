@@ -275,7 +275,7 @@ foreach ($preferred_languages as $language => $quality) {
 // Set the response language
 if ( ! empty($selected_language) ) {
   // Set the response headers to indicate the selected language
-  $Response->Header->set('Content-Language: ' . $selected_language);
+  $Response->Header->set('Content-Language', $selected_language);
 }
 
 // Now, the server can generate a response in the selected language
