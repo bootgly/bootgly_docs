@@ -475,7 +475,7 @@ export default {
   '/CLI/Terminal/Reporting/Mouse': {
     config: {
       icon: 'mouse',
-      status: 'empty',
+      status: 'draft',
       menu: {
         subheader: '.CLI.Terminal.Reporting',
         separator: true
