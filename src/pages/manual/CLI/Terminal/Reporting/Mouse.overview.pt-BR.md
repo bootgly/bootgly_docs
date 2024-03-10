@@ -81,7 +81,7 @@ Este método processa os dados de eventos do mouse gerados em tempo real. Ele re
 #### Callback
 
 ```php
-function (Bootgly\CLI\Terminal\Input\Mousestrokes $Action, array $coordinate, bool $clicking) : bool;
+function (Bootgly\CLI\Terminal\Input\Mousestrokes $Action, array $coordinate, bool $clicking) : bool
 ```
 
 ##### Parâmetros
