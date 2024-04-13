@@ -4,11 +4,11 @@ O Code API de servidor HTTP no Bootgly foi projetado para fornecer integração 
 
 ## Suporte Multiservidor e MultiSAPI
 
-Uma das principais características do Bootgly é seu suporte para múltiplos servidores HTTP e SAPIs. Isso significa que você pode executar sua aplicação em qualquer servidor HTTP, independentemente do tipo de SAPI que ele utilize. Além dos servidores tradicionais como "Apache", "Nginx" e "LiteSpeed" é possível desenvolver para a Web no servidor HTTP CLI built-in do Bootgly, utilizando o mesmo Code API.
+Uma das principais características do Bootgly é seu suporte para múltiplos servidores HTTP e SAPIs. Isso significa que você pode executar sua aplicação em qualquer servidor HTTP, independentemente do tipo de SAPI que ele utilize. Além dos servidores tradicionais como "Apache", "Nginx" e "LiteSpeed", é possível também desenvolver para a Web no servidor HTTP CLI built-in do Bootgly utilizando um mesmo Code API.
 
 ## Code API Unificado
 
-Um dos principais diferenciais do Bootgly é a uniformidade do Code API para Requisições e Respostas, independentemente do servidor HTTP ou SAPI em uso. Isso significa que a lógica de programação relacionada às solicitações e respostas HTTP permanece consistente, mesmo ao alternar entre servidores HTTP com diferentes SAPIs, como "Apache", "NGinx", "LiteSpeed", Bootgly HTTP Server CLI, etc.
+Um dos principais diferenciais do Bootgly é a uniformidade do Code API para Requisições e Respostas, independentemente do servidor HTTP ou SAPI em uso. Isso significa que a lógica de programação relacionada às solicitações e respostas HTTP permanece consistente, mesmo ao alternar entre servidores HTTP com diferentes SAPIs, como "Apache", "Nginx", "LiteSpeed", Bootgly HTTP Server CLI, etc.
 
 Essa abordagem oferece aos desenvolvedores um alto nível de abstração e facilidade de entendimento, simplificando o processo de desenvolvimento e manutenção de aplicativos web em ambientes heterogêneos.
 

@@ -4,11 +4,11 @@ The HTTP server Code API in Bootgly is designed to provide integration and inter
 
 ## Multi-Server and Multi-SAPI Support
 
-One of the key features of Bootgly is its support for multiple HTTP servers and SAPIs. This means you can run your application on any HTTP server, regardless of the type of SAPI it employs. In addition to traditional servers like "Apache", "Nginx", and "LiteSpeed", you can develop for the Web on Bootgly's built-in CLI HTTP server, using the same Code API.
+One of the key features of Bootgly is its support for multiple HTTP servers and SAPIs. This means you can run your application on any HTTP server, regardless of the type of SAPI it employs. In addition to traditional servers like "Apache", "Nginx", and "LiteSpeed", you can develop for the Web on Bootgly's built-in CLI HTTP server using the same Code API.
 
 ## Unified Code API
 
-A major differentiator of Bootgly is the uniformity of the Request and Response Code API, regardless of the HTTP server or SAPI in use. This means that the HTTP request and response programming logic remains consistent even when switching between HTTP servers with different SAPIs, such as "Apache", "NGinx", "LiteSpeed", Bootgly HTTP Server CLI, etc.
+A major differentiator of Bootgly is the uniformity of the Request and Response Code API, regardless of the HTTP server or SAPI in use. This means that the HTTP request and response programming logic remains consistent even when switching between HTTP servers with different SAPIs, such as "Apache", "Nginx", "LiteSpeed", Bootgly HTTP Server CLI, etc.
 
 This approach provides developers with a high level of abstraction and ease of understanding, simplifying the process of developing and maintaining web applications in heterogeneous environments.
 
