@@ -126,8 +126,8 @@ Envia arquivo para o cliente HTTP.
 **Parâmetros:**
 
 - `$file` (string|File): O arquivo ou caminho do arquivo para upload.
-- `$offset` (int): O deslocamento dos dados. (Somente no HTTP Server CLI)
-- `$length` (int|null): O comprimento dos dados para upload. (Somente no HTTP Server CLI)
+- `$offset` (int): O deslocamento dos dados.
+- `$length` (int|null): O comprimento dos dados para upload.
 - `$close` (bool): Fechar a conexão após o envio. (Somente no HTTP Server CLI)
 
 **Exemplo 1:**

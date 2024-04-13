@@ -126,8 +126,8 @@ Upload a file to the HTTP client.
 **Parameters:**
 
 - `$file` (string|File): The file or file path to upload.
-- `$offset` (int): The data offset. (Only in HTTP Server CLI)
-- `$length` (int|null): The length of the data to upload. (Only in HTTP Server CLI)
+- `$offset` (int): The data offset.
+- `$length` (int|null): The length of the data to upload.
 - `$close` (bool): Close the connection after sending. (Only in HTTP Server CLI)
 
 **Example 1:**
