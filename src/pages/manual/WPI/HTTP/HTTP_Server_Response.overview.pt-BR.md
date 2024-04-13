@@ -183,7 +183,7 @@ Redireciona o cliente para um novo URI.
 **Exemplo:**
 
 ```php
-return $Response->redirect('https://exemplo.com/novapagina', 301);
+return $Response->redirect('https://exemplo.com/novapagina?query1=value1#anchor1', 301);
 ```
 
 ### Encerrar
@@ -195,8 +195,8 @@ public function end (? int $code = null) : self;
 
 **Descrição:**
 
-Encerra a resposta HTTP, opcionalmente configurando um status de resposta antes de encerrar a resposta.
+Encerra a resposta HTTP, opcionalmente configurando um código de status de resposta antes de encerrar a resposta.
 
 **Parâmetros:**
 
-- `$status` (int|string|null, opcional): O status para enviar antes de encerrar a resposta.
+- `$code` (int|null, opcional): O código de status para enviar antes de encerrar a resposta.

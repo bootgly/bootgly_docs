@@ -183,7 +183,7 @@ Redirects the client to a new URI.
 **Example:**
 
 ```php
-return $Response->redirect('https://example.com/newpage', 301);
+return $Response->redirect('https://example.com/newpage?query1=value1#anchor1', 301);
 ```
 
 ### Terminate the HTTP Response
@@ -195,8 +195,8 @@ public function end (? int $code = null) : self;
 
 **Description:**
 
-Terminates the HTTP response, optionally setting a response status before ending the response.
+Terminates the HTTP response, optionally setting a response status code before ending the response.
 
 **Parameters:**
 
-- `$status` (int|string|null, optional): The status to send before ending the response.
+- `$code` (int|null, optional): The status code to send before ending the response.
