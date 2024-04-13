@@ -112,7 +112,7 @@ return $Response->JSON->send(['Olá' => 'Mundo!']);
 ### Enviando arquivos
 
 ```php
-public function upload (string|File $file) : self;
+public function upload (string|File $file, int $offset = 0, ? int $length = null) : self;
 ```
 
 ```php
