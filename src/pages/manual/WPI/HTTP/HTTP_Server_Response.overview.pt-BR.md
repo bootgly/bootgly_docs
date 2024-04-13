@@ -189,7 +189,8 @@ return $Response->redirect('https://exemplo.com/novapagina', 301);
 ### Encerrar
 
 ```php
-public function end (int|string|null $status = null) : void;
+public function end (? int $code = null) : void;
+public function end (? int $code = null) : self;
 ```
 
 **Descrição:**

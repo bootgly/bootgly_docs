@@ -189,7 +189,8 @@ return $Response->redirect('https://example.com/newpage', 301);
 ### Terminate the HTTP Response
 
 ```php
-public function end (int|string|null $status = null) : void;
+public function end (? int $code = null) : void;
+public function end (? int $code = null) : self;
 ```
 
 **Description:**
