@@ -618,7 +618,7 @@ export default {
   '/WPI/HTTP/HTTP_Servers': {
     config: {
       icon: 'dns', // device_hub?
-      status: 'empty',
+      status: 'draft',
       menu: {
         subheader: '.WPI.HTTP',
         separator: true
