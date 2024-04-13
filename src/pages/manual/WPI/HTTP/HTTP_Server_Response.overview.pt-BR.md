@@ -65,7 +65,7 @@ return $Response->append('Informação adicional');
 ### Renderizar uma view simples
 
 ```php
-public function render (string $view, ?array $data = null, ? \Closure $callback = null) : self;
+public function render (string $view, ? array $data = null, ? \Closure $callback = null) : self;
 ```
 
 **Descrição:**
@@ -154,18 +154,21 @@ Envia um desafio de autenticação para o cliente, normalmente em resposta a um 
 
 **Parâmetros:**
 
-- `$realm` (string, opcional): Uma descrição da área protegida. Padrão é "Área protegida".
+- `$Method` (Authentication): O Método de Autenticação HTTP. Por agora só é aceito "Basic" (veja exemplo).
 
 **Exemplo:**
 
 ```php
-return $Response->authenticate();
+use Bootgly\WPI\Modules\HTTP\Server\Response\Authentication;
+
+return $Response
+   ->authenticate(new Authentication\Basic(realm: "Bootgly Protected Area"));
 ```
 
 ### Redirecionar
 
 ```php
-public function redirect (string $URI, ?int $code = null) : self;
+public function redirect (string $URI, ? int $code = null) : self;
 ```
 
 **Descrição:**

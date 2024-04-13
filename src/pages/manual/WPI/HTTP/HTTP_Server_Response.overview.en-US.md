@@ -65,7 +65,7 @@ return $Response->append('Additional information');
 ### Render a simple view
 
 ```php
-public function render (string $view, ?array $data = null, ? \Closure $callback = null) : self;
+public function render (string $view, ? array $data = null, ? \Closure $callback = null) : self;
 ```
 
 **Description:**
@@ -145,7 +145,7 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 ### HTTP Basic Authentication
 
 ```php
-public function authenticate (string $realm = 'Protected area') : self;
+public function authenticate (Authentication $Method) : self
 ```
 
 **Description:**
@@ -154,18 +154,21 @@ Sends an authentication challenge to the client, typically in response to a prot
 
 **Parameters:**
 
-- `$realm` (string, optional): A description of the protected area. Defaults to "Protected area".
+- `$Method` (Authentication): A HTTP Authentication Method. For now only accepts "Basic" (see example).
 
 **Example:**
 
 ```php
-return $Response->authenticate();
+use Bootgly\WPI\Modules\HTTP\Server\Response\Authentication;
+
+return $Response
+   ->authenticate(new Authentication\Basic(realm: "Bootgly Protected Area"));
 ```
 
 ### Redirect to new URI
 
 ```php
-public function redirect (string $URI, ?int $code = null) : self;
+public function redirect (string $URI, ? int $code = null) : self;
 ```
 
 **Description:**
