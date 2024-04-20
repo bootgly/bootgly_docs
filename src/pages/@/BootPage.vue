@@ -46,7 +46,7 @@ q-page-container
           .text-h6 Bootgly Template Engine vs Laravel Blade
           .text-subtitle1 foreach in Bootgly is 9x faster than in Blade.
           .text-subtitle1
-            | Source code coming soon to the Bootgly Benchmark repository on Github.
+            a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
       q-carousel-slide(:name="1")
         .column.no-wrap.q-gutter-md
           .col-6
@@ -57,7 +57,7 @@ q-page-container
           .text-h6 Bootgly CLI - UI Progress component
           .text-subtitle1 Render ≈7x faster than Symfony / Laravel
           .text-subtitle1
-            a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
+            a.q-ml-xs.q-mr-xs(:href="links[1]" target="_blank") Try it yourself
 
       q-carousel-slide(:name="2")
         q-img.rounded-borders.col-12(width="834" height="829" :src="images[2].src")
@@ -110,7 +110,8 @@ export default {
       fullscreen: ref(false),
 
       links: [
-        'https://github.com/bootgly/bootgly_benchmarks/tree/main/Progress_Bar'
+        'https://github.com/bootgly/bootgly_benchmarks/blob/main/Template_Engine/README.md',
+        'https://github.com/bootgly/bootgly_benchmarks/blob/main/Progress_Bar/README.md'
       ],
       images: [
         { // 1 - OK
