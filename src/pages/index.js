@@ -218,13 +218,31 @@ export default {
       }
     }
   },
-  '/Bootgly/essential/projects': {
+  '/Bootgly/essential/debugging': {
     config: {
-      icon: 'create_new_folder',
+      icon: 'bug_report',
       status: 'empty',
       menu: {
         subheader: '.Bootgly.essential'
       },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Debugging'
+      },
+      'pt-BR': {
+        title: 'Debugando'
+      }
+    }
+  },
+  '/Bootgly/essential/projects': {
+    config: {
+      icon: 'create_new_folder',
+      status: 'empty',
+      menu: {},
       subpages: {
         showcase: false
       }
@@ -238,9 +256,9 @@ export default {
       }
     }
   },
-  '/Bootgly/essential/debugging': {
+  '/Bootgly/essential/templating': {
     config: {
-      icon: 'bug_report',
+      icon: 'alternate_email',
       status: 'empty',
       menu: {},
       subpages: {
@@ -248,11 +266,8 @@ export default {
       }
     },
     data: {
-      'en-US': {
-        title: 'Debugging'
-      },
-      'pt-BR': {
-        title: 'Debugando'
+      '*': {
+        title: 'Templating'
       }
     }
   },
