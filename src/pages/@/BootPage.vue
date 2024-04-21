@@ -33,12 +33,16 @@ q-page-container
         q-btn(v-else size="sm" icon="radio_button_unchecked" flat round dense @click="onClick")
 
       template(v-slot:control)
+        q-carousel-control(position="top-left", :offset="[18, 5]")
+            q-btn(
+              push, round, dense,
+              color="white", text-color="primary", :icon="autoplay === 0 ? 'play_circle' : 'pause_circle'",
+              @click="autoplay === 0 ? autoplay = 1000 : autoplay = 0")
         q-carousel-control(v-if="$q.platform.is.mobile" position="top-right", :offset="[18, 5]")
           q-btn(
             push, round, dense,
             color="white", text-color="primary", :icon="fullscreen ? 'fullscreen_exit' : 'fullscreen'",
-            @click="fullscreen = !fullscreen"
-          )
+            @click="fullscreen = !fullscreen")
 
       q-carousel-slide(:name="0")
         q-img.col-12rounded-borders(width="644" height="770" :src="images[0].src")
@@ -46,7 +50,7 @@ q-page-container
           .text-h6 Bootgly Template Engine vs Laravel Blade
           .text-subtitle1 foreach in Bootgly is 9x faster than in Blade.
           .text-subtitle1
-            a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Try it yourself
+            a.q-ml-xs.q-mr-xs(:href="links[0]" target="_blank") Compare yourself
       q-carousel-slide(:name="1")
         .column.no-wrap.q-gutter-md
           .col-6
@@ -57,7 +61,7 @@ q-page-container
           .text-h6 Bootgly CLI - UI Progress component
           .text-subtitle1 Render ≈7x faster than Symfony / Laravel
           .text-subtitle1
-            a.q-ml-xs.q-mr-xs(:href="links[1]" target="_blank") Try it yourself
+            a.q-ml-xs.q-mr-xs(:href="links[1]" target="_blank") Compare yourself
 
       q-carousel-slide(:name="2")
         q-img.rounded-borders.col-12(width="834" height="829" :src="images[2].src")
