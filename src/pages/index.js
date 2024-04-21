@@ -724,6 +724,21 @@ export default {
       }
     }
   },
+  '/WPI/HTTP/HTTP_Server_Middlewares': {
+    config: {
+      icon: 'settings_input_component',
+      status: 'empty',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Middlewares'
+      }
+    }
+  },
   '/WPI/TCP': {
     config: null,
     data: {
