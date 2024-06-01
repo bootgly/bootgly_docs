@@ -7,9 +7,9 @@ Aqui você encontra exemplos de uso da classe `Input` do `Terminal`.
 Para utilizar a classe `Input`, é necessário acessá-la através da classe `CLI`, como demonstrado no exemplo abaixo:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Input = CLI::$Terminal->Input;
+$Input = CLI->Terminal->Input;
 ```
 
 ## Configurações
@@ -43,11 +43,11 @@ reading(\Closure $CAPI, \Closure $SAPI)
 Exemplo de uma implementação do método `reading`:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
 
-$Input = CLI::$Terminal->Input;
-$Output = CLI::$Terminal->Output;
+$Input = CLI->Terminal->Input;
+$Output = CLI->Terminal->Output;
 
 
 $Output->render(<<<OUTPUT

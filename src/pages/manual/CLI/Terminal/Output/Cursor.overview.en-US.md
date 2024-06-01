@@ -7,9 +7,9 @@ The Cursor class is responsible for manipulating and moving the cursor on the te
 To use the Cursor class, it is necessary to obtain an instance through the Output class. To do this, simply access the `$Output` property of the Terminal class:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Cursor = $Output->Cursor; // Cursor class instance
 ```

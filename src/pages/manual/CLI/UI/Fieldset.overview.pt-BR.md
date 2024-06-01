@@ -7,10 +7,10 @@ A classe `Fieldset` oferece uma maneira elegante e simples de criar quadros com 
 Para utilizar a classe `Fieldset`, é necessário acessar uma instância da classe `Output`, que faz parte da classe `Terminal`, que por sua vez pode ser acessada através da classe estática `CLI`, como mostrado a seguir:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Fieldset\Fieldset;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Fieldset = new Fieldset($Output);
 ```
@@ -86,10 +86,10 @@ $Fieldset->render();
 Aqui está um exemplo completo de uso da classe `Fieldset`, do início ao fim:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Fieldset\Fieldset;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Fieldset = new Fieldset($Output);
 $Fieldset->title = "Meu Fieldset";

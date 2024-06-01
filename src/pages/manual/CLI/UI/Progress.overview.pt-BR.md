@@ -7,10 +7,10 @@ A classe `Progress` é utilizada para mostrar o progresso de uma operação em t
 Para utilizar a classe, primeiro é necessário criar uma instância dela:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Progress\Progress;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Progress = new Progress($Output);
 ```

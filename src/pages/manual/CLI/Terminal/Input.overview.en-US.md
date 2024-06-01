@@ -7,9 +7,9 @@ The `Input` class is responsible for providing methods to handle data input in t
 To use the `Input` class, you need to access it through the `CLI` class, as shown below:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Input = CLI::$Terminal->Input;
+$Input = CLI->Terminal->Input;
 ```
 
 ## Configuration

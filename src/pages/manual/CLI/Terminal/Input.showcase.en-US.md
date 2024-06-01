@@ -7,9 +7,9 @@ Here you can find examples of `Input` class usage.
 To use the `Input` class, you need to access it through the `CLI` class, as demonstrated in the example below:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Input = CLI::$Terminal->Input;
+$Input = CLI->Terminal->Input;
 ```
 
 ## Configuration
@@ -47,11 +47,11 @@ Example of a `reading` method implementation:
 namespace Bootgly\CLI;
 
 
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
 
-$Input = CLI::$Terminal->Input;
-$Output = CLI::$Terminal->Output;
+$Input = CLI->Terminal->Input;
+$Output = CLI->Terminal->Output;
 
 
 $Output->render(<<<OUTPUT

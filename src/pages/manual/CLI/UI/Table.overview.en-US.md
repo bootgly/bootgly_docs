@@ -7,10 +7,10 @@ The `Table` class is used to create and display tables in the terminal. It was d
 To create an instance of the `Table` class, the following code should be used:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Table\Table;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Table = new Table($Output);
 ```

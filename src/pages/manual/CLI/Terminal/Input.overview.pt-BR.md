@@ -7,9 +7,9 @@ A classe `Input` é responsável por prover métodos para lidar com a entrada de
 Para utilizar a classe `Input`, é necessário acessá-la através da classe `CLI`, como demonstrado abaixo:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Input = CLI::$Terminal->Input;
+$Input = CLI->Terminal->Input;
 ```
 
 ## Configurações

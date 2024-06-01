@@ -8,10 +8,10 @@ Aqui nós temos dois exemplo que também estão presentes como arquivo na demo d
 <?php
 namespace Bootgly\CLI;
 
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Progress\Progress;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 $Output->reset();
 
 $Output->render(<<<OUTPUT
@@ -74,10 +74,10 @@ $Progress->finish();
 <?php
 namespace Bootgly\CLI;
 
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Progress\Progress;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 $Output->reset();
 
 $Output->render(<<<OUTPUT

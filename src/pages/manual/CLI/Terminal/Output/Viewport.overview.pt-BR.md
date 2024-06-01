@@ -7,9 +7,9 @@ A classe Viewport é responsável pela manipulação do viewport (área visível
 Para utilizar a classe Viewport, é necessário acessar o objeto Terminal, que por sua vez contém o objeto Output que contém o objeto Viewport.
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Viewport->Output;
 ```

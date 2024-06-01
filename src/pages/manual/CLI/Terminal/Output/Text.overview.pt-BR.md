@@ -7,9 +7,9 @@ Output\Text é uma classe que permite a formatação de texto na saída padrão 
 Para utilizar a classe Output\Text do Terminal, você precisa acessar a instância através da classe Output:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 $Text = $Output->Text;
 ```
 

@@ -7,9 +7,9 @@ A classe Cursor é responsável pela manipulação e movimentação do cursor na
 Para utilizar a classe Cursor, é necessário obter uma instância através da classe Output. Para isso, basta acessar a propriedade `$Output` da classe Terminal:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Cursor = $Output->Cursor; // Instância da classe Cursor
 ```

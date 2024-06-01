@@ -7,10 +7,10 @@ The `Fieldset` class offers an elegant and simple way to create frames with a ti
 To use the `Fieldset` class, you need to access an instance of the `Output` class, which is part of the `Terminal` class, which in turn can be accessed through the static class `CLI`, as shown below:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Fieldset\Fieldset;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Fieldset = new Fieldset($Output);
 ```
@@ -86,10 +86,10 @@ $Fieldset->render();
 Here is a complete example of using the `Fieldset` class from start to finish:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Fieldset\Fieldset;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Fieldset = new Fieldset($Output);
 $Fieldset->title = "My Fieldset";

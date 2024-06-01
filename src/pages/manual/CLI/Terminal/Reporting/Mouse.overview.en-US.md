@@ -15,11 +15,11 @@ In Bootgly, we have an easy-to-understand Code API that abstracts the ANSI escap
 First of all, you will need to use the Input and Output classes from the CLI to use as a composition\. To do this, you can use the `Bootgly\CLI` class to get a static instance of the CLI class and then have access to the Input and Output classes. Then, create an instance of the Mouse class as shown below.
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\Terminal\Reporting\Mouse;
 
-$Input = CLI::$Terminal->Input;
-$Output = CLI::$Terminal->Output;
+$Input = CLI->Terminal->Input;
+$Output = CLI->Terminal->Output;
 
 $Mouse = new Mouse($Input, $Output);
 ```

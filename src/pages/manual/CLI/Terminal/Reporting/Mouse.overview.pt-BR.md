@@ -15,11 +15,11 @@ No Bootgly, temos um Code API de fácil entendimento que abstrai os códigos de 
 Antes de tudo, você precisará usar as classes Input e Output do CLI para usar como composição. Para isso, você pode usar a classe `Bootgly\CLI` para obter uma instância estática da classe CLI e então ter acesso às classes Input e Output. Em seguida, crie uma instância da classe Mouse conforme exemplo abaixo.
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\Terminal\Reporting\Mouse;
 
-$Input = CLI::$Terminal->Input;
-$Output = CLI::$Terminal->Output;
+$Input = CLI->Terminal->Input;
+$Output = CLI->Terminal->Output;
 
 $Mouse = new Mouse($Input, $Output);
 ```

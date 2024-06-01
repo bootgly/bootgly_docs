@@ -8,10 +8,10 @@ The Alert class is responsible for displaying colored alerts in the Terminal.
 To use the Alert class, it is necessary to instantiate an object of the same class passing as parameter a reference to the Output object of the Terminal class:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Alert\Alert;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 
 $Alert = new Alert($Output);
 ```

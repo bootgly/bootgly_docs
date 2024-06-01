@@ -7,9 +7,9 @@ The `Output` class is responsible for handling data output to the Terminal. Thro
 To use the instance correctly, it is necessary to access it through the `CLI` class:
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 
-$Output = CLI::$Terminal->Output;
+$Output = CLI->Terminal->Output;
 ```
 
 ## Configuration

@@ -7,11 +7,11 @@ O componente `Menu` da biblioteca Bootgly é responsável por renderizar e manip
 Para utilizar o componente, é necessário criar uma instância passando como parâmetros as instâncias dos componentes `Input` e `Output`.
 
 ```php
-use Bootgly\CLI;
+use const Bootgly\CLI;
 use Bootgly\CLI\UI\Menu\Menu;
 
-$Input = CLI::$Terminal->Input;
-$Output = CLI::$Terminal->Output;
+$Input = CLI->Terminal->Input;
+$Output = CLI->Terminal->Output;
 
 $Menu = new Menu($Input, $Output);
 ```
