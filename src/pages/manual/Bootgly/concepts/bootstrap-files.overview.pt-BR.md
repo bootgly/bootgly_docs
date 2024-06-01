@@ -5,7 +5,3 @@ São dois os arquivos de bootstrap principais do Bootgly: `bootgly` e `index.php
 ## Arquivos de Bootstrap em Diretórios Recurso
 
 Além dos arquivos de bootstrap principais, existem outros arquivos que são utilizados para inicializar ou indexar algum outro recurso interno do Bootgly como suites de testes por exemplo. Esse arquivos possuem um padrão fixo em seu nome e devem começar com um arroba: `@.php`. Esses arquivos de bootstrap podem ser encontrados no primeiro nível dos Diretórios Recurso do Bootgly.
-
-## Arquivos de boot para Plataformas do Bootgly
-
-Além dos arquivos de bootstrap em pastas recursos, existem também `arquivos de boot` para inicializar as Plataformas do Bootgly. Esses arquivos ficam localizados no diretório recurso `projects/` e possuem o seguinte padrão: `*.boot.php`. Por exemplo, para dar o boot na plataforma base o arquivo de boot está localizado em `projects/Bootgly.boot.php`, para dar boot na interface `CLI`, o arquivo de boot está localizado em `projects\Bootgly\CLI.boot.php`, e assim por diante.
