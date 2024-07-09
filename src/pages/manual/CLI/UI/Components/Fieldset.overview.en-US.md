@@ -8,7 +8,7 @@ To use the `Fieldset` class, you need to access an instance of the `Output` clas
 
 ```php
 use const Bootgly\CLI;
-use Bootgly\CLI\UI\Fieldset\Fieldset;
+use Bootgly\CLI\UI\Components\Fieldset;
 
 $Output = CLI->Terminal->Output;
 
@@ -87,7 +87,7 @@ Here is a complete example of using the `Fieldset` class from start to finish:
 
 ```php
 use const Bootgly\CLI;
-use Bootgly\CLI\UI\Fieldset\Fieldset;
+use Bootgly\CLI\UI\Components\Fieldset\Fieldset;
 
 $Output = CLI->Terminal->Output;
 

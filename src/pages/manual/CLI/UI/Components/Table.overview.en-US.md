@@ -8,7 +8,7 @@ To create an instance of the `Table` class, the following code should be used:
 
 ```php
 use const Bootgly\CLI;
-use Bootgly\CLI\UI\Table\Table;
+use Bootgly\CLI\UI\Components\Table;
 
 $Output = CLI->Terminal->Output;
 

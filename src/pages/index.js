@@ -506,20 +506,20 @@ export default {
     }
   },
 
-  '/CLI/UI': {
+  '/CLI/UI/Components': {
     config: null,
     data: {
       '*': {
-        title: 'CLI UI components'
+        title: 'CLI UI Components'
       }
     }
   },
-  '/CLI/UI/Alert': {
+  '/CLI/UI/Components/Alert': {
     config: {
       icon: 'notification_important',
       status: 'draft',
       menu: {
-        subheader: '.CLI.UI'
+        subheader: '.CLI.UI.Components'
       },
       subpages: {
         showcase: false
@@ -531,7 +531,7 @@ export default {
       }
     }
   },
-  '/CLI/UI/Fieldset': {
+  '/CLI/UI/Components/Fieldset': {
     config: {
       icon: 'crop_square',
       status: 'draft',
@@ -546,7 +546,7 @@ export default {
       }
     }
   },
-  '/CLI/UI/Menu': {
+  '/CLI/UI/Components/Menu': {
     config: {
       icon: 'menu',
       status: 'draft',
@@ -561,7 +561,7 @@ export default {
       }
     }
   },
-  '/CLI/UI/Progress': {
+  '/CLI/UI/Components/Progress': {
     config: {
       icon: 'downloading',
       status: 'draft',
@@ -576,7 +576,7 @@ export default {
       }
     }
   },
-  '/CLI/UI/Table': {
+  '/CLI/UI/Components/Table': {
     config: {
       icon: 'table_chart',
       status: 'draft',

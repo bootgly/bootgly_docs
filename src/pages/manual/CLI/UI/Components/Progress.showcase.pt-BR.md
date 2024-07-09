@@ -1,15 +1,15 @@
 # Progress
 
-Here we have two examples that are also present as a file in the Bootgly CLI demo.
+Aqui nós temos dois exemplo que também estão presentes como arquivo na demo do Bootgly CLI.
 
-## Determined state
+## Estado determinado
 
 ```php
 <?php
 namespace Bootgly\CLI;
 
 use const Bootgly\CLI;
-use Bootgly\CLI\UI\Progress\Progress;
+use Bootgly\CLI\UI\Components\Progress;
 
 $Output = CLI->Terminal->Output;
 $Output->reset();
@@ -68,14 +68,14 @@ while ($i++ < 250000) {
 $Progress->finish();
 ```
 
-## Indetermined state
+## Estado indeterminado
 
 ```php
 <?php
 namespace Bootgly\CLI;
 
 use const Bootgly\CLI;
-use Bootgly\CLI\UI\Progress\Progress;
+use Bootgly\CLI\UI\Components\Progress\Progress;
 
 $Output = CLI->Terminal->Output;
 $Output->reset();
