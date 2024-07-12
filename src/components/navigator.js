@@ -1,7 +1,5 @@
 import { scroll } from 'quasar'
 
-const { getScrollTarget, setVerticalScrollPosition } = scroll
-
 export default {
   methods: {
     // @ Boot
@@ -30,10 +28,10 @@ export default {
       const Anchor = document.getElementById(id)
 
       if (Anchor !== null && typeof Anchor === 'object') {
-        const ScrollTarget = getScrollTarget(Anchor)
+        const ScrollTarget = scroll.getScrollTarget(Anchor)
         const AnchorOffsetTop = Anchor.offsetTop
 
-        setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
+        scroll.setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
 
         setTimeout(() => {
           this.$store.commit('page/setScrolling', true)

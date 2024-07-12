@@ -131,8 +131,6 @@ q-scroll-area#menu(
 
 <script>
 import { openURL, scroll } from 'quasar'
-const { getScrollTarget, setVerticalScrollPosition } = scroll
-
 import tags from 'src/i18n/tags.hjson'
 
 export default {
@@ -322,13 +320,13 @@ export default {
         const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
 
         if (menuItemActive && typeof menuItemActive === 'object') {
-          const target = getScrollTarget(menuItemActive)
+          const target = scroll.getScrollTarget(menuItemActive)
           const offset = menuItemActive.offsetTop
           const duration = 300
 
           // TODO fix tremor
           // TODO detect scrollarea scroll position and only setVertical in initial position (top = 0)
-          setVerticalScrollPosition(target, offset - (window.innerHeight / 2) + 80, duration)
+          scroll.setVerticalScrollPosition(target, offset - (window.innerHeight / 2) + 80, duration)
         }
       }
     }
