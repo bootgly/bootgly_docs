@@ -28,6 +28,11 @@
       ]
     }
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "@vue/language-plugin-pug"
+    ]
+  },
   "exclude": [
     "dist",
     ".quasar",
