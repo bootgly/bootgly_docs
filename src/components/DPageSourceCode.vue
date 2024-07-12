@@ -28,6 +28,7 @@ import Prism from 'prismjs'
 import 'prismjs/components/prism-markup-templating' // dependency for prism-php extension
 // PHP
 import 'prismjs/components/prism-php'
+// Bash
 import 'prismjs/components/prism-bash'
 
 export default {
@@ -174,8 +175,8 @@ export default {
       user-select: none
 
   .code
+    font-family: "Fira Code Nerd Font" !important
     position: relative
-    font-family: "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", "Andale Mono", "Lucida Console", Monospace
     border: 1px solid #ddd
     border-bottom: 1px solid #ccc
     border-radius: 3px
@@ -208,6 +209,7 @@ export default {
           visibility: hidden
 
     pre
+      font-family: "Fira Code Nerd Font" !important
       display: flex
       margin: 0
       border: 0
@@ -219,8 +221,8 @@ export default {
       overflow-y: hidden
 
       > code
+        font-family: "Fira Code Nerd Font" !important
         display: block
-        font-size: 90%
         padding: 0
 
     &.white
