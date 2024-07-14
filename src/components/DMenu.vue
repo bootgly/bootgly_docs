@@ -44,7 +44,6 @@ q-scroll-area#menu(
 
     li(role="listitem")
       q-separator(role="separator")
-
     q-item(href="https://github.com/bootgly/bootgly/releases/" target="_blank")
       q-item-section(side)
         q-icon(name="assignment")
@@ -67,81 +66,71 @@ q-scroll-area#menu(
     li(role="listitem")
       q-separator(role="separator" spaced)
       q-item-section(side).q-ml-md {{ $t('menu.explore') }}
-
     q-item(href="https://github.com/bootgly/bootgly_awesome/" target="_blank")
-      //-q-item-section(side)
-        q-icon(name="github")
       q-item-section 🤯 Bootgly Awesome
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
     q-item(href="https://github.com/bootgly/bootgly_benchmarks/" target="_blank")
-      //-q-item-section(side)
-        q-icon(name="github")
       q-item-section ⏱️ Bootgly Benchmarks (WIP)
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
 
   q-separator.separator.list
 
-  q-list(v-if="items !== null && items.constructor === Array && items.length > 0" no-border link inset-delimiter role="list")
-    //-q-expansion-item.shadow-1(
-      v-if="1"
-      expand-separator
-      default-opened
-      icon="contact_support"
-      label="Bootgly"
-      caption="Base platform")
-      .inset-shadow(style="width: 100%; height: 12px;")
+  q-list(v-if="items !== null && items.constructor === Array && items.length > 0"
+    no-border link inset-delimiter role="list"
+  )
     template(v-for="(item, index) in items" :key="index")
-      //- Menu Separator - Header
-      q-item-section.label.header.sticky(v-if="item.meta.menu.header" :style="getMenuItemHeaderBackground()" role="listitem")
-        q-item-label(header)
-          q-icon(:name="item.meta.menu.header.icon" size="1.5rem")
-          | {{ getMenuItemHeaderLabel(item.meta) }}
-        q-separator.separator.partial(role="separator")
-
-      //- Menu Separator - Subheader
-      q-item-section(v-if="item.meta.menu.subheader")
-        q-item-label.label.subheader(header)
-          | {{ getMenuItemSubheader(item.meta) }}
-
-      q-item(
-        :to="item.path + '/overview'"
-        :active="item.path + subpage === $route.path"
-        v-show="matches[index] || !matches"
+      //- TODO: save state of opened items to localStorage?
+      q-expansion-item.menu-list-expansion(
+        v-if="item && item.constructor === Array"
+        expand-separator
+        default-opened
       )
-        q-item-section(side)
-          q-icon(v-if="item.meta.icon" :name="item.meta.icon")
-        q-item-section {{ getMenuItemLabel(item, index) }}
-        q-item-section.page-status(v-if="item.meta.status !== 'done'" side)
-          q-badge(
-            :text-color="getPageStatusTextColor(item.meta.status)"
-            :color="getPageStatusColor(item.meta.status)"
-            :label="getPageStatusText(item.meta.status)"
+        template(v-slot:header)
+          q-item-section
+            div.row.justify-center.text-center
+              div.col
+                q-icon(:name="item[0].meta.menu.header.icon" size="1.5rem")
+                span.q-ml-md
+                  | {{ getMenuItemHeaderLabel(item[0].meta) }}
+        template(v-for="(subitem, subindex) in item" :key="subindex")
+          d-menu-item(
+            :items="items.length"
+            :subitem="subitem"
+            :subindex="subindex"
+            :subpage="subpage"
+            :founds="founds"
           )
-          q-tooltip(:hide-delay="3") {{ getPageStatusTooltip(item.meta.status) }}
-
-      //- Menu Separator
-      li(v-if="item.meta.menu.separator" role="listitem")
-        q-separator(
-          :class="'separator' + (item.meta.menu.separator === true ? '' : item.meta.menu.separator)"
-          role="separator"
-        )
+      d-menu-item(v-else-if="item && item.constructor === Object"
+        :items="items.length"
+        :subitem="item"
+        :subindex="index"
+        :subpage="subpage"
+        :founds="founds"
+      )
 </template>
 
 <script>
 import { openURL, scroll } from 'quasar'
+
 import tags from 'src/i18n/tags.hjson'
+
+import DMenuItem from "./DMenuItem.vue";
 
 export default {
   name: 'DMenu',
 
+  components: {
+    DMenuItem
+  },
   data () {
     return {
       loaded: false,
+      scrolling: null,
 
       term: null,
-      matches: false,
+      founds: false,
 
       version: 'v0.x',
       versions: [
@@ -163,48 +152,60 @@ export default {
   methods: {
     openURL,
 
-    // TODO highlight terms found in menu item and page content?
-    // TODO search result count in input bottom?
+    // TODO: highlight terms found in menu item and page content?
+    // TODO: search result count in input bottom?
     searchTerm (term) {
       if (term.length > 1) {
         term = term.toLowerCase()
 
         const locale = this.$q.localStorage.getItem('setting.language')
 
-        this.matches = []
+        this.founds = []
 
-        for (const [index, route] of this.items.entries()) {
-          // ! Search in Menu item label
-          // TODO
-
-          // @ Search in i18n/tags.json
-          // Current language
-          this.matches[index] = false
-          if (tags[locale].length > 0) {
-            this.matches[index] = tags[locale][index].indexOf(term) !== -1
-            // en-US fallback
-            if (this.matches[index] === false && locale !== 'en-US') {
-              this.matches[index] = tags['en-US'][index].indexOf(term) !== -1
-            }
-          }
-
-          // @ Search in Page content
-          if (this.matches[index] === false) {
-            // ? Search in Page texts (overview, showcases?, changelog?)
-            // Current language
-            this.matches[index] = this.searchTermInI18nTexts(route.path, term, locale)
-            // en-US fallback
-            if (this.matches[index] === false && locale !== 'en-US') {
-              this.matches[index] = this.searchTermInI18nTexts(route.path, term, 'en-US')
-            }
-          }
+        for (const [index, items] of this.items.entries()) {
+          this.searchTermIterate(items, term, locale)
         }
       } else {
-        this.matches = false
+        this.founds = false
+      }
+    },
+    searchTermIterate (items, term, locale) {
+      if (items.constructor === Array) {
+        for (const subitems of items) {
+          this.searchTermIterate(subitems, term, locale)
+        }
+      } else if (items.constructor === Object) {
+        const item = items
+        const path = item.path
+
+        this.founds[path] = false
+
+        // TODO: search in Menu item label
+
+        // @ search in i18n/tags.json
+        // current language
+        if (tags[locale].length > 0) {
+          this.founds[path] = tags[locale][index].indexOf(term) !== -1
+          // en-US fallback
+          if (this.founds[path] === false && locale !== 'en-US') {
+            this.founds[path] = tags['en-US'][index].indexOf(term) !== -1
+          }
+        }
+
+        // @ search in Page content
+        if (this.founds[path] === false) {
+          // @ search in Page texts (overview, showcases?, changelog?)
+          // current language
+          this.founds[path] = this.searchTermInI18nTexts(path, term, locale)
+          // en-US fallback
+          if (this.founds[path] === false && locale !== 'en-US') {
+            this.founds[path] = this.searchTermInI18nTexts(path, term, 'en-US')
+          }
+        }
       }
     },
     searchTermInI18nTexts (route, term, locale) {
-      // TODO use global constants
+      // TODO: use global constants
       const subpages = [
         'overview',
         'showcase',
@@ -214,9 +215,8 @@ export default {
       let source = null
       let found = false
       for (const subpage of subpages) {
-        // TODO replace with global solution
+        // TODO: replace with global solution
         const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
-
         // * Search in page texts (i18n)
         source = null
         const msgExists = this.$te(path, locale)
@@ -238,10 +238,7 @@ export default {
       return true
     },
 
-    // * Item
-    getMenuItemHeaderBackground () {
-      return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
-    },
+    // _ Item
     getMenuItemHeaderLabel (meta) {
       const label = meta.menu.header.label
 
@@ -257,128 +254,100 @@ export default {
 
       return label // String raw
     },
-    getMenuItemSubheader (meta) {
-      const subheader = meta.menu.subheader
-      const path = `_.${meta.type}${subheader}._`
-
-      if (this.$te(path)) {
-        return this.$t(path)
-      } else {
-        return this.$t(path, 'en-US')
-      }
-    },
-    getMenuItemLabel (item, index) {
-      // if (this.loaded) return
-
-      if (index === this.items.length - 1) {
-        this.loaded = true
-      }
-
-      const path = `_${item.path.replace(/_$/, '').replace(/\//g, '.')}._`
-      // console.log(path)
-      // TODO fix re-render at menu scrolling?! Lol
-      if (this.$te(path)) {
-        return this.$t(path)
-      } else {
-        return this.$t(path, 'en-US')
-      }
-    },
-
-    getPageStatusText (status) {
-      if (status === 'draft') {
-        return this.$t('menu.status.draft._')
-      } else {
-        return this.$t('menu.status.empty._')
-      }
-    },
-    getPageStatusTextColor (status) {
-      if (status === 'draft') {
-        return 'dark'
-      } else {
-        return 'white'
-      }
-    },
-    getPageStatusColor (status) {
-      if (status === 'draft') {
-        return 'orange'
-      } else {
-        return 'red'
-      }
-    },
-    getPageStatusTooltip (status) {
-      if (status === 'draft') {
-        return this.$t('menu.status.draft.tooltip')
-      } else {
-        return this.$t('menu.status.empty.tooltip')
-      }
-    },
 
     scrollToActiveMenuItem () {
-      const menu = document.getElementById('menu')
-
-      if (menu) {
-        const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
-
-        if (menuItemActive && typeof menuItemActive === 'object') {
-          const target = scroll.getScrollTarget(menuItemActive)
-          const offset = menuItemActive.offsetTop
-          const duration = 300
-
-          // TODO fix tremor
-          // TODO detect scrollarea scroll position and only setVertical in initial position (top = 0)
-          scroll.setVerticalScrollPosition(target, offset - (window.innerHeight / 2) + 80, duration)
-        }
+      if (this.scrolling) {
+        clearTimeout(this.scrolling)
       }
+
+      this.scrolling = setTimeout(() => {
+        console.log('scrolling...')
+        const menu = document.getElementById('menu')
+        if (menu) {
+          const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
+          if (menuItemActive && typeof menuItemActive === 'object') {
+            const offsetTop1 = menuItemActive.closest('.menu-list-expansion')?.offsetTop ?? 0
+            const offsetTop2 = menuItemActive.offsetTop
+
+            const innerHeightBy2 = window.innerHeight / 2
+
+            const searchBarHeight = 50
+            let expansionHeaderHeight = 0
+            if (offsetTop1 > 0) {
+              expansionHeaderHeight = 45
+            }
+            const fixedHeight = searchBarHeight + expansionHeaderHeight
+
+            const target = scroll.getScrollTarget(menuItemActive)
+            const offset = (offsetTop1 + offsetTop2) - innerHeightBy2 + fixedHeight
+            const duration = 300
+
+            if (offset > 0) {
+              scroll.setVerticalScrollPosition(target, offset, duration)
+            }
+          }
+        }
+        this.scrolling = null
+      }, 1500)
     }
   },
 
-  // @ Events
+  // # Events
+  // Create
   beforeCreate () {
     // console.log('DMenu - beforeCreate()!')
 
     const routes = this.$router.options.routes.slice(0, -2) // Delete last 2 routes
     const items = []
 
+    let nodeBasepath = ''
+    let nodeIndex = 0
     for (const [index, route] of routes.entries()) {
-      items[index] = Object.freeze({
+      const item = Object.freeze({
         path: route.path,
         meta: route.meta
       })
+      // # Route
+      const basepath = route.path.split('/')[2]
+      const header = route.meta.menu.header
+
+      if (header !== undefined && basepath !== nodeBasepath) {
+        nodeBasepath = basepath
+        nodeIndex = index
+        items[index] = []
+      } else if (header === undefined && basepath !== nodeBasepath) {
+        nodeBasepath = ''
+      }
+
+      if (nodeBasepath !== '') {
+        items[nodeIndex].push(item)
+      } else {
+        items.push(item)
+      }
     }
 
-    this.items = Object.freeze(items)
-
-    // console.log(this.items, routes)
+    this.items = Object.freeze(items.filter(item => item !== undefined))
   },
-  created () {
-    // console.log('DMenu - created()!')
-  },
-  beforeMount () {
-    // console.log('DMenu - beforeMount()!')
-  },
+  // Mount
   mounted () {
     // console.log('DMenu - mounted()!')
 
     // ! Autoscrolling to active menu item after 1.5s
-    setTimeout(() => {
-      this.scrollToActiveMenuItem()
-    }, 1500)
+    this.scrollToActiveMenuItem()
+
     // * After each route change
     this.$router.afterEach((to, from) => {
       if (!to.hash || (from.path !== to.path)) {
-        setTimeout(() => {
-          this.scrollToActiveMenuItem()
-        }, 1500)
+        this.scrollToActiveMenuItem()
       }
     })
+  },
+  beforeUnmount () {
+    // console.log('DMenu - beforeUnmount()!')
 
-    // console.log(this.items)
-  },
-  beforeUpdate () {
-    // console.log('DMenu - beforeUpdate()!')
-  },
-  updated () {
-    // console.log('DMenu - updated()!')
+    if (this.scrolling) {
+      clearTimeout(this.scrolling)
+    }
   }
 }
 </script>
@@ -386,21 +355,12 @@ export default {
 <style lang="sass">
 body.body--dark
   --d-menu-subheader-txt-color: #a8a8a8
+  --d-menu-expansion-bg-color: rgb(48, 48, 48)
+  --d-menu-item-opacity: 0.03
 body.body--light
   --d-menu-subheader-txt-color: #363636
-
-.sticky
-  position: sticky
-  position: -webkit-sticky
-  position: -moz-sticky
-  position: -ms-sticky
-  position: -o-sticky
-  width: 100%
-  top: -1px
-  margin-bottom: 5px
-  z-index: 2
-  .separator
-    margin: 0 auto
+  --d-menu-expansion-bg-color: rgb(245, 245, 245)
+  --d-menu-item-opacity: 0.015
 
 #menu
   width: 100%
@@ -409,14 +369,42 @@ body.body--light
   // List
   .q-list
     padding: 8px 0
+
+    .menu-list-expansion
+      box-shadow: 0px -1px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.14), 0 2px 1px -1px rgba(0, 0, 0, 0.12)
+      margin-top: 5px
+
+      .q-item[role="button"]
+        position: sticky
+        position: -webkit-sticky
+        position: -moz-sticky
+        position: -ms-sticky
+        position: -o-sticky
+        width: 100%
+        top: -1px
+        z-index: 3
+        background-color: var(--d-menu-expansion-bg-color)
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.14), 0 2px 1px -1px rgba(0, 0, 0, 0.12)
+
+      .separator
+        margin: 0 auto
+
     // List Item
     .q-item
       padding: 8px 12px
       min-height: 45px
+      margin-bottom: 2px
+      &.q-hoverable > .q-focus-helper
+        background-color: currentColor
+        opacity: var(--d-menu-item-opacity)
+      &.q-hoverable:hover > .q-focus-helper
+        background-color: currentColor
+        opacity: 0.15 !important
+
     // List Item Section
     .q-item.q-router-link--active
       color: black
-      background: rgba(189, 189, 189, 0.7)
+      background-color: rgba(189, 189, 189, 0.7)
       // List Item Section
       .q-item__section--side:not(.q-item__section--avatar)
           .q-icon

@@ -1,5 +1,5 @@
 {
-  "name": "bootgly-php-framework",
+  "name": "bootgly_docs",
   "version": "0.0.1",
   "description": "Documentation of Bootgly PHP Framework",
   "productName": "Bootgly PHP Framework Documentation",
@@ -7,10 +7,10 @@
   "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
-    "@quasar/cli": "^2.4.1",
     "@quasar/extras": "^1.16.12",
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
@@ -26,11 +26,12 @@
     "@quasar/app-webpack": "^3.13.2",
     "@quasar/quasar-app-extension-qmediaplayer": "^2.0.0-beta.6",
     "@vue/language-plugin-pug": "^2.0.26",
-    "eslint": "^8.10.0",
-    "eslint-config-standard": "^17.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^8.1.0",
     "eslint-plugin-import": "^2.19.1",
     "eslint-plugin-n": "^15.0.0",
     "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-pug": "^1.2.5",
     "eslint-plugin-vue": "^9.0.0",
     "eslint-webpack-plugin": "^3.1.1",
     "hjson": "^3.2.2",
@@ -38,6 +39,7 @@
     "markdown-it": "^13.0.1",
     "markdown-it-attrs": "^4.1.6",
     "os": "^0.1.2",
+    "prettier": "^2.5.1",
     "prismjs": "^1.27.0",
     "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
@@ -57,7 +59,7 @@
     "last 5 Opera versions"
   ],
   "engines": {
-    "node": ">= 12.22.1",
+    "node": "^20 || ^18 || ^16",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
   }

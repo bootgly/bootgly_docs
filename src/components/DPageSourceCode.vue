@@ -175,7 +175,7 @@ export default {
       user-select: none
 
   .code
-    font-family: "Fira Code Nerd Font" !important
+    font-family: "Fira Code Nerd Font", "Consolas" !important
     position: relative
     border: 1px solid #ddd
     border-bottom: 1px solid #ccc
@@ -209,7 +209,7 @@ export default {
           visibility: hidden
 
     pre
-      font-family: "Fira Code Nerd Font" !important
+      font-family: "Fira Code Nerd Font", "Consolas" !important
       display: flex
       margin: 0
       border: 0
@@ -221,7 +221,7 @@ export default {
       overflow-y: hidden
 
       > code
-        font-family: "Fira Code Nerd Font" !important
+        font-family: "Fira Code Nerd Font", "Consolas" !important
         display: block
         padding: 0
 
