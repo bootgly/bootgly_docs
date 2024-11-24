@@ -8,7 +8,7 @@ Test files in Bootgly follow the `resources` directories and files standard. Tes
 
 You have the freedom to define any name you want for the test case files in Bootgly, but it is recommended to follow the already existing pattern. An example of a test case file name implemented in Bootgly is: `1.01-request_as_response-address.test.php`.
 
-### tests Directory + Test Case files
+### Directory + files
 
 ```txt
 tests
