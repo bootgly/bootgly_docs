@@ -274,7 +274,7 @@ export default {
   '/Bootgly/essential/testing': {
     config: {
       icon: 'science',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       subpages: {
         showcase: false
