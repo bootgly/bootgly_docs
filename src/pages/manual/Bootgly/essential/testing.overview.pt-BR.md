@@ -8,7 +8,7 @@ Os arquivos de testes no Bootgly seguem o padrão de diretórios e arquivos `rec
 
 Você tem a liberdade para definir o nome que quiser nos arquivos de casos de testes no Bootgly, porém, é recomendado seguir o padrão já existente. Um exemplo de nome de arquivo de caso de teste implementado no Bootgly é: `1.01-request_as_response-address.test.php`.
 
-### Diretório `tests` + arquivos de Casos de Teste
+### Diretório tests + arquivos de Casos de Teste
 
 ```txt
 tests
