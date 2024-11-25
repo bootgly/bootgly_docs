@@ -1,8 +1,10 @@
 <script setup>
-import { ref, defineProps, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
-import { useRouter, useRoute } from 'vue-router'
-import { scroll, useQuasar } from 'quasar'
+import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
+
+import useNavigator from 'src/composables/useNavigator'
 
 import DPageAnchor from 'components/DPageAnchor'
 import DPageMeta from 'components/DPageMeta'
@@ -11,6 +13,8 @@ const store = useStore()
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
+
+const { scrolling, navigate } = useNavigator()
 
 const props = defineProps({
   disableNav: {
@@ -85,94 +89,16 @@ const resetPageScroll = () => {
   }
 }
 
-const register = (id) => {
-  store.commit('page/pushAnchors', id)
-}
-
-const index = (id, child = false) => {
-  store.commit('page/pushNodes', {
-    id,
-    label: this.value,
-    child,
-    children: []
-  })
-}
-
-const anchor = (id, select = true) => {
-  store.commit('page/setScrolling', false)
-  id = '' + id
-  const Anchor = document.getElementById(id)
-  if (Anchor !== null && typeof Anchor === 'object') {
-    const ScrollTarget = scroll.getScrollTarget(Anchor)
-    const AnchorOffsetTop = Anchor.offsetTop
-    scroll.setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
-    setTimeout(() => {
-      store.commit('page/setScrolling', true)
-    }, 600)
-  }
-  if (select) {
-    selectAnchor(id)
-  }
-}
-
-const selectAnchor = (id) => {
-  store.commit('page/setAnchor', Number(id))
-  store.commit('page/pushNodesExpanded', Number(id))
-}
-
-const scrolling = (scroll) => {
-  const scrolling = store.state.page.scrolling
-  if (!scrolling) {
-    return
-  }
-  const scrollPositionTop = scroll.position.top + 50
-  const anchors = store.state.page.anchors
-  for (let i = 0; i < anchors.length; i++) {
-    const anchorId = anchors[i]
-    if (anchorId === 0) {
-      continue
-    }
-    const Anchor = document.getElementById(anchorId)
-    let AnchorOffsetTop = 20
-    if (Anchor !== null && typeof Anchor === 'object') {
-      AnchorOffsetTop = Anchor.offsetTop
-    }
-    if (scrollPositionTop >= AnchorOffsetTop) {
-      selectAnchor(anchorId)
-    }
-  }
-}
-
-const navigate = (value, anchor = true) => {
-  if (anchor) {
-    if (('#' + value) === route.hash) {
-      anchor(value)
-      return
-    } else if (value === null) {
-      anchor(selected.value, false)
-      return
-    }
-  }
-  router.push(route.path + '#' + value)
-  if (anchor) {
-    if ($q.platform.is.desktop) {
-      anchor(value)
-    } else {
-      setTimeout(() => {
-        anchor(value)
-      }, 600)
-    }
-  }
-}
-
 onMounted(() => {
   router.beforeEach((to, from, next) => {
     resetPageScroll()
+
     if (to.hash === '' && from.path !== to.path) {
       store.commit('page/resetAnchor')
       store.commit('page/resetAnchors')
       store.commit('page/resetNodes')
     }
+
     next()
   })
 })
