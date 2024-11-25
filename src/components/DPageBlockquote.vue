@@ -1,24 +1,18 @@
+<script setup>
+import { defineProps } from 'vue'
+
+const props = defineProps({
+  message: {
+    type: String,
+    default: ''
+  }
+})
+</script>
+
 <template lang="pug">
 blockquote
   strong(v-if="message === 'important'") Important
-  strong(v-else-if="warning") Warning
-  strong(v-else-if="note") Note
+  strong(v-else-if="message === 'warning'") Warning
+  strong(v-else-if="message === 'note'") Note
   slot
 </template>
-
-<script>
-export default {
-  name: 'QPageBlockquote',
-
-  props: {
-    message: {
-      type: String,
-      default: ''
-    }
-  }
-}
-</script>
-
-<style scoped>
-
-</style>

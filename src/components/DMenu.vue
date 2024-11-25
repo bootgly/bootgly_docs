@@ -1,6 +1,214 @@
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useQuasar, scroll, openURL } from 'quasar'
+import { useI18n } from 'vue-i18n'
+
+import tags from 'src/i18n/tags.hjson'
+import DMenuItem from './DMenuItem.vue'
+
+const $q = useQuasar()
+const $route = useRoute()
+const $router = useRouter()
+const { t, te, tm } = useI18n()
+
+const term = ref(null)
+const founds = ref(false)
+const version = ref('v0.x')
+const versions = ref(['v0.x'])
+const items = ref([])
+const scrolling = ref(null)
+
+const subpage = computed(() => {
+  const parent = $route.matched[0]?.path
+  const child = $route.matched[1]?.path
+  return child.substring(parent.length)
+})
+
+const searchTerm = (term) => {
+  if (term.length > 1) {
+    term = term.toLowerCase()
+    const locale = $q.localStorage.getItem('setting.language')
+    founds.value = []
+
+    for (const [index, items] of items.value.entries()) {
+      searchTermIterate(items, term, locale)
+    }
+  } else {
+    founds.value = false
+  }
+}
+
+const searchTermIterate = (items, term, locale) => {
+  if (Array.isArray(items)) {
+    for (const subitems of items) {
+      searchTermIterate(subitems, term, locale)
+    }
+  } else if (typeof items === 'object') {
+    const item = items
+    const path = item.path
+    founds.value[path] = false
+
+    // TODO: search in Menu item label
+
+    // @ search in i18n/tags.json
+    // current language
+    if (tags[locale].length > 0) {
+      founds.value[path] = tags[locale][index].indexOf(term) !== -1
+      // en-US fallback
+      if (founds.value[path] === false && locale !== 'en-US') {
+        founds.value[path] = tags['en-US'][index].indexOf(term) !== -1
+      }
+    }
+
+    // @ search in Page content
+    if (founds.value[path] === false) {
+      // @ search in Page texts (overview, showcases?, changelog?)
+      // current language
+      founds.value[path] = searchTermInI18nTexts(path, term, locale)
+      // en-US fallback
+      if (founds.value[path] === false && locale !== 'en-US') {
+        founds.value[path] = searchTermInI18nTexts(path, term, 'en-US')
+      }
+    }
+  }
+}
+
+const searchTermInI18nTexts = (route, term, locale) => {
+  // TODO: use global constants
+  const subpages = ['overview', 'showcase', 'vs']
+  let source = null
+  let found = false
+  for (const subpage of subpages) {
+    // TODO: replace with global solution
+    const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
+    // * Search in page texts (i18n)
+    const msgExists = te(path, locale)
+    if (msgExists) {
+      source = tm(path, locale)
+    }
+
+    if (msgExists && source.toLowerCase().includes(term)) {
+      found = true
+      break
+    }
+  }
+  return found
+}
+
+const clearSearchTerm = () => {
+  term.value = ''
+  searchTerm('')
+  return true
+}
+
+const getMenuItemHeaderLabel = (meta) => {
+  const label = meta.menu.header.label
+  if (label[0] === '.') { // Node path
+    const path = `_.${meta.type}${label}._`
+    if (te(path)) {
+      return t(path)
+    }
+    return t(path, 'en-US')
+  }
+  return label // String raw
+}
+
+const scrollToActiveMenuItem = () => {
+  if (scrolling.value) {
+    clearTimeout(scrolling.value)
+  }
+
+  scrolling.value = setTimeout(() => {
+    console.log('scrolling...')
+    const menu = document.getElementById('menu')
+    if (menu) {
+      const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
+      if (menuItemActive && typeof menuItemActive === 'object') {
+        const offsetTop1 = menuItemActive.closest('.menu-list-expansion')?.offsetTop ?? 0
+        const offsetTop2 = menuItemActive.offsetTop
+
+        const innerHeightBy2 = window.innerHeight / 2
+
+        const searchBarHeight = 50
+        let expansionHeaderHeight = 0
+        if (offsetTop1 > 0) {
+          expansionHeaderHeight = 45
+        }
+        const fixedHeight = searchBarHeight + expansionHeaderHeight
+
+        const target = scroll.getScrollTarget(menuItemActive)
+        const offset = (offsetTop1 + offsetTop2) - innerHeightBy2 + fixedHeight
+        const duration = 300
+
+        if (offset > 0) {
+          scroll.setVerticalScrollPosition(target, offset, duration)
+        }
+      }
+    }
+    scrolling.value = null
+  }, 1500)
+}
+
+onMounted(() => {
+  // console.log('DMenu - mounted()!')
+
+  // ! Autoscrolling to active menu item after 1.5s
+  scrollToActiveMenuItem()
+
+  // * After each route change
+  $router.afterEach((to, from) => {
+    if (!to.hash || (from.path !== to.path)) {
+      scrollToActiveMenuItem()
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  // console.log('DMenu - onBeforeUnmount()!')
+
+  if (scrolling.value) {
+    clearTimeout(scrolling.value)
+  }
+})
+
+// # Events
+// Create
+const routes = $router.options.routes.slice(0, -2) // Delete last 2 routes
+const itemsArray = []
+
+let nodeBasepath = ''
+let nodeIndex = 0
+for (const [index, route] of routes.entries()) {
+  const item = Object.freeze({
+    path: route.path,
+    meta: route.meta
+  })
+  // # Route
+  const basepath = route.path.split('/')[2]
+  const header = route.meta.menu.header
+
+  if (header !== undefined && basepath !== nodeBasepath) {
+    nodeBasepath = basepath
+    nodeIndex = index
+    itemsArray[index] = []
+  } else if (header === undefined && basepath !== nodeBasepath) {
+    nodeBasepath = ''
+  }
+
+  if (nodeBasepath !== '') {
+    itemsArray[nodeIndex].push(item)
+  } else {
+    itemsArray.push(item)
+  }
+}
+
+items.value = Object.freeze(itemsArray.filter(item => item !== undefined))
+</script>
+
 <template lang="pug">
 transition(appear enter-active-class="animated zoomIn" leave-active-class="animated zoomOut")
-  q-input(for="search" v-model="term" @update:model-value="searchTerm" :placeholder="$t('menu.search')" :debounce="300")
+  q-input(for="search" v-model="term" @update:model-value="searchTerm" :placeholder="t('menu.search')" :debounce="300")
     template(v-slot:prepend)
       q-icon.q-ml-sm(name="search")
     template(v-slot:append)
@@ -15,7 +223,7 @@ q-scroll-area#menu(
       img.q-mr-md(src="/images/logo/bootgly-logo-temp1.png" alt="Quasar Logo" width="85" height="85" style="float: right;")
     .col-7
       .text-weight-medium Bootgly PHP Framework
-      .text-caption.q-pt-xs {{ $t('system.documentation') }}
+      .text-caption.q-pt-xs {{ t('system.documentation') }}
       q-select.q-mr-md(
         v-model="version" :options="versions"
         dense options-dense
@@ -40,32 +248,32 @@ q-scroll-area#menu(
     q-item(to="/" exact)
       q-item-section(side)
         q-icon(name="home")
-      q-item-section {{ $t('menu.home') }}
+      q-item-section {{ t('menu.home') }}
 
     li(role="listitem")
       q-separator(role="separator")
     q-item(href="https://github.com/bootgly/bootgly/releases/" target="_blank")
       q-item-section(side)
         q-icon(name="assignment")
-      q-item-section {{ $t('menu.changelog') }}
+      q-item-section {{ t('menu.changelog') }}
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
     q-item(href="https://github.com/bootgly/bootgly/milestones" target="_blank")
       q-item-section(side)
         q-icon(name="playlist_add_check_circle")
-      q-item-section {{ $t('menu.roadmap') }}
+      q-item-section {{ t('menu.roadmap') }}
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
     q-item(href="https://github.com/sponsors/bootgly/" target="_blank")
       q-item-section(side)
         q-icon(name="favorite" color="red")
-      q-item-section {{ $t('menu.sponsor') }}
+      q-item-section {{ t('menu.sponsor') }}
       q-item-section(side)
         q-icon(name="open_in_new" size="xs")
 
     li(role="listitem")
       q-separator(role="separator" spaced)
-      q-item-section(side).q-ml-md {{ $t('menu.explore') }}
+      q-item-section(side).q-ml-md {{ t('menu.explore') }}
     q-item(href="https://github.com/bootgly/bootgly_awesome/" target="_blank")
       q-item-section 🤯 Bootgly Awesome
       q-item-section(side)
@@ -110,247 +318,6 @@ q-scroll-area#menu(
         :founds="founds"
       )
 </template>
-
-<script>
-import { openURL, scroll } from 'quasar'
-
-import tags from 'src/i18n/tags.hjson'
-
-import DMenuItem from "./DMenuItem.vue";
-
-export default {
-  name: 'DMenu',
-
-  components: {
-    DMenuItem
-  },
-  data () {
-    return {
-      loaded: false,
-      scrolling: null,
-
-      term: null,
-      founds: false,
-
-      version: 'v0.x',
-      versions: [
-        'v0.x'
-      ]
-    }
-  },
-  computed: {
-    subpage () {
-      const parent = this.$route.matched[0]?.path
-      const child = this.$route.matched[1]?.path
-
-      const subpage = child.substring(parent.length)
-
-      return subpage
-    }
-  },
-
-  methods: {
-    openURL,
-
-    // TODO: highlight terms found in menu item and page content?
-    // TODO: search result count in input bottom?
-    searchTerm (term) {
-      if (term.length > 1) {
-        term = term.toLowerCase()
-
-        const locale = this.$q.localStorage.getItem('setting.language')
-
-        this.founds = []
-
-        for (const [index, items] of this.items.entries()) {
-          this.searchTermIterate(items, term, locale)
-        }
-      } else {
-        this.founds = false
-      }
-    },
-    searchTermIterate (items, term, locale) {
-      if (items.constructor === Array) {
-        for (const subitems of items) {
-          this.searchTermIterate(subitems, term, locale)
-        }
-      } else if (items.constructor === Object) {
-        const item = items
-        const path = item.path
-
-        this.founds[path] = false
-
-        // TODO: search in Menu item label
-
-        // @ search in i18n/tags.json
-        // current language
-        if (tags[locale].length > 0) {
-          this.founds[path] = tags[locale][index].indexOf(term) !== -1
-          // en-US fallback
-          if (this.founds[path] === false && locale !== 'en-US') {
-            this.founds[path] = tags['en-US'][index].indexOf(term) !== -1
-          }
-        }
-
-        // @ search in Page content
-        if (this.founds[path] === false) {
-          // @ search in Page texts (overview, showcases?, changelog?)
-          // current language
-          this.founds[path] = this.searchTermInI18nTexts(path, term, locale)
-          // en-US fallback
-          if (this.founds[path] === false && locale !== 'en-US') {
-            this.founds[path] = this.searchTermInI18nTexts(path, term, 'en-US')
-          }
-        }
-      }
-    },
-    searchTermInI18nTexts (route, term, locale) {
-      // TODO: use global constants
-      const subpages = [
-        'overview',
-        'showcase',
-        'vs'
-      ]
-
-      let source = null
-      let found = false
-      for (const subpage of subpages) {
-        // TODO: replace with global solution
-        const path = `_${route.replace(/_$/, '').replace(/\//g, '.')}.${subpage}.source`
-        // * Search in page texts (i18n)
-        source = null
-        const msgExists = this.$te(path, locale)
-        if (msgExists) {
-          source = this.$tm(path, locale)
-        }
-
-        if (msgExists && source.toLowerCase().includes(term)) {
-          found = true
-          break
-        }
-      }
-
-      return found
-    },
-    clearSearchTerm () {
-      this.term = ''
-      this.searchTerm('')
-      return true
-    },
-
-    // _ Item
-    getMenuItemHeaderLabel (meta) {
-      const label = meta.menu.header.label
-
-      if (label[0] === '.') { // Node path
-        const path = `_.${meta.type}${label}._`
-
-        if (this.$te(path)) {
-          return this.$t(path)
-        }
-
-        return this.$t(path, 'en-US')
-      }
-
-      return label // String raw
-    },
-
-    scrollToActiveMenuItem () {
-      if (this.scrolling) {
-        clearTimeout(this.scrolling)
-      }
-
-      this.scrolling = setTimeout(() => {
-        console.log('scrolling...')
-        const menu = document.getElementById('menu')
-        if (menu) {
-          const menuItemActive = (menu.getElementsByClassName('q-router-link--active'))[0]
-          if (menuItemActive && typeof menuItemActive === 'object') {
-            const offsetTop1 = menuItemActive.closest('.menu-list-expansion')?.offsetTop ?? 0
-            const offsetTop2 = menuItemActive.offsetTop
-
-            const innerHeightBy2 = window.innerHeight / 2
-
-            const searchBarHeight = 50
-            let expansionHeaderHeight = 0
-            if (offsetTop1 > 0) {
-              expansionHeaderHeight = 45
-            }
-            const fixedHeight = searchBarHeight + expansionHeaderHeight
-
-            const target = scroll.getScrollTarget(menuItemActive)
-            const offset = (offsetTop1 + offsetTop2) - innerHeightBy2 + fixedHeight
-            const duration = 300
-
-            if (offset > 0) {
-              scroll.setVerticalScrollPosition(target, offset, duration)
-            }
-          }
-        }
-        this.scrolling = null
-      }, 1500)
-    }
-  },
-
-  // # Events
-  // Create
-  beforeCreate () {
-    // console.log('DMenu - beforeCreate()!')
-
-    const routes = this.$router.options.routes.slice(0, -2) // Delete last 2 routes
-    const items = []
-
-    let nodeBasepath = ''
-    let nodeIndex = 0
-    for (const [index, route] of routes.entries()) {
-      const item = Object.freeze({
-        path: route.path,
-        meta: route.meta
-      })
-      // # Route
-      const basepath = route.path.split('/')[2]
-      const header = route.meta.menu.header
-
-      if (header !== undefined && basepath !== nodeBasepath) {
-        nodeBasepath = basepath
-        nodeIndex = index
-        items[index] = []
-      } else if (header === undefined && basepath !== nodeBasepath) {
-        nodeBasepath = ''
-      }
-
-      if (nodeBasepath !== '') {
-        items[nodeIndex].push(item)
-      } else {
-        items.push(item)
-      }
-    }
-
-    this.items = Object.freeze(items.filter(item => item !== undefined))
-  },
-  // Mount
-  mounted () {
-    // console.log('DMenu - mounted()!')
-
-    // ! Autoscrolling to active menu item after 1.5s
-    this.scrollToActiveMenuItem()
-
-    // * After each route change
-    this.$router.afterEach((to, from) => {
-      if (!to.hash || (from.path !== to.path)) {
-        this.scrollToActiveMenuItem()
-      }
-    })
-  },
-  beforeUnmount () {
-    // console.log('DMenu - beforeUnmount()!')
-
-    if (this.scrolling) {
-      clearTimeout(this.scrolling)
-    }
-  }
-}
-</script>
 
 <style lang="sass">
 body.body--dark

@@ -1,6 +1,117 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import { useStore } from 'vuex'
+import Prism from 'prismjs'
+// @ Load Prism languages
+import 'prismjs/components/prism-markup-templating' // dependency for prism-php extension
+// PHP
+import 'prismjs/components/prism-php'
+// Bash
+import 'prismjs/components/prism-bash'
+
+const props = defineProps({
+  index: {
+    type: Number,
+    required: true
+  },
+  language: {
+    type: String,
+    default: 'html'
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  filename: {
+    type: String,
+    default: ''
+  }
+})
+
+const $q = useQuasar()
+const store = useStore()
+
+const copyBtnDisabled = ref(false)
+const copyBtnColor = ref(null)
+const copyBtnIcon = ref('content_copy')
+const codeRef = ref(null)
+
+const href = computed(() => `${store.state.page.absolute}#${anchor.value}`)
+const coloring = computed(() => $q.dark.isActive ? 'dark' : 'white')
+const anchor = computed(() => printToLetter(props.index + 1))
+const lines = computed(() => {
+  const splited = props.text.split(/\r\n|\n/)
+  return splited.length - 1
+})
+const highlighted = computed(() => {
+  if (!props.text) {
+    return ''
+  }
+
+  const text = props.text.replace(/&#123;/g, '{').replace(/&#125;/g, '}').replace(/&amp;/g, '&')
+
+  return Prism.highlight(
+    text,
+    Prism.languages[props.language],
+    props.language
+  )
+})
+
+function copyCode() {
+  const code = codeRef.value
+
+  if (code) {
+    // Creates a Range object
+    const range = document.createRange()
+
+    // Select the text of the element
+    range.selectNodeContents(code)
+
+    // Create a selection
+    const selection = window.getSelection()
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    try {
+      document.execCommand('copy')
+
+      copyBtnDisabled.value = true
+      copyBtnColor.value = 'positive'
+      copyBtnIcon.value = 'done'
+
+      setInterval(() => {
+        copyBtnDisabled.value = false
+        copyBtnColor.value = null
+        copyBtnIcon.value = 'content_copy'
+      }, 3000)
+    } catch (err) {
+      console.error('Error copying text: ', err)
+    } finally {
+      selection.removeAllRanges()
+    }
+  }
+}
+
+// TODO move to library/utils
+function printToLetter(number) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  let result = ''
+
+  while (number > 0) {
+    const charIndex = (number - 1) % 26
+    result = alphabet.charAt(charIndex) + result
+    number = Math.floor((number - 1) / 26)
+  }
+
+  return result
+}
+</script>
+
 <template lang="pug">
 .source-code
   .info(v-if="lines && lines > 1")
+    .filename {{ filename }}
     .language {{ language }}
     .copy
       q-btn(
@@ -21,126 +132,6 @@
     pre
       code(:class="`language-${language}`" v-html="highlighted" ref="code")
 </template>
-
-<script>
-import Prism from 'prismjs'
-// @ Load Prism languages
-import 'prismjs/components/prism-markup-templating' // dependency for prism-php extension
-// PHP
-import 'prismjs/components/prism-php'
-// Bash
-import 'prismjs/components/prism-bash'
-
-export default {
-  name: 'DPageSourceCode',
-
-  props: {
-    index: {
-      type: Number,
-      required: true
-    },
-    language: {
-      type: String,
-      default: 'html'
-    },
-    text: {
-      type: String,
-      required: true
-    }
-  },
-
-  data () {
-    return {
-      copyBtnDisabled: false,
-      copyBtnColor: null,
-      copyBtnIcon: 'content_copy'
-    }
-  },
-  computed: {
-    href () {
-      return `${this.$store.state.page.absolute}#${this.anchor}`
-    },
-    coloring () {
-      return this.$q.dark.isActive ? 'dark' : 'white'
-    },
-
-    anchor () {
-      return this.printToLetter(this.index + 1)
-    },
-    lines () {
-      const splited = this.text.split(/\r\n|\n/)
-      const lines = splited.length
-
-      return lines - 1
-    },
-    highlighted () {
-      if (!this.text) {
-        return ''
-      }
-
-      const text = this.text.replace(/&#123;/g, '{').replace(/&#125;/g, '}').replace(/&amp;/g, '&')
-
-      const highlighted = Prism.highlight(
-        text,
-        Prism.languages[this.language],
-        this.language
-      )
-
-      return highlighted
-    }
-  },
-
-  methods: {
-    copyCode () {
-      const code = this.$refs.code
-
-      if (code) {
-        // Creates a Range object
-        const range = document.createRange()
-
-        // Select the text of the element
-        range.selectNodeContents(code)
-
-        // Create a selection
-        const selection = window.getSelection()
-        selection.removeAllRanges()
-        selection.addRange(range)
-
-        try {
-          document.execCommand('copy')
-
-          this.copyBtnDisabled = true
-          this.copyBtnColor = 'positive'
-          this.copyBtnIcon = 'done'
-
-          setInterval(() => {
-            this.copyBtnDisabled = false
-            this.copyBtnColor = null
-            this.copyBtnIcon = 'content_copy'
-          }, 3000)
-        } catch (err) {
-          console.error('Error copying text: ', err)
-        } finally {
-          selection.removeAllRanges()
-        }
-      }
-    },
-    // TODO move to library/utils
-    printToLetter (number) {
-      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-      let result = ''
-
-      while (number > 0) {
-        const charIndex = (number - 1) % 26
-        result = alphabet.charAt(charIndex) + result
-        number = Math.floor((number - 1) / 26)
-      }
-
-      return result
-    }
-  }
-}
-</script>
 
 <style lang="sass">
 .source-code

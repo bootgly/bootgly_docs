@@ -1,3 +1,112 @@
+<script setup>
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import { openURL } from 'quasar'
+import { useI18n } from 'vue-i18n'
+
+const store = useStore()
+const route = useRoute()
+const router = useRouter()
+const { t, locale, availableLocales, te, tm } = useI18n()
+
+const base = 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/'
+
+const status = computed(() => route.meta.status)
+const URL = computed(() => {
+  const path = route.path.replace(/\/([^/]*)$/, '.$1')
+  return `${base}${path}.${locale.value}.md`
+})
+const color = computed(() => {
+  if (status.value === 'done') {
+    return 'white'
+  } else if (status.value === 'draft') {
+    return 'warning'
+  } else {
+    return 'red-6'
+  }
+})
+const icon = computed(() => {
+  if (status.value === 'done') {
+    return 'edit'
+  } else if (status.value === 'draft') {
+    return 'border_color'
+  } else {
+    return 'note_add'
+  }
+})
+
+const progress = computed(() => {
+  const i18nPathAbsolute = store.state.i18n.absolute
+  const sections = `_.${i18nPathAbsolute}._sections`
+  const sectionsCount = tm(`${sections}.count`)
+  let translationPercent = '?'
+
+  if (!isNaN(sectionsCount)) {
+    const subsectionsDone = tm(`${sections}.done`)
+    if (!isNaN(subsectionsDone)) {
+      translationPercent = ~~((subsectionsDone / sectionsCount) * 100)
+    }
+  }
+
+  return `${translationPercent}%`
+})
+
+const languages = computed(() => {
+  const i18nPathAbsolute = store.state.i18n.absolute
+  const translations = `_.${i18nPathAbsolute}._translations`
+  const i18nLocales = availableLocales
+  let fallbackLastUpdated = null
+
+  if (te(translations, 'en-US')) {
+    fallbackLastUpdated = tm(translations, 'en-US')
+  }
+
+  let i18nLocalesAvailable = 0
+  if (fallbackLastUpdated) {
+    for (let i = 0; i < i18nLocales.length; i++) {
+      if (t(translations, i18nLocales[i]) !== fallbackLastUpdated) {
+        i18nLocalesAvailable++
+      }
+    }
+  } else {
+    i18nLocalesAvailable = 1
+  }
+
+  return `${i18nLocalesAvailable}/${i18nLocales.length}`
+})
+
+const prev = computed(() => {
+  const base = store.state.page.base
+  const routes = router.options.routes.slice(0, -2)
+
+  for (let i = 0; i < routes.length; i++) {
+    if ('/' + base === routes[i].path) {
+      if (i > 0) {
+        return routes[i - 1].path
+      }
+    }
+  }
+
+  return ''
+})
+
+const next = computed(() => {
+  const base = store.state.page.base
+  const routes = router.options.routes.slice(0, -2)
+
+  for (let i = 0; i < routes.length; i++) {
+    if ('/' + base === routes[i].path) {
+      if (typeof routes[i + 1] !== 'undefined') {
+        return routes[i + 1].path
+      }
+    }
+  }
+
+  return ''
+})
+</script>
+
 <template lang="pug">
 #d-page-meta
   .row.justify-between.q-mt-lg
@@ -31,140 +140,6 @@
       span {{ $t(`_${next.replace(/_$/, '').replace(/\//g, '.')}._`) }}
       q-icon(name="navigate_next")
 </template>
-
-<script>
-import { openURL } from 'quasar'
-
-export default {
-  name: 'DPageMeta',
-
-  data () {
-    return {
-      base: 'https://github.com/bootgly/bootgly_docs/blob/master/src/pages/'
-    }
-  },
-  computed: {
-    // Edit
-    status () {
-      return this.$route.meta.status
-    },
-    URL () {
-      const base = this.base
-
-      const path = this.$route.path.replace(/\/([^/]*)$/, '.$1')
-
-      const locale = this.$i18n.locale
-
-      return `${base}${path}.${locale}.md`
-    },
-    color () {
-      if (this.status === 'done') {
-        return 'white'
-      } else if (this.status === 'draft') {
-        return 'warning'
-      } else {
-        return 'red-6'
-      }
-    },
-    icon () {
-      if (this.status === 'done') {
-        return 'edit'
-      } else if (this.status === 'draft') {
-        return 'border_color'
-      } else {
-        return 'note_add'
-      }
-    },
-
-    // Translation
-    progress () {
-      // i18n
-      // |-> paths
-      const i18nPathAbsolute = this.$store.state.i18n.absolute
-
-      // Sections
-      const sections = `_.${i18nPathAbsolute}._sections`
-
-      const sectionsCount = this.$tm(`${sections}.count`)
-
-      let translationPercent = '?'
-
-      if (!isNaN(sectionsCount)) {
-        const subsectionsDone = this.$tm(`${sections}.done`)
-        if (!isNaN(subsectionsDone)) {
-          translationPercent = ~~((subsectionsDone / sectionsCount) * 100)
-        }
-      }
-
-      return `${translationPercent}%`
-    },
-    languages () {
-      // i18n
-      // |-> paths
-      const i18nPathAbsolute = this.$store.state.i18n.absolute
-
-      // translations
-      const translations = `_.${i18nPathAbsolute}._translations`
-
-      // Get # of i18n locales available
-      const i18nLocales = Object.keys(this.$i18n.messages)
-      // Get page last updated status of default language
-      let fallbackLastUpdated = null
-      if (this.$te(translations, 'en-US')) {
-        fallbackLastUpdated = this.$tm(translations, 'en-US')
-      }
-
-      // Set page content locales available
-      let i18nLocalesAvailable = 0
-      if (fallbackLastUpdated) {
-        for (let i = 0; i < i18nLocales.length; i++) {
-          if (this.$t(translations, i18nLocales[i]) !== fallbackLastUpdated) {
-            i18nLocalesAvailable++
-          }
-        }
-      } else {
-        i18nLocalesAvailable = 1
-      }
-
-      return `${i18nLocalesAvailable}/${i18nLocales.length}`
-    },
-
-    // Navigation
-    prev () {
-      const base = this.$store.state.page.base
-      const routes = this.$router.options.routes.slice(0, -2)
-
-      for (let i = 0; i < routes.length; i++) {
-        if ('/' + base === routes[i].path) {
-          if (i > 0) {
-            return routes[i - 1].path
-          }
-        }
-      }
-
-      return ''
-    },
-    next () {
-      const base = this.$store.state.page.base
-      const routes = this.$router.options.routes.slice(0, -2)
-
-      for (let i = 0; i < routes.length; i++) {
-        if ('/' + base === routes[i].path) {
-          if (typeof routes[i + 1] !== 'undefined') {
-            return routes[i + 1].path
-          }
-        }
-      }
-
-      return ''
-    }
-  },
-
-  methods: {
-    openURL
-  }
-}
-</script>
 
 <style lang="sass">
 #d-page-meta

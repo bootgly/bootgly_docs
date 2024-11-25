@@ -18,6 +18,10 @@ export default {
         children: []
       })
     },
+    select (id) {
+      this.$store.commit('page/setAnchor', Number(id))
+      this.$store.commit('page/pushNodesExpanded', Number(id))
+    },
 
     anchor (id, select = true) {
       this.$store.commit('page/setScrolling', false)
@@ -42,13 +46,8 @@ export default {
         this.select(id)
       }
     },
-    select (id) {
-      this.$store.commit('page/setAnchor', Number(id))
-      this.$store.commit('page/pushNodesExpanded', Number(id))
-    },
     scrolling (scroll) {
       const scrolling = this.$store.state.page.scrolling
-
       if (!scrolling) {
         return
       }
@@ -77,7 +76,6 @@ export default {
         }
       }
     },
-
     navigate (value, anchor = true) {
       if (anchor) {
         if (('#' + value) === this.$route.hash) {

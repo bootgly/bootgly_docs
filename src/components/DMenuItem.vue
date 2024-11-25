@@ -1,3 +1,93 @@
+<script setup>
+import { computed, defineProps } from 'vue'
+import { useRoute } from 'vue-router'
+import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
+
+const props = defineProps({
+  items: {
+    type: Number,
+    required: true
+  },
+  subitem: {
+    type: Object,
+    required: true
+  },
+  subindex: {
+    type: Number,
+    required: true
+  },
+  subpage: {
+    type: String,
+    required: true
+  },
+  founds: {
+    type: [Boolean, Array],
+    required: true
+  }
+})
+
+const $q = useQuasar()
+const $route = useRoute()
+const { t, te } = useI18n()
+
+const getMenuItemHeaderBackground = () => {
+  return $q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
+}
+
+const getMenuItemLabel = (item, index) => {
+  const path = `_${item.path.replace(/_$/, '').replace(/\//g, '.')}._`
+  if (te(path)) {
+    return t(path)
+  } else {
+    return t(path, 'en-US')
+  }
+}
+
+const getMenuItemSubheader = (meta) => {
+  const subheader = meta.menu.subheader
+  const path = `_.${meta.type}${subheader}._`
+
+  if (te(path)) {
+    return t(path)
+  } else {
+    return t(path, 'en-US')
+  }
+}
+
+const getPageStatusText = (status) => {
+  if (status === 'draft') {
+    return t('menu.status.draft._')
+  } else {
+    return t('menu.status.empty._')
+  }
+}
+
+const getPageStatusTextColor = (status) => {
+  if (status === 'draft') {
+    return 'dark'
+  } else {
+    return 'white'
+  }
+}
+
+const getPageStatusColor = (status) => {
+  if (status === 'draft') {
+    return 'orange'
+  } else {
+    return 'red'
+  }
+}
+
+const getPageStatusTooltip = (status) => {
+  if (status === 'draft') {
+    return t('menu.status.draft.tooltip')
+  } else {
+    return t('menu.status.empty.tooltip')
+  }
+}
+</script>
+
 <template lang="pug">
 //- Menu Separator - Header
 //- q-item-section.label.header.sticky(v-if="subitem.meta.menu.header" :style="getMenuItemHeaderBackground()" role="listitem")
@@ -35,99 +125,3 @@ li(v-if="subitem.meta.menu.separator" role="listitem")
     role="separator"
   )
 </template>
-
-<script>
-export default {
-  name: 'DMenuItem',
-
-  props: {
-    items: {
-      type: Number,
-      required: true
-    },
-    subitem: {
-      type: Object,
-      required: true
-    },
-    subindex: {
-      type: Number,
-      required: true
-    },
-
-    subpage: {
-      type: String,
-      required: true
-    },
-
-    founds: {
-      type: [Boolean, Array],
-      required: true
-    }
-  },
-  data () {
-    return {}
-  },
-  computed: {},
-
-  methods: {
-    getMenuItemHeaderBackground () {
-      return this.$q.dark.isActive ? 'background-color: #1D1D1D !important' : 'background-color: #f5f5f5 !important'
-    },
-    getMenuItemLabel (item, index) {
-      // if (this.loaded) return
-
-      if (index === this.items - 1) {
-        this.loaded = true
-      }
-
-      const path = `_${item.path.replace(/_$/, '').replace(/\//g, '.')}._`
-      // console.log(path)
-      // TODO fix re-render at menu scrolling?! Lol
-      if (this.$te(path)) {
-        return this.$t(path)
-      } else {
-        return this.$t(path, 'en-US')
-      }
-    },
-    getMenuItemSubheader (meta) {
-      const subheader = meta.menu.subheader
-      const path = `_.${meta.type}${subheader}._`
-
-      if (this.$te(path)) {
-        return this.$t(path)
-      } else {
-        return this.$t(path, 'en-US')
-      }
-    },
-
-    getPageStatusText (status) {
-      if (status === 'draft') {
-        return this.$t('menu.status.draft._')
-      } else {
-        return this.$t('menu.status.empty._')
-      }
-    },
-    getPageStatusTextColor (status) {
-      if (status === 'draft') {
-        return 'dark'
-      } else {
-        return 'white'
-      }
-    },
-    getPageStatusColor (status) {
-      if (status === 'draft') {
-        return 'orange'
-      } else {
-        return 'red'
-      }
-    },
-    getPageStatusTooltip (status) {
-      if (status === 'draft') {
-        return this.$t('menu.status.draft.tooltip')
-      } else {
-        return this.$t('menu.status.empty.tooltip')
-      }
-    },
-  }
-}
-</script>

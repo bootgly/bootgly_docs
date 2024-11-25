@@ -1,3 +1,183 @@
+<script setup>
+import { ref, defineProps, computed, onMounted } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter, useRoute } from 'vue-router'
+import { scroll, useQuasar } from 'quasar'
+
+import DPageAnchor from 'components/DPageAnchor'
+import DPageMeta from 'components/DPageMeta'
+
+const store = useStore()
+const router = useRouter()
+const route = useRoute()
+const $q = useQuasar()
+
+const props = defineProps({
+  disableNav: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const pageScrollArea = ref(null)
+
+const overview = computed(() => route.matched[0].path)
+const showcase = computed(() => {
+  const showcase = route.matched[0].meta.subpages.showcase
+  return showcase ? overview.value + '/showcase' : false
+})
+const vs = computed(() => {
+  const vs = route.matched[0].meta.subpages.vs
+  return vs ? overview.value + '/vs' : false
+})
+const layoutMeta = computed({
+  get: () => store.state.layout.meta,
+  set: (value) => store.commit('layout/setMeta', value)
+})
+const main = computed(() => {
+  switch (store.state.page.relative) {
+    case '/showcase':
+      return 'showcase'
+    case '/vs':
+      return 'vs'
+    default:
+      return 'overview'
+  }
+})
+
+const toggleSectionsTree = () => {
+  layoutMeta.value = !layoutMeta.value
+}
+
+const pActive = (relative) => {
+  if (relative === '/' && (store.state.page.relative === relative || store.state.page.relative === '')) {
+    return 'active'
+  } else if (store.state.page.relative === relative) {
+    return 'active'
+  }
+  return null
+}
+
+const subroute = (to) => {
+  const base = '/' + store.state.page.base
+  const relative = store.state.page.relative
+  let path = base
+
+  if (to !== '/') {
+    path += to
+  }
+
+  if (relative === to) {
+    if (to !== '/showcase') {
+      return push('0')
+    } else {
+      return push('1')
+    }
+  }
+
+  router.push(path)
+  return true
+}
+
+const resetPageScroll = () => {
+  if (pageScrollArea.value !== null) {
+    pageScrollArea.value.setScrollPosition('vertical', 0, 0)
+  }
+}
+
+const register = (id) => {
+  store.commit('page/pushAnchors', id)
+}
+
+const index = (id, child = false) => {
+  store.commit('page/pushNodes', {
+    id,
+    label: this.value,
+    child,
+    children: []
+  })
+}
+
+const anchor = (id, select = true) => {
+  store.commit('page/setScrolling', false)
+  id = '' + id
+  const Anchor = document.getElementById(id)
+  if (Anchor !== null && typeof Anchor === 'object') {
+    const ScrollTarget = scroll.getScrollTarget(Anchor)
+    const AnchorOffsetTop = Anchor.offsetTop
+    scroll.setVerticalScrollPosition(ScrollTarget, AnchorOffsetTop, 300)
+    setTimeout(() => {
+      store.commit('page/setScrolling', true)
+    }, 600)
+  }
+  if (select) {
+    selectAnchor(id)
+  }
+}
+
+const selectAnchor = (id) => {
+  store.commit('page/setAnchor', Number(id))
+  store.commit('page/pushNodesExpanded', Number(id))
+}
+
+const scrolling = (scroll) => {
+  const scrolling = store.state.page.scrolling
+  if (!scrolling) {
+    return
+  }
+  const scrollPositionTop = scroll.position.top + 50
+  const anchors = store.state.page.anchors
+  for (let i = 0; i < anchors.length; i++) {
+    const anchorId = anchors[i]
+    if (anchorId === 0) {
+      continue
+    }
+    const Anchor = document.getElementById(anchorId)
+    let AnchorOffsetTop = 20
+    if (Anchor !== null && typeof Anchor === 'object') {
+      AnchorOffsetTop = Anchor.offsetTop
+    }
+    if (scrollPositionTop >= AnchorOffsetTop) {
+      selectAnchor(anchorId)
+    }
+  }
+}
+
+const navigate = (value, anchor = true) => {
+  if (anchor) {
+    if (('#' + value) === route.hash) {
+      anchor(value)
+      return
+    } else if (value === null) {
+      anchor(selected.value, false)
+      return
+    }
+  }
+  router.push(route.path + '#' + value)
+  if (anchor) {
+    if ($q.platform.is.desktop) {
+      anchor(value)
+    } else {
+      setTimeout(() => {
+        anchor(value)
+      }, 600)
+    }
+  }
+}
+
+onMounted(() => {
+  router.beforeEach((to, from, next) => {
+    resetPageScroll()
+    if (to.hash === '' && from.path !== to.path) {
+      store.commit('page/resetAnchor')
+      store.commit('page/resetAnchors')
+      store.commit('page/resetNodes')
+    }
+    next()
+  })
+})
+</script>
+
 <template lang="pug">
 q-page-container#page-container
   q-toolbar#submenu.bg-grey-8.text-white
@@ -35,143 +215,6 @@ q-page-container#page-container
   q-drawer(elevated show-if-above side="right" v-model="layoutMeta")
     d-page-anchor#anchor
 </template>
-
-<script>
-import DPageAnchor from 'components/DPageAnchor'
-import DPageMeta from 'components/DPageMeta'
-
-import Navigator from 'components/navigator'
-
-export default {
-  name: 'DPage',
-
-  components: {
-    DPageAnchor,
-    DPageMeta
-  },
-
-  mixins: [
-    Navigator
-  ],
-
-  props: {
-    disableNav: {
-      type: Boolean,
-      default: false
-    }
-  },
-
-  computed: {
-    overview () {
-      return this.$route.matched[0].path
-    },
-    showcase () {
-      const showcase = this.$route.matched[0].meta.subpages.showcase
-      if (showcase === true) {
-        return this.overview + '/showcase'
-      }
-      return false
-    },
-    vs () {
-      const vs = this.$route.matched[0].meta.subpages.vs
-      if (vs === true) {
-        return this.overview + '/vs'
-      }
-      return false
-    },
-
-    // Set CSS classes
-    layoutMeta: {
-      get () {
-        return this.$store.state.layout.meta
-      },
-      set (value) {
-        this.$store.commit('layout/setMeta', value)
-      }
-    },
-    main () {
-      let classes = ''
-
-      switch (this.$store.state.page.relative) {
-        case '/showcase':
-          classes = 'showcase'
-          break
-        case '/vs':
-          classes = 'vs'
-          break
-        default:
-          classes = 'overview'
-      }
-
-      return classes
-    }
-  },
-
-  methods: {
-    toggleSectionsTree () {
-      this.layoutMeta = !this.layoutMeta
-    },
-    pActive (relative) {
-      if (relative === '/' && (this.$store.state.page.relative === relative || this.$store.state.page.relative === '')) {
-        return 'active'
-      } else if (this.$store.state.page.relative === relative) {
-        return 'active'
-      }
-
-      return null
-    },
-    subroute (to) {
-      const base = '/' + this.$store.state.page.base
-      const relative = this.$store.state.page.relative
-      let path = base
-
-      if (to !== '/') {
-        path += to
-      }
-
-      if (relative === to) {
-        if (to !== '/showcase') {
-          return this.push('0')
-        } else {
-          return this.push('1')
-        }
-      }
-
-      this.$router.push(path)
-
-      return true
-    },
-    resetPageScroll () {
-      const pageScrollArea = this.$refs.pageScrollArea
-
-      if (pageScrollArea !== null) {
-        this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 0)
-      }
-    }
-
-    /*
-    backToTop () {
-      this.$refs.pageScrollArea.setScrollPosition('vertical', 0, 300)
-      this.$store.commit('page/setAnchor', 0)
-    }
-    */
-  },
-  // @ Events
-  mounted () {
-    this.$router.beforeEach((to, from, next) => {
-      this.resetPageScroll()
-
-      if (to.hash === '' && from.path !== to.path) {
-        this.$store.commit('page/resetAnchor')
-        this.$store.commit('page/resetAnchors')
-        this.$store.commit('page/resetNodes')
-      }
-
-      next()
-    })
-  }
-}
-</script>
 
 <style lang="sass">
 #page-container

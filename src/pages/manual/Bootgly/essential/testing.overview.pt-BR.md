@@ -204,7 +204,7 @@ return [
 ];
 ```
 
-Utilize os parâmetros do Closure manipular o reteste como quiser!
+Utilize os parâmetros do Closure para manipular o reteste como quiser!
 
 ### Descrevendo asserções
 
