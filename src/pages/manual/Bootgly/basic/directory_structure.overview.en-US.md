@@ -4,7 +4,7 @@ The Bootgly PHP Framework has been very organized since its inception and offers
 
 A fundamental part of this structure is the arrangement of directories in its root dir, which has been carefully designed to ensure clear and efficient organization in increasing order of dependencies. One of the reasons for this pattern is to separate everything that belongs to the Framework itself from everything that was produced through it.
 
-![Dir Structure](images/pages/Bootgly/basic/directory_structure-bootgly3.png)
+![Dir Structure](/images/pages/Bootgly/basic/directory_structure-bootgly3.png)
 
 ## Global dir @
 

@@ -1,8 +1,8 @@
 # O que é Bootgly?
 
-Bootgly é um framework PHP projetado para construir Apps e APIs para a Web e a linha de comando (CLI).
+Bootgly é um framework projetado para construir Apps e APIs para a Web e a linha de comando (CLI).
 
-O Bootgly é o primeiro framework PHP a usar a arquitetura I2P (interface-to-platform) e é focado principalmente em **eficiência**, por adotar uma política de dependência mínima.
+O Bootgly é o primeiro framework a usar a arquitetura I2P (interface-to-platform) e é focado principalmente em **eficiência**, por adotar uma política de dependência mínima.
 
 Devido a essa política, sua arquitetura I2P exclusiva e algumas Convenções de Código e Padrões de Design incomuns, o Bootgly tem desempenho e versatilidade superior, e tem Code APIs de fácil entendimento.
 
