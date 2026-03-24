@@ -58,19 +58,21 @@ Every bootstrap file that defines the test suite has a standard structure as in 
 
 # namespace here
 
-return [
+use Bootgly\ACI\Tests\Suite;
+
+return new Suite(
    // * Config
-   'autoBoot' => __DIR__,
-   'autoInstance' => true,
-   'autoReport' => true,
-   'autoSummarize' => true,
-   'exitOnFailure' => true,
+   autoBoot: __DIR__,
+   autoInstance: true,
+   autoReport: true,
+   autoSummarize: true,
+   exitOnFailure: true,
    // * Data
-   'suiteName' => __NAMESPACE__,
-   'tests' => [ // files that point to the root directory where the "@.php" file is located
+   suiteName: __NAMESPACE__,
+   tests: [ // files that point to the root directory where the "@.php" file is located
       '1.0-name' // the suffix ".test.php" should be omitted
    ]
-];
+);
 ```
 
 Real example of a test suite defined in Bootgly:
@@ -80,23 +82,25 @@ Real example of a test suite defined in Bootgly:
 
 namespace Bootgly\ABI\Data\__String;
 
-return [
+use Bootgly\ACI\Tests\Suite;
+
+return new Suite(
    // * Config
-   'autoBoot' => __DIR__,
-   'autoInstance' => true,
-   'autoReport' => true,
-   'autoSummarize' => true,
-   'exitOnFailure' => true,
+   autoBoot: __DIR__,
+   autoInstance: true,
+   autoReport: true,
+   autoSummarize: true,
+   exitOnFailure: true,
    // * Data
-   'suiteName' => __NAMESPACE__,
-   'tests' => [
+   suiteName: __NAMESPACE__,
+   tests: [
       '1.x-dynamic-props-length',
       '1.x-dynamic-props-lowercase',
       '1.x-dynamic-props-pascalcase',
       '2.x-dynamic-methods-pad',
       '2.x-dynamic-methods-search',
    ]
-];
+);
 ```
 
 ## Test Cases
@@ -108,19 +112,17 @@ In Bootgly, test case files have two structures, one for the Basic API and anoth
 ```php
 <?php
 
-return [
+use Bootgly\ACI\Tests\Suite\Test\Specification;
+
+return new Specification(
    // @ configure
-   'describe' => 'Description of the test case here',
-   // ...
-   // @ simulate
-   // ...
+   description: 'Description of the test case here',
    // @ test
-   'test' => function (): string|bool|null
+   test: function (): string|bool|null
    {
       // implement assertions here
    }
-   // ...
-];
+);
 ```
 
 ### Advanced API Structure
@@ -130,22 +132,19 @@ return [
 
 use Generator;
 
-use Bootgly\ACI\Tests\Cases\Assertion;
-use Bootgly\ACI\Tests\Cases\Assertions;
+use Bootgly\ACI\Tests\Assertion;
+use Bootgly\ACI\Tests\Assertions;
+use Bootgly\ACI\Tests\Suite\Test\Specification;
 
-return [
+return new Specification(
    // @ configure
-   'describe' => 'Description of the test case here',
-   // ...
-   // @ simulate
-   // ...
+   description: 'Description of the test case here',
    // @ test
-   'test' => new Assertions(function (): Generator
+   test: new Assertions(Case: function (): Generator
    {
       // implement assertions here
    })
-   // ...
-];
+);
 ```
 
 ## Assertions - Basic API
@@ -155,40 +154,41 @@ In the Basic API, you can return a boolean directly. If the test passed, it shou
 ```php
 <?php
 
-return [
+use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
+
+return new Specification(
    // @ configure
-   'separator.line' => 'Basic API',
-   'describe' => 'It should assert returning true',
-   // @ simulate
-   // ...
+   Separator: new Separator(line: 'Basic API'),
+   description: 'It should assert returning true',
    // @ test
-   'test' => function (): bool
+   test: function (): bool
    {
       return true === true;
    }
-];
+);
 ```
 
 This API focuses on maximum performance in tests or for those learning about the QA area. Tests in Bootgly have a progressive API and thus start from the basics to the most advanced, allowing anyone to implement tests without difficulties.
 
 ### Retests
 
-It is possible to retest a test (in case of failure, repetitions, etc.). Use the `'retest'` key in the test case return to implement a `Closure` with the following Code API:
+It is possible to retest a test (in case of failure, repetitions, etc.). Use the `retest` parameter in `Specification` to implement a `Closure` with the following Code API:
 
 ```php
 <?php
 
-return [
+use Bootgly\ACI\Tests\Suite\Test\Specification;
+
+return new Specification(
    // @ configure
-   'describe' => 'It should assert returning boolean (retestable)',
-   // @ simulate
-   // ...
+   description: 'It should assert returning boolean (retestable)',
    // @ test
-   'test' => function (bool $expected = false): bool
+   test: function (bool $expected = false): bool
    {
       return true === $expected;
    },
-   'retest' => function (callable $test, bool $passed, mixed ...$arguments): string|bool|null
+   retest: function (callable $test, bool $passed, mixed ...$arguments): string|bool|null
    {
       // ? If the last test fails, repeat the test by modifying the dataset (input)
       if ($passed === false) {
@@ -197,7 +197,7 @@ return [
 
       return null;
    }
-];
+);
 ```
 
 Use the Closure parameters to manipulate the retest as you wish!
@@ -209,21 +209,21 @@ In the basic API, it is possible to describe an assertion using the static prope
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Cases\Assertion;
+use Bootgly\ACI\Tests\Assertion;
+use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
 
-return [
+return new Specification(
    // @ configure
-   'separator.line' => 'Basic API',
-   'describe' => 'It should assert returning true',
-   // @ simulate
-   // ...
+   Separator: new Separator(line: 'Basic API'),
+   description: 'It should assert returning true',
    // @ test
-   'test' => function (): bool
+   test: function (): bool
    {
       Assertion::$description = 'Asserting that true is true';
       return true === true;
    }
-];
+);
 ```
 
 ### Fallbacks in Assertions
@@ -233,13 +233,14 @@ In the basic API, it is possible to return a fallback if an assertion fails...
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Cases\Assertion;
+use Bootgly\ACI\Tests\Assertion;
+use Bootgly\ACI\Tests\Suite\Test\Specification;
 
-return [
+return new Specification(
    // @ configure
-   'describe' => 'It should assert returning string (fallback)',
+   description: 'It should assert returning string (fallback)',
    // @ test
-   'test' => function (bool $expected = false): string|bool
+   test: function (bool $expected = false): string|bool
    {
       if ($expected === false) {
          Assertion::$description = 'Asserting that true is false';
@@ -249,7 +250,7 @@ return [
       Assertion::$description = 'Asserting that true is true';
       return true;
    },
-   'retest' => function (callable $test, bool $passed, mixed ...$arguments): string|bool|null
+   retest: function (callable $test, bool $passed, mixed ...$arguments): string|bool|null
    {
       if ($passed === false) {
          return $test(true);
@@ -257,7 +258,7 @@ return [
 
       return null;
    }
-];
+);
 ```
 
 ### Multiple Assertions
@@ -268,15 +269,14 @@ For the same test case, in the Basic API, it is already possible to return multi
 <?php
 
 use Generator;
-use Bootgly\ACI\Tests\Cases\Assertion;
+use Bootgly\ACI\Tests\Assertion;
+use Bootgly\ACI\Tests\Suite\Test\Specification;
 
-return [
+return new Specification(
    // @ configure
-   'describe' => 'It should assert returning true (with yield)',
-   // @ simulate
-   // ...
+   description: 'It should assert returning true (with yield)',
    // @ test
-   'test' => function (): Generator
+   test: function (): Generator
    {
       yield true === true;
 
@@ -292,5 +292,5 @@ return [
          yield true;
       }
    }
-];
+);
 ```
