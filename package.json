@@ -12,7 +12,7 @@
     "serve": "docsector serve"
   },
   "dependencies": {
-    "@docsector/docsector-reader": "^0.3.3",
+    "@docsector/docsector-reader": "^0.4.0",
     "@quasar/cli": "^3.0.0",
     "@quasar/extras": "^1.16.12",
     "quasar": "^2.16.6",
@@ -35,5 +35,8 @@
   "engines": {
     "node": "^22 || ^20",
     "npm": ">= 9"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.27"
   }
 }
