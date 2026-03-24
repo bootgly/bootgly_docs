@@ -48,3 +48,40 @@ To make sure everything was loaded correctly, in the terminal, change the workin
 ```bash
 php bootgly
 ```
+
+## Start an HTTP Server
+
+In Bootgly, **Projects** bootstrap servers. Each project is a PHP file that creates and configures a server instance.
+
+Create a `HTTP_Server_CLI.project.php` file inside your project folder (e.g., `projects/HTTP_Server_CLI/`):
+
+```php
+use Bootgly\API\Projects\Project;
+use Bootgly\WPI\Endpoints\Servers\Modes;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+return new Project(
+   name: 'HTTP Server CLI',
+   boot: function (): void
+   {
+      $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);
+      $Server->configure(
+         host: '0.0.0.0',
+         port: 8082,
+         workers: 4
+      );
+      $Server->handle(function ($Request, $Response, $Router) {
+         return $Response(body: 'Hello, World!');
+      });
+      $Server->start();
+   }
+);
+```
+
+Then run the project:
+
+```bash
+php bootgly project run HTTP_Server_CLI
+```
+
+The server will start listening on `0.0.0.0:8082`. See the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) documentation for the full configuration and architecture reference.

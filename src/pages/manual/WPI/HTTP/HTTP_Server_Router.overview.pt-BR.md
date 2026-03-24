@@ -1,48 +1,28 @@
-# Roteador do Servidor HTTP
+# HTTP Server CLI — Router
 
-O Roteador para Servidores HTTP oferece um sistema de roteamento web flexível e poderoso.
+O Router fornece um sistema de roteamento flexível e poderoso para o HTTP Server CLI.
 O método `route` é utilizado para definir rotas, com o esquema a seguir:
 
 ```php
-route (string $route, callable $handler, null|string|array $methods = null) : false|object
+route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = []) : false|object
 ```
 
 - `$route` é o padrão da URL a corresponder que aceita parâmetros.
 - `$handler` é o callback a ser executado quando a rota for correspondida.
 - `$methods` é o(s) método(s) HTTP que essa rota deve atender.
+- `$middlewares` é um array opcional de middlewares para esta rota específica.
 
 Argumentos de `$handler`:
 
-- `$Request` é a Solicitação do Servidor HTTP
+- `$Request` é a Requisição do Servidor HTTP
 - `$Response` é a Resposta do Servidor HTTP
 - `$Route` é a Rota do Servidor HTTP correspondida (apenas quando o manipulador não é uma Closure)
 
 ## Uso Básico
 
-### Servidor HTTP (com SAPI externa: Apache, NGinx, LiteSpeed, etc.)
-
 ```php
-use Bootgly\WPI\Nodes\HTTP\Server\Bridge\Request;
-use Bootgly\WPI\Nodes\HTTP\Server\Bridge\Response;
-
-// ...
-
-$Router->route('/', function (Request $Request, Response $Response) {
-  $Route = $this;
-  // $Params = $Route->Params;
-  // ...
-
-  return $Response(body: 'Olá Mundo!');
-}, GET);
-```
-
-### Servidor HTTP CLI
-
-```php
-use Bootgly\WPI\Nodes\HTTP\Server\CLI\Request;
-use Bootgly\WPI\Nodes\HTTP\Server\CLI\Response;
-
-// ...
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 
 yield $Router->route('/', function (Request $Request, Response $Response) {
   $Route = $this;
@@ -163,3 +143,27 @@ yield $Router->route('/*', function ($Request, $Response) {
   return $Response(code: 404, body: 'páginas/404');
 });
 ```
+
+## Middlewares de Grupo de Rotas (intercept)
+
+```php
+public function intercept (Middleware ...$middlewares): void;
+```
+
+Aplica middlewares a todas as rotas definidas após a chamada `intercept()` dentro do escopo de roteamento atual:
+
+```php
+use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\CORS;
+use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\RateLimit;
+
+$Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
+
+yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
+   // Todas as rotas aninhadas herdam CORS + RateLimit
+   yield $Router->route('users', function ($Request, $Response) {
+      $Response->Json->encode(['users' => []]);
+   }, GET);
+}, GET);
+```
+
+Veja [Middlewares](/manual/WPI/HTTP/HTTP_Server_Middlewares) para a documentação completa do pipeline de middlewares.

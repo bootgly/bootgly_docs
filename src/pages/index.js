@@ -622,37 +622,12 @@ export default {
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server': {
-    config: null,
-    data: {
-      '*': {
-        title: 'WPI HTTP Server'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Servers': {
+  '/WPI/HTTP/HTTP_Server_CLI': {
     config: {
-      icon: 'dns', // device_hub?
+      icon: 'dns',
       status: 'draft',
       menu: {
         subheader: '.WPI.HTTP',
-        separator: true
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'HTTP Servers'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI': {
-    config: {
-      icon: 'dns', // device_hub?
-      status: 'empty',
-      menu: {
         separator: true
       },
       subpages: {
@@ -670,7 +645,7 @@ export default {
       icon: 'last_page',
       status: 'draft',
       menu: {
-        subheader: '.WPI.HTTP.HTTP_Server'
+        subheader: '.WPI.HTTP.HTTP_Server_CLI'
       },
       subpages: {
         showcase: false
@@ -680,18 +655,6 @@ export default {
       '*': {
         title: 'Request'
       }
-    },
-    meta: {
-      'en-US': {
-        overview: {
-          _sections: {
-            count: 11,
-            done: null
-          },
-          _translations: 1
-        }
-      },
-      'pt-BR': {}
     }
   },
   '/WPI/HTTP/HTTP_Server_Response': {
@@ -727,7 +690,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_Middlewares': {
     config: {
       icon: 'settings_input_component',
-      status: 'empty',
+      status: 'draft',
       menu: {},
       subpages: {
         showcase: false

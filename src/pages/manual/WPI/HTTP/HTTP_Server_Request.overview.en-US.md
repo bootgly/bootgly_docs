@@ -1,6 +1,10 @@
-# HTTP Request Class Documentation
+# HTTP Server CLI — Request
 
-This class represents an HTTP request made to a web server. It provides a concise structure to access common request parameters such as headers, URI, query strings, and body content. This documentation outlines the accessible properties within the class, providing PHP examples for each.
+The `Request` object is automatically available in every route handler of the HTTP Server CLI. It provides a concise structure to access common request parameters such as headers, URI, query strings, and body content.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+```
 
 ## Connection
 
@@ -406,4 +410,12 @@ $Request->fresh; // true
 
 ```php
 $Request->stale; // false
+```
+
+## Session
+
+`Session`: The session object, lazy-initialized and file-based.
+
+```php
+$Request->Session; // Session object
 ```

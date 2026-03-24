@@ -12,11 +12,9 @@
     "serve": "docsector serve"
   },
   "dependencies": {
-    "@docsector/docsector-reader": "^0.2.1",
-    "@quasar/app-vite": "^2.1.0",
+    "@docsector/docsector-reader": "^0.2.3",
+    "@quasar/cli": "^3.0.0",
     "@quasar/extras": "^1.16.12",
-    "@quasar/quasar-app-extension-qmediaplayer": "^2.0.0-beta.6",
-    "autoprefixer": "^10.4.2",
     "quasar": "^2.16.6",
     "vue": "^3.5.13",
     "vue-i18n": "^9.0.0",

@@ -1,30 +1,16 @@
-# HTTP Response
+# HTTP Server CLI — Response
 
 ## Visão Geral
 
-A interface `Response` no Framework PHP Bootgly é projetada para fornecer uma API fácil de usar para gerenciar respostas HTTP em suas aplicações web ou APIs. Ela permite que você configure status, cabeçalhos e conteúdo do corpo de respostas, além de facilitar a renderização de visualizações, uploads de arquivos, autenticação de usuários e redirecionamentos.
+O objeto `Response` está automaticamente disponível em todo handler de rota do HTTP Server CLI. Ele fornece uma API fácil de usar para gerenciar respostas HTTP — configurando status, cabeçalhos e conteúdo do corpo, além de facilitar renderização de views, uploads de arquivos, autenticação e redirecionamentos.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+```
 
 ## Uso
 
-A seguir estão os métodos fornecidos pela interface `Response` com exemplos demonstrando seu uso.
-
-### Construtor
-
-```php
-public function __construct (int $code = 200, ? array $headers = null, string $body = '');
-```
-
-**Parâmetros:**
-
-- `$code` (int, opcional): O código de status HTTP. Padrão é 200.
-- `$headers` (array|null, opcional): Um array associativo de cabeçalhos a serem definidos na resposta.
-- `$body` (string, opcional): O conteúdo inicial do corpo da resposta.
-
-**Exemplo:**
-
-```php
-$Response = new Response(200, ['Content-Type' => 'application/json'], '{"message": "OK"}');
-```
+A seguir estão os métodos fornecidos pelo objeto `Response` com exemplos demonstrando seu uso.
 
 ### Invocação
 
@@ -128,7 +114,7 @@ Envia arquivo para o cliente HTTP.
 - `$file` (string|File): O arquivo ou caminho do arquivo para upload.
 - `$offset` (int): O deslocamento dos dados.
 - `$length` (int|null): O comprimento dos dados para upload.
-- `$close` (bool): Fechar a conexão após o envio. (Somente no HTTP Server CLI)
+- `$close` (bool): Fechar a conexão após o envio.
 
 **Exemplo 1:**
 
@@ -136,7 +122,7 @@ Envia arquivo para o cliente HTTP.
 return $Response->upload('/caminho/para/arquivo.pdf');
 ```
 
-**Exemplo 2 (somente se usando HTTP Server CLI):**
+**Exemplo 2:**
 
 ```php
 return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
@@ -200,3 +186,60 @@ Encerra a resposta HTTP, opcionalmente configurando um código de status de resp
 **Parâmetros:**
 
 - `$code` (int|null, opcional): O código de status para enviar antes de encerrar a resposta.
+
+## Respostas Assíncronas (Defer)
+
+```php
+public function defer (Closure $work): Response;
+```
+
+Executa `$work` de forma assíncrona via PHP Fiber, permitindo que o event loop processe outras conexões enquanto esta resposta está sendo preparada.
+
+Dentro de `$work()`, chame `Fiber::suspend()` para ceder o controle ao event loop:
+
+- **Suspender com `null`** → a Fiber retoma no próximo tick do event loop (agendamento por tick).
+- **Suspender com um `resource`** → a Fiber retoma quando `stream_select()` detecta I/O pronto naquele recurso (agendamento por I/O).
+
+A resposta é enviada automaticamente quando `$work()` retorna. Se uma exceção for lançada, um `500 Internal Server Error` é retornado.
+
+### Exemplo tick-based
+
+Útil para trabalho CPU-bound que não deve bloquear outras conexões:
+
+```php
+yield $Router->route('/defer/tick', function ($Request, $Response) {
+   return $Response->defer(function () use ($Response) {
+      $partial = '';
+      for ($i = 1; $i <= 5; $i++) {
+         $partial .= "chunk {$i}\n";
+         Fiber::suspend(); // Retoma no próximo tick
+      }
+      $Response->body = $partial;
+   });
+}, GET);
+```
+
+### Exemplo I/O-aware
+
+Útil para aguardar recursos externos (bancos de dados, APIs, sockets):
+
+```php
+yield $Router->route('/defer/io', function ($Request, $Response) {
+   return $Response->defer(function () use ($Response) {
+      [$read, $write] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+      stream_set_blocking($read, false);
+
+      // Simula I/O assíncrono: escreve de forma não-bloqueante
+      fwrite($write, 'Hello from async I/O!');
+      fclose($write);
+
+      // Suspende até o socket de leitura ter dados
+      Fiber::suspend($read);
+
+      $data = stream_get_contents($read);
+      fclose($read);
+
+      $Response->body = $data;
+   });
+}, GET);
+```

@@ -1,30 +1,16 @@
-# HTTP Response
+# HTTP Server CLI — Response
 
 ## Overview
 
-The `Response` interface in the Bootgly PHP Framework is designed to provide an easy-to-use API for managing HTTP responses in your web applications or APIs. It allows you to configure response statuses, headers, and body content, as well as facilitating view rendering, file uploads, user authentication, and redirection.
+The `Response` object is automatically available in every route handler of the HTTP Server CLI. It provides an easy-to-use API for managing HTTP responses — configuring statuses, headers, and body content, as well as facilitating view rendering, file uploads, authentication, and redirection.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+```
 
 ## Usage
 
-Below are the methods provided by the `Response` interface with examples demonstrating their usage.
-
-### Constructor
-
-```php
-public function __construct (int $code = 200, ? array $headers = null, string $body = '');
-```
-
-**Parameters:**
-
-- `$code` (int, optional): The HTTP status code. Defaults to 200.
-- `$headers` (array|null, optional): An associative array of headers to be set in the response.
-- `$body` (string, optional): The initial content of the response body.
-
-**Example:**
-
-```php
-$Response = new Response(200, ['Content-Type' => 'application/json'], '{"message": "OK"}');
-```
+Below are the methods provided by the `Response` object with examples demonstrating their usage.
 
 ### Invocation
 
@@ -128,7 +114,7 @@ Upload a file to the HTTP client.
 - `$file` (string|File): The file or file path to upload.
 - `$offset` (int): The data offset.
 - `$length` (int|null): The length of the data to upload.
-- `$close` (bool): Close the connection after sending. (Only in HTTP Server CLI)
+- `$close` (bool): Close the connection after sending.
 
 **Example 1:**
 
@@ -136,7 +122,7 @@ Upload a file to the HTTP client.
 return $Response->upload('/path/to/file.pdf');
 ```
 
-**Example 2 (only if using HTTP Server CLI):**
+**Example 2:**
 
 ```php
 return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
@@ -200,3 +186,60 @@ Terminates the HTTP response, optionally setting a response status code before e
 **Parameters:**
 
 - `$code` (int|null, optional): The status code to send before ending the response.
+
+## Deferred Responses (Async)
+
+```php
+public function defer (Closure $work): Response;
+```
+
+Executes `$work` asynchronously via a PHP Fiber, allowing the event loop to handle other connections while this response is being prepared.
+
+Inside `$work()`, call `Fiber::suspend()` to yield control back to the event loop:
+
+- **Suspend with `null`** → the Fiber resumes on the next event loop tick (tick-based scheduling).
+- **Suspend with a `resource`** → the Fiber resumes when `stream_select()` detects I/O readiness on that resource (I/O-bound scheduling).
+
+The response is sent automatically when `$work()` returns. If an exception is thrown, a `500 Internal Server Error` is returned.
+
+### Tick-based example
+
+Useful for CPU-bound work that should not block other connections:
+
+```php
+yield $Router->route('/defer/tick', function ($Request, $Response) {
+   return $Response->defer(function () use ($Response) {
+      $partial = '';
+      for ($i = 1; $i <= 5; $i++) {
+         $partial .= "chunk {$i}\n";
+         Fiber::suspend(); // Resume on next tick
+      }
+      $Response->body = $partial;
+   });
+}, GET);
+```
+
+### I/O-aware example
+
+Useful for waiting on external resources (databases, APIs, sockets):
+
+```php
+yield $Router->route('/defer/io', function ($Request, $Response) {
+   return $Response->defer(function () use ($Response) {
+      [$read, $write] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+      stream_set_blocking($read, false);
+
+      // Simulate async I/O: write in a non-blocking way
+      fwrite($write, 'Hello from async I/O!');
+      fclose($write);
+
+      // Suspend until the read socket has data
+      Fiber::suspend($read);
+
+      $data = stream_get_contents($read);
+      fclose($read);
+
+      $Response->body = $data;
+   });
+}, GET);
+```

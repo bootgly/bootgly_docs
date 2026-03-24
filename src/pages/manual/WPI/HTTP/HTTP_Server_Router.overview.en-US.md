@@ -1,15 +1,16 @@
-# HTTP Server Router
+# HTTP Server CLI — Router
 
-The Router for HTTP Servers provides a flexible and powerful web routing system.
+The Router provides a flexible and powerful routing system for the HTTP Server CLI.
 The `route` method is used to define routes, with the schema as follows:
 
 ```php
-route (string $route, callable $handler, null|string|array $methods = null) : false|object
+route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = []) : false|object
 ```
 
 - `$route` is the URL pattern to match that accepts params.
 - `$handler` is the callback to be executed when the route is matched.
 - `$methods` is the HTTP method(s) that this route should respond to.
+- `$middlewares` is an optional array of middlewares for this specific route.
 
 `$handler` arguments:
 
@@ -19,30 +20,9 @@ route (string $route, callable $handler, null|string|array $methods = null) : fa
 
 ## Basic usage
 
-### HTTP Server (with external SAPI: Apache, NGinx, LiteSpeed, etc.)
-
 ```php
-use Bootgly\WPI\Nodes\HTTP\Server\Bridge\Request;
-use Bootgly\WPI\Nodes\HTTP\Server\Bridge\Response;
-
-// ...
-
-$Router->route('/', function (Request $Request, Response $Response) {
-  $Route = $this;
-  // $Params = $Route->Params;
-  // ...
-
-  return $Response(body: 'Hello World!');
-}, GET);
-```
-
-### HTTP Server CLI
-
-```php
-use Bootgly\WPI\Nodes\HTTP\Server\CLI\Request;
-use Bootgly\WPI\Nodes\HTTP\Server\CLI\Response;
-
-// ...
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 
 yield $Router->route('/', function (Request $Request, Response $Response) {
   $Route = $this;
@@ -163,3 +143,27 @@ yield $Router->route('/*', function ($Request, $Response) {
   return $Response(code: 404, body: 'pages/404');
 });
 ```
+
+## Route Group Middlewares (intercept)
+
+```php
+public function intercept (Middleware ...$middlewares): void;
+```
+
+Applies middlewares to all routes defined after the `intercept()` call within the current routing scope:
+
+```php
+use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\CORS;
+use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\RateLimit;
+
+$Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
+
+yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
+   // All nested routes inherit CORS + RateLimit
+   yield $Router->route('users', function ($Request, $Response) {
+      $Response->Json->encode(['users' => []]);
+   }, GET);
+}, GET);
+```
+
+See [Middlewares](/manual/WPI/HTTP/HTTP_Server_Middlewares) for the full middleware pipeline documentation.

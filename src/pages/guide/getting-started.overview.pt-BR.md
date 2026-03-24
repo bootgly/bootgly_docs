@@ -48,3 +48,40 @@ Para se certificar que tudo foi carregado corretamente, ainda no terminal, mude 
 ```bash
 php bootgly
 ```
+
+## Iniciar um Servidor HTTP
+
+No Bootgly, **Projetos** iniciam servidores. Cada projeto é um arquivo PHP que cria e configura uma instância de servidor.
+
+Crie um arquivo `HTTP_Server_CLI.project.php` dentro da pasta do seu projeto (ex: `projects/HTTP_Server_CLI/`):
+
+```php
+use Bootgly\API\Projects\Project;
+use Bootgly\WPI\Endpoints\Servers\Modes;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+return new Project(
+   name: 'HTTP Server CLI',
+   boot: function (): void
+   {
+      $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);
+      $Server->configure(
+         host: '0.0.0.0',
+         port: 8082,
+         workers: 4
+      );
+      $Server->handle(function ($Request, $Response, $Router) {
+         return $Response(body: 'Hello, World!');
+      });
+      $Server->start();
+   }
+);
+```
+
+Então execute o projeto:
+
+```bash
+php bootgly project run HTTP_Server_CLI
+```
+
+O servidor iniciará escutando em `0.0.0.0:8082`. Veja a documentação do [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) para a referência completa de configuração e arquitetura.
