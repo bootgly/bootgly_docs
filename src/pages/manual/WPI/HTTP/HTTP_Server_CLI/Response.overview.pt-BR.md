@@ -195,10 +195,10 @@ public function defer (Closure $work): Response;
 
 Executa `$work` de forma assíncrona via PHP Fiber, permitindo que o event loop processe outras conexões enquanto esta resposta está sendo preparada.
 
-Dentro de `$work()`, chame `Fiber::suspend()` para ceder o controle ao event loop:
+Dentro de `$work()`, chame `$Response->wait()` para ceder o controle ao event loop:
 
-- **Suspender com `null`** → a Fiber retoma no próximo tick do event loop (agendamento por tick).
-- **Suspender com um `resource`** → a Fiber retoma quando `stream_select()` detecta I/O pronto naquele recurso (agendamento por I/O).
+- **Wait com `null`** → a Fiber retoma no próximo tick do event loop (agendamento por tick).
+- **Wait com um `resource`** → a Fiber retoma quando `stream_select()` detecta I/O pronto naquele recurso (agendamento por I/O).
 
 A resposta é enviada automaticamente quando `$work()` retorna. Se uma exceção for lançada, um `500 Internal Server Error` é retornado.
 
@@ -212,7 +212,7 @@ yield $Router->route('/defer/tick', function ($Request, $Response) {
       $partial = '';
       for ($i = 1; $i <= 5; $i++) {
          $partial .= "chunk {$i}\n";
-         Fiber::suspend(); // Retoma no próximo tick
+         $Response->wait(); // Retoma no próximo tick
       }
       $Response->body = $partial;
    });
@@ -234,7 +234,7 @@ yield $Router->route('/defer/io', function ($Request, $Response) {
       fclose($write);
 
       // Suspende até o socket de leitura ter dados
-      Fiber::suspend($read);
+      $Response->wait($read);
 
       $data = stream_get_contents($read);
       fclose($read);
@@ -243,3 +243,20 @@ yield $Router->route('/defer/io', function ($Request, $Response) {
    });
 }, GET);
 ```
+
+### wait()
+
+```php
+public function wait (null|mixed $value = null): Response;
+```
+
+Cede o controle ao event loop de dentro de uma closure `defer()`. O comportamento depende do valor passado:
+
+- **`$Response->wait()`** — tick-based: a Fiber retoma na próxima iteração do event loop.
+- **`$Response->wait($stream)`** — I/O-bound: a Fiber retoma quando `stream_select()` detecta prontidão no stream resource passado.
+
+Se chamado fora de um contexto deferred (`$this->deferred === false`), o método retorna imediatamente sem efeito.
+
+**Parâmetros:**
+
+- `$value` (resource|null, padrão `null`): Um stream resource PHP para agendamento I/O-bound, ou `null` para agendamento tick-based.

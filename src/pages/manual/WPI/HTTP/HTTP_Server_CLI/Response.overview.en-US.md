@@ -195,10 +195,10 @@ public function defer (Closure $work): Response;
 
 Executes `$work` asynchronously via a PHP Fiber, allowing the event loop to handle other connections while this response is being prepared.
 
-Inside `$work()`, call `Fiber::suspend()` to yield control back to the event loop:
+Inside `$work()`, call `$Response->wait()` to yield control back to the event loop:
 
-- **Suspend with `null`** → the Fiber resumes on the next event loop tick (tick-based scheduling).
-- **Suspend with a `resource`** → the Fiber resumes when `stream_select()` detects I/O readiness on that resource (I/O-bound scheduling).
+- **Wait with `null`** → the Fiber resumes on the next event loop tick (tick-based scheduling).
+- **Wait with a `resource`** → the Fiber resumes when `stream_select()` detects I/O readiness on that resource (I/O-bound scheduling).
 
 The response is sent automatically when `$work()` returns. If an exception is thrown, a `500 Internal Server Error` is returned.
 
@@ -212,7 +212,7 @@ yield $Router->route('/defer/tick', function ($Request, $Response) {
       $partial = '';
       for ($i = 1; $i <= 5; $i++) {
          $partial .= "chunk {$i}\n";
-         Fiber::suspend(); // Resume on next tick
+         $Response->wait(); // Resume on next tick
       }
       $Response->body = $partial;
    });
@@ -234,7 +234,7 @@ yield $Router->route('/defer/io', function ($Request, $Response) {
       fclose($write);
 
       // Suspend until the read socket has data
-      Fiber::suspend($read);
+      $Response->wait($read);
 
       $data = stream_get_contents($read);
       fclose($read);
@@ -243,3 +243,20 @@ yield $Router->route('/defer/io', function ($Request, $Response) {
    });
 }, GET);
 ```
+
+### wait()
+
+```php
+public function wait (null|mixed $value = null): Response;
+```
+
+Yields control back to the event loop from inside a `defer()` closure. The behavior depends on the value passed:
+
+- **`$Response->wait()`** — tick-based: the Fiber resumes on the next event loop iteration.
+- **`$Response->wait($stream)`** — I/O-bound: the Fiber resumes when `stream_select()` detects readiness on the given stream resource.
+
+If called outside of a deferred context (`$this->deferred === false`), the method returns immediately with no effect.
+
+**Parameters:**
+
+- `$value` (resource|null, default `null`): A PHP stream resource for I/O-bound scheduling, or `null` for tick-based scheduling.
