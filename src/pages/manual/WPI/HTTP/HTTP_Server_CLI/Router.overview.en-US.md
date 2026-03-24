@@ -166,4 +166,4 @@ yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
 }, GET);
 ```
 
-See [Middlewares](/manual/WPI/HTTP/HTTP_Server_Middlewares) for the full middleware pipeline documentation.
+See [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares) for the full middleware pipeline documentation.

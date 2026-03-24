@@ -45,6 +45,18 @@ To start the server, run:
 bootgly project run HTTP_Server_CLI
 ```
 
+Interactive mode:
+
+```bash
+bootgly project run HTTP_Server_CLI -i
+```
+
+Monitor mode:
+
+```bash
+bootgly project run HTTP_Server_CLI -m
+```
+
 ## Operation Modes
 
 The server supports multiple operation modes, selected when constructing the `HTTP_Server_CLI` instance:

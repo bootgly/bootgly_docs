@@ -6,7 +6,7 @@ O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um 
 
 No Bootgly, servidores são iniciados por Projetos — não por comandos do framework. Cada projeto define sua própria lógica de boot, incluindo instanciação do servidor, configuração e registro do handler.
 
-Um arquivo de projeto (ex: `WPI.project.php`) retorna uma instância de `Project`:
+Um arquivo de projeto (ex: `HTTP_Server_CLI.project.php`) retorna uma instância de `Project`:
 
 ```php
 use Bootgly\API\Projects\Project;
@@ -16,7 +16,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI;
 
 return new Project(
    name: 'HTTP Server CLI',
-   description: 'HTTP server demo with routing and catch-all 404',
+   description: 'Demonstração do servidor HTTP com roteamento e captura de 404',
    version: '0.1.0',
    author: 'Seu Nome',
 
@@ -42,6 +42,18 @@ Para iniciar o servidor, execute:
 
 ```bash
 php bootgly @project HTTP_Server_CLI
+```
+
+Modo interativo:
+
+```bash
+bootgly project run HTTP_Server_CLI -i
+```
+
+Modo monitor:
+
+```bash
+bootgly project run HTTP_Server_CLI -m
 ```
 
 ## Modos de Operação

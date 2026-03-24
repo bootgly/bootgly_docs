@@ -640,7 +640,7 @@ export default {
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_Request': {
+  '/WPI/HTTP/HTTP_Server_CLI/Request': {
     config: {
       icon: 'last_page',
       status: 'draft',
@@ -657,7 +657,7 @@ export default {
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_Response': {
+  '/WPI/HTTP/HTTP_Server_CLI/Response': {
     config: {
       icon: 'first_page',
       status: 'draft',
@@ -672,7 +672,7 @@ export default {
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_Router': {
+  '/WPI/HTTP/HTTP_Server_CLI/Router': {
     config: {
       icon: 'alt_route',
       status: 'draft',
@@ -687,7 +687,7 @@ export default {
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_Middlewares': {
+  '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
     config: {
       icon: 'settings_input_component',
       status: 'draft',
