@@ -6,7 +6,7 @@ O Bootgly é o primeiro framework a usar a arquitetura I2P (interface-to-platfor
 
 Devido a essa política, sua arquitetura I2P exclusiva e algumas Convenções de Código e Padrões de Design incomuns, o Bootgly tem desempenho e versatilidade superior, e tem Code APIs de fácil entendimento.
 
-A partir de um único codebase, o Bootgly atende tanto o **CLI** (plataforma Console) quanto a **Web** (plataforma Web), compartilhando camadas fundamentais (ABI, ACI, ADI, API) enquanto se especializa nas interfaces de nível superior. Requer PHP 8.2+ e roda nativamente no Linux, com suporte Docker para outros sistemas operacionais.
+A partir de um único codebase, o Bootgly atende tanto o **CLI** (plataforma Console) quanto a **Web** (plataforma Web), compartilhando camadas fundamentais (ABI, ACI, ADI, API) enquanto se especializa nas interfaces de nível superior. Requer PHP 8.4+ e roda nativamente no Linux, com suporte Docker para outros sistemas operacionais.
 
 Nosso objetivo é ajudar a criar aplicativos/APIs de forma fácil e rápida para a Web e para o CLI, que sejam escaláveis e de alta qualidade. Se você é um desenvolvedor experiente ou está apenas começando, o Bootgly tem tudo o que você precisa.
 
