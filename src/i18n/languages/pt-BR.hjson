@@ -70,7 +70,7 @@
 
   // @
   system: {
-    documentation: 'Documentação',
+    documentation: 'Documentação Oficial',
     support: 'Patrocine o Bootgly',
     backToTop: 'Voltar para o topo'
   },
