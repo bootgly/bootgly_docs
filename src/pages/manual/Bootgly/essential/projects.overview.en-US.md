@@ -6,7 +6,7 @@ Projects are managed entirely through the `project` CLI command, which provides 
 
 ## Project structure
 
-A project is a directory inside `projects/` with a boot file. The boot file follows the naming convention `{project_folder_name}.project.php` — the file name must match the project folder name.
+A project is a directory inside `projects/` with a boot file. The boot file follows the naming convention `&#123;project_folder_name&#125;.project.php` — the file name must match the project folder name.
 
 For example, a project in the folder `HTTP_Server_CLI` must have its boot file named `HTTP_Server_CLI.project.php`:
 
