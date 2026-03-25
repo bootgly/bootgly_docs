@@ -40,7 +40,7 @@ No Bootgly, as interfaces iniciais são:
 As interfaces seguem uma direção de dependência estrita — cada camada só pode depender das camadas abaixo dela:
 
 ```mermaid
-graph LR
+graph TB
   ABI["ABI\nBootable"] --> ACI["ACI\nCommon"]
   ACI --> ADI["ADI\nData"]
   ADI --> API["API\nApplication"]
