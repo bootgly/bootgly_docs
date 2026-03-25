@@ -113,6 +113,18 @@ export default {
       'pt-BR': {
         title: 'Por quê Bootgly?'
       }
+    },
+    meta: {
+      'en-US': {
+        overview: {
+          _sections: {
+            count: 4,
+            done: 4
+          },
+          _translations: 2
+        }
+      },
+      'pt-BR': {}
     }
   },
 
@@ -292,7 +304,7 @@ export default {
   '/Bootgly/essential/projects': {
     config: {
       icon: 'create_new_folder',
-      status: 'empty',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Projects — Documentation of Bootgly',
@@ -311,26 +323,18 @@ export default {
       'pt-BR': {
         title: 'Projetos'
       }
-    }
-  },
-  '/Bootgly/essential/templating': {
-    config: {
-      icon: 'alternate_email',
-      status: 'empty',
-      meta: {
-        description: {
-          '*': 'Templating — Documentation of Bootgly'
+    },
+    meta: {
+      'en-US': {
+        overview: {
+          _sections: {
+            count: 5,
+            done: 5
+          },
+          _translations: 2
         }
       },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Templating'
-      }
+      'pt-BR': {}
     }
   },
   '/Bootgly/essential/testing': {

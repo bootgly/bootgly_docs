@@ -37,6 +37,17 @@ No Bootgly, as interfaces iniciais são:
 - CLI (Command Line Interface)
 - WPI (Web Programming Interface)
 
+As interfaces seguem uma direção de dependência estrita — cada camada só pode depender das camadas abaixo dela:
+
+```mermaid
+graph LR
+  ABI["ABI\nBootable"] --> ACI["ACI\nCommon"]
+  ACI --> ADI["ADI\nData"]
+  ADI --> API["API\nApplication"]
+  API --> CLI["CLI\nCommand Line"]
+  API --> WPI["WPI\nWeb Programming"]
+```
+
 Na próxima página você poderá ver como as pastas das Interfaces estão estruturadas na plataforma base Bootgly e o que cada uma delas representa.
 
 ## Plataformas
@@ -54,5 +65,18 @@ No Bootgly as atuais plataformas são:
 - Bootgly (plataforma base)
 - Console (plataforma da interface CLI)
 - Web (plataforma da interface WPI)
+
+```mermaid
+graph TB
+  subgraph Base["Plataforma Base"]
+    Bootgly["Bootgly\n(ABI + ACI + ADI + API + CLI + WPI)"]
+  end
+  subgraph Working["Plataformas de Trabalho"]
+    Console["Plataforma Console\n(da interface CLI)"]
+    Web["Plataforma Web\n(da interface WPI)"]
+  end
+  Bootgly --> Console
+  Bootgly --> Web
+```
 
 No futuro poderá surgir uma outra interface chamada de "GUI" (Graphical User Interface), que poderá dar origem a uma outra plataforma chamada de "Graphical", que servirá pra construções de aplicações gráficas utilizando o PHP.

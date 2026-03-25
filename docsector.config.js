@@ -8,7 +8,7 @@ export default {
   branding: {
     logo: 'https://docs.bootgly.com/images/logo/bootgly-logo-temp1.png',
     name: 'Bootgly',
-    version: 'v0.0.1'
+    version: 'v0.11.0-beta'
   },
 
   // @ Links
