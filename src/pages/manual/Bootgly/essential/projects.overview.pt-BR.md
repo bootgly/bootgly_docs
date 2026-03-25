@@ -120,7 +120,7 @@ php bootgly project run HTTP_Server_CLI
 php bootgly project run Demo_CLI
 
 # Executar em modo interativo
-php bootgly project run HTTP_Server_CLI -it
+php bootgly project run HTTP_Server_CLI -i
 
 # Executar em modo monitor
 php bootgly project run HTTP_Server_CLI -m
@@ -131,7 +131,7 @@ Opções disponíveis:
 | Opção | Descrição |
 |-------|-----------|
 | `-d` | Executar em modo daemon (padrão) |
-| `-it` | Executar em modo interativo |
+| `-i` | Executar em modo interativo |
 | `-m` | Executar em modo monitor |
 
 ### `project stop`
