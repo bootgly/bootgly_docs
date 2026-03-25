@@ -8,14 +8,14 @@ Os projetos são gerenciados inteiramente através do comando CLI `project`, que
 
 Um projeto é um diretório dentro de `projects/` com um arquivo de boot. O arquivo de boot segue a convenção de nomenclatura `{project_folder_name}.project.php` — o nome do arquivo deve corresponder ao nome da pasta do projeto.
 
-Por exemplo, um projeto na pasta `HTTP_Server_CLI` deve ter seu arquivo de boot nomeado como `HTTP_Server_CLI.project.php`:
+Por exemplo, um projeto na pasta `Sample_Project` deve ter seu arquivo de boot nomeado como `Sample_Project.project.php`:
 
 ```
 projects/
-├── HTTP_Server_CLI/
-│   └── HTTP_Server_CLI.project.php
-├── Demo_CLI/
-│   └── Demo_CLI.project.php
+├── Sample_Project/
+│   └── Sample_Project.project.php
+├── Another_Project/
+│   └── Another_Project.project.php
 └── @.php
 ```
 
@@ -27,8 +27,8 @@ Cada arquivo de boot retorna uma instância de `Project` com metadados e uma Clo
 use Bootgly\API\Projects\Project;
 
 return new Project(
-   name: 'Meu HTTP Server',
-   description: 'Um servidor web com roteamento e middlewares',
+   name: 'Projeto Genérico',
+   description: 'Um exemplo genérico de projeto Bootgly',
    version: '1.0.0',
    author: 'Seu Nome',
 
@@ -56,7 +56,7 @@ O arquivo `projects/@.php` define qual projeto é o padrão:
 ```php
 <?php
 return [
-   'default' => 'HTTP_Server_CLI'
+   'default' => 'Sample_Project'
 ];
 ```
 
@@ -90,12 +90,9 @@ Exemplo de saída:
 ```
  Project list:
 
- #1  - HTTP Server CLI (projects/HTTP_Server_CLI) [WPI] [default]
-       HTTP server demo with static/dynamic routing and catch-all 404
- #2  - Demo CLI (projects/Demo_CLI) [CLI]
-       Interactive CLI demo for Bootgly terminal components
- #3  - TCP Server CLI (projects/TCP_Server_CLI) [WPI]
- #4  - TCP Client CLI (projects/TCP_Client_CLI) [CLI]
+ #1  - Projeto Generico (projects/Sample_Project) [CLI] [default]
+    Exemplo generico de projeto para a documentacao do Bootgly
+ #2  - Outro Projeto (projects/Another_Project) [WPI]
 ```
 
 ### `project set`
@@ -103,7 +100,7 @@ Exemplo de saída:
 Define propriedades do projeto. Atualmente suporta definir o projeto padrão:
 
 ```bash
-php bootgly project set HTTP_Server_CLI --default
+php bootgly project set Sample_Project --default
 ```
 
 Isso atualiza o `projects/@.php` para que `project run` (sem argumentos) inicialize o projeto especificado.
@@ -114,16 +111,16 @@ Inicializa um projeto pelo nome ou o projeto padrão:
 
 ```bash
 # Executar um projeto específico
-php bootgly project run HTTP_Server_CLI
+php bootgly project run Sample_Project
 
-# Executar a Demo do CLI
-php bootgly project run Demo_CLI
+# Executar outro projeto
+php bootgly project run Another_Project
 
 # Executar em modo interativo
-php bootgly project run HTTP_Server_CLI -i
+php bootgly project run Sample_Project -i
 
 # Executar em modo monitor
-php bootgly project run HTTP_Server_CLI -m
+php bootgly project run Sample_Project -m
 ```
 
 Opções disponíveis:
@@ -140,7 +137,7 @@ Para um projeto em execução enviando SIGTERM ao processo master. Se o processo
 
 ```bash
 # Parar um projeto específico
-php bootgly project stop HTTP_Server_CLI
+php bootgly project stop Sample_Project
 ```
 
 ### `project show`
@@ -148,19 +145,19 @@ php bootgly project stop HTTP_Server_CLI
 Mostra o status atual de um projeto em execução, incluindo PID, workers, endereço e uptime:
 
 ```bash
-php bootgly project show HTTP_Server_CLI
+php bootgly project show Sample_Project
 ```
 
 Exemplo de saída:
 
 ```
 ┌─ Project Status ────────────────────┐
-│ Project        HTTP_Server_CLI      │
-│ Type           WPI                  │
+│ Project        Sample_Project       │
+│ Type           CLI                  │
 │ Status         running              │
 │ Master PID     12345                │
 │ Workers        11/11                │
-│ Address        0.0.0.0:8082         │
+│ Address        -                    │
 │ Uptime         2h 15m 30s           │
 └─────────────────────────────────────┘
 ```
@@ -170,7 +167,7 @@ Exemplo de saída:
 Envia um sinal de hot-reload (SIGUSR2) a um projeto em execução, permitindo que ele recarregue seu código sem um restart completo:
 
 ```bash
-php bootgly project reload HTTP_Server_CLI
+php bootgly project reload Sample_Project
 ```
 
 ### `project restart`
@@ -178,7 +175,7 @@ php bootgly project reload HTTP_Server_CLI
 Para e depois inicia o projeto novamente. Aceita as mesmas opções que `project run`:
 
 ```bash
-php bootgly project restart HTTP_Server_CLI
+php bootgly project restart Sample_Project
 ```
 
 ### `project info`
@@ -186,20 +183,20 @@ php bootgly project restart HTTP_Server_CLI
 Exibe metadados detalhados sobre um projeto em um Fieldset:
 
 ```bash
-php bootgly project info HTTP_Server_CLI
+php bootgly project info Sample_Project
 ```
 
 Exemplo de saída:
 
 ```
 ┌─ Project Info ──────────────────────────────────────────────────────┐
-│ Name           HTTP Server CLI                                     │
-│ Folder         HTTP_Server_CLI                                     │
-│ Description    HTTP server demo with static/dynamic routing        │
+│ Name           Projeto Generico                                    │
+│ Folder         Sample_Project                                      │
+│ Description    Um exemplo generico de projeto Bootgly              │
 │ Version        0.1.0                                               │
-│ Author         Rodrigo Vieira                                      │
-│ Interfaces     WPI                                                 │
-│ Path           /path/to/projects/HTTP_Server_CLI                   │
+│ Author         Seu Nome                                            │
+│ Interfaces     CLI                                                 │
+│ Path           /path/to/projects/Sample_Project                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -233,7 +230,7 @@ O Bootgly vem com vários projetos de exemplo no diretório `projects/`:
 
 | Projeto | Interface | Descrição |
 |---------|-----------|-----------|
-| `HTTP_Server_CLI` | WPI | Demo de HTTP server com roteamento estático/dinâmico e catch-all 404 |
 | `Demo_CLI` | CLI | Demo interativo de CLI para componentes de terminal (22 demos) |
+| `HTTP_Server_CLI` | WPI | Demo de HTTP server com roteamento estático/dinâmico e catch-all 404 |
 | `TCP_Server_CLI` | WPI | TCP server raw com workers configuráveis |
 | `TCP_Client_CLI` | CLI | Benchmark de TCP client (teste de stress write/read) |

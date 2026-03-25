@@ -8,14 +8,14 @@ Projects are managed entirely through the `project` CLI command, which provides 
 
 A project is a directory inside `projects/` with a boot file. The boot file follows the naming convention `{project_folder_name}.project.php` — the file name must match the project folder name.
 
-For example, a project in the folder `HTTP_Server_CLI` must have its boot file named `HTTP_Server_CLI.project.php`:
+For example, a project in the folder `Sample_Project` must have its boot file named `Sample_Project.project.php`:
 
 ```
 projects/
-├── HTTP_Server_CLI/
-│   └── HTTP_Server_CLI.project.php
-├── Demo_CLI/
-│   └── Demo_CLI.project.php
+├── Sample_Project/
+│   └── Sample_Project.project.php
+├── Another_Project/
+│   └── Another_Project.project.php
 └── @.php
 ```
 
@@ -27,8 +27,8 @@ Each boot file returns a `Project` instance with metadata and a boot Closure:
 use Bootgly\API\Projects\Project;
 
 return new Project(
-   name: 'My HTTP Server',
-   description: 'A web server with routing and middlewares',
+   name: 'Generic Project',
+   description: 'A generic Bootgly project example',
    version: '1.0.0',
    author: 'Your Name',
 
@@ -56,7 +56,7 @@ The file `projects/@.php` defines which project is the default:
 ```php
 <?php
 return [
-   'default' => 'HTTP_Server_CLI'
+   'default' => 'Sample_Project'
 ];
 ```
 
@@ -90,12 +90,9 @@ Example output:
 ```
  Project list:
 
- #1  - HTTP Server CLI (projects/HTTP_Server_CLI) [WPI] [default]
-       HTTP server demo with static/dynamic routing and catch-all 404
- #2  - Demo CLI (projects/Demo_CLI) [CLI]
-       Interactive CLI demo for Bootgly terminal components
- #3  - TCP Server CLI (projects/TCP_Server_CLI) [WPI]
- #4  - TCP Client CLI (projects/TCP_Client_CLI) [CLI]
+ #1  - Generic Project (projects/Sample_Project) [CLI] [default]
+    Generic project example for Bootgly docs
+ #2  - Another Project (projects/Another_Project) [WPI]
 ```
 
 ### `project set`
@@ -103,7 +100,7 @@ Example output:
 Sets project properties. Currently supports setting the default project:
 
 ```bash
-php bootgly project set HTTP_Server_CLI --default
+php bootgly project set Sample_Project --default
 ```
 
 This updates `projects/@.php` so that `project run` (without arguments) will boot the specified project.
@@ -114,16 +111,16 @@ Boots a project by name or the default project:
 
 ```bash
 # Run a specific project
-php bootgly project run HTTP_Server_CLI
+php bootgly project run Sample_Project
 
-# Run only CLI demo
-php bootgly project run Demo_CLI
+# Run another project
+php bootgly project run Another_Project
 
 # Run in interactive mode
-php bootgly project run HTTP_Server_CLI -i
+php bootgly project run Sample_Project -i
 
 # Run in monitor mode
-php bootgly project run HTTP_Server_CLI -m
+php bootgly project run Sample_Project -m
 ```
 
 Available options:
@@ -140,7 +137,7 @@ Stops a running project by sending SIGTERM to the master process. If the process
 
 ```bash
 # Stop a named project
-php bootgly project stop HTTP_Server_CLI
+php bootgly project stop Sample_Project
 ```
 
 ### `project show`
@@ -148,19 +145,19 @@ php bootgly project stop HTTP_Server_CLI
 Shows the current status of a running project, including PID, workers, address and uptime:
 
 ```bash
-php bootgly project show HTTP_Server_CLI
+php bootgly project show Sample_Project
 ```
 
 Example output:
 
 ```
 ┌─ Project Status ────────────────────┐
-│ Project        HTTP_Server_CLI      │
-│ Type           WPI                  │
+│ Project        Sample_Project       │
+│ Type           CLI                  │
 │ Status         running              │
 │ Master PID     12345                │
 │ Workers        11/11                │
-│ Address        0.0.0.0:8082         │
+│ Address        -                    │
 │ Uptime         2h 15m 30s           │
 └─────────────────────────────────────┘
 ```
@@ -170,7 +167,7 @@ Example output:
 Sends a hot-reload signal (SIGUSR2) to a running project, allowing it to reload its code without a full restart:
 
 ```bash
-php bootgly project reload HTTP_Server_CLI
+php bootgly project reload Sample_Project
 ```
 
 ### `project restart`
@@ -178,7 +175,7 @@ php bootgly project reload HTTP_Server_CLI
 Stops and then starts a project again. Accepts the same options as `project run`:
 
 ```bash
-php bootgly project restart HTTP_Server_CLI
+php bootgly project restart Sample_Project
 ```
 
 ### `project info`
@@ -186,20 +183,20 @@ php bootgly project restart HTTP_Server_CLI
 Displays detailed metadata about a project in a Fieldset:
 
 ```bash
-php bootgly project info HTTP_Server_CLI
+php bootgly project info Sample_Project
 ```
 
 Example output:
 
 ```
 ┌─ Project Info ──────────────────────────────────────────────────────┐
-│ Name           HTTP Server CLI                                     │
-│ Folder         HTTP_Server_CLI                                     │
-│ Description    HTTP server demo with static/dynamic routing        │
+│ Name           Generic Project                                     │
+│ Folder         Sample_Project                                      │
+│ Description    A generic Bootgly project example                   │
 │ Version        0.1.0                                               │
-│ Author         Rodrigo Vieira                                      │
-│ Interfaces     WPI                                                 │
-│ Path           /path/to/projects/HTTP_Server_CLI                   │
+│ Author         Your Name                                           │
+│ Interfaces     CLI                                                 │
+│ Path           /path/to/projects/Sample_Project                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -233,7 +230,7 @@ Bootgly ships with several example projects in the `projects/` directory:
 
 | Project | Interface | Description |
 |---------|-----------|-------------|
-| `HTTP_Server_CLI` | WPI | HTTP server demo with static/dynamic routing and catch-all 404 |
 | `Demo_CLI` | CLI | Interactive CLI demo for terminal components (22 demos) |
+| `HTTP_Server_CLI` | WPI | HTTP server demo with static/dynamic routing and catch-all 404 |
 | `TCP_Server_CLI` | WPI | Raw TCP server with configurable workers |
 | `TCP_Client_CLI` | CLI | TCP client benchmark (write/read stress test) |
