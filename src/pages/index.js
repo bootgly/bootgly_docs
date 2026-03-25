@@ -3,6 +3,12 @@ export default {
     config: {
       icon: 'flag',
       status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Getting started — Documentation of Bootgly',
+          'pt-BR': 'Começando — Documentacao do Bootgly'
+        }
+      },
       type: 'guide',
       menu: {},
       subpages: {
@@ -47,6 +53,12 @@ export default {
     config: {
       icon: 'play_arrow',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'What is Bootgly? — Documentation of Bootgly',
+          'pt-BR': 'O que é Bootgly? — Documentacao do Bootgly'
+        }
+      },
       menu: {
         header: {
           icon: 'contact_support',
@@ -83,6 +95,12 @@ export default {
     config: {
       icon: 'question_mark',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Why Bootgly? — Documentation of Bootgly',
+          'pt-BR': 'Por quê Bootgly? — Documentacao do Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -113,6 +131,12 @@ export default {
     config: {
       icon: 'developer_board',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Architecture — Documentation of Bootgly',
+          'pt-BR': 'Arquitetura — Documentacao do Bootgly'
+        }
+      },
       menu: {
         subheader: '.Bootgly.basic'
       },
@@ -133,6 +157,12 @@ export default {
     config: {
       icon: 'account_tree',
       status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Directory Structure — Documentation of Bootgly',
+          'pt-BR': 'Estrutura de diretórios — Documentacao do Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -163,6 +193,11 @@ export default {
     config: {
       icon: 'cached',
       status: 'done',
+      meta: {
+        description: {
+          '*': 'Autoload system — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.Bootgly.concepts'
       },
@@ -180,6 +215,11 @@ export default {
     config: {
       icon: 'post_add',
       status: 'done',
+      meta: {
+        description: {
+          '*': 'Bootstrap files — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -195,6 +235,11 @@ export default {
     config: {
       icon: 'archive',
       status: 'done',
+      meta: {
+        description: {
+          '*': 'Git repositories — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -222,6 +267,12 @@ export default {
     config: {
       icon: 'bug_report',
       status: 'empty',
+      meta: {
+        description: {
+          'en-US': 'Debugging — Documentation of Bootgly',
+          'pt-BR': 'Debugando — Documentacao do Bootgly'
+        }
+      },
       menu: {
         subheader: '.Bootgly.essential'
       },
@@ -242,6 +293,12 @@ export default {
     config: {
       icon: 'create_new_folder',
       status: 'empty',
+      meta: {
+        description: {
+          'en-US': 'Projects — Documentation of Bootgly',
+          'pt-BR': 'Projetos — Documentacao do Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -260,6 +317,11 @@ export default {
     config: {
       icon: 'alternate_email',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'Templating — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -275,6 +337,12 @@ export default {
     config: {
       icon: 'science',
       status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Testing — Documentation of Bootgly',
+          'pt-BR': 'Testando — Documentacao do Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -295,6 +363,11 @@ export default {
     config: {
       icon: 'terminal',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Command Line Interface — Documentation of Bootgly'
+        }
+      },
       menu: {
         header: {
           icon: 'terminal',
@@ -317,6 +390,11 @@ export default {
     config: {
       icon: 'keyboard_command_key',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'Commands — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -332,6 +410,11 @@ export default {
     config: {
       icon: 'description',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'Scripts — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -347,6 +430,11 @@ export default {
     config: {
       icon: 'terminal',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'Terminal — Documentation of Bootgly'
+        }
+      },
       menu: {
         separator: true
       },
@@ -365,6 +453,11 @@ export default {
     config: {
       icon: 'input',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'CLI Terminal Input — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: true
@@ -380,6 +473,11 @@ export default {
     config: {
       icon: 'output',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'CLI Terminal Output — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -395,6 +493,11 @@ export default {
     config: {
       icon: 'report',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'CLI Terminal Reporting — Documentation of Bootgly'
+        }
+      },
       menu: {
         separator: true
       },
@@ -412,6 +515,11 @@ export default {
     config: {
       icon: 'keyboard',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'Keystrokes — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.CLI.Terminal.Input'
       },
@@ -429,6 +537,11 @@ export default {
     config: {
       icon: 'mouse',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'Mousestrokes — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -444,6 +557,11 @@ export default {
     config: {
       icon: 'fas fa-i-cursor',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Cursor — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.CLI.Terminal.Output'
       },
@@ -461,6 +579,11 @@ export default {
     config: {
       icon: 'text_fields',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Text — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -476,6 +599,11 @@ export default {
     config: {
       icon: 'wysiwyg',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Viewport — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -491,6 +619,11 @@ export default {
     config: {
       icon: 'mouse',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Mouse — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.CLI.Terminal.Reporting',
         separator: true
@@ -518,6 +651,11 @@ export default {
     config: {
       icon: 'notification_important',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Alert — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.CLI.UI.Components'
       },
@@ -535,6 +673,11 @@ export default {
     config: {
       icon: 'crop_square',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Fieldset — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -550,6 +693,11 @@ export default {
     config: {
       icon: 'menu',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Menu — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -565,6 +713,11 @@ export default {
     config: {
       icon: 'downloading',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Progress — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: true
@@ -580,6 +733,11 @@ export default {
     config: {
       icon: 'table_chart',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Table — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -597,6 +755,11 @@ export default {
     config: {
       icon: 'language',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Web Programming Interface — Documentation of Bootgly'
+        }
+      },
       menu: {
         header: {
           icon: 'language',
@@ -626,6 +789,11 @@ export default {
     config: {
       icon: 'dns',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'HTTP Server CLI — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.WPI.HTTP',
         separator: true
@@ -644,6 +812,11 @@ export default {
     config: {
       icon: 'last_page',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Request — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.WPI.HTTP.HTTP_Server_CLI'
       },
@@ -661,6 +834,11 @@ export default {
     config: {
       icon: 'first_page',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Response — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -676,6 +854,11 @@ export default {
     config: {
       icon: 'alt_route',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Routing — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -691,6 +874,11 @@ export default {
     config: {
       icon: 'settings_input_component',
       status: 'draft',
+      meta: {
+        description: {
+          '*': 'Middlewares — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
@@ -714,6 +902,11 @@ export default {
     config: {
       icon: 'desktop_windows',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'TCP Client — Documentation of Bootgly'
+        }
+      },
       menu: {
         subheader: '.WPI.TCP'
       },
@@ -731,6 +924,11 @@ export default {
     config: {
       icon: 'dns',
       status: 'empty',
+      meta: {
+        description: {
+          '*': 'TCP Server — Documentation of Bootgly'
+        }
+      },
       menu: {},
       subpages: {
         showcase: false
