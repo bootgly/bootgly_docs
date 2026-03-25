@@ -6,7 +6,7 @@ Os projetos são gerenciados inteiramente através do comando CLI `project`, que
 
 ## Estrutura de um projeto
 
-Um projeto é um diretório dentro de `projects/` com um arquivo de boot. O arquivo de boot segue a convenção de nomenclatura `&#123;project_folder_name&#125;.project.php` — o nome do arquivo deve corresponder ao nome da pasta do projeto.
+Um projeto é um diretório dentro de `projects/` com um arquivo de boot. O arquivo de boot segue a convenção de nomenclatura `{project_folder_name}.project.php` — o nome do arquivo deve corresponder ao nome da pasta do projeto.
 
 Por exemplo, um projeto na pasta `HTTP_Server_CLI` deve ter seu arquivo de boot nomeado como `HTTP_Server_CLI.project.php`:
 
