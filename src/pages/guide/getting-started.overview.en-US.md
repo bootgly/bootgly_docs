@@ -49,6 +49,28 @@ To make sure everything was loaded correctly, in the terminal, change the workin
 php bootgly
 ```
 
+## Install Bootgly CLI globally
+
+To use `bootgly` as a global command (and with `sudo` for privileged ports), run the setup command:
+
+```bash
+sudo php bootgly setup
+```
+
+This creates a wrapper script at `/usr/local/bin/bootgly` with the absolute path to your PHP binary, so it works correctly with `sudo` (which resets PATH).
+
+After setup, you can use `bootgly` directly from any directory:
+
+```bash
+bootgly help
+```
+
+To uninstall:
+
+```bash
+sudo bootgly setup --uninstall
+```
+
 ## Start an HTTP Server
 
 In Bootgly, **Projects** bootstrap servers. Each project is a PHP file that creates and configures a server instance.
@@ -81,7 +103,68 @@ return new Project(
 Then run the project:
 
 ```bash
-php bootgly project run HTTP_Server_CLI
+bootgly project run HTTP_Server_CLI
 ```
 
 The server will start listening on `0.0.0.0:8082`. See the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) documentation for the full configuration and architecture reference.
+
+## Binding to privileged ports (80, 443)
+
+Ports below 1024 require special permissions on Linux. There are two approaches:
+
+### Option A: Using sudo
+
+After running `sudo php bootgly setup`, you can start the server with sudo:
+
+```bash
+sudo bootgly project run HTTP_Server_CLI
+```
+
+For production, you can combine this with **privilege dropping** — the server binds to the port as root, then drops to a non-privileged user:
+
+```php
+$Server->configure(
+   host: '0.0.0.0',
+   port: 80,
+   workers: 4,
+   user: 'www-data', // Drop privileges after binding
+);
+```
+
+### Option B: Linux capabilities (no sudo needed)
+
+Grant PHP the ability to bind privileged ports without root:
+
+```bash
+sudo php bootgly setup --capabilities
+```
+
+This runs `setcap cap_net_bind_service=+ep` on the PHP binary. After that, any `bootgly` server can bind to ports like 80 or 443 without sudo.
+
+> **Note:** This applies to ALL PHP scripts on the system, not just Bootgly.
+
+## Enabling HTTPS (SSL/TLS)
+
+Bootgly supports TLSv1.2 and TLSv1.3 natively. Pass the `ssl` parameter to `configure()`:
+
+```php
+$Server->configure(
+   host: '0.0.0.0',
+   port: 443,
+   workers: 4,
+   ssl: [
+      'local_cert' => '/path/to/certificate.pem',
+      'local_pk'   => '/path/to/private-key.pem',
+      'verify_peer' => false,
+   ],
+   user: 'www-data', // Drop privileges after binding
+);
+```
+
+For local development, Bootgly includes self-signed certificates at `@/certificates/`. For production, use certificates from a trusted CA (e.g., Let's Encrypt).
+
+A ready-to-use HTTPS project example is included at `projects/HTTPS_Server_CLI/`:
+
+```bash
+sudo bootgly project run HTTPS_Server_CLI
+```

@@ -49,6 +49,28 @@ Para se certificar que tudo foi carregado corretamente, ainda no terminal, mude 
 php bootgly
 ```
 
+## Instalar Bootgly CLI globalmente
+
+Para usar `bootgly` como comando global (e com `sudo` para portas privilegiadas), execute o comando de setup:
+
+```bash
+sudo php bootgly setup
+```
+
+Isso cria um wrapper script em `/usr/local/bin/bootgly` com o caminho absoluto do seu binário PHP, garantindo que funcione corretamente com `sudo` (que redefine o PATH).
+
+Após o setup, você pode usar `bootgly` diretamente de qualquer diretório:
+
+```bash
+bootgly help
+```
+
+Para desinstalar:
+
+```bash
+sudo bootgly setup --uninstall
+```
+
 ## Iniciar um Servidor HTTP
 
 No Bootgly, **Projetos** iniciam servidores. Cada projeto é um arquivo PHP que cria e configura uma instância de servidor.
@@ -81,7 +103,68 @@ return new Project(
 Então execute o projeto:
 
 ```bash
-php bootgly project run HTTP_Server_CLI
+bootgly project run HTTP_Server_CLI
 ```
 
 O servidor iniciará escutando em `0.0.0.0:8082`. Veja a documentação do [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) para a referência completa de configuração e arquitetura.
+
+## Vinculando a portas privilegiadas (80, 443)
+
+Portas abaixo de 1024 requerem permissões especiais no Linux. Existem duas abordagens:
+
+### Opção A: Usando sudo
+
+Após executar `sudo php bootgly setup`, você pode iniciar o servidor com sudo:
+
+```bash
+sudo bootgly project run HTTP_Server_CLI
+```
+
+Para produção, você pode combinar com **privilege dropping** — o servidor faz o bind na porta como root, depois rebaixa para um usuário sem privilégios:
+
+```php
+$Server->configure(
+   host: '0.0.0.0',
+   port: 80,
+   workers: 4,
+   user: 'www-data', // Rebaixa privilégios após o bind
+);
+```
+
+### Opção B: Linux capabilities (sem sudo)
+
+Conceda ao PHP a capacidade de fazer bind em portas privilegiadas sem root:
+
+```bash
+sudo php bootgly setup --capabilities
+```
+
+Isso executa `setcap cap_net_bind_service=+ep` no binário PHP. Depois disso, qualquer servidor Bootgly pode usar portas como 80 ou 443 sem sudo.
+
+> **Nota:** Isso se aplica a TODOS os scripts PHP no sistema, não apenas ao Bootgly.
+
+## Habilitando HTTPS (SSL/TLS)
+
+O Bootgly suporta TLSv1.2 e TLSv1.3 nativamente. Passe o parâmetro `ssl` para `configure()`:
+
+```php
+$Server->configure(
+   host: '0.0.0.0',
+   port: 443,
+   workers: 4,
+   ssl: [
+      'local_cert' => '/caminho/para/certificado.pem',
+      'local_pk'   => '/caminho/para/chave-privada.pem',
+      'verify_peer' => false,
+   ],
+   user: 'www-data', // Rebaixa privilégios após o bind
+);
+```
+
+Para desenvolvimento local, o Bootgly inclui certificados auto-assinados em `@/certificates/`. Para produção, use certificados de uma CA confiável (ex: Let's Encrypt).
+
+Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/HTTPS_Server_CLI/`:
+
+```bash
+sudo bootgly project run HTTPS_Server_CLI
+```

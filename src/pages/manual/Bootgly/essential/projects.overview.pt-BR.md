@@ -12,11 +12,12 @@ Por exemplo, um projeto na pasta `Sample_Project` deve ter seu arquivo de boot n
 
 ```
 projects/
+├── WPI.projects.php
+├── CLI.projects.php
 ├── Sample_Project/
 │   └── Sample_Project.project.php
-├── Another_Project/
-│   └── Another_Project.project.php
-└── @.php
+└── Another_Project/
+    └── Another_Project.project.php
 ```
 
 ### Exemplo de arquivo de boot
@@ -49,16 +50,31 @@ A classe `Project` aceita as seguintes propriedades:
 | `author` | string | Nome do autor |
 | `boot` | Closure | A função de boot que inicializa a aplicação |
 
-### Projeto padrão
+### Arquivos de índice de interface
 
-O arquivo `projects/@.php` define qual projeto é o padrão:
+Cada interface possui um arquivo de índice na raiz de `projects/` que lista os projetos pertencentes àquela interface:
+
+**`WPI.projects.php`** — projetos Web (servidores HTTP, TCP, etc.):
 
 ```php
 <?php
 return [
-   'default' => 'Sample_Project'
+   'HTTP_Server_CLI',
+   'TCP_Server_CLI',
+   'TCP_Client_CLI'
 ];
 ```
+
+**`CLI.projects.php`** — projetos CLI:
+
+```php
+<?php
+return [
+   'Demo_CLI'
+];
+```
+
+Quando `bootgly project list` é executado, esses índices são lidos para determinar a(s) interface(s) de cada projeto.
 
 ## O comando `project`
 
@@ -68,7 +84,6 @@ O comando `project` é a ferramenta central para gerenciar projetos Bootgly. Exe
 graph LR
   project["php bootgly project"]
   project --> list["list"]
-  project --> set["set"]
   project --> run["run"]
   project --> stop["stop"]
   project --> show["show"]
@@ -90,24 +105,15 @@ Exemplo de saída:
 ```
  Project list:
 
- #1  - Projeto Generico (projects/Sample_Project) [CLI] [default]
+ #1  - Projeto Generico (projects/Sample_Project) [CLI]
     Exemplo generico de projeto para a documentacao do Bootgly
+
  #2  - Outro Projeto (projects/Another_Project) [WPI]
 ```
 
-### `project set`
-
-Define propriedades do projeto. Atualmente suporta definir o projeto padrão:
-
-```bash
-php bootgly project set Sample_Project --default
-```
-
-Isso atualiza o `projects/@.php` para que `project run` (sem argumentos) inicialize o projeto especificado.
-
 ### `project run`
 
-Inicializa um projeto pelo nome ou o projeto padrão:
+Inicializa um projeto pelo nome:
 
 ```bash
 # Executar um projeto específico
@@ -121,6 +127,19 @@ php bootgly project run Sample_Project -i
 
 # Executar em modo monitor
 php bootgly project run Sample_Project -m
+```
+
+Você pode inverter a ordem dos argumentos para ter as duas opções de passar subcomandos para um mesmo projeto ou passar vários projetos para um mesmo subcomando:
+
+```bash
+# Executar um projeto específico
+php bootgly project Sample_Project run
+# Executar outro projeto
+php bootgly project Another_Project run
+# Executar em modo interativo
+php bootgly project Sample_Project run
+# Parar o mesmo projeto
+php bootgly project Sample_Project stop
 ```
 
 Opções disponíveis:
@@ -206,8 +225,8 @@ O ciclo de vida típico de um projeto segue este fluxo:
 
 ```mermaid
 graph TB
-  Create["Criar diretório do projeto\ncom arquivo de boot"] --> Set["Definir como padrão\n(opcional)"]
-  Set --> Run["Executar projeto"]
+  Create["Criar diretório do projeto\ncom arquivo de boot"] --> Register["Registrar no índice\nda interface"]
+  Register --> Run["Executar projeto"]
   Run --> Show["Monitorar status"]
   Show --> Reload["Hot-reload de alterações"]
   Reload --> Show
@@ -217,7 +236,7 @@ graph TB
 ```
 
 1. **Criar** um diretório em `projects/` com um arquivo de boot `*.project.php`;
-2. **Definir** como padrão (opcional) com `project set <name> --default`;
+2. **Registrar** no arquivo de índice da interface (`WPI.projects.php` ou `CLI.projects.php`);
 3. **Executar** com `project run`;
 4. **Monitorar** seu status com `project show`;
 5. **Recarregar** alterações de código com `project reload` (envia SIGUSR2);
