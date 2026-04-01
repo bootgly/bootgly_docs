@@ -69,3 +69,5 @@ The `CAPI` callback should call the `read()` function as soon as there is input 
 The `SAPI` callback should read what the client sends and process that data by displaying the content on the screen or not.
 
 This method creates a basic local Client <-> Server interface, but it does not implement resource routing, so in Bootgly it is considered an interface only, not a node.
+
+When `reading()` is called within a project context (i.e. `BOOTGLY_PROJECT` is defined), the process state is saved using the **project folder name** as the PID file identifier. For example, running `Demo_CLI` creates `workdata/pids/Demo_CLI.json`, allowing you to use `bootgly project show Demo_CLI` and `bootgly project stop Demo_CLI` to monitor and stop the process. If no project context is available (standalone usage), it falls back to the class name.

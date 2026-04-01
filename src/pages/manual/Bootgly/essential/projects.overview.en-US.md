@@ -159,6 +159,8 @@ Stops a running project by sending SIGTERM to the master process. If the process
 php bootgly project stop Sample_Project
 ```
 
+This command stops **all running instances** of the project (primary and any named instances like test servers).
+
 ### `project show`
 
 Shows the current status of a running project, including PID, workers, address and uptime:
@@ -167,19 +169,39 @@ Shows the current status of a running project, including PID, workers, address a
 php bootgly project show Sample_Project
 ```
 
+If the project has multiple running instances (e.g. a production server and a test server), all instances are displayed:
+
 Example output:
 
 ```
 ┌─ Project Status ────────────────────┐
 │ Project        Sample_Project       │
-│ Type           CLI                  │
+│ Type           WPI                  │
 │ Status         running              │
 │ Master PID     12345                │
 │ Workers        11/11                │
-│ Address        -                    │
+│ Address        0.0.0.0:8082         │
 │ Uptime         2h 15m 30s           │
 └─────────────────────────────────────┘
+
+┌─ Project Status ────────────────────┐
+│ Project        Sample_Project.test  │
+│ Type           WPI                  │
+│ Status         running              │
+│ Master PID     12400                │
+│ Workers        1/1                  │
+│ Address        0.0.0.0:8080         │
+│ Uptime         0h 5m 12s            │
+└─────────────────────────────────────┘
 ```
+
+### Process state (PID files)
+
+When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `workdata/pids/`. The file is named after the **project folder name** — for example, running `HTTP_Server_CLI` creates `workdata/pids/HTTP_Server_CLI.json`.
+
+For named instances (like test servers), the file includes an instance qualifier: `HTTP_Server_CLI.test.json`. This allows multiple instances of the same project to coexist without PID file conflicts.
+
+The `project stop` and `project show` commands automatically discover all instances (primary + named) for a given project name.
 
 ### `project reload`
 
