@@ -46,5 +46,8 @@ export default {
   ],
 
   // @ Default language
-  defaultLanguage: 'en-US'
+  defaultLanguage: 'en-US',
+
+  // @ Site URL (used for sitemap.xml generation)
+  siteUrl: 'https://docs.bootgly.com'
 }
