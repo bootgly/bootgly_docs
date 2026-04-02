@@ -31,6 +31,12 @@ export default {
     editBaseUrl: 'https://github.com/bootgly/bootgly_docs/edit/master/src/pages'
   },
 
+  // @ MCP (Model Context Protocol)
+  mcp: {
+    serverName: 'bootgly-docs',
+    toolSuffix: 'bootgly'
+  },
+
   // @ Languages
   languages: [
     {
