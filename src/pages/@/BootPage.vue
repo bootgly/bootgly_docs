@@ -240,19 +240,6 @@
               <q-icon name="chevron_right" />
             </q-item-section>
           </q-item>
-
-          <q-item clickable to="/manual/Bootgly/essential/templating/overview">
-            <q-item-section avatar>
-              <q-icon name="alternate_email" color="deep-orange" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Templating</q-item-label>
-              <q-item-label caption>High-performance template engine</q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-icon name="chevron_right" />
-            </q-item-section>
-          </q-item>
         </q-list>
       </div>
     </q-page>
