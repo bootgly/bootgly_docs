@@ -71,19 +71,27 @@ O servidor suporta múltiplos modos de operação, selecionados ao construir a i
 
 O método `configure()` aceita os seguintes parâmetros:
 
-| Parâmetro | Tipo | Descrição |
-|---|---|---|
-| `host` | `string` | Endereço de bind. Use `'0.0.0.0'` para escutar em todas as interfaces. Quando definido como `'0.0.0.0'`, o domínio padrão é `localhost`. |
-| `port` | `int` | Porta de escuta. |
-| `workers` | `int` | Número de processos filhos criados via fork. Cada worker cria seu próprio socket via `SO_REUSEPORT`. |
-| `ssl` | `?array` | Opções de contexto de stream SSL. Quando fornecido, o esquema muda para `https://`. |
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `host` | `string` | — | Endereço de bind. Use `'0.0.0.0'` para escutar em todas as interfaces. Quando definido como `'0.0.0.0'`, o domínio padrão é `localhost`. |
+| `port` | `int` | — | Porta de escuta. |
+| `workers` | `int` | — | Número de processos filhos criados via fork. Cada worker cria seu próprio socket via `SO_REUSEPORT`. |
+| `ssl` | `?array` | `null` | Opções de contexto de stream SSL. Quando fornecido, o esquema muda para `https://`. |
+| `user` | `?string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
+| `group` | `?string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
+| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload. |
+| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo (em bytes) do corpo da requisição. |
 
 ```php
 $Server->configure(
    host: '0.0.0.0',
    port: 8082,
    workers: 4,
-   ssl: null
+   ssl: null,
+   user: null,
+   group: null,
+   requestMaxFileSize: 10 * 1024 * 1024, // 10 MB
+   requestMaxBodySize: 2 * 1024 * 1024   // 2 MB
 );
 ```
 

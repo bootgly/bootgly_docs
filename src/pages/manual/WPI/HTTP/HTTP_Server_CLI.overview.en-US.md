@@ -72,19 +72,27 @@ The server supports multiple operation modes, selected when constructing the `HT
 
 The `configure()` method accepts the following parameters:
 
-| Parameter | Type | Description |
-|---|---|---|
-| `host` | `string` | Bind address. Use `'0.0.0.0'` to listen on all interfaces. When set to `'0.0.0.0'`, domain defaults to `localhost`. |
-| `port` | `int` | Listen port. |
-| `workers` | `int` | Number of forked child processes. Each worker binds its own socket via `SO_REUSEPORT`. |
-| `ssl` | `?array` | SSL stream context options. When provided, the scheme switches to `https://`. |
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `host` | `string` | — | Bind address. Use `'0.0.0.0'` to listen on all interfaces. When set to `'0.0.0.0'`, domain defaults to `localhost`. |
+| `port` | `int` | — | Listen port. |
+| `workers` | `int` | — | Number of forked child processes. Each worker binds its own socket via `SO_REUSEPORT`. |
+| `ssl` | `?array` | `null` | SSL stream context options. When provided, the scheme switches to `https://`. |
+| `user` | `?string` | `null` | POSIX user name to demote the process to after binding. |
+| `group` | `?string` | `null` | POSIX group name to demote the process to after binding. |
+| `requestMaxFileSize` | `?int` | `null` | Maximum size (in bytes) for an uploaded file. |
+| `requestMaxBodySize` | `?int` | `null` | Maximum size (in bytes) for the request body. |
 
 ```php
 $Server->configure(
    host: '0.0.0.0',
    port: 8082,
    workers: 4,
-   ssl: null
+   ssl: null,
+   user: null,
+   group: null,
+   requestMaxFileSize: 10 * 1024 * 1024, // 10 MB
+   requestMaxBodySize: 2 * 1024 * 1024   // 2 MB
 );
 ```
 
