@@ -29,6 +29,7 @@ export default {
 
   // @ GitHub
   github: {
+    repo: 'bootgly/bootgly_docs',
     editBaseUrl: 'https://github.com/bootgly/bootgly_docs/edit/master/src/pages'
   },
 
