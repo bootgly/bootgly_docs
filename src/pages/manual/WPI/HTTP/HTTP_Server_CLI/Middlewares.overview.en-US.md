@@ -14,8 +14,8 @@ Applied to **every** request processed by the server:
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\API\Servers\SAPI;
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\CORS;
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\Compression;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 
 SAPI::$Middlewares->prepend(new CORS);       // Add to the beginning
 SAPI::$Middlewares->append(new Compression); // Add to the end
@@ -42,7 +42,7 @@ yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
 Applied to a single specific route:
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\RateLimit;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
 yield $Router->route('/login', function ($Request, $Response) {
    // ...
@@ -61,7 +61,7 @@ When both group and route-level middlewares are present, they are **merged** —
 
 ## Built-in Middlewares
 
-All built-in middlewares are in the namespace `Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares`.
+All built-in middlewares are in the namespace `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares`.
 
 ---
 
@@ -70,7 +70,7 @@ All built-in middlewares are in the namespace `Bootgly\WPI\Modules\HTTP\Server\R
 Handles Cross-Origin Resource Sharing validation and preflight (`OPTIONS`) requests.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\CORS;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 
 new CORS(
    origins: ['https://example.com'],      // Allowed origins (default: ['*'])
@@ -90,7 +90,7 @@ new CORS(
 Compresses response bodies using `gzip` or `deflate` based on the client's `Accept-Encoding` header.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\Compression;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 
 new Compression(
    level: 6,        // Compression level 1-9 (default: 6)
@@ -107,7 +107,7 @@ new Compression(
 Generates and validates ETags for HTTP caching. Returns `304 Not Modified` when the client's `If-None-Match` header matches.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\ETag;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
 
 new ETag(
    weak: true  // Use weak ETags (default: true)
@@ -123,7 +123,7 @@ new ETag(
 Enforces rate limiting by tracking request counts per IP address within time windows. Returns `429 Too Many Requests` when exceeded.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\RateLimit;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
 new RateLimit(
    limit: 60,   // Maximum requests per window (default: 60)
@@ -140,7 +140,7 @@ new RateLimit(
 Validates and enforces maximum request body size. Returns `413 Content Too Large` when exceeded.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\BodyParser;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
 
 new BodyParser(
    maxSize: 1_048_576  // Maximum body size in bytes (default: 1 MB)
@@ -156,7 +156,7 @@ new BodyParser(
 Generates or propagates unique request identifiers for distributed tracing and logging.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\RequestId;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RequestId;
 
 new RequestId(
    header: 'X-Request-Id'  // Header name to read/write (default: 'X-Request-Id')
@@ -174,7 +174,7 @@ If the request already contains the specified header, the existing value is pres
 Adds security headers to protect against common web vulnerabilities (XSS, clickjacking, MIME sniffing, etc.).
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\SecureHeaders;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\SecureHeaders;
 
 new SecureHeaders(
    contentSecurityPolicy: "default-src 'self'",  // CSP directive (default: "default-src 'self'")
@@ -192,12 +192,20 @@ new SecureHeaders(
 Resolves the real client IP from trusted proxy headers (`X-Forwarded-For`, `X-Real-IP`) when the server runs behind a reverse proxy or load balancer.
 
 ```php
-use Bootgly\WPI\Modules\HTTP\Server\Router\Middlewares\TrustedProxy;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
 
 new TrustedProxy(
    proxies: ['127.0.0.1', '::1']  // Trusted proxy IPs (default: ['127.0.0.1', '::1'])
 );
 ```
+
+When the request comes from a trusted proxy IP, the middleware:
+- Reads `X-Forwarded-For` (first IP) or `X-Real-IP` to update `$Request->address`
+- Reads `X-Forwarded-Proto` to update `$Request->scheme`
+
+Untrusted proxy IPs are ignored — the address and scheme are left unchanged.
+
+**Phase:** Pre-processing — resolves the real client IP before the handler runs.
 
 Only processes forwarded headers when the request originates from a trusted proxy IP.
 
