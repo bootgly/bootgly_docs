@@ -84,7 +84,7 @@ O comando `project` é a ferramenta central para gerenciar projetos Bootgly. Exe
 graph LR
   project["php bootgly project"]
   project --> list["list"]
-  project --> run["run"]
+  project --> start["start"]
   project --> stop["stop"]
   project --> show["show"]
   project --> reload["reload"]
@@ -133,11 +133,11 @@ Você pode inverter a ordem dos argumentos para ter as duas opções de passar s
 
 ```bash
 # Executar um projeto específico
-php bootgly project Sample_Project run
+php bootgly project Sample_Project start
 # Executar outro projeto
-php bootgly project Another_Project run
+php bootgly project Another_Project start
 # Executar em modo interativo
-php bootgly project Sample_Project run
+php bootgly project Sample_Project start
 # Parar o mesmo projeto
 php bootgly project Sample_Project stop
 ```
@@ -226,8 +226,8 @@ O ciclo de vida típico de um projeto segue este fluxo:
 ```mermaid
 graph TB
   Create["Criar diretório do projeto\ncom arquivo de boot"] --> Register["Registrar no índice\nda interface"]
-  Register --> Run["Executar projeto"]
-  Run --> Show["Monitorar status"]
+  Register --> Start["Executar projeto"]
+  Start --> Show["Monitorar status"]
   Show --> Reload["Hot-reload de alterações"]
   Reload --> Show
   Show --> Restart["Reiniciar se necessário"]

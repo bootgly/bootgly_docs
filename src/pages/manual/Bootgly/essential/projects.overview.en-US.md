@@ -84,7 +84,7 @@ The `project` command is the central tool for managing Bootgly projects. Run `ph
 graph LR
   project["php bootgly project"]
   project --> list["list"]
-  project --> run["run"]
+  project --> start["start"]
   project --> stop["stop"]
   project --> show["show"]
   project --> reload["reload"]
@@ -133,11 +133,11 @@ You can reverse the order of the arguments to have both options for passing subc
 
 ```bash
 # Run a specific project
-php bootgly project Sample_Project run
+php bootgly project Sample_Project start
 # Run another project
-php bootgly project Another_Project run
+php bootgly project Another_Project start
 # Run in interactive mode
-php bootgly project Sample_Project run -i
+php bootgly project Sample_Project start -i
 # Stop the same project
 php bootgly project Sample_Project stop
 ```
@@ -248,8 +248,8 @@ The typical lifecycle of a project follows this flow:
 ```mermaid
 graph TB
   Create["Create project directory\nwith boot file"] --> Register["Register in interface\nindex file"]
-  Register --> Run["Run project"]
-  Run --> Show["Monitor status"]
+  Register --> Start["Start project"]
+  Start --> Show["Monitor status"]
   Show --> Reload["Hot-reload changes"]
   Reload --> Show
   Show --> Restart["Restart if needed"]
