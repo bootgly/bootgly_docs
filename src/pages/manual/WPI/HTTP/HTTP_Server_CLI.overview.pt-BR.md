@@ -10,7 +10,7 @@ Um arquivo de projeto (ex: `HTTP_Server_CLI.project.php`) retorna uma instância
 
 ```php
 use Bootgly\API\Projects\Project;
-use Bootgly\WPI\Endpoints\Servers\Modes;
+use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
 
 
@@ -41,7 +41,7 @@ return new Project(
 Para iniciar o servidor, execute:
 
 ```bash
-php bootgly @project HTTP_Server_CLI
+bootgly project start HTTP_Server_CLI
 ```
 
 Modo interativo:

@@ -11,7 +11,7 @@ A project file (e.g. `HTTP_Server_CLI.project.php`) returns a `Project` instance
 ```php
 // HTTP_Server_CLI.project.php in ./project/HTTP_Server_CLI
 use Bootgly\API\Projects\Project;
-use Bootgly\WPI\Endpoints\Servers\Modes;
+use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
 
 
