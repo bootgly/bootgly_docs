@@ -294,3 +294,721 @@ return new Specification(
    }
 );
 ```
+
+## Assertions - Advanced API
+
+The Advanced API uses the `Assertion` class with a chainable fluent interface to compose expressive expectations. It operates within an `Assertions` wrapper that takes a `Generator` (using `yield`).
+
+The Advanced API offers three assertion styles:
+
+### Style 1: expect with operator
+
+Use the `Op` enum for direct comparisons:
+
+```php
+<?php
+
+use Generator;
+
+use Bootgly\ACI\Tests\Assertion\Auxiliaries\Op;
+use Bootgly\ACI\Tests\Assertion;
+use Bootgly\ACI\Tests\Assertions;
+use Bootgly\ACI\Tests\Suite\Test\Specification;
+
+return new Specification(
+   description: 'It should use assert API',
+   test: new Assertions(Case: function (): Generator
+   {
+      yield new Assertion(
+         description: 'expect (comparing values)',
+      )
+         ->expect(2, Op::Identical, 2)
+         ->assert();
+   })
+);
+```
+
+### Style 2: expect with fluent chain
+
+Use the `->to->be()` chain for readable comparisons:
+
+```php
+yield new Assertion(
+   description: 'to be [true] (implicit)',
+)
+   ->expect(true)
+   ->to->be(true)
+   ->assert();
+```
+
+You can also be explicit by passing a comparator directly:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Comparators\Identical;
+
+yield new Assertion(
+   description: 'to be [true] (explicit)',
+)
+   ->expect(actual: true)
+   ->to->be(expected: new Identical(true))
+   ->assert();
+```
+
+### Style 3: direct assert
+
+Pass values directly to the `assert()` method:
+
+```php
+yield new Assertion(
+   description: 'direct assert',
+)
+   ->assert(
+      actual: 'Hello',
+      expected: 'Hello',
+   );
+```
+
+---
+
+## Comparators
+
+The Advanced API provides 8 comparison operators through the `Op` enum:
+
+| Operator | Enum | PHP Meaning |
+|----------|------|-------------|
+| `==` | `Op::Equal` | Loose equality |
+| `!=` | `Op::NotEqual` | Loose inequality |
+| `===` | `Op::Identical` | Strict equality (default) |
+| `!==` | `Op::NotIdentical` | Strict inequality |
+| `>` | `Op::GreaterThan` | Greater than |
+| `<` | `Op::LessThan` | Less than |
+| `>=` | `Op::GreaterThanOrEqual` | Greater than or equal |
+| `<=` | `Op::LessThanOrEqual` | Less than or equal |
+
+### Comparison with Op (operator style)
+
+```php
+use Bootgly\ACI\Tests\Assertion\Auxiliaries\Op;
+
+// Equal (==)
+yield new Assertion(description: 'Equal [int]')
+   ->expect(1, Op::Equal, 1)
+   ->assert();
+
+// GreaterThan (>)
+yield new Assertion(description: 'Greater than')
+   ->expect(2, Op::GreaterThan, 1)
+   ->assert();
+
+// LessThanOrEqual (<=)
+yield new Assertion(description: 'Less than or equal')
+   ->expect(1, Op::LessThanOrEqual, 2)
+   ->assert();
+```
+
+### Comparison with fluent chain (Identical style)
+
+When you use `->to->be($expected)` without specifying a comparator, the default comparator is `Identical` (`===`):
+
+```php
+// boolean
+yield new Assertion(description: 'Equal booleans')
+   ->expect(true)
+   ->to->be(true)
+   ->assert();
+
+// string
+yield new Assertion(description: 'Equal strings')
+   ->expect('Bootgly')
+   ->to->be('Bootgly')
+   ->assert();
+
+// array
+yield new Assertion(description: 'Equal arrays')
+   ->expect([1, 2, 3])
+   ->to->be([1, 2, 3])
+   ->assert();
+
+// object
+$object1 = new stdClass();
+yield new Assertion(description: 'Equal objects')
+   ->expect($object1)
+   ->to->be($object1)
+   ->assert();
+```
+
+Comparators support these types: `bool`, `int`, `float`, `string`, `array` and `object`.
+
+---
+
+## Modifiers
+
+The Advanced API supports modifiers to compose complex expectations:
+
+### NOT (negation)
+
+Use `->not->` to negate an expectation:
+
+```php
+yield new Assertion(description: 'NOT to be [true]')
+   ->expect(true)
+   ->not->to->be(false)
+   ->assert();
+```
+
+### AND (conjunction)
+
+Use `->and->` to combine multiple expectations with AND logic:
+
+```php
+yield new Assertion(description: 'to be [true] AND [true]')
+   ->expect(true)
+   ->to->be(true)
+   ->and
+   ->to->be(true)
+   ->assert();
+```
+
+### OR (disjunction)
+
+Use `->or->` to combine expectations with OR logic (only one needs to pass):
+
+```php
+yield new Assertion(description: 'to be [false] OR [true]')
+   ->expect(true)
+   ->to->be(false)
+   ->or
+   ->to->be(true)
+   ->assert();
+```
+
+---
+
+## Behaviors (Types)
+
+Use the `Type` enum with `->to->be()` to validate a value's type:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Auxiliaries\Type;
+```
+
+### Available Types
+
+| Enum | PHP Validation |
+|------|---------------|
+| `Type::Array` | `is_array()` |
+| `Type::Boolean` | `is_bool()` |
+| `Type::Callable` | `is_callable()` |
+| `Type::Countable` | `is_countable()` |
+| `Type::Float` | `is_float()` |
+| `Type::Integer` | `is_int()` |
+| `Type::Iterable` | `is_iterable()` |
+| `Type::Null` | `is_null()` |
+| `Type::Number` | `is_numeric()` (numeric type) |
+| `Type::Numeric` | `is_numeric()` |
+| `Type::Object` | `is_object()` |
+| `Type::Resource` | `is_resource()` |
+| `Type::Scalar` | `is_scalar()` |
+| `Type::String` | `is_string()` |
+
+### Examples
+
+```php
+// array
+yield new Assertion(description: 'Validating array')
+   ->expect([])
+   ->to->be(Type::Array)
+   ->assert();
+
+// boolean
+yield new Assertion(description: 'Validating boolean')
+   ->expect(true)
+   ->to->be(Type::Boolean)
+   ->assert();
+
+// callable
+yield new Assertion(description: 'Validating callable')
+   ->expect(function() {})
+   ->to->be(Type::Callable)
+   ->assert();
+
+// integer
+yield new Assertion(description: 'Validating integer')
+   ->expect(1)
+   ->to->be(Type::Integer)
+   ->assert();
+
+// string
+yield new Assertion(description: 'Validating string')
+   ->expect('Bootgly')
+   ->to->be(Type::String)
+   ->assert();
+```
+
+## Behaviors (Values)
+
+Use the `Value` enum with `->to->be()` to validate value properties:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Auxiliaries\Value;
+```
+
+### Available Values
+
+| Enum | Description |
+|------|-------------|
+| `Value::Empty` | Empty value |
+| `Value::NaN` | Not a Number |
+| `Value::Even` | Even number |
+| `Value::Odd` | Odd number |
+| `Value::Positive` | Positive number |
+| `Value::Negative` | Negative number |
+| `Value::Infinite` | Infinite number |
+| `Value::Lowercase` | Lowercase string |
+| `Value::Uppercase` | Uppercase string |
+| `Value::Alphanumeric` | Alphanumeric string |
+| `Value::Numeric` | Numeric string |
+| `Value::Alpha` | Alphabetic string |
+| `Value::Email` | Email format |
+| `Value::URL` | URL format |
+| `Value::IP` | IP format |
+| `Value::UUID` | UUID format |
+
+### Examples
+
+```php
+yield new Assertion(description: 'Even number')
+   ->expect(4)
+   ->to->be(Value::Even)
+   ->assert();
+
+yield new Assertion(description: 'Positive number')
+   ->expect(42)
+   ->to->be(Value::Positive)
+   ->assert();
+
+yield new Assertion(description: 'Lowercase string')
+   ->expect('bootgly')
+   ->to->be(Value::Lowercase)
+   ->assert();
+```
+
+---
+
+## Delimiters (Intervals)
+
+Use `->to->delimit()` to check if a value is within a range:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Auxiliaries\Interval;
+```
+
+### Interval Types
+
+| Enum | Notation | Description |
+|------|----------|-------------|
+| `Interval::Closed` | `[min, max]` | Includes both bounds (default) |
+| `Interval::Open` | `(min, max)` | Excludes both bounds |
+| `Interval::LeftOpen` | `(min, max]` | Excludes min, includes max |
+| `Interval::RightOpen` | `[min, max)` | Includes min, excludes max |
+
+### Examples
+
+```php
+// integer
+yield new Assertion(description: 'Between integers')
+   ->expect(1)
+   ->to->delimit(1, 2)
+   ->assert();
+
+// float
+yield new Assertion(description: 'Between floats')
+   ->expect(1.5)
+   ->to->delimit(1.5, 2.5)
+   ->assert();
+
+// DateTime
+$date = new DateTime('2023-01-01');
+yield new Assertion(description: 'Between DateTime objects')
+   ->expect($date)
+   ->to->delimit($date, new DateTime('2023-01-02'))
+   ->assert();
+```
+
+---
+
+## Finders
+
+The Advanced API offers finders to check for the presence of values in different structures. Finders can be used in two ways: via direct `assert()` or via `->find()`.
+
+### Contains
+
+Checks if a value contains a given element (works for strings, arrays and objects):
+
+```php
+use Bootgly\ACI\Tests\Assertion\Expectations\Finders\Contains;
+
+// string
+yield new Assertion(description: 'Contains string')
+   ->assert(
+      actual: 'Hello, World!',
+      expected: new Contains('World'),
+   );
+
+// array
+yield new Assertion(description: 'Contains array')
+   ->assert(
+      actual: ['Hello', 'World!'],
+      expected: new Contains('World!'),
+   );
+
+// object
+$object = new stdClass();
+$object->property = 'Hello, World!';
+yield new Assertion(description: 'Contains object property')
+   ->assert(
+      actual: $object,
+      expected: new Contains('property'),
+   );
+```
+
+### StartsWith
+
+Checks if a string starts with a given prefix:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Expectations\Finders\StartsWith;
+
+yield new Assertion(description: 'Starts with string')
+   ->assert(
+      actual: 'Hello, World!',
+      expected: new StartsWith('Hello'),
+   );
+```
+
+### EndsWith
+
+Checks if a string ends with a given suffix:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Expectations\Finders\EndsWith;
+
+yield new Assertion(description: 'Ends with string')
+   ->assert(
+      actual: 'Hello, World!',
+      expected: new EndsWith('World!'),
+   );
+```
+
+### Find via In enum
+
+For more specific lookups, use the `In` enum with the `->find()` method:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Auxiliaries\In;
+```
+
+| Enum | Description |
+|------|-------------|
+| `In::ArrayKeys` | Search in array keys |
+| `In::ArrayValues` | Search in array values |
+| `In::ObjectProperties` | Search in object properties |
+| `In::ObjectMethods` | Search in object methods |
+| `In::ClassesDeclared` | Search in declared classes |
+| `In::InterfacesDeclared` | Search in declared interfaces |
+| `In::TraitsDeclared` | Search in declared traits |
+
+---
+
+## Matchers
+
+Use matchers to verify values with pattern matching.
+
+### Regex
+
+Regular expression matching:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Expectations\Matchers\Regex;
+
+yield new Assertion(description: 'Matches string')
+   ->assert(
+      actual: 'Hello, World!',
+      expected: new Regex('/World/'),
+   );
+```
+
+### VariadicDirPath
+
+Directory path matching with variadic patterns:
+
+```php
+use Bootgly\ABI\Data\__String\Path;
+use Bootgly\ACI\Tests\Assertion\Expectations\Matchers\VariadicDirPath;
+
+$Path = new Path('/etc/php/');
+$Path->match(path: '%', pattern: '8.*');
+yield new Assertion(description: 'Valid relative path')
+   ->assert(
+      actual: (string) $Path,
+      expected: new VariadicDirPath('/etc/php/8.*'),
+   );
+```
+
+---
+
+## Throwers
+
+Use throwers to verify that code throws expected exceptions, errors or throwables.
+
+### Testing exceptions
+
+Use the `->to->call()->to->throw()` pattern:
+
+```php
+$callable = function () {
+   throw new Exception('Exception');
+};
+yield new Assertion(description: 'Validating exception')
+   ->expect($callable)
+   ->to->call()
+   ->to->throw(new Exception('Exception'))
+   ->assert();
+```
+
+Available throwers:
+
+| Class | Catches |
+|-------|---------|
+| `ThrowException` | `Exception` |
+| `ThrowError` | `Error` |
+| `ThrowThrowable` | `Throwable` |
+
+---
+
+## Waiters
+
+Use waiters to test execution time and performance.
+
+### Normal usage
+
+Check if a function executes within an expected time (in microseconds):
+
+```php
+yield new Assertion(description: 'Validating wait time')
+   ->expect(function () {
+      usleep(10000);
+   })
+   ->to->call()
+   ->to->wait(10000)
+   ->assert();
+```
+
+### Closure with Subassertion
+
+For more complex time checks, use a Closure that receives the measured duration and returns sub-assertions:
+
+```php
+$callable = function () {
+   usleep(1000); // Simulates a blocking task
+};
+yield new Assertion(description: 'Validating wait time (Closure)')
+   ->expect($callable)
+   ->to->call()
+   ->to->wait(function (float $duration): Assertion {
+      $this::$description .= " [{$duration} ms]";
+
+      // implicit ->expect($duration)
+      return $this
+         ->to->delimit(1000, 20000);
+      // implicit ->assert()
+   })
+   ->assert();
+```
+
+---
+
+## Snapshots
+
+Snapshots allow you to capture and restore value state for regression testing.
+
+### Capture and Restore
+
+Capture an assertion's result and restore it later:
+
+```php
+use Bootgly\ACI\Tests\Assertion\Snapshots;
+
+// Capture
+$string1 = 'value';
+yield new Assertion(description: 'Capture strings')
+   ->assert(
+      actual: $string1,
+      expected: $string1,
+   )
+   ->capture('stringSnapshot');
+
+// Restore
+$string2 = 'value';
+yield new Assertion(description: 'Restoring strings')
+   ->restore('stringSnapshot')
+   ->assert(
+      actual: $string2,
+      expected: $string1,
+   );
+```
+
+### MemoryDefaultSnapshot (in-memory)
+
+In-memory snapshot storage (fastest, non-persistent):
+
+```php
+$array1 = [1, 2, 3];
+yield new Assertion(description: 'Capturing and restoring arrays')
+   ->assert(
+      actual: $array1,
+      expected: $array1,
+      using: new Snapshots\MemoryDefaultSnapshot
+   );
+```
+
+### FileStorageSnapshot (file-based)
+
+File-based JSON snapshot storage (persistent across runs):
+
+```php
+use Bootgly\ACI\Tests\Assertion\Expectations\Delimiters\ClosedInterval;
+
+yield new Assertion(description: 'Between integers')
+   ->assert(
+      actual: 2,
+      expected: new ClosedInterval(1, 3),
+      using: new Snapshots\FileStorageSnapshot
+   );
+```
+
+---
+
+## Lifecycle Hooks
+
+The `Assertions` class supports hooks to execute code before/after tests:
+
+```php
+use Bootgly\ACI\Tests\Assertions\Hook;
+```
+
+### Available Hooks
+
+| Hook | When |
+|------|------|
+| `Hook::BeforeAll` | Before all assertions |
+| `Hook::AfterAll` | After all assertions |
+| `Hook::BeforeEach` | Before each assertion |
+| `Hook::AfterEach` | After each assertion |
+
+### Example
+
+```php
+return new Specification(
+   description: 'It should compare equal values',
+   test: new Assertions(Case: function (): Generator
+   {
+      yield new Assertion(description: 'Equal integers')
+         ->expect(1)
+         ->to->be(1)
+         ->assert();
+   })
+      ->input('test')
+      ->on(Hook::BeforeEach, function ($Assertion, $arguments): void
+      {
+         // execute something before each assertion
+      })
+);
+```
+
+### Input (datasets)
+
+Use `->input()` to pass data to the assertions Closure:
+
+```php
+test: new Assertions(Case: function (): Generator
+{
+   yield new Assertion(description: 'Test with data')
+      ->expect(1)
+      ->to->be(1)
+      ->assert();
+})
+   ->input('value1', 'value2', 'value3')
+```
+
+---
+
+## Skip and Ignore
+
+### Skip
+
+The `skip` parameter in `Specification` allows skipping a test case (with output):
+
+```php
+return new Specification(
+   description: 'Test to skip',
+   skip: true,
+   test: function (): bool
+   {
+      return true;
+   }
+);
+```
+
+### Ignore
+
+The `ignore` parameter allows skipping a test case silently (without output):
+
+```php
+return new Specification(
+   description: 'Test to ignore',
+   ignore: true,
+   test: function (): bool
+   {
+      return true;
+   }
+);
+```
+
+### Skip in the Advanced API
+
+In the Advanced API, use the `->skip()` method on `Assertion`:
+
+```php
+yield new Assertion(description: 'Skipped assertion')
+   ->skip();
+```
+
+---
+
+## Visual Separators
+
+Use the `Separator` class to organize test output with visual separators:
+
+```php
+use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
+
+return new Specification(
+   Separator: new Separator(
+      line: 'Section Name',    // Separator line with label
+      left: 'Category',        // Left-side label
+      header: 'Main Section',  // Section header
+   ),
+   description: 'Test case',
+   test: function (): bool
+   {
+      return true;
+   }
+);
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `line` | `bool\|string\|null` | Separator line (true for simple line, string for label) |
+| `left` | `string\|null` | Label displayed on the left |
+| `header` | `string\|null` | Section header |
