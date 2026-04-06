@@ -47,13 +47,13 @@ php bootgly @project HTTP_Server_CLI
 Modo interativo:
 
 ```bash
-bootgly project run HTTP_Server_CLI -i
+bootgly project start HTTP_Server_CLI -i
 ```
 
 Modo monitor:
 
 ```bash
-bootgly project run HTTP_Server_CLI -m
+bootgly project start HTTP_Server_CLI -m
 ```
 
 ## Modos de Operação

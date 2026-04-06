@@ -42,19 +42,19 @@ return new Project(
 To start the server, run:
 
 ```bash
-bootgly project run HTTP_Server_CLI
+bootgly project start HTTP_Server_CLI
 ```
 
 Interactive mode:
 
 ```bash
-bootgly project run HTTP_Server_CLI -i
+bootgly project start HTTP_Server_CLI -i
 ```
 
 Monitor mode:
 
 ```bash
-bootgly project run HTTP_Server_CLI -m
+bootgly project start HTTP_Server_CLI -m
 ```
 
 ## Operation Modes

@@ -103,7 +103,7 @@ return new Project(
 Then run the project:
 
 ```bash
-bootgly project run HTTP_Server_CLI
+bootgly project start HTTP_Server_CLI
 ```
 
 The server will start listening on `0.0.0.0:8082`. See the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) documentation for the full configuration and architecture reference.
@@ -117,7 +117,7 @@ Ports below 1024 require special permissions on Linux. There are two approaches:
 After running `sudo php bootgly setup`, you can start the server with sudo:
 
 ```bash
-sudo bootgly project run HTTP_Server_CLI
+sudo bootgly project start HTTP_Server_CLI
 ```
 
 For production, you can combine this with **privilege dropping** — the server binds to the port as root, then drops to a non-privileged user:
@@ -166,5 +166,5 @@ For local development, Bootgly includes self-signed certificates at `@/certifica
 A ready-to-use HTTPS project example is included at `projects/HTTPS_Server_CLI/`:
 
 ```bash
-sudo bootgly project run HTTPS_Server_CLI
+sudo bootgly project start HTTPS_Server_CLI
 ```

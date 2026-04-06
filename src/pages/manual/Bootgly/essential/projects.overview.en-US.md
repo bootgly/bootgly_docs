@@ -111,22 +111,22 @@ Example output:
  #2  - Another Project (projects/Another_Project) [WPI]
 ```
 
-### `project run`
+### `project start`
 
 Boots a project by name:
 
 ```bash
 # Run a specific project
-php bootgly project run Sample_Project
+php bootgly project start Sample_Project
 
 # Run another project
-php bootgly project run Another_Project
+php bootgly project start Another_Project
 
 # Run in interactive mode
-php bootgly project run Sample_Project -i
+php bootgly project start Sample_Project -i
 
 # Run in monitor mode
-php bootgly project run Sample_Project -m
+php bootgly project start Sample_Project -m
 ```
 
 You can reverse the order of the arguments to have both options for passing subcommands to the same project or passing multiple projects to the same subcommand:
@@ -213,7 +213,7 @@ php bootgly project reload Sample_Project
 
 ### `project restart`
 
-Stops and then starts a project again. Accepts the same options as `project run`:
+Stops and then starts a project again. Accepts the same options as `project start`:
 
 ```bash
 php bootgly project restart Sample_Project
@@ -259,7 +259,7 @@ graph TB
 
 1. **Create** a directory in `projects/` with a `*.project.php` boot file;
 2. **Register** it in the interface index file (`WPI.projects.php` or `CLI.projects.php`);
-3. **Run** it with `project run`;
+3. **Run** it with `project start`;
 4. **Monitor** its status with `project show`;
 5. **Reload** code changes with `project reload` (sends SIGUSR2);
 6. **Restart** completely if needed with `project restart`;
