@@ -24,18 +24,18 @@ Likewise, a program in the Front-end may have an application programming interfa
 
 `App (Client) <-API-> (Server) DB`
 
-### Initial Interfaces
+### Bootgly Interfaces
 
-In Bootgly, the initial interfaces are:
+In Bootgly, the interfaces are:
 
-- ABI (Abstract Bootable Interface)
-- ACI (Abstract Common Interface)
-- ADI (Abstract Data Interface)
+- **ABI (Abstract Bootable Interface)** — Core bootstrap infrastructure: configs, data handling, IO, resources, and the template engine. The foundation everything else builds upon.
+- **ACI (Abstract Common Interface)** — Shared utilities for observability: benchmarking, event system, logging, and the built-in test framework.
+- **ADI (Abstract Data Interface)** — Data layer abstractions: database connections, table operations, and ORM foundations.
 
-- API (Application Programming Interface)
+- **API (Application Programming Interface)** — Application orchestration: components, endpoints, environments, projects, and server management. Forks into CLI and WPI.
 
-- CLI (Command Line Interface)
-- WPI (Web Programming Interface)
+- **CLI (Command Line Interface)** — Terminal UI components: alerts, menus, progress bars, tables, and interactive commands. Creates the **Console Platform**.
+- **WPI (Web Programming Interface)** — Web infrastructure: HTTP server, TCP server, TCP client — high-performance networking from the ground up. Creates the **Web Platform**.
 
 The interfaces follow a strict dependency direction — each layer can only depend on the layers below it:
 
@@ -50,7 +50,7 @@ graph TB
 
 On the next page, you will see how the Interface folders are structured in the base Bootgly platform and what each one represents.
 
-## Platforms
+## Bootgly Platforms
 
 In Bootgly, there are **base platforms** and **working platforms**.
 
