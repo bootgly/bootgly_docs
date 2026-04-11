@@ -32,7 +32,9 @@ return new Project(
          port: 8082,
          workers: 4
       );
-      $Server->handle(require __DIR__ . '/router/routes.php');
+      $Server->on(
+         request: require __DIR__ . '/router/routes.php'
+      );
       $Server->start();
    }
 );
@@ -79,8 +81,8 @@ O método `configure()` aceita os seguintes parâmetros:
 | `ssl` | `?array` | `null` | Opções de contexto de stream SSL. Quando fornecido, o esquema muda para `https://`. |
 | `user` | `?string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
 | `group` | `?string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
-| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload. |
-| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo (em bytes) do corpo da requisição. |
+| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload. Padrão: `500 MB`. |
+| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo (em bytes) do corpo da requisição. Padrão: `10 MB`. |
 
 ```php
 $Server->configure(
@@ -90,8 +92,163 @@ $Server->configure(
    ssl: null,
    user: null,
    group: null,
-   requestMaxFileSize: 10 * 1024 * 1024, // 10 MB
-   requestMaxBodySize: 2 * 1024 * 1024   // 2 MB
+   requestMaxFileSize: 500 * 1024 * 1024, // 500 MB (padrão)
+   requestMaxBodySize: 10 * 1024 * 1024,  // 10 MB (padrão)
+);
+```
+
+### SSL/TLS
+
+Passe um array `ssl` com opções de contexto de stream do PHP para habilitar HTTPS. O servidor muda automaticamente o esquema para `https://`:
+
+```php
+$Server->configure(
+   host: '0.0.0.0',
+   port: 443,
+   workers: 4,
+   ssl: [
+      'local_cert'  => '/caminho/para/certificado.pem',
+      'local_pk'    => '/caminho/para/chave-privada.pem',
+      'verify_peer' => false,
+   ],
+);
+```
+
+Para desenvolvimento local, o Bootgly inclui certificados auto-assinados em `@/certificates/`:
+
+```php
+ssl: [
+   'local_cert' => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
+   'local_pk'   => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
+   'verify_peer' => false,
+],
+```
+
+> [!NOTE]
+> Para produção, use certificados de uma CA confiável como o Let's Encrypt.
+
+### Rebaixamento de Privilégios
+
+Ao fazer bind em portas privilegiadas (< 1024), o processo precisa iniciar como root. Use `user` e `group` para rebaixar para uma identidade sem privilégios imediatamente após o socket ser vinculado:
+
+```php
+$Server->configure(
+   host: '0.0.0.0',
+   port: 443,
+   workers: 4,
+   ssl: [ /* ... */ ],
+   user: 'www-data',
+   group: 'www-data',
+);
+```
+
+> [!WARNING]
+> Tanto `user` quanto `group` requerem a extensão PHP `posix` e o processo deve ser iniciado como root.
+
+## Eventos
+
+O método `on()` registra callbacks para o ciclo de vida do servidor e o tratamento de requisições:
+
+```php
+$Server->on(
+   request: callable,  // Obrigatório — trata cada requisição HTTP recebida
+   started: ?callable, // Opcional — disparado após todos os workers estarem ativos
+   stopped: ?callable, // Opcional — disparado após todos os workers serem encerrados
+);
+```
+
+### `request`
+
+Chamado por cada processo **worker** para cada requisição HTTP recebida. Recebe os objetos `$Request` e `$Response`.
+
+```php
+$Server->on(
+   request: function ($Request, $Response) {
+      return $Response(body: 'Hello, World!');
+   }
+);
+```
+
+Para aplicações maiores, carregue o handler de um arquivo externo que retorna um callable:
+
+```php
+$Server->on(
+   request: require __DIR__ . '/router/routes.php'
+);
+```
+
+> [!IMPORTANT]
+> O handler `request` executa dentro de cada processo **worker**. O estado não é compartilhado entre workers — use memória compartilhada ou armazenamentos externos (Redis, DB) para comunicação entre workers.
+
+### `started`
+
+Disparado no processo **master** após todos os workers terem sido criados via fork e o socket do servidor estar vinculado. Use para exibir informações de inicialização, registrar timers ou configurar estado no lado do master.
+
+Propriedades do `$Server` disponíveis no callback:
+
+| Propriedade | Tipo | Descrição |
+|---|---|---|
+| `$Server->host` | `string` | Endereço de host vinculado. |
+| `$Server->port` | `int` | Número da porta vinculada. |
+| `$Server->socket` | `string` | Prefixo do esquema — `http://` ou `https://`. |
+
+```php
+use const Bootgly\CLI;
+
+$Server->on(
+   started: function ($Server) {
+      $Output = CLI->Terminal->Output;
+
+      $protocol = $Server->socket ?? 'http://';
+      $host     = $Server->host   ?? '0.0.0.0';
+      $port     = $Server->port   ?? 0;
+
+      $Output->render('@.;@#green:✓ HTTP Server iniciado@;@.;');
+      $Output->render('  Escutando em @#cyan:' . $protocol . $host . ':' . $port . '@;@.;');
+      $Output->render('  @#green:● Pronto para conexões@;@..;');
+   }
+);
+```
+
+### `stopped`
+
+Disparado no processo **master** após todos os workers serem encerrados. Use para limpeza ou saída final.
+
+```php
+use const Bootgly\CLI;
+
+$Server->on(
+   stopped: function ($Server) {
+      $Output = CLI->Terminal->Output;
+      $Output->render('@.;@#yellow:■ HTTP Server encerrado@;@.;');
+   }
+);
+```
+
+### Exemplo Completo
+
+```php
+use const Bootgly\CLI;
+
+$Server->on(
+   request: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
+
+   started: function ($Server) {
+      $Output = CLI->Terminal->Output;
+
+      $protocol = $Server->socket ?? 'http://';
+      $host     = $Server->host   ?? '0.0.0.0';
+      $port     = $Server->port   ?? 0;
+
+      $Output->render('@.;@#green:✓ HTTP Server iniciado@;@.;');
+      $Output->render('  Escutando em @#cyan:' . $protocol . $host . ':' . $port . '@;@.;');
+      $Output->render('  @#green:● Pronto para conexões@;@..;');
+   },
+
+   stopped: function ($Server) {
+      $Output = CLI->Terminal->Output;
+      $Output->render('@.;@#yellow:■ HTTP Server encerrado@;@.;');
+   }
 );
 ```
 

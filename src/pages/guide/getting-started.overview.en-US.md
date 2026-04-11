@@ -79,7 +79,7 @@ Create a `HTTP_Server_CLI.project.php` file inside your project folder (e.g., `p
 
 ```php
 use Bootgly\API\Projects\Project;
-use Bootgly\WPI\Endpoints\Servers\Modes;
+use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
 
 return new Project(
@@ -92,9 +92,15 @@ return new Project(
          port: 8082,
          workers: 4
       );
-      $Server->handle(function ($Request, $Response, $Router) {
-         return $Response(body: 'Hello, World!');
-      });
+      $Server->on(
+         request: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
+         started: function ($Server) {
+            // Called after the server starts listening
+         },
+         stopped: function ($Server) {
+            // Called after the server stops
+         }
+      );
       $Server->start();
    }
 );
@@ -106,7 +112,35 @@ Then run the project:
 bootgly project start HTTP_Server_CLI
 ```
 
-The server will start listening on `0.0.0.0:8082`. See the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) documentation for the full configuration and architecture reference.
+The server will start listening on `0.0.0.0:8082`.
+
+### Server Events
+
+The `on()` method registers event callbacks:
+
+| Event | Signature | Description |
+|---|---|---|
+| `request` | `fn ($Request, $Response)` | Called for each incoming HTTP request. |
+| `started` | `fn ($Server)` | Called after the server starts listening. |
+| `stopped` | `fn ($Server)` | Called after the server stops. |
+
+### Configuration Options
+
+The `configure()` method accepts the following parameters:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `host` | `string` | — | Bind address (`'0.0.0.0'` for all interfaces). |
+| `port` | `int` | — | Listen port. |
+| `workers` | `int` | — | Number of forked worker processes. |
+| `ssl` | `?array` | `null` | SSL context options. Switches scheme to `https://`. |
+| `user` | `?string` | `null` | POSIX user to drop privileges to after binding. |
+| `group` | `?string` | `null` | POSIX group to drop privileges to after binding. |
+| `requestMaxFileSize` | `?int` | `null` | Max uploaded file size (bytes). |
+| `requestMaxBodySize` | `?int` | `null` | Max request body size (bytes). |
+
+> [!TIP]
+> See the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) documentation for the full configuration, lifecycle, and architecture reference.
 
 ## Binding to privileged ports (80, 443)
 
@@ -141,7 +175,8 @@ sudo php bootgly setup --capabilities
 
 This runs `setcap cap_net_bind_service=+ep` on the PHP binary. After that, any `bootgly` server can bind to ports like 80 or 443 without sudo.
 
-> **Note:** This applies to ALL PHP scripts on the system, not just Bootgly.
+> [!WARNING]
+> This applies to ALL PHP scripts on the system, not just Bootgly.
 
 ## Enabling HTTPS (SSL/TLS)
 
@@ -161,7 +196,8 @@ $Server->configure(
 );
 ```
 
-For local development, Bootgly includes self-signed certificates at `@/certificates/`. For production, use certificates from a trusted CA (e.g., Let's Encrypt).
+> [!NOTE]
+> For local development, Bootgly includes self-signed certificates at `@/certificates/`. For production, use certificates from a trusted CA (e.g., Let's Encrypt).
 
 A ready-to-use HTTPS project example is included at `projects/HTTPS_Server_CLI/`:
 
