@@ -894,6 +894,71 @@ export default {
       }
     }
   },
+  '/WPI/HTTP/HTTP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'draft',
+      meta: {
+        description: {
+          '*': 'HTTP Client CLI — Documentation of Bootgly'
+        }
+      },
+      menu: {
+        subheader: '.WPI.HTTP',
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Client CLI'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI/Request': {
+    config: {
+      icon: 'last_page',
+      status: 'draft',
+      meta: {
+        description: {
+          '*': 'Request — Documentation of Bootgly'
+        }
+      },
+      menu: {
+        subheader: '.WPI.HTTP.HTTP_Client_CLI'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Request'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI/Response': {
+    config: {
+      icon: 'first_page',
+      status: 'draft',
+      meta: {
+        description: {
+          '*': 'Response — Documentation of Bootgly'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Response'
+      }
+    }
+  },
   '/WPI/TCP': {
     config: null,
     data: {
