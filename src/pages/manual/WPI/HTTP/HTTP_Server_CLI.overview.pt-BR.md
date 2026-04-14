@@ -43,19 +43,19 @@ return new Project(
 Para iniciar o servidor, execute:
 
 ```bash
-bootgly project start HTTP_Server_CLI
+bootgly project Demo start --HTTP_Server_CLI
 ```
 
 Modo interativo:
 
 ```bash
-bootgly project start HTTP_Server_CLI -i
+bootgly project Demo start --HTTP_Server_CLI -i
 ```
 
 Modo monitor:
 
 ```bash
-bootgly project start HTTP_Server_CLI -m
+bootgly project Demo start --HTTP_Server_CLI -m
 ```
 
 ## Modos de Operação
