@@ -32,3 +32,12 @@ Os recursos avançados de roteamento e gerenciamento de conexões do WPI proporc
 - APIs comuns
 
 Com a infraestrutura organizada do Bootgly, é possível integrar outros Server APIs (SAPIs) e manter uma API comum para servidores e clientes, utilizando tanto SAPIs internas quanto externas.
+
+## Componentes
+
+| Componente | Descrição |
+|---|---|
+| **HTTP Server CLI** | Servidor HTTP event-driven e multi-worker construído sobre TCP. |
+| **HTTP Client CLI** | Cliente HTTP puro PHP com keep-alive, pipelining, redirects, timeouts, retries e SSL/TLS. Sem dependência de cURL. |
+| **TCP Server CLI** | Servidor TCP de baixo nível com `SO_REUSEPORT` e I/O non-blocking. |
+| **TCP Client CLI** | Cliente TCP de baixo nível com integração ao event loop. |

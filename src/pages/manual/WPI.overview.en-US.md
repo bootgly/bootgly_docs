@@ -31,3 +31,12 @@ WPI's advanced routing and connection management features give developers a high
 - Common APIs
 
 With Bootgly's organized infrastructure, it's possible to integrate other Server APIs (SAPIs) and maintain a common API for servers and clients, using both internal and external SAPIs.
+
+## Components
+
+| Component | Description |
+|---|---|
+| **HTTP Server CLI** | Event-driven, multi-worker HTTP server built on TCP. |
+| **HTTP Client CLI** | Pure-PHP HTTP client with keep-alive, pipelining, redirects, timeouts, retries and SSL/TLS. No cURL dependency. |
+| **TCP Server CLI** | Low-level TCP server with `SO_REUSEPORT` and non-blocking I/O. |
+| **TCP Client CLI** | Low-level TCP client with event loop integration. |
