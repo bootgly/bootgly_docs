@@ -799,7 +799,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.WPI.HTTP',
+        subheader: '.WPI.HTTP'
       },
       subpages: {
         showcase: false
