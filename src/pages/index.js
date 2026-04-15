@@ -798,9 +798,7 @@ export default {
           '*': 'HTTP Server CLI — Documentation of Bootgly'
         }
       },
-      menu: {
-        subheader: '.WPI.HTTP.HTTP_Server_CLI'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
@@ -902,9 +900,7 @@ export default {
           '*': 'HTTP Client CLI — Documentation of Bootgly'
         }
       },
-      menu: {
-        subheader: '.WPI.HTTP.HTTP_Client_CLI'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
