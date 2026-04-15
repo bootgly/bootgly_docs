@@ -81,8 +81,8 @@ O método `configure()` aceita os seguintes parâmetros:
 | `ssl` | `?array` | `null` | Opções de contexto de stream SSL. Quando fornecido, o esquema muda para `https://`. |
 | `user` | `?string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
 | `group` | `?string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
-| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload. Padrão: `500 MB`. |
-| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo (em bytes) do corpo da requisição. Padrão: `10 MB`. |
+| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload do cliente. Padrão: `500 MB`. |
+| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo (em bytes) do corpo da requisição do cliente. Padrão: `10 MB`. |
 
 ```php
 $Server->configure(

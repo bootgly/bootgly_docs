@@ -176,7 +176,7 @@
         <h3 class="text-center q-mb-md">Quick Links</h3>
 
         <q-list bordered separator class="rounded-borders">
-          <q-item clickable to="/guide/getting-started/overview">
+          <q-item clickable to="/guide/getting-started/overview/">
             <q-item-section avatar>
               <q-icon name="flag" color="primary" />
             </q-item-section>
@@ -189,7 +189,7 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable to="/manual/Bootgly/basic/architecture/overview">
+          <q-item clickable to="/manual/Bootgly/basic/architecture/overview/">
             <q-item-section avatar>
               <q-icon name="developer_board" color="primary" />
             </q-item-section>
@@ -202,7 +202,7 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable to="/manual/CLI/overview">
+          <q-item clickable to="/manual/CLI/overview/">
             <q-item-section avatar>
               <q-icon name="terminal" color="secondary" />
             </q-item-section>
@@ -215,7 +215,7 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable to="/manual/WPI/overview">
+          <q-item clickable to="/manual/WPI/overview/">
             <q-item-section avatar>
               <q-icon name="language" color="secondary" />
             </q-item-section>
@@ -228,7 +228,7 @@
             </q-item-section>
           </q-item>
 
-          <q-item clickable to="/manual/Bootgly/essential/testing/overview">
+          <q-item clickable to="/manual/Bootgly/essential/testing/overview/">
             <q-item-section avatar>
               <q-icon name="science" color="accent" />
             </q-item-section>
