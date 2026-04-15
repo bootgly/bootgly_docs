@@ -799,8 +799,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.WPI.HTTP',
-        separator: true
+        subheader: '.WPI.HTTP.HTTP_Server_CLI'
       },
       subpages: {
         showcase: false
@@ -821,9 +820,7 @@ export default {
           '*': 'Request — Documentation of Bootgly'
         }
       },
-      menu: {
-        subheader: '.WPI.HTTP.HTTP_Server_CLI'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
