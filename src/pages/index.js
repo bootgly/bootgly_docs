@@ -785,7 +785,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'WPI HTTP'
+        title: 'HTTP'
       }
     }
   },
@@ -798,7 +798,9 @@ export default {
           '*': 'HTTP Server CLI — Documentation of Bootgly'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.WPI.HTTP',
+      },
       subpages: {
         showcase: false
       }
@@ -955,7 +957,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'WPI TCP'
+        title: 'TCP'
       }
     }
   },
