@@ -883,7 +883,9 @@ export default {
           '*': 'Middlewares — Documentation of Bootgly'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -904,8 +906,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.WPI.HTTP',
-        separator: true
+        subheader: '.WPI.HTTP.HTTP_Client_CLI'
       },
       subpages: {
         showcase: false
@@ -926,9 +927,7 @@ export default {
           '*': 'Request — Documentation of Bootgly'
         }
       },
-      menu: {
-        subheader: '.WPI.HTTP.HTTP_Client_CLI'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
