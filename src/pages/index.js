@@ -5,8 +5,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Getting started — Documentation of Bootgly',
-          'pt-BR': 'Começando — Documentacao do Bootgly'
+          'en-US': 'Set up Bootgly, choose a starter and run your first CLI or Web project.',
+          'pt-BR': 'Instale o Bootgly, escolha um starter e rode seu primeiro projeto CLI ou Web.'
         }
       },
       type: 'guide',
@@ -55,8 +55,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'What is Bootgly? — Documentation of Bootgly',
-          'pt-BR': 'O que é Bootgly? — Documentacao do Bootgly'
+          'en-US': 'Understand Bootgly and its I2P architecture for building CLI and Web apps from one foundation.',
+          'pt-BR': 'Entenda o Bootgly e sua arquitetura I2P para criar aplicações CLI e Web sobre a mesma base.'
         }
       },
       menu: {
@@ -97,8 +97,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Why Bootgly? — Documentation of Bootgly',
-          'pt-BR': 'Por quê Bootgly? — Documentacao do Bootgly'
+          'en-US': 'See why Bootgly favors shared architecture, low dependencies and performance across CLI and HTTP workloads.',
+          'pt-BR': 'Veja por que o Bootgly aposta em arquitetura compartilhada, poucas dependências e desempenho em CLI e HTTP.'
         }
       },
       menu: {},
@@ -145,8 +145,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Architecture — Documentation of Bootgly',
-          'pt-BR': 'Arquitetura — Documentacao do Bootgly'
+          'en-US': 'Explore the I2P layers that connect ABI, ACI, ADI, API, CLI and WPI into one framework.',
+          'pt-BR': 'Explore as camadas I2P que conectam ABI, ACI, ADI, API, CLI e WPI em um único framework.'
         }
       },
       menu: {
@@ -171,8 +171,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Directory Structure — Documentation of Bootgly',
-          'pt-BR': 'Estrutura de diretórios — Documentacao do Bootgly'
+          'en-US': 'Learn how Bootgly organizes framework code, project resources and boot files for predictable growth.',
+          'pt-BR': 'Aprenda como o Bootgly organiza código do framework, recursos do projeto e boot files para crescer com previsibilidade.'
         }
       },
       menu: {},
@@ -207,7 +207,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          '*': 'Autoload system — Documentation of Bootgly'
+          'en-US': 'See how Bootgly resolves classes across framework and project directories to enable extension and substitution.',
+          'pt-BR': 'Veja como o Bootgly resolve classes entre framework e projeto para permitir extensão e substituição.'
         }
       },
       menu: {
@@ -229,7 +230,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          '*': 'Bootstrap files — Documentation of Bootgly'
+          'en-US': 'Learn which boot files start CLI and Web projects and how Bootgly initializes each runtime.',
+          'pt-BR': 'Aprenda quais boot files iniciam projetos CLI e Web e como o Bootgly prepara cada runtime.'
         }
       },
       menu: {},
@@ -249,7 +251,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          '*': 'Git repositories — Documentation of Bootgly'
+          'en-US': 'Understand how Bootgly splits framework, templates and satellite repositories across its ecosystem.',
+          'pt-BR': 'Entenda como o Bootgly distribui framework, templates e repositórios satélite no seu ecossistema.'
         }
       },
       menu: {},
@@ -281,8 +284,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          'en-US': 'Debugging — Documentation of Bootgly',
-          'pt-BR': 'Debugando — Documentacao do Bootgly'
+          'en-US': 'Inspect errors, backtraces and runtime state with Bootgly debugging and diagnostics foundations.',
+          'pt-BR': 'Inspecione erros, backtraces e estado de runtime com a base de debugging e diagnóstico do Bootgly.'
         }
       },
       menu: {
@@ -307,8 +310,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Projects — Documentation of Bootgly',
-          'pt-BR': 'Projetos — Documentacao do Bootgly'
+          'en-US': 'Structure Bootgly projects with boot files, metadata and reusable resources for CLI and Web apps.',
+          'pt-BR': 'Estruture projetos Bootgly com boot files, metadados e recursos reutilizáveis para aplicações CLI e Web.'
         }
       },
       menu: {},
@@ -343,8 +346,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Testing — Documentation of Bootgly',
-          'pt-BR': 'Testando — Documentacao do Bootgly'
+          'en-US': 'Start testing Bootgly code with assertions, suites and project-friendly automation patterns.',
+          'pt-BR': 'Comece a testar código Bootgly com assertions, suítes e automação amigável para projetos.'
         }
       },
       menu: {},
@@ -369,7 +372,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Command Line Interface — Documentation of Bootgly'
+          'en-US': 'Build command-line apps with Bootgly terminal APIs, commands, scripts and interactive UI components.',
+          'pt-BR': 'Crie aplicações de linha de comando com APIs de terminal, comandos, scripts e UI interativa do Bootgly.'
         }
       },
       menu: {
@@ -396,7 +400,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'Commands — Documentation of Bootgly'
+          'en-US': 'Define and route Bootgly CLI commands with arguments, options and predictable execution flow.',
+          'pt-BR': 'Defina e roteie comandos do Bootgly CLI com argumentos, opções e um fluxo de execução previsível.'
         }
       },
       menu: {},
@@ -416,7 +421,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'Scripts — Documentation of Bootgly'
+          'en-US': 'Organize reusable CLI scripts and automate project tasks inside the Bootgly runtime.',
+          'pt-BR': 'Organize scripts reutilizáveis de CLI e automatize tarefas do projeto dentro do runtime Bootgly.'
         }
       },
       menu: {},
@@ -436,7 +442,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'Terminal — Documentation of Bootgly'
+          'en-US': 'Handle terminal input, output and reporting to build interactive command-line experiences.',
+          'pt-BR': 'Controle entrada, saída e reporting do terminal para criar experiências interativas em linha de comando.'
         }
       },
       menu: {
@@ -459,7 +466,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'CLI Terminal Input — Documentation of Bootgly'
+          'en-US': 'Read terminal input in blocking or event-driven modes for interactive Bootgly CLI tools.',
+          'pt-BR': 'Leia entrada do terminal em modos bloqueante ou orientado a eventos para ferramentas CLI do Bootgly.'
         }
       },
       menu: {},
@@ -479,7 +487,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'CLI Terminal Output — Documentation of Bootgly'
+          'en-US': 'Render colored text, cursor moves and paced output for richer terminal interfaces.',
+          'pt-BR': 'Renderize texto colorido, movimentos de cursor e saída cadenciada para interfaces de terminal mais ricas.'
         }
       },
       menu: {},
@@ -499,7 +508,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'CLI Terminal Reporting — Documentation of Bootgly'
+          'en-US': 'Track terminal events and feedback flows that support observability in Bootgly CLI sessions.',
+          'pt-BR': 'Acompanhe eventos e fluxos de feedback do terminal que apoiam a observabilidade em sessões CLI do Bootgly.'
         }
       },
       menu: {
@@ -521,7 +531,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'Keystrokes — Documentation of Bootgly'
+          'en-US': 'Capture key presses and keyboard-driven interactions for responsive terminal controls.',
+          'pt-BR': 'Capture pressionamentos de teclas e interações guiadas por teclado para controles responsivos no terminal.'
         }
       },
       menu: {
@@ -543,7 +554,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'Mousestrokes — Documentation of Bootgly'
+          'en-US': 'Interpret mouse actions in the terminal to support selection, clicks and richer CLI UX.',
+          'pt-BR': 'Interprete ações do mouse no terminal para suportar seleção, cliques e uma UX de CLI mais rica.'
         }
       },
       menu: {},
@@ -563,7 +575,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Cursor — Documentation of Bootgly'
+          'en-US': 'Move, hide and style the terminal cursor to orchestrate dynamic CLI layouts.',
+          'pt-BR': 'Mova, oculte e estilize o cursor do terminal para orquestrar layouts dinâmicos de CLI.'
         }
       },
       menu: {
@@ -585,7 +598,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Text — Documentation of Bootgly'
+          'en-US': 'Write styled text, clear lines and control output pacing in Bootgly terminal views.',
+          'pt-BR': 'Escreva texto estilizado, limpe linhas e controle o ritmo da saída nas views de terminal do Bootgly.'
         }
       },
       menu: {},
@@ -605,7 +619,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Viewport — Documentation of Bootgly'
+          'en-US': 'Work with terminal viewport space to align, refresh and compose screen-based interfaces.',
+          'pt-BR': 'Trabalhe o espaço visível do terminal para alinhar, atualizar e compor interfaces baseadas em tela.'
         }
       },
       menu: {},
@@ -625,7 +640,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Mouse — Documentation of Bootgly'
+          'en-US': 'Report mouse events from the terminal so Bootgly components can react in real time.',
+          'pt-BR': 'Reporte eventos de mouse do terminal para que componentes Bootgly reajam em tempo real.'
         }
       },
       menu: {
@@ -657,7 +673,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Alert — Documentation of Bootgly'
+          'en-US': 'Surface success, failure and attention states with styled CLI alerts.',
+          'pt-BR': 'Exiba estados de sucesso, falha e atenção com alertas de CLI estilizados.'
         }
       },
       menu: {
@@ -679,7 +696,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Fieldset — Documentation of Bootgly'
+          'en-US': 'Group prompts and form-like inputs into structured terminal sections.',
+          'pt-BR': 'Agrupe prompts e entradas em formato de formulário dentro de seções estruturadas de terminal.'
         }
       },
       menu: {},
@@ -699,7 +717,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Menu — Documentation of Bootgly'
+          'en-US': 'Build keyboard-friendly terminal menus for selection and navigation flows.',
+          'pt-BR': 'Monte menus de terminal amigáveis ao teclado para fluxos de seleção e navegação.'
         }
       },
       menu: {},
@@ -719,7 +738,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Progress — Documentation of Bootgly'
+          'en-US': 'Show live progress, ETA and rates for long-running CLI work.',
+          'pt-BR': 'Mostre progresso em tempo real, ETA e taxas para trabalhos longos em CLI.'
         }
       },
       menu: {},
@@ -739,7 +759,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Table — Documentation of Bootgly'
+          'en-US': 'Present structured datasets in readable terminal tables.',
+          'pt-BR': 'Apresente conjuntos de dados estruturados em tabelas legíveis no terminal.'
         }
       },
       menu: {},
@@ -761,7 +782,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Web Programming Interface — Documentation of Bootgly'
+          'en-US': 'Build web-facing systems with Bootgly HTTP and TCP layers, from protocols to high-level servers.',
+          'pt-BR': 'Crie sistemas voltados para a Web com as camadas HTTP e TCP do Bootgly, dos protocolos aos servidores.'
         }
       },
       menu: {
@@ -795,7 +817,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'HTTP Server CLI — Documentation of Bootgly'
+          'en-US': 'Run an event-driven HTTP server in pure PHP with workers, fibers, routing and middleware.',
+          'pt-BR': 'Execute um servidor HTTP orientado a eventos em PHP puro, com workers, fibers, roteamento e middleware.'
         }
       },
       menu: {
@@ -817,7 +840,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Request — Documentation of Bootgly'
+          'en-US': 'Inspect HTTP request data, connection details and URL parts inside Bootgly handlers.',
+          'pt-BR': 'Inspecione dados da requisição HTTP, detalhes da conexão e partes da URL dentro dos handlers do Bootgly.'
         }
       },
       menu: {},
@@ -837,7 +861,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Response — Documentation of Bootgly'
+          'en-US': 'Compose HTTP responses with headers, body formats, files and protocol-aware delivery.',
+          'pt-BR': 'Monte respostas HTTP com headers, formatos de body, arquivos e entrega consciente do protocolo.'
         }
       },
       menu: {},
@@ -857,7 +882,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Routing — Documentation of Bootgly'
+          'en-US': 'Match routes and dispatch HTTP requests through Bootgly routing.',
+          'pt-BR': 'Faça o match de rotas e despache requisições HTTP pelo roteamento do Bootgly.'
         }
       },
       menu: {},
@@ -877,7 +903,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Middlewares — Documentation of Bootgly'
+          'en-US': 'Chain CORS, rate limits, security headers and other HTTP middlewares around each request.',
+          'pt-BR': 'Encadeie CORS, rate limits, secure headers e outros middlewares HTTP ao redor de cada requisição.'
         }
       },
       menu: {
@@ -899,7 +926,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'HTTP Client CLI — Documentation of Bootgly'
+          'en-US': 'Send outbound HTTP requests from the CLI with Bootgly client, decoding and connection flow.',
+          'pt-BR': 'Envie requisições HTTP de saída pela CLI com o cliente, a decodificação e o fluxo de conexão do Bootgly.'
         }
       },
       menu: {},
@@ -919,7 +947,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Request — Documentation of Bootgly'
+          'en-US': 'Build outbound HTTP requests with methods, headers, body data and transport options.',
+          'pt-BR': 'Monte requisições HTTP de saída com métodos, headers, dados de body e opções de transporte.'
         }
       },
       menu: {},
@@ -939,7 +968,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          '*': 'Response — Documentation of Bootgly'
+          'en-US': 'Read outbound HTTP responses, status codes, headers and payloads from Bootgly CLI clients.',
+          'pt-BR': 'Leia respostas HTTP de saída, status codes, headers e payloads nos clientes CLI do Bootgly.'
         }
       },
       menu: {},
@@ -967,7 +997,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'TCP Client — Documentation of Bootgly'
+          'en-US': 'Open low-level TCP connections for custom protocols, event loops and outbound socket workflows.',
+          'pt-BR': 'Abra conexões TCP de baixo nível para protocolos customizados, event loops e fluxos de socket de saída.'
         }
       },
       menu: {
@@ -989,7 +1020,8 @@ export default {
       status: 'empty',
       meta: {
         description: {
-          '*': 'TCP Server — Documentation of Bootgly'
+          'en-US': 'Accept low-level TCP connections with non-blocking sockets and multi-worker foundations for custom servers.',
+          'pt-BR': 'Aceite conexões TCP de baixo nível com sockets não bloqueantes e base multi-worker para servidores customizados.'
         }
       },
       menu: {},
