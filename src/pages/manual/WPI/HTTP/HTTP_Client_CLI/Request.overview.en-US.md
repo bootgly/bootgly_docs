@@ -143,7 +143,7 @@ $Request->Response->body;      // 'Hello World'
 $Request->Response->headers;   // ['content-type' => 'text/plain', ...]
 ```
 
-See the [Response documentation](Response.overview.en-US.md) for full details.
+See the [Response documentation](/manual/WPI/HTTP/HTTP_Client_CLI/Response/) for full details.
 
 ## Reset
 
