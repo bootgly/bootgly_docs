@@ -154,23 +154,48 @@ return $Response
 ### Redirecionar
 
 ```php
-public function redirect (string $URI, ? int $code = null) : self;
+public function redirect (string $URI, int|null $code = null, bool $allowExternal = false) : self;
 ```
 
 **Descrição:**
 
 Redireciona o cliente para um novo URI.
 
+Por padrão, **URLs externas são bloqueadas** para prevenir vulnerabilidades de redirecionamento aberto (open redirect). Se a `$URI` começa com `http://`, `https://` ou `//`, ela é substituída por `/` a menos que `$allowExternal` seja explicitamente definido como `true`.
+
 **Parâmetros:**
 
 - `$URI` (string): O URI para o qual redirecionar.
 - `$code` (int|null, opcional): Código de status HTTP para o redirecionamento. Padrão é 307 para redirecionamentos GET ou 303 para POST.
+- `$allowExternal` (bool, padrão `false`): Se permite redirecionamentos para URLs externas. Quando `false`, URLs absolutas com scheme são rejeitadas e substituídas por `/`.
 
-**Exemplo:**
+**Exemplos:**
+
+Redirecionamento interno (URI relativa):
 
 ```php
-return $Response->redirect('https://exemplo.com/novapagina?query1=value1#anchor1', 301);
+return $Response->redirect('/dashboard');
 ```
+
+Redirecionamento interno com código de status específico:
+
+```php
+return $Response->redirect('/nova-localizacao', 301);
+```
+
+Redirecionamento externo (é necessário optar com `allowExternal: true`):
+
+```php
+return $Response->redirect('https://docs.bootgly.com/', allowExternal: true);
+```
+
+Redirecionamento externo com código de status específico:
+
+```php
+return $Response->redirect('https://docs.bootgly.com/', 302, allowExternal: true);
+```
+
+> ⚠️ **Segurança:** Nunca passe entrada do usuário diretamente para `redirect()` sem validação. Se o destino do redirecionamento pode ser controlado pelo usuário (ex: um parâmetro `?next=`), valide que a URI é relativa ou corresponde a um host permitido antes de chamar `redirect()`.
 
 ### Encerrar
 

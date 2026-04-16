@@ -154,23 +154,48 @@ return $Response
 ### Redirect to new URI
 
 ```php
-public function redirect (string $URI, ? int $code = null) : self;
+public function redirect (string $URI, int|null $code = null, bool $allowExternal = false) : self;
 ```
 
 **Description:**
 
 Redirects the client to a new URI.
 
+By default, **external URLs are blocked** to prevent open redirect vulnerabilities. If the `$URI` starts with `http://`, `https://`, or `//`, it is replaced with `/` unless `$allowExternal` is explicitly set to `true`.
+
 **Parameters:**
 
 - `$URI` (string): The URI to redirect to.
 - `$code` (int|null, optional): HTTP status code for the redirection. Defaults to 307 for GET or 303 for POST redirects.
+- `$allowExternal` (bool, default `false`): Whether to allow redirects to external URLs. When `false`, absolute URLs with a scheme are rejected and replaced with `/`.
 
-**Example:**
+**Examples:**
+
+Internal redirect (relative URI):
 
 ```php
-return $Response->redirect('https://example.com/newpage?query1=value1#anchor1', 301);
+return $Response->redirect('/dashboard');
 ```
+
+Internal redirect with specific status code:
+
+```php
+return $Response->redirect('/new-location', 301);
+```
+
+External redirect (must opt-in with `allowExternal: true`):
+
+```php
+return $Response->redirect('https://docs.bootgly.com/', allowExternal: true);
+```
+
+External redirect with specific status code:
+
+```php
+return $Response->redirect('https://docs.bootgly.com/', 302, allowExternal: true);
+```
+
+> ⚠️ **Security:** Never pass user-supplied input directly to `redirect()` without validation. If the redirect target may be controlled by the user (e.g., a `?next=` parameter), validate that the URI is relative or matches an allowed host before calling `redirect()`.
 
 ### Terminate the HTTP Response
 
