@@ -412,6 +412,54 @@ $Request->fresh; // true
 $Request->stale; // false
 ```
 
+## Configuração de Segurança
+
+### Allowlist de Host
+
+```php
+public static array $allowedHosts = [];
+```
+
+Quando não vazio, qualquer requisição cujo cabeçalho `Host` (case-insensitive, sem considerar porta) não corresponda a uma entrada da lista é rejeitada com `400 Bad Request` no momento da decodificação — antes de qualquer handler ou middleware ser executado.
+
+Isso bloqueia ataques de spoofing do cabeçalho Host, como envenenamento de cache e envenenamento de reset de senha em aplicações multi-tenant (RFC 9112 §3.2 / §7.2).
+
+Cada entrada é um **hostname em minúsculas sem porta**. O prefixo wildcard `*.example.com` corresponde a qualquer subdomínio de um único nível (`api.example.com`), mas NÃO ao domínio apex (`example.com`) e NÃO a subdomínios de múltiplos níveis (`a.b.example.com`). Uma lista vazia (o padrão) desabilita a aplicação por compatibilidade retroativa — zero overhead no hot path.
+
+#### Exemplo
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+
+// ? Permitir apenas hosts conhecidos
+Request::$allowedHosts = [
+   'example.com',
+   '*.example.com',  // corresponde a api.example.com, app.example.com, etc.
+   'localhost',
+];
+// @ Qualquer requisição com cabeçalho Host fora desta lista recebe 400 Bad Request
+```
+
+#### Suporte a IPv6
+
+Literais IPv6 entre colchetes são tratados corretamente — a porção da porta após o `]` de fechamento é removida antes da comparação:
+
+```php
+Request::$allowedHosts = [
+   '[::1]',
+   'localhost',
+];
+```
+
+#### Desabilitando a validação
+
+```php
+// : Resetar para o padrão — sem validação
+Request::$allowedHosts = [];
+```
+
+> **Nota:** Defina `$allowedHosts` antes do servidor iniciar (ex: no seu bootstrap ou arquivo de projeto). O valor é herdado por todos os processos worker.
+
 ## Sessão
 
 `Session`: O objeto de sessão, inicializado sob demanda e baseado em arquivos.

@@ -412,6 +412,54 @@ $Request->fresh; // true
 $Request->stale; // false
 ```
 
+## Security Configuration
+
+### Host Allowlist
+
+```php
+public static array $allowedHosts = [];
+```
+
+When non-empty, any request whose `Host` header (case-insensitive, port-agnostic) does not match an entry in the list is rejected with `400 Bad Request` at decode time — before any handler or middleware runs.
+
+This blocks Host-header spoofing attacks such as cache poisoning and password-reset poisoning in multi-tenant applications (RFC 9112 §3.2 / §7.2).
+
+Each entry is a **lowercase hostname without port**. Wildcard prefix `*.example.com` matches any single-label subdomain (`api.example.com`) but NOT the apex domain itself (`example.com`) and NOT multi-label subdomains (`a.b.example.com`). An empty list (the default) disables enforcement for backward compatibility — zero overhead on the hot path.
+
+#### Example
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+
+// ? Allow only known hosts
+Request::$allowedHosts = [
+   'example.com',
+   '*.example.com',  // matches api.example.com, app.example.com, etc.
+   'localhost',
+];
+// @ Any request with a Host header not in this list receives 400 Bad Request
+```
+
+#### IPv6 support
+
+IPv6 bracketed literals are handled correctly — the port portion after the closing `]` is stripped before matching:
+
+```php
+Request::$allowedHosts = [
+   '[::1]',
+   'localhost',
+];
+```
+
+#### Disabling enforcement
+
+```php
+// : Reset to default — no enforcement
+Request::$allowedHosts = [];
+```
+
+> **Note:** Set `$allowedHosts` before the server starts (e.g. in your bootstrap or project file). The value is inherited by all worker processes.
+
 ## Session
 
 `Session`: The session object, lazy-initialized and file-based.
