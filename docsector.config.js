@@ -8,7 +8,7 @@ export default {
   branding: {
     logo: 'https://docs.bootgly.com/images/logo/bootgly-logo.webp',
     name: 'Bootgly',
-    version: 'v0.13.2-beta',
+    version: 'v0.13.3-beta',
     description: 'Bootgly PHP Framework — base architecture for multi-platform, full-stack PHP development'
   },
 
