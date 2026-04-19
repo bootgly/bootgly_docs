@@ -73,6 +73,19 @@ export default {
     userAgent: '*',
     applyToAllBlocks: false
   },
+  agentSkills: {
+    enabled: true,
+    path: '/.well-known/agent-skills/index.json',
+    schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+    skills: [
+      {
+        name: 'bootgly-docs-mcp',
+        type: 'skill-md',
+        description: 'Search and fetch Bootgly documentation pages through the MCP endpoint.',
+        url: '/.well-known/agent-skills/bootgly-docs-mcp/SKILL.md'
+      }
+    ]
+  },
   // @ Languages
   languages: [
     {
