@@ -55,6 +55,16 @@ export default {
     enabled: true,
     agentFallback: true
   },
+  webBotAuth: {
+    enabled: true,
+    directoryPath: '/.well-known/http-message-signatures-directory',
+    jwksEnv: 'WEB_BOT_AUTH_JWKS',
+    privateJwkEnv: 'WEB_BOT_AUTH_PRIVATE_JWK',
+    keyIdEnv: 'WEB_BOT_AUTH_KEY_ID',
+    keyId: null,
+    signatureMaxAge: 300,
+    signatureLabel: 'sig1'
+  },
   // @ Languages
   languages: [
     {
