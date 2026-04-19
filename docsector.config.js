@@ -38,7 +38,13 @@ export default {
     serverName: 'bootgly-docs',
     toolSuffix: 'bootgly'
   },
-
+  // @ Homepage Link headers for agent discovery (optional)
+  linkHeaders: {
+    enabled: true,
+    serviceDoc: '/',
+    serviceDesc: '/mcp',
+    describedBy: '/llms.txt'
+  },
   // @ Languages
   languages: [
     {
