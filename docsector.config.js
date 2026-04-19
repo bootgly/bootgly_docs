@@ -38,6 +38,18 @@ export default {
     serverName: 'bootgly-docs',
     toolSuffix: 'bootgly'
   },
+  mcpServerCard: {
+    enabled: true,
+    path: '/.well-known/mcp/server-card.json',
+    transportEndpoint: '/mcp',
+    transportType: 'streamable-http',
+    protocolVersion: '2025-03-26',
+    capabilities: {
+      tools: { supported: true },
+      resources: { supported: false },
+      prompts: { supported: false }
+    }
+  },
   // @ Homepage Link headers for agent discovery (optional)
   linkHeaders: {
     enabled: true,
