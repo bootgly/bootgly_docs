@@ -1,6 +1,6 @@
 {
   "name": "bootgly_docs",
-  "version": "0.11.2-beta",
+  "version": "0.11.2",
   "description": "Documentation of Bootgly PHP Framework",
   "productName": "Bootgly PHP Framework Documentation",
   "author": "Rodrigo de Araujo Vieira",
@@ -12,7 +12,7 @@
     "serve": "docsector serve"
   },
   "dependencies": {
-    "@docsector/docsector-reader": "^1.7.0",
+    "@docsector/docsector-reader": "^1.7.1",
     "@quasar/cli": "^3.0.0",
     "@quasar/extras": "^1.16.12",
     "quasar": "^2.16.6",
