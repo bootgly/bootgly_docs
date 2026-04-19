@@ -50,6 +50,19 @@ export default {
       prompts: { supported: false }
     }
   },
+  webMcp: {
+    enabled: true,
+    apiMode: 'dual',
+    toolPrefix: 'bootgly.docs',
+    bridgeEndpoint: '/mcp',
+    bridgeToMcp: true,
+    tools: {
+      searchDocs: true,
+      getPage: true,
+      navigateTo: true,
+      copyCurrentPage: true
+    }
+  },
   // @ Homepage Link headers for agent discovery (optional)
   linkHeaders: {
     enabled: true,
