@@ -51,6 +51,10 @@ export default {
     path: '/.well-known/api-catalog',
     items: ['/mcp']
   },
+  markdownNegotiation: {
+    enabled: true,
+    agentFallback: true
+  },
   // @ Languages
   languages: [
     {
