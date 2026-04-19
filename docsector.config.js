@@ -33,6 +33,14 @@ export default {
     editBaseUrl: 'https://github.com/bootgly/bootgly_docs/edit/main/src/pages'
   },
 
+  // @ Home page source
+  homePage: {
+    source: 'remote-readme',
+    remoteReadmeUrl: 'https://raw.githubusercontent.com/bootgly/bootgly/refs/heads/main/README.md',
+    timeoutMs: 8000,
+    fallbackToLocal: true
+  },
+
   // @ MCP (Model Context Protocol)
   mcp: {
     serverName: 'bootgly-docs',
