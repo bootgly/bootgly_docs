@@ -1,4 +1,4 @@
-# Documentacao do Framework Bootgly
+# Documentação do Framework Bootgly
 
 > Documentação em construção.
 
