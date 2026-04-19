@@ -41,9 +41,15 @@ export default {
   // @ Homepage Link headers for agent discovery (optional)
   linkHeaders: {
     enabled: true,
+    apiCatalog: '/.well-known/api-catalog',
     serviceDoc: '/',
     serviceDesc: '/mcp',
     describedBy: '/llms.txt'
+  },
+  apiCatalog: {
+    enabled: true,
+    path: '/.well-known/api-catalog',
+    items: ['/mcp']
   },
   // @ Languages
   languages: [
