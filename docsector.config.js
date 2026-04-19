@@ -65,6 +65,14 @@ export default {
     signatureMaxAge: 300,
     signatureLabel: 'sig1'
   },
+  contentSignals: {
+    enabled: true,
+    aiTrain: 'yes',
+    search: 'yes',
+    aiInput: 'yes',
+    userAgent: '*',
+    applyToAllBlocks: false
+  },
   // @ Languages
   languages: [
     {
