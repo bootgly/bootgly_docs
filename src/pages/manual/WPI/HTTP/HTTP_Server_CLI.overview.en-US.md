@@ -79,7 +79,7 @@ The `configure()` method accepts the following parameters:
 | `host` | `string` | — | Bind address. Use `'0.0.0.0'` to listen on all interfaces. When set to `'0.0.0.0'`, domain defaults to `localhost`. |
 | `port` | `int` | — | Listen port. |
 | `workers` | `int` | — | Number of forked child processes. Each worker binds its own socket via `SO_REUSEPORT`. |
-| `ssl` | `?array` | `null` | SSL stream context options. When provided, the scheme switches to `https://`. |
+| `secure` | `?array` | `null` | Secure SSL/TLS stream context options. When provided, the scheme switches to `https://`. |
 | `user` | `?string` | `null` | POSIX user name to demote the process to after binding. |
 | `group` | `?string` | `null` | POSIX group name to demote the process to after binding. |
 | `requestMaxFileSize` | `?int` | `null` | Maximum size (in bytes) for an uploaded file from client. Defaults to `500 MB`. |
@@ -90,7 +90,7 @@ $Server->configure(
    host: '0.0.0.0',
    port: 8082,
    workers: 4,
-   ssl: null,
+   secure: null,
    user: null,
    group: null,
    requestMaxFileSize: 500 * 1024 * 1024, // 500 MB (default)
@@ -100,14 +100,14 @@ $Server->configure(
 
 ### SSL/TLS
 
-Pass an `ssl` array with PHP stream context options to enable HTTPS. The server automatically switches the scheme to `https://`:
+Pass a `secure` array with PHP stream context options to enable HTTPS. The server automatically switches the scheme to `https://`:
 
 ```php
 $Server->configure(
    host: '0.0.0.0',
    port: 443,
    workers: 4,
-   ssl: [
+   secure: [
       'local_cert'  => '/path/to/certificate.pem',
       'local_pk'    => '/path/to/private-key.pem',
       'verify_peer' => false,
@@ -118,7 +118,7 @@ $Server->configure(
 For local development, Bootgly ships self-signed certificates at `@/certificates/`:
 
 ```php
-ssl: [
+secure: [
    'local_cert' => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
    'local_pk'   => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
    'verify_peer' => false,
@@ -137,7 +137,7 @@ $Server->configure(
    host: '0.0.0.0',
    port: 443,
    workers: 4,
-   ssl: [ /* ... */ ],
+   secure: [ /* ... */ ],
    user: 'www-data',
    group: 'www-data',
 );

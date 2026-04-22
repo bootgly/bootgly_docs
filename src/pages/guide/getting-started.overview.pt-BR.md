@@ -133,7 +133,7 @@ O método `configure()` aceita os seguintes parâmetros:
 | `host` | `string` | — | Endereço de bind (`'0.0.0.0'` para todas as interfaces). |
 | `port` | `int` | — | Porta de escuta. |
 | `workers` | `int` | — | Número de processos worker via fork. |
-| `ssl` | `?array` | `null` | Opções de contexto SSL. Altera o esquema para `https://`. |
+| `secure` | `?array` | `null` | Opções de contexto seguro SSL/TLS. Altera o esquema para `https://`. |
 | `user` | `?string` | `null` | Usuário POSIX para rebaixar privilégios após o bind. |
 | `group` | `?string` | `null` | Grupo POSIX para rebaixar privilégios após o bind. |
 | `requestMaxFileSize` | `?int` | `null` | Tamanho máximo de arquivo upload (bytes). |
@@ -180,14 +180,14 @@ Isso executa `setcap cap_net_bind_service=+ep` no binário PHP. Depois disso, qu
 
 ## Habilitando HTTPS (SSL/TLS)
 
-O Bootgly suporta TLSv1.2 e TLSv1.3 nativamente. Passe o parâmetro `ssl` para `configure()`:
+O Bootgly suporta TLSv1.2 e TLSv1.3 nativamente. Passe o parâmetro `secure` para `configure()`:
 
 ```php
 $Server->configure(
    host: '0.0.0.0',
    port: 443,
    workers: 4,
-   ssl: [
+   secure: [
       'local_cert' => '/caminho/para/certificado.pem',
       'local_pk'   => '/caminho/para/chave-privada.pem',
       'verify_peer' => false,

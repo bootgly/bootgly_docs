@@ -162,7 +162,7 @@ use Bootgly\WPI\Nodes\HTTP_Client_CLI;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, ssl: []);
+$Client->configure(host: 'api.example.com', port: 443, secure: []);
 
 $Response = $Client->request(
    method: 'GET',

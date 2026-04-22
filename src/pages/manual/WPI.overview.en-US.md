@@ -1,10 +1,10 @@
 # Web Programming Interface (WPI)
 
-The `Web Programming Interface (WPI)` represents the backbone of the Web in Bootgly, offering an essential low-level implementation layer for robust and scalable web development. This fundamental component encapsulates a variety of core functionalities such as TCP and HTTP servers and clients, Web Routers, thus providing a solid foundation for web development.
+The `Web Programming Interface (WPI)` represents the backbone of the Web in Bootgly, offering an essential implementation layer for robust and scalable network and web development. This fundamental component encapsulates core building blocks such as UDP, TCP and HTTP servers and clients, plus routing-oriented HTTP capabilities, providing a solid foundation for Bootgly applications that talk over the network.
 
 ## Key Features of WPI
 
-1. `TCP/HTTP Servers and Clients`: WPI provides robust implementations of TCP/HTTP servers and clients, enabling efficient communication between web applications and their clients.
+1. `UDP/TCP/HTTP Servers and Clients`: WPI provides implementations of UDP, TCP and HTTP servers and clients, enabling efficient communication across different protocol layers and application needs.
 
 2. `Web Routing`: With advanced routing features, WPI facilitates the definition of endpoints and handling of HTTP requests, ensuring smooth and effective navigation through the application's resources.
 
@@ -38,5 +38,7 @@ With Bootgly's organized infrastructure, it's possible to integrate other Server
 |---|---|
 | **HTTP Server CLI** | Event-driven, multi-worker HTTP server built on TCP. |
 | **HTTP Client CLI** | Pure-PHP HTTP client with keep-alive, pipelining, redirects, timeouts, retries and SSL/TLS. No cURL dependency. |
+| **UDP Server CLI** | Low-level UDP server for datagram handlers, worker-based execution and terminal-driven operation. |
+| **UDP Client CLI** | Low-level UDP client with callback-driven send/receive flows and monitor-friendly execution. |
 | **TCP Server CLI** | Low-level TCP server with `SO_REUSEPORT` and non-blocking I/O. |
 | **TCP Client CLI** | Low-level TCP client with event loop integration. |

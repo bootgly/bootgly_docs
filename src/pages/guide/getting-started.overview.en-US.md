@@ -133,7 +133,7 @@ The `configure()` method accepts the following parameters:
 | `host` | `string` | — | Bind address (`'0.0.0.0'` for all interfaces). |
 | `port` | `int` | — | Listen port. |
 | `workers` | `int` | — | Number of forked worker processes. |
-| `ssl` | `?array` | `null` | SSL context options. Switches scheme to `https://`. |
+| `secure` | `?array` | `null` | Secure SSL/TLS context options. Switches scheme to `https://`. |
 | `user` | `?string` | `null` | POSIX user to drop privileges to after binding. |
 | `group` | `?string` | `null` | POSIX group to drop privileges to after binding. |
 | `requestMaxFileSize` | `?int` | `null` | Max uploaded file size (bytes). |
@@ -180,14 +180,14 @@ This runs `setcap cap_net_bind_service=+ep` on the PHP binary. After that, any `
 
 ## Enabling HTTPS (SSL/TLS)
 
-Bootgly supports TLSv1.2 and TLSv1.3 natively. Pass the `ssl` parameter to `configure()`:
+Bootgly supports TLSv1.2 and TLSv1.3 natively. Pass the `secure` parameter to `configure()`:
 
 ```php
 $Server->configure(
    host: '0.0.0.0',
    port: 443,
    workers: 4,
-   ssl: [
+   secure: [
       'local_cert' => '/path/to/certificate.pem',
       'local_pk'   => '/path/to/private-key.pem',
       'verify_peer' => false,

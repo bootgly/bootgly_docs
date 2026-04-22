@@ -46,7 +46,7 @@ use Bootgly\WPI\Nodes\HTTP_Client_CLI;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, ssl: []);
+$Client->configure(host: 'api.example.com', port: 443, secure: []);
 
 $Response = $Client->request(
    method: 'POST',
@@ -79,7 +79,7 @@ O método `configure()` aceita os seguintes parâmetros:
 | `host` | `string` | — | Host alvo para conexão. |
 | `port` | `int` | — | Porta alvo. |
 | `workers` | `int` | `0` | Número de processos worker (para benchmarking). |
-| `ssl` | `array\|null` | `null` | Opções de contexto de stream SSL. Use `[]` para TLS padrão. Auto-configura `peer_name` para verificação de hostname. |
+| `secure` | `array\|null` | `null` | Opções de contexto seguro SSL/TLS. Use `[]` para TLS padrão. Auto-configura `peer_name` para verificação de hostname. |
 
 ### Propriedades do Client
 
@@ -93,7 +93,7 @@ O método `configure()` aceita os seguintes parâmetros:
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, ssl: []);
+$Client->configure(host: 'api.example.com', port: 443, secure: []);
 
 // ? Configure
 $Client->maxRedirects = 5;
@@ -104,21 +104,21 @@ $Client->retryDelay = 0.5;
 
 ## SSL/TLS (HTTPS)
 
-Ative HTTPS passando o parâmetro `ssl` para `configure()`:
+Ative HTTPS passando o parâmetro `secure` para `configure()`:
 
 ```php
 // @ Configurações TLS padrão (verificação automática de peer_name)
-$Client->configure(host: 'secure.example.com', port: 443, ssl: []);
+$Client->configure(host: 'secure.example.com', port: 443, secure: []);
 
 // @ Opções SSL customizadas
-$Client->configure(host: 'secure.example.com', port: 443, ssl: [
+$Client->configure(host: 'secure.example.com', port: 443, secure: [
    'peer_name' => 'secure.example.com',
    'verify_peer' => true,
    'verify_peer_name' => true,
 ]);
 ```
 
-Quando `ssl` não é `null` e `peer_name` não está definido, o cliente automaticamente usa o parâmetro `host` para verificação de hostname.
+Quando `secure` não é `null` e `peer_name` não está definido, o cliente automaticamente usa o parâmetro `host` para verificação de hostname.
 
 ## Tratamento de Redirects
 

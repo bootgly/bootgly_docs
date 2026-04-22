@@ -46,7 +46,7 @@ use Bootgly\WPI\Nodes\HTTP_Client_CLI;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, ssl: []);
+$Client->configure(host: 'api.example.com', port: 443, secure: []);
 
 $Response = $Client->request(
    method: 'POST',
@@ -79,7 +79,7 @@ The `configure()` method accepts the following parameters:
 | `host` | `string` | — | Target host to connect to. |
 | `port` | `int` | — | Target port. |
 | `workers` | `int` | `0` | Number of worker processes (for benchmarking). |
-| `ssl` | `array\|null` | `null` | SSL stream context options. Set to `[]` for default TLS. Auto-sets `peer_name` for hostname verification. |
+| `secure` | `array\|null` | `null` | Secure SSL/TLS stream context options. Set to `[]` for default TLS. Auto-sets `peer_name` for hostname verification. |
 
 ### Client Properties
 
@@ -93,7 +93,7 @@ The `configure()` method accepts the following parameters:
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, ssl: []);
+$Client->configure(host: 'api.example.com', port: 443, secure: []);
 
 // ? Configure
 $Client->maxRedirects = 5;
@@ -104,21 +104,21 @@ $Client->retryDelay = 0.5;
 
 ## SSL/TLS (HTTPS)
 
-Enable HTTPS by passing the `ssl` parameter to `configure()`:
+Enable HTTPS by passing the `secure` parameter to `configure()`:
 
 ```php
 // @ Default TLS settings (auto peer_name verification)
-$Client->configure(host: 'secure.example.com', port: 443, ssl: []);
+$Client->configure(host: 'secure.example.com', port: 443, secure: []);
 
 // @ Custom SSL options
-$Client->configure(host: 'secure.example.com', port: 443, ssl: [
+$Client->configure(host: 'secure.example.com', port: 443, secure: [
    'peer_name' => 'secure.example.com',
    'verify_peer' => true,
    'verify_peer_name' => true,
 ]);
 ```
 
-When `ssl` is not `null` and `peer_name` is not set, the client automatically uses the `host` parameter for hostname verification.
+When `secure` is not `null` and `peer_name` is not set, the client automatically uses the `host` parameter for hostname verification.
 
 ## Redirect Handling
 

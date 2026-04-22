@@ -78,7 +78,7 @@ O método `configure()` aceita os seguintes parâmetros:
 | `host` | `string` | — | Endereço de bind. Use `'0.0.0.0'` para escutar em todas as interfaces. Quando definido como `'0.0.0.0'`, o domínio padrão é `localhost`. |
 | `port` | `int` | — | Porta de escuta. |
 | `workers` | `int` | — | Número de processos filhos criados via fork. Cada worker cria seu próprio socket via `SO_REUSEPORT`. |
-| `ssl` | `?array` | `null` | Opções de contexto de stream SSL. Quando fornecido, o esquema muda para `https://`. |
+| `secure` | `?array` | `null` | Opções de contexto seguro SSL/TLS. Quando fornecido, o esquema muda para `https://`. |
 | `user` | `?string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
 | `group` | `?string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
 | `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload do cliente. Padrão: `500 MB`. |
@@ -89,7 +89,7 @@ $Server->configure(
    host: '0.0.0.0',
    port: 8082,
    workers: 4,
-   ssl: null,
+   secure: null,
    user: null,
    group: null,
    requestMaxFileSize: 500 * 1024 * 1024, // 500 MB (padrão)
@@ -99,14 +99,14 @@ $Server->configure(
 
 ### SSL/TLS
 
-Passe um array `ssl` com opções de contexto de stream do PHP para habilitar HTTPS. O servidor muda automaticamente o esquema para `https://`:
+Passe um array `secure` com opções de contexto de stream do PHP para habilitar HTTPS. O servidor muda automaticamente o esquema para `https://`:
 
 ```php
 $Server->configure(
    host: '0.0.0.0',
    port: 443,
    workers: 4,
-   ssl: [
+   secure: [
       'local_cert'  => '/caminho/para/certificado.pem',
       'local_pk'    => '/caminho/para/chave-privada.pem',
       'verify_peer' => false,
@@ -117,7 +117,7 @@ $Server->configure(
 Para desenvolvimento local, o Bootgly inclui certificados auto-assinados em `@/certificates/`:
 
 ```php
-ssl: [
+secure: [
    'local_cert' => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
    'local_pk'   => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
    'verify_peer' => false,
@@ -136,7 +136,7 @@ $Server->configure(
    host: '0.0.0.0',
    port: 443,
    workers: 4,
-   ssl: [ /* ... */ ],
+   secure: [ /* ... */ ],
    user: 'www-data',
    group: 'www-data',
 );
