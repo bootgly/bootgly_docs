@@ -7,15 +7,15 @@ O UDP Client CLI é o cliente de baixo nível do Bootgly para envio e recebiment
 | Recurso | Descrição |
 |---|---|
 | **Cliente de datagramas UDP** | Envie payloads brutos para um servidor UDP e reaja às respostas com callbacks. |
-| **Fluxo baseado em callbacks** | Registre hooks para startup do worker, connect, disconnect, reads e writes. |
+| **Fluxo baseado em callbacks** | Registre hooks para inicialização do worker, conexão, desconexão, leituras e escritas. |
 | **Múltiplos modos** | Execute em `MODE_DEFAULT`, `MODE_MONITOR` ou `MODE_TEST`. |
-| **Opção multi-worker** | Inicie workers quando quiser concorrência ou tráfego de estilo benchmark. |
+| **Opção multi-worker** | Inicie workers quando precisar de concôrrência ou de tráfego no estilo benchmark. |
 | **Configuração simples** | Aponte o cliente para host e porta de destino com `configure()`. |
 | **PHP puro** | Sem cURL nem dependência extra de cliente de rede. |
 
 ## Quick Start
 
-Um fluxo típico do cliente UDP é: configurar o destino, conectar, definir o payload de saída e agendar o comportamento de escrita/leitura com callbacks.
+Um fluxo típico do cliente UDP é: configurar o destino, conectar, definir o payload de saída e controlar o comportamento de leitura/escrita com callbacks.
 
 ```php
 use Bootgly\WPI\Interfaces\UDP_Client_CLI;
@@ -29,7 +29,7 @@ $Client->configure(
 );
 
 $Client->on(
-   connect: function ($Socket, $Connection) {
+   clientConnect: function ($Socket, $Connection) {
       $Connection->output = 'Hello, Bootgly UDP!';
 
       UDP_Client_CLI::$Event->add(
@@ -77,11 +77,11 @@ Registre callbacks de runtime com `on()`:
 
 ```php
 $Client->on(
-   instance: ?Closure,
-   connect: ?Closure,
-   disconnect: ?Closure,
-   read: ?Closure,
-   write: ?Closure,
+   workerStarted: ?Closure,
+   clientConnect: ?Closure,
+   clientDisconnect: ?Closure,
+   datagramRead: ?Closure,
+   datagramWrite: ?Closure,
 );
 ```
 
@@ -89,22 +89,22 @@ $Client->on(
 
 | Hook | Assinatura | Finalidade |
 |---|---|---|
-| `instance` | `Closure($Client)` | Executa quando um worker é iniciado. |
-| `connect` | `Closure($Socket, $Connection)` | Executa quando o socket do cliente está pronto para uso. |
-| `disconnect` | `Closure($Connection)` | Executa quando o socket do cliente é fechado. |
-| `read` | `Closure($Socket, $Connection)` | Executa após a leitura de um datagrama. |
-| `write` | `Closure($Socket, $Connection)` | Executa após ou ao redor do fluxo de escrita, dependendo da sua lógica de callback. |
+| `workerStarted` | `Closure($Client)` | Executa quando um worker é iniciado. |
+| `clientConnect` | `Closure($Socket, $Connection)` | Executa quando o socket do cliente está pronto para uso. |
+| `clientDisconnect` | `Closure($Connection)` | Executa quando o socket do cliente é fechado. |
+| `datagramRead` | `Closure($Socket, $Connection)` | Executa após a leitura de um datagrama. |
+| `datagramWrite` | `Closure($Socket, $Connection)` | Executa após ou ao redor do fluxo de escrita, dependendo da sua lógica de callback. |
 
 Essa é a principal superfície pública de integração de `UDP_Client_CLI`.
 
 ## Fluxo Típico
 
-Um modelo mental consumer-facing para o cliente é:
+Um modelo mental voltado ao consumidor para o cliente é:
 
 1. criar o cliente
 2. chamar `configure()`
 3. registrar hooks com `on()`
-4. chamar `connect()` diretamente ou deixar seu hook `instance` fazer isso
+4. chamar `connect()` diretamente ou deixar seu hook `workerStarted` fazer isso
 5. definir `$Connection->output`
 6. chamar `start()` e deixar os callbacks conduzirem o tráfego
 
@@ -136,13 +136,13 @@ return new Project(
       );
 
       $Client->on(
-         instance: function ($Client) {
+         workerStarted: function ($Client) {
             $Socket = $Client->connect();
             if ($Socket) {
                $Client::$Event->loop();
             }
          },
-         connect: function ($Socket, $Connection) {
+         clientConnect: function ($Socket, $Connection) {
             Timer::add(
                interval: 10,
                handler: function ($Connection) {
@@ -155,16 +155,16 @@ return new Project(
             $Connection->output = 'Hello, Bootgly UDP!';
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          },
-         disconnect: function ($Connection) use ($Client) {
+         clientDisconnect: function ($Connection) use ($Client) {
             $Client->log(
                'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
                . ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\;'
             );
          },
-         write: function ($Socket, $Connection) {
+         datagramWrite: function ($Socket, $Connection) {
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          },
-         read: null,
+         datagramRead: null,
       );
 
       $Client->start();
@@ -174,7 +174,7 @@ return new Project(
 
 ## Comandos e operação
 
-A superfície interativa de comandos do cliente é propositalmente pequena.
+A interface de comandos interativos do cliente é intencionalmente simples.
 
 - `quit`
 - `clear`
@@ -182,7 +182,7 @@ A superfície interativa de comandos do cliente é propositalmente pequena.
 
 Para muitos casos de uso, os controles mais importantes são seus callbacks, a quantidade de workers e o modo selecionado.
 
-## Notas para Consumers
+## Notas para Consumidores
 
 - A API pública de `configure()` não expõe TLS ou DTLS.
 - UDP é orientado a datagramas e não garante entrega, ordenação nem retransmissão.
@@ -214,13 +214,13 @@ return new Project(
       );
 
       $Client->on(
-         instance: function ($Client) {
+         workerStarted: function ($Client) {
             $Socket = $Client->connect();
             if ($Socket) {
                $Client::$Event->loop();
             }
          },
-         connect: function ($Socket, $Connection) {
+         clientConnect: function ($Socket, $Connection) {
             Timer::add(
                interval: 10,
                handler: function ($Connection) {
@@ -233,16 +233,16 @@ return new Project(
             $Connection->output = 'Hello, Bootgly UDP!';
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          },
-         disconnect: function ($Connection) use ($Client) {
+         clientDisconnect: function ($Connection) use ($Client) {
             $Client->log(
                'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
                . ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\;'
             );
          },
-         write: function ($Socket, $Connection) {
+         datagramWrite: function ($Socket, $Connection) {
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          },
-         read: null,
+         datagramRead: null,
       );
 
       $Client->start();

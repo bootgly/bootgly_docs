@@ -93,8 +93,8 @@ return new Project(
          workers: 4
       );
       $Server->on(
-         request: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
-         started: function ($Server) {
+         requestReceived: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
+         serverStarted: function ($Server) {
             // Called after the server starts listening
          },
          stopped: function ($Server) {
@@ -120,9 +120,9 @@ The `on()` method registers event callbacks:
 
 | Event | Signature | Description |
 |---|---|---|
-| `request` | `fn ($Request, $Response)` | Called for each incoming HTTP request. |
-| `started` | `fn ($Server)` | Called after the server starts listening. |
-| `stopped` | `fn ($Server)` | Called after the server stops. |
+| `requestReceived` | `fn ($Request, $Response)` | Called for each incoming HTTP request. |
+| serverStarted | `fn ($Server)` | Called after the server starts listening. |
+| serverStopped | `fn ($Server)` | Called after the server stops. |
 
 ### Configuration Options
 

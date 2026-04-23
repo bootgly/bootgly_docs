@@ -93,8 +93,8 @@ return new Project(
          workers: 4
       );
       $Server->on(
-         request: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
-         started: function ($Server) {
+         requestReceived: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
+         serverStarted: function ($Server) {
             // Chamado após o servidor começar a escutar
          },
          stopped: function ($Server) {
@@ -120,9 +120,9 @@ O método `on()` registra callbacks de eventos:
 
 | Evento | Assinatura | Descrição |
 |---|---|---|
-| `request` | `fn ($Request, $Response)` | Chamado para cada requisição HTTP recebida. |
-| `started` | `fn ($Server)` | Chamado após o servidor começar a escutar. |
-| `stopped` | `fn ($Server)` | Chamado após o servidor parar. |
+| `requestReceived` | `fn ($Request, $Response)` | Chamado para cada requisição HTTP recebida. |
+| serverStarted | `fn ($Server)` | Chamado após o servidor começar a escutar. |
+| serverStopped | `fn ($Server)` | Chamado após o servidor parar. |
 
 ### Opções de Configuração
 

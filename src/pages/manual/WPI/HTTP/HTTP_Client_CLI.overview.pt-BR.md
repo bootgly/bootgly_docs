@@ -204,7 +204,7 @@ $Client = new HTTP_Client_CLI;
 $Client->configure(host: '127.0.0.1', port: 8080);
 
 $Client->on(
-   response: function (Request $Request, Response $Response): void {
+   responseReceive: function (Request $Request, Response $Response): void {
       echo "Status: {$Response->code}\n";
       echo "Body: {$Response->body}\n";
    }
@@ -218,10 +218,10 @@ $Client->start();
 
 | Hook | Assinatura | Descrição |
 |---|---|---|
-| `instance` | `Closure` | Chamado na inicialização da instância do worker. |
-| `connect` | `Closure($Socket, $Connection)` | Chamado quando uma conexão é estabelecida. |
-| `disconnect` | `Closure` | Chamado quando uma conexão é fechada. |
-| `response` | `Closure(Request, Response)` | Chamado quando uma resposta HTTP completa é recebida. |
+| `workerStarted` | `Closure` | Chamado na inicialização da instância do worker. |
+| `clientConnect` | `Closure($Socket, $Connection)` | Chamado quando uma conexão é estabelecida. |
+| `clientDisconnect` | `Closure` | Chamado quando uma conexão é fechada. |
+| `responseReceive` | `Closure(Request, Response)` | Chamado quando uma resposta HTTP completa é recebida. |
 
 ## Suporte a 100-Continue
 

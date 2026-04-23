@@ -72,7 +72,7 @@ $Server->configure(
 );
 
 $Server->on(
-   package: static fn (string $input): string => $input
+   datagramReceive: static fn (string $input): string => $input
 );
 
 $Server->start();
@@ -129,7 +129,7 @@ Register the receive handler with `on()`:
 
 ```php
 $Server->on(
-   package: function (string $input): string {
+   datagramReceive: function (string $input): string {
       return strtoupper($input);
    }
 );

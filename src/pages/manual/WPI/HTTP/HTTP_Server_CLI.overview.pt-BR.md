@@ -33,7 +33,7 @@ return new Project(
          workers: 4
       );
       $Server->on(
-         request: require __DIR__ . '/router/routes.php'
+         requestReceived: require __DIR__ . '/router/routes.php'
       );
       $Server->start();
    }
@@ -151,19 +151,19 @@ O método `on()` registra callbacks para o ciclo de vida do servidor e o tratame
 
 ```php
 $Server->on(
-   request: callable,  // Obrigatório — trata cada requisição HTTP recebida
-   started: ?callable, // Opcional — disparado após todos os workers estarem ativos
+   requestReceived: callable,  // Obrigatório — trata cada requisição HTTP recebida
+   serverStarted: ?callable, // Opcional — disparado após todos os workers estarem ativos
    stopped: ?callable, // Opcional — disparado após todos os workers serem encerrados
 );
 ```
 
-### `request`
+### `requestReceived`
 
 Chamado por cada processo **worker** para cada requisição HTTP recebida. Recebe os objetos `$Request` e `$Response`.
 
 ```php
 $Server->on(
-   request: function ($Request, $Response) {
+   requestReceived: function ($Request, $Response) {
       return $Response(body: 'Hello, World!');
    }
 );
@@ -173,14 +173,14 @@ Para aplicações maiores, carregue o handler de um arquivo externo que retorna 
 
 ```php
 $Server->on(
-   request: require __DIR__ . '/router/routes.php'
+   requestReceived: require __DIR__ . '/router/routes.php'
 );
 ```
 
 > [!IMPORTANT]
-> O handler `request` executa dentro de cada processo **worker**. O estado não é compartilhado entre workers — use memória compartilhada ou armazenamentos externos (Redis, DB) para comunicação entre workers.
+> O handler `requestReceived` executa dentro de cada processo **worker**. O estado não é compartilhado entre workers — use memória compartilhada ou armazenamentos externos (Redis, DB) para comunicação entre workers.
 
-### `started`
+### serverStarted
 
 Disparado no processo **master** após todos os workers terem sido criados via fork e o socket do servidor estar vinculado. Use para exibir informações de inicialização, registrar timers ou configurar estado no lado do master.
 
@@ -196,7 +196,7 @@ Propriedades do `$Server` disponíveis no callback:
 use const Bootgly\CLI;
 
 $Server->on(
-   started: function ($Server) {
+   serverStarted: function ($Server) {
       $Output = CLI->Terminal->Output;
 
       $protocol = $Server->socket ?? 'http://';
@@ -210,7 +210,7 @@ $Server->on(
 );
 ```
 
-### `stopped`
+### serverStopped
 
 Disparado no processo **master** após todos os workers serem encerrados. Use para limpeza ou saída final.
 
@@ -231,9 +231,9 @@ $Server->on(
 use const Bootgly\CLI;
 
 $Server->on(
-   request: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
+   requestReceived: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
 
-   started: function ($Server) {
+   serverStarted: function ($Server) {
       $Output = CLI->Terminal->Output;
 
       $protocol = $Server->socket ?? 'http://';

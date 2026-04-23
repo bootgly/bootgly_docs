@@ -204,7 +204,7 @@ $Client = new HTTP_Client_CLI;
 $Client->configure(host: '127.0.0.1', port: 8080);
 
 $Client->on(
-   response: function (Request $Request, Response $Response): void {
+   responseReceive: function (Request $Request, Response $Response): void {
       echo "Status: {$Response->code}\n";
       echo "Body: {$Response->body}\n";
    }
@@ -218,10 +218,10 @@ $Client->start();
 
 | Hook | Signature | Description |
 |---|---|---|
-| `instance` | `Closure` | Called on worker instance initialization. |
-| `connect` | `Closure($Socket, $Connection)` | Called when a connection is established. |
-| `disconnect` | `Closure` | Called when a connection is closed. |
-| `response` | `Closure(Request, Response)` | Called when a complete HTTP response is received. |
+| `workerStarted` | `Closure` | Called on worker instance initialization. |
+| `clientConnect` | `Closure($Socket, $Connection)` | Called when a connection is established. |
+| `clientDisconnect` | `Closure` | Called when a connection is closed. |
+| `responseReceive` | `Closure(Request, Response)` | Called when a complete HTTP response is received. |
 
 ## 100-Continue Support
 

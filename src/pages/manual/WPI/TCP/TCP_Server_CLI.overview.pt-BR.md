@@ -49,7 +49,7 @@ return new Project(
 		);
 
 		$Server->on(
-			package: (require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php')['on.Package.Receive']
+			dataReceive: require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
 		);
 
 		$Server->start();
@@ -59,7 +59,7 @@ return new Project(
 
 ## Quick Start
 
-O menor contrato público é simples: configure um socket de escuta, registre um callback de pacote e retorne uma string para ser escrita de volta ao peer.
+O menor contrato público é simples: configure um socket de escuta, registre um callback de dados e retorne uma string para ser escrita de volta ao peer.
 
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
@@ -75,7 +75,7 @@ $Server->configure(
 );
 
 $Server->on(
-	package: static function (string $input): string {
+	dataReceive: static function (string $input): string {
 		return "PONG\r\n";
 	}
 );
@@ -86,18 +86,16 @@ $Server->start();
 O projeto demo retorna uma resposta HTTP crua diretamente da camada TCP:
 
 ```php
-return [
-	'on.Package.Receive' => static function ($input) {
-		return <<<HTTP_RAW
-		HTTP/1.1 200 OK
-		Server: Bootgly
-		Content-Type: text/plain; charset=UTF-8
-		Content-Length: 13
+return static function ($input) {
+	return <<<HTTP_RAW
+	HTTP/1.1 200 OK
+	Server: Bootgly
+	Content-Type: text/plain; charset=UTF-8
+	Content-Length: 13
 
-		Hello, World!
-		HTTP_RAW;
-	}
-];
+	Hello, World!
+	HTTP_RAW;
+};
 ```
 
 > [!IMPORTANT]
@@ -166,19 +164,19 @@ $Server->configure(
 
 O Bootgly resolve o UID/GID de destino, inicializa grupos suplementares e então aplica `setgid()` / `setuid()` nessa ordem.
 
-## Handler de Pacotes
+## Handler de Dados
 
 `TCP_Server_CLI` expõe um único método público para registrar o handler:
 
 ```php
 $Server->on(
-	package: function (string $input): string {
+	dataReceive: function (string $input): string {
 		return strtoupper($input);
 	}
 );
 ```
 
-O callback é armazenado como handler de pacote do lado do servidor e executado pelos workers quando há dados prontos para processamento.
+O callback é armazenado como handler de dados do lado do servidor e executado pelos workers quando há dados prontos para processamento.
 
 ### Contrato de entrada e saída
 
@@ -294,7 +292,7 @@ return new Project(
 		);
 
 		$Server->on(
-			package: (require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php')['on.Package.Receive']
+			dataReceive: require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
 		);
 
 		$Server->start();

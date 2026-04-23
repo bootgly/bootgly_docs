@@ -49,7 +49,7 @@ return new Project(
 		);
 
 		$Server->on(
-			package: (require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php')['on.Package.Receive']
+			dataReceive: require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
 		);
 
 		$Server->start();
@@ -59,7 +59,7 @@ return new Project(
 
 ## Quick Start
 
-The smallest public contract is simple: configure a listening socket, register a package callback, then return a string to be written back to the peer.
+The smallest public contract is simple: configure a listening socket, register a data callback, then return a string to be written back to the peer.
 
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
@@ -75,7 +75,7 @@ $Server->configure(
 );
 
 $Server->on(
-	package: static function (string $input): string {
+	dataReceive: static function (string $input): string {
 		return "PONG\r\n";
 	}
 );
@@ -86,18 +86,16 @@ $Server->start();
 The demo project returns a raw HTTP response from the TCP layer directly:
 
 ```php
-return [
-	'on.Package.Receive' => static function ($input) {
-		return <<<HTTP_RAW
-		HTTP/1.1 200 OK
-		Server: Bootgly
-		Content-Type: text/plain; charset=UTF-8
-		Content-Length: 13
+return static function ($input) {
+	return <<<HTTP_RAW
+	HTTP/1.1 200 OK
+	Server: Bootgly
+	Content-Type: text/plain; charset=UTF-8
+	Content-Length: 13
 
-		Hello, World!
-		HTTP_RAW;
-	}
-];
+	Hello, World!
+	HTTP_RAW;
+};
 ```
 
 > [!IMPORTANT]
@@ -166,19 +164,19 @@ $Server->configure(
 
 Bootgly resolves the target UID/GID, initializes supplementary groups and then applies `setgid()` / `setuid()` in that order.
 
-## Package Handler
+## Data Handler
 
 `TCP_Server_CLI` exposes one public handler registration method:
 
 ```php
 $Server->on(
-	package: function (string $input): string {
+	dataReceive: function (string $input): string {
 		return strtoupper($input);
 	}
 );
 ```
 
-The callback is stored as the server-side package handler and is executed by worker processes when incoming data is ready to be handled.
+The callback is stored as the server-side data handler and is executed by worker processes when incoming data is ready to be handled.
 
 ### Input and Output Contract
 
@@ -294,7 +292,7 @@ return new Project(
 		);
 
 		$Server->on(
-			package: (require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php')['on.Package.Receive']
+			dataReceive: require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
 		);
 
 		$Server->start();

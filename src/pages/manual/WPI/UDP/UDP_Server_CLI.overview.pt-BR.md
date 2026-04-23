@@ -1,6 +1,6 @@
 # UDP Server CLI
 
-O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos baseados em datagramas. Ele permite fazer bind em uma porta UDP, registrar um handler raw de datagramas e executar o servidor em modos multi-worker adequados para desenvolvimento, monitoramento e execução em segundo plano.
+O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos baseados em datagramas. Ele permite vincular a uma porta UDP, registrar um handler bruto de datagramas e executar o servidor em modos multi-worker adequados para desenvolvimento, monitoramento e execução em segundo plano.
 
 ## Recursos
 
@@ -11,7 +11,7 @@ O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos basead
 | **Modos operacionais** | Execute em `Daemon`, `Interactive`, `Monitor` ou `Test`. |
 | **API simples de handler** | Registre um único callback `on(Closure $package)` para os datagramas recebidos. |
 | **Controles via CLI** | Use comandos como `status`, `stop`, `pause`, `resume` e `reload` em fluxos interativos. |
-| **Suporte a rebaixamento de privilégios** | Opcionalmente troque para um usuário e grupo POSIX de menor privilégio após o bind. |
+| **Suporte à redução de privilégios** | Opcionalmente mude para um usuário e grupo POSIX de menor privilégio após vincular o socket. |
 | **PHP puro** | Não depende de servidor externo. |
 
 ## Bootstrapping com Projects
@@ -56,7 +56,7 @@ return new Project(
 
 ## Quick Start
 
-O fluxo público mínimo é direto: configure o socket, registre um handler e inicie o servidor.
+O fluxo mínimo de uso é simples: configure o socket, registre um handler e inicie o servidor.
 
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
@@ -72,13 +72,13 @@ $Server->configure(
 );
 
 $Server->on(
-   package: static fn (string $input): string => $input
+   datagramReceive: static fn (string $input): string => $input
 );
 
 $Server->start();
 ```
 
-Esse exemplo se comporta como um echo server: qualquer payload enviado pelo cliente é retornado sem alteração.
+Este exemplo funciona como um echo server: qualquer payload enviado pelo cliente é retornado sem alteração.
 
 > [!IMPORTANT]
 > Mantenha o handler focado no payload do datagrama que você deseja aceitar e responder. A API pública é propositalmente simples: recebe bytes, retorna bytes.
@@ -116,9 +116,9 @@ $Server->configure(
 );
 ```
 
-### Rebaixamento de privilégios
+### Redução de privilégios
 
-Se você fizer bind em uma porta privilegiada, pode iniciar como root e depois trocar para uma conta POSIX de menor privilégio após a criação do socket.
+Se você vincular a uma porta privilegiada, pode iniciar como root e depois mudar para uma conta POSIX de menor privilégio após a criação do socket.
 
 > [!WARNING]
 > `user` e `group` dependem de funções POSIX e só são úteis em sistemas compatíveis quando o processo inicia com privilégios suficientes.
@@ -129,13 +129,13 @@ Registre o handler de recebimento com `on()`:
 
 ```php
 $Server->on(
-   package: function (string $input): string {
+   datagramReceive: function (string $input): string {
       return strtoupper($input);
    }
 );
 ```
 
-Esse é o principal ponto de extensão consumer-facing de `UDP_Server_CLI`.
+Este é o principal ponto de extensão para consumidores de `UDP_Server_CLI`.
 
 ### Contrato do handler
 
@@ -163,11 +163,11 @@ Ao rodar de forma interativa, o servidor expõe comandos como:
 
 Eles são úteis para operar e observar o servidor em execução pelo terminal.
 
-## Notas para Consumers
+## Notas para Consumidores
 
 - A API pública de `configure()` **não** expõe opções de SSL/TLS ou DTLS.
 - UDP é orientado a mensagens e não oferece as mesmas garantias de entrega do TCP.
-- `pause()` e `resume()` estão disponíveis quando você precisa interromper e retomar temporariamente o fluxo de escuta.
+- `pause()` e `resume()` estão disponíveis quando você precisa interromper e retomar temporariamente a escuta.
 
 ## Exemplo Completo
 

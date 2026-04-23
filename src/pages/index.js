@@ -365,321 +365,6 @@ export default {
     }
   },
 
-  // WPI
-  '/WPI': {
-    config: {
-      icon: 'language',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Build web-facing systems with Bootgly HTTP, TCP and UDP layers, from datagrams and sockets to high-level servers.',
-          'pt-BR': 'Crie sistemas voltados para a Web com as camadas HTTP, TCP e UDP do Bootgly, de datagramas e sockets a servidores de alto nível.'
-        }
-      },
-      menu: {
-        header: {
-          icon: 'language',
-          label: 'Bootgly WPI'
-        },
-        separator: true
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Web Programming Interface'
-      }
-    }
-  },
-  '/WPI/HTTP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'HTTP'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI': {
-    config: {
-      icon: 'dns',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Run an event-driven HTTP server in pure PHP with workers, fibers, routing and middleware.',
-          'pt-BR': 'Execute um servidor HTTP orientado a eventos em PHP puro, com workers, fibers, roteamento e middleware.'
-        }
-      },
-      menu: {
-        subheader: '.WPI.HTTP'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'HTTP Server CLI'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Request': {
-    config: {
-      icon: 'last_page',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Inspect HTTP request data, connection details and URL parts inside Bootgly handlers.',
-          'pt-BR': 'Inspecione dados da requisição HTTP, detalhes da conexão e partes da URL dentro dos handlers do Bootgly.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Request'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Response': {
-    config: {
-      icon: 'first_page',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Compose HTTP responses with headers, body formats, files and protocol-aware delivery.',
-          'pt-BR': 'Monte respostas HTTP com headers, formatos de body, arquivos e entrega consciente do protocolo.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Response'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Router': {
-    config: {
-      icon: 'alt_route',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Match routes and dispatch HTTP requests through Bootgly routing.',
-          'pt-BR': 'Faça o match de rotas e despache requisições HTTP pelo roteamento do Bootgly.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Routing'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
-    config: {
-      icon: 'settings_input_component',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Chain CORS, rate limits, security headers and other HTTP middlewares around each request.',
-          'pt-BR': 'Encadeie CORS, rate limits, secure headers e outros middlewares HTTP ao redor de cada requisição.'
-        }
-      },
-      menu: {
-        separator: true
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Middlewares'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Client_CLI': {
-    config: {
-      icon: 'desktop_windows',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Send outbound HTTP requests from the CLI with Bootgly client, decoding and connection flow.',
-          'pt-BR': 'Envie requisições HTTP de saída pela CLI com o cliente, a decodificação e o fluxo de conexão do Bootgly.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'HTTP Client CLI'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Client_CLI/Request': {
-    config: {
-      icon: 'last_page',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Build outbound HTTP requests with methods, headers, body data and transport options.',
-          'pt-BR': 'Monte requisições HTTP de saída com métodos, headers, dados de body e opções de transporte.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Request'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Client_CLI/Response': {
-    config: {
-      icon: 'first_page',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Read outbound HTTP responses, status codes, headers and payloads from Bootgly CLI clients.',
-          'pt-BR': 'Leia respostas HTTP de saída, status codes, headers e payloads nos clientes CLI do Bootgly.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Response'
-      }
-    }
-  },
-  '/WPI/TCP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'TCP'
-      }
-    }
-  },
-  '/WPI/TCP/TCP_Client_CLI': {
-    config: {
-      icon: 'desktop_windows',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
-          'pt-BR': 'Abra conexões TCP de saída de baixo nível para protocolos customizados, event loops e fluxos raw de socket.'
-        }
-      },
-      menu: {
-        separator: true,
-        subheader: '.WPI.TCP'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'TCP Client CLI'
-      }
-    }
-  },
-  '/WPI/TCP/TCP_Server_CLI': {
-    config: {
-      icon: 'dns',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Accept low-level TCP connections with non-blocking sockets, multi-worker runtime and raw package handlers.',
-          'pt-BR': 'Aceite conexões TCP de baixo nível com sockets não bloqueantes, runtime multi-worker e handlers raw de pacotes.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'TCP Server CLI'
-      }
-    }
-  },
-  '/WPI/UDP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'UDP'
-      }
-    }
-  },
-  '/WPI/UDP/UDP_Server_CLI': {
-    config: {
-      icon: 'dns',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Accept UDP datagrams with a raw handler API, worker-based execution and terminal-friendly control.',
-          'pt-BR': 'Aceite datagramas UDP com uma API raw de handler, execução com workers e controle amigável pelo terminal.'
-        }
-      },
-      menu: {
-        separator: true,
-        subheader: '.WPI.UDP'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'UDP Server CLI'
-      }
-    }
-  },
-  '/WPI/UDP/UDP_Client_CLI': {
-    config: {
-      icon: 'desktop_windows',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Send UDP datagrams with callback-based client flows, configurable workers and monitor-friendly execution.',
-          'pt-BR': 'Envie datagramas UDP com fluxos de cliente baseados em callbacks, workers configuráveis e execução amigável para monitoramento.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'UDP Client CLI'
-      }
-    }
-  },
-
   // CLI
   '/CLI': {
     config: {
@@ -1086,6 +771,321 @@ export default {
     data: {
       '*': {
         title: 'Table'
+      }
+    }
+  },
+
+  // WPI
+  '/WPI': {
+    config: {
+      icon: 'language',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build web-facing systems with Bootgly HTTP, TCP and UDP layers, from datagrams and sockets to high-level servers.',
+          'pt-BR': 'Crie sistemas voltados para a Web com as camadas HTTP, TCP e UDP do Bootgly, de datagramas e sockets a servidores de alto nível.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'language',
+          label: 'Bootgly WPI'
+        },
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Web Programming Interface'
+      }
+    }
+  },
+  '/WPI/HTTP': {
+    config: null,
+    data: {
+      '*': {
+        title: 'HTTP'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI': {
+    config: {
+      icon: 'dns',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Run an event-driven HTTP server in pure PHP with workers, fibers, routing and middleware.',
+          'pt-BR': 'Execute um servidor HTTP orientado a eventos em PHP puro, com workers, fibers, roteamento e middleware.'
+        }
+      },
+      menu: {
+        subheader: '.WPI.HTTP'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Server CLI'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Request': {
+    config: {
+      icon: 'last_page',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Inspect HTTP request data, connection details and URL parts inside Bootgly handlers.',
+          'pt-BR': 'Inspecione dados da requisição HTTP, detalhes da conexão e partes da URL dentro dos handlers do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Request'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Response': {
+    config: {
+      icon: 'first_page',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Compose HTTP responses with headers, body formats, files and protocol-aware delivery.',
+          'pt-BR': 'Monte respostas HTTP com headers, formatos de body, arquivos e entrega consciente do protocolo.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Response'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Router': {
+    config: {
+      icon: 'alt_route',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Match routes and dispatch HTTP requests through Bootgly routing.',
+          'pt-BR': 'Faça o match de rotas e despache requisições HTTP pelo roteamento do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Routing'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
+    config: {
+      icon: 'settings_input_component',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Chain CORS, rate limits, security headers and other HTTP middlewares around each request.',
+          'pt-BR': 'Encadeie CORS, rate limits, secure headers e outros middlewares HTTP ao redor de cada requisição.'
+        }
+      },
+      menu: {
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Middlewares'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Send outbound HTTP requests from the CLI with Bootgly client, decoding and connection flow.',
+          'pt-BR': 'Envie requisições HTTP de saída pela CLI com o cliente, a decodificação e o fluxo de conexão do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Client CLI'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI/Request': {
+    config: {
+      icon: 'last_page',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build outbound HTTP requests with methods, headers, body data and transport options.',
+          'pt-BR': 'Monte requisições HTTP de saída com métodos, headers, dados de body e opções de transporte.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Request'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI/Response': {
+    config: {
+      icon: 'first_page',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Read outbound HTTP responses, status codes, headers and payloads from Bootgly CLI clients.',
+          'pt-BR': 'Leia respostas HTTP de saída, status codes, headers e payloads nos clientes CLI do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Response'
+      }
+    }
+  },
+  '/WPI/TCP': {
+    config: null,
+    data: {
+      '*': {
+        title: 'TCP'
+      }
+    }
+  },
+  '/WPI/TCP/TCP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
+          'pt-BR': 'Abra conexões TCP de saída de baixo nível para protocolos customizados, event loops e fluxos raw de socket.'
+        }
+      },
+      menu: {
+        separator: true,
+        subheader: '.WPI.TCP'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Client CLI'
+      }
+    }
+  },
+  '/WPI/TCP/TCP_Server_CLI': {
+    config: {
+      icon: 'dns',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Accept low-level TCP connections with non-blocking sockets, multi-worker runtime and raw package handlers.',
+          'pt-BR': 'Aceite conexões TCP de baixo nível com sockets não bloqueantes, runtime multi-worker e handlers raw de pacotes.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Server CLI'
+      }
+    }
+  },
+  '/WPI/UDP': {
+    config: null,
+    data: {
+      '*': {
+        title: 'UDP'
+      }
+    }
+  },
+  '/WPI/UDP/UDP_Server_CLI': {
+    config: {
+      icon: 'dns',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Accept UDP datagrams with a raw handler API, worker-based execution and terminal-friendly control.',
+          'pt-BR': 'Aceite datagramas UDP com uma API raw de handler, execução com workers e controle amigável pelo terminal.'
+        }
+      },
+      menu: {
+        separator: true,
+        subheader: '.WPI.UDP'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'UDP Server CLI'
+      }
+    }
+  },
+  '/WPI/UDP/UDP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Send UDP datagrams with callback-based client flows, configurable workers and monitor-friendly execution.',
+          'pt-BR': 'Envie datagramas UDP com fluxos de cliente baseados em callbacks, workers configuráveis e execução amigável para monitoramento.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'UDP Client CLI'
       }
     }
   },

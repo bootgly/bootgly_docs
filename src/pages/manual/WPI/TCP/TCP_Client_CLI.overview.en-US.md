@@ -30,7 +30,7 @@ $Client->configure(
 );
 
 $Client->on(
-	connect: function ($Socket, $Connection) {
+	clientConnect: function ($Socket, $Connection) {
 		$Connection->output = "PING\r\n";
 
 		TCP_Client_CLI::$Event->add(
@@ -39,11 +39,11 @@ $Client->on(
 			$Connection
 		);
 	},
-	read: function ($Socket, $Connection, $Package) {
+	dataRead: function ($Socket, $Connection, $Package) {
 		echo $Package->input;
 		$Connection->close();
 	},
-	write: function ($Socket, $Connection, $Package) {
+	dataWrite: function ($Socket, $Connection, $Package) {
 		TCP_Client_CLI::$Event->add(
 			$Socket,
 			TCP_Client_CLI::$Event::EVENT_READ,
@@ -59,14 +59,14 @@ The demo project uses monitor mode and a simple HTTP request payload to drive th
 
 ```php
 $Client->on(
-	instance: function ($Client) {
+	workerStarted: function ($Client) {
 		$Socket = $Client->connect();
 
 		if ($Socket) {
 			$Client::$Event->loop();
 		}
 	},
-	connect: function ($Socket, $Connection) {
+	clientConnect: function ($Socket, $Connection) {
 		$Connection->output = "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n";
 
 		TCP_Client_CLI::$Event->add($Socket, TCP_Client_CLI::$Event::EVENT_WRITE, $Connection);
@@ -80,7 +80,7 @@ The constructor accepts one of the client mode constants.
 
 | Mode | Description |
 |---|---|
-| `TCP_Client_CLI::MODE_DEFAULT` | Single-process mode. Calls `connect()` and enters the event loop automatically when no custom `instance` hook is provided. |
+| `TCP_Client_CLI::MODE_DEFAULT` | Single-process mode. Calls `connect()` and enters the event loop automatically when no custom `workerStarted` hook is provided. |
 | `TCP_Client_CLI::MODE_MONITOR` | Runs workers and keeps the master process alive in monitor mode until you stop it. |
 | `TCP_Client_CLI::MODE_TEST` | Lightweight mode that skips process/commands infrastructure for tests or internal harnesses. |
 
@@ -114,11 +114,11 @@ Register runtime callbacks through `on()`:
 
 ```php
 $Client->on(
-	instance: ?Closure,
-	connect: ?Closure,
-	disconnect: ?Closure,
-	read: ?Closure,
-	write: ?Closure,
+	workerStarted: ?Closure,
+	clientConnect: ?Closure,
+	clientDisconnect: ?Closure,
+	dataRead: ?Closure,
+	dataWrite: ?Closure,
 );
 ```
 
@@ -126,11 +126,11 @@ $Client->on(
 
 | Hook | Signature | Purpose |
 |---|---|---|
-| `instance` | `Closure(TCP_Client_CLI $Client)` | Runs when a worker instance boots, useful for custom connect logic. |
-| `connect` | `Closure($Socket, $Connection)` | Runs when the connection object is established and ready. |
-| `disconnect` | `Closure($Connection)` | Runs after the socket is closed and removed from the client pool. |
-| `write` | `Closure($Socket, $Connection, $Package)` | Runs after data is written, typically to switch the socket into read mode. |
-| `read` | `Closure($Socket, $Connection, $Package)` | Runs after inbound data is read. |
+| `workerStarted` | `Closure(TCP_Client_CLI $Client)` | Runs when a worker instance boots, useful for custom connect logic. |
+| `clientConnect` | `Closure($Socket, $Connection)` | Runs when the connection object is established and ready. |
+| `clientDisconnect` | `Closure($Connection)` | Runs after the socket is closed and removed from the client pool. |
+| `dataWrite` | `Closure($Socket, $Connection, $Package)` | Runs after data is written, typically to switch the socket into read mode. |
+| `dataRead` | `Closure($Socket, $Connection, $Package)` | Runs after inbound data is read. |
 
 > [!IMPORTANT]
 > `Connection` inherits the package state, so the same object carries socket metadata plus `output`, `input`, counters and expiration metadata.
@@ -217,14 +217,14 @@ return new Project(
 		);
 
 		$Client->on(
-			instance: function ($Client) {
+			workerStarted: function ($Client) {
 				$Socket = $Client->connect();
 
 				if ($Socket) {
 					$Client::$Event->loop();
 				}
 			},
-			connect: function ($Socket, $Connection) {
+			clientConnect: function ($Socket, $Connection) {
 				Timer::add(
 					interval: 10,
 					handler: function ($Connection) {
@@ -238,16 +238,16 @@ return new Project(
 
 				TCP_Client_CLI::$Event->add($Socket, TCP_Client_CLI::$Event::EVENT_WRITE, $Connection);
 			},
-			disconnect: function ($Connection) use ($Client) {
+			clientDisconnect: function ($Connection) use ($Client) {
 				$Client->log(
 					'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
 					. ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\\;'
 				);
 			},
-			write: function ($Socket, $Connection, $Package) {
+			dataWrite: function ($Socket, $Connection, $Package) {
 				TCP_Client_CLI::$Event->add($Socket, TCP_Client_CLI::$Event::EVENT_READ, $Connection);
 			},
-			read: null,
+			dataRead: null,
 		);
 
 		$Client->start();
