@@ -82,8 +82,12 @@ The `configure()` method accepts the following parameters:
 | `secure` | `?array` | `null` | Secure SSL/TLS stream context options. When provided, the scheme switches to `https://`. |
 | `user` | `?string` | `null` | POSIX user name to demote the process to after binding. |
 | `group` | `?string` | `null` | POSIX group name to demote the process to after binding. |
-| `requestMaxFileSize` | `?int` | `null` | Maximum size (in bytes) for an uploaded file from client. Defaults to `500 MB`. |
-| `requestMaxBodySize` | `?int` | `null` | Maximum size (in bytes) for the request body from client. Defaults to `10 MB`. |
+| `requestMaxFileSize` | `?int` | `null` | Maximum size in bytes per uploaded file part in multipart requests. Defaults to `500 MB`. |
+| `requestMaxBodySize` | `?int` | `null` | Maximum total body size in bytes for non-multipart requests. Defaults to `10 MB`. |
+| `requestMaxMultipartFieldSize` | `?int` | `null` | Maximum size in bytes of a single multipart text field value. Defaults to `1 MB`. |
+| `requestMaxMultipartHeaderSize` | `?int` | `null` | Maximum size in bytes of the header block of a single multipart part. Defaults to `8 KB`. |
+| `requestMaxMultipartFields` | `?int` | `null` | Maximum number of text fields accepted in a multipart request. Defaults to `1024`. |
+| `requestMaxMultipartFiles` | `?int` | `null` | Maximum number of file parts accepted in a multipart request. Defaults to `1024`. |
 
 ```php
 $Server->configure(
@@ -93,8 +97,12 @@ $Server->configure(
    secure: null,
    user: null,
    group: null,
-   requestMaxFileSize: 500 * 1024 * 1024, // 500 MB (default)
-   requestMaxBodySize: 10 * 1024 * 1024,  // 10 MB (default)
+   requestMaxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
+   requestMaxBodySize: 10 * 1024 * 1024,          // 10 MB (default) — max total non-multipart body
+   requestMaxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (default) — max size per text field value
+   requestMaxMultipartHeaderSize: 8 * 1024,        // 8 KB (default) — max size of a single part's headers
+   requestMaxMultipartFields: 1024,                // 1024 (default) — max number of text fields
+   requestMaxMultipartFiles: 1024,                 // 1024 (default) — max number of file parts
 );
 ```
 

@@ -81,8 +81,12 @@ O método `configure()` aceita os seguintes parâmetros:
 | `secure` | `?array` | `null` | Opções de contexto seguro SSL/TLS. Quando fornecido, o esquema muda para `https://`. |
 | `user` | `?string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
 | `group` | `?string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
-| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo (em bytes) de um arquivo enviado via upload do cliente. Padrão: `500 MB`. |
-| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo (em bytes) do corpo da requisição do cliente. Padrão: `10 MB`. |
+| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo em bytes por parte de arquivo em requisições multipart. Padrão: `500 MB`. |
+| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo total do corpo em bytes para requisições não-multipart. Padrão: `10 MB`. |
+| `requestMaxMultipartFieldSize` | `?int` | `null` | Tamanho máximo em bytes do valor de um campo de texto multipart. Padrão: `1 MB`. |
+| `requestMaxMultipartHeaderSize` | `?int` | `null` | Tamanho máximo em bytes do bloco de headers de uma parte multipart. Padrão: `8 KB`. |
+| `requestMaxMultipartFields` | `?int` | `null` | Número máximo de campos de texto aceitos em uma requisição multipart. Padrão: `1024`. |
+| `requestMaxMultipartFiles` | `?int` | `null` | Número máximo de partes de arquivo aceitas em uma requisição multipart. Padrão: `1024`. |
 
 ```php
 $Server->configure(
@@ -92,8 +96,12 @@ $Server->configure(
    secure: null,
    user: null,
    group: null,
-   requestMaxFileSize: 500 * 1024 * 1024, // 500 MB (padrão)
-   requestMaxBodySize: 10 * 1024 * 1024,  // 10 MB (padrão)
+   requestMaxFileSize: 500 * 1024 * 1024,         // 500 MB (padrão) — tamanho máximo por parte de arquivo
+   requestMaxBodySize: 10 * 1024 * 1024,          // 10 MB (padrão) — corpo total não-multipart
+   requestMaxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (padrão) — tamanho máximo por campo de texto
+   requestMaxMultipartHeaderSize: 8 * 1024,        // 8 KB (padrão) — tamanho máximo dos headers de uma parte
+   requestMaxMultipartFields: 1024,                // 1024 (padrão) — número máximo de campos de texto
+   requestMaxMultipartFiles: 1024,                 // 1024 (padrão) — número máximo de partes de arquivo
 );
 ```
 
