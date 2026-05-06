@@ -107,7 +107,7 @@ Use `allow()` to define exactly which local `.env` keys a scope accepts:
 ```php
 use Bootgly\API\Environment\Configs;
 
-$Configs = (new Configs(__DIR__ . '/configs/'))
+$Configs = new Configs(__DIR__ . '/configs/')
    ->allow('database', [
       'DB_HOST',
       'DB_PORT',
@@ -121,7 +121,7 @@ When an allowlist exists, typos and cross-scope keys fail closed. For example, `
 Use `lock()` for keys that must not come from local `.env` files:
 
 ```php
-$Configs = (new Configs(__DIR__ . '/configs/'))
+$Configs = new Configs(__DIR__ . '/configs/')
    ->allow('database', [
       'DB_HOST',
       'DB_PORT',

@@ -107,7 +107,7 @@ Use `allow()` para definir exatamente quais chaves `.env` locais um escopo aceit
 ```php
 use Bootgly\API\Environment\Configs;
 
-$Configs = (new Configs(__DIR__ . '/configs/'))
+$Configs = new Configs(__DIR__ . '/configs/')
    ->allow('database', [
       'DB_HOST',
       'DB_PORT',
@@ -121,7 +121,7 @@ Quando uma allowlist existe, typos e chaves de outro escopo falham em modo fail-
 Use `lock()` para chaves que não devem vir de arquivos `.env` locais:
 
 ```php
-$Configs = (new Configs(__DIR__ . '/configs/'))
+$Configs = new Configs(__DIR__ . '/configs/')
    ->allow('database', [
       'DB_HOST',
       'DB_PORT',
