@@ -44,7 +44,7 @@ return new Config(scope: 'database')
          ->Port->bind(key: 'DB_PORT', default: 3306, cast: Types::Integer)
          ->Database->bind(key: 'DB_NAME', default: 'bootgly')
          ->Username->bind(key: 'DB_USER', default: 'root')
-         ->Password->need(key: 'DB_PASS')
+         ->Password->bind(key: 'DB_PASS', required: true)
          ->Charset->bind(key: '', default: 'utf8mb4');
 ```
 
@@ -137,10 +137,13 @@ Uma chave travada ainda pode ser fornecida pelo ambiente real do processo, entã
 
 ## Valores obrigatórios
 
-Use `need()` ou `bind(required: true)` para segredos e valores que precisam existir:
+Use `bind(required: true)` para segredos e valores que precisam existir:
 
 ```php
-$Config->JWT->Secret->need('JWT_SECRET');
+$Config->JWT->Secret->bind(
+   key: 'JWT_SECRET',
+   required: true
+);
 
 $Config->Database->Password->bind(
    key: 'DB_PASS',
@@ -199,7 +202,7 @@ O Bootgly endurece o carregamento de configs com várias regras:
 - `allow()` pode restringir chaves `.env` locais por escopo.
 - `lock()` pode reservar chaves sensíveis para o ambiente real de runtime.
 - Dot-notation não é suportada por `Configs::get()`.
-- Segredos obrigatórios podem falhar em modo fail-closed com `need()` ou `bind(required: true)`.
+- Segredos obrigatórios podem falhar em modo fail-closed com `bind(required: true)`.
 - Arquivos `.config.php` são código PHP confiável e devem ser revisados como código-fonte.
 
 > [!WARNING]

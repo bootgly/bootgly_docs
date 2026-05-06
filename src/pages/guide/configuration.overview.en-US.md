@@ -44,7 +44,7 @@ return new Config(scope: 'database')
          ->Port->bind(key: 'DB_PORT', default: 3306, cast: Types::Integer)
          ->Database->bind(key: 'DB_NAME', default: 'bootgly')
          ->Username->bind(key: 'DB_USER', default: 'root')
-         ->Password->need(key: 'DB_PASS')
+         ->Password->bind(key: 'DB_PASS', required: true)
          ->Charset->bind(key: '', default: 'utf8mb4');
 ```
 
@@ -137,10 +137,13 @@ A locked key may still be provided by the real process environment, so deploymen
 
 ## Required values
 
-Use `need()` or `bind(required: true)` for secrets and values that must exist:
+Use `bind(required: true)` for secrets and values that must exist:
 
 ```php
-$Config->JWT->Secret->need('JWT_SECRET');
+$Config->JWT->Secret->bind(
+   key: 'JWT_SECRET',
+   required: true
+);
 
 $Config->Database->Password->bind(
    key: 'DB_PASS',
@@ -199,7 +202,7 @@ Bootgly hardens config loading with several rules:
 - `allow()` can restrict local `.env` keys per scope.
 - `lock()` can reserve sensitive keys for the real runtime environment.
 - Dot-notation is not supported by `Configs::get()`.
-- Required secrets can fail closed with `need()` or `bind(required: true)`.
+- Required secrets can fail closed with `bind(required: true)`.
 - `.config.php` files are trusted PHP code and must be reviewed like source code.
 
 > [!WARNING]
