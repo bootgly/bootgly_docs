@@ -23,5 +23,31 @@ export default {
         title: 'Começando'
       }
     }
+  },
+
+  '/configuration': {
+    config: {
+      icon: 'tune',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Load scoped configs, local .env values, strict casts, required secrets and project overlays in Bootgly.',
+          'pt-BR': 'Carregue configs por escopo, .env local, casts estritos, segredos obrigatórios e overlays de projeto no Bootgly.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Configuration'
+      },
+      'pt-BR': {
+        title: 'Configuração'
+      }
+    }
   }
 }
