@@ -98,6 +98,43 @@ BOOTGLY_ENV=production php bootgly
 
 Com esse ambiente, o Bootgly também tenta carregar `.env.production` depois de `.env`.
 
+## Política de `.env` local
+
+Nomes de variáveis em `.env` local devem seguir `[A-Z_][A-Z0-9_]*`. Se um arquivo `.env` ou `.env.<BOOTGLY_ENV>` carregado contiver uma chave inválida, o carregamento do escopo falha e o escopo não é registrado.
+
+Use `allow()` para definir exatamente quais chaves `.env` locais um escopo aceita:
+
+```php
+use Bootgly\API\Environment\Configs;
+
+$Configs = (new Configs(__DIR__ . '/configs/'))
+   ->allow('database', [
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER'
+   ]);
+```
+
+Quando uma allowlist existe, typos e chaves de outro escopo falham em modo fail-closed. Por exemplo, `DB_HOSTT` ou `SERVER_HOST` no escopo `database` falhariam o carregamento, a menos que fossem explicitamente permitidas.
+
+Use `lock()` para chaves que não devem vir de arquivos `.env` locais:
+
+```php
+$Configs = (new Configs(__DIR__ . '/configs/'))
+   ->allow('database', [
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER'
+   ])
+   ->lock('database', [
+      'DB_PASS'
+   ]);
+```
+
+Uma chave travada ainda pode ser fornecida pelo ambiente real do processo, então plataformas de deploy podem injetar segredos em runtime. Os arquivos `.env` locais apenas não podem fornecer essa chave.
+
 ## Valores obrigatórios
 
 Use `need()` ou `bind(required: true)` para segredos e valores que precisam existir:
@@ -158,6 +195,9 @@ O Bootgly endurece o carregamento de configs com várias regras:
 - Nomes de escopo e ambiente devem seguir `[A-Za-z0-9_-]+`.
 - Paths são contidos com `File::guard()` antes de ler `.env` ou executar `.config.php`.
 - Valores `.env` são locais à instância do loader e não são exportados com `putenv()`.
+- Chaves `.env` devem seguir `[A-Z_][A-Z0-9_]*`.
+- `allow()` pode restringir chaves `.env` locais por escopo.
+- `lock()` pode reservar chaves sensíveis para o ambiente real de runtime.
 - Dot-notation não é suportada por `Configs::get()`.
 - Segredos obrigatórios podem falhar em modo fail-closed com `need()` ou `bind(required: true)`.
 - Arquivos `.config.php` são código PHP confiável e devem ser revisados como código-fonte.

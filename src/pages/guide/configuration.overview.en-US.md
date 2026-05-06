@@ -98,6 +98,43 @@ BOOTGLY_ENV=production php bootgly
 
 With that environment, Bootgly also tries `.env.production` after `.env`.
 
+## Local `.env` policy
+
+Local `.env` variable names must match `[A-Z_][A-Z0-9_]*`. If a loaded `.env` or `.env.<BOOTGLY_ENV>` file contains an invalid key, the scope load fails and the scope is not registered.
+
+Use `allow()` to define exactly which local `.env` keys a scope accepts:
+
+```php
+use Bootgly\API\Environment\Configs;
+
+$Configs = (new Configs(__DIR__ . '/configs/'))
+   ->allow('database', [
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER'
+   ]);
+```
+
+When an allowlist exists, typos and cross-scope keys fail closed. For example, `DB_HOSTT` or `SERVER_HOST` in the `database` scope would fail the load unless explicitly allowed.
+
+Use `lock()` for keys that must not come from local `.env` files:
+
+```php
+$Configs = (new Configs(__DIR__ . '/configs/'))
+   ->allow('database', [
+      'DB_HOST',
+      'DB_PORT',
+      'DB_NAME',
+      'DB_USER'
+   ])
+   ->lock('database', [
+      'DB_PASS'
+   ]);
+```
+
+A locked key may still be provided by the real process environment, so deployment platforms can inject secrets at runtime. The local `.env` files simply cannot provide that key.
+
 ## Required values
 
 Use `need()` or `bind(required: true)` for secrets and values that must exist:
@@ -158,6 +195,9 @@ Bootgly hardens config loading with several rules:
 - Scope and environment names must match `[A-Za-z0-9_-]+`.
 - Paths are contained with `File::guard()` before `.env` reads or `.config.php` execution.
 - `.env` values are local to the loader instance and are not exported with `putenv()`.
+- `.env` keys must match `[A-Z_][A-Z0-9_]*`.
+- `allow()` can restrict local `.env` keys per scope.
+- `lock()` can reserve sensitive keys for the real runtime environment.
 - Dot-notation is not supported by `Configs::get()`.
 - Required secrets can fail closed with `need()` or `bind(required: true)`.
 - `.config.php` files are trusted PHP code and must be reviewed like source code.
