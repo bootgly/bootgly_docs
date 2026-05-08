@@ -1,4 +1,5 @@
 export default {
+  // About
   '/about': {
     config: null,
     data: {
@@ -36,6 +37,8 @@ export default {
       }
     }
   },
+
+  // Basic
   '/skip-ignore': {
     config: {
       icon: 'visibility_off',
@@ -60,7 +63,32 @@ export default {
       }
     }
   },
+  '/running-tests': {
+    config: {
+      icon: 'play_arrow',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Run Bootgly suites and individual tests via the bootgly CLI, with coverage and static analysis.',
+          'pt-BR': 'Execute suítes Bootgly e testes individuais pela CLI bootgly, com cobertura e análise estática.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Running Tests'
+      },
+      'pt-BR': {
+        title: 'Executando Testes'
+      }
+    }
+  },
 
+  // API
   '/API': {
     config: null,
     data: {
@@ -294,6 +322,7 @@ export default {
     }
   },
 
+  // Digging Deeper
   '/advanced': {
     config: null,
     data: {
