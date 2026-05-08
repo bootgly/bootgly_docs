@@ -338,9 +338,8 @@ export default {
           'pt-BR': 'Comece a testar código Bootgly com assertions, suítes e automação amigável para projetos.'
         }
       },
-      menu: {},
-      subpages: {
-        showcase: false
+      link: {
+        to: '/testing/about/testing/overview/'
       }
     },
     data: {
