@@ -36,6 +36,30 @@ export default {
       }
     }
   },
+  '/skip-ignore': {
+    config: {
+      icon: 'visibility_off',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Control skipped and ignored cases in Specifications and Advanced API assertions.',
+          'pt-BR': 'Controle casos pulados e ignorados em Specifications e asserções da API Avançada.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Skip and Ignore'
+      },
+      'pt-BR': {
+        title: 'Skip e Ignore'
+      }
+    }
+  },
 
   '/API': {
     config: null,
@@ -328,30 +352,6 @@ export default {
       },
       'pt-BR': {
         title: 'Hooks'
-      }
-    }
-  },
-  '/skip-ignore': {
-    config: {
-      icon: 'visibility_off',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Control skipped and ignored cases in Specifications and Advanced API assertions.',
-          'pt-BR': 'Controle casos pulados e ignorados em Specifications e asserções da API Avançada.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Skip and Ignore'
-      },
-      'pt-BR': {
-        title: 'Skip e Ignore'
       }
     }
   },
