@@ -39,7 +39,18 @@ export default {
   },
 
   // Basic
-  '/skip-ignore': {
+  '/basic': {
+    config: null,
+    data: {
+      'en-US': {
+        title: 'Bootgly Tests - Basic'
+      },
+      'pt-BR': {
+        title: 'Bootgly Tests - Básico'
+      }
+    }
+  },
+  '/basic/skip-ignore': {
     config: {
       icon: 'visibility_off',
       status: 'draft',
@@ -49,7 +60,9 @@ export default {
           'pt-BR': 'Controle casos pulados e ignorados em Specifications e asserções da API Avançada.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.basic'
+      },
       subpages: {
         showcase: false
       }
@@ -63,7 +76,7 @@ export default {
       }
     }
   },
-  '/running-tests': {
+  '/basic/running-tests': {
     config: {
       icon: 'play_arrow',
       status: 'draft',
@@ -88,19 +101,19 @@ export default {
     }
   },
 
-  // API
-  '/API': {
+  // Core
+  '/core': {
     config: null,
     data: {
       'en-US': {
-        title: 'API'
+        title: 'Bootgly Tests - Core'
       },
       'pt-BR': {
-        title: 'API'
+        title: 'Bootgly Tests - Essencial'
       }
     }
   },
-  '/assertions': {
+  '/core/assertions': {
     config: {
       icon: 'rule',
       status: 'draft',
@@ -112,7 +125,7 @@ export default {
       },
       menu: {
         separator: true,
-        subheader: 'API'
+        subheader: '.core'
       },
       subpages: {
         showcase: false
@@ -127,7 +140,7 @@ export default {
       }
     }
   },
-  '/assertions/modifiers': {
+  '/core/assertions/modifiers': {
     config: {
       icon: 'tune',
       status: 'draft',
@@ -137,9 +150,7 @@ export default {
           'pt-BR': 'Componha expectations de asserção com modificadores NOT, AND e OR na API Avançada.'
         }
       },
-      menu: {
-        subheader: '.assertions'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
@@ -153,7 +164,7 @@ export default {
       }
     }
   },
-  '/assertions/behaviors-types': {
+  '/core/assertions/behaviors-types': {
     config: {
       icon: 'category',
       status: 'draft',
@@ -177,7 +188,7 @@ export default {
       }
     }
   },
-  '/assertions/behaviors-values': {
+  '/core/assertions/behaviors-values': {
     config: {
       icon: 'fact_check',
       status: 'draft',
@@ -201,7 +212,7 @@ export default {
       }
     }
   },
-  '/assertions/delimiters': {
+  '/core/assertions/delimiters': {
     config: {
       icon: 'settings_ethernet',
       status: 'draft',
@@ -225,7 +236,7 @@ export default {
       }
     }
   },
-  '/assertions/finders': {
+  '/core/assertions/finders': {
     config: {
       icon: 'search',
       status: 'draft',
@@ -249,7 +260,7 @@ export default {
       }
     }
   },
-  '/assertions/matchers': {
+  '/core/assertions/matchers': {
     config: {
       icon: 'pattern',
       status: 'draft',
@@ -273,7 +284,7 @@ export default {
       }
     }
   },
-  '/assertions/throwers': {
+  '/core/assertions/throwers': {
     config: {
       icon: 'error',
       status: 'draft',
@@ -297,7 +308,7 @@ export default {
       }
     }
   },
-  '/assertions/waiters': {
+  '/core/assertions/waiters': {
     config: {
       icon: 'timer',
       status: 'draft',
@@ -322,19 +333,19 @@ export default {
     }
   },
 
-  // Digging Deeper
-  '/advanced': {
+  // Deeper
+  '/deep': {
     config: null,
     data: {
       'en-US': {
-        title: 'Advanced'
+        title: 'Bootgly Tests - Digging Deeper'
       },
       'pt-BR': {
-        title: 'Avançado'
+        title: 'Bootgly Tests - Avançado'
       }
     }
   },
-  '/snapshots': {
+  '/deep/snapshots': {
     config: {
       icon: 'bookmark_added',
       status: 'draft',
@@ -345,7 +356,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.advanced'
+        subheader: '.deep'
       },
       subpages: {
         showcase: false
@@ -360,7 +371,7 @@ export default {
       }
     }
   },
-  '/hooks': {
+  '/deep/hooks': {
     config: {
       icon: 'webhook',
       status: 'draft',
@@ -384,7 +395,7 @@ export default {
       }
     }
   },
-  '/code-coverage': {
+  '/deep/coverage': {
     config: {
       icon: 'analytics',
       status: 'draft',
@@ -401,14 +412,14 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Code Coverage'
+        title: 'Coverage'
       },
       'pt-BR': {
-        title: 'Code Coverage'
+        title: 'Coverage'
       }
     }
   },
-  '/doubles': {
+  '/deep/doubles': {
     config: {
       icon: 'theater_comedy',
       status: 'draft',
@@ -432,7 +443,7 @@ export default {
       }
     }
   },
-  '/fakers': {
+  '/deep/fakers': {
     config: {
       icon: 'casino',
       status: 'draft',
@@ -456,7 +467,7 @@ export default {
       }
     }
   },
-  '/fixtures': {
+  '/deep/fixtures': {
     config: {
       icon: 'inventory_2',
       status: 'draft',
