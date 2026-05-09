@@ -467,3 +467,323 @@ Request::$allowedHosts = [];
 ```php
 $Request->Session; // Objeto Session
 ```
+
+## Validação de Requisição
+
+O Bootgly fornece um sistema de validação fluente para verificar dados da requisição antes do seu handler executar. Ele gira em torno de três peças:
+
+- `Validation` — executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo.
+- `Validators\*` — classes de regra built-in (`Required`, `Email`, `Integer`, `Minimum`, `Maximum`, `Regex`, `Size`, `MIME`, `Extension`).
+- Middleware `Validator` — aplica validação a uma fonte do Request e falha rapidamente (padrão `422 Unprocessable Entity`) se inválido. Veja [Middlewares → Validator](../Middlewares/#validator).
+
+### Validação Standalone
+
+Execute validação diretamente em qualquer array associativo — útil em scripts CLI, jobs, ou quando você precisa do resultado da validação dentro do handler:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Integer;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Maximum;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Minimum;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+
+$Validation = new Validation(
+   source: $Request->fields,
+   rules: [
+      'email' => [new Required, new Email],
+      'age'   => [new Required, new Integer, new Minimum(18), new Maximum(120)],
+   ]
+);
+
+$Validation->valid;  // true | false
+$Validation->errors; // ['email' => ['email must be a valid email address.'], ...]
+```
+
+Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada).
+
+### Fontes Disponíveis
+
+A enum `Sources` identifica qual propriedade do Request o middleware `Validator` lê:
+
+| Fonte | Propriedade do Request | Descrição |
+|---|---|---|
+| `Sources::Fields` | `$Request->fields` | Campos de formulário / corpo decodificado |
+| `Sources::Queries` | `$Request->queries` | Parâmetros da query string |
+| `Sources::Headers` | `$Request->headers` | Headers HTTP da requisição |
+| `Sources::Cookies` | `$Request->cookies` | Cookies da requisição |
+| `Sources::Files` | `$Request->files` | Estruturas de arquivos enviados |
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
+```
+
+### Validadores Built-in
+
+Todas as regras built-in vivem em `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão.
+
+---
+
+#### Required
+
+Rejeita `null`, strings vazias (após `trim`) e arrays vazios. Implícita — executa mesmo quando o campo está ausente.
+
+```php
+new Required;
+new Required('Name cannot be empty.');
+```
+
+Mensagem padrão: `"{field} is required."`
+
+---
+
+#### Email
+
+Valida com `filter_var($value, FILTER_VALIDATE_EMAIL)` do PHP.
+
+```php
+new Email;
+```
+
+Mensagem padrão: `"{field} must be a valid email address."`
+
+---
+
+#### Integer
+
+Aceita `int` nativo ou strings que correspondem a `/\A[-+]?\d+\z/`.
+
+```php
+new Integer;
+```
+
+Mensagem padrão: `"{field} must be an integer."`
+
+---
+
+#### Minimum
+
+Regra de limite inferior. Compara valores numéricos por valor, strings não-numéricas por `strlen`, e arrays por `count`.
+
+```php
+new Minimum(18);
+new Minimum(8, 'Password must be at least 8 characters.');
+```
+
+Mensagem padrão: `"{field} must be at least {limit}."`
+
+---
+
+#### Maximum
+
+Contraparte de `Minimum` para limite superior, com o mesmo dispatch (numérico, comprimento de string ou contagem de array).
+
+```php
+new Maximum(120);
+new Maximum(500, 'Bio cannot exceed 500 characters.');
+```
+
+Mensagem padrão: `"{field} must be at most {limit}."`
+
+---
+
+#### Regex
+
+Faz matching do valor contra um padrão PCRE. Lança `InvalidArgumentException` no momento da construção se o padrão for inválido.
+
+```php
+new Regex('/\A[a-z0-9_-]+\z/');
+new Regex('/\A[a-z0-9_]{3,}\z/', 'Username must be alphanumeric, 3+ chars.');
+```
+
+Mensagem padrão: `"{field} has an invalid format."`
+
+---
+
+#### Size
+
+Valida estruturas de upload (`['name', 'type', 'size', 'error', 'tmp_name']`). Passa quando `error === 0` e `size <= $limit` (em bytes).
+
+```php
+new Size(2 * 1024 * 1024); // 2 MB
+```
+
+Mensagem padrão: `"{field} must be at most {limit} bytes."`
+
+---
+
+#### MIME
+
+Valida estruturas de upload contra uma allowlist de tipos MIME (case-sensitive).
+
+```php
+new MIME('application/pdf');
+new MIME(['image/jpeg', 'image/png']);
+```
+
+Mensagem padrão: `"{field} must have an allowed MIME type."`
+
+---
+
+#### Extension
+
+Valida estruturas de upload contra uma allowlist de extensões de arquivo (case-insensitive; um `.` inicial é aceito e removido).
+
+```php
+new Extension('zip');
+new Extension(['jpg', 'jpeg', 'png']);
+```
+
+Mensagem padrão: `"{field} must have an allowed extension."`
+
+---
+
+### Regras Customizadas
+
+Estenda `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Condition` para adicionar sua própria regra. Implemente `validate()` (retorna `true` se válido) e `format()` (retorna a mensagem de erro).
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Condition;
+
+$InviteCode = new class extends Condition {
+   /**
+    * @param array<string,mixed> $data  Array completo da fonte — útil para regras cross-field.
+    */
+   public function validate (string $field, mixed $value, array $data): bool
+   {
+      return is_string($value) && $value === 'bootgly';
+   }
+
+   public function format (string $field): string
+   {
+      return "{$field} must match the demo invite code.";
+   }
+};
+```
+
+Defina `$implicit = true` na sua subclasse quando a regra precisar executar mesmo para campos ausentes/vazios (como `Required` faz).
+
+### Middleware Validator
+
+Para plugar validação diretamente em uma rota, use o middleware `Validator`. O handler é pulado se alguma regra falhar:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+
+yield $Router->route('/users', function (Request $Request, Response $Response) {
+   return $Response->JSON->send(['created' => true, 'user' => $Request->fields]);
+}, POST, middlewares: [
+   new BodyParser,
+   new Validator(rules: [
+      'email' => [new Required, new Email],
+   ], Source: Sources::Fields),
+]);
+```
+
+Veja [Middlewares → Validator](../Middlewares/#validator) para a referência completa do middleware (status code, fallback closure).
+
+### Exemplo End-to-End
+
+Um router completo demonstrando todos os modos de validação — corpo, query string, upload de arquivo, regra customizada e resposta de falha customizada:
+
+```php
+use function is_string;
+
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Extension;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Integer;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Maximum;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\MIME;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Minimum;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Regex;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Size;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+
+$Custom = new class extends Validators {
+   public function validate (string $field, mixed $value, array $data): bool
+   {
+      return is_string($value) && $value === 'bootgly';
+   }
+   public function format (string $field): string
+   {
+      return "{$field} must match the demo invite code.";
+   }
+};
+
+// Validação fail-closed do corpo
+yield $Router->route('/validation/middleware', function (Request $Request, Response $Response) {
+   return $Response->JSON->send(['created' => true, 'fields' => $Request->fields]);
+}, POST, middlewares: [
+   new BodyParser,
+   new Validator(rules: [
+      'email' => [new Required, new Email],
+      'age'   => [new Required, new Integer, new Minimum(18), new Maximum(120)],
+   ], Source: Sources::Fields),
+]);
+
+// Resposta de falha customizada
+yield $Router->route('/validation/fallback', function (Request $Request, Response $Response) {
+   return $Response->JSON->send(['created' => true]);
+}, POST, middlewares: [
+   new BodyParser,
+   new Validator(
+      rules: ['email' => [new Required, new Email]],
+      Source: Sources::Fields,
+      fallback: function (Request $Request, Response $Response, Validation $Validation): Response {
+         $Response->code(400);
+         return $Response->JSON->send([
+            'created' => false,
+            'fields'  => $Request->fields,
+            'errors'  => $Validation->errors,
+         ]);
+      }
+   ),
+]);
+
+// Validação de query
+yield $Router->route('/validation/query', function (Request $Request, Response $Response) {
+   return $Response->JSON->send(['queries' => $Request->queries]);
+}, GET, middlewares: [
+   new Validator(rules: [
+      'page'   => [new Integer, new Minimum(1)],
+      'filter' => [new Regex('/\A[a-z0-9_-]+\z/')],
+   ], Source: Sources::Queries),
+]);
+
+// Validação de upload de arquivo
+yield $Router->route('/validation/files', function (Request $Request, Response $Response) {
+   return $Response->JSON->send(['files' => $Request->files]);
+}, POST, middlewares: [
+   new BodyParser,
+   new Validator(rules: [
+      'avatar' => [
+         new Required,
+         new Size(2 * 1024 * 1024),
+         new MIME(['image/jpeg', 'image/png']),
+         new Extension(['jpg', 'jpeg', 'png']),
+      ],
+   ], Source: Sources::Files),
+]);
+
+// Regra customizada
+yield $Router->route('/validation/custom', function (Request $Request, Response $Response) {
+   return $Response->JSON->send(['accepted' => true]);
+}, POST, middlewares: [
+   new BodyParser,
+   new Validator(rules: [
+      'code' => [new Required, $Custom],
+   ], Source: Sources::Fields),
+]);
+```

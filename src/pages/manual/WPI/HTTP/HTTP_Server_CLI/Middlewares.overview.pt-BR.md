@@ -151,6 +151,62 @@ new BodyParser(
 
 ---
 
+### CSRF
+
+Proteção CSRF baseada em token sincronizador. Gera um token por sessão, armazena em `$Request->Session` e valida os tokens enviados nos métodos HTTP unsafe (`POST`, `PUT`, `PATCH`, `DELETE`) usando comparação timing-safe.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CSRF;
+
+new CSRF(
+   sessionKey: '_csrf_token',     // Chave de sessão onde o token é armazenado (padrão: '_csrf_token')
+   headerName: 'X-CSRF-Token',    // Header da requisição que carrega o token (padrão: 'X-CSRF-Token')
+   formField: '_token',           // Campo de formulário que carrega o token (padrão: '_token')
+   checkOrigin: false,            // Validar o hostname de Origin/Referer contra Host (padrão: false)
+   allowedOrigins: [],            // Hostnames cross-origin confiáveis quando checkOrigin=true (padrão: [])
+   tokenBytes: 32                 // Bytes aleatórios; token é hex-encoded (padrão: 32 → token de 64 caracteres)
+);
+```
+
+O token é lido do header `X-CSRF-Token` **ou** do campo de formulário `_token`. Métodos safe (`GET`, `HEAD`, `OPTIONS`) emitem o token mas pulam a validação. Métodos unsafe que falham na validação são rejeitados com `403 Forbidden`:
+
+- `Invalid CSRF token` — token ausente ou divergente.
+- `Invalid CSRF origin` — apenas quando `checkOrigin: true` e o hostname de `Origin` (fallback `Referer`) não corresponde a `Host` nem a nenhuma entrada de `allowedOrigins`.
+
+O token só é rotacionado quando você chama `$Request->Session->regenerate()` (ex.: após login ou escalada de privilégio). A comparação usa `hash_equals()` para evitar ataques de timing.
+
+**Fase:** Pré-processamento — gera e valida o token antes do handler executar.
+
+---
+
+### Validator
+
+Validação de requisição fail-closed. Executa um conjunto de regras contra uma fonte do Request (`Fields`, `Queries`, `Headers`, `Cookies` ou `Files`) e curto-circuita com uma resposta JSON de erro se alguma regra falhar — o handler da rota nunca executa.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+
+new Validator(
+   rules: [
+      'email' => [new Required, new Email],
+   ],
+   Source: Sources::Fields,   // Fields | Queries | Headers | Cookies | Files
+   code: 422,                  // Status HTTP na falha de validação (padrão: 422)
+   fallback: null              // Closure opcional Closure(Request, Response, Validation): object
+);
+```
+
+A resposta padrão de falha é `422 Unprocessable Entity` com corpo `{"errors": {"email": ["email must be a valid email address."]}}`. Forneça uma closure em `fallback` para renderizar uma resposta de erro customizada mantendo a rota fail-closed.
+
+Consulte a seção [Request Validation](../Request/#request-validation) para o catálogo completo de validadores, regras customizadas e exemplos end-to-end.
+
+**Fase:** Pré-processamento — valida a entrada antes do handler executar.
+
+---
+
 ### RequestId
 
 Gera ou propaga identificadores únicos de requisição para rastreamento distribuído e logging.
@@ -200,6 +256,7 @@ new TrustedProxy(
 ```
 
 Quando a requisição vem de um IP de proxy confiável, o middleware:
+
 - Lê `X-Forwarded-For` (primeiro IP) ou `X-Real-IP` para atualizar `$Request->address`
 - Lê `X-Forwarded-Proto` para atualizar `$Request->scheme`
 

@@ -151,6 +151,62 @@ new BodyParser(
 
 ---
 
+### CSRF
+
+Synchronizer-token CSRF protection. Generates a per-session token, stores it on `$Request->Session`, and validates submitted tokens on unsafe HTTP methods (`POST`, `PUT`, `PATCH`, `DELETE`) using a timing-safe comparison.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CSRF;
+
+new CSRF(
+   sessionKey: '_csrf_token',     // Session key for token storage (default: '_csrf_token')
+   headerName: 'X-CSRF-Token',    // Request header carrying the token (default: 'X-CSRF-Token')
+   formField: '_token',           // Form field carrying the token (default: '_token')
+   checkOrigin: false,            // Validate Origin/Referer hostname against Host (default: false)
+   allowedOrigins: [],            // Trusted cross-origin hostnames when checkOrigin=true (default: [])
+   tokenBytes: 32                 // Random bytes; token is hex-encoded (default: 32 → 64-char token)
+);
+```
+
+The token is read from the `X-CSRF-Token` header **or** the `_token` form field. Safe methods (`GET`, `HEAD`, `OPTIONS`) emit the token but skip validation. Unsafe methods that fail validation are rejected with `403 Forbidden`:
+
+- `Invalid CSRF token` — token missing or mismatched.
+- `Invalid CSRF origin` — only when `checkOrigin: true` and the `Origin` (fallback `Referer`) hostname does not match `Host` nor any entry in `allowedOrigins`.
+
+The token rotates only when you call `$Request->Session->regenerate()` (e.g. after login or privilege escalation). Comparison uses `hash_equals()` to prevent timing attacks.
+
+**Phase:** Pre-processing — generates and validates the token before the handler runs.
+
+---
+
+### Validator
+
+Fail-closed request validation. Runs a set of rules against one Request source (`Fields`, `Queries`, `Headers`, `Cookies`, or `Files`) and short-circuits with a JSON error response if any rule fails — the route handler never runs.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+
+new Validator(
+   rules: [
+      'email' => [new Required, new Email],
+   ],
+   Source: Sources::Fields,   // Fields | Queries | Headers | Cookies | Files
+   code: 422,                  // HTTP status on validation failure (default: 422)
+   fallback: null              // Optional Closure(Request, Response, Validation): object
+);
+```
+
+The default failure response is `422 Unprocessable Entity` with body `{"errors": {"email": ["email must be a valid email address."]}}`. Provide a `fallback` closure to render a custom error response while keeping the route fail-closed.
+
+See the [Request Validation](../Request/#request-validation) section for the full validator catalog, custom rules, and end-to-end examples.
+
+**Phase:** Pre-processing — validates input before the handler runs.
+
+---
+
 ### RequestId
 
 Generates or propagates unique request identifiers for distributed tracing and logging.
