@@ -1,17 +1,5 @@
 export default {
-  // About
-  '/about': {
-    config: null,
-    data: {
-      'en-US': {
-        title: 'Bootgly Tests'
-      },
-      'pt-BR': {
-        title: 'Bootgly Testes'
-      }
-    }
-  },
-  '/about/testing': {
+  '/foundations': {
     config: {
       icon: 'architecture',
       status: 'draft',
@@ -22,7 +10,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.about'
+        subheader: '.foundations'
       },
       subpages: {
         showcase: false
@@ -30,90 +18,26 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Testing'
+        title: 'Foundations'
       },
       'pt-BR': {
-        title: 'Testes'
+        title: 'Fundamentos'
       }
     }
   },
 
-  // Basic
-  '/basic': {
+  '/API': {
     config: null,
     data: {
       'en-US': {
-        title: 'Bootgly Tests - Basic'
+        title: 'API'
       },
       'pt-BR': {
-        title: 'Bootgly Tests - Básico'
+        title: 'API'
       }
     }
   },
-  '/basic/skip-ignore': {
-    config: {
-      icon: 'visibility_off',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Control skipped and ignored cases in Specifications and Advanced API assertions.',
-          'pt-BR': 'Controle casos pulados e ignorados em Specifications e asserções da API Avançada.'
-        }
-      },
-      menu: {
-        subheader: '.basic'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Skip and Ignore'
-      },
-      'pt-BR': {
-        title: 'Skip e Ignore'
-      }
-    }
-  },
-  '/basic/running-tests': {
-    config: {
-      icon: 'play_arrow',
-      status: 'draft',
-      meta: {
-        description: {
-          'en-US': 'Run Bootgly suites and individual tests via the bootgly CLI, with coverage and static analysis.',
-          'pt-BR': 'Execute suítes Bootgly e testes individuais pela CLI bootgly, com cobertura e análise estática.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Running Tests'
-      },
-      'pt-BR': {
-        title: 'Executando Testes'
-      }
-    }
-  },
-
-  // Core
-  '/core': {
-    config: null,
-    data: {
-      'en-US': {
-        title: 'Bootgly Tests - Core'
-      },
-      'pt-BR': {
-        title: 'Bootgly Tests - Essencial'
-      }
-    }
-  },
-  '/core/assertions': {
+  '/assertions': {
     config: {
       icon: 'rule',
       status: 'draft',
@@ -124,8 +48,7 @@ export default {
         }
       },
       menu: {
-        separator: true,
-        subheader: '.core'
+        subheader: 'API'
       },
       subpages: {
         showcase: false
@@ -140,7 +63,8 @@ export default {
       }
     }
   },
-  '/core/assertions/modifiers': {
+
+  '/assertions/modifiers': {
     config: {
       icon: 'tune',
       status: 'draft',
@@ -150,7 +74,10 @@ export default {
           'pt-BR': 'Componha expectations de asserção com modificadores NOT, AND e OR na API Avançada.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true,
+        subheader: 'API - Assertions'
+      },
       subpages: {
         showcase: false
       }
@@ -164,7 +91,7 @@ export default {
       }
     }
   },
-  '/core/assertions/behaviors-types': {
+  '/assertions/behaviors-types': {
     config: {
       icon: 'category',
       status: 'draft',
@@ -188,7 +115,7 @@ export default {
       }
     }
   },
-  '/core/assertions/behaviors-values': {
+  '/assertions/behaviors-values': {
     config: {
       icon: 'fact_check',
       status: 'draft',
@@ -212,7 +139,7 @@ export default {
       }
     }
   },
-  '/core/assertions/delimiters': {
+  '/assertions/delimiters': {
     config: {
       icon: 'settings_ethernet',
       status: 'draft',
@@ -236,7 +163,7 @@ export default {
       }
     }
   },
-  '/core/assertions/finders': {
+  '/assertions/finders': {
     config: {
       icon: 'search',
       status: 'draft',
@@ -260,7 +187,7 @@ export default {
       }
     }
   },
-  '/core/assertions/matchers': {
+  '/assertions/matchers': {
     config: {
       icon: 'pattern',
       status: 'draft',
@@ -284,7 +211,7 @@ export default {
       }
     }
   },
-  '/core/assertions/throwers': {
+  '/assertions/throwers': {
     config: {
       icon: 'error',
       status: 'draft',
@@ -308,7 +235,7 @@ export default {
       }
     }
   },
-  '/core/assertions/waiters': {
+  '/assertions/waiters': {
     config: {
       icon: 'timer',
       status: 'draft',
@@ -333,19 +260,18 @@ export default {
     }
   },
 
-  // Deeper
-  '/deep': {
+  '/advanced': {
     config: null,
     data: {
       'en-US': {
-        title: 'Bootgly Tests - Digging Deeper'
+        title: 'Advanced'
       },
       'pt-BR': {
-        title: 'Bootgly Tests - Avançado'
+        title: 'Avançado'
       }
     }
   },
-  '/deep/snapshots': {
+  '/snapshots': {
     config: {
       icon: 'bookmark_added',
       status: 'draft',
@@ -356,7 +282,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.deep'
+        subheader: '.advanced'
       },
       subpages: {
         showcase: false
@@ -371,7 +297,7 @@ export default {
       }
     }
   },
-  '/deep/hooks': {
+  '/hooks': {
     config: {
       icon: 'webhook',
       status: 'draft',
@@ -395,7 +321,31 @@ export default {
       }
     }
   },
-  '/deep/coverage': {
+  '/skip-ignore': {
+    config: {
+      icon: 'visibility_off',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Control skipped and ignored cases in Specifications and Advanced API assertions.',
+          'pt-BR': 'Controle casos pulados e ignorados em Specifications e asserções da API Avançada.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Skip and Ignore'
+      },
+      'pt-BR': {
+        title: 'Skip e Ignore'
+      }
+    }
+  },
+  '/code-coverage': {
     config: {
       icon: 'analytics',
       status: 'draft',
@@ -412,14 +362,14 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Coverage'
+        title: 'Code Coverage'
       },
       'pt-BR': {
-        title: 'Coverage'
+        title: 'Code Coverage'
       }
     }
   },
-  '/deep/doubles': {
+  '/doubles': {
     config: {
       icon: 'theater_comedy',
       status: 'draft',
@@ -443,7 +393,7 @@ export default {
       }
     }
   },
-  '/deep/fakers': {
+  '/fakers': {
     config: {
       icon: 'casino',
       status: 'draft',
@@ -467,7 +417,7 @@ export default {
       }
     }
   },
-  '/deep/fixtures': {
+  '/fixtures': {
     config: {
       icon: 'inventory_2',
       status: 'draft',

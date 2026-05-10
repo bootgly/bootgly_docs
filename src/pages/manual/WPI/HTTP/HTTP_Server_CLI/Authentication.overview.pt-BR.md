@@ -152,10 +152,11 @@ Um resolver pode retornar:
 
 ## Guard JWT
 
-O Bootgly inclui um signer/verifier JWT HS256 nativo em `Bootgly\API\Security\JWT`. JWT não é um schema HTTP separado; ele usa transporte Bearer.
+O Bootgly inclui um signer/verifier JWT nativo em `Bootgly\API\Security\JWT`. JWT não é um schema HTTP separado; ele usa transporte Bearer. Crie o objeto JWT uma vez no boot da aplicação e compartilhe entre requests em vez de reconstruir o key set por request.
 
 ```php
 use Bootgly\API\Security\JWT;
+use Bootgly\API\Security\JWT\Policies;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
@@ -177,7 +178,12 @@ yield $Router->route('/auth/jwt/issue', function (Request $Request, Response $Re
    ]);
 }, GET);
 
-$JWT = new Authenticating(new JWTGuard($Token));
+$Policies = new Policies(
+   issuers: 'https://issuer.bootgly.dev',
+   audiences: 'api://bootgly-demo',
+   subject: true
+);
+$JWT = new Authenticating(new JWTGuard($Token, $Policies));
 
 yield $Router->route('/auth/jwt', function (Request $Request, Response $Response) {
    return $Response->JSON->send([
@@ -187,11 +193,31 @@ yield $Router->route('/auth/jwt', function (Request $Request, Response $Response
 }, GET, middlewares: [new Authentication($JWT)]);
 ```
 
-A assinatura JWT lança `RuntimeException` quando claims ou headers não podem ser codificados como JSON. A verificação JWT rejeita tokens malformados, algoritmos não suportados, valores `typ` não suportados, assinaturas inválidas, `exp` expirado, `nbf` futuro e `iat` futuro. O segredo HS256 precisa ter no mínimo 32 bytes.
+A assinatura JWT lança `RuntimeException` quando claims ou headers não podem ser codificados como JSON. A verificação JWT rejeita tokens malformados, algoritmos não suportados, valores `typ` não suportados, assinaturas inválidas, `exp` expirado, `nbf` futuro e `iat` futuro. O segredo HS256 precisa ter no mínimo 32 bytes. `Policies` pode exigir `iss` exato, `aud` compatível, `sub` não vazio e `jti` não vazio. O guard ainda retorna apenas um desafio Bearer genérico `invalid_token` para o cliente.
 
 O padrão de `JWT->leeway` é `0`, então a verificação de claims temporais é estrita. Defina um valor pequeno, como `5` segundos, quando seus servidores puderem ter pequeno desvio de relógio.
 
-Quando o claim `sub` existe, o guard expõe `Bootgly\API\Security\Identity` como `$Request->identity`. Ele sempre expõe claims verificados como `$Request->claims`. Um claim JWT `scope` separado por espaços ou um claim `scp` em string/array é normalizado em `Identity->scopes`, então `$Request->identity->check('demo:read')` funciona para usuários JWT.
+Para testes determinísticos, use `JWT->freeze($timestamp)` e depois `JWT->resume()` para voltar ao relógio real.
+
+Quando o claim `sub` existe, o guard expõe `Bootgly\API\Security\Identity` como `$Request->identity`. Ele sempre expõe claims verificados como `$Request->claims` e headers protegidos verificados como `$Request->tokenHeaders`. Um claim JWT `scope` separado por espaços ou um claim `scp` em string/array é normalizado em `Identity->scopes`, então `$Request->identity->check('demo:read')` funciona para usuários JWT. Quando ambos existem, `scope` tem precedência sobre `scp`.
+
+### RS256, JWKS e rotação de chaves
+
+Use `Bootgly\API\Security\JWT\Key` para ids de chave explícitos e `Bootgly\API\Security\JWT\JWKS` para documentos JWKS locais:
+
+```php
+use Bootgly\API\Security\JWT;
+use Bootgly\API\Security\JWT\JWKS;
+use Bootgly\API\Security\JWT\Key;
+
+$Signer = new JWT($privatePem, 'RS256');
+$Signer->select(new Key($privatePem, 'RS256', 'current'));
+
+$Verifier = new JWT($publicPem, 'RS256');
+$Verifier->trust(JWKS::parse($jwks, 'RS256'));
+```
+
+Sempre defina `kid` ao rotacionar chaves JWT. Um key set sem `kid` é intencionalmente single-slot para tokens compatíveis antigos; adicionar uma segunda chave default falha explicitamente em vez de fazer o verifier adivinhar.
 
 ## Guard Basic
 
