@@ -128,10 +128,10 @@ return $Response->upload('/caminho/para/arquivo.pdf');
 return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 ```
 
-### HTTP Basic Authentication
+### HTTP Authentication
 
 ```php
-public function authenticate (string $realm = 'Área protegida') : self;
+public function authenticate (Authentication $Method) : self;
 ```
 
 **Descrição:**
@@ -140,9 +140,10 @@ Envia um desafio de autenticação para o cliente, normalmente em resposta a um 
 
 **Parâmetros:**
 
-- `$Method` (Authentication): O Método de Autenticação HTTP. Por agora só é aceito "Basic" (veja exemplo).
+- `$Method` (Authentication): O Método de Autenticação HTTP.
+- Método suportado: Basic.
 
-**Exemplo:**
+**Exemplo Basic:**
 
 ```php
 use Bootgly\WPI\Modules\HTTP\Server\Response\Authentication;
@@ -150,6 +151,8 @@ use Bootgly\WPI\Modules\HTTP\Server\Response\Authentication;
 return $Response
    ->authenticate(new Authentication\Basic(realm: "Bootgly Protected Area"));
 ```
+
+Challenges Bearer são emitidos por `Router\Middlewares\Authentication\Bearer` e `Router\Middlewares\Authentication\JWT`. Veja [Authentication](../Authentication/) para detalhes de guards e challenges.
 
 ### Redirecionar
 

@@ -208,26 +208,29 @@ $Request->time; // 1586496524
 $Request->secure; // true
 ```
 
-## HTTP Basic Authentication
+## HTTP Authentication
 
 ```php
-public function authenticate () : object|null;
+public function authenticate () : Basic|null;
 ```
 
-This method is responsible for extracting and decoding authorization credentials from an HTTP Request. It checks if the credentials are provided in the Basic Authentication format and, if so, extracts the username and password.
+This method extracts Basic authorization credentials from an HTTP Request. The Basic scheme match is case-insensitive as required by RFC 7235, so `Basic` and `basic` are both accepted. It only parses credentials; verification belongs to authentication guards and application resolvers. Bearer transport is exposed through `$Request->token` and handled by router authentication guards. Authentication parsing is cached per request and reset when the request is cloned or rebooted.
 
 ### Example of use
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Authentications\Basic;
+
 $Credentials = $Request->authenticate();
 
-if ($Credentials !== null) {
-    $username = $Credentials->username;
-    $password = $Credentials->password;
+if ($Credentials instanceof Basic) {
+   $username = $Credentials->username;
+   $password = $Credentials->password;
 
-    // Use the username and password to authenticate the client
-    // ...
+   // Verify username and password...
 }
+
+$token = $Request->token; // Bearer token for Router\Middlewares\Authentication\Bearer/JWT
 ```
 
 ### Generated metadata
@@ -243,6 +246,26 @@ $Request->username; // 'bootgly'
 ```php
 $Request->password; // 'example123'
 ```
+
+`token`: The token provided in Bearer authentication.
+
+```php
+$Request->token; // 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+```
+
+`identity`: The authenticated principal exposed by authentication guards.
+
+```php
+$Request->identity; // Bootgly\API\Security\Identity|string|null
+```
+
+`claims`: Verified token claims exposed by token-based guards.
+
+```php
+$Request->claims; // ['sub' => 'user-1', 'scope' => 'demo:read']
+```
+
+See [Authentication](../Authentication/) for guard-based Basic, Bearer, JWT, and Session examples.
 
 ## HTTP Content Negotiation
 

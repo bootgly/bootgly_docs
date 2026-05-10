@@ -1,0 +1,267 @@
+# HTTP Server CLI — Authentication
+
+Bootgly HTTP authentication is split into small layers:
+
+- **Request credentials** parse Basic `Authorization` headers without trusting them.
+- **Request token metadata** exposes Bearer transport as `$Request->token`.
+- **Authentication guards** verify credentials and emit protocol-aware challenges.
+- **The `Authentication` middleware** runs one or more guards around protected routes.
+
+Supported mechanisms in HTTP Server CLI are:
+
+| Mechanism | Use case | Transport |
+| --- | --- | --- |
+| Basic | Compatibility, development, simple protected endpoints | `Authorization: Basic ...` |
+| Bearer | Opaque API tokens and access tokens | `Authorization: Bearer <token>` |
+| JWT | Signed compact tokens verified by Bootgly | `Authorization: Bearer <jwt>` |
+| Session | Browser flows backed by `$Request->Session` | Session cookie |
+
+> Digest authentication is intentionally not part of this first implementation.
+
+## Request credentials
+
+`$Request->authenticate()` parses Basic HTTP `Authorization` credentials and returns a credentials object or `null`:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Authentications\Basic;
+
+$Credentials = $Request->authenticate();
+
+if ($Credentials instanceof Basic) {
+   $username = $Credentials->username;
+   $password = $Credentials->password;
+}
+```
+
+The parser does not verify credentials. Verification belongs to guards and application resolvers. Bearer and JWT tokens stay inside `Router\Middlewares`: read `$Request->token` or use the Bearer/JWT guards.
+
+The request also exposes lazy authentication metadata:
+
+```php
+$Request->username; // Basic username
+$Request->password; // Basic password
+$Request->token;    // Bearer token
+```
+
+## Response challenges
+
+Use `$Response->authenticate()` to return a Basic `401 Unauthorized` challenge. Bearer challenges are emitted by the Bearer/JWT guards so their definitions stay inside `Router\Middlewares`.
+
+### Basic challenge
+
+```php
+use Bootgly\WPI\Modules\HTTP\Server\Response\Authentication\Basic;
+
+return $Response->authenticate(new Basic(
+   realm: 'Bootgly Protected Area'
+));
+```
+
+Emits:
+
+```http
+WWW-Authenticate: Basic realm="Bootgly Protected Area"
+```
+
+### Bearer challenge
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Bearer = new Bearer(
+   Resolver: fn (string $token): bool => $token === 'demo-bearer-token',
+   realm: 'Bootgly API',
+   error: 'invalid_token',
+   description: 'The access token is missing or invalid.',
+   URI: 'https://docs.bootgly.com/manual/WPI/HTTP/HTTP_Server_CLI/Authentication',
+   scope: 'demo:read'
+);
+```
+
+On failure, the guard emits a Bearer `WWW-Authenticate` header with RFC 6750-style attributes.
+
+## Authentication middleware
+
+The middleware receives an `Authenticating` strategy object. The strategy stores guards in evaluation order.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+```
+
+When any guard authenticates successfully, the route handler runs. When all guards fail, the middleware uses the first guard to build the challenge response.
+
+`Authentication` requires at least one guard. Creating it with an empty `Authenticating` strategy throws `InvalidArgumentException` so protected routes cannot fail closed silently because of misconfiguration.
+
+Custom fallback callbacks may render a body or extra headers for denied requests, but the middleware normalizes the returned response to `401 Unauthorized` before and after the callback. This prevents accidental `200 OK` responses on authentication failure.
+
+```php
+$Auth = new Authentication(
+   Authenticating: $Bearer,
+   Fallback: function (Request $Request, Response $Response): Response {
+      return $Response(body: 'Custom unauthorized body');
+   }
+);
+```
+
+Authentication guards expose metadata through declared `Request` properties: `$Request->identity` for the authenticated principal and `$Request->claims` for verified token claims. Request doubles should declare those properties too, or use `stdClass` in lightweight tests.
+
+## Hardening notes
+
+- Pair Basic and Bearer routes with `RateLimit` to reduce brute-force attempts.
+- Resolver callbacks should compare secrets with `hash_equals()` when checking passwords, API tokens, or shared secrets.
+- Place CSRF protection before state-changing authenticated browser routes; token/API routes that do not use cookies can be exempted by route policy.
+- JWT is transported as a Bearer token and shares the `$Request->token` hook with opaque Bearer credentials.
+
+## Bearer token guard
+
+Use the Bearer guard for opaque API tokens. The resolver receives the token and the `Request`.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Bearer = new Authenticating(
+   new Bearer(function (string $token, Request $Request): bool {
+      return $token === 'demo-bearer-token';
+   })
+);
+
+yield $Router->route('/auth/bearer', function (Request $Request, Response $Response) {
+   return $Response->JSON->send([
+      'authorized' => true,
+      'guard' => 'Bearer',
+   ]);
+}, GET, middlewares: [new Authentication($Bearer)]);
+```
+
+Try it:
+
+```bash
+curl -H 'Authorization: Bearer demo-bearer-token' http://localhost:8082/auth/bearer
+```
+
+A resolver may return:
+
+- `false` or `null` to deny.
+- `true` to expose the token as `$Request->identity`.
+- any custom value to expose that value as `$Request->identity`.
+
+## JWT guard
+
+Bootgly includes a native HS256 JWT signer/verifier in `Bootgly\API\Security\JWT`. JWT is not a separate HTTP scheme; it uses Bearer transport.
+
+```php
+use Bootgly\API\Security\JWT;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\JWT as JWTGuard;
+
+$Token = new JWT('bootgly-demo-authentication-secret');
+
+yield $Router->route('/auth/jwt/issue', function (Request $Request, Response $Response) use ($Token) {
+   $token = $Token->sign([
+      'sub' => 'demo-user',
+      'scope' => 'demo:read',
+      'exp' => time() + 3600,
+   ]);
+
+   return $Response->JSON->send([
+      'token' => $token,
+      'authorization' => "Bearer {$token}",
+   ]);
+}, GET);
+
+$JWT = new Authenticating(new JWTGuard($Token));
+
+yield $Router->route('/auth/jwt', function (Request $Request, Response $Response) {
+   return $Response->JSON->send([
+      'authorized' => true,
+      'guard' => 'JWT',
+   ]);
+}, GET, middlewares: [new Authentication($JWT)]);
+```
+
+JWT signing throws `RuntimeException` when claims or headers cannot be JSON encoded. JWT verification rejects malformed tokens, unsupported algorithms, unsupported `typ` values, invalid signatures, expired `exp`, future `nbf`, and future `iat`. The HS256 secret must be at least 32 bytes.
+
+The default `JWT->leeway` is `0`, so time claim verification is strict. Set a small value such as `5` seconds when your servers can have minor clock drift.
+
+When the `sub` claim is present, the guard exposes `Bootgly\API\Security\Identity` as `$Request->identity`. It always exposes verified claims as `$Request->claims`. A space-separated JWT `scope` claim or an array/string `scp` claim is normalized into `Identity->scopes`, so `$Request->identity->check('demo:read')` works for JWT users.
+
+## Basic guard
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Basic as BasicGuard;
+
+$Basic = new Authenticating(
+   new BasicGuard(function (string $username, string $password, Request $Request): bool {
+      return $username === 'demo' && $password === 'secret';
+   })
+);
+
+yield $Router->route('/auth/basic', function (Request $Request, Response $Response) {
+   return $Response->JSON->send([
+      'authorized' => true,
+      'guard' => 'Basic',
+   ]);
+}, GET, middlewares: [new Authentication($Basic)]);
+```
+
+Try it:
+
+```bash
+curl -u demo:secret http://localhost:8082/auth/basic
+```
+
+## Session guard
+
+Use the Session guard when authentication state lives in `$Request->Session`. It checks a session key and exposes the stored value as `$Request->identity`.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Session as SessionGuard;
+
+$Session = new Authenticating(new SessionGuard(key: 'identity'));
+
+yield $Router->route('/account', function ($Request, $Response) {
+   return $Response->JSON->send([
+      'authorized' => true,
+   ]);
+}, GET, middlewares: [new Authentication($Session)]);
+```
+
+Session failures return a generic `401 Unauthorized` response without a `WWW-Authenticate` header.
+
+## Multiple guards
+
+You can compose guards in order:
+
+```php
+$API = new Authenticating(new JWTGuard($Token));
+$API->add(new Bearer(function (string $token, Request $Request): bool {
+   return $token === 'legacy-api-token';
+}));
+
+yield $Router->route('/api/private', $Handler, GET, middlewares: [new Authentication($API)]);
+```
+
+In this example Bootgly tries JWT first, then the opaque Bearer token. If both fail, the JWT guard defines the challenge because it is the first guard.
+
+## Demo project
+
+The repository includes working examples in `projects/Demo-HTTP_Server_CLI`:
+
+- `router/HTTP_Server_CLI-authentication.SAPI.php`
+- `router/routes/Authentication.routes.php`
+
+Enable that SAPI in `Demo-HTTP_Server_CLI.project.php`, start the demo server, then open `GET /auth` to see runnable commands for Bearer, JWT, and Basic routes.

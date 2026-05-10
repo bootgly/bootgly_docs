@@ -208,26 +208,29 @@ $Request->time; // 1586496524
 $Request->secure; // true
 ```
 
-## HTTP Basic Authentication
+## HTTP Authentication
 
 ```php
-public function authenticate () : object|null;
+public function authenticate () : Basic|null;
 ```
 
-Este método é responsável por extrair e decodificar as credenciais de autorização de uma Requisição HTTP por parte de um Client HTTP. Ele verifica se as credenciais são fornecidas no formato Basic Authentication e, se sim, extrai o nome de usuário e a senha.
+Este método extrai credenciais Basic de autorização de uma Requisição HTTP. A comparação do esquema Basic é case-insensitive como exige a RFC 7235, então `Basic` e `basic` são aceitos. Ele apenas faz o parse das credenciais; a verificação pertence aos guards de autenticação e aos resolvers da aplicação. O transporte Bearer é exposto por `$Request->token` e tratado pelos guards de autenticação do router. O parsing de autenticação é cacheado por request e resetado quando o request é clonado ou reinicializado.
 
 ### Exemplo de uso
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Authentications\Basic;
+
 $Credentials = $Request->authenticate();
 
-if ($Credentials !== null) {
-    $username = $Credentials->username;
-    $password = $Credentials->password;
+if ($Credentials instanceof Basic) {
+   $username = $Credentials->username;
+   $password = $Credentials->password;
 
-    // Use o nome de usuário e senha para autenticar o cliente
-    // ...
+   // Verifique username e password...
 }
+
+$token = $Request->token; // Token Bearer para Router\Middlewares\Authentication\Bearer/JWT
 ```
 
 ### Metadados gerados
@@ -243,6 +246,26 @@ $Request->username; // 'bootgly'
 ```php
 $Request->password; // 'example123'
 ```
+
+`token`: O token fornecido na autenticação Bearer.
+
+```php
+$Request->token; // 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+```
+
+`identity`: O principal autenticado exposto pelos guards de autenticação.
+
+```php
+$Request->identity; // Bootgly\API\Security\Identity|string|null
+```
+
+`claims`: Claims verificados expostos por guards baseados em token.
+
+```php
+$Request->claims; // ['sub' => 'user-1', 'scope' => 'demo:read']
+```
+
+Veja [Authentication](../Authentication/) para exemplos com guards Basic, Bearer, JWT e Session.
 
 ## HTTP Content Negotiation
 

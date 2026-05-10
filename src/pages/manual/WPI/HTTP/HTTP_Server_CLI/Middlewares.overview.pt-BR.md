@@ -65,6 +65,30 @@ Todos os middlewares built-in estão no namespace `Bootgly\WPI\Nodes\HTTP_Server
 
 ---
 
+### Authentication
+
+Protege rotas com guards ordenados de Basic, Bearer, JWT e Session. A autenticação é configurada com uma estratégia `Authenticating` e executada pelo middleware `Authentication`.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Bearer = new Authenticating(
+   new Bearer(function (string $token): bool {
+      return $token === 'demo-bearer-token';
+   })
+);
+
+yield $Router->route('/private', $Handler, GET, middlewares: [new Authentication($Bearer)]);
+```
+
+Veja a página [Authentication](../Authentication/) para Bearer, JWT, Basic, Session, challenges pertencentes ao middleware e rotas demo.
+
+**Fase:** Pré-processamento — rejeita requisições não autenticadas antes do handler executar.
+
+---
+
 ### CORS
 
 Gerencia a validação de Cross-Origin Resource Sharing e requisições preflight (`OPTIONS`).

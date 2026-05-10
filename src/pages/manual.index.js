@@ -884,6 +884,27 @@ export default {
       }
     }
   },
+  '/WPI/HTTP/HTTP_Server_CLI/Authentication': {
+    config: {
+      icon: 'shield',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Protect HTTP Server CLI routes with Basic, Bearer, JWT and Session authentication guards.',
+          'pt-BR': 'Proteja rotas do HTTP Server CLI com guards de autenticação Basic, Bearer, JWT e Session.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Authentication'
+      }
+    }
+  },
   '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
     config: {
       icon: 'settings_input_component',
