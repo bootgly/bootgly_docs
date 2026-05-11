@@ -203,21 +203,84 @@ When the `sub` claim is present, the guard exposes `Bootgly\API\Security\Identit
 
 ### RS256, JWKS, and key rotation
 
-Use `Bootgly\API\Security\JWT\Key` for explicit key ids and `Bootgly\API\Security\JWT\JWKS` for local JWKS documents:
+Use `Bootgly\API\Security\JWT\Key` for explicit key ids and `Bootgly\API\Security\JWT\KeysJWKS` for local JWKS documents:
 
 ```php
 use Bootgly\API\Security\JWT;
-use Bootgly\API\Security\JWT\JWKS;
 use Bootgly\API\Security\JWT\Key;
+use Bootgly\API\Security\JWT\KeysJWKS;
 
 $Signer = new JWT($privatePem, 'RS256');
 $Signer->select(new Key($privatePem, 'RS256', 'current'));
 
 $Verifier = new JWT($publicPem, 'RS256');
-$Verifier->trust(JWKS::parse($jwks, 'RS256'));
+$Verifier->trust(KeysJWKS::parse($jwks, 'RS256'));
 ```
 
 Always set `kid` when rotating JWT keys. A no-`kid` key set is intentionally single-slot for backwards-compatible tokens; adding a second default key fails loudly instead of letting the verifier guess.
+
+For external OAuth/OIDC issuers, use `Bootgly\API\Security\JWT\Remote` with the provider's `jwks_uri`:
+
+```php
+use Bootgly\API\Security\JWT;
+use Bootgly\API\Security\JWT\Policies;
+use Bootgly\API\Security\JWT\Remote;
+use Bootgly\API\Security\JWT\Vault;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\JWT as JWTGuard;
+
+$Remote = new Remote('https://issuer.example/.well-known/jwks.json');
+$Remote->cache(new Vault);
+$Verifier = new JWT($Remote, 'RS256');
+
+$Policies = new Policies(
+   issuers: 'https://issuer.example',
+   audiences: 'api://bootgly-demo',
+   subject: true
+);
+
+$JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
+```
+
+`Remote` keeps a process-local `KeySet` cache, can use `Vault` for a shared file-backed JWKS cache across workers on the same filesystem, refreshes the JWKS when a token arrives with an unknown `kid`, and fails closed when the endpoint cannot be fetched, returns a non-2xx status, returns invalid JSON, or returns an invalid JWKS document. Remote JWKS requires HTTPS by default; use `insecure: true` only in tests or controlled local environments. OIDC Discovery and external multi-host cache backends are separate future layers.
+
+### Refresh tokens and `jti` usage
+
+For first-party fullstack apps, keep access tokens short-lived and rotate opaque refresh tokens through `Bootgly\API\Security\JWT\Tokens`:
+
+```php
+use Bootgly\API\Security\JWT\Tokens;
+use Bootgly\API\Security\JWT\Usage;
+use Bootgly\API\Security\JWT\Vault;
+
+$Vault = new Vault;
+$Tokens = new Tokens($Vault);
+
+$Issued = $Tokens->mint('user-42', 60 * 60 * 24 * 30, [
+   'role' => 'admin',
+]);
+
+$Rotated = $Tokens->rotate($Issued->refresh, 60 * 60 * 24 * 30);
+if ($Rotated !== null) {
+   $Tokens->revoke($Rotated->refresh);
+}
+```
+
+`Tokens` stores refresh state under token hashes, consumes the old refresh token on rotation, leaves a tombstone for replay detection, and revokes the whole family if a consumed refresh token is reused.
+
+Use `Usage` when access-token `jti` values need persistent revocation or single-use replay protection:
+
+```php
+$Usage = new Usage($Vault);
+$Verifier->track($Usage);
+
+$Usage->block('access-token-jti', 300);
+
+$SingleUse = new Usage($Vault, single: true);
+$Verifier->track($SingleUse);
+```
+
+`Usage` runs only after signature, temporal claim validation, and optional `Policies` pass. Single-use mode requires an `exp` claim so the seen `jti` marker expires automatically.
 
 ## Basic guard
 
