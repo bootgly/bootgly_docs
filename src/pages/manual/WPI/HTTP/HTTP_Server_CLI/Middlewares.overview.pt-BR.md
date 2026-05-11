@@ -225,7 +225,7 @@ new Validator(
 
 A resposta padrão de falha é `422 Unprocessable Entity` com corpo `{"errors": {"email": ["email must be a valid email address."]}}`. Forneça uma closure em `fallback` para renderizar uma resposta de erro customizada mantendo a rota fail-closed.
 
-Consulte a seção [Request Validation](../Request/#request-validation) para o catálogo completo de validadores, regras customizadas e exemplos end-to-end.
+Consulte a seção [Request Validation](../../Request/#request-validation) para o catálogo completo de validadores, regras customizadas e exemplos end-to-end.
 
 **Fase:** Pré-processamento — valida a entrada antes do handler executar.
 

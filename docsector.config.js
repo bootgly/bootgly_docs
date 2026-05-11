@@ -18,7 +18,7 @@ export default {
     discussions: 'https://github.com/bootgly/bootgly/discussions',
     chat: 'https://t.me/bootgly/',
     email: 'public@bootgly.com',
-    changelog: '/changelog',
+    changelog: 'https://github.com/bootgly/bootgly/blob/main/CHANGELOG.md',
     roadmap: 'https://github.com/bootgly/bootgly/milestones',
     sponsor: 'https://github.com/sponsors/bootgly',
     explore: [
