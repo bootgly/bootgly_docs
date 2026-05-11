@@ -1,10 +1,92 @@
 # Doubles
 
-Doubles replace real collaborators during a test. In Bootgly, the feature is native to `Bootgly\ACI\Tests` and covers three main needs:
+Doubles replace real collaborators during a test. In Bootgly, the feature is native to `Bootgly\ACI\Tests` and covers four main needs:
 
 - `Mock`: replaces an interface or non-final class with controlled responses.
 - `Spy`: wraps a real instance, delegates calls and records interactions.
+- `Fake`: provides a working, stateful and deterministic implementation of a collaborator.
 - `Doubles`: small registry to reset multiple doubles together.
+
+## Fake
+
+Use `Fake` when a test needs realistic behavior with internal state, but does not need call recording or proxy generation. A Fake is useful when the relationship between calls matters, for example: `set('k', 'v')` → `check('k')` → `get('k')`.
+
+Fakes implement `Doubling`, so they can be registered in `Doubles` and reset together with `Mock` and `Spy`.
+
+### Fake\Memory
+
+`Fake\Memory` is an in-memory key-value store for collaborators shaped like sessions, caches or simple storage.
+
+```php
+<?php
+
+use Bootgly\ACI\Tests\Doubles\Fake\Memory;
+
+$Session = new Memory();
+
+$Session->set('_csrf_token', 'abc123');
+
+$exists = $Session->check('_csrf_token'); // true
+$token = $Session->get('_csrf_token');    // 'abc123'
+
+$Session->delete('_csrf_token');
+$Session->flush();
+$Session->reset();
+```
+
+Public API:
+
+| Method | Behavior |
+| ------ | -------- |
+| `check(string $name): bool` | Returns `true` when the key exists, even if the value is `null`. |
+| `get(string $name, mixed $default = null): mixed` | Returns the value or the default when the key is missing or contains `null`. |
+| `set(string $name, mixed $value): void` | Stores one value. |
+| `delete(string $name): void` | Removes one key. |
+| `list(): array<string,mixed>` | Returns all stored data. |
+| `flush(): void` | Removes all data. |
+| `reset(): static` | Clears state and returns the Fake itself. |
+
+### Fake\Clock
+
+`Fake\Clock` is a deterministic clock for time-sensitive tests. The current timestamp is stored in the `now` property.
+
+```php
+<?php
+
+use Bootgly\ACI\Tests\Doubles\Fake\Clock;
+
+$Clock = new Clock(100);
+
+$Clock->now; // 100.0
+
+$Clock->advance(60);
+$Clock->now; // 160.0
+
+$Clock->freeze(42.5);
+$Clock->now; // 42.5
+
+$Clock->reset();
+$Clock->now; // 100.0
+```
+
+When the SUT accepts a time provider, pass the Fake through a Closure:
+
+```php
+$RateLimit = new RateLimit(
+   limit: 3,
+   window: 60,
+   clock: fn (): float => $Clock->now
+);
+```
+
+Public API:
+
+| Member | Behavior |
+| ------ | -------- |
+| `now: float` | Current timestamp of the fake clock. |
+| `advance(int|float $seconds): void` | Advances the clock by seconds. |
+| `freeze(int|float $at): void` | Freezes the clock at an exact timestamp. |
+| `reset(): static` | Restores the initial timestamp and returns the Fake itself. |
 
 ## Mock
 
@@ -128,6 +210,7 @@ The `Wrapped` property is the typed proxy. The `Real` property keeps the real in
 <?php
 
 use Bootgly\ACI\Tests\Doubles;
+use Bootgly\ACI\Tests\Doubles\Fake\Memory;
 use Bootgly\ACI\Tests\Doubles\Mock;
 
 $Doubles = new Doubles();
@@ -135,7 +218,10 @@ $Doubles = new Doubles();
 $Auth = $Doubles->add(new Mock(Authing::class));
 $Auth->stub('check', true);
 
-$Doubles->reset(); // resets Calls and Stubs from registered doubles
+$Session = $Doubles->add(new Memory());
+$Session->set('_csrf_token', 'abc123');
+
+$Doubles->reset(); // resets Calls/Stubs and clears registered Fake state
 $Doubles->clear(); // removes all entries from the registry
 ```
 
@@ -156,5 +242,6 @@ The generated proxy follows PHP language constraints:
 
 - Use `Mock` to isolate external dependencies and control return values.
 - Use `Spy` when the real implementation must run.
+- Use `Fake` when the test needs consistent state across calls.
 - Use `verify()` for interaction intent; use normal assertions for final state.
 - Call `reset()` between scenarios when reusing the same double.

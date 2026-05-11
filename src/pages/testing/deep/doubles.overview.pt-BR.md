@@ -1,10 +1,92 @@
 # Doubles
 
-Doubles permitem substituir colaboradores reais durante um teste. No Bootgly, o recurso é nativo em `Bootgly\ACI\Tests` e cobre três necessidades principais:
+Doubles permitem substituir colaboradores reais durante um teste. No Bootgly, o recurso é nativo em `Bootgly\ACI\Tests` e cobre quatro necessidades principais:
 
 - `Mock`: substitui uma interface ou classe não-final com respostas controladas.
 - `Spy`: envolve uma instância real, delega chamadas e registra interações.
+- `Fake`: fornece uma implementação funcional, stateful e determinística de um colaborador.
 - `Doubles`: registry simples para resetar vários doubles juntos.
+
+## Fake
+
+Use `Fake` quando o teste precisa de comportamento realista com estado interno, mas não precisa registrar chamadas nem gerar proxy. Um Fake é útil quando a relação entre chamadas importa, por exemplo: `set('k', 'v')` → `check('k')` → `get('k')`.
+
+Fakes implementam `Doubling`, então podem ser registrados em `Doubles` e resetados junto com `Mock` e `Spy`.
+
+### Fake\Memory
+
+`Fake\Memory` é um key-value store em memória para colaboradores com shape parecido com sessão, cache ou storage simples.
+
+```php
+<?php
+
+use Bootgly\ACI\Tests\Doubles\Fake\Memory;
+
+$Session = new Memory();
+
+$Session->set('_csrf_token', 'abc123');
+
+$exists = $Session->check('_csrf_token'); // true
+$token = $Session->get('_csrf_token');    // 'abc123'
+
+$Session->delete('_csrf_token');
+$Session->flush();
+$Session->reset();
+```
+
+API pública:
+
+| Método | Comportamento |
+| ------ | ------------- |
+| `check(string $name): bool` | Retorna `true` quando a chave existe, mesmo se o valor for `null`. |
+| `get(string $name, mixed $default = null): mixed` | Retorna o valor ou o default quando a chave não existe ou vale `null`. |
+| `set(string $name, mixed $value): void` | Armazena um valor. |
+| `delete(string $name): void` | Remove uma chave. |
+| `list(): array<string,mixed>` | Retorna todos os dados armazenados. |
+| `flush(): void` | Remove todos os dados. |
+| `reset(): static` | Limpa o estado e retorna o próprio Fake. |
+
+### Fake\Clock
+
+`Fake\Clock` é um relógio determinístico para testes sensíveis a tempo. O timestamp atual fica na propriedade `now`.
+
+```php
+<?php
+
+use Bootgly\ACI\Tests\Doubles\Fake\Clock;
+
+$Clock = new Clock(100);
+
+$Clock->now; // 100.0
+
+$Clock->advance(60);
+$Clock->now; // 160.0
+
+$Clock->freeze(42.5);
+$Clock->now; // 42.5
+
+$Clock->reset();
+$Clock->now; // 100.0
+```
+
+Quando o SUT aceita um provider de tempo, passe o Fake por uma Closure:
+
+```php
+$RateLimit = new RateLimit(
+   limit: 3,
+   window: 60,
+   clock: fn (): float => $Clock->now
+);
+```
+
+API pública:
+
+| Membro | Comportamento |
+| ------ | ------------- |
+| `now: float` | Timestamp atual do relógio fake. |
+| `advance(int|float $seconds): void` | Avança o relógio em segundos. |
+| `freeze(int|float $at): void` | Fixa o relógio em um timestamp exato. |
+| `reset(): static` | Restaura o timestamp inicial e retorna o próprio Fake. |
 
 ## Mock
 
@@ -128,6 +210,7 @@ A propriedade `Wrapped` é o proxy tipado. A propriedade `Real` mantém a instâ
 <?php
 
 use Bootgly\ACI\Tests\Doubles;
+use Bootgly\ACI\Tests\Doubles\Fake\Memory;
 use Bootgly\ACI\Tests\Doubles\Mock;
 
 $Doubles = new Doubles();
@@ -135,7 +218,10 @@ $Doubles = new Doubles();
 $Auth = $Doubles->add(new Mock(Authing::class));
 $Auth->stub('check', true);
 
-$Doubles->reset(); // reseta Calls e Stubs dos doubles registrados
+$Session = $Doubles->add(new Memory());
+$Session->set('_csrf_token', 'abc123');
+
+$Doubles->reset(); // reseta Calls/Stubs e limpa o estado dos Fakes registrados
 $Doubles->clear(); // remove todos do registry
 ```
 
@@ -156,5 +242,6 @@ O proxy gerado respeita as restrições da linguagem PHP:
 
 - Use `Mock` para isolar dependências externas e controlar retornos.
 - Use `Spy` quando a implementação real deve rodar.
+- Use `Fake` quando o teste precisa observar estado consistente entre chamadas.
 - Use `verify()` para intenção de interação; use asserções normais para estado final.
 - Chame `reset()` entre cenários quando o mesmo double for reutilizado.
