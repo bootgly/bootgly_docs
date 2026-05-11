@@ -242,13 +242,15 @@ $Policies = new Policies(
 $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 ```
 
-`Remote` mantém um cache `KeySet` em memória por processo, pode usar `Vault` para cache JWKS file-backed compartilhado entre workers no mesmo filesystem, atualiza o JWKS quando um token chega com `kid` desconhecido e falha fechado quando o endpoint não pode ser buscado, retorna status não-2xx, retorna JSON inválido ou retorna um documento JWKS inválido. JWKS remoto exige HTTPS por padrão; use `insecure: true` apenas em testes ou ambientes locais controlados. OIDC Discovery e backends externos de cache multi-host continuam como camadas futuras.
+`Remote` mantém um cache `KeySet` em memória por processo, pode usar `Vault` para cache JWKS file-backed compartilhado entre workers no mesmo filesystem, respeita `Cache-Control: max-age` quando presente, compartilha o cooldown de refresh-on-miss via cache, atualiza o JWKS quando um token chega com `kid` desconhecido e falha fechado quando o endpoint não pode ser buscado, retorna status não-2xx, retorna JSON inválido ou retorna um documento JWKS inválido. JWKS remoto exige HTTPS por padrão; use `insecure: true` apenas em testes ou ambientes locais controlados. OIDC Discovery, `ETag`/`Last-Modified`, backoff exponencial e backends externos de cache multi-host continuam como camadas futuras.
 
 ### Refresh tokens e uso de `jti`
 
 Para apps fullstack first-party, mantenha access tokens curtos e rotacione refresh tokens opacos com `Bootgly\API\Security\JWT\Tokens`:
 
 ```php
+use Bootgly\API\Security\JWT\Replay;
+use Bootgly\API\Security\JWT\Token;
 use Bootgly\API\Security\JWT\Tokens;
 use Bootgly\API\Security\JWT\Usage;
 use Bootgly\API\Security\JWT\Vault;
@@ -261,12 +263,15 @@ $Issued = $Tokens->mint('user-42', 60 * 60 * 24 * 30, [
 ]);
 
 $Rotated = $Tokens->rotate($Issued->refresh, 60 * 60 * 24 * 30);
-if ($Rotated !== null) {
-   $Tokens->revoke($Rotated->refresh);
+if ($Rotated instanceof Replay) {
+   // incidente: registrar subject/family e forçar logout dos siblings
+}
+elseif ($Rotated instanceof Token) {
+   // emitir o novo refresh token para o cliente
 }
 ```
 
-`Tokens` guarda o estado de refresh por hash do token, consome o refresh antigo na rotação, mantém um tombstone para detectar replay e revoga a família inteira se um refresh já consumido for reutilizado.
+`Tokens` guarda o estado de refresh por hash do token, consome o refresh antigo na rotação, mantém um tombstone com `subject`/claims para auditoria e retorna `Replay` quando um refresh já consumido é reutilizado. Replay revoga a família inteira e deve ser tratado como incidente.
 
 Use `Usage` quando os valores `jti` de access tokens precisam de revogação persistente ou proteção single-use contra replay:
 
@@ -278,9 +283,11 @@ $Usage->block('access-token-jti', 300);
 
 $SingleUse = new Usage($Vault, single: true);
 $Verifier->track($SingleUse);
+
+$OptionalJTI = new Usage($Vault, required: false);
 ```
 
-`Usage` roda apenas depois de assinatura, claims temporais e `Policies` opcionais passarem. O modo single-use exige claim `exp` para que o marcador `jti` visto expire automaticamente.
+`Usage` roda apenas depois de assinatura, claims temporais e `Policies` opcionais passarem. Por padrão ele exige claim `jti`; use `required: false` apenas quando tokens sem identificador devem passar sem revogação persistente. O modo single-use exige claim `exp` para que o marcador `jti` visto expire automaticamente.
 
 ## Guard Basic
 
