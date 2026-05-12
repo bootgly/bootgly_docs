@@ -83,7 +83,7 @@ $Bearer = new Authenticating(
 yield $Router->route('/private', $Handler, GET, middlewares: [new Authentication($Bearer)]);
 ```
 
-See the [Authentication](../Authentication/) page for Bearer, JWT, Basic, Session, middleware-owned challenges, and demo routes.
+See the [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) page for Bearer, JWT, Basic, Session, middleware-owned challenges, and demo routes.
 
 **Phase:** Pre-processing — rejects unauthenticated requests before the handler runs.
 
@@ -225,7 +225,7 @@ new Validator(
 
 The default failure response is `422 Unprocessable Entity` with body `{"errors": {"email": ["email must be a valid email address."]}}`. Provide a `fallback` closure to render a custom error response while keeping the route fail-closed.
 
-See the [Request Validation](../Request/#request-validation) section for the full validator catalog, custom rules, and end-to-end examples.
+See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for the full validator catalog, custom rules, and end-to-end examples.
 
 **Phase:** Pre-processing — validates input before the handler runs.
 

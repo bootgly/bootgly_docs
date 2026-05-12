@@ -491,6 +491,8 @@ Request::$allowedHosts = [];
 $Request->Session; // Session object
 ```
 
+<span id="request-validation"></span>
+
 ## Request Validation
 
 Bootgly ships a fluent validation system for verifying request data before your handler runs. It revolves around three pieces:

@@ -491,6 +491,8 @@ Request::$allowedHosts = [];
 $Request->Session; // Objeto Session
 ```
 
+<span id="request-validation"></span>
+
 ## Validação de Requisição
 
 O Bootgly fornece um sistema de validação fluente para verificar dados da requisição antes do seu handler executar. Ele gira em torno de três peças:
