@@ -49,5 +49,31 @@ export default {
         title: 'Configuração'
       }
     }
+  },
+
+  '/performance': {
+    config: {
+      icon: 'speed',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Tune HTTP workers, benchmark concurrency, ADI Database pools and PostgreSQL settings for Bootgly projects.',
+          'pt-BR': 'Ajuste workers HTTP, concorrência de benchmark, pools do ADI Database e configurações PostgreSQL em projetos Bootgly.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Performance'
+      },
+      'pt-BR': {
+        title: 'Performance'
+      }
+    }
   }
 }
