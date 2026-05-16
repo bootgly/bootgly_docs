@@ -118,6 +118,8 @@ is genuinely held you get `Migration lock is already active.`
 ## Reference
 
 - **[Schema](/manual/ADI/Databases/SQL/Schema/overview/)** — the DDL facade.
+- **[Database queries](/guide/database-queries/overview/)** — the next flow after your
+  tables exist.
 - **[Blueprint](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/)** — columns, types, references.
 - **[Migrations](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)** — `Runner`, batches, history.
 - **[Dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)** — PostgreSQL / MySQL / SQLite.

@@ -118,6 +118,8 @@ automaticamente. Se o lock estiver realmente ativo você recebe
 ## Referência
 
 - **[Schema](/manual/ADI/Databases/SQL/Schema/overview/)** — a fachada DDL.
+- **[Consultas de banco](/guide/database-queries/overview/)** — o próximo fluxo depois que
+  suas tabelas existem.
 - **[Blueprint](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/)** — colunas, tipos, referências.
 - **[Migrations](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)** — `Runner`, batches, histórico.
 - **[Dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)** — PostgreSQL / MySQL / SQLite.

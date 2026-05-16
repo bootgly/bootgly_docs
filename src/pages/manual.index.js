@@ -396,6 +396,128 @@ export default {
       }
     }
   },
+  '/ADI/Databases/SQL/Builder': {
+    config: {
+      icon: 'storage',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build parameterized SELECT, INSERT, UPDATE and DELETE statements through the SQL Query Builder.',
+          'pt-BR': 'Monte SELECT, INSERT, UPDATE e DELETE parametrizados com o Query Builder SQL.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.SQL'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Query Builder'
+      },
+      'pt-BR': {
+        title: 'Query Builder'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Reading': {
+    config: {
+      icon: 'search',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Read rows with select, filters, text matching, joins, aliases, aggregates, grouping, order and locks.',
+          'pt-BR': 'Leia linhas com select, filtros, busca textual, joins, aliases, agregações, agrupamento, ordem e locks.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Reading rows'
+      },
+      'pt-BR': {
+        title: 'Lendo linhas'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Writing': {
+    config: {
+      icon: 'edit_note',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Write rows with insert, multi-row set values, update/delete guards, RETURNING output and upsert handling.',
+          'pt-BR': 'Escreva linhas com insert, valores multi-row, guards de update/delete, output RETURNING e upsert.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Writing rows'
+      },
+      'pt-BR': {
+        title: 'Escrevendo linhas'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Composing': {
+    config: {
+      icon: 'account_tree',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Compose advanced query shapes with Identifier, Expression, nested filters, subqueries, derived tables and CTEs.',
+          'pt-BR': 'Componha queries avançadas com Identifier, Expression, filtros aninhados, subqueries, tabelas derivadas e CTEs.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Composing queries'
+      },
+      'pt-BR': {
+        title: 'Compondo queries'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Dialects': {
+    config: {
+      icon: 'compare_arrows',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Compare Query Builder output across PostgreSQL, MySQL and SQLite: quotes, placeholders and capabilities.',
+          'pt-BR': 'Compare a saída do Query Builder em PostgreSQL, MySQL e SQLite: quotes, placeholders e capacidades.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Query dialects'
+      },
+      'pt-BR': {
+        title: 'Dialetos de query'
+      }
+    }
+  },
   '/ADI/Databases/SQL/Schema': {
     config: {
       icon: 'schema',
@@ -407,7 +529,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.ADI.Databases.SQL'
+        separator: true
       },
       subpages: {
         showcase: false

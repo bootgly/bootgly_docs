@@ -77,6 +77,32 @@ export default {
     }
   },
 
+  '/database-queries': {
+    config: {
+      icon: 'storage',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build, run and inspect SQL SELECT, INSERT, UPDATE and DELETE statements with the Bootgly Query Builder.',
+          'pt-BR': 'Monte, execute e inspecione SELECT, INSERT, UPDATE e DELETE SQL com o Query Builder do Bootgly.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database queries'
+      },
+      'pt-BR': {
+        title: 'Consultas de banco'
+      }
+    }
+  },
+
   '/database-migrations': {
     config: {
       icon: 'schema',

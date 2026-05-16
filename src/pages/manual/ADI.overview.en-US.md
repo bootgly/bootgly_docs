@@ -22,7 +22,9 @@ you a SQL database plus a **migration** workflow — that is all you touch day t
    bootgly project <name> migrate up
    ```
 
-3. **Query it** — read and write rows with the Query Builder: `$Database->query(...)`.
+3. **Query it** — read and write rows with the **[Database queries](/guide/database-queries/overview/)**
+   guide and the **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)**:
+   `$Database->table(...)` builds, `$Database->query(...)` runs.
 
 That is the whole loop: **connect → migrate → query**.
 
@@ -30,6 +32,10 @@ That is the whole loop: **connect → migrate → query**.
 
 - **[Database migrations](/guide/database-migrations/overview/)** — the full step-by-step
   flow (create a migration, apply it, see what happened). **Read this first.**
+- **[Database queries](/guide/database-queries/overview/)** — the next day-to-day flow:
+  build a query, run it, inspect `Operation->rows`.
+- **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** — the DML builder for
+  `SELECT`, `INSERT`, `UPDATE` and `DELETE`.
 - **[Schema Builder](/manual/ADI/Databases/SQL/Schema/overview/)** — the table operations
   you call inside a migration (`create`, `alter`, `drop`, …).
 - **[Defining tables](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/)** — how to
@@ -45,6 +51,8 @@ ADI (Abstract Data Interface) is the data layer of Bootgly's I2P architecture, i
 one-way chain `ABI → ACI → ADI → API → CLI → WPI`. The single entrypoint is the `SQL`
 facade; it exposes two builders:
 
-- `$Database->query(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
+- `$Database->table(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
+- `$Database->query(...)` — execution entrypoint for raw SQL, a builder or a compiled
+  `Query`.
 - `$Database->structure()` — Schema Builder (DDL + migrations), a cached `Schema` instance
   bound to the database dialect (same instance on every call).
