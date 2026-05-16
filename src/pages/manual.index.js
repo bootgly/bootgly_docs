@@ -504,7 +504,9 @@ export default {
           'pt-BR': 'Compare a saída do Query Builder em PostgreSQL, MySQL e SQLite: quotes, placeholders e capacidades.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -528,9 +530,7 @@ export default {
           'pt-BR': 'Compile DDL portável de CREATE, ALTER, DROP, RENAME, índices e constraints em SQL específico do dialeto.'
         }
       },
-      menu: {
-        separator: true
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
