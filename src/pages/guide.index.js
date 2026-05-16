@@ -75,5 +75,31 @@ export default {
         title: 'Performance'
       }
     }
+  },
+
+  '/database-migrations': {
+    config: {
+      icon: 'schema',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Create, apply, roll back and sync SQL schema migrations end to end with the Bootgly Schema Builder and CLI.',
+          'pt-BR': 'Crie, aplique, reverta e sincronize migrations de schema SQL ponta a ponta com o Schema Builder e a CLI do Bootgly.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database migrations'
+      },
+      'pt-BR': {
+        title: 'Migrations de banco'
+      }
+    }
   }
 }

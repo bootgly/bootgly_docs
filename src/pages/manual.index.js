@@ -352,6 +352,143 @@ export default {
     }
   },
 
+  // ADI
+  '/ADI': {
+    config: {
+      icon: 'data_array',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Access data in Bootgly: the SQL database, connection pooling, the Query Builder and the Schema Builder.',
+          'pt-BR': 'Acesse dados no Bootgly: o banco SQL, pool de conexões, o Query Builder e o Schema Builder.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'data_array',
+          label: 'Bootgly ADI'
+        },
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Abstract Data Interface'
+      }
+    }
+  },
+  '/ADI/Databases': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Databases'
+      }
+    }
+  },
+  '/ADI/Databases/SQL': {
+    config: null,
+    data: {
+      '*': {
+        title: 'SQL'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Schema': {
+    config: {
+      icon: 'schema',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Compile portable CREATE, ALTER, DROP, RENAME, index and constraint DDL into dialect-specific SQL.',
+          'pt-BR': 'Compile DDL portável de CREATE, ALTER, DROP, RENAME, índices e constraints em SQL específico do dialeto.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.SQL'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Schema Builder'
+      },
+      'pt-BR': {
+        title: 'Schema Builder'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Schema/Blueprint': {
+    config: {
+      icon: 'view_column',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Define tables and columns fluently: types, modifiers, keys, references and auxiliary enums.',
+          'pt-BR': 'Defina tabelas e colunas de forma fluente: tipos, modificadores, chaves, referências e enums auxiliares.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Defining tables'
+      },
+      'pt-BR': {
+        title: 'Definindo tabelas'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Schema/Migrations': {
+    config: {
+      icon: 'history',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Version the schema with migration files, the Runner, batches, history, transactions and locking.',
+          'pt-BR': 'Versione o schema com arquivos de migration, o Runner, batches, histórico, transações e lock.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Migrations'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Schema/Dialects': {
+    config: {
+      icon: 'compare_arrows',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'PostgreSQL, MySQL and SQLite compilation differences and capability checks.',
+          'pt-BR': 'Diferenças de compilação e checagem de capacidades de PostgreSQL, MySQL e SQLite.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Dialects'
+      }
+    }
+  },
+
   // CLI
   '/CLI': {
     config: {
