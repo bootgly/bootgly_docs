@@ -155,14 +155,14 @@ distinct (): static
 Muda para modo SELECT e emite `SELECT DISTINCT`.
 
 ```php
-filter (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null, Junctions $Junction = Junctions::And): static
+filter (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null): static
 ```
-Adiciona um predicado `WHERE`.
+Adiciona um predicado `WHERE`. Use `->or->filter(...)` ou `->and->filter(...)` para escolher a junção do próximo predicado.
 
 ```php
-match (BackedEnum|Stringable $Column, mixed $value, Matches $Match = Matches::Like, Junctions $Junction = Junctions::And): static
+match (BackedEnum|Stringable $Column, mixed $value, Matches $Match = Matches::Like): static
 ```
-Adiciona um predicado textual. O valor deve ser string.
+Adiciona um predicado textual. O valor deve ser string. Use `->or->match(...)` ou `->and->match(...)` para junções explícitas.
 
 ```php
 join (BackedEnum|Stringable $Table, BackedEnum|Stringable $Left, Operators $Operator, BackedEnum|Stringable $Right, Joins $Join = Joins::Inner): static
@@ -190,9 +190,9 @@ group (BackedEnum|Stringable ...$Columns): static
 Adiciona colunas ao `GROUP BY`.
 
 ```php
-having (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null, Junctions $Junction = Junctions::And): static
+having (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null): static
 ```
-Adiciona um predicado `HAVING`.
+Adiciona um predicado `HAVING`. Use `->or->having(...)` ou `->and->having(...)` para junções explícitas.
 
 ```php
 order (Orders $Order, BackedEnum|Stringable $Column, null|Nulls $Nulls = null): static

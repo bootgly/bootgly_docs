@@ -154,14 +154,14 @@ distinct (): static
 Switch to SELECT mode and emit `SELECT DISTINCT`.
 
 ```php
-filter (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null, Junctions $Junction = Junctions::And): static
+filter (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null): static
 ```
-Append one `WHERE` predicate.
+Append one `WHERE` predicate. Use `->or->filter(...)` or `->and->filter(...)` to choose the next predicate junction.
 
 ```php
-match (BackedEnum|Stringable $Column, mixed $value, Matches $Match = Matches::Like, Junctions $Junction = Junctions::And): static
+match (BackedEnum|Stringable $Column, mixed $value, Matches $Match = Matches::Like): static
 ```
-Append one text predicate. The value must be a string.
+Append one text predicate. The value must be a string. Use `->or->match(...)` or `->and->match(...)` for explicit junctions.
 
 ```php
 join (BackedEnum|Stringable $Table, BackedEnum|Stringable $Left, Operators $Operator, BackedEnum|Stringable $Right, Joins $Join = Joins::Inner): static
@@ -189,9 +189,9 @@ group (BackedEnum|Stringable ...$Columns): static
 Append `GROUP BY` columns.
 
 ```php
-having (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null, Junctions $Junction = Junctions::And): static
+having (BackedEnum|Stringable $Column, Operators $Operator, mixed $value = null): static
 ```
-Append one `HAVING` predicate.
+Append one `HAVING` predicate. Use `->or->having(...)` or `->and->having(...)` for explicit junctions.
 
 ```php
 order (Orders $Order, BackedEnum|Stringable $Column, null|Nulls $Nulls = null): static

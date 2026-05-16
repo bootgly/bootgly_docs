@@ -53,7 +53,6 @@ SELECT NOW() AS "current" FROM "users" WHERE LOWER("name") = $1
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder;
-use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Junctions;
 
 $Database
    ->table(Tables::Users)
@@ -61,7 +60,8 @@ $Database
    ->nest(function (Builder $Group): void {
       $Group
          ->filter(Columns::Active, Operators::IsTrue)
-         ->filter(Columns::Name, Operators::Equal, 'Ada', Junctions::Or);
+         ->or
+         ->filter(Columns::Name, Operators::Equal, 'Ada');
    })
    ->filter(Columns::Id, Operators::Greater, 10);
 ```
@@ -159,7 +159,7 @@ new Expression(string $sql)
 Wrap trusted raw SQL so the builder does not quote or bind it.
 
 ```php
-nest (Closure $Group, Junctions $Junction = Junctions::And): static
+nest (Closure $Group): static
 ```
 Append one grouped `WHERE` predicate scope.
 
