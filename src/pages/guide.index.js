@@ -127,5 +127,31 @@ export default {
         title: 'Migrations de banco'
       }
     }
+  },
+
+  '/database-seeders': {
+    config: {
+      icon: 'playlist_add',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Create, list and run rerunnable SQL data seeders with Query Builder and deterministic fakers.',
+          'pt-BR': 'Crie, liste e rode seeders SQL reexecutáveis com Query Builder e fakers determinísticos.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database seeders'
+      },
+      'pt-BR': {
+        title: 'Seeders de banco'
+      }
+    }
   }
 }

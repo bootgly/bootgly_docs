@@ -359,8 +359,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Access data in Bootgly: the SQL database, connection pooling, the Query Builder and the Schema Builder.',
-          'pt-BR': 'Acesse dados no Bootgly: o banco SQL, pool de conexões, o Query Builder e o Schema Builder.'
+          'en-US': 'Access data in Bootgly: the SQL database, connection pooling, the Query Builder, the Schema Builder and Seeders.',
+          'pt-BR': 'Acesse dados no Bootgly: o banco SQL, pool de conexões, o Query Builder, o Schema Builder e Seeders.'
         }
       },
       menu: {
@@ -599,7 +599,9 @@ export default {
           'pt-BR': 'Diferenças de compilação e checagem de capacidades de PostgreSQL, MySQL e SQLite.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -607,6 +609,27 @@ export default {
     data: {
       '*': {
         title: 'Dialects'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Seed': {
+    config: {
+      icon: 'playlist_add',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Create and run rerunnable SQL seeders with Query Builder, transactions, locks and deterministic fakers.',
+          'pt-BR': 'Crie e rode seeders SQL reexecutáveis com Query Builder, transações, locks e fakers determinísticos.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Seeders'
       }
     }
   },

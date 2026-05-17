@@ -1,6 +1,6 @@
 # Fakers
 
-Fakers geram dados falsos para testes sem depender de pacotes externos. Eles ficam em `Bootgly\ACI\Tests`, usam recursos nativos do PHP e podem ser determinísticos quando recebem uma seed.
+Fakers geram dados falsos sem depender de pacotes externos. Eles ficam em `Bootgly\ACI`, usam recursos nativos do PHP e podem ser determinísticos quando recebem uma seed.
 
 ## Recursos disponíveis
 
@@ -12,7 +12,7 @@ Fakers geram dados falsos para testes sem depender de pacotes externos. Eles fic
 | `Text` | Texto com palavras de um léxico interno. |
 | `UUID` | UUID v4 no formato RFC 4122. |
 
-Todos os fakers concretos estendem `Bootgly\ACI\Tests\Faker` e implementam `generate()`.
+Todos os fakers concretos estendem `Bootgly\ACI\Faker` e implementam `generate()`.
 
 ## Seed determinística
 
@@ -21,7 +21,7 @@ Passe `seed:` para repetir a mesma saída em execuções diferentes.
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\UUID;
+use Bootgly\ACI\Fakers\UUID;
 
 $First = new UUID(seed: 42);
 $Second = new UUID(seed: 42);
@@ -36,7 +36,7 @@ Use seeds quando o teste precisa de dados variados, mas estáveis.
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Email;
+use Bootgly\ACI\Fakers\Email;
 
 $Email = new Email(seed: 7);
 
@@ -52,7 +52,7 @@ $value = $Email->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Integer;
+use Bootgly\ACI\Fakers\Integer;
 
 $Integer = new Integer(seed: 10);
 $Integer->min = 100;
@@ -66,7 +66,7 @@ $value = $Integer->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Name;
+use Bootgly\ACI\Fakers\Name;
 
 $Name = new Name(seed: 3);
 
@@ -82,7 +82,7 @@ $value = $Name->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Text;
+use Bootgly\ACI\Fakers\Text;
 
 $Text = new Text(seed: 5);
 $Text->words = 8;
@@ -95,7 +95,7 @@ $value = $Text->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\UUID;
+use Bootgly\ACI\Fakers\UUID;
 
 $UUID = new UUID(seed: 1);
 
@@ -115,7 +115,7 @@ O trait `Fakers` oferece o atalho `fake($kind, $seed)` para classes que querem g
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers;
+use Bootgly\ACI\Fakers;
 
 $Host = new class {
    use Fakers;
@@ -136,7 +136,7 @@ use Generator;
 
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertions;
-use Bootgly\ACI\Tests\Fakers\Email;
+use Bootgly\ACI\Fakers\Email;
 use Bootgly\ACI\Tests\Suite\Test\Specification;
 
 return new Specification(

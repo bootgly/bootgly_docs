@@ -1,6 +1,6 @@
 # Fakers
 
-Fakers generate fake data for tests without external packages. They live in `Bootgly\ACI\Tests`, use native PHP resources and can be deterministic when they receive a seed.
+Fakers generate fake data without external packages. They live in `Bootgly\ACI`, use native PHP resources and can be deterministic when they receive a seed.
 
 ## Available resources
 
@@ -12,7 +12,7 @@ Fakers generate fake data for tests without external packages. They live in `Boo
 | `Text` | Text built from an internal lexicon. |
 | `UUID` | RFC 4122 version 4 UUID. |
 
-All concrete fakers extend `Bootgly\ACI\Tests\Faker` and implement `generate()`.
+All concrete fakers extend `Bootgly\ACI\Faker` and implement `generate()`.
 
 ## Deterministic seed
 
@@ -21,7 +21,7 @@ Pass `seed:` to repeat the same output across runs.
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\UUID;
+use Bootgly\ACI\Fakers\UUID;
 
 $First = new UUID(seed: 42);
 $Second = new UUID(seed: 42);
@@ -36,7 +36,7 @@ Use seeds when a test needs varied but stable data.
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Email;
+use Bootgly\ACI\Fakers\Email;
 
 $Email = new Email(seed: 7);
 
@@ -52,7 +52,7 @@ $value = $Email->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Integer;
+use Bootgly\ACI\Fakers\Integer;
 
 $Integer = new Integer(seed: 10);
 $Integer->min = 100;
@@ -66,7 +66,7 @@ $value = $Integer->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Name;
+use Bootgly\ACI\Fakers\Name;
 
 $Name = new Name(seed: 3);
 
@@ -82,7 +82,7 @@ $value = $Name->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\Text;
+use Bootgly\ACI\Fakers\Text;
 
 $Text = new Text(seed: 5);
 $Text->words = 8;
@@ -95,7 +95,7 @@ $value = $Text->generate();
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers\UUID;
+use Bootgly\ACI\Fakers\UUID;
 
 $UUID = new UUID(seed: 1);
 
@@ -115,7 +115,7 @@ The `Fakers` trait exposes the `fake($kind, $seed)` shortcut for classes that wa
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Fakers;
+use Bootgly\ACI\Fakers;
 
 $Host = new class {
    use Fakers;
@@ -136,7 +136,7 @@ use Generator;
 
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertions;
-use Bootgly\ACI\Tests\Fakers\Email;
+use Bootgly\ACI\Fakers\Email;
 use Bootgly\ACI\Tests\Suite\Test\Specification;
 
 return new Specification(
