@@ -62,7 +62,9 @@ export default {
         }
       },
       book: 'guide',
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -125,6 +127,32 @@ export default {
       },
       'pt-BR': {
         title: 'Consultas de banco'
+      }
+    }
+  },
+
+  '/database-read-replicas': {
+    config: {
+      icon: 'lan',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Route safe SQL reads to replica pools while writes, locks and transactions stay on primary.',
+          'pt-BR': 'Roteie leituras SQL seguras para pools de réplica enquanto escritas, locks e transações ficam no primário.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database read replicas'
+      },
+      'pt-BR': {
+        title: 'Réplicas de leitura de banco'
       }
     }
   },

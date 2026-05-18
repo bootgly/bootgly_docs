@@ -60,6 +60,11 @@ Parâmetros:
 ['Ada']
 ```
 
+Quando réplicas de leitura estão configuradas, builders de leitura como esse podem ser roteados
+para uma réplica, exceto quando o escopo atual está sticky depois de uma escrita. Veja
+**[Réplicas de leitura de banco](/guide/database-read-replicas/overview/)** para as regras de
+roteamento.
+
 ## Escrever linhas
 
 ```php
@@ -119,6 +124,7 @@ ou `set()` para virarem parâmetros.
 
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** - ciclo, compile e execução.
 - **[DBAL de banco](/guide/database-dbal/overview/)** - uso async do DBAL em respostas HTTP.
+- **[Réplicas de leitura de banco](/guide/database-read-replicas/overview/)** - roteie leituras seguras para réplicas e mantenha escritas no primário.
 - **[Lendo linhas](/manual/ADI/Databases/SQL/Builder/Reading/overview/)** - select, filtros, joins, agrupamento e limites.
 - **[Escrevendo linhas](/manual/ADI/Databases/SQL/Builder/Writing/overview/)** - insert, update, delete, output e upsert.
 - **[Compondo queries](/manual/ADI/Databases/SQL/Builder/Composing/overview/)** - identifiers, expressions, subqueries e CTEs.

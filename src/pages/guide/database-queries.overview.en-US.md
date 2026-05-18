@@ -61,6 +61,10 @@ Parameters:
 ['Ada']
 ```
 
+When read replicas are configured, read builders like this can route to a replica unless the
+current scope is sticky after a write. See
+**[Database read replicas](/guide/database-read-replicas/overview/)** for the routing rules.
+
 ## Write rows
 
 ```php
@@ -121,6 +125,7 @@ $Query = $Database
 
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** - lifecycle, compile and execution.
 - **[Database DBAL](/guide/database-dbal/overview/)** - async DBAL usage in HTTP responses.
+- **[Database read replicas](/guide/database-read-replicas/overview/)** - route safe reads to replicas and keep writes on primary.
 - **[Reading rows](/manual/ADI/Databases/SQL/Builder/Reading/overview/)** - select, filters, joins, grouping and limits.
 - **[Writing rows](/manual/ADI/Databases/SQL/Builder/Writing/overview/)** - insert, update, delete, output and upsert.
 - **[Composing queries](/manual/ADI/Databases/SQL/Builder/Composing/overview/)** - identifiers, expressions, subqueries and CTEs.

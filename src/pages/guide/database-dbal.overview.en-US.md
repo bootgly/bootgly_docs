@@ -16,7 +16,8 @@ work.
 
 Projects load database settings from `configs/database`. The demo project maps environment
 variables such as `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_TIMEOUT`,
-`DB_STATEMENTS`, `DB_POOL_MIN` and `DB_POOL_MAX` into `DatabaseConfig`.
+`DB_STATEMENTS`, `DB_POOL_MIN`, `DB_POOL_MAX`, `DB_ROUTING_STICKY` and
+`DB_REPLICA_*` values into `DatabaseConfig`.
 
 When a project boots, `Project::boot()` defines `BOOTGLY_PROJECT` and creates
 `BOOTGLY_PROJECT->Configs` from the project `configs/` directory. That loader is
@@ -51,7 +52,15 @@ return new Config(scope: 'database')
             ->up()
          ->Pool
             ->Min->bind(key: 'DB_POOL_MIN', default: 0, cast: Types::Integer)
-            ->Max->bind(key: 'DB_POOL_MAX', default: 8, cast: Types::Integer);
+            ->Max->bind(key: 'DB_POOL_MAX', default: 8, cast: Types::Integer)
+            ->up()
+         ->Routing
+            ->Sticky->bind(key: 'DB_ROUTING_STICKY', default: 5.0, cast: Types::Float)
+            ->up()
+         ->Replicas
+            ->Replica1
+               ->Host->bind(key: 'DB_REPLICA_1_HOST', default: null)
+               ->Port->bind(key: 'DB_REPLICA_1_PORT', default: null, cast: Types::Integer);
 ```
 
 Inside a `*.project.php` file, create the `SQL` instance from that config, then register
@@ -89,6 +98,33 @@ return new Project(
          'DB_POOL_MAX',
          'DB_POOL_MIN',
          'DB_PORT',
+         'DB_REPLICA_1_HOST',
+         'DB_REPLICA_1_NAME',
+         'DB_REPLICA_1_PASS',
+         'DB_REPLICA_1_POOL_MAX',
+         'DB_REPLICA_1_POOL_MIN',
+         'DB_REPLICA_1_PORT',
+         'DB_REPLICA_1_SSLCAFILE',
+         'DB_REPLICA_1_SSLMODE',
+         'DB_REPLICA_1_SSLPEER',
+         'DB_REPLICA_1_SSLVERIFY',
+         'DB_REPLICA_1_STATEMENTS',
+         'DB_REPLICA_1_TIMEOUT',
+         'DB_REPLICA_1_USER',
+         'DB_REPLICA_2_HOST',
+         'DB_REPLICA_2_NAME',
+         'DB_REPLICA_2_PASS',
+         'DB_REPLICA_2_POOL_MAX',
+         'DB_REPLICA_2_POOL_MIN',
+         'DB_REPLICA_2_PORT',
+         'DB_REPLICA_2_SSLCAFILE',
+         'DB_REPLICA_2_SSLMODE',
+         'DB_REPLICA_2_SSLPEER',
+         'DB_REPLICA_2_SSLVERIFY',
+         'DB_REPLICA_2_STATEMENTS',
+         'DB_REPLICA_2_TIMEOUT',
+         'DB_REPLICA_2_USER',
+         'DB_ROUTING_STICKY',
          'DB_SSLCAFILE',
          'DB_SSLMODE',
          'DB_SSLPEER',
@@ -166,3 +202,4 @@ return $Response->defer(function (Response $Response): void {
 - **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** - built-in resources and the DBAL response bridge.
 - **[DBAL core](/manual/ADI/Database/overview/)** - low-level config, pool, operation and driver lifecycle.
 - **[Database queries](/guide/database-queries/overview/)** - building SQL statements with Query Builder.
+- **[Database read replicas](/guide/database-read-replicas/overview/)** - read/write splitting, sticky scopes and replica failover.
