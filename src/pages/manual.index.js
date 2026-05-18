@@ -412,6 +412,15 @@ export default {
       }
     }
   },
+
+  '/ADI/Databases/SQL': {
+    config: null,
+    data: {
+      '*': {
+        title: 'SQL'
+      }
+    }
+  },
   '/ADI/Databases/SQL/Transaction': {
     config: {
       icon: 'sync_alt',
@@ -433,15 +442,6 @@ export default {
       },
       'pt-BR': {
         title: 'Transações'
-      }
-    }
-  },
-
-  '/ADI/Databases/SQL': {
-    config: null,
-    data: {
-      '*': {
-        title: 'SQL'
       }
     }
   },
