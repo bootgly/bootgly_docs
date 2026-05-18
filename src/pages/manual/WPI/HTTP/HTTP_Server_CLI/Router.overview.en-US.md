@@ -297,7 +297,7 @@ $Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
 yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
    // All nested routes inherit CORS + RateLimit
    yield $Router->route('users', function ($Request, $Response) {
-      return $Response->Json->send(['users' => []]);
+      return $Response->JSON->send(['users' => []]);
    }, GET);
 }, GET);
 ```

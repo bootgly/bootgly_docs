@@ -48,15 +48,16 @@ Appends data to the response body.
 return $Response->append('Additional information');
 ```
 
-### Render a simple view
+### Render a view
 
 ```php
-public function render (string $view, ? array $data = null, ? \Closure $callback = null) : self;
+$Response->View->render(string $view, null|array $data = null, null|Closure $callback = null): Response;
 ```
 
 **Description:**
 
-Renders a view and appends it to the response body.
+Renders a project view through the built-in `View` response resource and appends it to the
+response body.
 
 **Parameters:**
 
@@ -67,7 +68,7 @@ Renders a view and appends it to the response body.
 **Example:**
 
 ```php
-return $Response->render('welcome', ['title' => 'Welcome Page']);
+return $Response->View->render('welcome', ['title' => 'Welcome Page']);
 ```
 
 ### Send content
@@ -94,6 +95,27 @@ return $Response->send('{"status":"success"}');
 ```php
 return $Response->JSON->send(['Hello' => 'World!']);
 ```
+
+### Deferred I/O resources
+
+Use `defer()` for response work that must wait for external I/O. Response Resources loaded
+with `responseResources` can bridge that I/O to the response scheduler, but the response is
+still finalized with the normal `send()` flow.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+
+return $Response->defer(function (Response $Response): void {
+   $Database = $Response->Database;
+   $Result = $Database->fetch('SELECT 1 AS ok');
+
+   $Response->JSON->send([
+      'rows' => $Result->rows,
+   ]);
+});
+```
+
+See **[Response Resources](./Resources/)** for built-in resources and the DBAL bridge.
 
 ### Upload files
 
@@ -234,14 +256,14 @@ The response is sent automatically when `$work()` returns. If an exception is th
 Useful for CPU-bound work that should not block other connections:
 
 ```php
-yield $Router->route('/defer/tick', function ($Request, $Response) {
-   return $Response->defer(function () use ($Response) {
+yield $Router->route('/defer/tick', function ($Request, Response $Response) {
+   return $Response->defer(function (Response $Response): void {
       $partial = '';
       for ($i = 1; $i <= 5; $i++) {
          $partial .= "chunk {$i}\n";
          $Response->wait(); // Resume on next tick
       }
-      $Response->body = $partial;
+      $Response->send($partial);
    });
 }, GET);
 ```
@@ -251,8 +273,8 @@ yield $Router->route('/defer/tick', function ($Request, $Response) {
 Useful for waiting on external resources (databases, APIs, sockets):
 
 ```php
-yield $Router->route('/defer/io', function ($Request, $Response) {
-   return $Response->defer(function () use ($Response) {
+yield $Router->route('/defer/io', function ($Request, Response $Response) {
+   return $Response->defer(function (Response $Response): void {
       [$read, $write] = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
       stream_set_blocking($read, false);
 
@@ -266,7 +288,7 @@ yield $Router->route('/defer/io', function ($Request, $Response) {
       $data = stream_get_contents($read);
       fclose($read);
 
-      $Response->body = $data;
+      $Response->send($data);
    });
 }, GET);
 ```
@@ -274,16 +296,17 @@ yield $Router->route('/defer/io', function ($Request, $Response) {
 ### wait()
 
 ```php
-public function wait (null|mixed $value = null): Response;
+public function wait (mixed $value = null): Response;
 ```
 
 Yields control back to the event loop from inside a `defer()` closure. The behavior depends on the value passed:
 
 - **`$Response->wait()`** — tick-based: the Fiber resumes on the next event loop iteration.
 - **`$Response->wait($stream)`** — I/O-bound: the Fiber resumes when `stream_select()` detects readiness on the given stream resource.
+- **`$Response->wait($Readiness)`** — explicit I/O-bound scheduling through a DBAL or event-loop readiness object.
 
 If called outside of a deferred context (`$this->deferred === false`), the method returns immediately with no effect.
 
 **Parameters:**
 
-- `$value` (resource|null, default `null`): A PHP stream resource for I/O-bound scheduling, or `null` for tick-based scheduling.
+- `$value` (Readiness|resource|null, default `null`): A readiness request, PHP stream resource, or `null` for tick-based scheduling.

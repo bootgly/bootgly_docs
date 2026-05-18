@@ -47,6 +47,8 @@ Rules of thumb:
   them, because a runner may require the same file more than once in one PHP process.
 - Write idempotency into the seeder with `upsert`, guarded deletes or cleanup. Seeders have
   no history table.
+- `Runner::preview()` and `seed run --dry-run` skip execution of returned SQL only; seeders
+  that call `$Database->query(...)` directly inside the closure still touch the database.
 
 ## Reference
 

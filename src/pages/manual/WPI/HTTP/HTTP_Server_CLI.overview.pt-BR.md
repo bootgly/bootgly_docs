@@ -299,6 +299,6 @@ Cada worker executa um event loop baseado em `stream_select()` que lida com:
 - **Conexões de entrada**: Aceitas e registradas para monitoramento de leitura.
 - **Leitura de requisições**: Dados TCP brutos são decodificados em requisições HTTP.
 - **Escrita de respostas**: Respostas HTTP codificadas são escritas nos sockets dos clientes.
-- **PHP Fibers**: O event loop se integra com PHP Fibers para suportar respostas deferred (assíncronas). Veja o método `Response->defer()` para detalhes.
+- **PHP Fibers**: O event loop se integra com PHP Fibers para suportar respostas deferred (assíncronas). Veja `$Response->defer()` para detalhes.
 
 O event loop suporta aproximadamente 1000 file descriptors simultâneos (limite do `stream_select()`). Quando Fibers estão ativas, o loop opera em modo non-blocking (polling); caso contrário, ele bloqueia até que I/O esteja disponível, garantindo zero uso de CPU em idle.

@@ -32,7 +32,7 @@ $Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
 yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
    // Todas as rotas dentro deste grupo herdam CORS + RateLimit
    yield $Router->route('/users', function ($Request, $Response) {
-      $Response->Json->encode(['users' => []]);
+      return $Response->JSON->send(['users' => []]);
    }, GET);
 }, GET);
 ```

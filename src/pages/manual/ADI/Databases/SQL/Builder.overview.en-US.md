@@ -82,24 +82,13 @@ route.
 
 ## Transactions
 
-Use `SQL::begin()` when several statements must run on the same connection:
+Use `SQL::begin()` when several statements must run on the same connection and commit or
+roll back together. `Transaction::table()` starts the same Query Builder surface with the
+database dialect, and `Transaction::query()` accepts raw SQL, `Builder` and `Query`, like
+`SQL::query()`.
 
-```php
-$Transaction = $Database->begin();
-$Database->Pool->wait($Transaction->Operation);
-
-$Builder = $Transaction
-   ->table(Tables::Users)
-   ->update()
-   ->set(Columns::Active, false)
-   ->filter(Columns::Id, Operators::Equal, 7);
-
-$Database->Pool->wait($Transaction->query($Builder));
-$Database->Pool->wait($Transaction->commit());
-```
-
-`Transaction::table()` starts a builder with the same database dialect. `Transaction::query()`
-accepts raw SQL, `Builder` and `Query`, like `SQL::query()`.
+See **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)** for commit,
+rollback and savepoints.
 
 ## Reference
 
@@ -118,7 +107,8 @@ Create an async SQL operation from raw SQL, a builder or a compiled query.
 ```php
 begin (): Transaction
 ```
-Start a transaction pinned to one pooled connection.
+Start a transaction pinned to one pooled connection. See
+**[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)**.
 
 ### Builder lifecycle
 

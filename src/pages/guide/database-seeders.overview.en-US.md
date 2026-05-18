@@ -64,7 +64,8 @@ bootgly project <name> seed list
 When the database dialect supports transactions, each seeder runs in its own transaction.
 A local seeders lock plus a dialect advisory lock where supported stops overlapping runs.
 Use `--dry-run` before a rerun to compile the returned SQL and parameters without sending
-the statements to the database.
+the statements to the database. Dry-run skips execution of returned SQL only; seeders that
+call `$Database->query(...)` directly inside the closure still touch the database.
 
 ## Rerunnable by design
 

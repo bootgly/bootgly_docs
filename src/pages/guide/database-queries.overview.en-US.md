@@ -6,6 +6,10 @@ against the configured SQL database, then read the resulting `Operation`.
 Use the **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** when query shape
 comes from application code. Use raw SQL only when the builder is not the right fit.
 
+In `HTTP_Server_CLI` routes, use the
+**[Database DBAL](/guide/database-dbal/overview/)** guide to await operations through the
+Response resource instead of calling `Pool->wait()` directly.
+
 ## The flow
 
 ```php
@@ -75,24 +79,12 @@ PostgreSQL and SQLite support `output()` through `RETURNING`. MySQL rejects that
 so omit `output()` there and read generated values with the driver-specific flow your app
 uses.
 
-## Update inside a transaction
+## Use a transaction when writes must stay together
 
-Transactions pin queries to one pooled connection. Wait for each operation before sending
-the next statement on the same transaction.
-
-```php
-$Transaction = $Database->begin();
-$Database->Pool->wait($Transaction->Operation);
-
-$Update = $Transaction
-   ->table(Tables::Users)
-   ->update()
-   ->set(Columns::Active, false)
-   ->filter(Columns::Id, Operators::Equal, 7);
-
-$Database->Pool->wait($Transaction->query($Update));
-$Database->Pool->wait($Transaction->commit());
-```
+When several statements must share one connection and commit or roll back as a unit, use
+`SQL::begin()` and run builders through `Transaction::query()`. See
+**[Database transactions](/guide/database-transactions/overview/)** for the full flow,
+rollback pattern and savepoints.
 
 `update()` and `delete()` require at least one `filter()`. The builder stops global mutation
 queries before they can run.
@@ -128,7 +120,9 @@ $Query = $Database
 ## Next references
 
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** - lifecycle, compile and execution.
+- **[Database DBAL](/guide/database-dbal/overview/)** - async DBAL usage in HTTP responses.
 - **[Reading rows](/manual/ADI/Databases/SQL/Builder/Reading/overview/)** - select, filters, joins, grouping and limits.
 - **[Writing rows](/manual/ADI/Databases/SQL/Builder/Writing/overview/)** - insert, update, delete, output and upsert.
 - **[Composing queries](/manual/ADI/Databases/SQL/Builder/Composing/overview/)** - identifiers, expressions, subqueries and CTEs.
 - **[Query dialects](/manual/ADI/Databases/SQL/Builder/Dialects/overview/)** - PostgreSQL, MySQL and SQLite differences.
+- **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)** - commit, rollback and savepoints.

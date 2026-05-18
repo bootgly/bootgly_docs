@@ -81,24 +81,13 @@ operação até o fim. Em código HTTP, use o fluxo do scheduler da resposta já
 
 ## Transações
 
-Use `SQL::begin()` quando várias instruções precisam rodar na mesma conexão:
+Use `SQL::begin()` quando várias instruções precisam rodar na mesma conexão e commitar ou
+fazer rollback juntas. `Transaction::table()` inicia a mesma superfície de Query Builder
+com o dialeto do banco, e `Transaction::query()` aceita SQL cru, `Builder` e `Query`, como
+`SQL::query()`.
 
-```php
-$Transaction = $Database->begin();
-$Database->Pool->wait($Transaction->Operation);
-
-$Builder = $Transaction
-   ->table(Tables::Users)
-   ->update()
-   ->set(Columns::Active, false)
-   ->filter(Columns::Id, Operators::Equal, 7);
-
-$Database->Pool->wait($Transaction->query($Builder));
-$Database->Pool->wait($Transaction->commit());
-```
-
-`Transaction::table()` inicia um builder com o mesmo dialeto do banco. `Transaction::query()`
-aceita SQL cru, `Builder` e `Query`, como `SQL::query()`.
+Veja **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)** para commit,
+rollback e savepoints.
 
 ## Referência
 
@@ -117,7 +106,8 @@ Cria uma operação SQL assíncrona a partir de SQL cru, um builder ou uma query
 ```php
 begin (): Transaction
 ```
-Inicia uma transação presa a uma conexão do pool.
+Inicia uma transação presa a uma conexão do pool. Veja
+**[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)**.
 
 ### Ciclo do Builder
 

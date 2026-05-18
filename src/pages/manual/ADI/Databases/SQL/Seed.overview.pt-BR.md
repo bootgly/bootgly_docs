@@ -48,6 +48,8 @@ Regras práticas:
   no mesmo processo PHP.
 - Escreva a idempotência no seeder com `upsert`, deletes com filtro ou limpeza. Seeders não
   têm tabela de histórico.
+- `Runner::preview()` e `seed run --dry-run` pulam apenas a execução do SQL retornado; seeders
+  que chamam `$Database->query(...)` diretamente dentro da closure ainda tocam o banco.
 
 ## Referência
 

@@ -77,6 +77,32 @@ export default {
     }
   },
 
+  '/database-dbal': {
+    config: {
+      icon: 'hub',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Use the Bootgly DBAL inside HTTP Server CLI responses without exposing low-level async loops.',
+          'pt-BR': 'Use o DBAL do Bootgly dentro de respostas HTTP Server CLI sem expor loops async de baixo nível.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database DBAL'
+      },
+      'pt-BR': {
+        title: 'DBAL de banco'
+      }
+    }
+  },
+
   '/database-queries': {
     config: {
       icon: 'storage',
@@ -99,6 +125,32 @@ export default {
       },
       'pt-BR': {
         title: 'Consultas de banco'
+      }
+    }
+  },
+
+  '/database-transactions': {
+    config: {
+      icon: 'sync_alt',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Run SQL statements on one pooled connection with commit, rollback and nested savepoints.',
+          'pt-BR': 'Rode instruções SQL em uma conexão do pool com commit, rollback e savepoints aninhados.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database transactions'
+      },
+      'pt-BR': {
+        title: 'Transações de banco'
       }
     }
   },

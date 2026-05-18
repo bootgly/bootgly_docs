@@ -41,12 +41,20 @@ That is the whole loop: **connect → migrate → seed → query**.
 
 - **[Database migrations](/guide/database-migrations/overview/)** — the full step-by-step
   flow (create a migration, apply it, see what happened). **Read this first.**
+- **[Database DBAL](/guide/database-dbal/overview/)** — use the async DBAL from
+  `HTTP_Server_CLI` routes without exposing low-level readiness loops.
 - **[Database queries](/guide/database-queries/overview/)** — the next day-to-day flow:
   build a query, run it, inspect `Operation->rows`.
+- **[Database transactions](/guide/database-transactions/overview/)** — commit or roll
+  back several SQL statements on one pooled connection.
 - **[Database seeders](/guide/database-seeders/overview/)** — fill tables with
   rerunnable project data using Query Builder and deterministic fakers.
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** — the DML builder for
   `SELECT`, `INSERT`, `UPDATE` and `DELETE`.
+- **[DBAL core](/manual/ADI/Database/overview/)** — low-level config, connection, pool,
+  operation, result and driver lifecycle.
+- **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)** — `begin`,
+  `commit`, `rollback` and nested savepoints.
 - **[Schema Builder](/manual/ADI/Databases/SQL/Schema/overview/)** — the table operations
   you call inside a migration (`create`, `alter`, `drop`, …).
 - **[Defining tables](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/)** — how to
@@ -62,10 +70,16 @@ That is the whole loop: **connect → migrate → seed → query**.
 
 ADI (Abstract Data Interface) is the data layer of Bootgly's I2P architecture, in the
 one-way chain `ABI → ACI → ADI → API → CLI → WPI`. The single entrypoint is the `SQL`
-facade; it exposes two builders:
+facade; it exposes query execution, transactions and two builders:
 
 - `$Database->table(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
 - `$Database->query(...)` — execution entrypoint for raw SQL, a builder or a compiled
   `Query`.
+- `$Database->begin()` — a transaction pinned to one pooled connection.
 - `$Database->structure()` — Schema Builder (DDL + migrations), a cached `Schema` instance
   bound to the database dialect (same instance on every call).
+
+In HTTP routes, WPI adds
+**[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** so
+the route can await DBAL operations through `$Response->Database` while still sending HTTP
+through the normal `Response` API.

@@ -380,6 +380,30 @@ export default {
       }
     }
   },
+  '/ADI/Database': {
+    config: {
+      icon: 'hub',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Understand the low-level DBAL core: config, connection, pool, operation, result and drivers.',
+          'pt-BR': 'Entenda o núcleo baixo nível do DBAL: config, conexão, pool, operação, resultado e drivers.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database DBAL'
+      },
+      'pt-BR': {
+        title: 'DBAL de banco'
+      }
+    }
+  },
   '/ADI/Databases': {
     config: null,
     data: {
@@ -388,6 +412,31 @@ export default {
       }
     }
   },
+  '/ADI/Databases/SQL/Transaction': {
+    config: {
+      icon: 'sync_alt',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Use SQL transactions and savepoints on one pinned pooled connection.',
+          'pt-BR': 'Use transações SQL e savepoints em uma conexão fixada do pool.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Transactions'
+      },
+      'pt-BR': {
+        title: 'Transações'
+      }
+    }
+  },
+
   '/ADI/Databases/SQL': {
     config: null,
     data: {
@@ -1142,6 +1191,30 @@ export default {
     data: {
       '*': {
         title: 'Response'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Response/Resources': {
+    config: {
+      icon: 'extension',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View and Database.',
+          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View e Database.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Response Resources'
+      },
+      'pt-BR': {
+        title: 'Response Resources'
       }
     }
   },
