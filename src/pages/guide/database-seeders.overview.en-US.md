@@ -78,4 +78,5 @@ demo data.
 
 - **[Database migrations](/guide/database-migrations/overview/)** — create the tables first.
 - **[Database queries](/guide/database-queries/overview/)** — Query Builder DML used inside seeders.
+- **[Database ORM](/guide/database-orm/overview/)** — map seeded tables back to entities in application code.
 - **[Seeders](/manual/ADI/Databases/SQL/Seed/overview/)** — `Seed`, `Seeder`, `Seeders` and `Runner`.

@@ -202,5 +202,6 @@ return $Response->defer(function (Response $Response): void {
 
 - **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** - resources built-in e a ponte HTTP com DBAL.
 - **[Núcleo DBAL](/manual/ADI/Database/overview/)** - config, pool, operação e ciclo de driver em baixo nível.
+- **[ORM de banco](/guide/database-orm/overview/)** - mapeie resultados SQL async para entidades com repositories Data Mapper.
 - **[Consultas de banco](/guide/database-queries/overview/)** - montagem de SQL com Query Builder.
 - **[Réplicas de leitura de banco](/guide/database-read-replicas/overview/)** - read/write splitting, escopos sticky e failover de réplica.

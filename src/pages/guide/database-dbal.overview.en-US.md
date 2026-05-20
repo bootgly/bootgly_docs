@@ -201,5 +201,6 @@ return $Response->defer(function (Response $Response): void {
 
 - **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** - built-in resources and the DBAL response bridge.
 - **[DBAL core](/manual/ADI/Database/overview/)** - low-level config, pool, operation and driver lifecycle.
+- **[Database ORM](/guide/database-orm/overview/)** - map async SQL results to entities with Data Mapper repositories.
 - **[Database queries](/guide/database-queries/overview/)** - building SQL statements with Query Builder.
 - **[Database read replicas](/guide/database-read-replicas/overview/)** - read/write splitting, sticky scopes and replica failover.

@@ -125,6 +125,7 @@ $Query = $Database
 
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** - lifecycle, compile and execution.
 - **[Database DBAL](/guide/database-dbal/overview/)** - async DBAL usage in HTTP responses.
+- **[Database ORM](/guide/database-orm/overview/)** - Data Mapper entities over SQL operations.
 - **[Database read replicas](/guide/database-read-replicas/overview/)** - route safe reads to replicas and keep writes on primary.
 - **[Reading rows](/manual/ADI/Databases/SQL/Builder/Reading/overview/)** - select, filters, joins, grouping and limits.
 - **[Writing rows](/manual/ADI/Databases/SQL/Builder/Writing/overview/)** - insert, update, delete, output and upsert.

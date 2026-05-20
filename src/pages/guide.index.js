@@ -131,6 +131,32 @@ export default {
     }
   },
 
+  '/database-orm': {
+    config: {
+      icon: 'account_tree',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Map SQL rows to entities with Bootgly ORM Data Mapper while preserving async DBAL operations.',
+          'pt-BR': 'Mapeie linhas SQL para entidades com o ORM Data Mapper do Bootgly preservando operações async do DBAL.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database ORM'
+      },
+      'pt-BR': {
+        title: 'ORM de banco'
+      }
+    }
+  },
+
   '/database-read-replicas': {
     config: {
       icon: 'lan',
@@ -142,7 +168,9 @@ export default {
         }
       },
       book: 'guide',
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }

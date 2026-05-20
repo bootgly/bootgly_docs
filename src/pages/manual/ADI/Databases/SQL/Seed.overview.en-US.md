@@ -80,3 +80,8 @@ Supporting classes:
 - A seeder file not returning a `Seeder` -> `InvalidArgumentException`.
 - Running a missing named seeder -> `RuntimeException`.
 - Lock already held -> `RuntimeException` ("Seeder lock is already active.").
+
+### Related ORM docs
+
+- **[ORM Model](/manual/ADI/Databases/SQL/Model/overview/)** - entity metadata for seeded tables.
+- **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)** - hydrate seeded data into entities.

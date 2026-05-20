@@ -79,4 +79,5 @@ limpeza da tabela antes de inserir dados de demo.
 
 - **[Migrations de banco](/guide/database-migrations/overview/)** — crie as tabelas primeiro.
 - **[Consultas de banco](/guide/database-queries/overview/)** — DML do Query Builder usada nos seeders.
+- **[ORM de banco](/guide/database-orm/overview/)** — mapeie tabelas populadas de volta para entidades no código da aplicação.
 - **[Seeders](/manual/ADI/Databases/SQL/Seed/overview/)** — `Seed`, `Seeder`, `Seeders` e `Runner`.

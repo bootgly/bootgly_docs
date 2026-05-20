@@ -359,8 +359,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Access data in Bootgly: the SQL database, connection pooling, the Query Builder, the Schema Builder and Seeders.',
-          'pt-BR': 'Acesse dados no Bootgly: o banco SQL, pool de conexões, o Query Builder, o Schema Builder e Seeders.'
+          'en-US': 'Access data in Bootgly: the SQL database, connection pooling, Query Builder, Schema Builder, Seeders and ORM Data Mapper.',
+          'pt-BR': 'Acesse dados no Bootgly: banco SQL, pool de conexões, Query Builder, Schema Builder, Seeders e ORM Data Mapper.'
         }
       },
       menu: {
@@ -671,7 +671,9 @@ export default {
           'pt-BR': 'Crie e rode seeders SQL reexecutáveis com Query Builder, transações, locks e fakers determinísticos.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -679,6 +681,102 @@ export default {
     data: {
       '*': {
         title: 'Seeders'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Model': {
+    config: {
+      icon: 'label',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Compile ORM entity metadata from Table, Key, Column and Relation attributes.',
+          'pt-BR': 'Compile metadata de entidades ORM a partir dos attributes Table, Key, Column e Relation.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Model'
+      },
+      'pt-BR': {
+        title: 'Model ORM'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Model/Attributes': {
+    config: {
+      icon: 'sell',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Define ORM entity metadata with Table, Key, Column and Relation attributes.',
+          'pt-BR': 'Defina metadata de entidades ORM com attributes Table, Key, Column e Relation.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Attributes'
+      },
+      'pt-BR': {
+        title: 'Attributes'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository': {
+    config: {
+      icon: 'account_tree',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Run ORM Data Mapper operations with repositories, selections, hydration and local identity maps.',
+          'pt-BR': 'Execute operações ORM Data Mapper com repositories, selections, hidratação e identity maps locais.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository'
+      },
+      'pt-BR': {
+        title: 'Repository ORM'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Relations': {
+    config: {
+      icon: 'hub',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Load ORM relations through explicit deferred operations or eager auto-await for has-many, belongs-to and many-to-many data.',
+          'pt-BR': 'Carregue relações ORM com operações explícitas deferidas ou eager auto-await para has-many, belongs-to e many-to-many.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Relations'
+      },
+      'pt-BR': {
+        title: 'Relações'
       }
     }
   },

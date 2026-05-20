@@ -307,10 +307,10 @@ yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RequestId;
 
-$requestId = new RequestId;
+$RequestId = new RequestId;
 yield $Router->route('/protected/dashboard', function ($Request, $Response) {
    return $Response(body: 'Protected Dashboard');
-}, GET, middlewares: [$requestId]);
+}, GET, middlewares: [$RequestId]);
 ```
 
 When both group and route-level middlewares are present, they are **merged** — group middlewares execute first, then route-level ones, forming a single onion pipeline around the handler.

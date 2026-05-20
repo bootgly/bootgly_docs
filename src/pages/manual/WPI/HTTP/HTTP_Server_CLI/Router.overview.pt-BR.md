@@ -307,10 +307,10 @@ yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RequestId;
 
-$requestId = new RequestId;
+$RequestId = new RequestId;
 yield $Router->route('/protegido/dashboard', function ($Request, $Response) {
    return $Response(body: 'Dashboard Protegido');
-}, GET, middlewares: [$requestId]);
+}, GET, middlewares: [$RequestId]);
 ```
 
 Quando middlewares de grupo e de rota estão presentes, eles são **mesclados** — middlewares de grupo executam primeiro, depois os de rota, formando um único pipeline onion ao redor do handler.

@@ -81,3 +81,8 @@ Classes de apoio:
 - Arquivo de seeder não retornando `Seeder` -> `InvalidArgumentException`.
 - Rodar um seeder nomeado inexistente -> `RuntimeException`.
 - Lock já ativo -> `RuntimeException` ("Seeder lock is already active.").
+
+### Docs ORM relacionadas
+
+- **[ORM Model](/manual/ADI/Databases/SQL/Model/overview/)** - metadata de entidades para tabelas populadas por seeders.
+- **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)** - hidrate dados populados para entidades.
