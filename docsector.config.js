@@ -9,6 +9,13 @@ export default {
     logo: 'https://docs.bootgly.com/images/logo/bootgly-logo.webp',
     name: 'Bootgly',
     version: 'v0.16.0-beta',
+    versions: [
+      {
+        id: 'v0.16.0-beta',
+        current: true,
+        released: false
+      },
+    ],
     description: 'Bootgly PHP Framework — base architecture for multi-platform, full-stack PHP development'
   },
 
