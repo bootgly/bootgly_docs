@@ -356,7 +356,8 @@ export default {
   '/ADI': {
     config: {
       icon: 'data_array',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Access data in Bootgly: the SQL database, connection pooling, Query Builder, Schema Builder, Seeders and ORM Data Mapper.',
@@ -383,7 +384,8 @@ export default {
   '/ADI/Database': {
     config: {
       icon: 'hub',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Understand the low-level DBAL core: config, connection, pool, operation, result and drivers.',
@@ -424,7 +426,8 @@ export default {
   '/ADI/Databases/SQL/Transaction': {
     config: {
       icon: 'sync_alt',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Use SQL transactions and savepoints on one pinned pooled connection.',
@@ -448,7 +451,8 @@ export default {
   '/ADI/Databases/SQL/Builder': {
     config: {
       icon: 'storage',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Build parameterized SELECT, INSERT, UPDATE and DELETE statements through the SQL Query Builder.',
@@ -474,7 +478,8 @@ export default {
   '/ADI/Databases/SQL/Builder/Reading': {
     config: {
       icon: 'search',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Read rows with select, filters, text matching, joins, aliases, aggregates, grouping, order and locks.',
@@ -498,7 +503,8 @@ export default {
   '/ADI/Databases/SQL/Builder/Writing': {
     config: {
       icon: 'edit_note',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Write rows with insert, multi-row set values, update/delete guards, RETURNING output and upsert handling.',
@@ -522,7 +528,8 @@ export default {
   '/ADI/Databases/SQL/Builder/Composing': {
     config: {
       icon: 'account_tree',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Compose advanced query shapes with Identifier, Expression, nested filters, subqueries, derived tables and CTEs.',
@@ -546,7 +553,8 @@ export default {
   '/ADI/Databases/SQL/Builder/Dialects': {
     config: {
       icon: 'compare_arrows',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Compare Query Builder output across PostgreSQL, MySQL and SQLite: quotes, placeholders and capabilities.',
@@ -572,7 +580,8 @@ export default {
   '/ADI/Databases/SQL/Schema': {
     config: {
       icon: 'schema',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Compile portable CREATE, ALTER, DROP, RENAME, index and constraint DDL into dialect-specific SQL.',
@@ -596,7 +605,8 @@ export default {
   '/ADI/Databases/SQL/Schema/Blueprint': {
     config: {
       icon: 'view_column',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Define tables and columns fluently: types, modifiers, keys, references and auxiliary enums.',
@@ -620,7 +630,8 @@ export default {
   '/ADI/Databases/SQL/Schema/Migrations': {
     config: {
       icon: 'history',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Version the schema with migration files, the Runner, batches, history, transactions and locking.',
@@ -641,7 +652,8 @@ export default {
   '/ADI/Databases/SQL/Schema/Dialects': {
     config: {
       icon: 'compare_arrows',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'PostgreSQL, MySQL and SQLite compilation differences and capability checks.',
@@ -664,7 +676,8 @@ export default {
   '/ADI/Databases/SQL/Seed': {
     config: {
       icon: 'playlist_add',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Create and run rerunnable SQL seeders with Query Builder, transactions, locks and deterministic fakers.',
@@ -687,7 +700,8 @@ export default {
   '/ADI/Databases/SQL/Model': {
     config: {
       icon: 'label',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Compile ORM entity metadata from Table, Key, Column and Relation attributes.',
@@ -711,7 +725,8 @@ export default {
   '/ADI/Databases/SQL/Model/Attributes': {
     config: {
       icon: 'sell',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Define ORM entity metadata with Table, Key, Column and Relation attributes.',
@@ -735,7 +750,8 @@ export default {
   '/ADI/Databases/SQL/Repository': {
     config: {
       icon: 'account_tree',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Run ORM Data Mapper operations with repositories, selections, hydration and local identity maps.',
@@ -759,7 +775,8 @@ export default {
   '/ADI/Databases/SQL/Repository/Relations': {
     config: {
       icon: 'hub',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.16.0',
       meta: {
         description: {
           'en-US': 'Load ORM relations through explicit deferred operations or eager auto-await for has-many, belongs-to and many-to-many data.',
