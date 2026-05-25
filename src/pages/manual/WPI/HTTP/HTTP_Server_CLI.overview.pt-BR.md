@@ -12,6 +12,7 @@ Um arquivo de projeto (ex: `HTTP_Server_CLI.project.php`) retorna uma instância
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 
 return new Project(
@@ -32,9 +33,7 @@ return new Project(
          port: 8082,
          workers: 4
       );
-      $Server->on(
-         requestReceived: require __DIR__ . '/router/routes.php'
-      );
+      $Server->on(Events::RequestReceived, require __DIR__ . '/router/routes.php');
       $Server->start();
    }
 );
@@ -43,19 +42,19 @@ return new Project(
 Para iniciar o servidor, execute:
 
 ```bash
-bootgly project Demo start --HTTP_Server_CLI
+bootgly project Demo-HTTP_Server_CLI start
 ```
 
 Modo interativo:
 
 ```bash
-bootgly project Demo start --HTTP_Server_CLI -i
+bootgly project Demo-HTTP_Server_CLI start -i
 ```
 
 Modo monitor:
 
 ```bash
-bootgly project Demo start --HTTP_Server_CLI -m
+bootgly project Demo-HTTP_Server_CLI start -m
 ```
 
 ## Modos de Operação
@@ -157,21 +156,20 @@ $Server->configure(
 
 O método `on()` registra callbacks para o ciclo de vida do servidor e o tratamento de requisições:
 
-```php
-$Server->on(
-   requestReceived: callable,  // Obrigatório — trata cada requisição HTTP recebida
-   serverStarted: ?callable, // Opcional — disparado após todos os workers estarem ativos
-   stopped: ?callable, // Opcional — disparado após todos os workers serem encerrados
-);
-```
+| Evento | Callback | Descrição |
+|---|---|---|
+| `Events::RequestReceived` | `callable` | Obrigatório — trata cada requisição HTTP recebida. |
+| `Events::ServerStarted` | `?callable` | Opcional — disparado após todos os workers estarem ativos. |
+| `Events::ServerStopped` | `?callable` | Opcional — disparado após todos os workers serem encerrados. |
 
-### `requestReceived`
+### `Events::RequestReceived`
 
 Chamado por cada processo **worker** para cada requisição HTTP recebida. Recebe os objetos `$Request` e `$Response`.
 
 ```php
 $Server->on(
-   requestReceived: function ($Request, $Response) {
+   Events::RequestReceived,
+   function ($Request, $Response) {
       return $Response(body: 'Hello, World!');
    }
 );
@@ -180,13 +178,11 @@ $Server->on(
 Para aplicações maiores, carregue o handler de um arquivo externo que retorna um callable:
 
 ```php
-$Server->on(
-   requestReceived: require __DIR__ . '/router/routes.php'
-);
+$Server->on(Events::RequestReceived, require __DIR__ . '/router/routes.php');
 ```
 
 > [!IMPORTANT]
-> O handler `requestReceived` executa dentro de cada processo **worker**. O estado não é compartilhado entre workers — use memória compartilhada ou armazenamentos externos (Redis, DB) para comunicação entre workers.
+> O handler `Events::RequestReceived` executa dentro de cada processo **worker**. O estado não é compartilhado entre workers — use memória compartilhada ou armazenamentos externos (Redis, DB) para comunicação entre workers.
 
 ### serverStarted
 
@@ -202,9 +198,11 @@ Propriedades do `$Server` disponíveis no callback:
 
 ```php
 use const Bootgly\CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 $Server->on(
-   serverStarted: function ($Server) {
+   Events::ServerStarted,
+   function ($Server) {
       $Output = CLI->Terminal->Output;
 
       $protocol = $Server->socket ?? 'http://';
@@ -224,9 +222,11 @@ Disparado no processo **master** após todos os workers serem encerrados. Use pa
 
 ```php
 use const Bootgly\CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 $Server->on(
-   stopped: function ($Server) {
+   Events::ServerStopped,
+   function ($Server) {
       $Output = CLI->Terminal->Output;
       $Output->render('@.;@#yellow:■ HTTP Server encerrado@;@.;');
    }
@@ -237,11 +237,11 @@ $Server->on(
 
 ```php
 use const Bootgly\CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
-$Server->on(
-   requestReceived: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
-
-   serverStarted: function ($Server) {
+$Server
+   ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
+   ->on(Events::ServerStarted, function ($Server) {
       $Output = CLI->Terminal->Output;
 
       $protocol = $Server->socket ?? 'http://';
@@ -251,13 +251,11 @@ $Server->on(
       $Output->render('@.;@#green:✓ HTTP Server iniciado@;@.;');
       $Output->render('  Escutando em @#cyan:' . $protocol . $host . ':' . $port . '@;@.;');
       $Output->render('  @#green:● Pronto para conexões@;@..;');
-   },
-
-   stopped: function ($Server) {
+   })
+   ->on(Events::ServerStopped, function ($Server) {
       $Output = CLI->Terminal->Output;
       $Output->render('@.;@#yellow:■ HTTP Server encerrado@;@.;');
-   }
-);
+   });
 ```
 
 ## Ciclo de Vida do Servidor

@@ -9,7 +9,7 @@ O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos basead
 | **Servidor orientado a datagramas** | Receba payloads UDP brutos e retorne payloads brutos para o remetente. |
 | **Runtime multi-worker** | Inicie um ou mais processos worker para lidar com o tráfego. |
 | **Modos operacionais** | Execute em `Daemon`, `Interactive`, `Monitor` ou `Test`. |
-| **API simples de handler** | Registre um único callback `on(Closure $package)` para os datagramas recebidos. |
+| **API simples de handler** | Registre um único callback `on(Events::DatagramReceive, Closure $Callback)` para os datagramas recebidos. |
 | **Controles via CLI** | Use comandos como `status`, `stop`, `pause`, `resume` e `reload` em fluxos interativos. |
 | **Suporte à redução de privilégios** | Opcionalmente mude para um usuário e grupo POSIX de menor privilégio após vincular o socket. |
 | **PHP puro** | Não depende de servidor externo. |
@@ -25,6 +25,7 @@ use function shell_exec;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Events;
 
 
 return new Project(
@@ -47,7 +48,7 @@ return new Project(
          workers: max(1, (int) shell_exec('nproc') ?: 1),
       );
 
-      $Server->on(fn ($input) => $input);
+      $Server->on(Events::DatagramReceive, fn ($input) => $input);
 
       $Server->start();
    }
@@ -61,6 +62,7 @@ O fluxo mínimo de uso é simples: configure o socket, registre um handler e ini
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Events;
 
 
 $Server = new UDP_Server_CLI(Modes::Monitor);
@@ -72,7 +74,8 @@ $Server->configure(
 );
 
 $Server->on(
-   datagramReceive: static fn (string $input): string => $input
+   Events::DatagramReceive,
+   static fn (string $input): string => $input
 );
 
 $Server->start();
@@ -129,7 +132,8 @@ Registre o handler de recebimento com `on()`:
 
 ```php
 $Server->on(
-   datagramReceive: function (string $input): string {
+   Events::DatagramReceive,
+   function (string $input): string {
       return strtoupper($input);
    }
 );
@@ -178,6 +182,7 @@ use function shell_exec;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Events;
 
 
 return new Project(
@@ -200,7 +205,7 @@ return new Project(
          workers: max(1, (int) shell_exec('nproc') ?: 1),
       );
 
-      $Server->on(fn ($input) => $input);
+      $Server->on(Events::DatagramReceive, fn ($input) => $input);
 
       $Server->start();
    }

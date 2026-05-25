@@ -9,7 +9,7 @@ The TCP Server CLI is the low-level TCP server foundation of the Bootgly PHP Fra
 | **Multi-worker runtime** | Forks multiple workers so each process can accept and handle connections independently. |
 | **Non-blocking sockets** | Uses a `stream_select()`-driven event loop for read, write and accept operations. |
 | **Operation modes** | Supports `Daemon`, `Interactive`, `Monitor` and `Test` modes. |
-| **Raw package handler** | Register a single `on(Closure $package)` callback that receives raw input and returns raw output. |
+| **Raw package handler** | Register a single `on(Events::DataReceive, Closure $Callback)` callback that receives raw input and returns raw output. |
 | **Signals and control** | Pause, resume, reload, stop, inspect connections and view stats with POSIX signals and CLI commands. |
 | **SSL/TLS** | Accept encrypted connections through PHP stream context SSL options. |
 | **Worker recovery** | In master mode, crashed workers are automatically reforked via `SIGCHLD`. |
@@ -26,6 +26,7 @@ use function getenv;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
 return new Project(
@@ -49,7 +50,8 @@ return new Project(
 		);
 
 		$Server->on(
-			dataReceive: require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
+			Events::DataReceive,
+			require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
 		);
 
 		$Server->start();
@@ -64,6 +66,7 @@ The smallest public contract is simple: configure a listening socket, register a
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
 $Server = new TCP_Server_CLI(Modes::Monitor);
@@ -75,7 +78,8 @@ $Server->configure(
 );
 
 $Server->on(
-	dataReceive: static function (string $input): string {
+	Events::DataReceive,
+	static function (string $input): string {
 		return "PONG\r\n";
 	}
 );
@@ -170,7 +174,8 @@ Bootgly resolves the target UID/GID, initializes supplementary groups and then a
 
 ```php
 $Server->on(
-	dataReceive: function (string $input): string {
+	Events::DataReceive,
+	function (string $input): string {
 		return strtoupper($input);
 	}
 );
@@ -269,6 +274,7 @@ use function getenv;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
 return new Project(
@@ -292,7 +298,8 @@ return new Project(
 		);
 
 		$Server->on(
-			dataReceive: require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
+			Events::DataReceive,
+			require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
 		);
 
 		$Server->start();

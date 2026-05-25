@@ -196,6 +196,7 @@ Register hooks for fully async operation:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Events;
 use Bootgly\WPI\Nodes\HTTP_Client_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Client_CLI\Request\Response;
 
@@ -204,7 +205,8 @@ $Client = new HTTP_Client_CLI;
 $Client->configure(host: '127.0.0.1', port: 8080);
 
 $Client->on(
-   responseReceive: function (Request $Request, Response $Response): void {
+   Events::ResponseReceive,
+   function (Request $Request, Response $Response): void {
       echo "Status: {$Response->code}\n";
       echo "Body: {$Response->body}\n";
    }
@@ -218,10 +220,12 @@ $Client->start();
 
 | Hook | Signature | Description |
 |---|---|---|
-| `workerStarted` | `Closure` | Called on worker instance initialization. |
-| `clientConnect` | `Closure($Socket, $Connection)` | Called when a connection is established. |
-| `clientDisconnect` | `Closure` | Called when a connection is closed. |
-| `responseReceive` | `Closure(Request, Response)` | Called when a complete HTTP response is received. |
+| `Events::WorkerStarted` | `Closure(HTTP_Client_CLI $Client)` | Called on worker instance initialization. |
+| `Events::ClientConnect` | `Closure($Socket, $Connection)` | Called when a connection is established. |
+| `Events::ClientDisconnect` | `Closure($Connection)` | Called when a connection is closed. |
+| `Events::DataRead` | `Closure($Socket, $Connection)` | Called after raw response data is read. |
+| `Events::DataWrite` | `Closure($Socket, $Connection)` | Called after request data is written. |
+| `Events::ResponseReceive` | `Closure(Request, Response)` | Called when a complete HTTP response is received. |
 
 ## 100-Continue Support
 

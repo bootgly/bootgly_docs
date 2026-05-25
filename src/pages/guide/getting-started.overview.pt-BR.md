@@ -81,6 +81,7 @@ Crie um arquivo `HTTP_Server_CLI.project.php` dentro da pasta do seu projeto (ex
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
    name: 'HTTP Server CLI',
@@ -92,15 +93,14 @@ return new Project(
          port: 8082,
          workers: 4
       );
-      $Server->on(
-         requestReceived: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
-         serverStarted: function ($Server) {
+      $Server
+         ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
+         ->on(Events::ServerStarted, function ($Server) {
             // Chamado após o servidor começar a escutar
-         },
-         stopped: function ($Server) {
+         })
+         ->on(Events::ServerStopped, function ($Server) {
             // Chamado após o servidor parar
-         }
-      );
+         });
       $Server->start();
    }
 );
@@ -109,7 +109,7 @@ return new Project(
 Então execute o projeto:
 
 ```bash
-bootgly project Demo start --HTTP_Server_CLI
+bootgly project Demo-HTTP_Server_CLI start
 ```
 
 O servidor iniciará escutando em `0.0.0.0:8082`.
@@ -120,9 +120,9 @@ O método `on()` registra callbacks de eventos:
 
 | Evento | Assinatura | Descrição |
 |---|---|---|
-| `requestReceived` | `fn ($Request, $Response)` | Chamado para cada requisição HTTP recebida. |
-| serverStarted | `fn ($Server)` | Chamado após o servidor começar a escutar. |
-| serverStopped | `fn ($Server)` | Chamado após o servidor parar. |
+| `Events::RequestReceived` | `fn ($Request, $Response)` | Chamado para cada requisição HTTP recebida. |
+| `Events::ServerStarted` | `fn ($Server)` | Chamado após o servidor começar a escutar. |
+| `Events::ServerStopped` | `fn ($Server)` | Chamado após o servidor parar. |
 
 ### Opções de Configuração
 
@@ -151,7 +151,7 @@ Portas abaixo de 1024 requerem permissões especiais no Linux. Existem duas abor
 Após executar `sudo php bootgly setup`, você pode iniciar o servidor com sudo:
 
 ```bash
-sudo bootgly project Demo start --HTTP_Server_CLI
+sudo bootgly project Demo-HTTP_Server_CLI start
 ```
 
 Para produção, você pode combinar com **privilege dropping** — o servidor faz o bind na porta como root, depois rebaixa para um usuário sem privilégios:
@@ -199,8 +199,8 @@ $Server->configure(
 > [!NOTE]
 > Para desenvolvimento local, o Bootgly inclui certificados auto-assinados em `@/certificates/`. Para produção, use certificados de uma CA confiável (ex: Let's Encrypt).
 
-Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/HTTPS_Server_CLI/`:
+Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/Demo-HTTPS_Server_CLI/`:
 
 ```bash
-sudo bootgly project Demo start --HTTPS_Server_CLI
+sudo bootgly project Demo-HTTPS_Server_CLI start
 ```

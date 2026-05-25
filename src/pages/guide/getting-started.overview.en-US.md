@@ -81,6 +81,7 @@ Create a `HTTP_Server_CLI.project.php` file inside your project folder (e.g., `p
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
    name: 'HTTP Server CLI',
@@ -92,15 +93,14 @@ return new Project(
          port: 8082,
          workers: 4
       );
-      $Server->on(
-         requestReceived: fn ($Request, $Response) => $Response(body: 'Hello, World!'),
-         serverStarted: function ($Server) {
+      $Server
+         ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
+         ->on(Events::ServerStarted, function ($Server) {
             // Called after the server starts listening
-         },
-         stopped: function ($Server) {
+         })
+         ->on(Events::ServerStopped, function ($Server) {
             // Called after the server stops
-         }
-      );
+         });
       $Server->start();
    }
 );
@@ -120,9 +120,9 @@ The `on()` method registers event callbacks:
 
 | Event | Signature | Description |
 |---|---|---|
-| `requestReceived` | `fn ($Request, $Response)` | Called for each incoming HTTP request. |
-| serverStarted | `fn ($Server)` | Called after the server starts listening. |
-| serverStopped | `fn ($Server)` | Called after the server stops. |
+| `Events::RequestReceived` | `fn ($Request, $Response)` | Called for each incoming HTTP request. |
+| `Events::ServerStarted` | `fn ($Server)` | Called after the server starts listening. |
+| `Events::ServerStopped` | `fn ($Server)` | Called after the server stops. |
 
 ### Configuration Options
 
