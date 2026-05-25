@@ -51,6 +51,32 @@ export default {
     }
   },
 
+  '/authorization': {
+    config: {
+      icon: 'verified_user',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Protect HTTP routes with Scope, Role, Policy and persisted RBAC authorization in Bootgly.',
+          'pt-BR': 'Proteja rotas HTTP com Authorization por Scope, Role, Policy e RBAC persistido no Bootgly.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Authorization'
+      },
+      'pt-BR': {
+        title: 'Authorization'
+      }
+    }
+  },
+
   '/performance': {
     config: {
       icon: 'speed',

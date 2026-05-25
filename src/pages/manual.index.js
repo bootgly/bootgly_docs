@@ -1375,6 +1375,27 @@ export default {
       }
     }
   },
+  '/WPI/HTTP/HTTP_Server_CLI/Authorization': {
+    config: {
+      icon: 'verified_user',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Require Scope, Role and Policy gates after HTTP authentication succeeds.',
+          'pt-BR': 'Exija gates de Scope, Role e Policy depois que a autenticação HTTP passa.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Authorization'
+      }
+    }
+  },
   '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
     config: {
       icon: 'settings_input_component',

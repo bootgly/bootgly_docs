@@ -13,7 +13,7 @@ Applied to **every** request processed by the server:
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
-use Bootgly\API\Servers\SAPI;
+use Bootgly\API\Workables\Server as SAPI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 
@@ -86,6 +86,26 @@ yield $Router->route('/private', $Handler, GET, middlewares: [new Authentication
 See the [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) page for Bearer, JWT, Basic, Session, middleware-owned challenges, and demo routes.
 
 **Phase:** Pre-processing — rejects unauthenticated requests before the handler runs.
+
+---
+
+### Authorization
+
+Protects authenticated routes with ordered Scope, Role and Policy gates. Authorization is configured with an `Authorizing` gate strategy and executed by the `Authorization` middleware.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorizing;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization\Scope;
+
+$Authorizing = new Authorizing(new Scope('demo:read'));
+
+yield $Router->route('/private', $Handler, GET, middlewares: [new Authorization($Authorizing)]);
+```
+
+See the [Authorization](/manual/WPI/HTTP/HTTP_Server_CLI/Authorization/) page for Scope, Role, Policy gates, denial responses and the API/RBAC boundary.
+
+**Phase:** Pre-processing — rejects unauthorized requests before the handler runs.
 
 ---
 
