@@ -123,6 +123,12 @@ export default {
         type: 'skill-md',
         description: 'Search and fetch Bootgly documentation pages through the MCP endpoint.',
         url: '/.well-known/agent-skills/bootgly-docs-mcp/SKILL.md'
+      },
+      {
+        name: 'docsector-documentation-authoring',
+        type: 'skill-md',
+        description: 'Author Docsector documentation with Markdown, custom blocks, MCP, and WebMCP.',
+        url: '/.well-known/agent-skills/docsector-documentation-authoring/SKILL.md'
       }
     ]
   },
