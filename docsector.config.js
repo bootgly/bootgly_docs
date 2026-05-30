@@ -78,6 +78,47 @@ export default {
       copyCurrentPage: true
     }
   },
+
+  // @ AI Assistant
+  aiAssistant: {
+    enabled: true,
+    provider: 'aiSearch',
+    endpoint: '/assistant',
+    ui: {
+      title: 'Bootgly AI Assistant',
+      subtitle: 'Ask, search, or explain the docs.',
+      drawerWidth: 380,
+      wideBreakpoint: 1280,
+      showCitations: true,
+      suggestedPrompts: [
+        'How do I get started?',
+        'Summarize this page.',
+        'What is the I2P architecture?',
+      ]
+    },
+    aiSearch: {
+      binding: 'AI_SEARCH',
+      instanceNameEnv: 'AI_SEARCH_INSTANCE_NAME',
+      namespace: '',
+      accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
+      apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
+      model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+      retrievalType: 'vector',
+      maxResults: 6,
+      matchThreshold: 0.4,
+      contextExpansion: 1,
+      queryRewrite: {
+        enabled: true
+      },
+      reranking: {
+        enabled: false,
+        model: '@cf/baai/bge-reranker-base',
+        matchThreshold: 0.4
+      },
+      stream: true
+    }
+  },
+
   // @ Homepage Link headers for agent discovery (optional)
   linkHeaders: {
     enabled: true,
