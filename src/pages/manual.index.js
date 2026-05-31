@@ -697,6 +697,14 @@ export default {
       }
     }
   },
+  '/ADI/Databases/SQL/ORM': {
+    config: null,
+    data: {
+      '*': {
+        title: 'ORM'
+      }
+    }
+  },
   '/ADI/Databases/SQL/Model': {
     config: {
       icon: 'label',
@@ -708,7 +716,9 @@ export default {
           'pt-BR': 'Compile metadata de entidades ORM a partir dos attributes Table, Key, Column e Relation.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.ADI.Databases.SQL.ORM'
+      },
       subpages: {
         showcase: false
       }
@@ -718,7 +728,7 @@ export default {
         title: 'ORM Model'
       },
       'pt-BR': {
-        title: 'Model ORM'
+        title: 'ORM Model'
       }
     }
   },
@@ -740,10 +750,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Attributes'
+        title: 'ORM Model Attributes'
       },
       'pt-BR': {
-        title: 'Attributes'
+        title: 'ORM Model Attributes'
       }
     }
   },
@@ -768,7 +778,7 @@ export default {
         title: 'ORM Repository'
       },
       'pt-BR': {
-        title: 'Repository ORM'
+        title: 'ORM Repository'
       }
     }
   },
@@ -790,10 +800,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Relations'
+        title: 'ORM Relations'
       },
       'pt-BR': {
-        title: 'Relações'
+        title: 'ORM Relations'
       }
     }
   },
