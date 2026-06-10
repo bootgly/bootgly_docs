@@ -12,7 +12,8 @@ Resources built-in ficam disponíveis de forma lazy em toda resposta:
 - `$Response->View` - renderiza views do projeto.
 
 Resources de projeto são registrados uma vez em `HTTP_Server_CLI::configure()` e depois
-acessados pelo nome dentro da rota, por exemplo `$Response->Database`.
+acessados pelo nome dentro da rota, por exemplo `$Response->Database` (SQL async) ou
+`$Response->KV` (key-value Redis async).
 
 ## Usar resources built-in
 
@@ -165,6 +166,120 @@ transact (callable $work): mixed
 
 Inicia uma transação SQL, aguarda `BEGIN`, executa o callback, faz commit no sucesso e
 rollback quando o callback lança exceção.
+
+## Registrar o resource KV
+
+`KV` adapta o banco key-value async (`ADI/Databases/KV`, Redis) ao scheduler da resposta do
+mesmo jeito que `Database` adapta SQL. Registre com `responseResources`; a factory constrói um
+banco `KV` por worker com uma única conexão no pool, para que comandos pendentes façam pipeline
+nela.
+
+```php
+use RuntimeException;
+
+use Bootgly\ADI\Databases\KV;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
+
+$KVResource = static function (object $Context): KVResource {
+   if ($Context instanceof Response === false) {
+      throw new RuntimeException('KV response resource expects a Response context.');
+   }
+
+   static $KV = null;
+
+   if ($KV instanceof KV === false) {
+      // Uma conexão por worker: comandos pendentes fazem pipeline nela
+      $KV = new KV([
+         'driver' => 'redis',
+         'host' => '127.0.0.1',
+         'port' => 6379,
+         'pool' => ['min' => 0, 'max' => 1],
+      ]);
+   }
+
+   return new KVResource($KV);
+};
+
+$HTTP_Server_CLI->configure(
+   responseResources: [
+      'KV' => $KVResource,
+   ],
+);
+```
+
+## Aguardar trabalho key-value
+
+`KV` estaciona o Fiber da resposta na prontidão (readiness) da conexão Redis em vez de bloquear
+o loop do worker. O caminho mais simples é `fetch()`, que emite um comando, aguarda e retorna a
+resposta (lançando `RuntimeException` em erro do Redis):
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+
+return $Response->defer(function (Response $Response): void {
+   $KV = $Response->KV;
+
+   $KV->fetch('SET', ['bootgly:demo', 'async-kv']);
+
+   $Response->JSON->send([
+      'status' => 'ok',
+      'value' => $KV->fetch('GET', ['bootgly:demo']),
+   ]);
+});
+```
+
+Cada `fetch()` é um round-trip completo. Para sobrepor vários comandos, emita-os com `command()`
+— que dá flush no write imediatamente, para o próximo comando fazer pipeline na mesma conexão —
+e faça `drain()` do grupo numa passagem só:
+
+```php
+return $Response->defer(function (Response $Response): void {
+   $KV = $Response->KV;
+   $Operations = [];
+
+   for ($i = 0; $i < 8; $i++) {
+      $Operations[] = $KV->command('GET', ['bootgly:demo']);
+   }
+
+   $values = [];
+   foreach ($KV->drain($Operations) as $Operation) {
+      $values[] = $Operation->error ?? $Operation->response;
+   }
+
+   $Response->JSON->send([
+      'status' => 'ok',
+      'values' => $values,
+   ]);
+});
+```
+
+Fazer pipeline de 8 leituras com `drain()` é ~2,4× mais rápido que 8 `fetch()` sequenciais,
+porque os round-trips se sobrepõem na mesma conexão em vez de rodar um de cada vez.
+
+## Métodos do KV
+
+```php
+fetch (string $command, array $arguments = []): mixed
+```
+
+Cria um comando, aguarda e retorna a resposta. Lança `RuntimeException` quando o Redis reporta
+um erro.
+
+```php
+command (string $command, array $arguments = []): Operation
+```
+
+Cria e avança um comando — o write recebe flush imediato — mas **não** aguarda. Emita vários e
+passe-os para `drain()` para sobrepor os round-trips.
+
+```php
+await (Operation $Operation): Operation
+drain (array $Operations): array
+```
+
+Aguarda uma operação, ou um grupo de operações, na prontidão da conexão. `drain()` re-escaneia o
+grupo após cada passagem de avanço para que as respostas FIFO pipelined resolvam corretamente.
 
 ## Fronteira
 
