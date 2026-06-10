@@ -77,6 +77,33 @@ export default {
     }
   },
 
+  '/cache': {
+    config: {
+      icon: 'cached',
+      status: 'draft',
+      version: '0.17.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Cache values with File, APCu, Shared-memory or Redis drivers — TTL, tags, atomic counters and the multi-worker rate-limit backend.',
+          'pt-BR': 'Faça cache de valores com drivers File, APCu, Shared-memory ou Redis — TTL, tags, contadores atômicos e o backend de rate limit multi-worker.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Cache'
+      },
+      'pt-BR': {
+        title: 'Cache'
+      }
+    }
+  },
+
   '/performance': {
     config: {
       icon: 'speed',
