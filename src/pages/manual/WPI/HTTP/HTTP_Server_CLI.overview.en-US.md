@@ -2,6 +2,25 @@
 
 The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It is an event-driven, multi-worker server built on top of a non-blocking TCP infrastructure with support for PHP Fibers for asynchronous responses — everything is 100% pure PHP and no extensions.
 
+## Features
+
+| Feature | Description |
+|---|---|
+| **Operation Modes** | Daemon (background), Interactive (REPL), Monitor (hot-reload), and Test (automated) |
+| **Multi-Worker** | Fork-based workers with `SO_REUSEPORT`; master auto-reforks on unexpected worker death |
+| **PHP Fibers** | Deferred async responses via `$Response->defer()`, integrated in the `stream_select` event loop |
+| **Event-Driven** | `stream_select`-based event loop; non-blocking I/O, zero idle CPU usage |
+| **Routing** | Static and dynamic routes with typed parameter constraints; one-time warmup cache |
+| **Middleware** | Per-group pipeline via `intercept()`; onion-model execution order |
+| **SSL/TLS** | Full HTTPS via PHP stream context options; bundled self-signed certs for local development |
+| **Response Compression** | gzip, deflate, and compress via `$Response->compress()` |
+| **Chunked Responses** | `Transfer-Encoding: chunked` for streaming responses |
+| **Authentication** | HTTP Basic auth challenge via `$Response->authenticate()` |
+| **Keep-Alive** | Automatic HTTP/1.1 connection reuse |
+| **Request Body Limits** | Configurable limits for multipart fields, file parts, and non-multipart bodies |
+| **Privilege Dropping** | POSIX user/group demotion after socket bind for secure privileged-port operation |
+| **Project Bootstrapping** | Server lifecycle managed through Bootgly Project files, not framework commands |
+
 ## Bootstrapping with Projects
 
 In Bootgly, servers are started by Projects — not by framework commands. Each project defines its own boot logic, including server instantiation, configuration, and handler registration.
