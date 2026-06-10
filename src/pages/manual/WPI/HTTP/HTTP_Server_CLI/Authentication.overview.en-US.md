@@ -242,7 +242,21 @@ $Policies = new Policies(
 $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 ```
 
-`Remote` keeps a process-local `KeySet` cache, can use `Vault` for a shared file-backed JWKS cache across workers on the same filesystem, honors `Cache-Control: max-age` when present, shares refresh-on-miss cooldown through the cache, refreshes the JWKS when a token arrives with an unknown `kid`, and fails closed when the endpoint cannot be fetched, returns a non-2xx status, returns invalid JSON, or returns an invalid JWKS document. Remote JWKS requires HTTPS by default; use `insecure: true` only in tests or controlled local environments. OIDC Discovery, `ETag`/`Last-Modified`, exponential backoff, and external multi-host cache backends are separate future layers.
+`Remote` keeps a process-local `KeySet` cache, can use `Vault` for a shared JWKS cache across workers, honors `Cache-Control: max-age` when present, shares refresh-on-miss cooldown through the cache, refreshes the JWKS when a token arrives with an unknown `kid`, and fails closed when the endpoint cannot be fetched, returns a non-2xx status, returns invalid JSON, or returns an invalid JWKS document. Remote JWKS requires HTTPS by default; use `insecure: true` only in tests or controlled local environments. OIDC Discovery, `ETag`/`Last-Modified`, and exponential backoff are separate future layers.
+
+`Vault` stores its records on the Bootgly `Cache` facade. By default it uses the `file` driver (shared across workers on the same filesystem); passing a Redis-backed `Cache` shares JWKS, refresh-token state, and revocations across hosts — inject a shared HMAC secret (≥ 32 bytes) so every host can verify the records:
+
+```php
+use Bootgly\ABI\Resources\Cache;
+use Bootgly\API\Security\JWT\Vault;
+
+$Vault = new Vault(
+   new Cache(['driver' => 'redis', 'host' => 'redis.internal']),
+   secret: getenv('JWT_VAULT_SECRET')
+);
+```
+
+Every record carries an HMAC-SHA256 envelope, so an entry altered in the storage backend fails verification and reads as a miss.
 
 ### Refresh tokens and `jti` usage
 

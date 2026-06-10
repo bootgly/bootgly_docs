@@ -242,7 +242,21 @@ $Policies = new Policies(
 $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 ```
 
-`Remote` mantém um cache `KeySet` em memória por processo, pode usar `Vault` para cache JWKS file-backed compartilhado entre workers no mesmo filesystem, respeita `Cache-Control: max-age` quando presente, compartilha o cooldown de refresh-on-miss via cache, atualiza o JWKS quando um token chega com `kid` desconhecido e falha fechado quando o endpoint não pode ser buscado, retorna status não-2xx, retorna JSON inválido ou retorna um documento JWKS inválido. JWKS remoto exige HTTPS por padrão; use `insecure: true` apenas em testes ou ambientes locais controlados. OIDC Discovery, `ETag`/`Last-Modified`, backoff exponencial e backends externos de cache multi-host continuam como camadas futuras.
+`Remote` mantém um cache `KeySet` em memória por processo, pode usar `Vault` para cache JWKS compartilhado entre workers, respeita `Cache-Control: max-age` quando presente, compartilha o cooldown de refresh-on-miss via cache, atualiza o JWKS quando um token chega com `kid` desconhecido e falha fechado quando o endpoint não pode ser buscado, retorna status não-2xx, retorna JSON inválido ou retorna um documento JWKS inválido. JWKS remoto exige HTTPS por padrão; use `insecure: true` apenas em testes ou ambientes locais controlados. OIDC Discovery, `ETag`/`Last-Modified` e backoff exponencial continuam como camadas futuras.
+
+`Vault` guarda seus registros no facade `Cache` do Bootgly. Por padrão usa o driver `file` (compartilhado entre workers no mesmo filesystem); passando um `Cache` com driver Redis, o JWKS, o estado de refresh tokens e as revogações são compartilhados entre hosts — injete um segredo HMAC compartilhado (≥ 32 bytes) para que todos os hosts consigam verificar os registros:
+
+```php
+use Bootgly\ABI\Resources\Cache;
+use Bootgly\API\Security\JWT\Vault;
+
+$Vault = new Vault(
+   new Cache(['driver' => 'redis', 'host' => 'redis.internal']),
+   secret: getenv('JWT_VAULT_SECRET')
+);
+```
+
+Cada registro carrega um envelope HMAC-SHA256, então uma entrada alterada no backend de armazenamento falha na verificação e é lida como miss.
 
 ### Refresh tokens e uso de `jti`
 
