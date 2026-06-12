@@ -114,14 +114,26 @@ The scheduler emits domain events through the ABI event bus
 are opt-in and cost nothing when none are attached (zero-allocation `check()` guard):
 
 ```php
+use Bootgly\ABI\Events\Emission;
 use Bootgly\ABI\Events\Emitter;
 use Bootgly\ACI\Schedule\Events;
 
-Emitter::$Instance->listen(Events::Started,  fn (string $id, $Job) => log("start $id"));
-Emitter::$Instance->listen(Events::Finished, fn (string $id, float $ms) => metric($id, $ms));
-Emitter::$Instance->listen(Events::Failed,   fn (string $id, \Throwable $e) => alert($id, $e));
-Emitter::$Instance->listen(Events::Skipped,  fn (string $id, string $why) => log("skip $id: $why"));
+Emitter::$Instance->listen(Events::Started,  function (Emission $E) {
+   [$id, $Job] = $E->payload;
+});
+Emitter::$Instance->listen(Events::Finished, function (Emission $E) {
+   [$id, $duration] = $E->payload;
+});
+Emitter::$Instance->listen(Events::Failed,   function (Emission $E) {
+   [$id, $Throwable] = $E->payload;
+});
+Emitter::$Instance->listen(Events::Skipped,  function (Emission $E) {
+   [$id, $reason] = $E->payload;
+});
 ```
+
+See the **[Events](/guide/events/overview/)** guide for the full bus API (`Emission`,
+priorities, propagation).
 
 | Event | When | Payload |
 |---|---|---|

@@ -130,6 +130,32 @@ export default {
     }
   },
 
+  '/events': {
+    config: {
+      icon: 'podcasts',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Listen to framework domain events — cache, SQL, HTTP, sessions, workers — on the zero-overhead ABI event bus.',
+          'pt-BR': 'Escute eventos de domínio do framework — cache, SQL, HTTP, sessões, workers — no barramento de eventos ABI de overhead zero.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Events'
+      },
+      'pt-BR': {
+        title: 'Events'
+      }
+    }
+  },
+
   '/performance': {
     config: {
       icon: 'speed',

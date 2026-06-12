@@ -116,14 +116,26 @@ listeners são opcionais e não custam nada quando nenhum está anexado (guarda 
 zero alocação):
 
 ```php
+use Bootgly\ABI\Events\Emission;
 use Bootgly\ABI\Events\Emitter;
 use Bootgly\ACI\Schedule\Events;
 
-Emitter::$Instance->listen(Events::Started,  fn (string $id, $Job) => log("start $id"));
-Emitter::$Instance->listen(Events::Finished, fn (string $id, float $ms) => metric($id, $ms));
-Emitter::$Instance->listen(Events::Failed,   fn (string $id, \Throwable $e) => alert($id, $e));
-Emitter::$Instance->listen(Events::Skipped,  fn (string $id, string $why) => log("skip $id: $why"));
+Emitter::$Instance->listen(Events::Started,  function (Emission $E) {
+   [$id, $Job] = $E->payload;
+});
+Emitter::$Instance->listen(Events::Finished, function (Emission $E) {
+   [$id, $duration] = $E->payload;
+});
+Emitter::$Instance->listen(Events::Failed,   function (Emission $E) {
+   [$id, $Throwable] = $E->payload;
+});
+Emitter::$Instance->listen(Events::Skipped,  function (Emission $E) {
+   [$id, $reason] = $E->payload;
+});
 ```
+
+Veja o guia **[Events](/guide/events/overview/)** para a API completa do barramento
+(`Emission`, prioridades, propagação).
 
 | Evento | Quando | Payload |
 |---|---|---|
