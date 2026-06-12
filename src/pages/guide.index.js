@@ -104,6 +104,32 @@ export default {
     }
   },
 
+  '/scheduler': {
+    config: {
+      icon: 'schedule',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Schedule cron-style jobs with repeat(), overlap locks, missed-run recovery, a worker command and lifecycle events.',
+          'pt-BR': 'Agende jobs no estilo cron com repeat(), locks de sobreposição, recuperação de execuções perdidas, comando worker e eventos de ciclo de vida.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Scheduler'
+      },
+      'pt-BR': {
+        title: 'Scheduler'
+      }
+    }
+  },
+
   '/performance': {
     config: {
       icon: 'speed',
