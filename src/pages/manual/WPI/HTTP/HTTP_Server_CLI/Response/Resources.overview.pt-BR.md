@@ -31,75 +31,59 @@ return $Response->View->render('boas-vindas', [
 
 ## Registrar resources de projeto
 
-Registre resources customizados com a opção `responseResources`. Cada factory recebe o
-contexto da resposta atual e retorna uma instância de `Response\Resource`.
+Registre resources customizados com a opção `responseResources`. Cada factory é um
+`Closure(object): Response\Resource` que recebe o contexto da resposta atual e retorna uma
+instância de `Response\Resource` — criada de forma lazy na primeira leitura do resource pelo nome.
 
-Para um resource de banco do projeto, carregue primeiro o escopo de config `database`.
-`Project::boot()` cria `BOOTGLY_PROJECT->Configs` a partir do diretório `configs/` do projeto,
-e `get('database')` carrega `configs/database/database.config.php` e os arquivos `.env` locais.
+`Database` e `KV` trazem uma factory estática `provide()` que encapsula esse setup: ela lê um
+escopo de config do diretório `configs/` do projeto, constrói uma conexão pooled por worker e a
+encapsula. Passe o diretório `configs/` do projeto e registre cada resource em uma única linha:
 
 ```php
-use const BOOTGLY_PROJECT;
-use RuntimeException;
-
-use Bootgly\ADI\Databases\SQL;
-use Bootgly\API\Environment\Configs\Config;
-use Bootgly\API\Environment\Configs\DatabaseConfig;
-use Bootgly\API\Projects\Configs;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
-
-$Configs = BOOTGLY_PROJECT->Configs;
-
-if ($Configs instanceof Configs === false) {
-   throw new RuntimeException('Create the project configs/ directory before loading database config.');
-}
-
-$Configs->allow('database', [
-   'DB_CONNECTION',
-   'DB_ENABLED',
-   'DB_HOST',
-   'DB_NAME',
-   'DB_PASS',
-   'DB_POOL_MAX',
-   'DB_POOL_MIN',
-   'DB_PORT',
-   'DB_SSLCAFILE',
-   'DB_SSLMODE',
-   'DB_SSLPEER',
-   'DB_SSLVERIFY',
-   'DB_STATEMENTS',
-   'DB_TIMEOUT',
-   'DB_USER',
-]);
-$Scope = $Configs->get('database');
-
-if ($Scope instanceof Config === false) {
-   throw new RuntimeException('Create configs/database/database.config.php before loading database config.');
-}
-
-$DatabaseResource = static function (object $Context) use ($Scope): DatabaseResource {
-   if ($Context instanceof Response === false) {
-      throw new RuntimeException('Database response resource expects a Response context.');
-   }
-
-   static $Database = null;
-
-   if ($Database instanceof SQL === false) {
-      $Database = new SQL(new DatabaseConfig($Scope)->configure());
-   }
-
-   return new DatabaseResource($Database);
-};
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
 
 $HTTP_Server_CLI->configure(
    responseResources: [
-      'Database' => $DatabaseResource,
+      'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
+      'KV' => KVResource::provide(__DIR__ . '/configs/'),
    ],
 );
 ```
 
-O resource é criado de forma lazy na primeira leitura de `$Response->Database` pela rota.
+`Database::provide()` lê o escopo `database` (`configs/database/database.config.php` e os arquivos
+`.env` locais), constrói uma conexão `SQL` pooled por worker e a encapsula. Lança exceção quando o
+escopo está desabilitado (`DB_ENABLED=false`) ou o contexto não é um `Response`. O resource é criado
+de forma lazy na primeira leitura de `$Response->Database` pela rota.
+
+Uma factory é só um closure, então quando você precisa de controle total sobre a construção pode
+montar e encapsular o resource você mesmo em vez de chamar `provide()`:
+
+```php
+use RuntimeException;
+
+use Bootgly\ADI\Databases\SQL;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
+
+$HTTP_Server_CLI->configure(
+   responseResources: [
+      'Database' => static function (object $Context): DatabaseResource {
+         if ($Context instanceof Response === false) {
+            throw new RuntimeException('Database response resource expects a Response context.');
+         }
+
+         static $Database = null;
+
+         if ($Database instanceof SQL === false) {
+            $Database = new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1']);
+         }
+
+         return new DatabaseResource($Database);
+      },
+   ],
+);
+```
 
 ## Aguardar trabalho de banco
 
@@ -131,6 +115,14 @@ return $Response->defer(function (Response $Response): void {
 ```
 
 ## Métodos do Database
+
+```php
+provide (string $configs): Closure
+```
+
+Factory estática. Lê o escopo `database` do diretório `configs/` do projeto informado e retorna um
+`Closure(object): Database` lazy para `responseResources`. Constrói uma `SQL` pooled por worker;
+lança exceção quando o escopo está desabilitado ou o contexto não é um `Response`.
 
 ```php
 table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder
@@ -170,43 +162,40 @@ rollback quando o callback lança exceção.
 ## Registrar o resource KV
 
 `KV` adapta o banco key-value async (`ADI/Databases/KV`, Redis) ao scheduler da resposta do
-mesmo jeito que `Database` adapta SQL. Registre com `responseResources`; a factory constrói um
-banco `KV` por worker com uma única conexão no pool, para que comandos pendentes façam pipeline
-nela.
+mesmo jeito que `Database` adapta SQL. `KV::provide()` lê o escopo `kv` e constrói um banco `KV` por
+worker com uma única conexão no pool, para que comandos pendentes façam pipeline nela:
 
 ```php
-use RuntimeException;
-
-use Bootgly\ADI\Databases\KV;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
-
-$KVResource = static function (object $Context): KVResource {
-   if ($Context instanceof Response === false) {
-      throw new RuntimeException('KV response resource expects a Response context.');
-   }
-
-   static $KV = null;
-
-   if ($KV instanceof KV === false) {
-      // Uma conexão por worker: comandos pendentes fazem pipeline nela
-      $KV = new KV([
-         'driver' => 'redis',
-         'host' => '127.0.0.1',
-         'port' => 6379,
-         'pool' => ['min' => 0, 'max' => 1],
-      ]);
-   }
-
-   return new KVResource($KV);
-};
 
 $HTTP_Server_CLI->configure(
    responseResources: [
-      'KV' => $KVResource,
+      'KV' => KVResource::provide(__DIR__ . '/configs/'),
    ],
 );
 ```
+
+Declare o escopo `kv` em `configs/kv/kv.config.php`. Cada nó faz bind de uma chave de env com um
+default, então a conexão fica configurável pelo ambiente sem tocar no código:
+
+```php
+use Bootgly\API\Environment\Configs\Config;
+use Bootgly\API\Environment\Configs\Config\Types;
+
+return new Config(scope: 'kv')
+   ->Enabled->bind(key: 'KV_ENABLED', default: true, cast: Types::Boolean)
+   ->Driver->bind(key: 'KV_DRIVER', default: 'redis')
+   ->Host->bind(key: 'KV_HOST', default: '127.0.0.1')
+   ->Port->bind(key: 'KV_PORT', default: 6379, cast: Types::Integer)
+   ->Timeout->bind(key: 'KV_TIMEOUT', default: 30.0, cast: Types::Float)
+   ->Pool
+      ->Min->bind(key: 'KV_POOL_MIN', default: 0, cast: Types::Integer)
+      ->Max->bind(key: 'KV_POOL_MAX', default: 1, cast: Types::Integer);
+```
+
+`KV::provide()` lança exceção quando o escopo está desabilitado (`KV_ENABLED=false`) ou o contexto
+não é um `Response`. O resource é criado de forma lazy na primeira leitura de `$Response->KV` pela
+rota.
 
 ## Aguardar trabalho key-value
 
@@ -258,6 +247,14 @@ Fazer pipeline de 8 leituras com `drain()` é ~2,4× mais rápido que 8 `fetch()
 porque os round-trips se sobrepõem na mesma conexão em vez de rodar um de cada vez.
 
 ## Métodos do KV
+
+```php
+provide (string $configs): Closure
+```
+
+Factory estática. Lê o escopo `kv` do diretório `configs/` do projeto informado e retorna um
+`Closure(object): KV` lazy para `responseResources`. Constrói uma conexão pipelined por worker;
+lança exceção quando o escopo está desabilitado ou o contexto não é um `Response`.
 
 ```php
 fetch (string $command, array $arguments = []): mixed

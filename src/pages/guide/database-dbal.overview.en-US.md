@@ -63,111 +63,52 @@ return new Config(scope: 'database')
                ->Port->bind(key: 'DB_REPLICA_1_PORT', default: null, cast: Types::Integer);
 ```
 
-Inside a `*.project.php` file, create the `SQL` instance from that config, then register
-Bootgly's built-in Database Response Resource while instantiating `HTTP_Server_CLI`. The factory
-below is only wiring: it injects the configured `SQL` instance into the built-in
-`DatabaseResource`; it does not define a custom resource class.
+Inside a `*.project.php` file, register Bootgly's built-in Database Response Resource while
+instantiating `HTTP_Server_CLI`. `DatabaseResource::provide()` is only wiring: it reads the
+`database` scope from the project `configs/` directory and injects one pooled `SQL` instance per
+worker into the built-in `DatabaseResource`; it does not define a custom resource class.
 
 ```php
-use const BOOTGLY_PROJECT;
-use RuntimeException;
-
-use Bootgly\ADI\Databases\SQL;
+use const Bootgly\CLI;
 use Bootgly\API\Endpoints\Server\Modes;
-use Bootgly\API\Environment\Configs\Config;
-use Bootgly\API\Environment\Configs\DatabaseConfig;
-use Bootgly\API\Projects\Configs;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
 
 return new Project(
    boot: function (): void {
-      $Configs = BOOTGLY_PROJECT->Configs;
-
-      if ($Configs instanceof Configs === false) {
-         throw new RuntimeException('Create the project configs/ directory before loading database config.');
-      }
-
-      $Configs->allow('database', [
-         'DB_CONNECTION',
-         'DB_ENABLED',
-         'DB_HOST',
-         'DB_NAME',
-         'DB_PASS',
-         'DB_POOL_MAX',
-         'DB_POOL_MIN',
-         'DB_PORT',
-         'DB_REPLICA_1_HOST',
-         'DB_REPLICA_1_NAME',
-         'DB_REPLICA_1_PASS',
-         'DB_REPLICA_1_POOL_MAX',
-         'DB_REPLICA_1_POOL_MIN',
-         'DB_REPLICA_1_PORT',
-         'DB_REPLICA_1_SSLCAFILE',
-         'DB_REPLICA_1_SSLMODE',
-         'DB_REPLICA_1_SSLPEER',
-         'DB_REPLICA_1_SSLVERIFY',
-         'DB_REPLICA_1_STATEMENTS',
-         'DB_REPLICA_1_TIMEOUT',
-         'DB_REPLICA_1_USER',
-         'DB_REPLICA_2_HOST',
-         'DB_REPLICA_2_NAME',
-         'DB_REPLICA_2_PASS',
-         'DB_REPLICA_2_POOL_MAX',
-         'DB_REPLICA_2_POOL_MIN',
-         'DB_REPLICA_2_PORT',
-         'DB_REPLICA_2_SSLCAFILE',
-         'DB_REPLICA_2_SSLMODE',
-         'DB_REPLICA_2_SSLPEER',
-         'DB_REPLICA_2_SSLVERIFY',
-         'DB_REPLICA_2_STATEMENTS',
-         'DB_REPLICA_2_TIMEOUT',
-         'DB_REPLICA_2_USER',
-         'DB_ROUTING_STICKY',
-         'DB_SSLCAFILE',
-         'DB_SSLMODE',
-         'DB_SSLPEER',
-         'DB_SSLVERIFY',
-         'DB_STATEMENTS',
-         'DB_TIMEOUT',
-         'DB_USER',
-      ]);
-      $Scope = $Configs->get('database');
-
-      if ($Scope instanceof Config === false) {
-         throw new RuntimeException('Create configs/database/database.config.php before loading database config.');
-      }
-
-      $DatabaseResource = static function () use ($Scope): DatabaseResource {
-         static $Database = null;
-
-         if ($Database instanceof SQL === false) {
-            $Database = new SQL(new DatabaseConfig($Scope)->configure());
-         }
-
-         return new DatabaseResource($Database);
-      };
-
       $HTTP_Server_CLI = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $HTTP_Server_CLI->configure(
          host: '0.0.0.0',
          port: 8082,
          workers: 1,
          responseResources: [
-            'Database' => $DatabaseResource,
+            'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
          ],
       );
+
+      $HTTP_Server_CLI
+         // # Routes — the request entry point (a required *.SAPI.php router)
+         ->on(Events::RequestReceived, require __DIR__ . '/router/routes.SAPI.php')
+         // # Lifecycle feedback
+         ->on(Events::ServerStarted, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server started@;@.;'))
+         ->on(Events::ServerStopped, fn () => CLI->Terminal->Output->render('@#yellow:■ HTTP server stopped@;@.;'));
+
       $HTTP_Server_CLI->start();
    }
 );
 ```
 
-Define the `database` scope in `configs/database/database.config.php`; environment values are
-bound inside that file. Reuse the same `SQL` instance per worker when possible. The pool lives on
-that instance.
-`HTTP_Server_CLI` passes the current `Response` context to resource factories; this Database
-factory does not need it because the built-in resource only needs the configured `SQL` instance.
+`on()` wires the three `HTTP_Server_CLI` lifecycle events: `RequestReceived` (the route entry point,
+usually a `require`d `*.SAPI.php` router), `ServerStarted` and `ServerStopped` (boot/shutdown
+feedback). Without `RequestReceived` the server starts but answers nothing.
+
+Define the `database` scope in `configs/database/database.config.php`; environment values are bound
+inside that file. `provide()` reads that scope, builds one pooled `SQL` instance per worker (the pool
+lives on that instance) and creates the resource lazily on the first `$Response->Database`. It throws
+when the scope is disabled (`DB_ENABLED=false`) or the context is not a `Response`. Need full control
+over construction? Pass your own `Closure(object): DatabaseResource` instead of calling `provide()`.
 
 ## Use it in a response
 

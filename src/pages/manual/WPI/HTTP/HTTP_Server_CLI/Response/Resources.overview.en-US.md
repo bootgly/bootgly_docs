@@ -31,75 +31,59 @@ return $Response->View->render('welcome', [
 
 ## Register project resources
 
-Register custom resources with the `responseResources` option. Each factory receives the
-current response context and returns a `Response\Resource` instance.
+Register custom resources with the `responseResources` option. Each factory is a
+`Closure(object): Response\Resource` that receives the current response context and returns a
+`Response\Resource` instance — created lazily the first time the route reads the resource by name.
 
-For a project database resource, load the project `database` config scope first. `Project::boot()`
-creates `BOOTGLY_PROJECT->Configs` from the project `configs/` directory, and `get('database')`
-loads `configs/database/database.config.php` plus the local `.env` files.
+`Database` and `KV` ship a static `provide()` factory that encapsulates this wiring: it reads a
+config scope from the project `configs/` directory, builds one pooled connection per worker and
+wraps it. Pass the project `configs/` directory and register each resource in a single line:
 
 ```php
-use const BOOTGLY_PROJECT;
-use RuntimeException;
-
-use Bootgly\ADI\Databases\SQL;
-use Bootgly\API\Environment\Configs\Config;
-use Bootgly\API\Environment\Configs\DatabaseConfig;
-use Bootgly\API\Projects\Configs;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
-
-$Configs = BOOTGLY_PROJECT->Configs;
-
-if ($Configs instanceof Configs === false) {
-   throw new RuntimeException('Create the project configs/ directory before loading database config.');
-}
-
-$Configs->allow('database', [
-   'DB_CONNECTION',
-   'DB_ENABLED',
-   'DB_HOST',
-   'DB_NAME',
-   'DB_PASS',
-   'DB_POOL_MAX',
-   'DB_POOL_MIN',
-   'DB_PORT',
-   'DB_SSLCAFILE',
-   'DB_SSLMODE',
-   'DB_SSLPEER',
-   'DB_SSLVERIFY',
-   'DB_STATEMENTS',
-   'DB_TIMEOUT',
-   'DB_USER',
-]);
-$Scope = $Configs->get('database');
-
-if ($Scope instanceof Config === false) {
-   throw new RuntimeException('Create configs/database/database.config.php before loading database config.');
-}
-
-$DatabaseResource = static function (object $Context) use ($Scope): DatabaseResource {
-   if ($Context instanceof Response === false) {
-      throw new RuntimeException('Database response resource expects a Response context.');
-   }
-
-   static $Database = null;
-
-   if ($Database instanceof SQL === false) {
-      $Database = new SQL(new DatabaseConfig($Scope)->configure());
-   }
-
-   return new DatabaseResource($Database);
-};
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
 
 $HTTP_Server_CLI->configure(
    responseResources: [
-      'Database' => $DatabaseResource,
+      'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
+      'KV' => KVResource::provide(__DIR__ . '/configs/'),
    ],
 );
 ```
 
-The resource is created lazily the first time the route reads `$Response->Database`.
+`Database::provide()` reads the `database` scope (`configs/database/database.config.php` plus the
+local `.env` files), builds one pooled `SQL` connection per worker and wraps it. It throws when the
+scope is disabled (`DB_ENABLED=false`) or the context is not a `Response`. The resource is created
+lazily the first time the route reads `$Response->Database`.
+
+A factory is just a closure, so when you need full control over construction you can build and wrap
+the resource yourself instead of calling `provide()`:
+
+```php
+use RuntimeException;
+
+use Bootgly\ADI\Databases\SQL;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
+
+$HTTP_Server_CLI->configure(
+   responseResources: [
+      'Database' => static function (object $Context): DatabaseResource {
+         if ($Context instanceof Response === false) {
+            throw new RuntimeException('Database response resource expects a Response context.');
+         }
+
+         static $Database = null;
+
+         if ($Database instanceof SQL === false) {
+            $Database = new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1']);
+         }
+
+         return new DatabaseResource($Database);
+      },
+   ],
+);
+```
 
 ## Await database work
 
@@ -131,6 +115,14 @@ return $Response->defer(function (Response $Response): void {
 ```
 
 ## Database methods
+
+```php
+provide (string $configs): Closure
+```
+
+Static factory. Reads the `database` scope from the given project `configs/` directory and returns a
+lazy `Closure(object): Database` for `responseResources`. Builds one pooled `SQL` per worker; throws
+when the scope is disabled or the context is not a `Response`.
 
 ```php
 table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder
@@ -170,43 +162,39 @@ back when the callback throws.
 ## Register the KV resource
 
 `KV` adapts the async key-value database (`ADI/Databases/KV`, Redis) to the response
-scheduler the same way `Database` adapts SQL. Register it with `responseResources`; the
-factory builds one `KV` database per worker with a single pooled connection so pending
-commands pipeline on it.
+scheduler the same way `Database` adapts SQL. `KV::provide()` reads the `kv` scope and builds one
+`KV` database per worker with a single pooled connection so pending commands pipeline on it:
 
 ```php
-use RuntimeException;
-
-use Bootgly\ADI\Databases\KV;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
-
-$KVResource = static function (object $Context): KVResource {
-   if ($Context instanceof Response === false) {
-      throw new RuntimeException('KV response resource expects a Response context.');
-   }
-
-   static $KV = null;
-
-   if ($KV instanceof KV === false) {
-      // One connection per worker: pending commands pipeline on it
-      $KV = new KV([
-         'driver' => 'redis',
-         'host' => '127.0.0.1',
-         'port' => 6379,
-         'pool' => ['min' => 0, 'max' => 1],
-      ]);
-   }
-
-   return new KVResource($KV);
-};
 
 $HTTP_Server_CLI->configure(
    responseResources: [
-      'KV' => $KVResource,
+      'KV' => KVResource::provide(__DIR__ . '/configs/'),
    ],
 );
 ```
+
+Declare the `kv` scope in `configs/kv/kv.config.php`. Each node binds an env key with a default, so
+the connection is configurable through the environment without touching code:
+
+```php
+use Bootgly\API\Environment\Configs\Config;
+use Bootgly\API\Environment\Configs\Config\Types;
+
+return new Config(scope: 'kv')
+   ->Enabled->bind(key: 'KV_ENABLED', default: true, cast: Types::Boolean)
+   ->Driver->bind(key: 'KV_DRIVER', default: 'redis')
+   ->Host->bind(key: 'KV_HOST', default: '127.0.0.1')
+   ->Port->bind(key: 'KV_PORT', default: 6379, cast: Types::Integer)
+   ->Timeout->bind(key: 'KV_TIMEOUT', default: 30.0, cast: Types::Float)
+   ->Pool
+      ->Min->bind(key: 'KV_POOL_MIN', default: 0, cast: Types::Integer)
+      ->Max->bind(key: 'KV_POOL_MAX', default: 1, cast: Types::Integer);
+```
+
+`KV::provide()` throws when the scope is disabled (`KV_ENABLED=false`) or the context is not a
+`Response`. The resource is created lazily the first time the route reads `$Response->KV`.
 
 ## Await key-value work
 
@@ -258,6 +246,14 @@ Pipelining 8 reads through `drain()` is ~2.4× faster than 8 sequential `fetch()
 because their round-trips overlap on the one connection instead of running one at a time.
 
 ## KV methods
+
+```php
+provide (string $configs): Closure
+```
+
+Static factory. Reads the `kv` scope from the given project `configs/` directory and returns a lazy
+`Closure(object): KV` for `responseResources`. Builds one pipelined connection per worker; throws
+when the scope is disabled or the context is not a `Response`.
 
 ```php
 fetch (string $command, array $arguments = []): mixed
