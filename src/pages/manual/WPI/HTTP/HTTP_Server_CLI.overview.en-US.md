@@ -106,6 +106,8 @@ The `configure()` method accepts the following parameters:
 | `requestMaxMultipartHeaderSize` | `?int` | `null` | Maximum size in bytes of the header block of a single multipart part. Defaults to `8 KB`. |
 | `requestMaxMultipartFields` | `?int` | `null` | Maximum number of text fields accepted in a multipart request. Defaults to `1024`. |
 | `requestMaxMultipartFiles` | `?int` | `null` | Maximum number of file parts accepted in a multipart request. Defaults to `1024`. |
+| `maxConnections` | `?int` | `null` | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. Defaults to `10000`; `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |
+| `maxConnectionsPerIP` | `?int` | `null` | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: defaults to `0` (unlimited), because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
 
 ```php
 $Server->configure(
@@ -121,6 +123,34 @@ $Server->configure(
    requestMaxMultipartHeaderSize: 8 * 1024,        // 8 KB (default) — max size of a single part's headers
    requestMaxMultipartFields: 1024,                // 1024 (default) — max number of text fields
    requestMaxMultipartFiles: 1024,                 // 1024 (default) — max number of file parts
+   maxConnections: 10000,                          // 10000 (default) — global concurrent-connection ceiling per worker (0 = unlimited)
+   maxConnectionsPerIP: 0,                          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
+);
+```
+
+### Connection limits
+
+`maxConnections` and `maxConnectionsPerIP` protect each worker against a connection-exhaustion
+DoS: a client that opens connections up to the operating-system file-descriptor limit can
+otherwise exhaust the FDs and per-connection memory of a single-threaded event-loop worker.
+
+The ceiling is checked once per accepted connection (not on the per-request hot path), so it
+has no effect on the throughput of established keep-alive connections. When a worker is already
+at `maxConnections`, the next connection is accepted and immediately closed.
+
+Leave `maxConnectionsPerIP` at `0` when the server sits behind a reverse proxy or load
+balancer — every request then arrives from the proxy's IP, and a per-IP cap would throttle all
+legitimate traffic. Enable it (a value comfortably above your real per-client concurrency) only
+when clients connect to the server directly.
+
+```php
+// Direct-to-internet worker: cap total and per-client concurrency.
+$Server->configure(
+   host: '0.0.0.0',
+   port: 8080,
+   workers: 8,
+   maxConnections: 20000,    // per worker
+   maxConnectionsPerIP: 200, // per source IP (only safe without a fronting proxy)
 );
 ```
 

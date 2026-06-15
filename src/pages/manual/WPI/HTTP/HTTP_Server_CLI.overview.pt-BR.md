@@ -105,6 +105,8 @@ O método `configure()` aceita os seguintes parâmetros:
 | `requestMaxMultipartHeaderSize` | `?int` | `null` | Tamanho máximo em bytes do bloco de headers de uma parte multipart. Padrão: `8 KB`. |
 | `requestMaxMultipartFields` | `?int` | `null` | Número máximo de campos de texto aceitos em uma requisição multipart. Padrão: `1024`. |
 | `requestMaxMultipartFiles` | `?int` | `null` | Número máximo de partes de arquivo aceitas em uma requisição multipart. Padrão: `1024`. |
+| `maxConnections` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. Padrão: `10000`; `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
+| `maxConnectionsPerIP` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: padrão `0` (ilimitado), porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
 
 ```php
 $Server->configure(
@@ -120,6 +122,35 @@ $Server->configure(
    requestMaxMultipartHeaderSize: 8 * 1024,        // 8 KB (padrão) — tamanho máximo dos headers de uma parte
    requestMaxMultipartFields: 1024,                // 1024 (padrão) — número máximo de campos de texto
    requestMaxMultipartFiles: 1024,                 // 1024 (padrão) — número máximo de partes de arquivo
+   maxConnections: 10000,                          // 10000 (padrão) — teto global de conexões simultâneas por worker (0 = ilimitado)
+   maxConnectionsPerIP: 0,                          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
+);
+```
+
+### Limites de conexão
+
+`maxConnections` e `maxConnectionsPerIP` protegem cada worker contra um DoS de exaustão de
+conexões: um cliente que abre conexões até o limite de file descriptors do sistema operacional
+pode, de outra forma, esgotar os FDs e a memória por conexão de um worker de event loop de
+thread única.
+
+O teto é verificado uma vez por conexão aceita (não no hot path por requisição), então não tem
+efeito sobre a vazão das conexões keep-alive já estabelecidas. Quando um worker já está em
+`maxConnections`, a próxima conexão é aceita e imediatamente fechada.
+
+Deixe `maxConnectionsPerIP` em `0` quando o servidor estiver atrás de um proxy reverso ou
+balanceador de carga — toda requisição chega do IP do proxy, e um limite por IP estrangularia
+todo o tráfego legítimo. Habilite-o (com um valor confortavelmente acima da concorrência real
+por cliente) apenas quando os clientes se conectam diretamente ao servidor.
+
+```php
+// Worker direto para a internet: limita a concorrência total e por cliente.
+$Server->configure(
+   host: '0.0.0.0',
+   port: 8080,
+   workers: 8,
+   maxConnections: 20000,    // por worker
+   maxConnectionsPerIP: 200, // por IP de origem (seguro apenas sem um proxy à frente)
 );
 ```
 
