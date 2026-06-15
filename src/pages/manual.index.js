@@ -1429,6 +1429,27 @@ export default {
       }
     }
   },
+  '/WPI/HTTP/HTTP_Server_CLI/Queues': {
+    config: {
+      icon: 'queue',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Enqueue background jobs from request handlers and process them with a queue worker.',
+          'pt-BR': 'Enfileire jobs em background a partir dos route handlers e processe-os com um worker de fila.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Queues'
+      }
+    }
+  },
   '/WPI/HTTP/HTTP_Client_CLI': {
     config: {
       icon: 'desktop_windows',

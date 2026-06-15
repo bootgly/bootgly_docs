@@ -104,6 +104,32 @@ export default {
     }
   },
 
+  '/queues': {
+    config: {
+      icon: 'queue',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Enqueue background jobs and run workers — File or Redis drivers, retry/backoff, dead-letter, the queue worker command and lifecycle events.',
+          'pt-BR': 'Enfileire jobs em background e rode workers — drivers File ou Redis, retry/backoff, dead-letter, comando de worker e eventos de ciclo de vida.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Queues'
+      },
+      'pt-BR': {
+        title: 'Filas'
+      }
+    }
+  },
+
   '/scheduler': {
     config: {
       icon: 'schedule',
