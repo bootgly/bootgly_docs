@@ -182,7 +182,7 @@ Relation names are single-level in v0.16. Nested paths such as `posts.comments` 
 
 ## Demo project
 
-`projects/Demo-HTTP_Server_CLI/router/HTTP_Server_CLI-response-database.SAPI.php` exposes ORM examples:
+`projects/Demo-HTTP_Server_CLI/router/routes/Database.php` exposes ORM examples:
 
 The entity classes used by those routes live in `projects/Demo-HTTP_Server_CLI/Models/`.
 

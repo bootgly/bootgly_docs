@@ -175,14 +175,14 @@ Rode os comandos de migrate somente depois de configurar e acessar o banco do pr
 
 ## Rotas demo
 
-Habilite o handler demo de Authorization em
-`projects/Demo-HTTP_Server_CLI/Demo-HTTP_Server_CLI.project.php`:
+Habilite o set demo de Authorization em
+`projects/Demo-HTTP_Server_CLI/router/router.index.php` (o projeto carrega a pasta `router/` via `Router::load()`):
 
-```php
-$HTTP_Server_CLI->on(
-   Events::RequestReceived,
-   require __DIR__ . '/router/HTTP_Server_CLI-authorization.SAPI.php'
-);
+```php :filename="router.index.php";
+// adicione 'Authorization' ao manifesto
+return [
+   'Authorization',
+];
 ```
 
 Depois inicie o servidor demo:

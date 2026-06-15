@@ -176,14 +176,14 @@ Run the migrate commands only after the project database is configured and reach
 
 ## Demo routes
 
-Enable the Authorization demo handler in
-`projects/Demo-HTTP_Server_CLI/Demo-HTTP_Server_CLI.project.php`:
+Enable the Authorization demo set in
+`projects/Demo-HTTP_Server_CLI/router/router.index.php` (the project loads the `router/` folder via `Router::load()`):
 
-```php
-$HTTP_Server_CLI->on(
-   Events::RequestReceived,
-   require __DIR__ . '/router/HTTP_Server_CLI-authorization.SAPI.php'
-);
+```php :filename="router.index.php";
+// add 'Authorization' to the manifest
+return [
+   'Authorization',
+];
 ```
 
 Then start the demo server:

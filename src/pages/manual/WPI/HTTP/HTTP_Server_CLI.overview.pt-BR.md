@@ -52,7 +52,7 @@ return new Project(
          port: 8082,
          workers: 4
       );
-      $Server->on(Events::RequestReceived, require __DIR__ . '/router/routes.php');
+      $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
       $Server->start();
    }
 );
@@ -194,14 +194,55 @@ $Server->on(
 );
 ```
 
-Para aplicações maiores, carregue o handler de um arquivo externo que retorna um callable:
+Para aplicações maiores, carregue as rotas da pasta `router/` do projeto com `Router::load()`:
 
 ```php
-$Server->on(Events::RequestReceived, require __DIR__ . '/router/routes.php');
+$Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
 ```
 
 > [!IMPORTANT]
 > O handler `Events::RequestReceived` executa dentro de cada processo **worker**. O estado não é compartilhado entre workers — use memória compartilhada ou armazenamentos externos (Redis, DB) para comunicação entre workers.
+
+### Carregando rotas
+
+`Router::load()` é a forma canônica de registrar rotas. Aponta para a pasta `router/` do projeto e retorna o handler de requisição passado para `Events::RequestReceived`:
+
+```php :filename="Demo-HTTP_Server_CLI.project.php";
+$Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
+```
+
+Dentro da pasta:
+
+- **`router/router.index.php`** — um manifesto listando os nomes dos route sets ativos. Cada nome resolve para `router/routes/<Name>.php`. Liste mais de um para compor vários sets em um único handler.
+- **`router/routes/<Name>.php`** — um route set: uma generator-closure `(Request, Response, Router): Generator` que faz `yield` das suas rotas.
+
+```php :group="router-load"; :tab="router.index.php"; :breadcrumb="router > router.index.php";
+// Manifesto dos nomes dos route sets ativos
+return [
+   'Database',           // ativo
+   // 'Authentication',  // descomente para também carregar (sets são compostos na ordem)
+];
+```
+
+```php :group="router-load"; :tab="Database.php"; :breadcrumb="router > routes > Database.php";
+// Um route set (generator-closure)
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+
+return static function (Request $Request, Response $Response, Router $Router): Generator {
+   yield $Router->route('/users', fn (Request $Request, Response $Response) =>
+      $Response->JSON->send(['ok' => true]), GET);
+};
+```
+
+Um único set é retornado diretamente; múltiplos sets são compostos (`yield from` em cada) num só handler. A pasta também é a casa do router — reservada para um futuro arquivo `router.config.php` de defaults.
+
+```php
+Router::load (string $path): Closure
+```
+
+Lê `$path/router.index.php` (um manifesto de nomes de route sets), resolve cada nome para `$path/routes/<Name>.php`, e retorna um único handler closure (compondo múltiplos sets com `yield from`). Lança `InvalidArgumentException` quando o index ou um set nomeado não existe, ou quando um set não retorna um `Closure`.
 
 ### serverStarted
 

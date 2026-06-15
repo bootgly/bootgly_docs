@@ -182,7 +182,7 @@ Nomes de relação são single-level no v0.16. Caminhos aninhados como `posts.co
 
 ## Projeto demo
 
-`projects/Demo-HTTP_Server_CLI/router/HTTP_Server_CLI-response-database.SAPI.php` expõe exemplos ORM:
+`projects/Demo-HTTP_Server_CLI/router/routes/Database.php` expõe exemplos ORM:
 
 As classes de entidade usadas por essas rotas ficam em `projects/Demo-HTTP_Server_CLI/Models/`.
 

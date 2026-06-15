@@ -89,8 +89,8 @@ return new Project(
       );
 
       $HTTP_Server_CLI
-         // # Rotas — o ponto de entrada do request (um router *.SAPI.php via require)
-         ->on(Events::RequestReceived, require __DIR__ . '/router/routes.SAPI.php')
+         // # Rotas — o ponto de entrada do request (pasta router/ via Router::load())
+         ->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'))
          // # Feedback de ciclo de vida
          ->on(Events::ServerStarted, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server iniciado@;@.;'))
          ->on(Events::ServerStopped, fn () => CLI->Terminal->Output->render('@#yellow:■ HTTP server parado@;@.;'));
@@ -101,7 +101,7 @@ return new Project(
 ```
 
 `on()` liga os três eventos de ciclo de vida do `HTTP_Server_CLI`: `RequestReceived` (o ponto de
-entrada das rotas, normalmente um router `*.SAPI.php` via `require`), `ServerStarted` e
+entrada das rotas, a pasta `router/` carregada via `Router::load()`), `ServerStarted` e
 `ServerStopped` (feedback de boot/shutdown). Sem `RequestReceived` o servidor sobe mas não responde
 nada.
 
