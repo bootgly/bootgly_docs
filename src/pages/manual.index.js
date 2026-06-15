@@ -1416,9 +1416,7 @@ export default {
           'pt-BR': 'Encadeie CORS, rate limits, secure headers e outros middlewares HTTP ao redor de cada requisição.'
         }
       },
-      menu: {
-        separator: true
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
@@ -1439,7 +1437,9 @@ export default {
           'pt-BR': 'Enfileire jobs em background a partir dos route handlers e processe-os com um worker de fila.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
