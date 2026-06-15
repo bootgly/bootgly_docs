@@ -108,6 +108,7 @@ export default {
     config: {
       icon: 'queue',
       status: 'draft',
+      version: '0.17.0-beta',
       meta: {
         description: {
           'en-US': 'Enqueue background jobs and run workers — File or Redis drivers, retry/backoff, dead-letter, the queue worker command and lifecycle events.',
@@ -134,6 +135,7 @@ export default {
     config: {
       icon: 'schedule',
       status: 'draft',
+      version: '0.17.0-beta',
       meta: {
         description: {
           'en-US': 'Schedule cron-style jobs with repeat(), overlap locks, missed-run recovery, a worker command and lifecycle events.',
@@ -160,6 +162,7 @@ export default {
     config: {
       icon: 'podcasts',
       status: 'draft',
+      version: '0.17.0-beta',
       meta: {
         description: {
           'en-US': 'Listen to framework domain events — cache, SQL, HTTP, sessions, workers — on the zero-overhead ABI event bus.',
