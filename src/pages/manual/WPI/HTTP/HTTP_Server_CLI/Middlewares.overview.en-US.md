@@ -168,17 +168,40 @@ Enforces rate limiting by tracking request counts per IP address within time win
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit\Algorithms;
 
 new RateLimit(
-   limit: 60,             // Maximum requests per window (default: 60)
-   window: 60,            // Time window in seconds (default: 60)
-   trustForwarded: false  // Key on the proxy-resolved $Request->address (default: false)
+   limit: 60,                        // Maximum requests per window (default: 60)
+   window: 60,                       // Time window in seconds (default: 60)
+   trustForwarded: false,            // Key on the proxy-resolved $Request->address (default: false)
+   ipv6Prefix: 64,                   // Aggregate IPv6 keys to this prefix (default: /64)
+   globalLimit: 0,                   // Optional cross-worker aggregate ceiling (default: 0 = off)
+   algorithm: Algorithms::Sliding,   // Counting algorithm (default: Sliding; or Fixed)
+   key: null                         // Custom key resolver fn (Request): ?string (default: IP)
 );
 ```
 
 **Counter key (security).** By default the limiter keys on `$Request->peer` — the **immutable TCP transport IP**, which a client cannot forge. This is deliberate: `TrustedProxy` can overwrite `$Request->address` from a client-supplied `X-Forwarded-For` header, so keying on `$address` would let a client behind (or co-located with) a trusted proxy rotate that header and open a fresh rate-limit bucket per request, evading the limit entirely.
 
 Set `trustForwarded: true` **only** when the server sits behind a genuinely trusted proxy and you want per-real-client buckets — it makes the limiter key on `$Request->address` (the proxy-resolved client IP). Combine it with a correctly configured `TrustedProxy` so that address is itself trustworthy.
+
+**IPv6 aggregation.** A single client is routinely allocated a whole `/64`, giving 2⁶⁴ distinct `/128` addresses. Keying on the full address would let such a client mint a fresh bucket per request, so IPv6 keys are masked to `ipv6Prefix` (default `/64`) — every address in the same `/64` shares one counter. IPv4 keys are used in full. Lower the prefix (e.g. `/56`, `/48`) to aggregate even more aggressively.
+
+**Algorithm.** `Algorithms::Sliding` (default) is a weighted sliding window: it blends the current and previous windows by how much of the previous window is still in view, so a client cannot send `2 × limit` by bursting across a window boundary. `Algorithms::Fixed` is the cheaper classic counter (one key, resets on TTL) if you do not need boundary smoothing.
+
+**Global ceiling.** `globalLimit` (default `0` = off) adds a single cross-worker aggregate counter on top of the per-key limit — a safety net against a distributed/botnet client that stays under the per-key limit on each of many keys. Requests are counted globally only after they pass the per-key check.
+
+**Custom key.** `key` is a resolver `fn (object $Request): ?string`. Return a string to rate-limit on something other than the IP — an API key, an authenticated user id, a tenant — or `null` to fall back to the default IP key.
+
+```php
+// Rate-limit by API key instead of IP:
+new RateLimit(
+   limit: 1000,
+   window: 3600,
+   key: fn (object $Request): ?string =>
+      ($k = $Request->Header->get('X-Api-Key')) !== null ? "api:{$k}" : null
+);
+```
 
 **Phase:** Pre-processing — rejects requests that exceed the rate limit before reaching the handler.
 

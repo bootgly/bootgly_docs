@@ -168,17 +168,40 @@ Aplica limitação de taxa rastreando contagem de requisições por IP dentro de
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit\Algorithms;
 
 new RateLimit(
-   limit: 60,             // Máximo de requisições por janela (padrão: 60)
-   window: 60,            // Janela de tempo em segundos (padrão: 60)
-   trustForwarded: false  // Usar o $Request->address resolvido pelo proxy (padrão: false)
+   limit: 60,                        // Máximo de requisições por janela (padrão: 60)
+   window: 60,                       // Janela de tempo em segundos (padrão: 60)
+   trustForwarded: false,            // Usar o $Request->address resolvido pelo proxy (padrão: false)
+   ipv6Prefix: 64,                   // Agregar chaves IPv6 neste prefixo (padrão: /64)
+   globalLimit: 0,                   // Teto agregado entre workers opcional (padrão: 0 = desligado)
+   algorithm: Algorithms::Sliding,   // Algoritmo de contagem (padrão: Sliding; ou Fixed)
+   key: null                         // Resolvedor de chave fn (Request): ?string (padrão: IP)
 );
 ```
 
 **Chave do contador (segurança).** Por padrão o limitador usa como chave `$Request->peer` — o **IP de transporte TCP imutável**, que um cliente não pode forjar. Isso é intencional: o `TrustedProxy` pode sobrescrever `$Request->address` a partir de um header `X-Forwarded-For` enviado pelo cliente, então usar `$address` como chave permitiria que um cliente atrás de (ou colocalizado com) um proxy confiável rotacionasse esse header e abrisse um novo balde de rate limit por requisição, burlando o limite por completo.
 
 Defina `trustForwarded: true` **apenas** quando o servidor está atrás de um proxy genuinamente confiável e você quer baldes por cliente real — isso faz o limitador usar `$Request->address` (o IP do cliente resolvido pelo proxy) como chave. Combine com um `TrustedProxy` corretamente configurado para que esse address seja, ele próprio, confiável.
+
+**Agregação IPv6.** Um único cliente costuma receber um `/64` inteiro, com 2⁶⁴ endereços `/128` distintos. Usar o endereço completo como chave permitiria a esse cliente criar um balde novo por requisição, então as chaves IPv6 são mascaradas para `ipv6Prefix` (padrão `/64`) — todo endereço no mesmo `/64` compartilha um contador. Chaves IPv4 são usadas por completo. Reduza o prefixo (ex.: `/56`, `/48`) para agregar de forma ainda mais agressiva.
+
+**Algoritmo.** `Algorithms::Sliding` (padrão) é uma janela deslizante ponderada: combina a janela atual e a anterior pela fração da janela anterior ainda em vista, de modo que um cliente não consegue enviar `2 × limit` estourando na virada de janela. `Algorithms::Fixed` é o contador clássico mais barato (uma chave, reinicia no TTL) caso você não precise do suavizamento de borda.
+
+**Teto global.** `globalLimit` (padrão `0` = desligado) adiciona um único contador agregado entre workers sobre o limite por chave — uma rede de segurança contra um cliente distribuído/botnet que fica abaixo do limite por chave em muitas chaves. As requisições só são contadas globalmente depois de passarem na checagem por chave.
+
+**Chave customizada.** `key` é um resolvedor `fn (object $Request): ?string`. Retorne uma string para limitar por algo diferente do IP — uma API key, um id de usuário autenticado, um tenant — ou `null` para recair na chave de IP padrão.
+
+```php
+// Limitar por API key em vez de IP:
+new RateLimit(
+   limit: 1000,
+   window: 3600,
+   key: fn (object $Request): ?string =>
+      ($k = $Request->Header->get('X-Api-Key')) !== null ? "api:{$k}" : null
+);
+```
 
 **Fase:** Pré-processamento — rejeita requisições que excedem o limite antes de alcançar o handler.
 
