@@ -170,10 +170,15 @@ Enforces rate limiting by tracking request counts per IP address within time win
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
 new RateLimit(
-   limit: 60,   // Maximum requests per window (default: 60)
-   window: 60   // Time window in seconds (default: 60)
+   limit: 60,             // Maximum requests per window (default: 60)
+   window: 60,            // Time window in seconds (default: 60)
+   trustForwarded: false  // Key on the proxy-resolved $Request->address (default: false)
 );
 ```
+
+**Counter key (security).** By default the limiter keys on `$Request->peer` — the **immutable TCP transport IP**, which a client cannot forge. This is deliberate: `TrustedProxy` can overwrite `$Request->address` from a client-supplied `X-Forwarded-For` header, so keying on `$address` would let a client behind (or co-located with) a trusted proxy rotate that header and open a fresh rate-limit bucket per request, evading the limit entirely.
+
+Set `trustForwarded: true` **only** when the server sits behind a genuinely trusted proxy and you want per-real-client buckets — it makes the limiter key on `$Request->address` (the proxy-resolved client IP). Combine it with a correctly configured `TrustedProxy` so that address is itself trustworthy.
 
 **Phase:** Pre-processing — rejects requests that exceed the rate limit before reaching the handler.
 
@@ -295,18 +300,18 @@ Resolves the real client IP from trusted proxy headers (`X-Forwarded-For`, `X-Re
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
 
 new TrustedProxy(
-   proxies: ['127.0.0.1', '::1']  // Trusted proxy IPs (default: ['127.0.0.1', '::1'])
+   proxies: ['10.0.0.1']  // Trusted proxy IPs — set these explicitly in production
 );
 ```
 
 When the request comes from a trusted proxy IP, the middleware:
-- Reads `X-Forwarded-For` (first IP) or `X-Real-IP` to update `$Request->address`
+- Reads `X-Forwarded-For` (right-to-left, first untrusted hop) or `X-Real-IP` to update `$Request->address`
 - Reads `X-Forwarded-Proto` to update `$Request->scheme`
 
 Untrusted proxy IPs are ignored — the address and scheme are left unchanged.
 
-**Phase:** Pre-processing — resolves the real client IP before the handler runs.
+**`$Request->address` vs `$Request->peer`.** This middleware only ever changes `$Request->address` (the application-facing client IP). The real socket peer is always available, unaltered, as **`$Request->peer`** — use it for anti-abuse decisions that must not be spoofable (rate limiting keys on it by default; see [RateLimit](#ratelimit)).
 
-Only processes forwarded headers when the request originates from a trusted proxy IP.
+> **Security — set `proxies` explicitly in production.** When you construct `TrustedProxy` without a `proxies` argument it falls back to the localhost default (`127.0.0.1`, `::1`) and logs a one-time `WARNING` the first time it trusts a forwarded header. With that default, anything that can reach the server from localhost — a sidecar, an SSRF pivot, a dev port-forward — is trusted and can spoof `$Request->address` via `X-Forwarded-For`. Always pass the actual IPs of your reverse proxy / load balancer.
 
-**Phase:** Pre-processing — resolves the real client IP before the handler runs.
+**Phase:** Pre-processing — resolves the real client IP before the handler runs. Only processes forwarded headers when the request originates from a trusted proxy IP.

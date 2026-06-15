@@ -170,10 +170,15 @@ Aplica limitação de taxa rastreando contagem de requisições por IP dentro de
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
 new RateLimit(
-   limit: 60,   // Máximo de requisições por janela (padrão: 60)
-   window: 60   // Janela de tempo em segundos (padrão: 60)
+   limit: 60,             // Máximo de requisições por janela (padrão: 60)
+   window: 60,            // Janela de tempo em segundos (padrão: 60)
+   trustForwarded: false  // Usar o $Request->address resolvido pelo proxy (padrão: false)
 );
 ```
+
+**Chave do contador (segurança).** Por padrão o limitador usa como chave `$Request->peer` — o **IP de transporte TCP imutável**, que um cliente não pode forjar. Isso é intencional: o `TrustedProxy` pode sobrescrever `$Request->address` a partir de um header `X-Forwarded-For` enviado pelo cliente, então usar `$address` como chave permitiria que um cliente atrás de (ou colocalizado com) um proxy confiável rotacionasse esse header e abrisse um novo balde de rate limit por requisição, burlando o limite por completo.
+
+Defina `trustForwarded: true` **apenas** quando o servidor está atrás de um proxy genuinamente confiável e você quer baldes por cliente real — isso faz o limitador usar `$Request->address` (o IP do cliente resolvido pelo proxy) como chave. Combine com um `TrustedProxy` corretamente configurado para que esse address seja, ele próprio, confiável.
 
 **Fase:** Pré-processamento — rejeita requisições que excedem o limite antes de alcançar o handler.
 
@@ -295,15 +300,19 @@ Resolve o IP real do cliente a partir dos headers de proxy confiáveis (`X-Forwa
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
 
 new TrustedProxy(
-   proxies: ['127.0.0.1', '::1']  // IPs de proxies confiáveis (padrão: ['127.0.0.1', '::1'])
+   proxies: ['10.0.0.1']  // IPs de proxies confiáveis — defina-os explicitamente em produção
 );
 ```
 
 Quando a requisição vem de um IP de proxy confiável, o middleware:
 
-- Lê `X-Forwarded-For` (primeiro IP) ou `X-Real-IP` para atualizar `$Request->address`
+- Lê `X-Forwarded-For` (da direita para a esquerda, primeiro hop não confiável) ou `X-Real-IP` para atualizar `$Request->address`
 - Lê `X-Forwarded-Proto` para atualizar `$Request->scheme`
 
 IPs de proxy não confiáveis são ignorados — o endereço e esquema permanecem inalterados.
 
-**Fase:** Pré-processamento — resolve o IP real do cliente antes do handler executar.
+**`$Request->address` vs `$Request->peer`.** Este middleware só altera `$Request->address` (o IP do cliente voltado à aplicação). O par de socket real está sempre disponível, inalterado, como **`$Request->peer`** — use-o para decisões anti-abuso que não podem ser forjáveis (o rate limiting usa-o como chave por padrão; veja [RateLimit](#ratelimit)).
+
+> **Segurança — defina `proxies` explicitamente em produção.** Quando você constrói o `TrustedProxy` sem o argumento `proxies`, ele recai no padrão localhost (`127.0.0.1`, `::1`) e registra um `WARNING` único na primeira vez que confia em um header encaminhado. Com esse padrão, qualquer coisa que alcance o servidor a partir do localhost — um sidecar, um pivô de SSRF, um port-forward de desenvolvimento — é confiada e pode forjar `$Request->address` via `X-Forwarded-For`. Sempre passe os IPs reais do seu proxy reverso / balanceador de carga.
+
+**Fase:** Pré-processamento — resolve o IP real do cliente antes do handler executar. Só processa headers encaminhados quando a requisição se origina de um IP de proxy confiável.
