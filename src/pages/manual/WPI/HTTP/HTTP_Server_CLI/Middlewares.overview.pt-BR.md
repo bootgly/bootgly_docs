@@ -117,13 +117,21 @@ Gerencia a validação de Cross-Origin Resource Sharing e requisições prefligh
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 
 new CORS(
-   origins: ['https://example.com'],      // Origens permitidas (padrão: ['*'])
+   origins: ['https://example.com'],      // Origens permitidas (padrão: [] — allowlist vazia; passe ['*'] para wildcard)
    methods: ['GET', 'POST'],              // Métodos permitidos (padrão: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'])
    headers: ['Content-Type'],             // Headers permitidos (padrão: ['Content-Type','Authorization'])
    maxAge: 86400,                         // Cache do preflight em segundos (padrão: 86400)
    credentials: false                     // Permitir credenciais (padrão: false)
 );
 ```
+
+> **Seguro por padrão.** `origins` usa por padrão uma **allowlist vazia** — toda requisição
+> cross-origin é rejeitada (`403`) até você listar as origens confiáveis. Passe `origins: ['*']`
+> para optar por uma política wildcard (independente de origem). Quando o `Origin` da requisição
+> é refletido (correspondência na allowlist), `Vary: Origin` é emitido para que um cache
+> compartilhado (CDN / proxy reverso) nunca sirva a resposta de uma origem para outra. Uma
+> allowlist sem `Origin` na requisição não emite `Access-Control-Allow-Origin` — nunca cai
+> para `*`.
 
 **Fase:** Pré-processamento — valida a origem e trata o preflight antes do handler executar.
 

@@ -117,13 +117,20 @@ Handles Cross-Origin Resource Sharing validation and preflight (`OPTIONS`) reque
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 
 new CORS(
-   origins: ['https://example.com'],      // Allowed origins (default: ['*'])
+   origins: ['https://example.com'],      // Allowed origins (default: [] — empty allowlist; pass ['*'] for wildcard)
    methods: ['GET', 'POST'],              // Allowed methods (default: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'])
    headers: ['Content-Type'],             // Allowed headers (default: ['Content-Type','Authorization'])
    maxAge: 86400,                         // Preflight cache in seconds (default: 86400)
    credentials: false                     // Allow credentials (default: false)
 );
 ```
+
+> **Secure by default.** `origins` defaults to an **empty allowlist** — every cross-origin
+> request is rejected (`403`) until you list the origins you trust. Pass `origins: ['*']` to opt
+> into a wildcard (origin-independent) policy. When a request's `Origin` is reflected (allowlist
+> match), `Vary: Origin` is emitted so a shared cache (CDN / reverse proxy) never serves one
+> origin's response to another. An allowlist with no request `Origin` emits no
+> `Access-Control-Allow-Origin` — it never falls back to `*`.
 
 **Phase:** Pre-processing — validates the origin and handles preflight before the handler runs.
 
