@@ -151,6 +151,8 @@ new Compression(
 
 **Phase:** Post-processing — compresses the response body after the handler produces it.
 
+> **Only 2xx/3xx.** Only success and redirect bodies are compressed — `4xx`/`5xx` error and auth-challenge responses are left untouched.
+
 ---
 
 ### ETag
@@ -166,6 +168,8 @@ new ETag(
 ```
 
 **Phase:** Post-processing — computes the ETag from the response body after the handler runs.
+
+> **Only 2xx/3xx + RFC 7232.** An ETag is set (and `304` revalidation performed) only for success/redirect responses — never for `4xx`/`5xx` error or auth-challenge bodies. `If-None-Match` is evaluated per RFC 7232: `*` matches any representation, comma-separated lists are supported, and the weak comparison ignores the `W/` prefix. Order `ETag` **outside** `Compression` so the tag covers the encoded (delivered) body.
 
 ---
 

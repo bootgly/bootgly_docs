@@ -152,6 +152,8 @@ new Compression(
 
 **Fase:** Pós-processamento — comprime o corpo da resposta após o handler produzi-lo.
 
+> **Apenas 2xx/3xx.** Apenas corpos de sucesso e redirecionamento são comprimidos — respostas de erro `4xx`/`5xx` e de desafio de autenticação não são tocadas.
+
 ---
 
 ### ETag
@@ -167,6 +169,8 @@ new ETag(
 ```
 
 **Fase:** Pós-processamento — calcula o ETag a partir do corpo da resposta após o handler executar.
+
+> **Apenas 2xx/3xx + RFC 7232.** Um ETag é definido (e a revalidação `304` realizada) apenas para respostas de sucesso/redirecionamento — nunca para corpos de erro `4xx`/`5xx` ou de desafio de autenticação. O `If-None-Match` é avaliado conforme a RFC 7232: `*` corresponde a qualquer representação, listas separadas por vírgula são suportadas e a comparação fraca ignora o prefixo `W/`. Ordene o `ETag` **fora** do `Compression` para que o tag cubra o corpo codificado (entregue).
 
 ---
 
