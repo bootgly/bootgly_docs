@@ -12,6 +12,24 @@ Os arquivos do Docker ficam no diretório `bootgly_docker/` (irmão de `bootgly/
 permanece livre de dependências: nenhum pacote de terceiros em runtime, nenhum banco de
 dados, nenhum framework de benchmark externo.
 
+## Baixar do Docker Hub
+
+As imagens são publicadas como `bootgly/bootgly` — baixe e rode, sem instalar nada:
+
+```bash
+# benchmark do Bootgly contra ele mesmo
+docker run --rm bootgly/bootgly:full test benchmark HTTP_Server_CLI \
+  --opponents=bootgly --loads=1 --runner=TCP_Client --server-workers=15
+
+# rode o servidor HTTP demo
+docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo-HTTP_Server_CLI start -f
+```
+
+Tags: `bootgly/bootgly:slim` (runtime), `:full` (teste + benchmark) e `:latest` (= `slim`).
+
+O resto deste guia usa as tags locais `bootgly:slim`/`bootgly:full` que o `docker build`
+produz. Se você baixou em vez de construir, prefixe com `bootgly/` (ex.: `bootgly/bootgly:slim`).
+
 ## Construir a imagem
 
 O contexto de build é o diretório **pai**, para que o alvo `full` alcance o irmão

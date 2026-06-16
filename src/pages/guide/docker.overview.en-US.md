@@ -12,6 +12,24 @@ The Docker assets live in the `bootgly_docker/` directory (a sibling of `bootgly
 image stays dependency-free: no third-party runtime packages, no database, no external
 benchmark frameworks.
 
+## Pull from Docker Hub
+
+The images are published as `bootgly/bootgly` — pull and run, nothing to install:
+
+```bash
+# benchmark Bootgly against itself
+docker run --rm bootgly/bootgly:full test benchmark HTTP_Server_CLI \
+  --opponents=bootgly --loads=1 --runner=TCP_Client --server-workers=15
+
+# run the demo HTTP server
+docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo-HTTP_Server_CLI start -f
+```
+
+Tags: `bootgly/bootgly:slim` (runtime), `:full` (test + benchmark) and `:latest` (= `slim`).
+
+The rest of this guide uses the local `bootgly:slim`/`bootgly:full` tags that `docker build`
+produces. If you pulled instead, prefix them with `bootgly/` (e.g. `bootgly/bootgly:slim`).
+
 ## Build the image
 
 The build context is the **parent** directory, so the `full` target can reach the sibling
