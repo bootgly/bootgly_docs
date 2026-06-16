@@ -29,6 +29,8 @@ return $Response->View->render('boas-vindas', [
 ]);
 ```
 
+> **Nomes de view** são restritos a `[A-Za-z0-9_/-]` — um segmento `..` ou `.`, uma `/` inicial ou um byte nulo são rejeitados com `403`. Use um nome simples (opcionalmente com `/` para subdiretórios), sem o sufixo `.template.php`.
+
 ## Registrar resources de projeto
 
 Registre resources customizados com a opção `responseResources`. Cada factory é um
