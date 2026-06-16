@@ -36,13 +36,14 @@ docker run --rm -it --entrypoint bash bootgly:full   # abrir um shell
 
 ## Rodar um servidor
 
-Passe `-i` para rodar um servidor em **primeiro plano** — isso é necessário em containers.
-Sem ele os servidores demo viram daemon (fazem fork e se desanexam) e o container encerra
-imediatamente. Em primeiro plano o servidor envia logs para o stdout e para de forma limpa
-com `SIGTERM` (`docker stop`).
+Passe `-f` para rodar um servidor em **primeiro plano** (headless) — isso é necessário em
+containers. Sem ele os servidores demo viram daemon (fazem fork e se desanexam) e o container
+encerra imediatamente. Em primeiro plano o servidor envia logs para o stdout e para de forma
+limpa com `SIGTERM` (`docker stop`). (Use `-i` apenas para um REPL interativo com TTY, ex.:
+`docker run -it`.)
 
 ```bash
-docker run --rm -p 8082:8082 bootgly:slim project Demo-HTTP_Server_CLI start -i
+docker run --rm -p 8082:8082 bootgly:slim project Demo-HTTP_Server_CLI start -f
 ```
 
 Depois, em outro terminal:
@@ -64,7 +65,7 @@ Todo servidor demo lê a variável de ambiente `PORT` (com fallback para o padr�
 Troque a porta sem reconstruir a imagem:
 
 ```bash
-docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo-HTTP_Server_CLI start -i
+docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo-HTTP_Server_CLI start -f
 ```
 
 ## Usar o Bootgly no seu próprio projeto
@@ -76,7 +77,7 @@ Monte seu projeto em `/bootgly/projects/<Nome>` e inicie — sem reconstruir:
 ```bash
 docker run --rm -p 8082:8082 \
   -v "$PWD/MyApp:/bootgly/projects/MyApp" \
-  bootgly:slim project MyApp start -i
+  bootgly:slim project MyApp start -f
 ```
 
 Um projeto é localizado pelo seu diretório dentro de `projects/`, então nenhum registro é
@@ -88,7 +89,7 @@ necessário para dar `start` nele.
 FROM bootgly:slim
 COPY . /bootgly/projects/MyApp
 EXPOSE 8082
-CMD ["project", "MyApp", "start", "-i"]
+CMD ["project", "MyApp", "start", "-f"]
 ```
 
 ```bash

@@ -35,12 +35,13 @@ docker run --rm -it --entrypoint bash bootgly:full   # open a shell
 
 ## Run a server
 
-Pass `-i` to run a server in the **foreground** — this is required in containers. Without it
-the demo servers daemonize (fork and detach) and the container exits immediately. In the
-foreground the server logs to stdout and stops cleanly on `SIGTERM` (`docker stop`).
+Pass `-f` to run a server in the **foreground** (headless) — this is required in containers.
+Without it the demo servers daemonize (fork and detach) and the container exits immediately.
+In the foreground the server logs to stdout and stops cleanly on `SIGTERM` (`docker stop`).
+(`-i` instead gives an interactive REPL and needs a TTY, e.g. `docker run -it`.)
 
 ```bash
-docker run --rm -p 8082:8082 bootgly:slim project Demo-HTTP_Server_CLI start -i
+docker run --rm -p 8082:8082 bootgly:slim project Demo-HTTP_Server_CLI start -f
 ```
 
 Then, from another terminal:
@@ -62,7 +63,7 @@ binds `0.0.0.0`:
 Change the port without rebuilding:
 
 ```bash
-docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo-HTTP_Server_CLI start -i
+docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo-HTTP_Server_CLI start -f
 ```
 
 ## Use Bootgly in your own project
@@ -74,7 +75,7 @@ Mount your project into `/bootgly/projects/<Name>` and start it — no rebuild:
 ```bash
 docker run --rm -p 8082:8082 \
   -v "$PWD/MyApp:/bootgly/projects/MyApp" \
-  bootgly:slim project MyApp start -i
+  bootgly:slim project MyApp start -f
 ```
 
 A project is found by its directory under `projects/`, so no registration is needed to
@@ -86,7 +87,7 @@ A project is found by its directory under `projects/`, so no registration is nee
 FROM bootgly:slim
 COPY . /bootgly/projects/MyApp
 EXPOSE 8082
-CMD ["project", "MyApp", "start", "-i"]
+CMD ["project", "MyApp", "start", "-f"]
 ```
 
 ```bash
