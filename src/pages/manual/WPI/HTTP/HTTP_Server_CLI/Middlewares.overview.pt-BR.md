@@ -247,6 +247,21 @@ O token é lido do header `X-CSRF-Token` **ou** do campo de formulário `_token`
 
 O token só é rotacionado quando você chama `$Request->Session->regenerate()` (ex.: após login ou escalada de privilégio). A comparação usa `hash_equals()` para evitar ataques de timing.
 
+**Renderize o token mascarado (proteção BREACH).** O token de sessão é um segredo estável; renderizá-lo raw em um corpo que também é comprimido (veja [Compression](#compression)) e reflete entrada do atacante o expõe a um oráculo de comprimento de compressão (BREACH). Renderize `CSRF::mask()` em vez do token raw — ele retorna um valor por resposta (`hex(nonce ‖ (token XOR nonce))`, diferente a cada chamada), de modo que não há segredo estável no corpo. A validação desmascara o token enviado automaticamente (e ainda aceita o token raw, então formulários existentes continuam funcionando).
+
+```php
+// No seu view/template — emita um token mascarado, nunca o valor raw da sessão:
+<input type="hidden" name="_token"
+       value="<?= CSRF::mask($Request->Session->get('_csrf_token')) ?>">
+```
+
+```php
+// Equivalente para um cliente API/JS (ex.: uma meta tag que o front-end lê):
+$masked = CSRF::mask($Request->Session->get('_csrf_token'));
+```
+
+> Um app que renderiza *o seu próprio* segredo (uma API key, um valor de sessão) junto a entrada refletida da requisição em uma resposta comprimida ainda deve evitar comprimir essa resposta — o mascaramento cobre apenas o token CSRF do framework.
+
 **Fase:** Pré-processamento — gera e valida o token antes do handler executar.
 
 ---

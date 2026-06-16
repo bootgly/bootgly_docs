@@ -247,6 +247,21 @@ The token is read from the `X-CSRF-Token` header **or** the `_token` form field.
 
 The token rotates only when you call `$Request->Session->regenerate()` (e.g. after login or privilege escalation). Comparison uses `hash_equals()` to prevent timing attacks.
 
+**Render the token masked (BREACH protection).** The session token is a stable secret; rendering it raw into a body that is also compressed (see [Compression](#compression)) and reflects attacker input exposes it to a BREACH compression-length oracle. Render `CSRF::mask()` instead of the raw token — it returns a per-response value (`hex(nonce ‖ (token XOR nonce))`, different every call), so there is no stable secret in the body. Validation unmasks the submitted token automatically (and still accepts a raw token, so existing forms keep working).
+
+```php
+// In your view/template — emit a masked token, never the raw session value:
+<input type="hidden" name="_token"
+       value="<?= CSRF::mask($Request->Session->get('_csrf_token')) ?>">
+```
+
+```php
+// Equivalent for an API/JS client (e.g. a meta tag the front end reads):
+$masked = CSRF::mask($Request->Session->get('_csrf_token'));
+```
+
+> An app that renders *its own* secret (an API key, a session value) alongside reflected request input in a compressed response should still avoid compressing that response — masking only covers the framework's CSRF token.
+
 **Phase:** Pre-processing — generates and validates the token before the handler runs.
 
 ---
