@@ -144,16 +144,24 @@ Other cases include `TCP_Server_CLI`, `UDP_Server_CLI`, `Template_Engine` and `C
 ### Cross-framework (vs Swoole, Workerman, …)
 
 Competitor runtimes are never baked into `bootgly:slim`/`:full` — they stay dependency-free.
-To benchmark Bootgly against other frameworks, build the separate `bootgly-bench` image from
-`bootgly_benchmarks/`, opting in to each opponent with a build ARG. Every server is spawned
-locally in the one container, so all share loopback and the comparison stays fair.
+They live only in the separate `bootgly_benchmarks` image. Every server is spawned locally in the
+one container, so all share loopback and the comparison stays fair.
+
+Pull and run (Swoole already baked in):
 
 ```bash
-# from bootgly_benchmarks/ (build bootgly:full first)
-docker build -f Dockerfile --build-arg WITH_SWOOLE=1 -t bootgly-bench:swoole .
+docker run --rm bootgly/bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
+  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=1 --server-workers=15
+```
 
-docker run --rm bootgly-bench:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=tcp_client --loads=1
+Or build it yourself (e.g. to add other opponents), from `bootgly_benchmarks/` (build
+`bootgly:full` first), opting in per opponent with a build ARG:
+
+```bash
+docker build -f Dockerfile --build-arg WITH_SWOOLE=1 -t bootgly_benchmarks:swoole .
+
+docker run --rm bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
+  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=1
 ```
 
 Opponent ARGs: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKENPHP`,
