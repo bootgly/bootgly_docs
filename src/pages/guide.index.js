@@ -382,7 +382,9 @@ export default {
         }
       },
       book: 'guide',
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -399,7 +401,7 @@ export default {
 
   '/docker': {
     config: {
-      icon: 'deployed_code',
+      icon: 'view_in_ar',
       status: 'draft',
       meta: {
         description: {
@@ -408,9 +410,7 @@ export default {
         }
       },
       book: 'guide',
-      menu: {
-        separator: true
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
