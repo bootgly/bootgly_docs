@@ -395,5 +395,33 @@ export default {
         title: 'Seeders de banco'
       }
     }
+  },
+
+  '/docker': {
+    config: {
+      icon: 'deployed_code',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build a slim or full Bootgly image to run servers, test, benchmark and ship your own projects with Docker.',
+          'pt-BR': 'Construa uma imagem Bootgly slim ou full para rodar servidores, testar, fazer benchmark e publicar seus projetos com Docker.'
+        }
+      },
+      book: 'guide',
+      menu: {
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Docker'
+      },
+      'pt-BR': {
+        title: 'Docker'
+      }
+    }
   }
 }
