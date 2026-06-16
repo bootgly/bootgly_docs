@@ -125,8 +125,24 @@ docker run --rm bootgly:full \
 
 Outros casos incluem `TCP_Server_CLI`, `UDP_Server_CLI`, `Template_Engine` e `Cache`.
 
-Benchmark entre frameworks e TechEmpower (PostgreSQL + Swoole) não faz parte desta imagem de
-propósito; rode isso direto a partir do repositório `bootgly_benchmarks`.
+### Entre frameworks (vs Swoole, Workerman, …)
+
+Runtimes de concorrentes nunca entram em `bootgly:slim`/`:full` — elas permanecem livres de
+dependências. Para comparar o Bootgly com outros frameworks, construa a imagem separada
+`bootgly-bench` a partir de `bootgly_benchmarks/`, habilitando cada oponente com um build ARG.
+Cada servidor é iniciado localmente no mesmo container, então todos compartilham o loopback e
+a comparação permanece justa.
+
+```bash
+# a partir de bootgly_benchmarks/ (construa bootgly:full primeiro)
+docker build -f Dockerfile --build-arg WITH_SWOOLE=1 -t bootgly-bench:swoole .
+
+docker run --rm bootgly-bench:swoole test benchmark HTTP_Server_CLI \
+  --opponents=bootgly,swoole-base --runner=tcp_client --loads=1
+```
+
+ARGs de oponentes: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKENPHP`,
+`WITH_HYPERF` e `WITH_POSTGRES` (para loads TechEmpower com banco, como `swoole-techempower`).
 
 ## Docker Compose
 
