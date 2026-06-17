@@ -185,6 +185,33 @@ export default {
     }
   },
 
+  '/logging': {
+    config: {
+      icon: 'receipt_long',
+      status: 'draft',
+      version: '0.18.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Structured logging — channels, handlers (file/stream/syslog), formatters, processors, filters, rotation, and a real-time filterable log viewer in Monitor mode.',
+          'pt-BR': 'Logging estruturado — canais, handlers (arquivo/stream/syslog), formatters, processors, filters, rotação e um viewer de logs em tempo real e filtrável no modo Monitor.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Logging'
+      },
+      'pt-BR': {
+        title: 'Logging'
+      }
+    }
+  },
+
   '/performance': {
     config: {
       icon: 'speed',
