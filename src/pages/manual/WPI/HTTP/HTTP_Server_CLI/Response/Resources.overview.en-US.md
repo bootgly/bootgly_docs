@@ -8,6 +8,7 @@ Built-in resources are available lazily on every response:
 
 - `$Response->JSON` - sends JSON through the normal response sender.
 - `$Response->JSONP` - sends JSONP through the normal response sender.
+- `$Response->Plaintext` - sends plain text and sets the `text/plain` media type.
 - `$Response->Pre` - formats debug output for preformatted HTML.
 - `$Response->View` - renders project views.
 
@@ -24,10 +25,20 @@ return $Response->JSON->send([
 ```
 
 ```php
+return $Response->Plaintext->send('Hello, World!');
+```
+
+```php
 return $Response->View->render('welcome', [
    'title' => 'Welcome Page',
 ]);
 ```
+
+> **Plaintext** sets the response media type through `Response->Header->type` (the default
+> Content-Type) instead of writing a `Content-Type` header field. The response keeps `build()`'s
+> empty-fields fast path and the raw wire-cache, so a constant plain-text route serializes its
+> headers once and reuses them — no per-request header array, no validation regex. An explicit
+> `Content-Type` set via `Header->set()` still wins when present.
 
 > **View names** are restricted to `[A-Za-z0-9_/-]` — a `..` or `.` segment, a leading `/`, or a null byte is rejected with `403`. Use a plain name (optionally with `/` for subdirectories), without the `.template.php` suffix.
 
