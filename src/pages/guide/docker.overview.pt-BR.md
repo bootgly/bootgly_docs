@@ -8,7 +8,7 @@ imagem multi-stage oferece dois alvos:
 - **`full`** — tudo do `slim` mais o framework de testes, os casos de benchmark interno e
   algumas ferramentas de linha de comando. Use para testar e fazer benchmark do Bootgly.
 
-Os arquivos do Docker ficam no diretório `bootgly_docker/` (irmão de `bootgly/`). A imagem
+Os arquivos do Docker ficam no próprio repositório `bootgly/` (`Dockerfile` e `docker-compose.yml` na raiz, tuning de opcache/JIT em `@/__php__/zz-bootgly.ini`). A imagem
 permanece livre de dependências: nenhum pacote de terceiros em runtime, nenhum banco de
 dados, nenhum framework de benchmark externo.
 
@@ -33,7 +33,7 @@ produz. Se você baixou em vez de construir, prefixe com `bootgly/` (ex.: `bootg
 ## Construir a imagem
 
 O contexto de build é o diretório **pai**, para que o alvo `full` alcance o irmão
-`bootgly_benchmarks/`. Rode estes comandos de dentro de `bootgly_docker/`:
+`bootgly_benchmarks/`. Rode estes comandos a partir da raiz do repositório `bootgly/`:
 
 ```bash
 # slim — apenas runtime
@@ -171,8 +171,8 @@ ARGs de oponentes: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRA
 
 ## Docker Compose
 
-Um arquivo Compose em `bootgly_docker/` conduz os três casos de uso por profiles. A partir
-desse diretório:
+Um arquivo Compose na raiz do repositório `bootgly/` conduz os três casos de uso por profiles. A partir
+dessa raiz:
 
 ```bash
 docker compose --profile serve up        # servidor HTTP demo em :8082
@@ -207,7 +207,7 @@ AI_AGENT    Defina como 1 para saída de testes legível por máquina
 
 ```text
 PHP_IMAGE         Imagem base (padrão: php:8.4-cli-bookworm)
-BOOTGLY_VERSION   Label de versão OCI da imagem (padrão: 0.17.1-beta)
+BOOTGLY_VERSION   Label de versão OCI da imagem
 ```
 
 ### Extensões PHP

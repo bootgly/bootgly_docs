@@ -8,7 +8,7 @@ image gives you two targets:
 - **`full`** — everything in `slim` plus the test framework, the internal benchmark cases
   and a few command-line tools. Use it to test and benchmark Bootgly.
 
-The Docker assets live in the `bootgly_docker/` directory (a sibling of `bootgly/`). The
+The Docker assets live in the `bootgly/` repository itself (`Dockerfile` and `docker-compose.yml` at the root, opcache/JIT tuning in `@/__php__/zz-bootgly.ini`). The
 image stays dependency-free: no third-party runtime packages, no database, no external
 benchmark frameworks.
 
@@ -33,7 +33,7 @@ produces. If you pulled instead, prefix them with `bootgly/` (e.g. `bootgly/boot
 ## Build the image
 
 The build context is the **parent** directory, so the `full` target can reach the sibling
-`bootgly_benchmarks/`. Run these from inside `bootgly_docker/`:
+`bootgly_benchmarks/`. Run these from the `bootgly/` repo root:
 
 ```bash
 # slim — runtime only
@@ -169,8 +169,8 @@ Opponent ARGs: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKEN
 
 ## Docker Compose
 
-A Compose file in `bootgly_docker/` drives the three use-cases through profiles. From that
-directory:
+A Compose file at the `bootgly/` repo root drives the three use-cases through profiles. From
+that root:
 
 ```bash
 docker compose --profile serve up        # demo HTTP server on :8082
@@ -205,7 +205,7 @@ AI_AGENT    Set to 1 for machine-readable test output
 
 ```text
 PHP_IMAGE         Base image (default: php:8.4-cli-bookworm)
-BOOTGLY_VERSION   OCI image version label (default: 0.17.1-beta)
+BOOTGLY_VERSION   OCI image version label
 ```
 
 ### PHP extensions
