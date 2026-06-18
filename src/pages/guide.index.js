@@ -212,6 +212,33 @@ export default {
     }
   },
 
+  '/observability': {
+    config: {
+      icon: 'insights',
+      status: 'draft',
+      version: '0.18.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Native metrics — counters, gauges, histograms, process & runtime health, JSON/Prometheus/OTLP exporters, and /health + /metrics endpoints (Prometheus scrape + OTLP push) with file-per-worker aggregation.',
+          'pt-BR': 'Métricas nativas — counters, gauges, histograms, saúde de processo & runtime, exporters JSON/Prometheus/OTLP e endpoints /health + /metrics (scrape Prometheus + push OTLP) com agregação por-worker.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Observability'
+      },
+      'pt-BR': {
+        title: 'Observabilidade'
+      }
+    }
+  },
+
   '/performance': {
     config: {
       icon: 'speed',
