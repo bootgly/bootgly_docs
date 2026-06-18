@@ -1154,6 +1154,27 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Logs': {
+    config: {
+      icon: 'subject',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Tail and filter structured logs live in the terminal — the Monitor-mode viewer.',
+          'pt-BR': 'Acompanhe e filtre logs estruturados ao vivo no terminal — o viewer do modo Monitor.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Logs'
+      }
+    }
+  },
   '/CLI/UI/Components/Menu': {
     config: {
       icon: 'menu',
