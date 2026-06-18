@@ -149,29 +149,42 @@ Mensagens multilinha — exceptions, stack traces — são **colapsadas em uma l
 
 > [!NOTE]
 > O viewer funciona porque **todo** `Logger` também despacha para um sink global
-> (`Logger::$Sink`) no modo Monitor, enquanto `Display::$mode` fica em `Display::NONE` para nada
-> rabiscar a TUI diretamente. Sob enxurrada de logs, a escrita não-bloqueante do pipe de um worker
-> é descartada em vez de travar o caminho da requisição.
+> (`Logger::$Sink`) no modo Monitor, enquanto `Display::show(Display::NONE)` muta a saída local de
+> stdout para nada rabiscar a TUI diretamente. Sob enxurrada de logs, a escrita não-bloqueante do
+> pipe de um worker é descartada em vez de travar o caminho da requisição.
 
-## Verbosidade da saída padrão no terminal
+## Escolha o que a linha no terminal mostra
 
-O estático `Display::$mode` controla como a saída padrão `Line` é decorada (não afeta os
-handlers de arquivo/JSON):
+A saída padrão `Line` é montada a partir de **segmentos** independentes — escolha exatamente as
+partes que quiser com `Display::show()` (não afeta os handlers de arquivo/JSON):
 
-| Modo | Mostra |
+```php
+use Bootgly\ACI\Logs\Data\Display;
+
+Display::show(Display::MESSAGE, Display::TIMESTAMP, Display::CHANNEL);
+```
+
+| Segmento | Adiciona |
 |---|---|
-| `Display::NONE` | nada (silencia o handler local de stdout) |
-| `Display::MESSAGE` | só a mensagem (padrão) |
-| `Display::MESSAGE_WHEN` | mensagem + timestamp ISO-8601 |
-| `Display::MESSAGE_WHEN_ID` | mensagem + timestamp + canal e severidade |
+| `Display::MESSAGE` | o texto da mensagem (o conteúdo) |
+| `Display::TIMESTAMP` | `[hora ISO-8601]` antes da linha |
+| `Display::CHANNEL` | o nome do canal |
+| `Display::SEVERITY` | o rótulo do nível (`ERROR`, `INFO`, …) |
+| `Display::CONTEXT` | o array `context`, codificado inline |
+
+`CHANNEL` e `SEVERITY` são independentes — juntos viram `canal.NÍVEL`, qualquer um aparece
+sozinho. `Display::show()` sem argumentos (ou `Display::NONE`) silencia a saída local de stdout por
+completo. As flags são um bitmask, então `Display::MESSAGE | Display::TIMESTAMP` também funciona. O
+padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra final.
 
 ## Referência
 
 - **Logger** — `Bootgly\ACI\Logs\Logger(string $channel = '')`: `log(string|array ...$args): bool`
   (variádico de nível nomeado, multi-nível). Tem `Handlers` e `Processors` públicos; estático `$Sink`
   (um `Handler` global aplicado a toda instância, ex.: o pipe do Monitor).
-- **Display** — `Logs\Data\Display`: estático `$mode` + as constantes `Display::NONE` / `MESSAGE` /
-  `MESSAGE_WHEN` / `MESSAGE_WHEN_ID` — a verbosidade da saída padrão `Line`.
+- **Display** — `Logs\Data\Display`: `show(int ...$segments): void` define o mask ativo, guardado no
+  estático `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
+  `CONTEXT` — os segmentos da saída padrão `Line` (um bitmask; combine à vontade).
 - **Levels** — enum com backing `Logs\Data\Levels` (`Emergency` = 1 … `Debug` = 8; menor = mais severo):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:

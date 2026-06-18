@@ -148,29 +148,42 @@ thing (message, `context` and `extra`) in a scrollable detail view.
 
 > [!NOTE]
 > The viewer works because **every** `Logger` also dispatches to a global sink
-> (`Logger::$Sink`) in Monitor mode, while `Display::$mode` is set to `Display::NONE` so nothing
-> scribbles the TUI directly. Under a log flood, a worker's non-blocking pipe write is dropped
-> rather than blocking the request path.
+> (`Logger::$Sink`) in Monitor mode, while `Display::show(Display::NONE)` mutes the local stdout
+> output so nothing scribbles the TUI directly. Under a log flood, a worker's non-blocking pipe
+> write is dropped rather than blocking the request path.
 
-## Verbosity of the default terminal output
+## Choose what the terminal line shows
 
-The static `Display::$mode` controls how the default `Line` output is decorated (it does not
-affect file/JSON handlers):
+The default `Line` output is assembled from independent **segments** — pick exactly the pieces you
+want with `Display::show()` (it does not affect file/JSON handlers):
 
-| Mode | Shows |
+```php
+use Bootgly\ACI\Logs\Data\Display;
+
+Display::show(Display::MESSAGE, Display::TIMESTAMP, Display::CHANNEL);
+```
+
+| Segment | Adds |
 |---|---|
-| `Display::NONE` | nothing (silences the local stdout handler) |
-| `Display::MESSAGE` | the message only (default) |
-| `Display::MESSAGE_WHEN` | message + ISO-8601 timestamp |
-| `Display::MESSAGE_WHEN_ID` | message + timestamp + channel and severity |
+| `Display::MESSAGE` | the message text (the content) |
+| `Display::TIMESTAMP` | `[ISO-8601 time]` before the line |
+| `Display::CHANNEL` | the channel name |
+| `Display::SEVERITY` | the level label (`ERROR`, `INFO`, …) |
+| `Display::CONTEXT` | the `context` array, encoded inline |
+
+`CHANNEL` and `SEVERITY` are independent — together they read `channel.LEVEL`, either one shows
+alone. `Display::show()` with no arguments (or `Display::NONE`) silences the local stdout output
+entirely. The flags are a bitmask, so `Display::MESSAGE | Display::TIMESTAMP` works too. The
+default is `Display::MESSAGE` alone — a compact inline line with no trailing newline.
 
 ## Reference
 
 - **Logger** — `Bootgly\ACI\Logs\Logger(string $channel = '')`: `log(string|array ...$args): bool`
   (named-level variadic, multi-level). Holds public `Handlers` and `Processors`; static `$Sink`
   (a global `Handler` applied to every instance, e.g. the Monitor pipe).
-- **Display** — `Logs\Data\Display`: static `$mode` + the `Display::NONE` / `MESSAGE` /
-  `MESSAGE_WHEN` / `MESSAGE_WHEN_ID` constants — the verbosity of the default `Line` output.
+- **Display** — `Logs\Data\Display`: `show(int ...$segments): void` sets the active mask, held in
+  static `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
+  `CONTEXT` — the segments of the default `Line` output (a bitmask; combine freely).
 - **Levels** — `Logs\Data\Levels` backed enum (`Emergency` = 1 … `Debug` = 8; lower = more severe):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:
