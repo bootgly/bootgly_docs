@@ -167,6 +167,28 @@ docker run --rm bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
 Opponent ARGs: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKENPHP`,
 `WITH_HYPERF`, and `WITH_POSTGRES` (for TechEmpower DB loads such as `swoole-techempower`).
 
+### Laravel (TechEmpower)
+
+The Laravel opponents (`laravel-nginx`, `laravel-apache`) are a heavier, **separate** image:
+Laravel 13 served by nginx and Apache over PHP-FPM 8.4, with PostgreSQL for the six
+TechEmpower routes. It runs as a non-root user (PHP-FPM refuses `opcache.preload` as root)
+and has its own `Dockerfile.laravel`. PostgreSQL is started and the TechEmpower tables seeded
+automatically on first run.
+
+```bash
+docker run --rm \
+  -e BOOTGLY_HTTP_SERVER_CLI_LOADS=techempower \
+  -e BOOTGLY_HTTP_SERVER_CLI_ROUTER=techempower \
+  bootgly/bootgly_benchmarks:laravel test benchmark HTTP_Server_CLI \
+  --opponents=bootgly,laravel-nginx,laravel-apache --runner=TCP_Client --loads=1,3
+```
+
+Build it yourself from `bootgly_benchmarks/` (with `bootgly:full` built first):
+
+```bash
+docker build -f Dockerfile.laravel -t bootgly_benchmarks:laravel ..
+```
+
 ## Docker Compose
 
 A Compose file at the `bootgly/` repo root drives the three use-cases through profiles. From
