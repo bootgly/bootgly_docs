@@ -104,6 +104,33 @@ export default {
     }
   },
 
+  '/storage': {
+    config: {
+      icon: 'folder',
+      status: 'draft',
+      version: '0.18.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Store files through a native facade — Local, Memory and S3 drivers, named disks, streaming write/read (S3 multipart) and path jailing.',
+          'pt-BR': 'Armazene arquivos através de um facade nativo — drivers Local, Memory e S3, disks nomeados, write/read em streaming (multipart no S3) e jailing de caminho.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Storage'
+      },
+      'pt-BR': {
+        title: 'Storage'
+      }
+    }
+  },
+
   '/queues': {
     config: {
       icon: 'queue',
