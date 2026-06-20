@@ -49,6 +49,8 @@ Push a `File` handler. Rotation is built in — it rotates on a size cap **or** 
 whichever comes first, and keeps a bounded number of archives:
 
 ```php
+use const BOOTGLY_STORAGE_DIR;
+
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Handlers\File\Rotation;
 use Bootgly\ACI\Logs\Data\Levels;
@@ -58,7 +60,7 @@ $Logger = new Logger(channel: 'App');
 
 $Logger->Handlers->push(
    new File(
-      BOOTGLY_WORKING_BASE . '/workdata/logs/app.log',
+      BOOTGLY_STORAGE_DIR . 'logs/app.log',
       Rotation: new Rotation(size: 10_485_760, daily: true, keep: 7),
    ),
    Levels::Warning,   // this handler only accepts Warning and more severe
@@ -67,6 +69,51 @@ $Logger->Handlers->push(
 
 `push()`'s second argument sets the handler's **minimum severity** (lower RFC 5424 value = more
 severe). Archives are numbered `app.log.1` … `app.log.7`; the oldest is dropped.
+
+A `{channel}` placeholder in the path writes **one file per channel** — each record lands in a file
+named after its module:
+
+```php
+$Logger->Handlers->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
+// a logger on channel 'Demo.App' → storage/logs/Demo.App.log
+```
+
+## Persist logs across the app
+
+A per-logger `File` handler covers one logger. To persist **every opted-in logger** to one place —
+a framework-wide channel — register a global **sink** once and opt modules in:
+
+```php
+use const BOOTGLY_STORAGE_DIR;
+
+use Bootgly\ACI\Logs\Handlers;
+use Bootgly\ACI\Logs\Handlers\File;
+use Bootgly\ACI\Logs\Logger;
+
+// destination — register once at boot, before forking workers
+Logger::$Sinks ??= new Handlers;
+Logger::$Sinks->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
+
+// source — a module opts in by constructing its logger global
+$Logger = new Logger(channel: 'Payments', global: true);
+```
+
+Persistence is **opt-in on both ends**: nothing is written until you register a sink (the
+destination), and only loggers built `global: true` reach it (the source). With `{channel}` you get
+one file per module — `storage/logs/Payments.log`.
+
+Where an opted-in logger's records land, per server mode:
+
+| Mode | Sink file | Live viewer |
+|---|---|---|
+| Foreground / Interactive | ✅ (also stdout) | — |
+| Daemon | ✅ | — |
+| Monitor | ✅ | ✅ |
+
+> [!NOTE]
+> In **Daemon** mode stdout is detached, so a logger that did **not** opt in (`global: false` — e.g.
+> a framework subsystem) has its terminal output discarded; only opted-in loggers persist. Opt in
+> the channels you need. Tail one live with `tail -f storage/logs/<channel>.log`.
 
 ## Choose a format
 
@@ -126,7 +173,7 @@ Start an `HTTP_Server_CLI` in **Monitor** mode and its terminal becomes a real-t
 log dashboard. Master **and** every worker stream their records to the master, which renders them:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI -m
+bootgly project Demo-HTTP_Server_CLI start -m
 ```
 
 You get a status bar, a tailing log pane and a keybindings footer. Filter and navigate live:
@@ -147,10 +194,11 @@ marker so they never flood the dashboard. Select the record and press `Enter` to
 thing (message, `context` and `extra`) in a scrollable detail view.
 
 > [!NOTE]
-> The viewer works because **every** `Logger` also dispatches to a global sink
-> (`Logger::$Sink`) in Monitor mode, while `Display::show(Display::NONE)` mutes the local stdout
-> output so nothing scribbles the TUI directly. Under a log flood, a worker's non-blocking pipe
-> write is dropped rather than blocking the request path.
+> The viewer works because Monitor sets a live tap (`Logger::$Tap`) that **every** `Logger` feeds —
+> regardless of opt-in — while `Display::show(Display::NONE)` mutes the local stdout output so
+> nothing scribbles the TUI directly. (The tap is separate from `Logger::$Sinks`, which is the
+> opt-in persistent channel below.) Under a log flood, a worker's non-blocking pipe write is dropped
+> rather than blocking the request path.
 
 ## Choose what the terminal line shows
 
@@ -178,9 +226,12 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
 
 ## Reference
 
-- **Logger** — `Bootgly\ACI\Logs\Logger(string $channel = '')`: `log(string|array ...$args): bool`
-  (named-level variadic, multi-level). Holds public `Handlers` and `Processors`; static `$Sink`
-  (a global `Handler` applied to every instance, e.g. the Monitor pipe).
+- **Logger** — `Bootgly\ACI\Logs\Logger(string $channel = '', bool $global = false)`:
+  `log(string|array ...$args): bool` (named-level variadic, multi-level). Holds public `Handlers`
+  and `Processors`. `$global` (default `false`) opts the logger into the static `$Sinks` — a global
+  `Handlers` fan-out for framework-wide persistence (push a `File` sink once; only opted-in loggers
+  reach it). The static `$Tap` (a single `Handler`) is the Monitor live viewer — fed by every
+  record regardless of opt-in, set/cleared by Monitor.
 - **Display** — `Logs\Data\Display`: `show(int ...$segments): void` sets the active mask, held in
   static `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
   `CONTEXT` — the segments of the default `Line` output (a bitmask; combine freely).

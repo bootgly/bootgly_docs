@@ -49,6 +49,8 @@ Adicione um handler `File`. A rotação é embutida — rotaciona por limite de 
 mudança de dia, o que vier primeiro, e mantém um número limitado de arquivos:
 
 ```php
+use const BOOTGLY_STORAGE_DIR;
+
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Handlers\File\Rotation;
 use Bootgly\ACI\Logs\Data\Levels;
@@ -58,7 +60,7 @@ $Logger = new Logger(channel: 'App');
 
 $Logger->Handlers->push(
    new File(
-      BOOTGLY_WORKING_BASE . '/workdata/logs/app.log',
+      BOOTGLY_STORAGE_DIR . 'logs/app.log',
       Rotation: new Rotation(size: 10_485_760, daily: true, keep: 7),
    ),
    Levels::Warning,   // este handler só aceita Warning e mais severos
@@ -67,6 +69,51 @@ $Logger->Handlers->push(
 
 O segundo argumento de `push()` define a **severidade mínima** do handler (valor RFC 5424 menor =
 mais severo). Os arquivos são numerados `app.log.1` … `app.log.7`; o mais antigo é descartado.
+
+Um placeholder `{channel}` no caminho escreve **um arquivo por canal** — cada record cai num arquivo
+nomeado pelo seu módulo:
+
+```php
+$Logger->Handlers->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
+// um logger no canal 'Demo.App' → storage/logs/Demo.App.log
+```
+
+## Persista logs em toda a aplicação
+
+Um handler `File` por logger cobre um logger. Para persistir **todo logger que optou** num só lugar —
+um canal de todo o framework — registre um **sink** global uma vez e faça os módulos optarem:
+
+```php
+use const BOOTGLY_STORAGE_DIR;
+
+use Bootgly\ACI\Logs\Handlers;
+use Bootgly\ACI\Logs\Handlers\File;
+use Bootgly\ACI\Logs\Logger;
+
+// destino — registre uma vez no boot, antes de forkar os workers
+Logger::$Sinks ??= new Handlers;
+Logger::$Sinks->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
+
+// origem — um módulo opta construindo seu logger global
+$Logger = new Logger(channel: 'Payments', global: true);
+```
+
+A persistência é **opt-in nas duas pontas**: nada é escrito até você registrar um sink (o destino),
+e só loggers construídos `global: true` chegam nele (a origem). Com `{channel}` você ganha um arquivo
+por módulo — `storage/logs/Payments.log`.
+
+Onde os records de um logger opted-in caem, por modo do servidor:
+
+| Modo | Arquivo do sink | Viewer ao vivo |
+|---|---|---|
+| Foreground / Interactive | ✅ (e stdout) | — |
+| Daemon | ✅ | — |
+| Monitor | ✅ | ✅ |
+
+> [!NOTE]
+> No modo **Daemon** o stdout é destacado, então um logger que **não** optou (`global: false` — ex.:
+> um subsistema do framework) tem a saída de terminal descartada; só loggers opted-in persistem. Opte
+> nos canais que precisar. Acompanhe um ao vivo com `tail -f storage/logs/<canal>.log`.
 
 ## Escolha um formato
 
@@ -126,7 +173,7 @@ Inicie um `HTTP_Server_CLI` em modo **Monitor** e seu terminal vira um painel de
 real e filtrável. O master **e** cada worker transmitem seus records ao master, que os renderiza:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI -m
+bootgly project Demo-HTTP_Server_CLI start -m
 ```
 
 Você tem uma barra de status, um painel de logs em tailing e um rodapé com os atalhos. Filtre e
@@ -148,10 +195,11 @@ Mensagens multilinha — exceptions, stack traces — são **colapsadas em uma l
 `context` e `extra`) numa visão de detalhe rolável.
 
 > [!NOTE]
-> O viewer funciona porque **todo** `Logger` também despacha para um sink global
-> (`Logger::$Sink`) no modo Monitor, enquanto `Display::show(Display::NONE)` muta a saída local de
-> stdout para nada rabiscar a TUI diretamente. Sob enxurrada de logs, a escrita não-bloqueante do
-> pipe de um worker é descartada em vez de travar o caminho da requisição.
+> O viewer funciona porque o Monitor liga um tap ao vivo (`Logger::$Tap`) que **todo** `Logger`
+> alimenta — independente de opt-in — enquanto `Display::show(Display::NONE)` muta a saída local de
+> stdout para nada rabiscar a TUI diretamente. (O tap é separado do `Logger::$Sinks`, que é o canal
+> persistente opt-in abaixo.) Sob enxurrada de logs, a escrita não-bloqueante do pipe de um worker é
+> descartada em vez de travar o caminho da requisição.
 
 ## Escolha o que a linha no terminal mostra
 
@@ -179,9 +227,12 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
 
 ## Referência
 
-- **Logger** — `Bootgly\ACI\Logs\Logger(string $channel = '')`: `log(string|array ...$args): bool`
-  (variádico de nível nomeado, multi-nível). Tem `Handlers` e `Processors` públicos; estático `$Sink`
-  (um `Handler` global aplicado a toda instância, ex.: o pipe do Monitor).
+- **Logger** — `Bootgly\ACI\Logs\Logger(string $channel = '', bool $global = false)`:
+  `log(string|array ...$args): bool` (variádico de nível nomeado, multi-nível). Tem `Handlers` e
+  `Processors` públicos. `$global` (padrão `false`) opta o logger no estático `$Sinks` — um fan-out
+  `Handlers` global para persistência em todo o framework (adicione um sink `File` uma vez; só
+  loggers que optaram chegam nele). O estático `$Tap` (um único `Handler`) é o viewer ao vivo do
+  Monitor — alimentado por todo record independente de opt-in, ligado/desligado pelo Monitor.
 - **Display** — `Logs\Data\Display`: `show(int ...$segments): void` define o mask ativo, guardado no
   estático `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
   `CONTEXT` — os segmentos da saída padrão `Line` (um bitmask; combine à vontade).
