@@ -142,8 +142,8 @@ $Storage->disk('scratch')->write('z.txt', stream('...'));   // em processo, sem 
 ```
 
 O driver de cada disk é construído uma vez, sob demanda, no primeiro acesso e fica preso
-(jailed) dentro do seu próprio `root` (travessias como `../` são normalizadas e fixadas ao
-root).
+(jailed) dentro do seu próprio `root`: travessias como `../` são normalizadas e fixadas, e um
+check de `realpath()` rejeita symlinks que escapariam do root.
 
 ## Escolher um driver
 

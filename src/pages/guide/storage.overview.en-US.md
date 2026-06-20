@@ -137,8 +137,9 @@ $Storage->disk('uploads')->write('y.txt', stream('...'));
 $Storage->disk('scratch')->write('z.txt', stream('...'));   // in-process, no filesystem
 ```
 
-Each disk's driver is built once, lazily, on first access and jailed inside its own `root`
-(path traversal such as `../` is normalized away and clamped to the root).
+Each disk's driver is built once, lazily, on first access and jailed inside its own `root`:
+`../` traversal is normalized away and clamped, and a `realpath()` check rejects symlinks that
+would escape the root.
 
 ## Choose a driver
 
