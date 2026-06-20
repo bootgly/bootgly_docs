@@ -167,12 +167,22 @@ $Storage = new Storage([
          // S3-compatible (MinIO / Cloudflare R2 / Wasabi): point at a custom endpoint
          // 'endpoint'   => 'https://…',
          // 'path_style' => true,
+         // 'insecure'   => true,   // required to allow http:// or verify => false (test/MinIO only)
       ],
    ],
 ]);
 
-$Storage->disk('cdn')->write('logo.png', fopen('logo.png', 'r'));
+$Storage->disk('cdn')->write('logo.png', fopen('logo.png', 'r'), ['type' => 'image/png']);
 $Storage->disk('cdn')->read('logo.png', fopen('php://output', 'w'));
+```
+
+Pass `type` (Content-Type) and `meta` (a `x-amz-meta-*` map) as write options so the stored
+object is served correctly; Local/Memory ignore them. When an operation returns `false`, the
+reason is on the driver — `$Storage->disk('cdn')->error` (drivers can't log directly; ABI
+cannot depend on the ACI logger, so failures are surfaced for a higher layer to log).
+
+```php
+$Storage->disk('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta' => ['owner' => 'reports']]);
 ```
 
 A disk's `root` acts as a key prefix.
@@ -222,12 +232,14 @@ Concrete drivers extend `Bootgly\ABI\Resources\Storage\Driver`. Every path is di
 and resolved against the driver's `root`. `$source`/`$sink` are PHP stream resources.
 
 ```php
-public function write (string $path, $source): bool
+public function write (string $path, $source, array $options = []): bool
 ```
 
 Streams the readable resource `$source` into `$path`, creating parent directories as needed.
-On S3 this is a single PUT for a small object and an automatic Multipart Upload for a large
-one. Returns `true` on success.
+On S3 this is a single PUT for a small object and an automatic Multipart Upload (parallel
+parts) for a large one. `$options` are driver-specific — S3 reads `type` (Content-Type) and
+`meta` (a `x-amz-meta-*` map); Local/Memory ignore them. Returns `true` on success; on `false`
+the reason is on the driver (`$Storage->disk()->error`).
 
 ```php
 public function read (string $path, $sink): bool

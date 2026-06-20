@@ -172,12 +172,22 @@ $Storage = new Storage([
          // Compatível com S3 (MinIO / Cloudflare R2 / Wasabi): aponte um endpoint próprio
          // 'endpoint'   => 'https://…',
          // 'path_style' => true,
+         // 'insecure'   => true,   // exigido para permitir http:// ou verify => false (teste/MinIO)
       ],
    ],
 ]);
 
-$Storage->disk('cdn')->write('logo.png', fopen('logo.png', 'r'));
+$Storage->disk('cdn')->write('logo.png', fopen('logo.png', 'r'), ['type' => 'image/png']);
 $Storage->disk('cdn')->read('logo.png', fopen('php://output', 'w'));
+```
+
+Passe `type` (Content-Type) e `meta` (um mapa `x-amz-meta-*`) como opções de escrita para o
+objeto ser servido corretamente; Local/Memory ignoram. Quando uma operação retorna `false`, o
+motivo fica no driver — `$Storage->disk('cdn')->error` (drivers não logam direto; a ABI não
+pode depender do logger da ACI, então a falha é exposta para uma camada superior logar).
+
+```php
+$Storage->disk('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta' => ['owner' => 'reports']]);
 ```
 
 O `root` de um disk funciona como prefixo de chave.
@@ -228,12 +238,14 @@ Drivers concretos estendem `Bootgly\ABI\Resources\Storage\Driver`. Todo caminho 
 disk e resolvido contra o `root` do driver. `$source`/`$sink` são resources de stream do PHP.
 
 ```php
-public function write (string $path, $source): bool
+public function write (string $path, $source, array $options = []): bool
 ```
 
 Transmite o resource legível `$source` para `$path`, criando diretórios pai conforme
-necessário. No S3 é um único PUT para objetos pequenos e um Multipart Upload automático para
-objetos grandes. Retorna `true` em caso de sucesso.
+necessário. No S3 é um único PUT para objetos pequenos e um Multipart Upload automático
+(partes em paralelo) para objetos grandes. `$options` são específicas do driver — o S3 lê
+`type` (Content-Type) e `meta` (mapa `x-amz-meta-*`); Local/Memory ignoram. Retorna `true` em
+caso de sucesso; em `false`, o motivo fica no driver (`$Storage->disk()->error`).
 
 ```php
 public function read (string $path, $sink): bool
