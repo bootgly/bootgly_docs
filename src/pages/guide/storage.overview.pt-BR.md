@@ -111,20 +111,45 @@ tamanho do pedaço, não pelo tamanho do arquivo:
 
 ```php
 // envia um export de vários GB para o S3 sem bufferizá-lo
-$Storage->disk('cdn')->write('exports/2026.csv', fopen('/data/2026.csv', 'r'));
+$Storage->open('cdn')->write('exports/2026.csv', fopen('/data/2026.csv', 'r'));
 
 // transmite de volta para um arquivo local
-$Storage->disk('cdn')->read('exports/2026.csv', fopen('/data/restore.csv', 'w'));
+$Storage->open('cdn')->read('exports/2026.csv', fopen('/data/restore.csv', 'w'));
 ```
 
 > [!NOTE]
 > O driver **Memory** mantém os objetos em um array PHP, então ele bufferiza valores inteiros
 > por natureza — use-o para testes e dados pequenos por requisição, não para arquivos grandes.
 
+## Persistir um upload HTTP
+
+No servidor HTTP um upload `multipart/form-data` é transmitido para um arquivo temporário conforme
+chega; o `$Request->store()` então move esse arquivo temporário para um disco do Storage — Local,
+S3 ou qualquer driver registrado — transmitindo os bytes (memória constante) e removendo o
+temporário em caso de sucesso:
+
+```php
+use Bootgly\ABI\Resources\Storage;
+
+$Storage = new Storage([
+   'disks' => ['uploads' => ['driver' => 's3', 'bucket' => 'assets', /* … */]],
+]);
+
+// em um handler de rota
+$Request->download();
+$path = $Request->store('avatar', 'users/1/avatar.png', $Storage->open('uploads'));
+// o caminho armazenado em caso de sucesso, false caso contrário — o motivo fica no `error` do disk
+```
+
+O `store()` repassa as mesmas opções de escrita do driver (`type`/`meta` do S3), e um upload grande
+para o S3 usa o caminho multipart automático, então a memória do worker permanece limitada
+independentemente do tamanho do arquivo. Veja a
+[referência do Request](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/) para a assinatura completa.
+
 ## Múltiplos disks
 
 Um disk é um driver nomeado mais suas opções. Configure quantos precisar e acesse-os pelo
-nome com `disk()`; o disk padrão é o que sustenta os próprios métodos do facade:
+nome com `open()`; o disk padrão é o que sustenta os próprios métodos do facade:
 
 ```php
 $Storage = new Storage([
@@ -137,8 +162,8 @@ $Storage = new Storage([
 ]);
 
 $Storage->write('x.txt', stream('...'));            // → disk 'local' padrão
-$Storage->disk('uploads')->write('y.txt', stream('...'));
-$Storage->disk('scratch')->write('z.txt', stream('...'));   // em processo, sem sistema de arquivos
+$Storage->open('uploads')->write('y.txt', stream('...'));
+$Storage->open('scratch')->write('z.txt', stream('...'));   // em processo, sem sistema de arquivos
 ```
 
 O driver de cada disk é construído uma vez, sob demanda, no primeiro acesso e fica preso
@@ -177,17 +202,17 @@ $Storage = new Storage([
    ],
 ]);
 
-$Storage->disk('cdn')->write('logo.png', fopen('logo.png', 'r'), ['type' => 'image/png']);
-$Storage->disk('cdn')->read('logo.png', fopen('php://output', 'w'));
+$Storage->open('cdn')->write('logo.png', fopen('logo.png', 'r'), ['type' => 'image/png']);
+$Storage->open('cdn')->read('logo.png', fopen('php://output', 'w'));
 ```
 
 Passe `type` (Content-Type) e `meta` (um mapa `x-amz-meta-*`) como opções de escrita para o
 objeto ser servido corretamente; Local/Memory ignoram. Quando uma operação retorna `false`, o
-motivo fica no driver — `$Storage->disk('cdn')->error` (drivers não logam direto; a ABI não
+motivo fica no driver — `$Storage->open('cdn')->error` (drivers não logam direto; a ABI não
 pode depender do logger da ACI, então a falha é exposta para uma camada superior logar).
 
 ```php
-$Storage->disk('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta' => ['owner' => 'reports']]);
+$Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta' => ['owner' => 'reports']]);
 ```
 
 O `root` de um disk funciona como prefixo de chave.
@@ -225,10 +250,10 @@ Emitter::$Instance->listen(Events::Read, function (Emission $Emission) {
 ### Facade
 
 ```php
-public function disk (string $name = ''): Driver
+public function open (string $name = ''): Driver
 ```
 
-Resolve um nome de disk para o seu driver, construindo-o uma vez no primeiro acesso. Sem
+Abre um disk pelo nome, construindo o seu driver uma vez no primeiro acesso. Sem
 argumento, retorna o disk padrão. Os próprios métodos de arquivo do facade (abaixo) delegam
 ao disk padrão.
 
@@ -245,7 +270,7 @@ Transmite o resource legível `$source` para `$path`, criando diretórios pai co
 necessário. No S3 é um único PUT para objetos pequenos e um Multipart Upload automático
 (partes em paralelo) para objetos grandes. `$options` são específicas do driver — o S3 lê
 `type` (Content-Type) e `meta` (mapa `x-amz-meta-*`); Local/Memory ignoram. Retorna `true` em
-caso de sucesso; em `false`, o motivo fica no driver (`$Storage->disk()->error`).
+caso de sucesso; em `false`, o motivo fica no driver (`$Storage->open()->error`).
 
 ```php
 public function read (string $path, $sink): bool

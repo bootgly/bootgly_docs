@@ -176,6 +176,34 @@ $Request->post; // Array ( [chave_post] => valor_post )
 $Request->files; // Array ( [nome_do_arquivo] => atributos_do_arquivo )
 ```
 
+### Persistir um upload (`store`)
+
+`store()` move um upload finalizado do seu arquivo temporário para um disco do
+[Storage](/guide/storage/overview/) — Local, S3 ou qualquer driver registrado — transmitindo os
+bytes (memória constante) e removendo o arquivo temporário em caso de sucesso.
+
+```php
+use Bootgly\ABI\Resources\Storage;
+
+$Storage = new Storage([
+   'disks' => ['uploads' => ['driver' => 's3', 'bucket' => 'assets', /* … */]],
+]);
+
+$Request->download();
+$path = $Request->store('avatar', 'users/1/avatar.png', $Storage->open('uploads'));
+// $path === 'users/1/avatar.png' em caso de sucesso, false caso contrário ($Disk->error tem o motivo)
+```
+
+```php
+public function store (string $key, string $path, Driver $Disk, array $options = []): string|false
+```
+
+Persiste o arquivo enviado em `$key` no `$Disk` em `$path` (um `$path` vazio, ou terminado em `/`,
+usa o nome do arquivo enviado). `$options` são repassados ao `write()` do driver (ex.: `type`/`meta`
+do S3). Retorna o caminho armazenado, ou `false` quando a chave não existe, a parte falhou no
+upload, ou a escrita no disco falhou — nesse caso o arquivo temporário é mantido para o `clean()`
+recuperá-lo e o motivo fica em `$Disk->error`.
+
 ## Metadados
 
 `raw`: Os dados brutos da requisição HTTP.

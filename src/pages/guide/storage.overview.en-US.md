@@ -107,20 +107,43 @@ file size:
 
 ```php
 // move a multi-GB export up to S3 without buffering it
-$Storage->disk('cdn')->write('exports/2026.csv', fopen('/data/2026.csv', 'r'));
+$Storage->open('cdn')->write('exports/2026.csv', fopen('/data/2026.csv', 'r'));
 
 // stream it back down to a local file
-$Storage->disk('cdn')->read('exports/2026.csv', fopen('/data/restore.csv', 'w'));
+$Storage->open('cdn')->read('exports/2026.csv', fopen('/data/restore.csv', 'w'));
 ```
 
 > [!NOTE]
 > The **Memory** driver keeps objects in a PHP array, so it buffers whole values by nature —
 > use it for tests and small, request-scoped data, not large files.
 
+## Persist an HTTP upload
+
+In the HTTP server a `multipart/form-data` upload is streamed to a temp file as it arrives;
+`$Request->store()` then moves that temp file into a Storage disk — Local, S3, or any registered
+driver — streaming the bytes (constant memory) and removing the temp on success:
+
+```php
+use Bootgly\ABI\Resources\Storage;
+
+$Storage = new Storage([
+   'disks' => ['uploads' => ['driver' => 's3', 'bucket' => 'assets', /* … */]],
+]);
+
+// in a route handler
+$Request->download();
+$path = $Request->store('avatar', 'users/1/avatar.png', $Storage->open('uploads'));
+// the stored path on success, false otherwise — the reason is on the disk's `error`
+```
+
+`store()` forwards the same write options as the driver (S3 `type`/`meta`), and a large upload to
+S3 takes the automatic multipart path, so worker memory stays bounded regardless of file size. See
+the [Request reference](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/) for the full signature.
+
 ## Multiple disks
 
 A disk is a named driver plus its options. Configure as many as you need and address them by
-name with `disk()`; the default disk backs the facade's own methods:
+name with `open()`; the default disk backs the facade's own methods:
 
 ```php
 $Storage = new Storage([
@@ -133,8 +156,8 @@ $Storage = new Storage([
 ]);
 
 $Storage->write('x.txt', stream('...'));            // → default 'local' disk
-$Storage->disk('uploads')->write('y.txt', stream('...'));
-$Storage->disk('scratch')->write('z.txt', stream('...'));   // in-process, no filesystem
+$Storage->open('uploads')->write('y.txt', stream('...'));
+$Storage->open('scratch')->write('z.txt', stream('...'));   // in-process, no filesystem
 ```
 
 Each disk's driver is built once, lazily, on first access and jailed inside its own `root`:
@@ -173,17 +196,17 @@ $Storage = new Storage([
    ],
 ]);
 
-$Storage->disk('cdn')->write('logo.png', fopen('logo.png', 'r'), ['type' => 'image/png']);
-$Storage->disk('cdn')->read('logo.png', fopen('php://output', 'w'));
+$Storage->open('cdn')->write('logo.png', fopen('logo.png', 'r'), ['type' => 'image/png']);
+$Storage->open('cdn')->read('logo.png', fopen('php://output', 'w'));
 ```
 
 Pass `type` (Content-Type) and `meta` (a `x-amz-meta-*` map) as write options so the stored
 object is served correctly; Local/Memory ignore them. When an operation returns `false`, the
-reason is on the driver — `$Storage->disk('cdn')->error` (drivers can't log directly; ABI
+reason is on the driver — `$Storage->open('cdn')->error` (drivers can't log directly; ABI
 cannot depend on the ACI logger, so failures are surfaced for a higher layer to log).
 
 ```php
-$Storage->disk('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta' => ['owner' => 'reports']]);
+$Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta' => ['owner' => 'reports']]);
 ```
 
 A disk's `root` acts as a key prefix.
@@ -221,10 +244,10 @@ Emitter::$Instance->listen(Events::Read, function (Emission $Emission) {
 ### Facade
 
 ```php
-public function disk (string $name = ''): Driver
+public function open (string $name = ''): Driver
 ```
 
-Resolves a disk name to its driver, building it once on first access. With no argument it
+Opens a disk by name, building its driver once on first access. With no argument it
 returns the default disk. The facade's own file methods (below) proxy to the default disk.
 
 ### Driver contract
@@ -240,7 +263,7 @@ Streams the readable resource `$source` into `$path`, creating parent directorie
 On S3 this is a single PUT for a small object and an automatic Multipart Upload (parallel
 parts) for a large one. `$options` are driver-specific — S3 reads `type` (Content-Type) and
 `meta` (a `x-amz-meta-*` map); Local/Memory ignore them. Returns `true` on success; on `false`
-the reason is on the driver (`$Storage->disk()->error`).
+the reason is on the driver (`$Storage->open()->error`).
 
 ```php
 public function read (string $path, $sink): bool

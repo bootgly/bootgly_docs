@@ -176,6 +176,34 @@ $Request->post; // Array ( [post_key] => post_value )
 $Request->files; // Array ( [file_name] => file_attributes )
 ```
 
+### Persist an upload (`store`)
+
+`store()` moves a finished upload from its temp file into a [Storage](/guide/storage/overview/)
+disk — Local, S3, or any registered driver — streaming the bytes (constant memory) and
+removing the temp file on success.
+
+```php
+use Bootgly\ABI\Resources\Storage;
+
+$Storage = new Storage([
+   'disks' => ['uploads' => ['driver' => 's3', 'bucket' => 'assets', /* … */]],
+]);
+
+$Request->download();
+$path = $Request->store('avatar', 'users/1/avatar.png', $Storage->open('uploads'));
+// $path === 'users/1/avatar.png' on success, false otherwise ($Disk->error has the reason)
+```
+
+```php
+public function store (string $key, string $path, Driver $Disk, array $options = []): string|false
+```
+
+Persists the uploaded file under `$key` into `$Disk` at `$path` (an empty `$path`, or one ending
+in `/`, falls back to the uploaded file name). `$options` are forwarded to the driver's `write()`
+(e.g. S3 `type`/`meta`). Returns the stored path, or `false` when the key is missing, the part
+failed to upload, or the disk write failed — in which case the temp file is left for `clean()` to
+reclaim and the reason is on `$Disk->error`.
+
 ## Metadata
 
 `raw`: The raw HTTP request data.
