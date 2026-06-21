@@ -19,7 +19,7 @@ The images are published as `bootgly/bootgly` — pull and run, nothing to insta
 ```bash
 # benchmark Bootgly against itself
 docker run --rm bootgly/bootgly:full test benchmark HTTP_Server_CLI \
-  --opponents=bootgly --loads=1 --runner=TCP_Client --server-workers=15
+  --opponents=bootgly --loads=benchmark:1 --runner=TCP_Client --server-workers=15
 
 # run the demo HTTP server
 docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo/HTTP_Server_CLI start -f
@@ -151,7 +151,7 @@ Pull and run (Swoole already baked in):
 
 ```bash
 docker run --rm bootgly/bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=1 --server-workers=15
+  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=benchmark:1 --server-workers=15
 ```
 
 Or build it yourself (e.g. to add other opponents), from `bootgly_benchmarks/` (build
@@ -161,7 +161,7 @@ Or build it yourself (e.g. to add other opponents), from `bootgly_benchmarks/` (
 docker build -f Dockerfile --build-arg WITH_SWOOLE=1 -t bootgly_benchmarks:swoole .
 
 docker run --rm bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=1
+  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=benchmark:1
 ```
 
 Opponent ARGs: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKENPHP`,
@@ -177,14 +177,13 @@ automatically on first run.
 
 ```bash
 docker run --rm \
-  -e BOOTGLY_HTTP_SERVER_CLI_LOADS=techempower \
   bootgly/bootgly_benchmarks:laravel test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,laravel-nginx,laravel-apache --runner=TCP_Client --loads=1,3
+  --opponents=bootgly,laravel-nginx,laravel-apache --runner=TCP_Client --loads=techempower:1,3
 ```
 
-> Only `BOOTGLY_HTTP_SERVER_CLI_LOADS` is needed — the Bootgly opponent derives the
-> matching server router from it. Set `BOOTGLY_HTTP_SERVER_CLI_ROUTER` explicitly only
-> to override that choice.
+> `--loads=<set>:<indexes>` is mandatory. The `techempower:` set both selects the load
+> routes and tells the Bootgly opponent which server router to serve — no env needed. Use
+> `techempower:*` for all six routes, or list indices (`techempower:1,3`).
 
 Build it yourself from `bootgly_benchmarks/` (with `bootgly:full` built first):
 

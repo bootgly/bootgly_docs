@@ -19,7 +19,7 @@ As imagens são publicadas como `bootgly/bootgly` — baixe e rode, sem instalar
 ```bash
 # benchmark do Bootgly contra ele mesmo
 docker run --rm bootgly/bootgly:full test benchmark HTTP_Server_CLI \
-  --opponents=bootgly --loads=1 --runner=TCP_Client --server-workers=15
+  --opponents=bootgly --loads=benchmark:1 --runner=TCP_Client --server-workers=15
 
 # rode o servidor HTTP demo
 docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo/HTTP_Server_CLI start -f
@@ -153,7 +153,7 @@ Baixe e rode (Swoole já incluso):
 
 ```bash
 docker run --rm bootgly/bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=1 --server-workers=15
+  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=benchmark:1 --server-workers=15
 ```
 
 Ou construa você mesmo (ex.: para adicionar outros oponentes), a partir de
@@ -163,7 +163,7 @@ Ou construa você mesmo (ex.: para adicionar outros oponentes), a partir de
 docker build -f Dockerfile --build-arg WITH_SWOOLE=1 -t bootgly_benchmarks:swoole .
 
 docker run --rm bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=1
+  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=benchmark:1
 ```
 
 ARGs de oponentes: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKENPHP`,
@@ -179,14 +179,13 @@ populadas automaticamente na primeira execução.
 
 ```bash
 docker run --rm \
-  -e BOOTGLY_HTTP_SERVER_CLI_LOADS=techempower \
   bootgly/bootgly_benchmarks:laravel test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,laravel-nginx,laravel-apache --runner=TCP_Client --loads=1,3
+  --opponents=bootgly,laravel-nginx,laravel-apache --runner=TCP_Client --loads=techempower:1,3
 ```
 
-> Apenas `BOOTGLY_HTTP_SERVER_CLI_LOADS` é necessário — o oponente Bootgly deriva dele o
-> router do servidor correspondente. Defina `BOOTGLY_HTTP_SERVER_CLI_ROUTER` explicitamente
-> só para sobrescrever essa escolha.
+> `--loads=<set>:<indexes>` é obrigatório. O set `techempower:` seleciona as rotas de carga
+> e também informa ao oponente Bootgly qual router servir — sem env. Use `techempower:*`
+> para todas as seis rotas, ou liste índices (`techempower:1,3`).
 
 Para construir você mesmo, a partir de `bootgly_benchmarks/` (com `bootgly:full` já construído):
 
