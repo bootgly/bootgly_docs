@@ -168,7 +168,7 @@ may use ADI.
 ## Demo and guide
 
 The runnable demo routes are in
-`projects/Demo-HTTP_Server_CLI/router/routes/Authorization.php`.
+`projects/Demo/HTTP_Server_CLI/router/routes/Authorization.php`.
 
 For the full workflow, including migrations, seeders, RBAC tables and Postman collection,
 see **[Authorization guide](/guide/authorization/overview/)**.

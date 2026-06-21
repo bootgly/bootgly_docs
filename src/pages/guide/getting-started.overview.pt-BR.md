@@ -109,7 +109,7 @@ return new Project(
 Então execute o projeto:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start
+bootgly project Demo/HTTP_Server_CLI start
 ```
 
 O servidor iniciará escutando em `0.0.0.0:8082`.
@@ -151,7 +151,7 @@ Portas abaixo de 1024 requerem permissões especiais no Linux. Existem duas abor
 Após executar `sudo php bootgly setup`, você pode iniciar o servidor com sudo:
 
 ```bash
-sudo bootgly project Demo-HTTP_Server_CLI start
+sudo bootgly project Demo/HTTP_Server_CLI start
 ```
 
 Para produção, você pode combinar com **privilege dropping** — o servidor faz o bind na porta como root, depois rebaixa para um usuário sem privilégios:
@@ -199,8 +199,8 @@ $Server->configure(
 > [!NOTE]
 > Para desenvolvimento local, o Bootgly inclui certificados auto-assinados em `@/certificates/`. Para produção, use certificados de uma CA confiável (ex: Let's Encrypt).
 
-Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/Demo-HTTPS_Server_CLI/`:
+Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/Demo/HTTPS_Server_CLI/`:
 
 ```bash
-sudo bootgly project Demo-HTTPS_Server_CLI start
+sudo bootgly project Demo/HTTPS_Server_CLI start
 ```

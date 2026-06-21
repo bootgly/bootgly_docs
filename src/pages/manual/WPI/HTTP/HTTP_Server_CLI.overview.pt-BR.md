@@ -61,19 +61,19 @@ return new Project(
 Para iniciar o servidor, execute:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start
+bootgly project Demo/HTTP_Server_CLI start
 ```
 
 Modo interativo:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -i
+bootgly project Demo/HTTP_Server_CLI start -i
 ```
 
 Modo monitor:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -m
+bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
 ## Modos de Operação
@@ -238,7 +238,7 @@ $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/
 
 `Router::load()` é a forma canônica de registrar rotas. Aponta para a pasta `router/` do projeto e retorna o handler de requisição passado para `Events::RequestReceived`:
 
-```php :filename="Demo-HTTP_Server_CLI.project.php";
+```php :filename="HTTP_Server_CLI.project.php";
 $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
 ```
 

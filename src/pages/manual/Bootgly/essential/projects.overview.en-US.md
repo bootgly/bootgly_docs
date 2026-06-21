@@ -1,24 +1,26 @@
 # Projects
 
-Bootgly organizes applications as **projects** — self-contained directories inside `projects/` that contain one or more boot files. Each project declares its metadata (name, description, version, author) and a boot Closure that initializes the application.
+Bootgly organizes applications as **projects** — self-contained directories inside `projects/` that contain a boot file. Each project declares its metadata (name, description, version, author) and a boot Closure that initializes the application.
 
-Projects are managed entirely through the `project` CLI command, which provides subcommands for listing, running, stopping, inspecting and hot-reloading projects.
+A project can live at **any depth** inside `projects/`. A directory like `Demo/` can group several **subprojects** (`Demo/HTTP_Server_CLI`, `Demo/TCP_Server_CLI`, …), each started independently by its path. Projects are managed entirely through the `project` CLI command, which lists, runs, stops, inspects and hot-reloads them.
 
 ## Project structure
 
-A project is a directory inside `projects/` with a boot file. The boot file follows the naming convention `{project_folder_name}.project.php` — the file name must match the project folder name.
-
-For example, a project in the folder `Sample_Project` must have its boot file named `Sample_Project.project.php`:
+A project is a directory inside `projects/` (at any depth) containing a boot file named after its **leaf** folder — the convention is `{leaf}.project.php`. The file name matches the last path segment, not the full path.
 
 ```
 projects/
-├── WPI.projects.php
-├── CLI.projects.php
-├── Sample_Project/
-│   └── Sample_Project.project.php
-└── Another_Project/
-    └── Another_Project.project.php
+├── Bootgly.projects.php          ← the registry (allow-list)
+├── Site/                         ← a flat project (one path segment)
+│   └── Site.project.php
+└── Demo/                         ← a grouping folder (not a project itself)
+    ├── HTTP_Server_CLI/
+    │   └── HTTP_Server_CLI.project.php
+    └── TCP_Server_CLI/
+        └── TCP_Server_CLI.project.php
 ```
+
+Here `Demo/HTTP_Server_CLI` and `Demo/TCP_Server_CLI` are two subprojects grouped under `Demo/`. `Demo/` itself has no `.project.php` — it is only a container.
 
 ### Boot file example
 
@@ -40,45 +42,35 @@ return new Project(
 );
 ```
 
-The `Project` class accepts the following properties:
+The constructor derives `path` (the absolute project directory) and `folder` (the project's path **relative to** `projects/`, e.g. `Demo/HTTP_Server_CLI`) automatically from the boot file's location — `folder` is the project's canonical identifier.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `name` | string | Display name of the project |
-| `description` | string | Brief description |
-| `version` | string | Semantic version |
-| `author` | string | Author name |
-| `boot` | Closure | The boot function that initializes the application |
+## The project registry
 
-### Interface index files
+A single file at the root of `projects/` — **`Bootgly.projects.php`** — declares every registered project. It is both the interface map (which projects belong to CLI and/or WPI) **and the security boundary**: only paths listed here may be started or autobooted.
 
-Each interface has an index file at the root of `projects/` that lists the projects belonging to that interface:
-
-**`WPI.projects.php`** — Web projects (HTTP servers, TCP, etc.):
+It returns a project-keyed map, kept in **alphabetical order by path**. Each key is a project's canonical path (relative to `projects/`); each value lists the `interfaces` it serves:
 
 ```php
 <?php
 return [
-   'HTTP_Server_CLI',
-   'TCP_Server_CLI',
-   'TCP_Client_CLI'
+   'Demo/CLI'             => ['interfaces' => ['CLI']],
+   'Demo/HTTP_Server_CLI' => ['interfaces' => ['WPI'], 'default' => true],
+   'Demo/TCP_Server_CLI'  => ['interfaces' => ['WPI']],
+   'Site'                 => ['interfaces' => ['CLI']],
 ];
 ```
 
-**`CLI.projects.php`** — CLI projects:
+A project that serves both interfaces lists both: `['interfaces' => ['CLI', 'WPI']]`. On the Web platform, the WPI entry flagged `'default' => true` is booted by default — the alphabetical file order does not affect this choice. If no entry is flagged, the first registered WPI project is used.
 
-```php
-<?php
-return [
-   'Demo_CLI'
-];
-```
+### Why an allow-list
 
-When `bootgly project list` is executed, these indexes are read to determine each project's interface(s).
+Because projects can nest arbitrarily, an attacker who compromised your project tree could otherwise hide a rogue nested `.project.php` and have it executed. The registry closes that door: `bootgly project <path> start` runs **only** paths that are exact keys of `Bootgly.projects.php`. Anything else — an unregistered path, a grouping container (`Demo`), path traversal (`..`), an absolute path, a backslash or a null byte — is rejected, and the resolved directory is additionally jailed under the `projects/` base.
+
+To make a new project runnable, create its directory and boot file, then add its path to the registry.
 
 ## The `project` command
 
-The `project` command is the central tool for managing Bootgly projects. Run `php bootgly project` to see all available subcommands:
+The `project` command is the central tool for managing Bootgly projects. Run `php bootgly project` to see all subcommands:
 
 ```mermaid
 graph LR
@@ -94,7 +86,7 @@ graph LR
 
 ### `project list`
 
-Discovers and lists all projects in the `projects/` directory, showing their interfaces (CLI, WPI or both) and marking the default project:
+Lists every registered project, grouped by interface (CLI, WPI or both):
 
 ```bash
 php bootgly project list
@@ -105,41 +97,35 @@ Example output:
 ```
  Project list:
 
- #1  - Generic Project (projects/Sample_Project) [CLI]
-    Generic project example for Bootgly docs
+ #1  - Benchmark
+    Description: Benchmarking project for Bootgly's
+    Type: CLI
 
- #2  - Another Project (projects/Another_Project) [WPI]
+ #2  - Demo/HTTP_Server_CLI
+    Description: Demonstration project for Bootgly HTTP Server CLI
+    Type: WPI
 ```
 
 ### `project start`
 
-Boots a project by name:
+Boots a project by its path:
 
 ```bash
-# Run a specific project
-php bootgly project start Sample_Project
-
-# Run another project
-php bootgly project start Another_Project
+# Run a subproject by its path
+php bootgly project Demo/HTTP_Server_CLI start
 
 # Run in interactive mode
-php bootgly project start Sample_Project -i
+php bootgly project Demo/HTTP_Server_CLI start -i
 
 # Run in monitor mode
-php bootgly project start Sample_Project -m
+php bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
-You can reverse the order of the arguments to have both options for passing subcommands to the same project or passing multiple projects to the same subcommand:
+You can reverse the order of the arguments (subcommand first):
 
 ```bash
-# Run a specific project
-php bootgly project Sample_Project start
-# Run another project
-php bootgly project Another_Project start
-# Run in interactive mode
-php bootgly project Sample_Project start -i
-# Stop the same project
-php bootgly project Sample_Project stop
+php bootgly project start Demo/HTTP_Server_CLI
+php bootgly project stop Demo/HTTP_Server_CLI
 ```
 
 Available options:
@@ -155,27 +141,24 @@ Available options:
 Stops a running project by sending SIGTERM to the master process. If the process does not terminate within 5 seconds, it sends SIGKILL:
 
 ```bash
-# Stop a named project
-php bootgly project stop Sample_Project
+php bootgly project Demo/HTTP_Server_CLI stop
 ```
 
-This command stops **all running instances** of the project (primary and any named instances like test servers).
+This stops **all running instances** of the project (primary and any named instances like test servers).
 
 ### `project show`
 
 Shows the current status of a running project, including PID, workers, address and uptime:
 
 ```bash
-php bootgly project show Sample_Project
+php bootgly project Demo/HTTP_Server_CLI show
 ```
-
-If the project has multiple running instances (e.g. a production server and a test server), all instances are displayed:
 
 Example output:
 
 ```
 ┌─ Project Status ────────────────────┐
-│ Project        Sample_Project       │
+│ Project        Demo/HTTP_Server_CLI │
 │ Type           WPI                  │
 │ Status         running              │
 │ Master PID     12345                │
@@ -183,32 +166,20 @@ Example output:
 │ Address        0.0.0.0:8082         │
 │ Uptime         2h 15m 30s           │
 └─────────────────────────────────────┘
-
-┌─ Project Status ────────────────────┐
-│ Project        Sample_Project.test  │
-│ Type           WPI                  │
-│ Status         running              │
-│ Master PID     12400                │
-│ Workers        1/1                  │
-│ Address        0.0.0.0:8080         │
-│ Uptime         0h 5m 12s            │
-└─────────────────────────────────────┘
 ```
 
 ### Process state (PID files)
 
-When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `workdata/pids/`. The file is named after the **project folder name** — for example, running `HTTP_Server_CLI` creates `workdata/pids/HTTP_Server_CLI.json`.
+When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide — running `Demo/HTTP_Server_CLI` creates `storage/pids/Demo~HTTP_Server_CLI.json`.
 
-For named instances (like test servers), the file includes an instance qualifier: `HTTP_Server_CLI.test.json`. This allows multiple instances of the same project to coexist without PID file conflicts.
-
-The `project stop` and `project show` commands automatically discover all instances (primary + named) for a given project name.
+For named instances (like test servers), the file gains an instance qualifier: `Demo~HTTP_Server_CLI.test.json`. The `project stop` and `project show` commands automatically discover all instances (primary + named) for a given project path.
 
 ### `project reload`
 
 Sends a hot-reload signal (SIGUSR2) to a running project, allowing it to reload its code without a full restart:
 
 ```bash
-php bootgly project reload Sample_Project
+php bootgly project Demo/HTTP_Server_CLI reload
 ```
 
 ### `project restart`
@@ -216,7 +187,7 @@ php bootgly project reload Sample_Project
 Stops and then starts a project again. Accepts the same options as `project start`:
 
 ```bash
-php bootgly project restart Sample_Project
+php bootgly project Demo/HTTP_Server_CLI restart
 ```
 
 ### `project info`
@@ -224,20 +195,20 @@ php bootgly project restart Sample_Project
 Displays detailed metadata about a project in a Fieldset:
 
 ```bash
-php bootgly project info Sample_Project
+php bootgly project Demo/HTTP_Server_CLI info
 ```
 
 Example output:
 
 ```
 ┌─ Project Info ──────────────────────────────────────────────────────┐
-│ Name           Generic Project                                     │
-│ Folder         Sample_Project                                      │
-│ Description    A generic Bootgly project example                   │
-│ Version        0.1.0                                               │
-│ Author         Your Name                                           │
-│ Interfaces     CLI                                                 │
-│ Path           /path/to/projects/Sample_Project                    │
+│ Name           Demo HTTP Server CLI                                │
+│ Folder         Demo/HTTP_Server_CLI                                │
+│ Description    Demonstration project for Bootgly HTTP Server CLI   │
+│ Version        1.0.0                                               │
+│ Author         Bootgly                                             │
+│ Interfaces     WPI                                                 │
+│ Path           /path/to/projects/Demo/HTTP_Server_CLI             │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -247,7 +218,7 @@ The typical lifecycle of a project follows this flow:
 
 ```mermaid
 graph TB
-  Create["Create project directory\nwith boot file"] --> Register["Register in interface\nindex file"]
+  Create["Create project directory\nwith leaf-named boot file"] --> Register["Register the path in\nBootgly.projects.php"]
   Register --> Start["Start project"]
   Start --> Show["Monitor status"]
   Show --> Reload["Hot-reload changes"]
@@ -257,8 +228,8 @@ graph TB
   Show --> Stop["Stop project"]
 ```
 
-1. **Create** a directory in `projects/` with a `*.project.php` boot file;
-2. **Register** it in the interface index file (`WPI.projects.php` or `CLI.projects.php`);
+1. **Create** a directory in `projects/` (at any depth) with a `{leaf}.project.php` boot file;
+2. **Register** its path in `Bootgly.projects.php` under the right interface(s);
 3. **Run** it with `project start`;
 4. **Monitor** its status with `project show`;
 5. **Reload** code changes with `project reload` (sends SIGUSR2);
@@ -267,11 +238,15 @@ graph TB
 
 ## Built-in projects
 
-Bootgly ships with several example projects in the `projects/` directory:
+Bootgly ships with example projects under `projects/`:
 
 | Project | Interface | Description |
 |---------|-----------|-------------|
-| `Demo_CLI` | CLI | Interactive CLI demo for terminal components (22 demos) |
-| `HTTP_Server_CLI` | WPI | HTTP server demo with static/dynamic routing and catch-all 404 |
-| `TCP_Server_CLI` | WPI | Raw TCP server with configurable workers |
-| `TCP_Client_CLI` | CLI | TCP client benchmark (write/read stress test) |
+| `Demo/CLI` | CLI | Interactive CLI demo for terminal components |
+| `Demo/HTTP_Server_CLI` | WPI | HTTP server demo with routing, ORM and observability routes |
+| `Demo/HTTPS_Server_CLI` | WPI | HTTPS server demo |
+| `Demo/TCP_Server_CLI` | WPI | Raw TCP server with configurable workers |
+| `Demo/Queue-HTTP_Server_CLI` | WPI | HTTP server that enqueues background jobs |
+| `Benchmark/HTTP_Server_CLI` | WPI | HTTP server benchmark (simple/techempower/bootgly routers) |
+| `Benchmark/TCP_Server_CLI` | WPI | Raw TCP server benchmark (HTTP or echo) |
+| `Benchmark/UDP_Server_CLI` | WPI | Raw UDP echo server benchmark |

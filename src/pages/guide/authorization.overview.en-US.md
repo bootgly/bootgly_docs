@@ -165,11 +165,11 @@ The canonical project tables are:
 The demo project includes migrations and a rerunnable seeder for those tables:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI migrate status
-bootgly project Demo-HTTP_Server_CLI migrate up
-bootgly project Demo-HTTP_Server_CLI seed list
-bootgly project Demo-HTTP_Server_CLI seed run --dry-run
-bootgly project Demo-HTTP_Server_CLI seed run authorization_rbac
+bootgly project Demo/HTTP_Server_CLI migrate status
+bootgly project Demo/HTTP_Server_CLI migrate up
+bootgly project Demo/HTTP_Server_CLI seed list
+bootgly project Demo/HTTP_Server_CLI seed run --dry-run
+bootgly project Demo/HTTP_Server_CLI seed run authorization_rbac
 ```
 
 Run the migrate commands only after the project database is configured and reachable.
@@ -177,7 +177,7 @@ Run the migrate commands only after the project database is configured and reach
 ## Demo routes
 
 Enable the Authorization demo set in
-`projects/Demo-HTTP_Server_CLI/router/router.index.php` (the project loads the `router/` folder via `Router::load()`):
+`projects/Demo/HTTP_Server_CLI/router/router.index.php` (the project loads the `router/` folder via `Router::load()`):
 
 ```php :filename="router.index.php";
 // add 'Authorization' to the manifest
@@ -189,7 +189,7 @@ return [
 Then start the demo server:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -i
+bootgly project Demo/HTTP_Server_CLI start -i
 ```
 
 Available routes:
@@ -203,7 +203,7 @@ Available routes:
 | `/authz/policy` | Requires the authenticated user to own the demo resource. |
 
 The matching Postman collection lives at
-`projects/Demo-HTTP_Server_CLI/router/HTTP_Server_CLI-authorization.postman_collection.json`.
+`projects/Demo/HTTP_Server_CLI/router/HTTP_Server_CLI-authorization.postman_collection.json`.
 It covers successful Scope, Role and Policy requests plus denial cases with valid tokens.
 
 ## Testing

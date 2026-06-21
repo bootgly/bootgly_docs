@@ -85,7 +85,7 @@ reivindicado de forma atômica, então nunca é processado duas vezes.
 
 ## Exemplo funcional
 
-Um projeto completo e executável fica em `projects/Demo-Queue-HTTP_Server_CLI/`:
+Um projeto completo e executável fica em `projects/Demo/Queue-HTTP_Server_CLI/`:
 `GET /email/:to` enfileira um job e responde na hora; `bootgly queue run emails` o processa e
 acrescenta a prova em `workdata/queue-demo.log`. Veja o `README.md` dele para a execução completa.
 

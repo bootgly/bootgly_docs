@@ -15,7 +15,7 @@ O componente é dirigido por `TCP_Server_CLI::monitoring()` (herdado por `HTTP_S
 caminho comum é apenas iniciar um servidor em modo Monitor — sem fiação manual:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -m
+bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
 O servidor entra na tela alternativa, aponta todo `Logger` para o pipe do Monitor e alimenta o

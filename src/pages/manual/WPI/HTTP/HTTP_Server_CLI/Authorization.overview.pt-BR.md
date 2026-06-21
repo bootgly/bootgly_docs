@@ -168,7 +168,7 @@ depender de API, enquanto API pode usar ADI.
 ## Demo e guide
 
 As rotas demo executáveis ficam em
-`projects/Demo-HTTP_Server_CLI/router/routes/Authorization.php`.
+`projects/Demo/HTTP_Server_CLI/router/routes/Authorization.php`.
 
 Para o fluxo completo, incluindo migrations, seeders, tabelas RBAC e coleção Postman, veja
 **[Authorization guide](/guide/authorization/overview/)**.

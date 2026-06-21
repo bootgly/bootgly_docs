@@ -1,37 +1,39 @@
 # Projetos
 
-O Bootgly organiza aplicações como **projetos** — diretórios autocontidos dentro de `projects/` que contêm um ou mais arquivos de boot. Cada projeto declara seus metadados (name, description, version, author) e uma Closure de boot que inicializa a aplicação.
+O Bootgly organiza aplicações como **projetos** — diretórios autocontidos dentro de `projects/` que contêm um arquivo de boot. Cada projeto declara seus metadados (nome, descrição, versão, autor) e uma Closure de boot que inicializa a aplicação.
 
-Os projetos são gerenciados inteiramente através do comando CLI `project`, que fornece subcomandos para listar, executar, parar, inspecionar e fazer hot-reload de projetos.
+Um projeto pode ficar em **qualquer profundidade** dentro de `projects/`. Um diretório como `Demo/` pode agrupar vários **subprojetos** (`Demo/HTTP_Server_CLI`, `Demo/TCP_Server_CLI`, …), cada um iniciado de forma independente pelo seu caminho. Os projetos são gerenciados inteiramente pelo comando CLI `project`, que lista, executa, para, inspeciona e recarrega a quente.
 
-## Estrutura de um projeto
+## Estrutura do projeto
 
-Um projeto é um diretório dentro de `projects/` com um arquivo de boot. O arquivo de boot segue a convenção de nomenclatura `{project_folder_name}.project.php` — o nome do arquivo deve corresponder ao nome da pasta do projeto.
-
-Por exemplo, um projeto na pasta `Sample_Project` deve ter seu arquivo de boot nomeado como `Sample_Project.project.php`:
+Um projeto é um diretório dentro de `projects/` (em qualquer profundidade) contendo um arquivo de boot nomeado pela **folha** (leaf) da pasta — a convenção é `{folha}.project.php`. O nome do arquivo corresponde ao último segmento do caminho, não ao caminho completo.
 
 ```
 projects/
-├── WPI.projects.php
-├── CLI.projects.php
-├── Sample_Project/
-│   └── Sample_Project.project.php
-└── Another_Project/
-    └── Another_Project.project.php
+├── Bootgly.projects.php          ← o registro (allow-list)
+├── Site/                         ← um projeto plano (um segmento de caminho)
+│   └── Site.project.php
+└── Demo/                         ← uma pasta de agrupamento (não é um projeto)
+    ├── HTTP_Server_CLI/
+    │   └── HTTP_Server_CLI.project.php
+    └── TCP_Server_CLI/
+        └── TCP_Server_CLI.project.php
 ```
+
+Aqui `Demo/HTTP_Server_CLI` e `Demo/TCP_Server_CLI` são dois subprojetos agrupados sob `Demo/`. O próprio `Demo/` não tem `.project.php` — é apenas um contêiner.
 
 ### Exemplo de arquivo de boot
 
-Cada arquivo de boot retorna uma instância de `Project` com metadados e uma Closure de boot:
+Cada arquivo de boot retorna uma instância `Project` com metadados e uma Closure de boot:
 
 ```php
 use Bootgly\API\Projects\Project;
 
 return new Project(
-   name: 'Projeto Genérico',
-   description: 'Um exemplo genérico de projeto Bootgly',
+   name: 'Generic Project',
+   description: 'A generic Bootgly project example',
    version: '1.0.0',
-   author: 'Seu Nome',
+   author: 'Your Name',
 
    boot: function (array $arguments = [], array $options = []): void
    {
@@ -40,45 +42,35 @@ return new Project(
 );
 ```
 
-A classe `Project` aceita as seguintes propriedades:
+O construtor deriva `path` (o diretório absoluto do projeto) e `folder` (o caminho do projeto **relativo a** `projects/`, ex.: `Demo/HTTP_Server_CLI`) automaticamente a partir da localização do arquivo de boot — `folder` é o identificador canônico do projeto.
 
-| Propriedade | Tipo | Descrição |
-|-------------|------|-----------|
-| `name` | string | Nome de exibição do projeto |
-| `description` | string | Breve descrição |
-| `version` | string | Versão semântica |
-| `author` | string | Nome do autor |
-| `boot` | Closure | A função de boot que inicializa a aplicação |
+## O registro de projetos
 
-### Arquivos de índice de interface
+Um único arquivo na raiz de `projects/` — **`Bootgly.projects.php`** — declara todos os projetos registrados. Ele é ao mesmo tempo o mapa de interfaces (quais projetos pertencem a CLI e/ou WPI) **e a fronteira de segurança**: apenas os caminhos listados aqui podem ser iniciados ou autobootados.
 
-Cada interface possui um arquivo de índice na raiz de `projects/` que lista os projetos pertencentes àquela interface:
-
-**`WPI.projects.php`** — projetos Web (servidores HTTP, TCP, etc.):
+Ele retorna um mapa indexado por projeto, mantido em **ordem alfabética por caminho**. Cada chave é o caminho canônico de um projeto (relativo a `projects/`); cada valor lista as `interfaces` que ele serve:
 
 ```php
 <?php
 return [
-   'HTTP_Server_CLI',
-   'TCP_Server_CLI',
-   'TCP_Client_CLI'
+   'Demo/CLI'             => ['interfaces' => ['CLI']],
+   'Demo/HTTP_Server_CLI' => ['interfaces' => ['WPI'], 'default' => true],
+   'Demo/TCP_Server_CLI'  => ['interfaces' => ['WPI']],
+   'Site'                 => ['interfaces' => ['CLI']],
 ];
 ```
 
-**`CLI.projects.php`** — projetos CLI:
+Um projeto que serve ambas as interfaces lista as duas: `['interfaces' => ['CLI', 'WPI']]`. Na plataforma Web, a entrada WPI marcada com `'default' => true` é bootada por padrão — a ordem alfabética do arquivo não afeta essa escolha. Se nenhuma entrada estiver marcada, o primeiro projeto WPI registrado é usado.
 
-```php
-<?php
-return [
-   'Demo_CLI'
-];
-```
+### Por que uma allow-list
 
-Quando `bootgly project list` é executado, esses índices são lidos para determinar a(s) interface(s) de cada projeto.
+Como os projetos podem aninhar arbitrariamente, um atacante que comprometesse a sua árvore de projetos poderia esconder um `.project.php` aninhado malicioso e fazê-lo executar. O registro fecha essa porta: `bootgly project <caminho> start` executa **apenas** caminhos que sejam chaves exatas de `Bootgly.projects.php`. Qualquer outra coisa — um caminho não registrado, uma pasta de agrupamento (`Demo`), path traversal (`..`), um caminho absoluto, uma barra invertida ou um null byte — é rejeitada, e o diretório resolvido é ainda enjaulado sob a base `projects/`.
+
+Para tornar um novo projeto executável, crie o diretório e o arquivo de boot, depois adicione o caminho dele ao registro.
 
 ## O comando `project`
 
-O comando `project` é a ferramenta central para gerenciar projetos Bootgly. Execute `php bootgly project` para ver todos os subcomandos disponíveis:
+O comando `project` é a ferramenta central para gerenciar projetos Bootgly. Rode `php bootgly project` para ver todos os subcomandos:
 
 ```mermaid
 graph LR
@@ -94,7 +86,7 @@ graph LR
 
 ### `project list`
 
-Descobre e lista todos os projetos no diretório `projects/`, mostrando suas interfaces (CLI, WPI ou ambas) e marcando o projeto padrão:
+Lista todos os projetos registrados, agrupados por interface (CLI, WPI ou ambas):
 
 ```bash
 php bootgly project list
@@ -105,151 +97,157 @@ Exemplo de saída:
 ```
  Project list:
 
- #1  - Projeto Generico (projects/Sample_Project) [CLI]
-    Exemplo generico de projeto para a documentacao do Bootgly
+ #1  - Benchmark
+    Description: Benchmarking project for Bootgly's
+    Type: CLI
 
- #2  - Outro Projeto (projects/Another_Project) [WPI]
+ #2  - Demo/HTTP_Server_CLI
+    Description: Demonstration project for Bootgly HTTP Server CLI
+    Type: WPI
 ```
 
 ### `project start`
 
-Inicializa um projeto pelo nome:
+Boota um projeto pelo seu caminho:
 
 ```bash
-# Executar um projeto específico
-php bootgly project start Sample_Project
+# Executa um subprojeto pelo caminho
+php bootgly project Demo/HTTP_Server_CLI start
 
-# Executar outro projeto
-php bootgly project start Another_Project
+# Executa em modo interativo
+php bootgly project Demo/HTTP_Server_CLI start -i
 
-# Executar em modo interativo
-php bootgly project start Sample_Project -i
-
-# Executar em modo monitor
-php bootgly project start Sample_Project -m
+# Executa em modo monitor
+php bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
-Você pode inverter a ordem dos argumentos para ter as duas opções de passar subcomandos para um mesmo projeto ou passar vários projetos para um mesmo subcomando:
+Você pode inverter a ordem dos argumentos (subcomando primeiro):
 
 ```bash
-# Executar um projeto específico
-php bootgly project Sample_Project start
-# Executar outro projeto
-php bootgly project Another_Project start
-# Executar em modo interativo
-php bootgly project Sample_Project start
-# Parar o mesmo projeto
-php bootgly project Sample_Project stop
+php bootgly project start Demo/HTTP_Server_CLI
+php bootgly project stop Demo/HTTP_Server_CLI
 ```
 
 Opções disponíveis:
 
 | Opção | Descrição |
 |-------|-----------|
-| `-d` | Executar em modo daemon (padrão) |
-| `-i` | Executar em modo interativo |
-| `-m` | Executar em modo monitor |
+| `-d` | Executa em modo daemon (padrão) |
+| `-i` | Executa em modo interativo |
+| `-m` | Executa em modo monitor |
 
 ### `project stop`
 
 Para um projeto em execução enviando SIGTERM ao processo master. Se o processo não terminar em 5 segundos, envia SIGKILL:
 
 ```bash
-# Parar um projeto específico
-php bootgly project stop Sample_Project
+php bootgly project Demo/HTTP_Server_CLI stop
 ```
+
+Isso para **todas as instâncias em execução** do projeto (primária e quaisquer instâncias nomeadas, como servidores de teste).
 
 ### `project show`
 
 Mostra o status atual de um projeto em execução, incluindo PID, workers, endereço e uptime:
 
 ```bash
-php bootgly project show Sample_Project
+php bootgly project Demo/HTTP_Server_CLI show
 ```
 
 Exemplo de saída:
 
 ```
 ┌─ Project Status ────────────────────┐
-│ Project        Sample_Project       │
-│ Type           CLI                  │
+│ Project        Demo/HTTP_Server_CLI │
+│ Type           WPI                  │
 │ Status         running              │
 │ Master PID     12345                │
 │ Workers        11/11                │
-│ Address        -                    │
+│ Address        0.0.0.0:8082         │
 │ Uptime         2h 15m 30s           │
 └─────────────────────────────────────┘
 ```
 
+### Estado de processo (arquivos PID)
+
+Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam — executar `Demo/HTTP_Server_CLI` cria `storage/pids/Demo~HTTP_Server_CLI.json`.
+
+Para instâncias nomeadas (como servidores de teste), o arquivo ganha um qualificador de instância: `Demo~HTTP_Server_CLI.test.json`. Os comandos `project stop` e `project show` descobrem automaticamente todas as instâncias (primária + nomeadas) de um dado caminho de projeto.
+
 ### `project reload`
 
-Envia um sinal de hot-reload (SIGUSR2) a um projeto em execução, permitindo que ele recarregue seu código sem um restart completo:
+Envia um sinal de hot-reload (SIGUSR2) a um projeto em execução, permitindo recarregar o código sem um restart completo:
 
 ```bash
-php bootgly project reload Sample_Project
+php bootgly project Demo/HTTP_Server_CLI reload
 ```
 
 ### `project restart`
 
-Para e depois inicia o projeto novamente. Aceita as mesmas opções que `project start`:
+Para e então inicia o projeto novamente. Aceita as mesmas opções de `project start`:
 
 ```bash
-php bootgly project restart Sample_Project
+php bootgly project Demo/HTTP_Server_CLI restart
 ```
 
 ### `project info`
 
-Exibe metadados detalhados sobre um projeto em um Fieldset:
+Exibe metadados detalhados de um projeto em um Fieldset:
 
 ```bash
-php bootgly project info Sample_Project
+php bootgly project Demo/HTTP_Server_CLI info
 ```
 
 Exemplo de saída:
 
 ```
 ┌─ Project Info ──────────────────────────────────────────────────────┐
-│ Name           Projeto Generico                                    │
-│ Folder         Sample_Project                                      │
-│ Description    Um exemplo generico de projeto Bootgly              │
-│ Version        0.1.0                                               │
-│ Author         Seu Nome                                            │
-│ Interfaces     CLI                                                 │
-│ Path           /path/to/projects/Sample_Project                    │
+│ Name           Demo HTTP Server CLI                                │
+│ Folder         Demo/HTTP_Server_CLI                                │
+│ Description    Demonstration project for Bootgly HTTP Server CLI   │
+│ Version        1.0.0                                               │
+│ Author         Bootgly                                             │
+│ Interfaces     WPI                                                 │
+│ Path           /path/to/projects/Demo/HTTP_Server_CLI             │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Ciclo de vida de um projeto
+## Ciclo de vida do projeto
 
 O ciclo de vida típico de um projeto segue este fluxo:
 
 ```mermaid
 graph TB
-  Create["Criar diretório do projeto\ncom arquivo de boot"] --> Register["Registrar no índice\nda interface"]
-  Register --> Start["Executar projeto"]
-  Start --> Show["Monitorar status"]
-  Show --> Reload["Hot-reload de alterações"]
+  Create["Crie o diretório do projeto\ncom o arquivo de boot da folha"] --> Register["Registre o caminho em\nBootgly.projects.php"]
+  Register --> Start["Inicie o projeto"]
+  Start --> Show["Monitore o status"]
+  Show --> Reload["Recarregue mudanças a quente"]
   Reload --> Show
-  Show --> Restart["Reiniciar se necessário"]
+  Show --> Restart["Reinicie se necessário"]
   Restart --> Show
-  Show --> Stop["Parar projeto"]
+  Show --> Stop["Pare o projeto"]
 ```
 
-1. **Criar** um diretório em `projects/` com um arquivo de boot `*.project.php`;
-2. **Registrar** no arquivo de índice da interface (`WPI.projects.php` ou `CLI.projects.php`);
-3. **Executar** com `project start`;
-4. **Monitorar** seu status com `project show`;
-5. **Recarregar** alterações de código com `project reload` (envia SIGUSR2);
-6. **Reiniciar** completamente se necessário com `project restart`;
-7. **Parar** com `project stop`.
+1. **Crie** um diretório em `projects/` (em qualquer profundidade) com um arquivo de boot `{folha}.project.php`;
+2. **Registre** o caminho dele em `Bootgly.projects.php` sob a(s) interface(s) certa(s);
+3. **Execute** com `project start`;
+4. **Monitore** o status com `project show`;
+5. **Recarregue** mudanças de código com `project reload` (envia SIGUSR2);
+6. **Reinicie** completamente se necessário com `project restart`;
+7. **Pare** com `project stop`.
 
-## Projetos built-in
+## Projetos integrados
 
-O Bootgly vem com vários projetos de exemplo no diretório `projects/`:
+O Bootgly traz projetos de exemplo sob `projects/`:
 
 | Projeto | Interface | Descrição |
 |---------|-----------|-----------|
-| `Demo_CLI` | CLI | Demo interativo de CLI para componentes de terminal (22 demos) |
-| `HTTP_Server_CLI` | WPI | Demo de HTTP server com roteamento estático/dinâmico e catch-all 404 |
-| `TCP_Server_CLI` | WPI | TCP server raw com workers configuráveis |
-| `TCP_Client_CLI` | CLI | Benchmark de TCP client (teste de stress write/read) |
+| `Demo/CLI` | CLI | Demo CLI interativo dos componentes de terminal |
+| `Demo/HTTP_Server_CLI` | WPI | Demo de servidor HTTP com rotas, ORM e observabilidade |
+| `Demo/HTTPS_Server_CLI` | WPI | Demo de servidor HTTPS |
+| `Demo/TCP_Server_CLI` | WPI | Servidor TCP cru com workers configuráveis |
+| `Demo/Queue-HTTP_Server_CLI` | WPI | Servidor HTTP que enfileira jobs em background |
+| `Benchmark/HTTP_Server_CLI` | WPI | Benchmark de servidor HTTP (routers simple/techempower/bootgly) |
+| `Benchmark/TCP_Server_CLI` | WPI | Benchmark de servidor TCP cru (HTTP ou echo) |
+| `Benchmark/UDP_Server_CLI` | WPI | Benchmark de servidor UDP echo |
+```

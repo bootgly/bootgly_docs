@@ -22,7 +22,7 @@ docker run --rm bootgly/bootgly:full test benchmark HTTP_Server_CLI \
   --opponents=bootgly --loads=1 --runner=TCP_Client --server-workers=15
 
 # rode o servidor HTTP demo
-docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo-HTTP_Server_CLI start -f
+docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
 Tags: `bootgly/bootgly:slim` (runtime), `:full` (teste + benchmark) e `:latest` (= `slim`).
@@ -61,7 +61,7 @@ limpa com `SIGTERM` (`docker stop`). (Use `-i` apenas para um REPL interativo co
 `docker run -it`.)
 
 ```bash
-docker run --rm -p 8082:8082 bootgly:slim project Demo-HTTP_Server_CLI start -f
+docker run --rm -p 8082:8082 bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
 Depois, em outro terminal:
@@ -75,15 +75,15 @@ Todo servidor demo lê a variável de ambiente `PORT` (com fallback para o padr�
 
 | Servidor | Projeto | Porta padrão |
 |----------|---------|--------------|
-| HTTP  | `Demo-HTTP_Server_CLI`  | 8082 |
-| HTTPS | `Demo-HTTPS_Server_CLI` | 443  |
-| TCP   | `Demo-TCP_Server_CLI`   | 8080 |
-| UDP   | `Demo-UDP_Server_CLI`   | 9999 |
+| HTTP  | `Demo/HTTP_Server_CLI`  | 8082 |
+| HTTPS | `Demo/HTTPS_Server_CLI` | 443  |
+| TCP   | `Demo/TCP_Server_CLI`   | 8080 |
+| UDP   | `Demo/UDP_Server_CLI`   | 9999 |
 
 Troque a porta sem reconstruir a imagem:
 
 ```bash
-docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo-HTTP_Server_CLI start -f
+docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
 ## Usar o Bootgly no seu próprio projeto

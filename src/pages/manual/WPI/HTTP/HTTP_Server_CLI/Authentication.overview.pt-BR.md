@@ -369,7 +369,7 @@ Neste exemplo, o Bootgly tenta JWT primeiro e depois o Bearer opaco. Se ambos fa
 
 ## Projeto demo
 
-O repositório inclui exemplos funcionais em `projects/Demo-HTTP_Server_CLI`:
+O repositório inclui exemplos funcionais em `projects/Demo/HTTP_Server_CLI`:
 
 - `router/routes/Authentication.php`
 

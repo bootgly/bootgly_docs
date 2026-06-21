@@ -369,7 +369,7 @@ In this example Bootgly tries JWT first, then the opaque Bearer token. If both f
 
 ## Demo project
 
-The repository includes working examples in `projects/Demo-HTTP_Server_CLI`:
+The repository includes working examples in `projects/Demo/HTTP_Server_CLI`:
 
 - `router/routes/Authentication.php`
 

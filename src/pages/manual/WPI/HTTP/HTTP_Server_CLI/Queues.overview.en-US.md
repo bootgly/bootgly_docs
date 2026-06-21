@@ -85,7 +85,7 @@ atomically, so it is never processed twice.
 
 ## Working example
 
-A complete, runnable project lives at `projects/Demo-Queue-HTTP_Server_CLI/`:
+A complete, runnable project lives at `projects/Demo/Queue-HTTP_Server_CLI/`:
 `GET /email/:to` enqueues a job and responds instantly; `bootgly queue run emails` processes it
 and appends proof to `workdata/queue-demo.log`. See its `README.md` for the full run.
 

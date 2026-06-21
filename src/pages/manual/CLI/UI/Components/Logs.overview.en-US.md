@@ -15,7 +15,7 @@ The component is driven by `TCP_Server_CLI::monitoring()` (inherited by `HTTP_Se
 common path is simply starting a server in Monitor mode — no manual wiring:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -m
+bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
 The server enters the alternate screen, points every `Logger` at the Monitor pipe, and feeds the

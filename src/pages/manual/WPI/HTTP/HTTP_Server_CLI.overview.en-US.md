@@ -62,19 +62,19 @@ return new Project(
 To start the server, run:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start
+bootgly project Demo/HTTP_Server_CLI start
 ```
 
 Interactive mode:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -i
+bootgly project Demo/HTTP_Server_CLI start -i
 ```
 
 Monitor mode:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -m
+bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
 ## Operation Modes
@@ -238,7 +238,7 @@ $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/
 
 `Router::load()` is the canonical way to wire routes. It points at the project's `router/` folder and returns the request handler passed to `Events::RequestReceived`:
 
-```php :filename="Demo-HTTP_Server_CLI.project.php";
+```php :filename="HTTP_Server_CLI.project.php";
 $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
 ```
 

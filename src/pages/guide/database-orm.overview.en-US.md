@@ -182,9 +182,9 @@ Relation names are single-level in v0.16. Nested paths such as `posts.comments` 
 
 ## Demo project
 
-`projects/Demo-HTTP_Server_CLI/router/routes/Database.php` exposes ORM examples:
+`projects/Demo/HTTP_Server_CLI/router/routes/Database.php` exposes ORM examples:
 
-The entity classes used by those routes live in `projects/Demo-HTTP_Server_CLI/Models/`.
+The entity classes used by those routes live in `projects/Demo/HTTP_Server_CLI/Models/`.
 
 - `/deferred/database/orm/users`
 - `/deferred/database/orm/user`
@@ -192,7 +192,7 @@ The entity classes used by those routes live in `projects/Demo-HTTP_Server_CLI/M
 - `/deferred/database/orm/lazy-relations`
 - `/deferred/database/orm/save`
 
-Run `/deferred/database/setup` first. The Postman collection in `projects/Demo-HTTP_Server_CLI/router/HTTP_Server_CLI-response-database.postman_collection.json` includes the same routes.
+Run `/deferred/database/setup` first. The Postman collection in `projects/Demo/HTTP_Server_CLI/router/HTTP_Server_CLI-response-database.postman_collection.json` includes the same routes.
 
 ## Reference
 

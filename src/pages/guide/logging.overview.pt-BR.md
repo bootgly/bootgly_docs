@@ -173,7 +173,7 @@ Inicie um `HTTP_Server_CLI` em modo **Monitor** e seu terminal vira um painel de
 real e filtrável. O master **e** cada worker transmitem seus records ao master, que os renderiza:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -m
+bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
 Você tem uma barra de status, um painel de logs em tailing e um rodapé com os atalhos. Filtre e

@@ -173,7 +173,7 @@ Start an `HTTP_Server_CLI` in **Monitor** mode and its terminal becomes a real-t
 log dashboard. Master **and** every worker stream their records to the master, which renders them:
 
 ```bash
-bootgly project Demo-HTTP_Server_CLI start -m
+bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
 You get a status bar, a tailing log pane and a keybindings footer. Filter and navigate live:
