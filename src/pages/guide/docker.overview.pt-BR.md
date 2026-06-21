@@ -180,10 +180,13 @@ populadas automaticamente na primeira execução.
 ```bash
 docker run --rm \
   -e BOOTGLY_HTTP_SERVER_CLI_LOADS=techempower \
-  -e BOOTGLY_HTTP_SERVER_CLI_ROUTER=techempower \
   bootgly/bootgly_benchmarks:laravel test benchmark HTTP_Server_CLI \
   --opponents=bootgly,laravel-nginx,laravel-apache --runner=TCP_Client --loads=1,3
 ```
+
+> Apenas `BOOTGLY_HTTP_SERVER_CLI_LOADS` é necessário — o oponente Bootgly deriva dele o
+> router do servidor correspondente. Defina `BOOTGLY_HTTP_SERVER_CLI_ROUTER` explicitamente
+> só para sobrescrever essa escolha.
 
 Para construir você mesmo, a partir de `bootgly_benchmarks/` (com `bootgly:full` já construído):
 
