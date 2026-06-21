@@ -128,7 +128,7 @@ Queues::push($Job, 'emails');
 
 | Driver | Setup | Escopo | Melhor para |
 |---|---|---|---|
-| **File** (padrão) | nenhum | um host | sem config, host único; reivindicação por rename atômico em `workdata/queues/<name>/` |
+| **File** (padrão) | nenhum | um host | sem config, host único; reivindicação por rename atômico em `storage/queues/<name>/` |
 | **Redis** | um servidor Redis | cross-host | muitos workers / hosts; reivindicação `ZADD`/`ZREM`, `O(log N)` por op, um round-trip |
 
 O driver File varre o diretório de prontos a cada reserve (`O(N·log N)`), o que serve para
@@ -168,7 +168,7 @@ Veja o guia de **[Eventos](/guide/events/overview/)** para a API completa do bar
 ## Segurança
 
 O armazenamento de jobs é uma **fronteira de confiança**: só a sua aplicação deve conseguir
-escrever em `workdata/queues/` ou no servidor Redis — proteja-os com permissões de sistema de
+escrever em `storage/queues/` ou no servidor Redis — proteja-os com permissões de sistema de
 arquivos e de rede. Como defesa em profundidade, os drivers desserializam os jobs armazenados com
 `allowed_classes` restrito a `Job` (assim um payload adulterado nunca dispara um gadget de
 object-injection), e o worker se recusa a instanciar um handler que não seja um `Queues\Handler`

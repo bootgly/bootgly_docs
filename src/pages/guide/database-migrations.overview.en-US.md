@@ -12,7 +12,7 @@ Database connection settings come from the project's environment config
 beyond a reachable database.
 
 Migration files live in `<project>/database/migrations/` and the runner lock in
-`workdata/locks/migrations/<project>.lock` (both created on demand).
+`storage/locks/migrations/<project>.lock` (both created on demand).
 
 ## 2. Create a migration
 

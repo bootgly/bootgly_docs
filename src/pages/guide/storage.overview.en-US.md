@@ -10,7 +10,7 @@ One facade, named **disks**, and pluggable **drivers** — **Local** (filesystem
 chunks, so even a multi-gigabyte file never lands whole in PHP memory.
 
 > [!NOTE]
-> Bootgly's runtime data folder is `storage/` (renamed from `workdata/`). Its absolute path
+> Bootgly's runtime data folder is `storage/` (renamed from `storage/`). Its absolute path
 > is the `BOOTGLY_STORAGE_DIR` constant, which you can pre-define before boot (e.g. to point
 > at a mounted volume). The default **local** disk is rooted there.
 

@@ -101,7 +101,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `driver` | `file` | todos | Driver ativo |
 | `prefix` | `''` | todos | Namespace prefixado em toda chave |
 | `ttl` | `0` | todos | TTL padrão (segundos; `0` = para sempre) |
-| `path` | `…/workdata/cache` | file | Diretório base |
+| `path` | `…/storage/cache` | file | Diretório base |
 | `segment` | `0` | shared | Chave System V (`0` deriva uma) |
 | `size` | `16 MiB` | shared | Tamanho do segmento em bytes |
 | `host` / `port` | `127.0.0.1` / `6379` | redis | Endpoint do servidor |
@@ -190,7 +190,7 @@ tags, resolve, ...) com o caso de benchmark `Cache`:
 ```
 
 Ele imprime uma matriz driver×operação (o mais rápido destacado) e salva os `.marks` em
-`workdata/tests/benchmarks/Cache/`. Drivers cujo backend não está disponível (extensão
+`storage/tests/benchmarks/Cache/`. Drivers cujo backend não está disponível (extensão
 ausente / servidor Redis inacessível) aparecem como **N/A**, então a execução continua
 funcionando em instalações mínimas. Requer o repositório irmão `bootgly_benchmarks` clonado
 ao lado de `bootgly`; veja o `Cache/README.md` dele para a lista de operações e flags de

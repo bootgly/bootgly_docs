@@ -99,7 +99,7 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 | `driver` | `file` | all | Active driver |
 | `prefix` | `''` | all | Namespace prepended to every key |
 | `TTL` | `0` | all | Default TTL (seconds; `0` = forever) |
-| `path` | `…/workdata/cache` | file | Base directory |
+| `path` | `…/storage/cache` | file | Base directory |
 | `segment` | `0` | shared | System V key (`0` derives one) |
 | `size` | `16 MiB` | shared | Segment size in bytes |
 | `host` / `port` | `127.0.0.1` / `6379` | redis | Server endpoint |
@@ -187,7 +187,7 @@ resolve, ...) with the `Cache` benchmark case:
 ```
 
 It prints a driver×operation matrix (fastest highlighted) and saves `.marks` under
-`workdata/tests/benchmarks/Cache/`. Drivers whose backend is unavailable (missing
+`storage/tests/benchmarks/Cache/`. Drivers whose backend is unavailable (missing
 extension / unreachable Redis server) show **N/A**, so the run still succeeds on minimal
 installs. Requires the sibling `bootgly_benchmarks` repo checked out next to `bootgly`; see
 its `Cache/README.md` for the operation list and tuning flags.

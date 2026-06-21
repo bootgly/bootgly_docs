@@ -66,7 +66,7 @@ roda quando **qualquer um** casa.
 ## Evite sobreposição — `lock()`
 
 Chame `lock()` para que uma execução lenta nunca sobreponha a próxima. O scheduler obtém um
-`flock` exclusivo não-bloqueante em `workdata/schedule/<id>.lock` antes de despachar; se o
+`flock` exclusivo não-bloqueante em `storage/schedule/<id>.lock` antes de despachar; se o
 lock estiver retido, a execução é pulada e um evento `Skipped` (`'overlap'`) é emitido:
 
 ```php
@@ -86,7 +86,7 @@ $Job->recover(Catchups::Once);   // roda uma única recuperação, depois retoma
 ```
 
 O worker chama `Schedule->recover(time())` uma vez na inicialização. Os timestamps da última
-execução são persistidos por job em `workdata/schedule/state.json`, então a política
+execução são persistidos por job em `storage/schedule/state.json`, então a política
 sobrevive a reinícios.
 
 ## Rode o worker
@@ -155,7 +155,7 @@ Veja o guia **[Events](/guide/events/overview/)** para a API completa do barrame
 - **Enums** — `Schedule\Frequencies` (`Minutely`, `Hourly`, `Daily`, `Weekly`, `Monthly`)
   e `Schedule\Catchups` (`Skip`, `Once`).
 - **Lock & State** — `Schedule\Lock` (`flock` por job) e `Schedule\State` (mapa JSON da
-  última execução), ambos sob `workdata/schedule/`. Orquestrados pelo motor, nunca pelo
+  última execução), ambos sob `storage/schedule/`. Orquestrados pelo motor, nunca pelo
   `Job`.
 - **Camadas** — `Schedule` é um componente ACI que depende apenas do barramento de eventos
   da ABI; o worker `ScheduleCommand` fica na camada CLI.

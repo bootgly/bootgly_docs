@@ -66,7 +66,7 @@ runs when **either** matches.
 ## Prevent overlap — `lock()`
 
 Call `lock()` so a slow run can never overlap the next one. The scheduler takes a
-non-blocking exclusive `flock` on `workdata/schedule/<id>.lock` before dispatching; if the
+non-blocking exclusive `flock` on `storage/schedule/<id>.lock` before dispatching; if the
 lock is held, the run is skipped and a `Skipped` event (`'overlap'`) is emitted:
 
 ```php
@@ -86,7 +86,7 @@ $Job->recover(Catchups::Once);   // run a single catch-up, then resume
 ```
 
 The worker calls `Schedule->recover(time())` once on startup. Last-run timestamps are
-persisted per job in `workdata/schedule/state.json`, so the policy survives restarts.
+persisted per job in `storage/schedule/state.json`, so the policy survives restarts.
 
 ## Run the worker
 
@@ -153,7 +153,7 @@ priorities, propagation).
 - **Enums** — `Schedule\Frequencies` (`Minutely`, `Hourly`, `Daily`, `Weekly`, `Monthly`)
   and `Schedule\Catchups` (`Skip`, `Once`).
 - **Lock & State** — `Schedule\Lock` (per-job `flock`) and `Schedule\State` (JSON last-run
-  map), both under `workdata/schedule/`. Orchestrated by the engine, never by `Job`.
+  map), both under `storage/schedule/`. Orchestrated by the engine, never by `Job`.
 - **Layering** — `Schedule` is an ACI component that depends only on the ABI event bus; the
   `ScheduleCommand` worker lives in the CLI layer.
 

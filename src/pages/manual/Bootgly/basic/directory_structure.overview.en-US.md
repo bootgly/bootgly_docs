@@ -46,6 +46,6 @@ The `public/` dir will serve to store Web files and should only be placed in the
 
 The `scripts/` dir stores scripts for the CLI/Console and should only be placed in the root dir.
 
-The `tests/` dirs store bootstrap test files and files that define a "test case". These dirs should be created in the same namespace as what is being tested.
+The `storage/` dir contains data generated, collected, or used in the work environment, such as cache files, log files, temporary files, information about projects, tasks, and so on.
 
-The `workdata/` dir contains data generated, collected, or used in the work environment, such as cache files, log files, temporary files, information about projects, tasks, and so on.
+The `tests/` dirs store bootstrap test files and files that define a "test case". These dirs should be created in the same namespace as what is being tested.

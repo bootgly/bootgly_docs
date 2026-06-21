@@ -11,7 +11,7 @@ configurações de conexão vêm do config de ambiente do projeto (`DatabaseConf
 usado em runtime. Não há setup extra além de um banco acessível.
 
 Os arquivos de migration ficam em `<projeto>/database/migrations/` e o lock do runner em
-`workdata/locks/migrations/<projeto>.lock` (ambos criados sob demanda).
+`storage/locks/migrations/<projeto>.lock` (ambos criados sob demanda).
 
 ## 2. Criar uma migration
 

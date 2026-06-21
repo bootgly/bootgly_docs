@@ -202,7 +202,7 @@ docker compose --profile test  up        # run a test suite
 docker compose --profile bench up        # run the internal benchmark
 ```
 
-Server state and PIDs persist in a named `workdata` volume.
+Server state and PIDs persist in a named `storage` volume.
 
 ## Reference
 

@@ -46,6 +46,6 @@ O diretório `public/` servirá para armazenar arquivos da Web e só deve ser ex
 
 O diretório `scripts/` armazena os scripts para o CLI/Console e só deve ser existir dentro do diretório raiz.
 
-O diretório `tests/` armazenam arquivos de bootstrap de testes e arquivos que definem um "test case". Esses diretórios devem ser criados no mesmo namespace do que está sendo testado.
+O diretório `storage/` contém dados gerados, coletados ou utilizados no ambiente de trabalho, como arquivos de cache, de logs, arquivos temporários, informações sobre projetos, tarefas, etc.
 
-O diretório `workdata/` contém dados gerados, coletados ou utilizados no ambiente de trabalho, como arquivos de cache, de logs, arquivos temporários, informações sobre projetos, tarefas, etc.
+O diretório `tests/` armazenam arquivos de bootstrap de testes e arquivos que definem um "test case". Esses diretórios devem ser criados no mesmo namespace do que está sendo testado.

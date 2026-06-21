@@ -204,7 +204,7 @@ docker compose --profile test  up        # roda uma suíte de testes
 docker compose --profile bench up        # roda o benchmark interno
 ```
 
-O estado e os PIDs do servidor persistem em um volume nomeado `workdata`.
+O estado e os PIDs do servidor persistem em um volume nomeado `storage`.
 
 ## Referência
 

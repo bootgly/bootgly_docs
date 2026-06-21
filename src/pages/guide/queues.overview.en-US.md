@@ -127,7 +127,7 @@ Queues::push($Job, 'emails');
 
 | Driver | Setup | Scope | Best for |
 |---|---|---|---|
-| **File** (default) | none | one host | zero-config, single host; atomic-rename claim under `workdata/queues/<name>/` |
+| **File** (default) | none | one host | zero-config, single host; atomic-rename claim under `storage/queues/<name>/` |
 | **Redis** | a Redis server | cross-host | many workers / hosts; `ZADD`/`ZREM` claim, `O(log N)` per op, one round-trip |
 
 The File driver scans the ready directory per reserve (`O(N·log N)`), which is fine for modest
@@ -165,7 +165,7 @@ See the **[Events](/guide/events/overview/)** guide for the full bus API.
 ## Security
 
 The job store is a **trust boundary**: only your app should be able to write to
-`workdata/queues/` or the Redis instance — protect them with filesystem and network
+`storage/queues/` or the Redis instance — protect them with filesystem and network
 permissions. As defense in depth, the drivers deserialize stored jobs with `allowed_classes`
 restricted to `Job` (so a tampered payload can never trigger an object-injection gadget), and the
 worker refuses to instantiate a handler that is not a declared `Queues\Handler`.

@@ -12,7 +12,7 @@ trafegam em pedaços limitados, então mesmo um arquivo de vários gigabytes nun
 memória do PHP.
 
 > [!NOTE]
-> A pasta de dados de runtime do Bootgly é `storage/` (renomeada de `workdata/`). Seu caminho
+> A pasta de dados de runtime do Bootgly é `storage/` (renomeada de `storage/`). Seu caminho
 > absoluto é a constante `BOOTGLY_STORAGE_DIR`, que você pode pré-definir antes do boot (por
 > exemplo, apontando para um volume montado). O disk **local** padrão é ancorado nela.
 
