@@ -1,13 +1,14 @@
 # Cache
 
 O Bootgly traz uma camada de cache nativa e sem dependências em
-`Bootgly\ABI\Resources\Cache`. Uma facade, quatro drivers bloqueantes — **File**, **APCu**,
-**Shared-memory** e **Redis** — com TTL, tags, contadores atômicos e invalidação por tag. É o
-mesmo cache usado internamente pelo rate limiter multi-worker.
+`Bootgly\ABI\Resources\Cache`. Uma facade, cinco drivers bloqueantes — **Memory**, **File**,
+**APCu**, **Shared-memory** e **Redis** — com TTL, tags, contadores atômicos e invalidação por
+tag. É o mesmo cache usado internamente pelo rate limiter multi-worker.
 
 > [!NOTE]
 > O cache vive na camada ABI, então todo driver é **bloqueante**. Dentro do worker assíncrono
-> do `HTTP_Server_CLI`, prefira `shared`/`apcu` (sem rede) nos caminhos quentes e use o
+> do `HTTP_Server_CLI`, prefira `memory` (por worker, array puro — nunca toca uma syscall) ou
+> `shared`/`apcu` (sem rede) nos caminhos quentes e use o
 > **[driver Redis KV](#redis-assincrono-no-event-loop)** não-bloqueante quando precisar de
 > Redis no event loop — uma chamada Redis bloqueante travaria o loop.
 
@@ -74,6 +75,7 @@ $Report = $Cache->resolve('report:daily', TTL: 3600, compute: function () {
 
 | Driver | `driver` | Escopo | Use para |
 |---|---|---|---|
+| Memory | `memory` | Por processo, na heap | O mais rápido; caches de processo único, testes, uma camada L1 na frente de um backend compartilhado (sem extensão; não é compartilhado entre workers) |
 | File | `file` (padrão) | Por host, em disco | Sempre disponível; padrão seguro |
 | APCu | `apcu` | Por processo | Dados quentes de worker único (precisa `ext-apcu`) |
 | Shared-memory | `shared` | Por host, **cross-worker** | Estado compartilhado multi-worker, rate limiting (precisa `ext-sysvshm` + `ext-sysvsem`) |
@@ -83,6 +85,12 @@ $Report = $Cache->resolve('report:daily', TTL: 3600, compute: function () {
 $Cache = new Cache(['driver' => 'shared', 'prefix' => 'app:']);
 $Cache = new Cache(['driver' => 'redis', 'host' => '127.0.0.1', 'port' => 6379]);
 ```
+
+O driver **Memory** mantém as entradas em um array PHP comum dentro da instância do driver: cada
+operação é um acesso direto por hash, sem serialização, sem locks e sem extensão — o backend mais
+rápido. O custo é o escopo: cada worker tem sua própria cópia, nada é compartilhado entre workers
+forkados, e o store morre com o processo. Use-o como cache de processo único, um dublê de teste,
+ou uma camada L1 na frente de um backend compartilhado mais lento.
 
 O driver **Shared-memory** é o backend cross-worker canônico: mantém os dados em um segmento de
 memória compartilhada System V protegido por um semáforo System V, então todo worker forkado no
@@ -108,7 +116,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `password` / `database` | `''` / `0` | redis | AUTH / SELECT |
 | `timeout` | `5.0` | redis | Segundos de conexão/leitura |
 | `secure` | `false` | redis | Conexão TLS |
-| `clock` | `null` | file, shared | Override de relógio `Closure(): int` (testes) |
+| `clock` | `null` | file, shared, memory | Override de relógio `Closure(): int` (testes) |
 
 ## Rate limiting (backend compartilhado)
 
@@ -170,7 +178,9 @@ nunca chame `advance()` manualmente.
 - **Codec RESP** — `Bootgly\ABI\Data\RESP` fornece um `Encoder` stateless e um `Decoder`
   incremental (RESP2 + RESP3), compartilhado pelo driver Redis bloqueante e pelo driver KV
   assíncrono.
-- **Drivers** — `Cache\Drivers\{File, APCu, Shared, Redis}`. File grava um arquivo por chave
+- **Drivers** — `Cache\Drivers\{Memory, File, APCu, Shared, Redis}`. Memory mantém as entradas
+  em um array PHP por processo (sem serialização, sem locks; o mais rápido, mas não compartilhado
+  entre workers e limpo ao encerrar o processo); File grava um arquivo por chave
   com sharding por hash (temp + rename atômico, `flock` para contadores); Shared usa um segmento
   System V + semáforo com um índice de chaves vivas para `clear`/`purge`; Redis mapeia o
   contrato para `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`, agrupando

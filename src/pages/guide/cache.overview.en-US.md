@@ -1,15 +1,16 @@
 # Cache
 
 Bootgly ships a native, dependency-free cache layer at `Bootgly\ABI\Resources\Cache`.
-One facade, four blocking drivers — **File**, **APCu**, **Shared-memory** and **Redis** —
-with TTL, tags, atomic counters and tag invalidation. It is the same cache used internally
-by the multi-worker rate limiter.
+One facade, five blocking drivers — **Memory**, **File**, **APCu**, **Shared-memory** and
+**Redis** — with TTL, tags, atomic counters and tag invalidation. It is the same cache used
+internally by the multi-worker rate limiter.
 
 > [!NOTE]
 > The cache lives in the ABI layer, so every driver is **blocking**. Inside the async
-> `HTTP_Server_CLI` worker, prefer `shared`/`apcu` (no network) for hot paths, and use the
-> non-blocking **[KV Redis driver](#async-redis-on-the-event-loop)** when you need Redis on
-> the event loop — a blocking Redis call would stall the loop.
+> `HTTP_Server_CLI` worker, prefer `memory` (per-worker, pure array — never touches a syscall)
+> or `shared`/`apcu` (no network) for hot paths, and use the non-blocking
+> **[KV Redis driver](#async-redis-on-the-event-loop)** when you need Redis on the event
+> loop — a blocking Redis call would stall the loop.
 
 ## Store and read
 
@@ -72,6 +73,7 @@ $Report = $Cache->resolve('report:daily', TTL: 3600, compute: function () {
 
 | Driver | `driver` | Scope | Use it for |
 |---|---|---|---|
+| Memory | `memory` | Per-process, in heap | Fastest; single-process caches, tests, an L1 tier in front of a shared backend (no extension; not shared across workers) |
 | File | `file` (default) | Per-host, on disk | Always available; safe default |
 | APCu | `apcu` | Per-process | Single-worker hot data (needs `ext-apcu`) |
 | Shared-memory | `shared` | Per-host, **cross-worker** | Multi-worker shared state, rate limiting (needs `ext-sysvshm` + `ext-sysvsem`) |
@@ -81,6 +83,12 @@ $Report = $Cache->resolve('report:daily', TTL: 3600, compute: function () {
 $Cache = new Cache(['driver' => 'shared', 'prefix' => 'app:']);
 $Cache = new Cache(['driver' => 'redis', 'host' => '127.0.0.1', 'port' => 6379]);
 ```
+
+The **Memory** driver keeps entries in a plain PHP array inside the driver instance: every
+operation is a direct hash lookup with no serialization, no locks and no extension — the
+fastest backend. The trade-off is scope: each worker holds its own copy, nothing is shared
+across forked workers, and the store dies with the process. Reach for it as a single-process
+cache, a test double, or an L1 tier in front of a slower shared backend.
 
 The **Shared-memory** driver is the canonical cross-worker backend: it keeps data in a
 System V shared-memory segment guarded by a System V semaphore, so every forked worker on the
@@ -106,7 +114,7 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 | `password` / `database` | `''` / `0` | redis | AUTH / SELECT |
 | `timeout` | `5.0` | redis | Connect/read seconds |
 | `secure` | `false` | redis | TLS connection |
-| `clock` | `null` | file, shared | `Closure(): int` clock override (testing) |
+| `clock` | `null` | file, shared, memory | `Closure(): int` clock override (testing) |
 
 ## Rate limiting (shared backend)
 
@@ -167,7 +175,9 @@ it from `$Response->defer()` like any other async resource so route code never c
   event loop. Async Redis is an ADI concern (`Bootgly\ADI\Databases\KV`).
 - **RESP codec** — `Bootgly\ABI\Data\RESP` provides a stateless `Encoder` and an incremental
   `Decoder` (RESP2 + RESP3), shared by the blocking Redis driver and the async KV driver.
-- **Drivers** — `Cache\Drivers\{File, APCu, Shared, Redis}`. File stores one hash-sharded
+- **Drivers** — `Cache\Drivers\{Memory, File, APCu, Shared, Redis}`. Memory holds entries in a
+  per-process PHP array (no serialization, no locks; fastest, but not shared across workers and
+  cleared on process exit); File stores one hash-sharded
   file per key (atomic temp + rename, `flock` for counters); Shared uses a System V segment +
   semaphore with a live-key index for `clear`/`purge`; Redis maps the contract to
   `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`, batching multi-command
