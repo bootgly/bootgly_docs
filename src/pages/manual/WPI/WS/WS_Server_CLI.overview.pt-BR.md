@@ -11,10 +11,10 @@ no handshake. Os recursos mais profundos têm suas próprias páginas: **Channel
 **Authentication**.
 
 > [!NOTE]
-> O broadcasting é **por worker**: cada worker `SO_REUSEPORT` mantém seu próprio conjunto de
-> conexões, então um `broadcast()` alcança apenas os clientes daquele worker. Para fan-out entre
-> vários clientes hoje, rode um único worker (`workers: 1`) ou coloque um load balancer sticky na
-> frente. Um barramento entre workers é trabalho futuro.
+> O `broadcast()` faz fan-out **entre workers**: cada worker `SO_REUSEPORT` mantém seu próprio
+> conjunto de conexões, e um relay de datagramas por worker (criado antes do fork) republica o frame
+> para os workers vizinhos, então todo membro recebe a mensagem independente de qual worker tem a
+> conexão — sem precisar de load balancer sticky.
 
 ## Inicie um servidor de echo
 
@@ -128,15 +128,17 @@ use Bootgly\WPI\Nodes\WS_Server_CLI\Events;
 com `on()`. `Connected`/`Disconnected` recebem `($Session)`; `MessageReceived` recebe
 `($Session, $Message)`; `ServerStarted`/`ServerStopped` recebem `($Server)`.
 
-### `new WS_Server_CLI (Modes $Mode = Modes::Daemon)`
+### Métodos
+
+```php
+new WS_Server_CLI (Modes $Mode = Modes::Daemon)
+```
 
 Cria o servidor. `Mode` é um de `Foreground`, `Daemon`, `Interactive`, `Monitor`, `Test`
 (`Bootgly\API\Endpoints\Server\Modes`).
 
-### `configure (string $host, int $port, int $workers, ...)`
-
 ```php
-public function configure (
+configure (
    string $host, int $port, int $workers,
    null|array $secure = null,
    null|string $user = null, null|string $group = null,
@@ -159,28 +161,38 @@ mensagem remontada — exceder qualquer um fecha com `1009`. `subprotocols` é a
 preferência do servidor. `compression` liga/desliga o `permessage-deflate`. `guards` é uma lista de
 guards de autenticação do handshake. `secure` é um array de contexto de stream TLS para `wss://`.
 
-### `on (Event&BackedEnum $Event, Closure $Callback): self`
+```php
+on (Event&BackedEnum $Event, Closure $Callback): self
+```
 
 Registra um handler para um case de `WS_Server_CLI\Events`. Encadeável. Registrar o mesmo evento
 duas vezes lança exceção.
 
-### `start (): bool`
+```php
+start (): bool
+```
 
 Faz boot, forka os workers e entra no loop de eventos. Bloqueante em `Foreground`/`Monitor`;
 desacopla em `Daemon`.
 
-### `Session->send (string $payload, bool $binary = false, int $fragment = 0): bool`
+```php
+Session->send (string $payload, bool $binary = false, int $fragment = 0): bool
+```
 
 Envia uma mensagem a este cliente — texto por padrão, binário quando `$binary` é `true`. Comprimida
 automaticamente quando a sessão negociou `permessage-deflate`. Passe `$fragment` > 0 para dividir o
 payload (pós-compressão) em frames de no máximo essa quantidade de bytes — um frame inicial seguido
 de frames de continuação — em vez de um único frame.
 
-### `Session->ping (string $payload = ''): bool`
+```php
+Session->ping (string $payload = ''): bool
+```
 
 Envia um frame de controle ping; o pong do cliente zera o timer de liveness.
 
-### `Session->close (int $code = 1000, string $reason = ''): bool`
+```php
+Session->close (int $code = 1000, string $reason = ''): bool
+```
 
 Envia um frame de close e derruba a conexão (dispara `Disconnected`).
 

@@ -11,10 +11,9 @@ authentication step. The deeper features have their own pages: **Channels**, **C
 **Authentication**.
 
 > [!NOTE]
-> Broadcasting is **per-worker**: each `SO_REUSEPORT` worker holds its own connection set, so a
-> `broadcast()` reaches only the clients on that worker. For multi-client fan-out today, run a
-> single worker (`workers: 1`) or put a sticky load balancer in front. A cross-worker bus is
-> future work.
+> `broadcast()` fans out **across workers**: each `SO_REUSEPORT` worker keeps its own connection set,
+> and a per-worker datagram relay (built before fork) republishes the frame to peer workers, so every
+> member receives it no matter which worker holds the connection — no sticky load balancer needed.
 
 ## Start an echo server
 
@@ -128,15 +127,17 @@ use Bootgly\WPI\Nodes\WS_Server_CLI\Events;
 `on()`. `Connected`/`Disconnected` receive `($Session)`; `MessageReceived` receives
 `($Session, $Message)`; `ServerStarted`/`ServerStopped` receive `($Server)`.
 
-### `new WS_Server_CLI (Modes $Mode = Modes::Daemon)`
+### Methods
+
+```php
+new WS_Server_CLI (Modes $Mode = Modes::Daemon)
+```
 
 Create the server. `Mode` is one of `Foreground`, `Daemon`, `Interactive`, `Monitor`, `Test`
 (`Bootgly\API\Endpoints\Server\Modes`).
 
-### `configure (string $host, int $port, int $workers, ...)`
-
 ```php
-public function configure (
+configure (
    string $host, int $port, int $workers,
    null|array $secure = null,
    null|string $user = null, null|string $group = null,
@@ -159,28 +160,38 @@ either closes with `1009`. `subprotocols` is the server's ordered preference lis
 toggles `permessage-deflate`. `guards` is a list of handshake auth guards. `secure` is a TLS
 stream-context array for `wss://`.
 
-### `on (Event&BackedEnum $Event, Closure $Callback): self`
+```php
+on (Event&BackedEnum $Event, Closure $Callback): self
+```
 
 Register one handler for a `WS_Server_CLI\Events` case. Chainable. Registering the same event twice
 throws.
 
-### `start (): bool`
+```php
+start (): bool
+```
 
 Boot, fork the workers and enter the event loop. Blocking in `Foreground`/`Monitor`; detaches in
 `Daemon`.
 
-### `Session->send (string $payload, bool $binary = false, int $fragment = 0): bool`
+```php
+Session->send (string $payload, bool $binary = false, int $fragment = 0): bool
+```
 
 Send one message to this client — text by default, binary when `$binary` is `true`. Compressed
 automatically when the session negotiated `permessage-deflate`. Pass `$fragment` > 0 to split the
 (post-compression) payload into frames of at most that many bytes — a lead frame followed by
 continuation frames — instead of a single frame.
 
-### `Session->ping (string $payload = ''): bool`
+```php
+Session->ping (string $payload = ''): bool
+```
 
 Send a ping control frame; the client's pong clears the liveness timer.
 
-### `Session->close (int $code = 1000, string $reason = ''): bool`
+```php
+Session->close (int $code = 1000, string $reason = ''): bool
+```
 
 Send a close frame and tear the connection down (fires `Disconnected`).
 

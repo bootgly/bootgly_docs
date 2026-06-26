@@ -4,9 +4,9 @@ Channels are named rooms. Add sessions to a channel and fan a message out to eve
 call — the frame is built **once** and written to each member (encode-once, deliver-many).
 
 > [!NOTE]
-> Channels live **per worker**. Each `SO_REUSEPORT` worker has its own channel registry, so a
-> broadcast reaches only the members on that worker. Run `workers: 1` (or a sticky load balancer)
-> when every client must receive every message.
+> Each `SO_REUSEPORT` worker keeps its own channel registry, but `broadcast()` republishes the frame
+> to peer workers over a per-worker datagram relay, so a broadcast reaches every member of the channel
+> across all workers — no `workers: 1` or sticky load balancer required.
 
 ## Join, broadcast, leave
 
@@ -41,21 +41,32 @@ $Session->join('room-42');
 
 ## Reference
 
-### `Session->join (string $channel): Channel`
+### Methods
+
+```php
+Session->join (string $channel): Channel
+```
 
 Add this session to a channel, creating it on first use. Returns the `Channel` so you can inspect
 `count()` or broadcast directly.
 
-### `Session->leave (string $channel): void`
+```php
+Session->leave (string $channel): void
+```
 
 Remove this session from a channel. The channel is dropped from the registry when it becomes empty.
 
-### `Session->broadcast (string $channel, string $payload, bool $binary = false, bool $self = false): int`
+```php
+Session->broadcast (string $channel, string $payload, bool $binary = false, bool $self = false): int
+```
 
-Encode the message once and write it to every member of `$channel`. The sender is skipped unless
-`$self` is `true`. Returns the number of recipients. Broadcast frames are sent uncompressed (a
-single shared frame cannot carry per-session compression state).
+Encode the message once and write it to every member of `$channel`, republishing to peer workers over
+the relay so members on other workers receive it too. The sender is skipped unless `$self` is `true`.
+Returns the number of **local** recipients. Broadcast frames are sent uncompressed (a single shared
+frame cannot carry per-session compression state).
 
-### `Channel->count (): int`
+```php
+Channel->count (): int
+```
 
-The number of sessions currently in the channel.
+The number of sessions currently in the channel (on this worker).

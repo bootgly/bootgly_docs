@@ -5,9 +5,9 @@ membros com uma chamada — o frame é construído **uma vez** e escrito em cada
 vez, entrega-a-muitos).
 
 > [!NOTE]
-> Os channels vivem **por worker**. Cada worker `SO_REUSEPORT` tem seu próprio registro de channels,
-> então um broadcast alcança apenas os membros daquele worker. Rode `workers: 1` (ou um load
-> balancer sticky) quando todo cliente precisar receber toda mensagem.
+> Cada worker `SO_REUSEPORT` tem seu próprio registro de channels, mas o `broadcast()` republica o
+> frame para os workers vizinhos por um relay de datagramas por worker, então um broadcast alcança
+> todo membro do channel em todos os workers — sem precisar de `workers: 1` ou load balancer sticky.
 
 ## Entrar, broadcast, sair
 
@@ -43,21 +43,32 @@ $Session->join('room-42');
 
 ## Referência
 
-### `Session->join (string $channel): Channel`
+### Métodos
+
+```php
+Session->join (string $channel): Channel
+```
 
 Adiciona esta sessão a um channel, criando-o no primeiro uso. Retorna o `Channel` para você
 inspecionar `count()` ou fazer broadcast direto.
 
-### `Session->leave (string $channel): void`
+```php
+Session->leave (string $channel): void
+```
 
 Remove esta sessão de um channel. O channel é descartado do registro quando fica vazio.
 
-### `Session->broadcast (string $channel, string $payload, bool $binary = false, bool $self = false): int`
+```php
+Session->broadcast (string $channel, string $payload, bool $binary = false, bool $self = false): int
+```
 
-Codifica a mensagem uma vez e a escreve em cada membro de `$channel`. O remetente é pulado a menos
-que `$self` seja `true`. Retorna o número de destinatários. Frames de broadcast são enviados sem
-compressão (um único frame compartilhado não carrega o estado de compressão por sessão).
+Codifica a mensagem uma vez e a escreve em cada membro de `$channel`, republicando para os workers
+vizinhos pelo relay para que membros em outros workers também recebam. O remetente é pulado a menos
+que `$self` seja `true`. Retorna o número de destinatários **locais**. Frames de broadcast são
+enviados sem compressão (um único frame compartilhado não carrega o estado de compressão por sessão).
 
-### `Channel->count (): int`
+```php
+Channel->count (): int
+```
 
-O número de sessões atualmente no channel.
+O número de sessões atualmente no channel (neste worker).
