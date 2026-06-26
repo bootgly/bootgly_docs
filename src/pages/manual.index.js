@@ -1534,6 +1534,106 @@ export default {
       }
     }
   },
+  '/WPI/WS': {
+    config: null,
+    data: {
+      '*': {
+        title: 'WS'
+      }
+    }
+  },
+  '/WPI/WS/WS_Server_CLI': {
+    config: {
+      icon: 'sync_alt',
+      status: 'draft',
+      version: '0.19.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
+          'pt-BR': 'Execute um servidor WebSocket orientado a eventos em PHP puro — framing RFC 6455, salas, heartbeat ping/pong, compressão e autenticação no handshake.'
+        }
+      },
+      menu: {
+        subheader: '.WPI.WS'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'WS Server CLI'
+      }
+    }
+  },
+  '/WPI/WS/WS_Server_CLI/Channels': {
+    config: {
+      icon: 'forum',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Group WebSocket sessions into rooms and broadcast to every member (single-worker).',
+          'pt-BR': 'Agrupe sessões WebSocket em salas e faça broadcast para todos os membros (single-worker).'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Channels'
+      }
+    }
+  },
+  '/WPI/WS/WS_Server_CLI/Compression': {
+    config: {
+      icon: 'compress',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Negotiate permessage-deflate (RFC 7692) to compress WebSocket messages with built-in zlib.',
+          'pt-BR': 'Negocie permessage-deflate (RFC 7692) para comprimir mensagens WebSocket com o zlib embutido.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Compression'
+      },
+      'pt-BR': {
+        title: 'Compressão'
+      }
+    }
+  },
+  '/WPI/WS/WS_Server_CLI/Authentication': {
+    config: {
+      icon: 'shield',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Authenticate the WebSocket handshake by reusing the HTTP Server CLI auth guards.',
+          'pt-BR': 'Autentique o handshake WebSocket reaproveitando os guards de autenticação do HTTP Server CLI.'
+        }
+      },
+      menu: {
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Authentication'
+      }
+    }
+  },
   '/WPI/TCP': {
     config: null,
     data: {
