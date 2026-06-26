@@ -1546,7 +1546,7 @@ export default {
     config: {
       icon: 'sync_alt',
       status: 'draft',
-      version: '0.19.0-beta',
+      version: 'v0.19.0-beta (unreleased)',
       meta: {
         description: {
           'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
@@ -1572,8 +1572,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Group WebSocket sessions into rooms and broadcast to every member (single-worker).',
-          'pt-BR': 'Agrupe sessões WebSocket em salas e faça broadcast para todos os membros (single-worker).'
+          'en-US': 'Group WebSocket sessions into rooms and broadcast to every member across workers.',
+          'pt-BR': 'Agrupe sessões WebSocket em salas e faça broadcast para todos os membros entre workers.'
         }
       },
       menu: {},
