@@ -1546,7 +1546,7 @@ export default {
     config: {
       icon: 'sync_alt',
       status: 'draft',
-      version: 'v0.19.0-beta (unreleased)',
+      version: 'v0.19.0-beta',
       meta: {
         description: {
           'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
