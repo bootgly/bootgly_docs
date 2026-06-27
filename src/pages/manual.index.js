@@ -1542,30 +1542,6 @@ export default {
       }
     }
   },
-  '/WPI/WS/WS_Client_CLI': {
-    config: {
-      icon: 'cell_tower',
-      status: 'draft',
-      version: 'v0.19.0-beta',
-      meta: {
-        description: {
-          'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',
-          'pt-BR': 'Converse com um endpoint WebSocket em PHP puro — framing mascarado RFC 6455, fragmentação, ping/pong, permessage-deflate e wss://.'
-        }
-      },
-      menu: {
-        subheader: '.WPI.WS'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'WS Client CLI'
-      }
-    }
-  },
   '/WPI/WS/WS_Server_CLI': {
     config: {
       icon: 'sync_alt',
@@ -1577,7 +1553,9 @@ export default {
           'pt-BR': 'Execute um servidor WebSocket orientado a eventos em PHP puro — framing RFC 6455, salas, heartbeat ping/pong, compressão e autenticação no handshake.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.WPI.WS'
+      },
       subpages: {
         showcase: false
       }
@@ -1592,6 +1570,7 @@ export default {
     config: {
       icon: 'forum',
       status: 'draft',
+      version: 'v0.19.0-beta',
       meta: {
         description: {
           'en-US': 'Group WebSocket sessions into rooms and broadcast to every member across workers.',
@@ -1613,6 +1592,7 @@ export default {
     config: {
       icon: 'compress',
       status: 'draft',
+      version: 'v0.19.0-beta',
       meta: {
         description: {
           'en-US': 'Negotiate permessage-deflate (RFC 7692) to compress WebSocket messages with built-in zlib.',
@@ -1637,6 +1617,7 @@ export default {
     config: {
       icon: 'shield',
       status: 'draft',
+      version: 'v0.19.0-beta',
       meta: {
         description: {
           'en-US': 'Authenticate the WebSocket handshake by reusing the HTTP Server CLI auth guards.',
@@ -1656,27 +1637,19 @@ export default {
       }
     }
   },
-  '/WPI/TCP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'TCP'
-      }
-    }
-  },
-  '/WPI/TCP/TCP_Client_CLI': {
+  '/WPI/WS/WS_Client_CLI': {
     config: {
-      icon: 'desktop_windows',
+      icon: 'cell_tower',
       status: 'draft',
+      version: 'v0.19.0-beta',
       meta: {
         description: {
-          'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
-          'pt-BR': 'Abra conexões TCP de saída de baixo nível para protocolos customizados, event loops e fluxos raw de socket.'
+          'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',
+          'pt-BR': 'Converse com um endpoint WebSocket em PHP puro — framing mascarado RFC 6455, fragmentação, ping/pong, permessage-deflate e wss://.'
         }
       },
       menu: {
-        separator: true,
-        subheader: '.WPI.TCP'
+        separator: true
       },
       subpages: {
         showcase: false
@@ -1684,7 +1657,15 @@ export default {
     },
     data: {
       '*': {
-        title: 'TCP Client CLI'
+        title: 'WS Client CLI'
+      }
+    }
+  },
+  '/WPI/TCP': {
+    config: null,
+    data: {
+      '*': {
+        title: 'TCP'
       }
     }
   },
@@ -1698,7 +1679,11 @@ export default {
           'pt-BR': 'Aceite conexões TCP de baixo nível com sockets não bloqueantes, runtime multi-worker e handlers raw de pacotes.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.WPI.TCP',  
+        separator: true
+      
+      },
       subpages: {
         showcase: false
       }
@@ -1706,6 +1691,27 @@ export default {
     data: {
       '*': {
         title: 'TCP Server CLI'
+      }
+    }
+  },
+  '/WPI/TCP/TCP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
+          'pt-BR': 'Abra conexões TCP de saída de baixo nível para protocolos customizados, event loops e fluxos raw de socket.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Client CLI'
       }
     }
   },
