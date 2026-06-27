@@ -1542,6 +1542,30 @@ export default {
       }
     }
   },
+  '/WPI/WS/WS_Client_CLI': {
+    config: {
+      icon: 'cell_tower',
+      status: 'draft',
+      version: 'v0.19.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',
+          'pt-BR': 'Converse com um endpoint WebSocket em PHP puro — framing mascarado RFC 6455, fragmentação, ping/pong, permessage-deflate e wss://.'
+        }
+      },
+      menu: {
+        subheader: '.WPI.WS'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'WS Client CLI'
+      }
+    }
+  },
   '/WPI/WS/WS_Server_CLI': {
     config: {
       icon: 'sync_alt',
@@ -1553,9 +1577,7 @@ export default {
           'pt-BR': 'Execute um servidor WebSocket orientado a eventos em PHP puro — framing RFC 6455, salas, heartbeat ping/pong, compressão e autenticação no handshake.'
         }
       },
-      menu: {
-        subheader: '.WPI.WS'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
