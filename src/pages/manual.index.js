@@ -1289,7 +1289,8 @@ export default {
         subheader: '.WPI.HTTP'
       },
       subpages: {
-        showcase: false
+        showcase: false,
+        vs: { template: 'vs' }
       }
     },
     data: {

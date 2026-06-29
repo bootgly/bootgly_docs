@@ -28,6 +28,16 @@ Use `overview` for conceptual explanation, syntax, attributes, and authoring not
 
 Most block docs should include both subpages. Structure docs such as page, subpage, or books may use different subpage rules depending on their registry configuration.
 
+## Subpage templates
+
+A subpage renders free-form Markdown by default (the `freestyle` template). The `vs` (versus) subpage can opt into a **structured template** with a fixed set of sections, selected per subpage in the registry:
+
+```javascript
+subpages: { vs: { template: 'vs' } }   // object form selects a template; `true` stays freestyle
+```
+
+The built-in `vs` template is **managed/strict**: it owns the section order and localized titles for **Features**, **Performance** and **Security**. In the Markdown, write one `##` heading per section (`## Features`, `## Performance`, `## Security`, or their localized titles). Sections you omit are dropped gracefully, so a comparison with partial data only includes the sections it has. Keep both locale files on the same canonical sections.
+
 ## Localization
 
 Localized Markdown files use locale suffixes such as `.en-US.md` and `.pt-BR.md`. Keep route structure and headings aligned across locales when possible so translation progress and navigation remain useful.
