@@ -153,7 +153,7 @@ Baixe e rode (Swoole já incluso):
 
 ```bash
 docker run --rm bootgly/bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=benchmark:1 --server-workers=15
+  --opponents=bootgly,swoole --runner=TCP_Client --loads=benchmark:1 --server-workers=15
 ```
 
 Ou construa você mesmo (ex.: para adicionar outros oponentes), a partir de
@@ -163,11 +163,11 @@ Ou construa você mesmo (ex.: para adicionar outros oponentes), a partir de
 docker build -f Dockerfile --build-arg WITH_SWOOLE=1 -t bootgly_benchmarks:swoole .
 
 docker run --rm bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole-base --runner=TCP_Client --loads=benchmark:1
+  --opponents=bootgly,swoole --runner=TCP_Client --loads=benchmark:1
 ```
 
 ARGs de oponentes: `WITH_SWOOLE`, `WITH_WORKERMAN`, `WITH_ROADRUNNER`, `WITH_FRANKENPHP`,
-`WITH_HYPERF` e `WITH_POSTGRES` (para loads TechEmpower com banco, como `swoole-techempower`).
+`WITH_HYPERF` e `WITH_POSTGRES` (para os loads TechEmpower com banco do oponente `swoole`).
 
 ### Laravel (TechEmpower)
 
