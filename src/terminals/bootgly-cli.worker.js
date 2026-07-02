@@ -31,6 +31,17 @@ if (typeof window === 'undefined') {
   globalThis.window = globalThis.self
 }
 
+// php-wasm serializes every run behind the Web Lock 'php-wasm-fs-lock' — a
+// FIXED name whose scope is the whole origin, across workers. A dual
+// (Client/Server) run needs two PHPs executing at once, so the lock is scoped
+// per worker here. It only guards FS syncfs/transactions (IDBFS), which this
+// engine never uses — the bundle lives on plain MEMFS.
+{
+  const scope = `:${Math.random().toString(36).slice(2)}`
+  const request = navigator.locks.request.bind(navigator.locks)
+  navigator.locks.request = (name, ...rest) => request(`${name}${scope}`, ...rest)
+}
+
 const decoder = new TextDecoder()
 
 // Interactive stdin. Inbound postMessage NEVER reaches a worker whose thread is
@@ -60,6 +71,45 @@ function feedInput (data) {
   }
 
   inputChunks.push(String(data))
+}
+
+// Dual (Client/Server) runs: natively `Input->reading()` forks two processes
+// joined by a pipe; here each role runs in its own worker and a MessagePort
+// plays the pipe. Reads await bootglyPipeRead() through vrzno (same mechanics
+// as stdin); writes post straight to the port (outbound never blocks).
+let pipePort = null
+let pipeChunks = []
+let pipeWaiter = null
+
+globalThis.bootglyPipeRead = () => {
+  if (pipeChunks.length) {
+    return pipeChunks.splice(0).join('')
+  }
+
+  return new Promise((resolve) => { pipeWaiter = resolve })
+}
+
+globalThis.bootglyPipeWrite = (data) => {
+  const payload = String(data)
+
+  // Zero bytes never travel on a socket pair — an empty message would read as
+  // "channel closed" on the server side.
+  if (payload !== '') {
+    pipePort?.postMessage(payload)
+  }
+
+  return payload.length
+}
+
+function feedPipe (data) {
+  if (pipeWaiter) {
+    const resolve = pipeWaiter
+    pipeWaiter = null
+    resolve(String(data))
+    return
+  }
+
+  pipeChunks.push(String(data))
 }
 
 let bundlePromise = null
@@ -127,12 +177,65 @@ function mountBundle (FS, files) {
   }
 }
 
-function buildBootstrap (argv, columns, rows) {
+function buildBootstrap (argv, columns, rows, role = null) {
   const args = JSON.stringify(argv)
+
+  // Dual runs: this process assumes ONE Client/Server role; the duplex channel
+  // is a pipe:// stream wrapper bridged to the MessagePort (see globals above).
+  const roleBlock = !role
+    ? ''
+    : `
+putenv('BOOTGLY_TERMINAL_ROLE=${role === 'server' ? 'server' : 'client'}');
+putenv('BOOTGLY_TERMINAL_CHANNEL=pipe://channel');
+final class PipeStream
+{
+   public $context;
+   private string $buffer = '';
+   private static null|Vrzno $JS = null;
+
+   public function stream_open (string $path, string $mode, int $options, null|string &$opened_path): bool
+   {
+      return true;
+   }
+   public function stream_read (int $count): string
+   {
+      if ($this->buffer === '') {
+         self::$JS ??= new Vrzno;
+         $data = vrzno_await(self::$JS->bootglyPipeRead());
+         $this->buffer = is_string($data) ? $data : '';
+      }
+      $chunk = substr($this->buffer, 0, $count);
+      $this->buffer = substr($this->buffer, strlen($chunk));
+      return $chunk;
+   }
+   public function stream_write (string $data): int
+   {
+      self::$JS ??= new Vrzno;
+      $written = self::$JS->bootglyPipeWrite($data);
+      return is_int($written) ? $written : strlen($data);
+   }
+   public function stream_eof (): bool
+   {
+      return false;
+   }
+   public function stream_stat (): array|false
+   {
+      return false;
+   }
+   public function stream_set_option (int $option, int $arg1, null|int $arg2): bool
+   {
+      return false;
+   }
+   public function stream_close (): void
+   {
+   }
+}
+stream_wrapper_register('pipe', PipeStream::class);
+`
 
   return `<?php
 putenv('BOOTGLY_SAPI=cli');
-putenv('BOOTGLY_TTY=1');
+putenv('BOOTGLY_TTY=1');${roleBlock}
 putenv('COLUMNS=${Math.max(20, columns | 0)}');
 putenv('LINES=${Math.max(5, rows | 0)}');
 // STDIN is a userland stream wrapper: reads await the worker's bootglyStdin()
@@ -238,10 +341,20 @@ function ensurePhp (post) {
   return phpPromise
 }
 
-async function run (id, command, columns, rows) {
+async function run (id, command, columns, rows, role = null, port = null) {
   const post = (message) => self.postMessage({ id, ...message })
 
   currentId = id
+
+  // ? Dual runs wire the MessagePort that plays the Client/Server pipe
+  pipePort = port || null
+  pipeChunks = []
+  pipeWaiter = null
+  if (pipePort) {
+    pipePort.addEventListener('message', (event) => feedPipe(event.data))
+    pipePort.start()
+  }
+
   const php = await ensurePhp(post)
   const files = await fetchBundle()
 
@@ -267,7 +380,7 @@ async function run (id, command, columns, rows) {
   const flusher = setInterval(() => php.flush(), 50)
 
   try {
-    return await php.run(buildBootstrap(parseCommand(command), columns, rows))
+    return await php.run(buildBootstrap(parseCommand(command), columns, rows, role))
   } finally {
     clearInterval(flusher)
     php.flush()
@@ -298,11 +411,11 @@ async function source (command) {
 }
 
 self.addEventListener('message', async (event) => {
-  const { type, id, command, columns, rows, data } = event.data || {}
+  const { type, id, command, columns, rows, data, role, port } = event.data || {}
 
   try {
     if (type === 'run') {
-      const code = await run(id, command, columns, rows)
+      const code = await run(id, command, columns, rows, role, port)
       self.postMessage({ type: 'exit', id, code })
     } else if (type === 'input') {
       // Keyboard/mouse data typed into the terminal. This message only lands
