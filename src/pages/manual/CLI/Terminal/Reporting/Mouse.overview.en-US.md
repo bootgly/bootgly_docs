@@ -1,5 +1,7 @@
 # Mouse Reporting
 
+> **Try it live:** the [CLI showcase](/manual/CLI/showcase) runs this exact example (`bootgly demo 23`) on PHP WASM — move, click and scroll over the terminal; right-click exits.
+
 Mouse Reporting or Mouse Tracking is a feature that allows Command Line Interface (CLI) terminals to receive mouse input events, such as `movement`, `click`, and `scrolling`. This can be useful for interacting with text-based applications that support mouse usage, such as text editors, file managers, games, and menus.
 
 To enable Mouse Reporting, a special control sequence must be sent to the terminal, which depends on the type of terminal and the desired tracking mode. There are several tracking modes, such as `X10`, `X11`, `SGR`, and `URXVT`, which differ in how mouse events are encoded and reported. Some terminals also support extended tracking modes, which allow larger coordinates than 223 or 95, depending on the protocol.

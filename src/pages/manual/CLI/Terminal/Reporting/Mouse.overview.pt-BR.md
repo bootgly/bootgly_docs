@@ -1,5 +1,7 @@
 # Mouse Reporting
 
+> **Experimente ao vivo:** o [showcase do CLI](/manual/CLI/showcase) executa exatamente este exemplo (`bootgly demo 23`) em PHP WASM — mova, clique e role sobre o terminal; clique direito encerra.
+
 Mouse Reporting ou Mouse Tracking é um recurso que permite que os terminais de interface de linha de comando (CLI) recebam eventos de entrada do mouse, como `movimento`, `clique` e `rolagem`. Isso pode ser útil para interagir com aplicações baseadas em texto que suportam o uso do mouse, como editores de texto, gerenciadores de arquivos, jogos e menus.
 
 Para habilitar o Mouse Reporting, é necessário enviar uma sequência de controle especial para o terminal, que depende do tipo de terminal e do modo de rastreamento desejado. Existem vários modos de rastreamento, como `X10`, `X11`, `SGR` e `URXVT`, que diferem na forma como os eventos do mouse são codificados e reportados. Alguns terminais também suportam modos de rastreamento estendidos, que permitem coordenadas maiores do que 223 ou 95, dependendo do protocolo.

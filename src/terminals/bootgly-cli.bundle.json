@@ -2,8 +2,8 @@
   "asset": "/wasm/bootgly-cli.zip",
   "version": "0.18.0-beta",
   "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
-  "files": 510,
-  "bytes": 543842,
+  "files": 511,
+  "bytes": 545015,
   "demos": {
     "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
     "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
@@ -26,6 +26,7 @@
     "19": "projects/Demo/CLI/UI/Progress-01.demo.php",
     "20": "projects/Demo/CLI/UI/Progress-02.demo.php",
     "21": "projects/Demo/CLI/UI/Table-01.demo.php",
-    "22": "projects/Demo/CLI/UI/Fieldset-01.demo.php"
+    "22": "projects/Demo/CLI/UI/Fieldset-01.demo.php",
+    "23": "projects/Demo/CLI/Terminal/Reporting/Mouse-01.demo.php"
   }
 }

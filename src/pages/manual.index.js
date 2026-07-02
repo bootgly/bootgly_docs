@@ -1092,7 +1092,7 @@ export default {
         separator: true
       },
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {

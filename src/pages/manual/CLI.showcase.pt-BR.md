@@ -5,16 +5,17 @@ O terminal abaixo executa o **Bootgly CLI de verdade** — os arquivos de demo r
 <d-block-terminal
   engine="bootgly-cli"
   title="Bootgly CLI — demos ao vivo"
-  commands="Menu:demo 13|Menu (divisores):demo 14|Menu (único):demo 15|Menu (horizontal):demo 16|Menu (centralizado):demo 17|Menu (à direita):demo 18|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Progress:demo 19|Progress (indeterminado):demo 20|Writing:demo 2|Cores de texto:demo 6|Estilos de texto:demo 7|Posicionamento de cursor:demo 3"
+  commands="Mouse:demo 23|Menu:demo 13|Menu (divisores):demo 14|Menu (único):demo 15|Menu (horizontal):demo 16|Menu (centralizado):demo 17|Menu (à direita):demo 18|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Progress:demo 19|Progress (indeterminado):demo 20|Writing:demo 2|Cores de texto:demo 6|Estilos de texto:demo 7|Posicionamento de cursor:demo 3"
   height="420"
 >
-Escolha um demo e pressione executar — a saída que você vê é produzida pelos mesmos componentes documentados neste manual. Os demos de Menu são **interativos**: clique no terminal, use as setas para mirar, Espaço para selecionar e Enter para confirmar. Use o botão de código-fonte para ler o arquivo PHP do demo.
+Escolha um demo e pressione executar — a saída que você vê é produzida pelos mesmos componentes documentados neste manual. Os demos de Mouse e Menu são **interativos**: clique no terminal primeiro; no Menu use as setas para mirar, Espaço para selecionar e Enter para confirmar; no Mouse apenas mova, clique e role — clique direito encerra. Use o botão de código-fonte para ler o arquivo PHP do demo.
 </d-block-terminal>
 
 ## O que você está vendo
 
 Cada comando mapeia para um arquivo real em [`projects/Demo/CLI/`](https://github.com/bootgly/bootgly/tree/main/projects/Demo/CLI) no repositório do framework:
 
+- **Mouse** — Mouse Reporting em tempo real: o terminal habilita o rastreamento SGR e o PHP decodifica cada movimento, clique, arrasto e rolagem com coordenadas de coluna/linha. Clique direito encerra.
 - **Menu** — o componente interativo de seleção, em seis variações (divisores, seleção única, orientação horizontal, alinhamento centralizado e à direita). O terminal encaminha seu teclado para o PHP: setas miram, Espaço alterna, Enter confirma — `Ctrl+C` interrompe.
 - **Alert, Fieldset, Table** — componentes de saída renderizando caixas estilizadas em ANSI, rótulos e colunas alinhadas.
 - **Progress** — a barra de progresso animada: corações se preenchem enquanto tempo decorrido, ETA e taxa atualizam em tempo real.
