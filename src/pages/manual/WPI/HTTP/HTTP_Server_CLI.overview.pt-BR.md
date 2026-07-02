@@ -13,6 +13,7 @@ O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um 
 | **Roteamento** | Rotas estáticas e dinâmicas com restrições de parâmetros tipadas; cache de warmup único |
 | **Middleware** | Pipeline por grupo via `intercept()`; execução em modelo onion |
 | **SSL/TLS** | HTTPS completo via stream context do PHP; certificados autoassinados incluídos para desenvolvimento local |
+| **HTTP/2** | h2 nativo (TLS-ALPN) e prior knowledge em texto claro — HPACK, multiplexação, controle de fluxo, proteção rapid-reset |
 | **Compressão de Resposta** | gzip, deflate e compress via `$Response->compress()` |
 | **Respostas Chunked** | `Transfer-Encoding: chunked` para respostas em streaming |
 | **Autenticação** | Desafio HTTP Basic auth via `$Response->authenticate()` |
@@ -183,6 +184,22 @@ secure: [
 
 > [!NOTE]
 > Para produção, use certificados de uma CA confiável como o Let's Encrypt.
+
+### HTTP/2
+
+O servidor fala HTTP/2 nativamente na mesma porta e rotas. Com `secure` definido, o ALPN
+anuncia `h2,http/1.1` automaticamente; em texto claro, clientes conectam com prior
+knowledge — sem configuração alguma (desligue o HTTP/2 por completo com
+`enableHTTP2: false`):
+
+```bash
+curl -s --http2-prior-knowledge http://127.0.0.1:8080/ -w '%{http_version}\n'
+# 2
+```
+
+Os handlers não mudam — `$Request->protocol` reporta `'HTTP/2'`. Modos de negociação,
+HPACK, multiplexação, controle de fluxo, limites embutidos e ressalvas atuais estão na
+página **[HTTP/2](/manual/WPI/HTTP/HTTP_Server_CLI/HTTP2/)**.
 
 ### Rebaixamento de Privilégios
 

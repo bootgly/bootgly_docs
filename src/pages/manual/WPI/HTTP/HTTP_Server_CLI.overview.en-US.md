@@ -13,6 +13,7 @@ The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It i
 | **Routing** | Static and dynamic routes with typed parameter constraints; one-time warmup cache |
 | **Middleware** | Per-group pipeline via `intercept()`; onion-model execution order |
 | **SSL/TLS** | Full HTTPS via PHP stream context options; bundled self-signed certs for local development |
+| **HTTP/2** | Native h2 (TLS-ALPN) and cleartext prior knowledge — HPACK, multiplexing, flow control, rapid-reset protection |
 | **Response Compression** | gzip, deflate, and compress via `$Response->compress()` |
 | **Chunked Responses** | `Transfer-Encoding: chunked` for streaming responses |
 | **Authentication** | HTTP Basic auth challenge via `$Response->authenticate()` |
@@ -183,6 +184,21 @@ secure: [
 
 > [!NOTE]
 > For production, use certificates from a trusted CA such as Let's Encrypt.
+
+### HTTP/2
+
+The server speaks HTTP/2 natively on the same port and routes. With `secure` set, ALPN
+advertises `h2,http/1.1` automatically; in cleartext, clients connect with prior
+knowledge — no setup at all (turn HTTP/2 off entirely with `enableHTTP2: false`):
+
+```bash
+curl -s --http2-prior-knowledge http://127.0.0.1:8080/ -w '%{http_version}\n'
+# 2
+```
+
+Handlers don't change — `$Request->protocol` reports `'HTTP/2'`. Negotiation modes,
+HPACK, multiplexing, flow control, built-in limits and current caveats are covered in
+the **[HTTP/2](/manual/WPI/HTTP/HTTP_Server_CLI/HTTP2/)** page.
 
 ### Privilege Dropping
 

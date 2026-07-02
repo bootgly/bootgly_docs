@@ -1299,6 +1299,28 @@ export default {
       }
     }
   },
+  '/WPI/HTTP/HTTP_Server_CLI/HTTP2': {
+    config: {
+      icon: 'bolt',
+      status: 'draft',
+      version: '0.19.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Serve HTTP/2 natively — h2 over TLS (ALPN) and cleartext prior knowledge, HPACK, multiplexing, flow control and rapid-reset protection, dependency-free.',
+          'pt-BR': 'Sirva HTTP/2 nativamente — h2 sobre TLS (ALPN) e prior knowledge em texto claro, HPACK, multiplexação, controle de fluxo e proteção rapid-reset, sem dependências.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP/2'
+      }
+    }
+  },
   '/WPI/HTTP/HTTP_Server_CLI/Request': {
     config: {
       icon: 'last_page',
