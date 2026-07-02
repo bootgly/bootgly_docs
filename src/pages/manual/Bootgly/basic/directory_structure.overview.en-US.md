@@ -1,10 +1,48 @@
-# Estrutura de diretórios
+# Directory Structure
 
 The Bootgly PHP Framework has been very organized since its inception and offers a solid structure for building your code.
 
 A fundamental part of this structure is the arrangement of directories in its root dir, which has been carefully designed to ensure clear and efficient organization in increasing order of dependencies. One of the reasons for this pattern is to separate everything that belongs to the Framework itself from everything that was produced through it.
 
-![Dir Structure](/images/pages/Bootgly/basic/directory_structure-bootgly3.png)
+As presented on the Architecture page, this separation is explicit and visual: framework module folders (the Interfaces) start with an **uppercase** letter, while resource dirs start with a **lowercase** letter.
+
+```mermaid
+graph LR
+  root["bootgly/"]
+
+  root --> at["@/ (artifacts)"]
+  root --> B["Bootgly/ (base platform)"]
+
+  subgraph Interfaces["Interfaces"]
+    ABI["ABI/"]
+    ACI["ACI/"]
+    ADI["ADI/"]
+    API["API/"]
+    CLI["CLI/"]
+    WPI["WPI/"]
+  end
+
+  B --> ABI
+  B --> ACI
+  B --> ADI
+  B --> API
+  B --> CLI
+  B --> WPI
+
+  subgraph Resources["Resource dirs"]
+    projects["projects/"]
+    public["public/"]
+    scripts["scripts/"]
+    storage["storage/"]
+    tests["tests/"]
+  end
+
+  root --> projects
+  root --> public
+  root --> scripts
+  root --> storage
+  root --> tests
+```
 
 ## Global dir @
 
@@ -38,7 +76,7 @@ The `WPI` interface (Web Programming Interface) is an interface that _represents
 
 Resource dirs must start with a lowercase letter and are well known in any programming project. In Bootgly these dirs have simply been "formalized"!
 
-"These resource dirs are used to store standardized resources by the `Resources` interface found in the `ABI` interface. For example, a class called 'Scripts' may standardize a 'scripts/' dir that will be used to store Bootgly scripts. A class called 'Tests' may formalize a resource dir called 'tests/' to store files for testing in Bootgly, and so on!"
+These resource dirs are used to store resources standardized by the `Resources` interface found in the `ABI` interface. For example, a class called "Scripts" may standardize a "scripts/" dir that will be used to store Bootgly scripts. A class called "Tests" may formalize a resource dir called "tests/" to store files for testing in Bootgly, and so on! Check below the main resource dirs of Bootgly.
 
 The `projects/` dir will be used by developer users to store their projects developed from Bootgly such as APIs, Apps, etc. This dir should only be created in the root dir.
 
