@@ -5,7 +5,7 @@
  * demo runs, so output streams into xterm.js in real time even for CPU-bound
  * demos that never sleep. Chunks flow to the page via postMessage.
  *
- * Protocol (in): { type: 'run', id, command, columns, rows } | { type: 'source', id, command }
+ * Protocol (in): { type: 'run', id, command, columns, rows } | { type: 'input', data } | { type: 'source', id, command }
  * Protocol (out): { type: 'status'|'output'|'error', id, ... } then { type: 'exit', id, code }
  * or { type: 'source-result', id, source } — errors end with { type: 'fail', id, message }.
  */
@@ -32,6 +32,35 @@ if (typeof window === 'undefined') {
 }
 
 const decoder = new TextDecoder()
+
+// Interactive stdin. Inbound postMessage NEVER reaches a worker whose thread is
+// executing WASM — PHP's usleep spins inside the module without releasing the
+// event loop, so an emscripten stdin callback can never see later keystrokes.
+// The bridge that works is vrzno: the bootstrap wraps STDIN in a PHP stream
+// wrapper whose read does `vrzno_await($JS->bootglyStdin())` — an Asyncify
+// await on a real Promise. While PHP awaits it, the event loop is free, the
+// 'input' message lands here and resolves the promise with the typed bytes.
+let inputChunks = []
+let inputWaiter = null
+
+globalThis.bootglyStdin = () => {
+  if (inputChunks.length) {
+    return inputChunks.splice(0).join('')
+  }
+
+  return new Promise((resolve) => { inputWaiter = resolve })
+}
+
+function feedInput (data) {
+  if (inputWaiter) {
+    const resolve = inputWaiter
+    inputWaiter = null
+    resolve(String(data))
+    return
+  }
+
+  inputChunks.push(String(data))
+}
 
 let bundlePromise = null
 
@@ -103,9 +132,51 @@ function buildBootstrap (argv, columns, rows) {
 
   return `<?php
 putenv('BOOTGLY_SAPI=cli');
+putenv('BOOTGLY_TTY=1');
 putenv('COLUMNS=${Math.max(20, columns | 0)}');
 putenv('LINES=${Math.max(5, rows | 0)}');
-defined('STDIN')  || define('STDIN',  fopen('php://stdin', 'r'));
+// STDIN is a userland stream wrapper: reads await the worker's bootglyStdin()
+// promise through vrzno (Asyncify), which frees the event loop until a key
+// arrives — php://stdin would either latch EOF or starve the message queue.
+final class TerminalStream
+{
+   public $context;
+   private string $buffer = '';
+   private static null|Vrzno $JS = null;
+
+   public function stream_open (string $path, string $mode, int $options, null|string &$opened_path): bool
+   {
+      return true;
+   }
+   public function stream_read (int $count): string
+   {
+      if ($this->buffer === '') {
+         self::$JS ??= new Vrzno;
+         $data = vrzno_await(self::$JS->bootglyStdin());
+         $this->buffer = is_string($data) ? $data : '';
+      }
+      $chunk = substr($this->buffer, 0, $count);
+      $this->buffer = substr($this->buffer, strlen($chunk));
+      return $chunk;
+   }
+   public function stream_eof (): bool
+   {
+      return false;
+   }
+   public function stream_stat (): array|false
+   {
+      return false;
+   }
+   public function stream_set_option (int $option, int $arg1, null|int $arg2): bool
+   {
+      return false;
+   }
+   public function stream_close (): void
+   {
+   }
+}
+stream_wrapper_register('terminal', TerminalStream::class);
+defined('STDIN')  || define('STDIN',  fopen('terminal://input', 'r'));
 defined('STDOUT') || define('STDOUT', fopen('php://stdout', 'w'));
 defined('STDERR') || define('STDERR', fopen('php://stderr', 'w'));
 $_SERVER['argv'] = json_decode('${args}', true);
@@ -188,8 +259,11 @@ async function run (id, command, columns, rows) {
   }
 
   post({ type: 'status', phase: 'running' })
+  // Keystrokes queued after the previous run must not leak into this one.
+  inputChunks = []
+  inputWaiter = null
   // The output buffer only auto-flushes on newlines; a periodic flush keeps
-  // partial lines (carriage-return animations) streaming while PHP yields.
+  // partial lines (carriage-return animations) streaming while PHP awaits input.
   const flusher = setInterval(() => php.flush(), 50)
 
   try {
@@ -224,12 +298,17 @@ async function source (command) {
 }
 
 self.addEventListener('message', async (event) => {
-  const { type, id, command, columns, rows } = event.data || {}
+  const { type, id, command, columns, rows, data } = event.data || {}
 
   try {
     if (type === 'run') {
       const code = await run(id, command, columns, rows)
       self.postMessage({ type: 'exit', id, code })
+    } else if (type === 'input') {
+      // Keyboard/mouse data typed into the terminal. This message only lands
+      // while PHP is suspended in `vrzno_await` on bootglyStdin() — resolving
+      // the waiter hands the bytes straight to the STDIN stream wrapper.
+      feedInput(data)
     } else if (type === 'source') {
       self.postMessage({ type: 'source-result', id, source: await source(command) })
     }

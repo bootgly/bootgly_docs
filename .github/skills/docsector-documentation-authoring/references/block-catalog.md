@@ -190,7 +190,7 @@ Use Terminal blocks to embed a live, runnable xterm.js terminal whose execution 
 </d-block-terminal>
 ```
 
-Place engines under `src/terminals/**/*.js` (`*.worker.js` sidecars are ignored). The `engine` value is normalized to kebab-case, so `bootgly-cli` resolves to `src/terminals/bootgly-cli.js`. An engine default-exports `async ({ onOutput, onError, onStatus }) => ({ run(command, { columns, rows }), source(command)?, stop()?, dispose()? })` and may export `meta = { label, language }`. The factory must be cheap — it runs at page mount so the source panel and Stop button are wired before the first run; heavy work (runtime download, VM boot) belongs inside `run()`, reported via `onStatus('downloading' | 'extracting' | 'booting' | 'running')`. xterm.js still loads only on the first Run. When `stop()` exists, a Stop button appears during runs.
+Place engines under `src/terminals/**/*.js` (`*.worker.js` sidecars are ignored). The `engine` value is normalized to kebab-case, so `bootgly-cli` resolves to `src/terminals/bootgly-cli.js`. An engine default-exports `async ({ onOutput, onError, onStatus }) => ({ run(command, { columns, rows }), source(command)?, input(data)?, stop()?, dispose()? })` and may export `meta = { label, language }`. The factory must be cheap — it runs at page mount so the source panel and Stop button are wired before the first run; heavy work (runtime download, VM boot) belongs inside `run()`, reported via `onStatus('downloading' | 'extracting' | 'booting' | 'running')`. xterm.js still loads only on the first Run. When `stop()` exists, a Stop button appears during runs. When `input(data)` exists, the terminal is interactive: keyboard (and terminal mouse-tracking sequences) are forwarded byte-for-byte, capture is click-to-focus, and `Ctrl+C` maps to `stop()`.
 
 Common attributes:
 
@@ -199,7 +199,7 @@ Common attributes:
 | `engine`    | Engine id under `src/terminals/**/*.js` (required)          |
 | `title`     | Toolbar title; falls back to the engine `meta.label`        |
 | `command`   | Single command passed to the engine `run()`                 |
-| `commands`  | Command tab strip below the toolbar: `Label:command` pairs separated by `\|` |
+| `commands`  | Command tab strip below the toolbar: `Label:command` pairs separated by `\|`; non-default tabs persist in the URL as `?t<index>` |
 | `autorun`   | Runs on first visibility when `true`                        |
 | `height`    | Terminal viewport height such as `360` or `420px`           |
 | `run-label` | Custom label for the Run button                             |

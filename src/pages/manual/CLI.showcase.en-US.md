@@ -5,16 +5,17 @@ The terminal below runs the **real Bootgly CLI** — the framework's actual demo
 <d-block-terminal
   engine="bootgly-cli"
   title="Bootgly CLI — live demos"
-  commands="Alert:demo 12|Fieldset:demo 22|Table:demo 21|Progress:demo 19|Progress (indeterminate):demo 20|Writing:demo 2|Text coloring:demo 6|Text styling:demo 7|Cursor positioning:demo 3"
+  commands="Menu:demo 13|Menu (divisors):demo 14|Menu (unique):demo 15|Menu (horizontal):demo 16|Menu (centered):demo 17|Menu (right-aligned):demo 18|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Progress:demo 19|Progress (indeterminate):demo 20|Writing:demo 2|Text coloring:demo 6|Text styling:demo 7|Cursor positioning:demo 3"
   height="420"
 >
-Pick a demo and press Run — the output you see is produced by the same components documented in this manual. Use the source button to read the demo's PHP file.
+Pick a demo and press Run — the output you see is produced by the same components documented in this manual. Menu demos are **interactive**: click the terminal, then use the arrow keys to aim, Space to select and Enter to confirm. Use the source button to read the demo's PHP file.
 </d-block-terminal>
 
 ## What you are seeing
 
 Each command maps to a real file under [`projects/Demo/CLI/`](https://github.com/bootgly/bootgly/tree/main/projects/Demo/CLI) in the framework repository:
 
+- **Menu** — the interactive selection component, in six variations (divisors, unique selection, horizontal orientation, centered and right alignment). The terminal forwards your keyboard to PHP: arrows aim, Space toggles, Enter confirms — `Ctrl+C` interrupts.
 - **Alert, Fieldset, Table** — output components rendering ANSI-styled boxes, labels and aligned columns.
 - **Progress** — the animated progress bar: hearts fill up while elapsed time, ETA and rate tick in real time.
 - **Writing** — paced, typewriter-style output via `Output->writing()`.

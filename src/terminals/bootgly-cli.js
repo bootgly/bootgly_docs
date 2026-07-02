@@ -72,6 +72,12 @@ export default async function createEngine ({ onOutput, onError, onStatus }) {
       return request({ type: 'run', command, columns, rows })
     },
 
+    // Keyboard/mouse data typed into the terminal — queued into the PHP stdin
+    // buffer; Bootgly reads it as an emulated TTY (BOOTGLY_TTY=1).
+    input (data) {
+      worker?.postMessage({ type: 'input', data })
+    },
+
     // Stopping kills the worker: PHP dies instantly, mid-instruction. The next
     // run spawns a fresh worker (the bundle re-fetch hits the HTTP cache).
     async stop () {
