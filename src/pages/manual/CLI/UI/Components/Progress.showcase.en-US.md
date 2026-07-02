@@ -1,130 +1,19 @@
 # Progress
 
-Here we have two examples that are also present as a file in the Bootgly CLI demo.
+Both official Progress demos run live below — real framework code on PHP 8.4 WebAssembly, in your browser. Use the source button on the terminal to read the exact PHP file being executed.
 
 ## Determined state
 
-```php
-<?php
-namespace Bootgly\CLI;
+A 250 000-iteration loop with a heart-symbol bar, descriptions that change at milestones, and a ~60 fps render throttle. This demo measures raw loop throughput — the rate counter is the star.
 
-use const Bootgly\CLI;
-use Bootgly\CLI\UI\Components\Progress;
-
-$Output = CLI->Terminal->Output;
-$Output->reset();
-
-$Output->render(<<<OUTPUT
-/* @*:
- * @#green: Bootgly CLI Terminal - Progress component @;
- * @#yellow: @@ Demo - Example #1 @;
- * projects/@bootgly/cli/examples/terminal/components/Progress-01.example.php
- */\n\n
-OUTPUT);
-
-$Progress = new Progress($Output);
-// * Config
-// @
-$Progress->throttle = 0.0;
-
-// * Data
-// @
-$Progress->total = 250000;
-// ! Templating
-$Progress->template = <<<'TEMPLATE'
-@description;
-@current;/@total; [@bar;] @percent;%
-⏱️ @elapsed;s - 🏁 @eta;s - 📈 @rate; loops/s
-TEMPLATE;
-
-// ! Bar
-// * Config
-$Progress->Bar->units = 10;
-// * Data
-$Progress->Bar->Symbols->incomplete = '🖤';
-$Progress->Bar->Symbols->current = '';
-$Progress->Bar->Symbols->complete = '❤️';
-
-$Progress->start();
-
-$i = 0;
-while ($i++ < 250000) {
-   if ($i === 1) {
-      $Progress->describe('@#red: Performing progress! @;');
-   }
-   if ($i === 125000) {
-      $Progress->describe('@#yellow: There\'s only half left... @;');
-   }
-   if ($i === 249999) {
-      $Progress->describe('@#green: Finished!!! @;');
-   }
-
-   $Progress->advance();
-
-   #usleep(100);
-}
-
-
-$Progress->finish();
-```
+<d-block-terminal engine="bootgly-cli" title="Progress — determined" command="demo 19" height="300">
+`Progress` with `total = 250000`: percent, elapsed, ETA and rate are computed on every advance; rendering is throttled to ~60 fps.
+</d-block-terminal>
 
 ## Indetermined state
 
-```php
-<?php
-namespace Bootgly\CLI;
+When `total` is `0`, Progress switches to the indetermined state: the bar cycles and the percent stays unknown while elapsed time and rate keep ticking. Each of the 1 500 iterations sleeps 5 ms — a realistic pacing animation.
 
-use const Bootgly\CLI;
-use Bootgly\CLI\UI\Components\Progress\Progress;
-
-$Output = CLI->Terminal->Output;
-$Output->reset();
-
-$Output->render(<<<OUTPUT
-/* @*:
- * @#green: Bootgly CLI Terminal - Progress component @;
- * @#yellow: @@ Demo - Example #2: Indeterminate state @;
- * projects/@bootgly/cli/examples/terminal/components/Progress-02.example.php
- */\n\n
-OUTPUT);
-
-$Progress = new Progress($Output);
-// * Config
-// @
-$Progress->throttle = 0.0;
-
-// * Data
-// @
-$Progress->total = 0;
-// @ Templating
-$Progress->template = <<<'TEMPLATE'
-@description;
-@current;/@total; [@bar;] @percent;%
-⏱️ @elapsed;s - 🏁 @eta;s - 📈 @rate; loops/s
-TEMPLATE;
-
-// ! Bar
-$Bar = $Progress->Bar;
-// * Config
-$Bar->units = 10;
-// * Data
-$Bar->Symbols->incomplete = '🖤';
-$Bar->Symbols->current = '';
-$Bar->Symbols->complete = '❤️';
-
-$Progress->start();
-
-$i = 0;
-while ($i++ < 1500) {
-   if ($i === 1) {
-      $Progress->describe('@#red: Performing progress! @;');
-   }
-
-   $Progress->advance();
-
-   usleep(5000);
-}
-
-
-$Progress->finish();
-```
+<d-block-terminal engine="bootgly-cli" title="Progress — indetermined" command="demo 20" height="300">
+`Progress` with `total = 0` (indetermined): the loop advances 1 500 times with `usleep(5000)` between advances.
+</d-block-terminal>

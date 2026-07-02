@@ -827,7 +827,7 @@ export default {
         separator: true
       },
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -1047,7 +1047,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {

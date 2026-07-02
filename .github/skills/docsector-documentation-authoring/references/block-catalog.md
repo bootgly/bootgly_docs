@@ -14,6 +14,7 @@ This catalog summarizes the Docsector authoring blocks that an agent should know
 | Files         | `<d-block-file>`                                    | Download cards for attachments                           | `manual/content/blocks/files/overview`         |
 | Embedded URLs | `<d-block-embedded-url>`                            | YouTube, Vimeo, Spotify, CodePen, or link-card fallbacks | `manual/content/blocks/embedded-urls/overview` |
 | Code Examples | `<d-block-code-example>`                            | Live Vue SFC previews with source inspection             | `manual/content/blocks/code-examples/overview` |
+| Terminals     | `<d-block-terminal>`                                | Live runnable terminals driven by project engines        | `manual/content/blocks/terminals/overview`     |
 | API Reference | `<d-block-api>`                                     | Quasar-compatible JSON API reference UIs                 | `manual/content/blocks/api-reference/overview` |
 
 ### Quick Links
@@ -173,6 +174,37 @@ Common attributes:
 | `scrollable` | Gives the preview a fixed scrollable height    |
 | `overflow`   | Allows horizontal and vertical overflow        |
 | `height`     | Sets a preview height such as `360` or `420px` |
+
+### Terminals
+
+Use Terminal blocks to embed a live, runnable xterm.js terminal whose execution is provided by a project engine module (for example, the Bootgly docs run real CLI demos on PHP-WASM).
+
+```html
+<d-block-terminal
+  engine="bootgly-cli"
+  title="Bootgly CLI — live demos"
+  commands="Alert:demo 12|Table:demo 21|Progress:demo 20"
+  height="420"
+>
+  Optional caption rendered as inline Markdown.
+</d-block-terminal>
+```
+
+Place engines under `src/terminals/**/*.js` (`*.worker.js` sidecars are ignored). The `engine` value is normalized to kebab-case, so `bootgly-cli` resolves to `src/terminals/bootgly-cli.js`. An engine default-exports `async ({ onOutput, onError, onStatus }) => ({ run(command, { columns, rows }), source(command)?, stop()?, dispose()? })` and may export `meta = { label, language }`. The factory must be cheap — it runs at page mount so the source panel and Stop button are wired before the first run; heavy work (runtime download, VM boot) belongs inside `run()`, reported via `onStatus('downloading' | 'extracting' | 'booting' | 'running')`. xterm.js still loads only on the first Run. When `stop()` exists, a Stop button appears during runs.
+
+Common attributes:
+
+| Attribute   | Purpose                                                     |
+| ----------- | ----------------------------------------------------------- |
+| `engine`    | Engine id under `src/terminals/**/*.js` (required)          |
+| `title`     | Toolbar title; falls back to the engine `meta.label`        |
+| `command`   | Single command passed to the engine `run()`                 |
+| `commands`  | Command tab strip below the toolbar: `Label:command` pairs separated by `\|` |
+| `autorun`   | Runs on first visibility when `true`                        |
+| `height`    | Terminal viewport height such as `360` or `420px`           |
+| `run-label` | Custom label for the Run button                             |
+
+When the engine implements `source(command)`, readers get a source panel rendered with the standard code block renderer, plus a GitHub action when the returned object carries a `url`.
 
 ### API Reference
 

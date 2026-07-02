@@ -2,6 +2,19 @@
 
 Segue abaixo exemplos de uso da classe Cursor do Terminal Output.
 
+## Demos ao vivo
+
+Os demos oficiais de cursor, executando em PHP 8.4 WebAssembly no seu navegador:
+
+<d-block-terminal
+  engine="bootgly-cli"
+  title="Cursor — demos ao vivo"
+  commands="Posicionamento:demo 3|Formato:demo 4|Visualização:demo 5"
+  height="320"
+>
+Escolha um demo e pressione executar. O botão de código-fonte mostra o arquivo PHP exato do demo.
+</d-block-terminal>
+
 ## Movimentos básicos
 
 Exemplo com `up()`:

@@ -1,0 +1,31 @@
+{
+  "asset": "/wasm/bootgly-cli.zip",
+  "version": "0.18.0-beta",
+  "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
+  "files": 510,
+  "bytes": 543604,
+  "demos": {
+    "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
+    "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
+    "3": "projects/Demo/CLI/Terminal/Output/Cursor-positioning-01.demo.php",
+    "4": "projects/Demo/CLI/Terminal/Output/Cursor-shaping-01.demo.php",
+    "5": "projects/Demo/CLI/Terminal/Output/Cursor-visualizing-01.demo.php",
+    "6": "projects/Demo/CLI/Terminal/Output/Text-formatting-coloring-01.demo.php",
+    "7": "projects/Demo/CLI/Terminal/Output/Text-formatting-styling-01.demo.php",
+    "8": "projects/Demo/CLI/Terminal/Output/Text-modifying-01.demo.php",
+    "9": "projects/Demo/CLI/Terminal/Output/Text-modifying-indisplay-01.demo.php",
+    "10": "projects/Demo/CLI/Terminal/Output/Text-modifying-inline-01.demo.php",
+    "11": "projects/Demo/CLI/Terminal/Output/Text-modifying-line-01.demo.php",
+    "12": "projects/Demo/CLI/UI/Alert-01.demo.php",
+    "13": "projects/Demo/CLI/UI/Menu-01.demo.php",
+    "14": "projects/Demo/CLI/UI/Menu-02.demo.php",
+    "15": "projects/Demo/CLI/UI/Menu-03.demo.php",
+    "16": "projects/Demo/CLI/UI/Menu-04.demo.php",
+    "17": "projects/Demo/CLI/UI/Menu-05.demo.php",
+    "18": "projects/Demo/CLI/UI/Menu-06.demo.php",
+    "19": "projects/Demo/CLI/UI/Progress-01.demo.php",
+    "20": "projects/Demo/CLI/UI/Progress-02.demo.php",
+    "21": "projects/Demo/CLI/UI/Table-01.demo.php",
+    "22": "projects/Demo/CLI/UI/Fieldset-01.demo.php"
+  }
+}

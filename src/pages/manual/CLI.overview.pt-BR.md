@@ -44,3 +44,14 @@ Com suporte a plugins, os desenvolvedores podem estender facilmente a funcionali
 - `Experiência do Usuário Aprimorada`
 
 Uma interface de usuário intuitiva e mensagens claras garantem uma experiência de usuário agradável e sem complicações.
+
+## Ambiente
+
+O CLI resolve seu ambiente de execução a partir de algumas variáveis bem conhecidas:
+
+- **`BOOTGLY_SAPI`** — o Bootgly condiciona suas interfaces de plataforma à constante `BOOTGLY_SAPI`, definida no boot como `getenv('BOOTGLY_SAPI') ?: PHP_SAPI`. Runtimes embarcados que se comportam como console — como PHP compilado para WebAssembly, onde `PHP_SAPI` reporta `embed` — exportam `BOOTGLY_SAPI=cli` para inicializar a plataforma Console. Checagens de capacidade (sockets, controle de processos) intencionalmente continuam usando `PHP_SAPI`.
+- **`COLUMNS` / `LINES`** — o Terminal resolve seu tamanho primeiro a partir dessas variáveis de ambiente (a convenção do ncurses), com fallback para `tput cols` / `tput lines` e, por fim, `80x30`. Pipes, runners de CI e runtimes embarcados podem exportá-las para controlar o layout sem um TTY.
+
+Quando a posição do cursor não pode ser consultada (sem TTY no stdin), os componentes degradam graciosamente: o `Progress` ancora sua renderização com save/restore de cursor ANSI em vez de posicionamento absoluto.
+
+Essas são as mecânicas que alimentam o [showcase do CLI ao vivo](/manual/CLI/showcase) — cada demo ali executa o framework real em PHP 8.4 WebAssembly no seu navegador.

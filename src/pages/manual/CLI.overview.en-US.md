@@ -43,3 +43,14 @@ With plugin support, developers can easily extend the functionality of the CLI t
 - `Improved User Experience`
 
 An intuitive user interface and clear messages ensure a pleasant and uncomplicated user experience.
+
+## Environment
+
+The CLI resolves its execution environment from a few well-known variables:
+
+- **`BOOTGLY_SAPI`** — Bootgly gates its platform interfaces on the `BOOTGLY_SAPI` constant, defined at boot as `getenv('BOOTGLY_SAPI') ?: PHP_SAPI`. Embedded runtimes that behave as a console — such as PHP compiled to WebAssembly, where `PHP_SAPI` reports `embed` — export `BOOTGLY_SAPI=cli` to boot the Console platform. Capability checks (sockets, process control) intentionally keep using `PHP_SAPI`.
+- **`COLUMNS` / `LINES`** — the Terminal resolves its size from these environment variables first (the ncurses convention), falling back to `tput cols` / `tput lines`, then to `80x30`. Pipes, CI runners and embedded runtimes can export them to control layout without a TTY.
+
+When the cursor position cannot be queried (no TTY on stdin), components degrade gracefully: `Progress` anchors its rendering with ANSI cursor save/restore instead of absolute positioning.
+
+These are the mechanics that power the [live CLI showcase](/manual/CLI/showcase) — every demo there runs the real framework on PHP 8.4 WebAssembly in your browser.
