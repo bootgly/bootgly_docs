@@ -57,3 +57,7 @@ Suponhamos que você utiliza o método para realizar um "pan down" (ou scroll up
 É importante notar que esse método não rola o conteúdo do Terminal como uma rolagem com o scroll do mouse. Em vez disso, ele move a janela do Terminal para cima, expondo conteúdo anterior que estava oculto na parte inferior da janela. Se houver mais conteúdo do que a janela pode exibir, o conteúdo mais antigo pode ser perdido à medida que é movido para fora da janela.
 
 Por outro lado, a rolagem com o scroll do mouse permite que o usuário role o conteúdo do Terminal para cima ou para baixo de forma suave e controlada. Isso permite que o usuário visualize todo o conteúdo do Terminal, incluindo o conteúdo mais antigo que está fora da janela atual.
+
+## Veja ao vivo
+
+O demo oficial de Viewport roda no [showcase ao vivo](/manual/CLI/Terminal/Output/Viewport/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

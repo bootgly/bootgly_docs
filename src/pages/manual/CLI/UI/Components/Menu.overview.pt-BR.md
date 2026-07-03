@@ -105,3 +105,7 @@ $selected = $Menu->open();
 ```
 
 O exemplo acima executa a função `open()` do componente e armazena as opções selecionadas em uma variável chamada `$selected`.
+
+## Veja ao vivo
+
+O demo oficial de Menu roda no [showcase ao vivo](/manual/CLI/UI/Components/Menu/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

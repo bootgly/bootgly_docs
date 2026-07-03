@@ -88,3 +88,7 @@ Exemplo:
 ```php
 $Table->Cells->align('left');
 ```
+
+## Veja ao vivo
+
+O demo oficial de Table roda no [showcase ao vivo](/manual/CLI/UI/Components/Table/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

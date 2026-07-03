@@ -66,6 +66,10 @@ thing in a scrollable detail view.
 While **paused**, rendering uses a frozen snapshot of the buffer (`$paused` true), so the screen
 does not move as new records stream in. `End` (or `space`) resumes the live tail.
 
+## See it live
+
+The official Logs demo runs in the [live showcase](/manual/CLI/UI/Components/Logs/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.
+
 ## Reference
 
 ```php

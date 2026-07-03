@@ -840,7 +840,7 @@ export default {
   '/CLI/Commands': {
     config: {
       icon: 'keyboard_command_key',
-      status: 'empty',
+      status: 'draft',
       meta: {
         description: {
           'en-US': 'Define and route Bootgly CLI commands with arguments, options and predictable execution flow.',
@@ -861,7 +861,7 @@ export default {
   '/CLI/Scripts': {
     config: {
       icon: 'description',
-      status: 'empty',
+      status: 'draft',
       meta: {
         description: {
           'en-US': 'Organize reusable CLI scripts and automate project tasks inside the Bootgly runtime.',
@@ -882,7 +882,7 @@ export default {
   '/CLI/Terminal': {
     config: {
       icon: 'terminal',
-      status: 'empty',
+      status: 'draft',
       meta: {
         description: {
           'en-US': 'Handle terminal input, output and reporting to build interactive command-line experiences.',
@@ -936,7 +936,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -948,7 +948,7 @@ export default {
   '/CLI/Terminal/Reporting': {
     config: {
       icon: 'report',
-      status: 'empty',
+      status: 'draft',
       meta: {
         description: {
           'en-US': 'Track terminal events and feedback flows that support observability in Bootgly CLI sessions.',
@@ -971,7 +971,7 @@ export default {
   '/CLI/Terminal/Input/Keystrokes': {
     config: {
       icon: 'keyboard',
-      status: 'empty',
+      status: 'draft',
       meta: {
         description: {
           'en-US': 'Capture key presses and keyboard-driven interactions for responsive terminal controls.',
@@ -994,7 +994,7 @@ export default {
   '/CLI/Terminal/Input/Mousestrokes': {
     config: {
       icon: 'mouse',
-      status: 'empty',
+      status: 'draft',
       meta: {
         description: {
           'en-US': 'Interpret mouse actions in the terminal to support selection, clicks and richer CLI UX.',
@@ -1068,7 +1068,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -1124,7 +1124,7 @@ export default {
         subheader: '.CLI.UI.Components'
       },
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -1145,7 +1145,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -1166,7 +1166,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -1187,7 +1187,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
@@ -1229,7 +1229,7 @@ export default {
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {

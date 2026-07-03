@@ -64,3 +64,7 @@ Example:
 ```php
 $Alert->message = 'This is a success alert!';
 ```
+
+## See it live
+
+The official Alert demo runs in the [live showcase](/manual/CLI/UI/Components/Alert/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

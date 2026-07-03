@@ -53,3 +53,7 @@ Assume that you use this method to perform a "pan down" (or scroll up) in termin
 It is important to note that this method does not scroll the content of the Terminal like scroll mouse. Instead, it moves the Terminal window up, revealing previous content that was hidden at the bottom of the window. If there is more content than the window can display, the older content may be lost as it is moved out of the window.
 
 On the other hand, scrolling with the mouse allows the user to scroll the Terminal content up or down in a smooth and controlled manner. This allows the user to view all Terminal content, including older content that is out of the window.
+
+## See it live
+
+The official Viewport demo runs in the [live showcase](/manual/CLI/Terminal/Output/Viewport/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

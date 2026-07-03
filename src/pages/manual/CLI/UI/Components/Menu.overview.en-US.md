@@ -105,3 +105,7 @@ $selected = $Menu->open();
 ```
 
 The above example executes the `open()` function of the component and stores the selected options in a variable called `$selected`.
+
+## See it live
+
+The official Menu demo runs in the [live showcase](/manual/CLI/UI/Components/Menu/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

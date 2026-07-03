@@ -77,6 +77,22 @@ function feedInput (data) {
 // joined by a pipe; here each role runs in its own worker and a MessagePort
 // plays the pipe. Reads await bootglyPipeRead() through vrzno (same mechanics
 // as stdin); writes post straight to the port (outbound never blocks).
+// True char-level output streaming. Emscripten's stdout TTY is line-buffered:
+// partial lines sit in its internal buffer until a newline, and php.flush()
+// cannot reach them — paced output like `Output->writing()` would land whole
+// lines at once. The bootstrap wraps STDOUT in a PHP stream wrapper whose
+// write calls this function through vrzno: outbound postMessage dispatches
+// synchronously even while the WASM thread runs, so every fwrite streams.
+globalThis.bootglyStdout = (data) => {
+  const payload = String(data)
+
+  if (payload !== '' && currentId !== null) {
+    self.postMessage({ type: 'output', id: currentId, chunk: payload })
+  }
+
+  return payload.length
+}
+
 let pipePort = null
 let pipeChunks = []
 let pipeWaiter = null
@@ -210,9 +226,11 @@ final class PipeStream
    }
    public function stream_write (string $data): int
    {
+      // PHP expects BYTES written — the JS return counts UTF-16 units and a
+      // multibyte payload would read as a partial write (endless tail retries)
       self::$JS ??= new Vrzno;
-      $written = self::$JS->bootglyPipeWrite($data);
-      return is_int($written) ? $written : strlen($data);
+      self::$JS->bootglyPipeWrite($data);
+      return strlen($data);
    }
    public function stream_eof (): bool
    {
@@ -262,6 +280,20 @@ final class TerminalStream
       $this->buffer = substr($this->buffer, strlen($chunk));
       return $chunk;
    }
+   public function stream_write (string $data): int
+   {
+      // Bypasses emscripten's line-buffered TTY: every fwrite streams instantly.
+      // PHP expects BYTES written; the JS side counts UTF-16 units — returning
+      // that for a multibyte payload reads as a partial write and PHP re-sends
+      // the tail forever, duplicating box-drawing output.
+      self::$JS ??= new Vrzno;
+      self::$JS->bootglyStdout($data);
+      return strlen($data);
+   }
+   public function stream_flush (): bool
+   {
+      return true;
+   }
    public function stream_eof (): bool
    {
       return false;
@@ -280,7 +312,7 @@ final class TerminalStream
 }
 stream_wrapper_register('terminal', TerminalStream::class);
 defined('STDIN')  || define('STDIN',  fopen('terminal://input', 'r'));
-defined('STDOUT') || define('STDOUT', fopen('php://stdout', 'w'));
+defined('STDOUT') || define('STDOUT', fopen('terminal://output', 'w'));
 defined('STDERR') || define('STDERR', fopen('php://stderr', 'w'));
 $_SERVER['argv'] = json_decode('${args}', true);
 $_SERVER['argc'] = count($_SERVER['argv']);

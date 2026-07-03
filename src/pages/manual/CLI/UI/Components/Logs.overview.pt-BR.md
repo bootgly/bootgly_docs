@@ -115,3 +115,7 @@ flicker.
 `Logs` vive em `CLI/UI/Components` e consome `ACI\Logs\{Record, Data\Levels}` mais `CLI\Terminal`
 para dimensão/teclas — depende só para baixo. O transporte (`ACI\Logs\Handlers\Pipe`) e o laço de
 monitoramento (`WPI`) ficam em lados opostos dele e nunca o acessam de volta.
+
+## Veja ao vivo
+
+O demo oficial de Logs roda no [showcase ao vivo](/manual/CLI/UI/Components/Logs/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

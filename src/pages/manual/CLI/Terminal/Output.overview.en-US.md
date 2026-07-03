@@ -102,3 +102,7 @@ Example:
 ```php
 $Output->render('@#green: This text will be presented by the Terminal in green color.');
 ```
+
+## See it live
+
+The official Output demo runs in the [live showcase](/manual/CLI/Terminal/Output/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

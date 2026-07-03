@@ -63,3 +63,7 @@ Exemplo:
 ```php
 $Alert->message = 'Isso é um alerta de sucesso!
 ```
+
+## Veja ao vivo
+
+O demo oficial de Alert roda no [showcase ao vivo](/manual/CLI/UI/Components/Alert/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

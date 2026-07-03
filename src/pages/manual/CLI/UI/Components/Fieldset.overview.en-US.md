@@ -98,3 +98,7 @@ $Fieldset->width = 50;
 $Fieldset->color = '@#Green:';
 $Fieldset->render();
 ```
+
+## See it live
+
+The official Fieldset demo runs in the [live showcase](/manual/CLI/UI/Components/Fieldset/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.
