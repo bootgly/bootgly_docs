@@ -4,10 +4,10 @@ Both official Progress demos run live below — real framework code on PHP 8.4 W
 
 ## Determined state
 
-A 250 000-iteration loop with a heart-symbol bar, descriptions that change at milestones, and a ~60 fps render throttle. This demo measures raw loop throughput — the rate counter is the star.
+A 1000000-iteration loop with a heart-symbol bar, descriptions that change at milestones, and a ~60 fps render throttle. This demo measures raw loop throughput — the rate counter is the star.
 
 <d-block-terminal engine="bootgly-cli" title="Progress — determined" command="demo 19" height="300">
-`Progress` with `total = 250000`: percent, elapsed, ETA and rate are computed on every advance; rendering is throttled to ~60 fps.
+`Progress` with `total = 1000000`: percent, elapsed, ETA and rate are computed on every advance; rendering is throttled to ~60 fps.
 </d-block-terminal>
 
 ## Indetermined state
