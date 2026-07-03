@@ -8,13 +8,14 @@ It features **automatic route caching** for high performance, **parameter constr
 The `route` method is used to define routes:
 
 ```php
-route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = []) : false|object
+route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = [], null|array $cache = null) : false|object
 ```
 
 - `$route` — the URL pattern to match (accepts params, constraints, and catch-all).
 - `$handler` — the callback to be executed when the route is matched.
 - `$methods` — the HTTP method(s) that this route should respond to.
 - `$middlewares` — an optional array of middlewares for this specific route.
+- `$cache` — optional route response cache options (see **Route Response Cache**): `['TTL' => <seconds>]`.
 
 `$handler` arguments:
 
@@ -279,6 +280,54 @@ The cache is per-worker (each worker process warms its own cache on the first re
 ```php
 $Router->cached; // bool — true after the cache is warmed
 ```
+
+## Route Response Cache
+
+Routes can opt in to a **response cache**: the server stores the fully built
+response (status line + headers + body) and serves repeated requests directly
+from those bytes — before routing, middlewares, the handler and serialization
+run. A database-backed route served from the cache responds at static-route
+speed (~10× throughput in the Bootgly benchmark: 93k → 938k req/s).
+
+Opt in per route with the `cache` option and a `TTL` (entry lifetime, in
+seconds):
+
+```php
+yield $Router->route('/report', function ($Request, $Response) {
+   return $Response->defer(function (Response $Response): void {
+      $Result = $Response->Database->fetch('SELECT count(*) AS total FROM orders');
+
+      $Response->JSON->send($Result->row);
+   });
+}, GET, cache: ['TTL' => 30]);
+```
+
+The first request runs the handler and stores the built response; every
+request in the next 30 seconds is answered from the stored bytes. When the
+`TTL` expires, the next request runs the handler again and refreshes the
+entry. Deferred (async) handlers are cached the same way as synchronous ones.
+
+### What is cached — and what never is
+
+Entries are keyed by **method + path + query string** — `/report?page=1` and
+`/report?page=2` are distinct entries. A response is only stored when the
+exchange is safely cacheable:
+
+- `GET` over `HTTP/1.1`, status `200`, plain identity body (no streaming,
+  chunking or compression);
+- the request carries **no credentials** (`Cookie` / `Authorization`) and asks
+  to keep the connection alive;
+- the response sets **no cookies** (`Set-Cookie`).
+
+Credentialed requests also never **read** the cache — a logged-in user always
+reaches the handler.
+
+### Scope and limits
+
+The store is **per worker** (in-process), holds up to 512 entries (oldest
+evicted first) and refreshes the `Date` header of stored responses once per
+second. There is no cross-worker sharing: each worker warms its own entry
+within one `TTL` window.
 
 ## Route Group Middlewares (intercept)
 

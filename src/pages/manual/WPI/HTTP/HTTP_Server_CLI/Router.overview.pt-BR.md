@@ -8,13 +8,14 @@ Ele possui **cache automático de rotas** para alta performance, **tipos de rest
 O método `route` é utilizado para definir rotas:
 
 ```php
-route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = []) : false|object
+route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = [], null|array $cache = null) : false|object
 ```
 
 - `$route` — o padrão da URL a corresponder (aceita parâmetros, restrições e catch-all).
 - `$handler` — o callback a ser executado quando a rota for correspondida.
 - `$methods` — o(s) método(s) HTTP que essa rota deve atender.
 - `$middlewares` — um array opcional de middlewares para esta rota específica.
+- `$cache` — opções do cache de resposta da rota (veja **Cache de Resposta de Rota**): `['TTL' => <segundos>]`.
 
 Argumentos de `$handler`:
 
@@ -279,6 +280,56 @@ O cache é por-worker (cada processo worker aquece seu próprio cache na primeir
 ```php
 $Router->cached; // bool — true após o cache estar aquecido
 ```
+
+## Cache de Resposta de Rota
+
+Rotas podem optar por um **cache de resposta**: o servidor armazena a resposta
+completamente construída (status line + headers + body) e serve requisições
+repetidas diretamente desses bytes — antes do roteamento, dos middlewares, do
+handler e da serialização. Uma rota com banco de dados servida do cache
+responde na velocidade de rota estática (~10× de throughput no benchmark do
+Bootgly: 93k → 938k req/s).
+
+Opte por rota com a opção `cache` e um `TTL` (tempo de vida da entrada, em
+segundos):
+
+```php
+yield $Router->route('/report', function ($Request, $Response) {
+   return $Response->defer(function (Response $Response): void {
+      $Result = $Response->Database->fetch('SELECT count(*) AS total FROM orders');
+
+      $Response->JSON->send($Result->row);
+   });
+}, GET, cache: ['TTL' => 30]);
+```
+
+A primeira requisição executa o handler e armazena a resposta construída;
+toda requisição nos próximos 30 segundos é respondida a partir dos bytes
+armazenados. Quando o `TTL` expira, a próxima requisição executa o handler
+novamente e renova a entrada. Handlers deferred (assíncronos) são cacheados
+da mesma forma que os síncronos.
+
+### O que é cacheado — e o que nunca é
+
+As entradas usam como chave **método + path + query string** —
+`/report?page=1` e `/report?page=2` são entradas distintas. Uma resposta só é
+armazenada quando a troca é segura de cachear:
+
+- `GET` sobre `HTTP/1.1`, status `200`, body simples identity (sem streaming,
+  chunking ou compressão);
+- a requisição **não carrega credenciais** (`Cookie` / `Authorization`) e pede
+  para manter a conexão viva;
+- a resposta **não define cookies** (`Set-Cookie`).
+
+Requisições com credenciais também nunca **leem** o cache — um usuário logado
+sempre alcança o handler.
+
+### Escopo e limites
+
+O armazenamento é **por worker** (in-process), guarda até 512 entradas (a mais
+antiga é removida primeiro) e atualiza o header `Date` das respostas
+armazenadas uma vez por segundo. Não há compartilhamento entre workers: cada
+worker aquece a própria entrada dentro de uma janela de `TTL`.
 
 ## Middlewares de Grupo de Rotas (intercept)
 
