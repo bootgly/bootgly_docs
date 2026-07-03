@@ -38,7 +38,7 @@ export default {
   github: {
     repo: 'bootgly/bootgly_docs',
     editBaseUrl: 'https://github.com/bootgly/bootgly_docs/edit/main/src/pages',
-    stars: true
+    stars: false
   },
 
   // @ Home page source
