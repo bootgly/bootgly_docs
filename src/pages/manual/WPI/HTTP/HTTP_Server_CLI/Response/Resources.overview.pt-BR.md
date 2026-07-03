@@ -145,14 +145,14 @@ table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $A
 Inicia um SQL query builder para uma tabela pelo banco encapsulado.
 
 ```php
-query (string|Builder|Query $query, array $parameters = []): Operation
+query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
 ```
 
 Cria uma operação SQL, aguarda até finalizar e retorna a `Operation`. Use quando você quer
 inspecionar `error`, `Result`, estado do pool ou detalhes de protocolo.
 
 ```php
-fetch (string|Builder|Query $query, array $parameters = []): Result
+fetch (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Result
 ```
 
 Cria uma operação SQL, aguarda até finalizar e retorna `Result`. Se a operação falhar, lança

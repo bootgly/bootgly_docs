@@ -144,14 +144,14 @@ table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $A
 Starts a SQL query builder for one table through the wrapped database.
 
 ```php
-query (string|Builder|Query $query, array $parameters = []): Operation
+query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
 ```
 
 Creates a SQL operation, waits until it finishes and returns the `Operation`. Use it when you
 want to inspect `error`, `Result`, pool state or protocol details yourself.
 
 ```php
-fetch (string|Builder|Query $query, array $parameters = []): Result
+fetch (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Result
 ```
 
 Creates a SQL operation, waits until it finishes and returns `Result`. If the operation fails,
