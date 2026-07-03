@@ -13,7 +13,7 @@ export default {
       {
         id: 'v0.19.0-beta',
         current: true,
-        released: false
+        released: true
       },
     ],
     description: 'Bootgly PHP Framework — base architecture for multi-platform, full-stack PHP development'
