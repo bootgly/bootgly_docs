@@ -54,5 +54,5 @@ Bootgly is probably **not** the right choice today if you need a large ecosystem
 ## Next steps
 
 - **[What is Bootgly?](/manual/Bootgly/about/what/overview/)** — identity, inventory and requirements;
-- **[Getting started](/guide/getting-started/overview/)** — from an empty directory to a running HTTP server;
+- **[Getting started](/guide/getting-started/overview/)** — from an empty directory to a running project;
 - **[Architecture](/manual/Bootgly/basic/architecture/overview/)** — the I2P layers in depth.

@@ -36,8 +36,9 @@ Esses repositórios possuem o seguinte padrão em seu nome: `^[a-z]+.[a-z]+$`.
 
 Todos os repositório templates possuem um `.` (ponto) como separador:
 
-- [bootgly.console](https://github.com/bootgly/bootgly.console)
-- [bootgly.web](https://github.com/bootgly/bootgly.web)
+- [bootgly.kit](https://github.com/bootgly/bootgly.kit)
+
+Os antigos templates `bootgly.console` e `bootgly.web` foram unificados no `bootgly.kit` e estão descontinuados.
 
 ## Repositórios extensão
 

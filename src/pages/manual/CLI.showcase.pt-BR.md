@@ -5,7 +5,7 @@ O terminal abaixo executa o **Bootgly CLI de verdade** — os arquivos de demo r
 <d-block-terminal
   engine="bootgly-cli"
   title="Bootgly CLI — demos ao vivo"
-  commands="Client/Server:demo 1|Mouse:demo 23|Logs:demo 25|Menu:demo 13|Menu (divisores):demo 14|Menu (único):demo 15|Menu (horizontal):demo 16|Menu (centralizado):demo 17|Menu (à direita):demo 18|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Progress:demo 19|Progress (indeterminado):demo 20|Writing:demo 2|Cores de texto:demo 6|Estilos de texto:demo 7|Posicionamento de cursor:demo 3|Viewport:demo 24"
+  commands="Client/Server:demo 1|Dialog:demo 26|Question:demo 27|Mouse:demo 23|Logs:demo 25|Menu:demo 13|Menu (divisores):demo 14|Menu (único):demo 15|Menu (horizontal):demo 16|Menu (centralizado):demo 17|Menu (à direita):demo 18|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Progress:demo 19|Progress (indeterminado):demo 20|Writing:demo 2|Cores de texto:demo 6|Estilos de texto:demo 7|Posicionamento de cursor:demo 3|Viewport:demo 24"
   height="420"
 >
 Escolha um demo e pressione executar — a saída que você vê é produzida pelos mesmos componentes documentados neste manual. Os demos de Mouse e Menu são **interativos**: clique no terminal primeiro; no Menu use as setas para mirar, Espaço para selecionar e Enter para confirmar; no Mouse apenas mova, clique e role — clique direito encerra. Use o botão de código-fonte para ler o arquivo PHP do demo.

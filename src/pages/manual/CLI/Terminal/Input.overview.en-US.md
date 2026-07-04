@@ -51,6 +51,14 @@ read (int $length) : string | false
 
 The `read()` method is responsible for reading the data entered by the user. It receives an integer as a parameter that represents the maximum number of bytes to be read. The return value can be a string with the data entered or `false` if an error occurs in the operation.
 
+### Reading a line with scan()
+
+```php
+public function scan (): string|false
+```
+
+The `scan()` method reads a single line from the input stream — bytes are consumed until a line terminator (`\n` or `\r`) or EOF is reached. It returns the line without the terminator, or `false` on immediate EOF. It works on TTYs and pipes, which makes it the line-reading primitive behind interactive components like [Dialog](/manual/CLI/UI/Components/Dialog/overview) and [Question](/manual/CLI/UI/Components/Question/overview).
+
 ### Reading data with reading()
 
 ```php

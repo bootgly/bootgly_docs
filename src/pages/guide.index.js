@@ -5,8 +5,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Set up Bootgly, choose a starter and run your first CLI or Web project.',
-          'pt-BR': 'Instale o Bootgly, escolha um starter e rode seu primeiro projeto CLI ou Web.'
+          'en-US': 'Install Bootgly with one command and create your first project with the wizard.',
+          'pt-BR': 'Instale o Bootgly com um comando e crie seu primeiro projeto com o wizard.'
         }
       },
       book: 'guide',

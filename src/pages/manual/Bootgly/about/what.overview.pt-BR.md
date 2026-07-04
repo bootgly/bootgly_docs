@@ -33,5 +33,5 @@ Cada item abaixo é código próprio — o núcleo tem **zero dependências de t
 
 - **[Por que Bootgly?](/manual/Bootgly/about/why/overview/)** — os problemas que ele resolve e a prova por trás disso;
 - **[Arquitetura](/manual/Bootgly/basic/architecture/overview/)** — as camadas I2P em profundidade;
-- **[Primeiros passos](/guide/getting-started/overview/)** — seu primeiro servidor HTTP em quatro comandos;
+- **[Primeiros passos](/guide/getting-started/overview/)** — seu primeiro projeto em um comando;
 - **[Bootgly vs outros runtimes](/manual/WPI/HTTP/HTTP_Server_CLI/vs/)** — matriz de features e benchmarks contra Swoole, Hyperf, ReactPHP, AMPHP e stacks Laravel.

@@ -54,5 +54,5 @@ O Bootgly provavelmente **não** é a escolha certa hoje se você precisa de um 
 ## Próximos passos
 
 - **[O que é Bootgly?](/manual/Bootgly/about/what/overview/)** — identidade, inventário e requisitos;
-- **[Primeiros passos](/guide/getting-started/overview/)** — de um diretório vazio a um servidor HTTP rodando;
+- **[Primeiros passos](/guide/getting-started/overview/)** — de um diretório vazio a um projeto rodando;
 - **[Arquitetura](/manual/Bootgly/basic/architecture/overview/)** — as camadas I2P em profundidade.

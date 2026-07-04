@@ -1,49 +1,75 @@
 # Getting started
 
-To start using Bootgly from a starter kit, you should use one of [Bootgly's template](/manual/Bootgly/concepts/github-repositories/overview) repositories:
-
-- [bootgly.console](https://github.com/bootgly/bootgly.console)
-- [bootgly.web](https://github.com/bootgly/bootgly.web)
-
-For now, the use of Composer is optional and you can use only Git to compose the "bootable" submodules of Bootgly.
-
-## Templating
-
-Here are tutorials to download a starter kit using only Git/Github or Composer.
-
-### Option 1): Using Composer
-
-If you need Composer to compose some external dependency, use the `create-project` command to download and already install all the dependencies:
-
-#### Bootgly Console
-
-If you only want to develop only for the CLI, download the Console starter kit:
+Bootgly has **one canonical way** to start: a single command that installs everything and opens the **project wizard**.
 
 ```bash
-composer create-project bootgly/bootgly.console bootgly.console
+curl -fsSL https://bootgly.com/install | bash
 ```
 
-#### Bootgly Web
+The installer:
 
-If you want to develop for the CLI and for the Web, download the Web starter kit that already comes with the Console together:
+1. Checks your environment (`git` + PHP **8.4+**);
+2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./myapp` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
+3. Initializes the **Bootgly platform** (git submodule);
+4. Opens the **project wizard** (`php bootgly project create`).
+
+## The project wizard
+
+The wizard guides you from an empty kit to a running project:
+
+1. **Platform** — choose `Console` (CLI / TUI apps) or `Web` (HTTP / WebSocket servers — includes Console). The wizard initializes the matching platform submodules (`Console/`, `Web/`);
+2. **Resources** — it runs `bootgly boot` to install the resource folders (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) into your kit;
+3. **Mode** — create **from scratch** or **import a platform project** (like the Demos shipped with the framework);
+4. **Project** — pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author;
+5. **Confirm** — review the summary and confirm. The project is generated in `projects/<Path>/` and registered in `projects/Bootgly.projects.php`.
+
+Then boot it:
 
 ```bash
-composer create-project bootgly/bootgly.web bootgly.web
+php bootgly project list
+php bootgly project MyApp start
 ```
 
-### Option 2): Using Git
+You can rerun the wizard anytime with `php bootgly project create` — everything already set up is skipped.
 
-Start by using `Github Templating` to create other repositories from a template or make a `clone` directly from some template repository.
+### Non-interactive (CI / scripts / AI agents)
 
-If you do not intend to use Composer yet, run the command below in your terminal to download the submodules that are listed in the `.gitmodules` file:
+All wizard inputs are available as flags — with `--yes` (or piped input) nothing is asked:
 
 ```bash
-git submodule update --init --recursive
+php bootgly project create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
+
+Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of from scratch. See the [Reference](#reference) below for all flags.
+
+## Manual setup (git submodules)
+
+Prefer to do it by hand? Use [bootgly.kit](https://github.com/bootgly/bootgly.kit) as a GitHub template (or clone it), then:
+
+```bash
+git clone https://github.com/bootgly/bootgly.kit myapp
+cd myapp
+git submodule update --init Bootgly
+php bootgly project create
+```
+
+The kit keeps the platforms as git submodules — `Bootgly/` (the framework), `Console/` and `Web/` — and the wizard initializes the optional ones on demand.
+
+## Using Composer (alternative)
+
+If you need Composer to manage external dependencies:
+
+```bash
+composer create-project bootgly/bootgly.kit myapp --stability=dev
+cd myapp
+php bootgly project create
+```
+
+Dependencies are installed into `./@imports/` and loaded by the same `bootgly` launcher.
 
 ## Execute the Bootgly CLI
 
-To make sure everything was loaded correctly, in the terminal, change the working directory to the folder that was generated and use the command below to execute the initial screen of Bootgly CLI:
+To make sure everything was loaded correctly, run the initial screen of the Bootgly CLI from your kit directory:
 
 ```bash
 php bootgly
@@ -71,11 +97,9 @@ To uninstall:
 sudo bootgly setup --uninstall
 ```
 
-## Start an HTTP Server
+## Anatomy of a project
 
-In Bootgly, **Projects** bootstrap servers. Each project is a PHP file that creates and configures a server instance.
-
-Create a `HTTP_Server_CLI.project.php` file inside your project folder (e.g., `projects/HTTP_Server_CLI/`):
+In Bootgly, **Projects** bootstrap your apps and servers. Each project is a folder inside `projects/` with a `<Leaf>.project.php` file at its root — that file is the **Bootgly project signature** — returning a configured `Project` instance:
 
 ```php
 use Bootgly\API\Projects\Project;
@@ -84,63 +108,39 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
-   name: 'HTTP Server CLI',
-   boot: function (): void
+   name: 'MyApp',
+   boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $Server->configure(
          host: '0.0.0.0',
-         port: 8082,
-         workers: 4
+         port: 8080,
+         workers: 2
       );
       $Server
          ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
          ->on(Events::ServerStarted, function ($Server) {
             // Called after the server starts listening
-         })
-         ->on(Events::ServerStopped, function ($Server) {
-            // Called after the server stops
          });
       $Server->start();
    }
 );
 ```
 
-Then run the project:
+This is exactly what the wizard generates for a `WPI` project (plus a `router/` with a welcome route). Only project paths registered in `projects/Bootgly.projects.php` can be started — the wizard registers them for you.
+
+## Importing projects
+
+Any git repository carrying the project signature (`*.project.php` at its root) can be imported directly:
 
 ```bash
-bootgly project Demo/HTTP_Server_CLI start
+php bootgly project import https://github.com/foo/project1 Project1
 ```
 
-The server will start listening on `0.0.0.0:8082`.
+The project is cloned, validated, copied into `projects/Project1/` and registered.
 
-### Server Events
-
-The `on()` method registers event callbacks:
-
-| Event | Signature | Description |
-|---|---|---|
-| `Events::RequestReceived` | `fn ($Request, $Response)` | Called for each incoming HTTP request. |
-| `Events::ServerStarted` | `fn ($Server)` | Called after the server starts listening. |
-| `Events::ServerStopped` | `fn ($Server)` | Called after the server stops. |
-
-### Configuration Options
-
-The `configure()` method accepts the following parameters:
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `host` | `string` | — | Bind address (`'0.0.0.0'` for all interfaces). |
-| `port` | `int` | — | Listen port. |
-| `workers` | `int` | — | Number of forked worker processes. |
-| `secure` | `?array` | `null` | Secure SSL/TLS context options. Switches scheme to `https://`. |
-| `user` | `?string` | `null` | POSIX user to drop privileges to after binding. |
-| `group` | `?string` | `null` | POSIX group to drop privileges to after binding. |
-| `requestMaxFileSize` | `?int` | `null` | Max uploaded file size (bytes). |
-| `requestMaxBodySize` | `?int` | `null` | Max request body size (bytes). |
-
-> [!TIP]
-> See the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) documentation for the full configuration, lifecycle, and architecture reference.
+> [!WARNING]
+> Imported projects run third-party code when started — the command asks for confirmation (skip with `--yes`).
 
 ## Binding to privileged ports (80, 443)
 
@@ -151,7 +151,7 @@ Ports below 1024 require special permissions on Linux. There are two approaches:
 After running `sudo php bootgly setup`, you can start the server with sudo:
 
 ```bash
-sudo bootgly project Demo/HTTP_Server_CLI start
+sudo bootgly project MyApp start
 ```
 
 For production, you can combine this with **privilege dropping** — the server binds to the port as root, then drops to a non-privileged user:
@@ -199,8 +199,44 @@ $Server->configure(
 > [!NOTE]
 > For local development, Bootgly includes self-signed certificates at `@/certificates/`. For production, use certificates from a trusted CA (e.g., Let's Encrypt).
 
-A ready-to-use HTTPS project example is included at `projects/HTTPS_Server_CLI/`:
+A ready-to-use HTTPS project example is included at `projects/Demo/HTTPS_Server_CLI/`:
 
 ```bash
 sudo bootgly project Demo/HTTPS_Server_CLI start
 ```
+
+## Reference
+
+### Installer
+
+```bash
+curl -fsSL https://bootgly.com/install | bash [-s -- <dir>]
+```
+
+Checks `git` + PHP 8.4+, clones `bootgly.kit` into `<dir>` (default `myapp`), initializes the `Bootgly` submodule and opens the project wizard on interactive terminals.
+
+### `bootgly project create`
+
+```bash
+bootgly project create [<Name>] [options]
+```
+
+Creates a project. On interactive terminals the wizard fills the missing inputs; with `--yes` (or piped input) everything comes from the flags.
+
+| Option | Description |
+|---|---|
+| `--platform=console\|web` | Platform to set up on the kit's first run (submodules + resources). |
+| `--from=scratch\|<source>` | Creation source: from scratch (default) or a platform project (e.g. `Demo/HTTP_Server_CLI`). |
+| `--interfaces=CLI\|WPI` | Interface bound to the new project (from scratch; default `CLI`). |
+| `--port=<port>` | Server port token for `WPI` projects (default `8080`). |
+| `--description=`, `--version=`, `--author=` | Project metadata (from scratch). |
+| `--default` | Flag the project as the Web (WPI) autoboot default. |
+| `--yes` | Skip confirmations (non-interactive). |
+
+### `bootgly project import`
+
+```bash
+bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
+```
+
+Clones `<url>` (system git), validates the Bootgly project signature (`*.project.php` at the repository root), copies it into `projects/<Name>/` (default: the repository name) and registers it.

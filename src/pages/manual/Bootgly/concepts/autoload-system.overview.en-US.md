@@ -8,7 +8,7 @@ The autoload system can work with up to two different base directories: the root
 
 The root directory, defined by the `BOOTGLY_ROOT_DIR` constant is where the **Bootgly platform is located**. Meanwhile, the working directory, defined by the `BOOTGLY_WORKING_DIR` constant is **where you develop your projects** with Bootgly and will generally have a different path from the Bootgly root directory.
 
-If you are using a starter kit to start your projects and you used `Composer` to manage your dependencies, the root directory of Bootgly will have the relative path `@imports/bootgly/bootgly/`. If you used `git submodules` to manage Bootgly's dependencies and you want to save `Composer` for later, the root directory of Bootgly will have the relative path `Bootgly/Bootgly`.
+If you are using the `bootgly.kit` starter kit to start your projects and you used `Composer` to manage your dependencies, the root directory of Bootgly will have the relative path `@imports/bootgly/bootgly/`. If you used `git submodules` to manage Bootgly's dependencies and you want to save `Composer` for later, the root directory of Bootgly will have the relative path `Bootgly/Bootgly`.
 
 You also have the option to only use the basic Bootgly platform and then you will have to use the CLI and WPI interfaces to develop your apps and APIs and in this case, Bootgly's root and working directories will be the same, since the files that include `autoload.php` will be in the same folder as `autoload.php`!
 

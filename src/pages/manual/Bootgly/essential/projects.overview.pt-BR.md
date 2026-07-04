@@ -66,7 +66,37 @@ Um projeto que serve ambas as interfaces lista as duas: `['interfaces' => ['CLI'
 
 Como os projetos podem aninhar arbitrariamente, um atacante que comprometesse a sua árvore de projetos poderia esconder um `.project.php` aninhado malicioso e fazê-lo executar. O registro fecha essa porta: `bootgly project <caminho> start` executa **apenas** caminhos que sejam chaves exatas de `Bootgly.projects.php`. Qualquer outra coisa — um caminho não registrado, uma pasta de agrupamento (`Demo`), path traversal (`..`), um caminho absoluto, uma barra invertida ou um null byte — é rejeitada, e o diretório resolvido é ainda enjaulado sob a base `projects/`.
 
-Para tornar um novo projeto executável, crie o diretório e o arquivo de boot, depois adicione o caminho dele ao registro.
+Para tornar um novo projeto executável, use `bootgly project create` — ele gera o diretório, o arquivo de boot e a entrada do registro em um único passo. O arquivo de registro é gerenciado por máquina pelo `create`/`import` (as entradas são re-emitidas ordenadas; comentários adicionados à mão dentro do array não são preservados).
+
+## Criando um projeto
+
+`bootgly project create` é a maneira canônica de iniciar um novo projeto. Em terminais interativos, ele abre um **wizard**:
+
+```bash
+php bootgly project create
+```
+
+O wizard prepara o kit na primeira execução (submodules de plataforma + recursos via `bootgly boot`), depois pergunta o modo de criação — **do zero (from scratch)** (um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework) ou **importando um projeto de plataforma** (qualquer projeto encontrado nas pastas de plataforma, como os Demos) — o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma.
+
+Não-interativamente (CI, scripts, agentes de IA), tudo vem das flags:
+
+```bash
+php bootgly project create App/API --from=scratch --interfaces=WPI --port=8080 --yes
+php bootgly project create Mirror --from=Demo/HTTP_Server_CLI --yes
+```
+
+## Importando um projeto
+
+Qualquer diretório que carregue a **assinatura de projeto Bootgly** — um arquivo `*.project.php` na raiz — é um projeto importável. O `bootgly project import` busca um a partir de uma URL de repositório git:
+
+```bash
+php bootgly project import https://github.com/foo/project1 Project1
+```
+
+O repositório é clonado (git do sistema), validado contra a assinatura, copiado para `projects/Project1/` (o arquivo de assinatura é renomeado para o novo leaf) e registrado na allow-list.
+
+> [!WARNING]
+> Projetos importados executam código de terceiros ao serem iniciados — o comando pede confirmação (pule com `--yes`).
 
 ## O comando `project`
 
@@ -75,6 +105,8 @@ O comando `project` é a ferramenta central para gerenciar projetos Bootgly. Rod
 ```mermaid
 graph LR
   project["php bootgly project"]
+  project --> create["create"]
+  project --> import["import"]
   project --> list["list"]
   project --> start["start"]
   project --> stop["stop"]
@@ -82,6 +114,29 @@ graph LR
   project --> reload["reload"]
   project --> restart["restart"]
   project --> info["info"]
+```
+
+### `project create`
+
+Cria um novo projeto — wizard em terminais interativos, flags caso contrário:
+
+```bash
+php bootgly project create [<Name>] [--platform=console|web] [--from=scratch|<source>] \
+   [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--default] [--yes]
+```
+
+- `--platform` — plataforma a configurar na primeira execução do kit (inicializa os submodules `Console`/`Web` e roda o `bootgly boot`);
+- `--from` — `scratch` (padrão) ou o caminho de um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`);
+- `--interfaces` — interface vinculada a um projeto do zero (`CLI` por padrão);
+- `--default` — marca a entrada como padrão de autoboot Web (WPI);
+- `--yes` — pula confirmações.
+
+### `project import`
+
+Importa um projeto de uma URL de repositório git que carregue a assinatura `*.project.php`:
+
+```bash
+php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
 ```
 
 ### `project list`

@@ -1133,6 +1133,27 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Dialog': {
+    config: {
+      icon: 'question_answer',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Confirm actions, prompt for raw answers and pause on alerts in CLI flows.',
+          'pt-BR': 'Confirme ações, solicite respostas raw e pause em alertas nos fluxos de CLI.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Dialog'
+      }
+    }
+  },
   '/CLI/UI/Components/Fieldset': {
     config: {
       icon: 'crop_square',
@@ -1214,6 +1235,27 @@ export default {
     data: {
       '*': {
         title: 'Progress'
+      }
+    }
+  },
+  '/CLI/UI/Components/Question': {
+    config: {
+      icon: 'help',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Ask validated questions with defaults, required answers and attempt limits.',
+          'pt-BR': 'Faça perguntas validadas com valores padrão, respostas obrigatórias e limite de tentativas.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Question'
       }
     }
   },

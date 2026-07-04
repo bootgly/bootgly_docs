@@ -33,5 +33,5 @@ Every item below is first-party code — the core has **zero third-party runtime
 
 - **[Why Bootgly?](/manual/Bootgly/about/why/overview/)** — the problems it solves and the proof behind it;
 - **[Architecture](/manual/Bootgly/basic/architecture/overview/)** — the I2P layers in depth;
-- **[Getting started](/guide/getting-started/overview/)** — your first HTTP server in four commands;
+- **[Getting started](/guide/getting-started/overview/)** — your first project in one command;
 - **[Bootgly vs other runtimes](/manual/WPI/HTTP/HTTP_Server_CLI/vs/)** — feature matrix and benchmarks against Swoole, Hyperf, ReactPHP, AMPHP and Laravel stacks.
