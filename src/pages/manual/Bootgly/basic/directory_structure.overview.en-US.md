@@ -6,42 +6,24 @@ A fundamental part of this structure is the arrangement of directories in its ro
 
 As presented on the Architecture page, this separation is explicit and visual: framework module folders (the Interfaces) start with an **uppercase** letter, while resource dirs start with a **lowercase** letter.
 
-```mermaid
-graph LR
-  root["bootgly/"]
+This is the root dir in the same order your file explorer shows it — `@/` first, then the `Bootgly/` base platform (the Interfaces), then the resource dirs:
 
-  root --> at["@/ (artifacts)"]
-  root --> B["Bootgly/ (base platform)"]
-
-  subgraph Interfaces["Interfaces"]
-    ABI["ABI/"]
-    ACI["ACI/"]
-    ADI["ADI/"]
-    API["API/"]
-    CLI["CLI/"]
-    WPI["WPI/"]
-  end
-
-  B --> ABI
-  B --> ACI
-  B --> ADI
-  B --> API
-  B --> CLI
-  B --> WPI
-
-  subgraph Resources["Resource dirs"]
-    projects["projects/"]
-    public["public/"]
-    scripts["scripts/"]
-    storage["storage/"]
-    tests["tests/"]
-  end
-
-  root --> projects
-  root --> public
-  root --> scripts
-  root --> storage
-  root --> tests
+```text
+bootgly/
+├── @/            ← global artifacts & metadata
+├── Bootgly/      ← base platform (the Interfaces)
+│   ├── ABI/
+│   ├── ACI/
+│   ├── ADI/
+│   ├── API/
+│   ├── CLI/
+│   └── WPI/
+├── configs/      ← resource dirs (lowercase)
+├── projects/
+├── public/
+├── scripts/
+├── storage/
+└── tests/
 ```
 
 ## Global dir @
@@ -77,6 +59,8 @@ The `WPI` interface (Web Programming Interface) is an interface that _represents
 Resource dirs must start with a lowercase letter and are well known in any programming project. In Bootgly these dirs have simply been "formalized"!
 
 These resource dirs are used to store resources standardized by the `Resources` interface found in the `ABI` interface. For example, a class called "Scripts" may standardize a "scripts/" dir that will be used to store Bootgly scripts. A class called "Tests" may formalize a resource dir called "tests/" to store files for testing in Bootgly, and so on! Check below the main resource dirs of Bootgly.
+
+The `configs/` dir stores configuration files loaded in scopes (see the [Configuration](/guide/configuration/overview/) guide). It exists in the root dir and can also exist inside each project.
 
 The `projects/` dir will be used by developer users to store their projects developed from Bootgly such as APIs, Apps, etc. This dir should only be created in the root dir.
 

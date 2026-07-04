@@ -6,42 +6,24 @@ Uma parte fundamental dessa estrutura é a disposição de diretórios da sua pa
 
 Como apresentado na página de Arquitetura, essa separação é explícita e visual: as pastas de módulos do framework (as Interfaces) começam com letra **maiúscula**, enquanto os diretórios de recursos começam com letra **minúscula**.
 
-```mermaid
-graph LR
-  root["bootgly/"]
+Este é o diretório raiz na mesma ordem que o seu explorador de arquivos mostra — `@/` primeiro, depois a plataforma base `Bootgly/` (as Interfaces), depois os diretórios de recursos:
 
-  root --> at["@/ (artefatos)"]
-  root --> B["Bootgly/ (plataforma base)"]
-
-  subgraph Interfaces["Interfaces"]
-    ABI["ABI/"]
-    ACI["ACI/"]
-    ADI["ADI/"]
-    API["API/"]
-    CLI["CLI/"]
-    WPI["WPI/"]
-  end
-
-  B --> ABI
-  B --> ACI
-  B --> ADI
-  B --> API
-  B --> CLI
-  B --> WPI
-
-  subgraph Resources["Diretórios de recursos"]
-    projects["projects/"]
-    public["public/"]
-    scripts["scripts/"]
-    storage["storage/"]
-    tests["tests/"]
-  end
-
-  root --> projects
-  root --> public
-  root --> scripts
-  root --> storage
-  root --> tests
+```text
+bootgly/
+├── @/            ← artefatos e metadados globais
+├── Bootgly/      ← plataforma base (as Interfaces)
+│   ├── ABI/
+│   ├── ACI/
+│   ├── ADI/
+│   ├── API/
+│   ├── CLI/
+│   └── WPI/
+├── configs/      ← diretórios de recursos (minúsculas)
+├── projects/
+├── public/
+├── scripts/
+├── storage/
+└── tests/
 ```
 
 ## Diretório global @/
@@ -77,6 +59,8 @@ A interface `WPI` (Web Programming Interface) é uma interface que _representa a
 Os diretórios de recursos obrigatoriamente começam com letra minúscula e já são bem conhecidos em qualquer projeto de programação. No Bootgly eles foram simplesmente "formalizados"!
 
 Esses diretórios de recursos são utilizados para armazenar recursos padronizados pela interface `Resources` que se encontra na interface `ABI`. Por exemplo, uma classe chamada "Scripts" poderá padronizar diretórios "scripts/" que servirão para armazenar scripts do Bootgly. Uma classe chamada "Tests" poderá formalizar diretórios "tests/" que servirão para armazenar os arquivos para testes no Bootgly, e assim por diante! Confira abaixo os principais diretórios de recursos do Bootgly.
+
+O diretório `configs/` armazena arquivos de configuração carregados em escopos (veja o guia de [Configuração](/guide/configuration/overview/)). Ele existe no diretório raiz e também pode existir dentro de cada projeto.
 
 O diretório `projects/` será utilizado por usuários desenvolvedores para armazenar os seus projetos desenvolvidos a partir do Bootgly. Nele devem ser encontrados Apps, APIs, etc. Este diretório só deve existir dentro do diretório raiz.
 
