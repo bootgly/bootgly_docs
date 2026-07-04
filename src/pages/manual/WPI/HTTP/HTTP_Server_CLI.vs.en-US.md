@@ -65,25 +65,52 @@ in pure PHP** — exactly what the **Performance** gap reflects (≈ 150× Larav
 > **Methodology** — 24 logical CPUs (WSL2), PHP 8.4.22, 514 connections, 10s per point,
 > `DB_POOL_MAX=1` for **every** framework (symmetric database footprint). Each server's
 > **worker count** (`--server-workers`) was swept from 1 to 24; figures are the peak req/s at
-> each framework's best worker count. Reproduce with the
+> each framework's best worker count. The Bootgly series was measured on
+> **v0.19.1-beta** (persistent Fiber pool + DBAL hot path, 2026-07-04); opponent series are
+> the published 2026-06 runs on the same machine and setup. Reproduce with the
 > [HTTP_Server_CLI benchmark case](https://github.com/bootgly/bootgly_benchmarks/tree/main/HTTP_Server_CLI),
 > full per-opponent runs under [results](https://github.com/bootgly/bootgly_benchmarks/tree/main/HTTP_Server_CLI/results).
 
-Peak req/s per route, at each framework's best worker count:
+Peak req/s per route, at each framework's best worker count. Versions: **Bootgly
+v0.19.1-beta**, **Swoole 6.2.0** (ext-swoole), **Hyperf v3.2.0-beta.1** (Swoole engine),
+**ReactPHP** (react/http v1.11.0), **AMPHP** (amphp/http-server v3.4.6) and
+**Laravel v13.16.1 + Octane v2.17.5** (Swoole engine):
 
-| Route (req/s) | Bootgly | Swoole 6.2.0 | Hyperf | ReactPHP | AMPHP | Laravel (Octane) |
+| Route (req/s) | Bootgly v0.19.1-beta | Swoole 6.2.0 | Hyperf v3.2.0-beta.1 | ReactPHP v1.11.0 | AMPHP v3.4.6 | Laravel Octane v2.17.5 |
 |---|--:|--:|--:|--:|--:|--:|
-| `/plaintext` | 1,076,709 | 964,908 | 358,576 | 267,158 | 99,093 | 11,482 |
-| `/json` | 1,068,765 | 979,082 | 347,233 | 269,292 | 99,244 | 11,413 |
-| `/db` (single query) | 88,304 | 95,718 | 75,883 | 43,190 | 29,008 | 8,094 |
-| `/query` (20×) | 20,341 | 17,263 | 15,800 | 924 | 1,890 | 2,326 |
-| `/fortunes` | 73,640 | 98,557 | 75,650 | 42,550 | 14,954 | 7,695 |
-| `/updates` (20×) | 5,974 | 3,721 | 3,499 | 1,086 | 809 | 321 |
+| `/plaintext` | 1,030,930 | 964,908 | 358,576 | 267,158 | 99,093 | 11,482 |
+| `/json` | 1,037,342 | 979,082 | 347,233 | 269,292 | 99,244 | 11,413 |
+| `/db` (single query) | 166,746 | 95,718 | 75,883 | 43,190 | 29,008 | 8,094 |
+| `/query` (20×) | 24,966 | 17,263 | 15,800 | 924 | 1,890 | 2,326 |
+| `/fortunes` | 131,263 | 98,557 | 75,650 | 42,550 | 14,954 | 7,695 |
+| `/updates` (20×) | 5,782 | 3,721 | 3,499 | 1,086 | 809 | 321 |
 
-Against Swoole — the closest competitor — Bootgly leads on `/plaintext`, `/json`, `/query`
-(+126%) and `/updates` (+60%), trailing only on `/db` (−7.7%) and `/fortunes` (−25.3%) at peak
-worker counts. Against every other framework it leads on every route. Laravel (Octane) is shown;
-on nginx + PHP-FPM the gap widens to ≈ 150× on `/plaintext`.
+Bootgly leads **every route against every framework**. Against Swoole — the closest
+competitor — the lead ranges from +6.0% (`/json`) and +6.8% (`/plaintext`) to +33.2%
+(`/fortunes`), +44.6% (`/query`), +55.4% (`/updates`) and **+74.2%** (`/db`). Laravel
+(Octane) is shown; on nginx + PHP-FPM the gap widens to ≈ 150× on `/plaintext`.
+
+Full sweep charts (server-workers 1→24, click for the complete report):
+
+**vs Swoole 6.2.0** — [report](https://github.com/bootgly/bootgly_benchmarks/blob/main/HTTP_Server_CLI/results/swoole/RESULTS-techempower-2026-07-04_002103.md)
+
+![Bootgly vs Swoole — TechEmpower throughput](https://github.com/bootgly/bootgly_benchmarks/raw/main/HTTP_Server_CLI/results/swoole/RESULTS-techempower-2026-07-04_002103.chart.throughput.png)
+
+**vs Hyperf v3.2.0-beta.1** — [report](https://github.com/bootgly/bootgly_benchmarks/blob/main/HTTP_Server_CLI/results/hyperf/RESULTS-techempower-2026-07-04_002106.md)
+
+![Bootgly vs Hyperf — TechEmpower throughput](https://github.com/bootgly/bootgly_benchmarks/raw/main/HTTP_Server_CLI/results/hyperf/RESULTS-techempower-2026-07-04_002106.chart.throughput.png)
+
+**vs ReactPHP v1.11.0** — [report](https://github.com/bootgly/bootgly_benchmarks/blob/main/HTTP_Server_CLI/results/reactphp/RESULTS-techempower-2026-07-04_002108.md)
+
+![Bootgly vs ReactPHP — TechEmpower throughput](https://github.com/bootgly/bootgly_benchmarks/raw/main/HTTP_Server_CLI/results/reactphp/RESULTS-techempower-2026-07-04_002108.chart.throughput.png)
+
+**vs AMPHP v3.4.6** — [report](https://github.com/bootgly/bootgly_benchmarks/blob/main/HTTP_Server_CLI/results/amphp/RESULTS-techempower-2026-07-04_002111.md)
+
+![Bootgly vs AMPHP — TechEmpower throughput](https://github.com/bootgly/bootgly_benchmarks/raw/main/HTTP_Server_CLI/results/amphp/RESULTS-techempower-2026-07-04_002111.chart.throughput.png)
+
+**vs Laravel Octane v2.17.5** — [report](https://github.com/bootgly/bootgly_benchmarks/blob/main/HTTP_Server_CLI/results/laravel-octane/RESULTS-techempower-2026-07-04_002118.md)
+
+![Bootgly vs Laravel Octane — TechEmpower throughput](https://github.com/bootgly/bootgly_benchmarks/raw/main/HTTP_Server_CLI/results/laravel-octane/RESULTS-techempower-2026-07-04_002118.chart.throughput.png)
 
 ## Security
 
