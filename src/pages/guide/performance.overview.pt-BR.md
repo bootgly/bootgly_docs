@@ -15,8 +15,9 @@ A rota estática mostra o teto do servidor HTTP para a máquina, build do PHP, q
 
 ```bash
 bootgly test benchmark HTTP_Server_CLI \
-  --competitors=bootgly \
-  --runner=TCP_Client \
+  --opponents=bootgly \
+  --runner=tcp_client \
+  --loads=benchmark:1 \
   --server-workers=13
 ```
 
@@ -45,17 +46,33 @@ Compare apenas execuções com o mesmo cenário, duração, warmup e carga da m�
 
 O `HTTP_Server_CLI` usa processos worker. Mais workers podem aumentar throughput até CPU, overhead do scheduler ou dependências compartilhadas virarem o gargalo.
 
-Comece perto do número de cores físicos ou de um ótimo já conhecido em rota estática, depois faça varredura:
+Comece perto do número de cores físicos ou de um ótimo já conhecido em rota
+estática, depois faça a varredura — `--server-workers` aceita valores de sweep
+(`A..B`, `A..B:passo`, `N,N,...`) que executam um round por valor em um único
+comando:
 
 ```bash
 bootgly test benchmark HTTP_Server_CLI \
-  --competitors=bootgly \
-  --runner=TCP_Client \
+  --opponents=bootgly \
+  --runner=tcp_client \
+  --loads=benchmark:1 \
   --connections=256 \
-  --server-workers=8
+  --server-workers=8..24:4
 ```
 
-Depois repita com valores como `12`, `16`, `20` e `24` em uma máquina de 24 cores.
+Cada round grava seu próprio arquivo `.bench.marks` e a execução termina com um
+rodapé **Artifacts** apontando para todos os arquivos. Três opções globais
+moldam a saída:
+
+- `--output=full|compact` — estilo da saída (auto: compact ao fazer sweep — o
+  banner do sistema e a lista de opponents imprimem uma vez, cada round ganha um
+  header curto).
+- `--format=text|json` — `json` emite um documento JSON legível por máquina como
+  a última linha do stdout (todos os rounds, resultados e paths dos artefatos).
+- `--results=marks|report|charts` — níveis de artefatos: `report` também grava um
+  `RESULTS-<set>-<timestamp>.md`; `charts` adiciona gráficos SVG nativos
+  (throughput, ratio, latência) — sem tooling externo. Os reports ficam em
+  `bootgly/storage/tests/benchmarks/<case>/results/`.
 
 ## Dimensionamento do pool de banco
 

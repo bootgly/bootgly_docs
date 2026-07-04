@@ -64,7 +64,7 @@ The native driver requires `opcache.enable_cli=0` so that source files are not p
 The `benchmark` subcommand runs performance cases under `benchmarks/`:
 
 ```bash
-php bootgly test benchmark <CASE> --competitors=bootgly
+php bootgly test benchmark <CASE> --opponents=bootgly --loads=<set>:*
 ```
 
 Use `--help` after the case name to inspect runner-specific options:

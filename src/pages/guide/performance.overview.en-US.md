@@ -15,8 +15,9 @@ The static route shows the HTTP server ceiling for the current machine, PHP buil
 
 ```bash
 bootgly test benchmark HTTP_Server_CLI \
-  --competitors=bootgly \
-  --runner=TCP_Client \
+  --opponents=bootgly \
+  --runner=tcp_client \
+  --loads=benchmark:1 \
   --server-workers=13
 ```
 
@@ -45,17 +46,31 @@ Only compare runs with the same scenario, duration, warmup and machine load.
 
 `HTTP_Server_CLI` uses worker processes. More workers can increase throughput until CPU, scheduler overhead or shared dependencies become the bottleneck.
 
-Start around the number of physical cores or a known static-route optimum, then sweep:
+Start around the number of physical cores or a known static-route optimum, then
+sweep — `--server-workers` accepts sweep values (`A..B`, `A..B:step`, `N,N,...`)
+that run one round per value in a single command:
 
 ```bash
 bootgly test benchmark HTTP_Server_CLI \
-  --competitors=bootgly \
-  --runner=TCP_Client \
+  --opponents=bootgly \
+  --runner=tcp_client \
+  --loads=benchmark:1 \
   --connections=256 \
-  --server-workers=8
+  --server-workers=8..24:4
 ```
 
-Then repeat with values such as `12`, `16`, `20` and `24` on a 24-core machine.
+Each round writes its own `.bench.marks` file and the run ends with an
+**Artifacts** footer pointing at every file. Three global options shape the
+output:
+
+- `--output=full|compact` — output style (auto: compact when sweeping — the
+  system banner and opponents list print once, each round gets a short header).
+- `--format=text|json` — `json` emits one machine-readable JSON document as the
+  last stdout line (all rounds, results and artifact paths).
+- `--results=marks|report|charts` — artifact levels: `report` also writes a
+  `RESULTS-<set>-<timestamp>.md`; `charts` adds native SVG charts
+  (throughput, ratio, latency) — no external tooling required. Reports land in
+  `bootgly/storage/tests/benchmarks/<case>/results/`.
 
 ## Database pool sizing
 

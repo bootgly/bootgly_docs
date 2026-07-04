@@ -136,7 +136,7 @@ no database, no external frameworks:
 
 ```bash
 docker run --rm bootgly:full \
-  test benchmark HTTP_Server_CLI --opponents=bootgly --runner=tcp_client
+  test benchmark HTTP_Server_CLI --opponents=bootgly --runner=tcp_client --loads=benchmark:1
 ```
 
 Other cases include `TCP_Server_CLI`, `UDP_Server_CLI`, `Template_Engine` and `Cache`.
@@ -151,7 +151,19 @@ Pull and run (Swoole already baked in):
 
 ```bash
 docker run --rm bootgly/bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
-  --opponents=bootgly,swoole --runner=TCP_Client --loads=benchmark:1 --server-workers=15
+  --opponents=bootgly,swoole --runner=tcp_client --loads=benchmark:1 --server-workers=15
+```
+
+A full worker **sweep with charts** also runs in one `docker run` —
+`--server-workers` accepts sweep values (`1..24`, `1..24:4`, `1,2,4,8`), each
+one an execution round, and `--results=charts` generates the Markdown report +
+native SVG charts. Mount a host directory to keep the artifacts:
+
+```bash
+docker run --rm -v "$(pwd)/results:/bootgly/storage/tests/benchmarks" \
+  bootgly/bootgly_benchmarks:swoole test benchmark HTTP_Server_CLI \
+  --opponents=bootgly,swoole --loads=techempower:1,2 \
+  --server-workers=1..24:4 --results=charts
 ```
 
 Or build it yourself (e.g. to add other opponents), from `bootgly_benchmarks/` (build

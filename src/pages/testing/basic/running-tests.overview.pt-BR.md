@@ -64,7 +64,7 @@ O driver nativo exige `opcache.enable_cli=0` para que os arquivos de origem não
 O subcomando `benchmark` executa casos de performance localizados em `benchmarks/`:
 
 ```bash
-php bootgly test benchmark <CASE> --competitors=bootgly
+php bootgly test benchmark <CASE> --opponents=bootgly --loads=<set>:*
 ```
 
 Use `--help` após o nome do caso para inspecionar as opções específicas do runner:
