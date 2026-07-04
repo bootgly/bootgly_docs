@@ -59,6 +59,8 @@ public function scan (): string|false
 
 O método `scan()` lê uma única linha do stream de entrada — os bytes são consumidos até um terminador de linha (`\n` ou `\r`) ou EOF. Ele retorna a linha sem o terminador, ou `false` em EOF imediato. Funciona em TTYs e pipes, o que o torna a primitiva de leitura de linha por trás de componentes interativos como o [Dialog](/manual/CLI/UI/Components/Dialog/overview) e o [Question](/manual/CLI/UI/Components/Question/overview).
 
+O `scan()` também atua como a line discipline do stream: teclas de apagar (Backspace / Delete) editam o buffer e, em terminais emulados — onde `BOOTGLY_TTY=1` é forçado pelo ambiente mas o stream não é um TTY real, então nenhum kernel ecoa o que você digita — ele faz self-echo da entrada conforme digitada (caracteres UTF-8 inteiros, sequências de apagar e quebras de linha). TTYs reais continuam ecoando no kernel e pipes permanecem silenciosos; a propriedade `Input->echo` sobrescreve a detecção automática.
+
 ### Lendo dados com reading()
 
 ```php

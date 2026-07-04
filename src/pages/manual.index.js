@@ -1136,7 +1136,8 @@ export default {
   '/CLI/UI/Components/Dialog': {
     config: {
       icon: 'question_answer',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.20.0-beta',
       meta: {
         description: {
           'en-US': 'Confirm actions, prompt for raw answers and pause on alerts in CLI flows.',
@@ -1241,7 +1242,8 @@ export default {
   '/CLI/UI/Components/Question': {
     config: {
       icon: 'help',
-      status: 'draft',
+      status: 'new',
+      version: 'v0.20.0-beta',
       meta: {
         description: {
           'en-US': 'Ask validated questions with defaults, required answers and attempt limits.',

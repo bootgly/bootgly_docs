@@ -59,6 +59,8 @@ public function scan (): string|false
 
 The `scan()` method reads a single line from the input stream — bytes are consumed until a line terminator (`\n` or `\r`) or EOF is reached. It returns the line without the terminator, or `false` on immediate EOF. It works on TTYs and pipes, which makes it the line-reading primitive behind interactive components like [Dialog](/manual/CLI/UI/Components/Dialog/overview) and [Question](/manual/CLI/UI/Components/Question/overview).
 
+`scan()` also acts as the line discipline of the stream: erase keys (Backspace / Delete) edit the buffer, and on emulated terminals — where `BOOTGLY_TTY=1` is forced by the environment but the stream is not a real TTY, so no kernel echoes what you type — it self-echoes the input back as typed (whole UTF-8 characters, erase sequences and newlines). Real TTYs keep echoing in the kernel and pipes stay silent; the `Input->echo` property overrides the automatic detection.
+
 ### Reading data with reading()
 
 ```php
