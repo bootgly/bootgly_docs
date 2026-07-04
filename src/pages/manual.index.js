@@ -70,8 +70,8 @@ export default {
       'en-US': {
         overview: {
           _sections: {
-            count: 2,
-            done: 2
+            count: 4,
+            done: 4
           },
           _translations: 2
         }
@@ -106,8 +106,8 @@ export default {
       'en-US': {
         overview: {
           _sections: {
-            count: 4,
-            done: 4
+            count: 6,
+            done: 6
           },
           _translations: 2
         }

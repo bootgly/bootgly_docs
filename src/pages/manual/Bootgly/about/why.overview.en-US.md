@@ -1,71 +1,58 @@
 # Why Bootgly?
 
-The key point of Bootgly is integration as a base for efficiency, performance and versatility, generating as a consequence APIs for easy understanding.
+Because the modern PHP stack became a tax — and Bootgly's bet is that you should not have to pay it.
 
-Bootgly is built on three **Core Principles** that guide every design decision in the framework: **One-way policy**, **Minimum dependency** and **Strict layer separation**. Together, these principles ensure that Bootgly remains coherent, performant and easy to understand as it grows.
+This page explains the problems Bootgly exists to solve, how its design answers them, the numbers that back the claims, and — just as important — the trade-offs of that bet.
 
-## One-way policy
+## The problem
 
-There is exactly **one canonical way** to do each thing in Bootgly — one HTTP server, one config schema, one autoloader, one test framework. This avoids confusion, reduces maintenance burden and keeps AI-generated code precise.
+Making PHP fast and maintainable today usually costs you on three fronts:
 
-While many frameworks offer multiple ORMs, several template engines, or different testing libraries to choose from, Bootgly deliberately provides a single, well-integrated solution for each concern:
+1. **Infrastructure sprawl** — to get performance, teams stack Nginx in front, PHP-FPM behind it, supervisors around it and C extensions (Swoole, event loops) underneath. Every extra piece is one more thing to configure, monitor, upgrade — and pay for;
+2. **Supply-chain surface** — a typical application ships hundreds of `vendor/` packages to production. Each one has its own author, style, release cadence and vulnerabilities to track. Patch reaction time is bounded by the slowest third party;
+3. **Too many ways to do everything** — competing servers, ORMs, template engines and test stacks mean every project starts with a round of plumbing decisions, every onboarding starts from zero, and AI-generated code guesses among patterns.
 
-- **One test framework** — `ACI/Tests` provides the Specification-based testing system used across the entire framework;
-- **One autoloader** — a single `spl_autoload_register` with the root/working directory pattern;
-- **One HTTP server** — `HTTP_Server_CLI` is the built-in, high-performance HTTP server;
-- **One middleware pipeline** — `API/Server/Middlewares` with the onion pattern via interface-only middlewares;
-- **One template engine** — `ABI/Templates` for server-side rendering.
+## The Bootgly answer
 
-This one-way policy brings clarity: when you search for "how to do X in Bootgly", there is always one answer. It also makes the framework highly predictable for AI-assisted development, since there is no ambiguity about which tool or pattern to use.
+Bootgly attacks the three costs directly, with three deliberate design decisions:
 
-## Minimum dependency
+**One canonical way.** There is exactly one way to do each thing — one HTTP server, one config schema, one autoloader, one test framework, one template engine. When you ask "how do I do X in Bootgly?", there is one answer. Onboarding gets faster, reviews get faster, and AI-assisted development gets precise, because there is no ambiguity about which tool or pattern to use.
 
-It is normal when creating a new package to take advantage of the existence of other third-party packages to speed up development in the short term, but as everything in engineering, there are always advantages and disadvantages in it.
+**Minimum dependency.** The core has zero third-party runtime packages: the server, router, ORM, sessions, cache and test framework are first-party code, designed together. That means full-stack integration, a much smaller supply-chain surface to audit, and patch reaction time that depends only on Bootgly itself. See [What is in the box](/manual/Bootgly/about/what/overview/) for the concrete inventory.
 
-We understand that a Framework is something base, and as such, there should not be many third-party packages in your composition because the greater the external dependency, the less integrated and fragile the project as a whole can be, generating some problems:
+**One core, two platforms.** The I2P (Interface-to-Platform) architecture organizes the framework into six interfaces with a strict one-way dependency direction — the same foundation serves the **Console** and **Web** platforms, so a CLI tool and an HTTP API share components instead of duplicating them. The layers are covered in depth in [Architecture](/manual/Bootgly/basic/architecture/overview/).
 
-1. Notifications and bug fixes and vulnerabilities of third-party packages can decrease the reaction time of patch releases;
-2. In the medium or long term, external dependencies can delay the implementation of new features and improvements due to limitations that may exist in the API of the third party package;
-3. The dependency on third party packages increases the learning curve for beginners and for potential source code contributors because it forces learning of external projects with different authors and coding styles.
+## Proof, not promises
 
-Bootgly has this policy of **minimum dependency** to third party packages, allowing more secure development, with the maximum integration between internal components, favoring the rapid implementation of new features and improvements, and making the code base easy to understand.
+All figures below come from published, reproducible runs — measured 2026-07-04 on 24 logical CPUs (WSL2), PHP 8.4.22, 514 connections, TechEmpower-style routes:
 
-With this view, many Bootgly features are built-in and are fully integrated with the Framework itself, thus allowing complete integration with the possibility of rapid extension of its capabilities.
+| Scenario | Bootgly | Reference | Δ |
+|---|---|---|---|
+| HTTP plaintext | 1,030,930 req/s | Swoole — 964,908 req/s | +7.3% |
+| HTTP single DB query | 166,746 req/s | Swoole — 95,718 req/s | +93.8% |
+| HTTP plaintext | 1,030,930 req/s | Laravel + PHP-FPM — 6,959 req/s | ~148× |
+| WebSocket echo (32B) | 873,804 msg/s | Autobahn conformance: 462 passed / 0 failed | — |
+| CLI progress bar | ~7× | Laravel / Symfony progress bar | — |
+| Template engine (`foreach`) | ~9× | Laravel Blade | — |
 
-Here are some concrete examples of built-in features that replace typical third-party dependencies:
+Same hardware, same date, reproducible scripts — read the methodology before quoting these numbers:
 
-- **Template engine** — `ABI/Templates` with directives and iterators;
-- **Test framework** — `ACI/Tests` with Assertions, Suites and Specifications;
-- **HTTP Server** — `WPI/Nodes/HTTP_Server_CLI` with multi-worker support;
-- **Middleware pipeline** — `API/Server/Middlewares` with onion-pattern execution;
-- **Built-in middlewares** — CORS, RateLimit, Compression, ETag, SecureHeaders, and more.
+- **[Bootgly vs other runtimes](/manual/WPI/HTTP/HTTP_Server_CLI/vs/)** — full matrix across Swoole, Hyperf, ReactPHP, AMPHP and Laravel stacks;
+- **[Benchmark repository](https://github.com/bootgly/bootgly_benchmarks)** — scripts, Docker images and published reports.
 
-The big downside to this approach is that launches become more time-consuming.
+## The trade-offs
 
-## Strict layer separation
+Honesty is part of the bet. Choosing to build everything first-party has real costs:
 
-Bootgly's I2P architecture defines six interfaces with a **strict dependency direction** — each layer can only depend on the layers below it. No cross-layer skipping is allowed.
+- **Features take longer to ship** — building a native component is slower than wiring a third-party package, so the roadmap moves deliberately;
+- **Beta status** — Bootgly is pre-1.0: the public API is still being finalized, and production use is not yet recommended;
+- **Linux-native** — Windows and other systems are supported through Docker only;
+- **Young ecosystem** — there is no marketplace of community packages; what the core does not ship, you build.
 
-The six interfaces, from the most foundational to the most specialized, are:
+Bootgly is probably **not** the right choice today if you need a large ecosystem of ready-made packages, long-term-support stability in production right now, or native Windows execution. If those are your constraints, a traditional full-stack framework will serve you better — and the comparison page above stays honest about that.
 
-1. **ABI** (Abstract Bootable Interface) — everything related to booting and OS-level abstractions: filesystem, configurations, templates, debugging;
-2. **ACI** (Abstract Common Interface) — everything common in software: benchmarks, events, logs, tests;
-3. **ADI** (Abstract Data Interface) — everything related to data: databases, tables;
-4. **API** (Application Programming Interface) — everything intrinsic to the application: projects, environments, server handlers, middleware pipeline;
-5. **CLI** (Command Line Interface) — commands, scripts, terminal I/O and UI components for the Console;
-6. **WPI** (Web Programming Interface) — TCP/HTTP servers and clients, protocol modules, routing for the Web.
+## Next steps
 
-```mermaid
-graph TB
-  ABI["ABI\nAbstract Bootable Interface"] --> ACI["ACI\nAbstract Common Interface"]
-  ACI --> ADI["ADI\nAbstract Data Interface"]
-  ADI --> API["API\nApplication Programming Interface"]
-  API --> CLI["CLI\nCommand Line Interface"]
-  API --> WPI["WPI\nWeb Programming Interface"]
-  CLI -. "creates" .-> Console["Console Platform"]
-  WPI -. "creates" .-> Web["Web Platform"]
-```
-
-This is the **I2P (Interface-to-Platform)** architecture: the top-level interfaces (CLI and WPI) each give rise to a **Platform** — CLI creates the **Console** platform and WPI creates the **Web** platform. Each platform can then contain its own interfaces and workables.
-
-Future platforms may include **AI** (originating from ADI), **Graphics** (from a future GUI interface), Embedded and Mobile.
+- **[What is Bootgly?](/manual/Bootgly/about/what/overview/)** — identity, inventory and requirements;
+- **[Getting started](/guide/getting-started/overview/)** — from an empty directory to a running HTTP server;
+- **[Architecture](/manual/Bootgly/basic/architecture/overview/)** — the I2P layers in depth.
