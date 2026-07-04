@@ -17,7 +17,7 @@ O instalador:
 
 O wizard te guia de um kit vazio até um projeto rodando:
 
-1. **Plataforma** — escolha `Console` (apps CLI / TUI) ou `Web` (servidores HTTP / WebSocket — inclui o Console). O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
+1. **Plataforma** — escolha `Console` (apps CLI / TUI) ou `Web` (inclui o Console). O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
 2. **Recursos** — ele executa o `bootgly boot` para instalar as pastas de recursos (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) no seu kit;
 3. **Modo** — crie **do zero (from scratch)** ou **importe um projeto de plataforma** (como os Demos que acompanham o framework);
 4. **Projeto** — escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor;
