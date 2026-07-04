@@ -9,7 +9,7 @@ curl -fsSL https://bootgly.com/install | bash
 The installer:
 
 1. Checks your environment (`git` + PHP **8.4+**);
-2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./myapp` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
+2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./bootgly.kit` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
 3. Initializes the **Bootgly platform** (git submodule);
 4. Opens the **project wizard** (`php bootgly project create`).
 
@@ -47,8 +47,8 @@ Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of fr
 Prefer to do it by hand? Use [bootgly.kit](https://github.com/bootgly/bootgly.kit) as a GitHub template (or clone it), then:
 
 ```bash
-git clone https://github.com/bootgly/bootgly.kit myapp
-cd myapp
+git clone https://github.com/bootgly/bootgly.kit
+cd bootgly.kit
 git submodule update --init Bootgly
 php bootgly project create
 ```
@@ -60,8 +60,8 @@ The kit keeps the platforms as git submodules — `Bootgly/` (the framework), `C
 If you need Composer to manage external dependencies:
 
 ```bash
-composer create-project bootgly/bootgly.kit myapp --stability=dev
-cd myapp
+composer create-project bootgly/bootgly.kit --stability=dev
+cd bootgly.kit
 php bootgly project create
 ```
 
@@ -213,7 +213,7 @@ sudo bootgly project Demo/HTTPS_Server_CLI start
 curl -fsSL https://bootgly.com/install | bash [-s -- <dir>]
 ```
 
-Checks `git` + PHP 8.4+, clones `bootgly.kit` into `<dir>` (default `myapp`), initializes the `Bootgly` submodule and opens the project wizard on interactive terminals.
+Checks `git` + PHP 8.4+, clones `bootgly.kit` into `<dir>` (default `bootgly.kit`), initializes the `Bootgly` submodule and opens the project wizard on interactive terminals.
 
 ### `bootgly project create`
 
