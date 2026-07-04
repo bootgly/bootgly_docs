@@ -67,8 +67,10 @@ moldam a saída:
 - `--output=full|compact` — estilo da saída (auto: compact ao fazer sweep — o
   banner do sistema e a lista de opponents imprimem uma vez, cada round ganha um
   header curto).
-- `--format=text|json` — `json` emite um documento JSON legível por máquina como
-  a última linha do stdout (todos os rounds, resultados e paths dos artefatos).
+- `--format=text|json` — com `json`, a execução imprime **apenas** um documento
+  JSON legível por máquina (todos os rounds, resultados e paths dos artefatos);
+  toda a saída legível por humanos é suprimida, então a saída encadeia direto
+  no `jq`.
 - `--results=marks|report|charts` — níveis de artefatos: `report` também grava um
   `RESULTS-<set>-<timestamp>.md`; `charts` adiciona gráficos SVG nativos
   (throughput, ratio, latência) — sem tooling externo. Os reports ficam em

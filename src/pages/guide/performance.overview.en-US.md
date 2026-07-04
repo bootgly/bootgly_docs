@@ -65,8 +65,10 @@ output:
 
 - `--output=full|compact` — output style (auto: compact when sweeping — the
   system banner and opponents list print once, each round gets a short header).
-- `--format=text|json` — `json` emits one machine-readable JSON document as the
-  last stdout line (all rounds, results and artifact paths).
+- `--format=text|json` — with `json`, the run prints **only** one
+  machine-readable JSON document (all rounds, results and artifact paths);
+  all human-readable output is suppressed, so the output pipes straight
+  into `jq`.
 - `--results=marks|report|charts` — artifact levels: `report` also writes a
   `RESULTS-<set>-<timestamp>.md`; `charts` adds native SVG charts
   (throughput, ratio, latency) — no external tooling required. Reports land in
