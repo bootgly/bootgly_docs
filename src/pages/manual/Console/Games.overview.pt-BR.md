@@ -105,7 +105,7 @@ $this->Scenes->add(new Scene(
 
 ## Os demos Snake e Pong
 
-A plataforma traz dois jogos completos como projetos exportáveis (`Console/projects/`): o clássico **Snake** (direção pelas setas, aceleração ao segurar) e o **Pong** contra uma IA simples (raquete por tecla segurada, deflexão pelo ponto de impacto) — ambos com scenes Menu → Play → Over, tabuleiros de pixels quadrados ajustados e centrados no terminal, e o placar na Statusbar. Jogue-os no [showcase ao vivo](/manual/Console/Games/showcase), importe-os pelo wizard ou rode-os do repo da plataforma:
+A plataforma traz dois jogos completos como projetos exportáveis (`Console/projects/`): o clássico **Snake** (direção pelas setas, aceleração ao segurar) e o **Pong** contra uma IA simples (raquete por impulso de tecla — toque ajusta, segurar acelera — e deflexão pelo ponto de impacto) — ambos com scenes Menu → Play → Over, tabuleiros de pixels quadrados ajustados e centrados no terminal, e o placar na Statusbar. Jogue-os no [showcase ao vivo](/manual/Console/Games/showcase), importe-os pelo wizard ou rode-os do repo da plataforma:
 
 ```bash
 php bootgly project Snake start

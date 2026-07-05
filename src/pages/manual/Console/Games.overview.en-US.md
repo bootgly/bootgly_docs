@@ -105,7 +105,7 @@ $this->Scenes->add(new Scene(
 
 ## The Snake and Pong demos
 
-The platform ships two complete games as exportable projects (`Console/projects/`): the classic **Snake** (arrow steering, hold-to-accelerate) and **Pong** vs a simple AI (held-key paddle movement, deflection by hit offset) — both with Menu → Play → Over scenes, square-pixel boards fitted and centered to the terminal, and the score on the Statusbar. Play them in the [live showcase](/manual/Console/Games/showcase), import them with the wizard or run them from the platform repo:
+The platform ships two complete games as exportable projects (`Console/projects/`): the classic **Snake** (arrow steering, hold-to-accelerate) and **Pong** vs a simple AI (keystroke-impulse paddle — tap to nudge, hold to stream — and deflection by hit offset) — both with Menu → Play → Over scenes, square-pixel boards fitted and centered to the terminal, and the score on the Statusbar. Play them in the [live showcase](/manual/Console/Games/showcase), import them with the wizard or run them from the platform repo:
 
 ```bash
 php bootgly project Snake start
