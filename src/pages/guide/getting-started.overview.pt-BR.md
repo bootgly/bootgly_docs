@@ -20,7 +20,7 @@ O wizard te guia de um kit vazio até um projeto rodando:
 
 1. **Plataforma** — a **plataforma base Bootgly** sempre vem incluída: não opinativa, ela traz as interfaces `CLI` e `WPI`. Aqui você escolhe a **plataforma extra** com as dependências opinativas: `Console` (extras de CLI — apps TUI) ou `Web` (extras de WPI — inclui o Console). O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
 2. **Recursos** — ele executa o `bootgly boot` para instalar as pastas de recursos (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) no seu kit;
-3. **Modo** — crie **do zero (from scratch)** ou **importe projetos de plataforma** (como os Demos que acompanham o framework);
+3. **Modo** — crie **do zero (from scratch)** ou **importe a partir de projetos de Plataforma** (como os Demos que acompanham o framework);
 4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. Importando: apenas multi-selecione os projetos (Espaço marca, Enter confirma) — cada um é copiado sob o próprio caminho de plataforma, sem perguntas; cópias existentes são sinalizadas com `(overwrite)` e atualizadas;
 5. **Confirmação** — revise o resumo (modo, importações com a plataforma de origem, overwrites) e confirme. Os projetos ficam em `projects/<Caminho>/` e são registrados em `projects/Bootgly.projects.php`.
 
