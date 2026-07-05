@@ -356,7 +356,7 @@ export default {
   '/ADI': {
     config: {
       icon: 'data_array',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -384,7 +384,7 @@ export default {
   '/ADI/Database': {
     config: {
       icon: 'hub',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -426,7 +426,7 @@ export default {
   '/ADI/Databases/SQL/Transaction': {
     config: {
       icon: 'sync_alt',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -451,7 +451,7 @@ export default {
   '/ADI/Databases/SQL/Builder': {
     config: {
       icon: 'storage',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -478,7 +478,7 @@ export default {
   '/ADI/Databases/SQL/Builder/Reading': {
     config: {
       icon: 'search',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -503,7 +503,7 @@ export default {
   '/ADI/Databases/SQL/Builder/Writing': {
     config: {
       icon: 'edit_note',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -528,7 +528,7 @@ export default {
   '/ADI/Databases/SQL/Builder/Composing': {
     config: {
       icon: 'account_tree',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -553,7 +553,7 @@ export default {
   '/ADI/Databases/SQL/Builder/Dialects': {
     config: {
       icon: 'compare_arrows',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -580,7 +580,7 @@ export default {
   '/ADI/Databases/SQL/Schema': {
     config: {
       icon: 'schema',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -605,7 +605,7 @@ export default {
   '/ADI/Databases/SQL/Schema/Blueprint': {
     config: {
       icon: 'view_column',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -630,7 +630,7 @@ export default {
   '/ADI/Databases/SQL/Schema/Migrations': {
     config: {
       icon: 'history',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -652,7 +652,7 @@ export default {
   '/ADI/Databases/SQL/Schema/Dialects': {
     config: {
       icon: 'compare_arrows',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -676,7 +676,7 @@ export default {
   '/ADI/Databases/SQL/Seed': {
     config: {
       icon: 'playlist_add',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -708,7 +708,7 @@ export default {
   '/ADI/Databases/SQL/Model': {
     config: {
       icon: 'label',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -735,7 +735,7 @@ export default {
   '/ADI/Databases/SQL/Model/Attributes': {
     config: {
       icon: 'sell',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -760,7 +760,7 @@ export default {
   '/ADI/Databases/SQL/Repository': {
     config: {
       icon: 'account_tree',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
@@ -785,7 +785,7 @@ export default {
   '/ADI/Databases/SQL/Repository/Relations': {
     config: {
       icon: 'hub',
-      status: 'new',
+      status: 'done',
       version: 'v0.16.0',
       meta: {
         description: {
