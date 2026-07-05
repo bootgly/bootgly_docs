@@ -1200,15 +1200,15 @@ export default {
       }
     }
   },
-  '/CLI/UI/Components/Chart': {
+  '/CLI/UI/Components/Charts': {
     config: {
       icon: 'bar_chart',
       status: 'new',
       version: 'v0.20.0-beta',
       meta: {
         description: {
-          'en-US': 'Plot labeled series as ANSI sparklines or horizontal bars in the terminal.',
-          'pt-BR': 'Plote séries rotuladas como sparklines ANSI ou barras horizontais no terminal.'
+          'en-US': 'Plot gradient-colored sparklines, bars, meters and live braille graphs in the terminal.',
+          'pt-BR': 'Plote sparklines com gradiente, barras, meters e graphs braille ao vivo no terminal.'
         }
       },
       menu: {},
@@ -1218,7 +1218,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Chart'
+        title: 'Charts'
       }
     }
   },

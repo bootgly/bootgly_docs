@@ -22,7 +22,7 @@ Each command maps to a real file under [`projects/Demo/CLI/`](https://github.com
 - **Form** — the sequential multi-field component: Text, Secret, Select and Confirm fields asked one at a time (`↑` + Enter goes back), ending in a summary Fieldset + confirm Menu.
 - **Menu** — the interactive selection component: arrows aim, Space toggles, Enter confirms the selection or the aimed option, letters filter — `Ctrl+C` interrupts (divisors, unique selection, horizontal, alignments, viewport + filter and grid variations live in the [Menu showcase](/manual/CLI/UI/Components/Menu/showcase)).
 - **Alert, Fieldset, Table** — output components rendering ANSI-styled boxes, labels and aligned columns.
-- **Chart** — ANSI plots: a one-line sparkline and labeled horizontal bars scaled to the widest value (also printed by `bootgly test benchmark`).
+- **Charts** — the ANSI chart family: gradient-colored sparkline, labeled bars and meters (the live braille Graph streams in the [Charts showcase](/manual/CLI/UI/Components/Charts/showcase); Bars is also printed by `bootgly test benchmark`).
 - **Progress** — the animated progress bar: hearts fill up while elapsed time, ETA and rate tick in real time (indeterminate and multi-bar grid variations live in the [Progress showcase](/manual/CLI/UI/Components/Progress/showcase)).
 - **Text (effects)** — animated text: typewriter, fade-in and the shimmering color wave passing letter by letter.
 - **Textarea** — the multiline editor: Enter breaks lines, arrows navigate, Ctrl+D submits (stdin lines until EOF on pipes).

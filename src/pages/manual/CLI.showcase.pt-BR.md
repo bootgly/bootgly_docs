@@ -22,7 +22,7 @@ Cada comando mapeia para um arquivo real em [`projects/Demo/CLI/`](https://githu
 - **Form** — o componente sequencial multi-campo: campos Text, Secret, Select e Confirm perguntados um por vez (`↑` + Enter volta), terminando em um Fieldset de resumo + Menu de confirmação.
 - **Menu** — o componente interativo de seleção: setas miram, Espaço alterna, Enter confirma a seleção ou a opção mirada, letras filtram — `Ctrl+C` interrompe (variações de divisores, seleção única, horizontal, alinhamentos, viewport + filtro e grade vivem no [showcase do Menu](/manual/CLI/UI/Components/Menu/showcase)).
 - **Alert, Fieldset, Table** — componentes de saída renderizando caixas estilizadas em ANSI, rótulos e colunas alinhadas.
-- **Chart** — plots ANSI: um sparkline de uma linha e barras horizontais rotuladas escaladas ao maior valor (também impresso pelo `bootgly test benchmark`).
+- **Charts** — a família de charts ANSI: sparkline com gradiente, barras rotuladas e meters (o Graph braille ao vivo transmite no [showcase do Charts](/manual/CLI/UI/Components/Charts/showcase); o Bars também é impresso pelo `bootgly test benchmark`).
 - **Progress** — a barra de progresso animada: corações se preenchem enquanto tempo decorrido, ETA e taxa atualizam em tempo real (variações indeterminada e grade multi-bar vivem no [showcase do Progress](/manual/CLI/UI/Components/Progress/showcase)).
 - **Text (efeitos)** — texto animado: typewriter, fade-in e a onda de cor shimmer passando letra por letra.
 - **Textarea** — o editor multilinha: Enter quebra linhas, setas navegam, Ctrl+D submete (linhas do stdin até EOF em pipes).
