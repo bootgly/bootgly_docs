@@ -34,6 +34,7 @@ return new Project(
    description: 'A generic Bootgly project example',
    version: '1.0.0',
    author: 'Your Name',
+   exportable: true,
 
    boot: function (array $arguments = [], array $options = []): void
    {
@@ -76,13 +77,18 @@ Para tornar um novo projeto executável, use `bootgly project create` — ele ge
 php bootgly project create
 ```
 
-O wizard prepara o kit na primeira execução (submodules de plataforma + recursos via `bootgly boot`), depois pergunta o modo de criação — **do zero (from scratch)** (um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework) ou **importando um projeto de plataforma** (qualquer projeto encontrado nas pastas de plataforma, como os Demos) — o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma.
+O wizard prepara o kit na primeira execução (submodules de plataforma + recursos via `bootgly boot`), depois pergunta o modo de criação:
+
+- **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
+- **Importando projetos de plataforma** — uma multi-seleção sobre os projetos **exportáveis** encontrados nas pastas de plataforma (como os Demos): cada projeto selecionado é copiado recursivamente sob o próprio caminho no `projects/` do seu workspace, sem perguntas. Cópias existentes a nível de usuário — que se sobrepõem às da plataforma no carregamento — são sinalizadas com `(overwrite)` no resumo e atualizadas.
+
+Apenas projetos declarados com `exportable: true` na assinatura `new Project(...)` aparecem no picker de importação.
 
 Não-interativamente (CI, scripts, agentes de IA), tudo vem das flags:
 
 ```bash
 php bootgly project create App/API --from=scratch --interfaces=WPI --port=8080 --yes
-php bootgly project create Mirror --from=Demo/HTTP_Server_CLI --yes
+php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 ```
 
 ## Importando um projeto
@@ -126,7 +132,7 @@ php bootgly project create [<Name>] [--platform=console|web] [--from=scratch|<so
 ```
 
 - `--platform` — plataforma a configurar na primeira execução do kit (inicializa os submodules `Console`/`Web` e roda o `bootgly boot`);
-- `--from` — `scratch` (padrão) ou o caminho de um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`);
+- `--from` — `scratch` (padrão) ou o caminho de um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`). Importações de plataforma mantêm o próprio caminho (`<Name>` é opcional) e atualizam uma cópia existente;
 - `--interfaces` — interface vinculada a um projeto do zero (`CLI` por padrão);
 - `--default` — marca a entrada como padrão de autoboot Web (WPI);
 - `--yes` — pula confirmações.

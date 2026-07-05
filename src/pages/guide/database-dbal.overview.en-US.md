@@ -77,6 +77,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
 
 return new Project(
+   exportable: true,
    boot: function (): void {
       $HTTP_Server_CLI = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $HTTP_Server_CLI->configure(

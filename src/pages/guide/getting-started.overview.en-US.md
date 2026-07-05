@@ -19,9 +19,9 @@ The wizard guides you from an empty kit to a running project:
 
 1. **Platform** — choose `Console` (CLI / TUI apps) or `Web` (includes Console). The wizard initializes the matching platform submodules (`Console/`, `Web/`);
 2. **Resources** — it runs `bootgly boot` to install the resource folders (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) into your kit;
-3. **Mode** — create **from scratch** or **import a platform project** (like the Demos shipped with the framework);
-4. **Project** — pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author;
-5. **Confirm** — review the summary and confirm. The project is generated in `projects/<Path>/` and registered in `projects/Bootgly.projects.php`.
+3. **Mode** — create **from scratch** or **import platform projects** (like the Demos shipped with the framework);
+4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. Importing: just multi-select the projects (Space marks, Enter confirms) — each one is copied under its own platform path, no questions asked; existing copies are flagged `(overwrite)` and refreshed;
+5. **Confirm** — review the summary and confirm. Projects land in `projects/<Path>/` and are registered in `projects/Bootgly.projects.php`.
 
 Then boot it:
 
@@ -109,6 +109,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
    name: 'MyApp',
+   exportable: true,
    boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);

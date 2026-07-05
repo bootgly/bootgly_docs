@@ -41,6 +41,7 @@ return new Project(
    description: 'HTTP server demo with routing and catch-all 404',
    version: '0.1.0',
    author: 'Your Name',
+   exportable: true,
 
    boot: function (array $arguments = [], array $options = []): void
    {

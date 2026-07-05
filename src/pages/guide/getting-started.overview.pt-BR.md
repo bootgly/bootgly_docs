@@ -19,9 +19,9 @@ O wizard te guia de um kit vazio até um projeto rodando:
 
 1. **Plataforma** — escolha `Console` (apps CLI / TUI) ou `Web` (inclui o Console). O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
 2. **Recursos** — ele executa o `bootgly boot` para instalar as pastas de recursos (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) no seu kit;
-3. **Modo** — crie **do zero (from scratch)** ou **importe um projeto de plataforma** (como os Demos que acompanham o framework);
-4. **Projeto** — escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor;
-5. **Confirmação** — revise o resumo e confirme. O projeto é gerado em `projects/<Caminho>/` e registrado em `projects/Bootgly.projects.php`.
+3. **Modo** — crie **do zero (from scratch)** ou **importe projetos de plataforma** (como os Demos que acompanham o framework);
+4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. Importando: apenas multi-selecione os projetos (Espaço marca, Enter confirma) — cada um é copiado sob o próprio caminho de plataforma, sem perguntas; cópias existentes são sinalizadas com `(overwrite)` e atualizadas;
+5. **Confirmação** — revise o resumo e confirme. Os projetos ficam em `projects/<Caminho>/` e são registrados em `projects/Bootgly.projects.php`.
 
 Depois, inicie:
 
@@ -109,6 +109,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
    name: 'MyApp',
+   exportable: true,
    boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);

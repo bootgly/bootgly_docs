@@ -40,6 +40,7 @@ return new Project(
    description: 'Demonstração do servidor HTTP com roteamento e captura de 404',
    version: '0.1.0',
    author: 'Seu Nome',
+   exportable: true,
 
    boot: function (array $arguments = [], array $options = []): void
    {
