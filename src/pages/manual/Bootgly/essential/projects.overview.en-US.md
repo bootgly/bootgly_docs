@@ -91,6 +91,44 @@ php bootgly project create App/API --from=scratch --interfaces=WPI --port=8080 -
 php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 ```
 
+### The workspace, before and after
+
+A freshly installed kit (what `curl -fsSL https://bootgly.com/install | bash` — or `git clone` + `git submodule update --init Bootgly` — leaves behind) contains only the **base platform** and the kit files:
+
+```text
+bootgly.kit/
+├── Bootgly/            ← base platform (required git submodule)
+│   ├── Bootgly/        ← the framework itself: ABI/ ACI/ ADI/ API/ CLI/ WPI/ + commands/
+│   ├── projects/       ← author-level projects — the import sources (Demo/, Benchmark/, Example/)
+│   ├── public/  scripts/  storage/  tests/   ← resource templates used by `bootgly boot`
+│   └── autoboot.php    ← framework autoboot (required by the kit launcher)
+├── bootgly             ← the CLI launcher (autoboots Bootgly + the optional platforms)
+├── index.php           ← the Web front controller
+├── composer.json
+└── README.md
+```
+
+`Console/` and `Web/` exist only as empty submodule entries at this point. The wizard's first run initializes the chosen platform submodules and runs `bootgly boot` to install your own resource folders:
+
+```text
+bootgly.kit/
+├── Bootgly/            ← base platform (submodule)
+├── Console/            ← Console platform (initialized by the wizard)
+├── Web/                ← Web platform (initialized when chosen)
+├── projects/           ← YOUR projects — installed by `bootgly boot`
+│   ├── Benchmark/      ← exportable: false — hidden from the import picker
+│   ├── Demo/           ← exportable: true — importable / refreshable by the wizard
+│   ├── Example/
+│   └── Bootgly.projects.php   ← the consumer registry (allow-list, machine-managed)
+├── public/             ← installed by `bootgly boot`
+├── scripts/            ← installed by `bootgly boot`
+├── storage/            ← installed by `bootgly boot` (cache/, logs/, pids/)
+├── tests/              ← installed by `bootgly boot`
+├── bootgly  index.php  composer.json  README.md
+```
+
+Everything you own lives at the workspace level — `projects/`, `public/`, `storage/` — while the platforms stay untouched inside their submodules. When a project exists both in your `projects/` and in a platform's, **your copy wins on load**: that is why re-importing a platform project simply refreshes your copy.
+
 ## Importing a project
 
 Any directory carrying the **Bootgly project signature** — a `*.project.php` file at its root — is an importable project. `bootgly project import` fetches one from a git repository URL:
