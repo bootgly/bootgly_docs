@@ -14,6 +14,100 @@ The installer:
 4. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
 5. Opens the **project wizard** (`php bootgly project create`).
 
+<details>
+   <summary><kbd>Manual setup (git submodules)</kbd></summary><br>
+
+   Prefer to do it by hand? Use [bootgly.kit](https://github.com/bootgly/bootgly.kit) as a GitHub template (or clone it), then:
+
+   ```bash
+   git clone https://github.com/bootgly/bootgly.kit
+   cd bootgly.kit
+   git submodule update --init Bootgly
+   php bootgly project create
+   ```
+
+   The kit keeps the platforms as git submodules — `Bootgly/` (the framework), `Console/` and `Web/` — and the wizard initializes the optional ones on demand.
+</details>
+
+<details>
+   <summary><kbd>Using Composer (alternative)</kbd></summary><br>
+
+   If you need Composer to manage external dependencies:
+
+   ```bash
+   composer create-project bootgly/bootgly.kit --stability=dev
+   cd bootgly.kit
+   php bootgly project create
+   ```
+
+   Dependencies are installed into `./@imports/` and loaded by the same `bootgly` launcher.
+</details>
+
+A freshly cloned kit (`git clone` — or using the GitHub template) contains only the kit files — every platform submodule is **empty** until installed:
+
+```text
+bootgly.kit/
+├── Bootgly/            ← base platform (REQUIRED git submodule — empty, not installed yet)
+├── Console/            ← Console platform (optional git submodule — empty)
+├── Web/                ← Web platform (optional git submodule — empty)
+├── .gitignore
+├── .gitmodules         ← Bootgly (required) + Console and Web (optional platforms)
+├── LICENSE
+├── README.md
+├── bootgly             ← the CLI launcher (autoboots Bootgly + the optional platforms)
+├── composer.json
+└── index.php           ← the Web front controller
+```
+
+The installer initializes the required base platform (`git submodule update --init Bootgly`); the wizard's first run initializes the chosen platform submodules and runs `bootgly boot` to install your own resource folders:
+
+```text
+bootgly.kit/
+├── Bootgly/            ← base platform (installed submodule)
+│   ├── &/              ← internal framework resources
+│   ├── @/              ← framework meta resources (certificates, static analysis, ...)
+│   ├── Bootgly/        ← the framework itself — the I2P interfaces, in dependency order:
+│   │   ├── ABI/        ← Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
+│   │   ├── ACI/        ← Events/ Fakers/ Logs/ Observability/ Process/ Queues/ Schedule/ Tests/
+│   │   ├── ADI/        ← Database/ Databases/ Table/
+│   │   ├── API/        ← Endpoints/ Environment/ Projects/ Security/ Workables/
+│   │   ├── CLI/        ← Commands/ Terminal/ UI/
+│   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
+│   │   └── commands/   ← built-in CLI commands (boot, demo, project, test, ...)
+│   ├── configs/        ← framework configs
+│   ├── docs/           ← framework docs assets
+│   ├── projects/       ← author-level projects — the import sources (Benchmark/, Demo/, Example/)
+│   ├── public/         ← resource template used by `bootgly boot`
+│   ├── scripts/        ← resource template used by `bootgly boot`
+│   ├── storage/        ← resource template used by `bootgly boot`
+│   ├── tests/          ← resource template used by `bootgly boot`
+│   ├── Bootgly.php     ← the framework root entity
+│   ├── autoboot.php    ← framework autoboot (required by the kit launcher)
+│   ├── bootgly         ← the framework's own CLI launcher
+│   ├── composer.json
+│   └── index.php
+├── Console/            ← Console platform (installed by the wizard)
+├── Web/                ← Web platform (installed when chosen)
+├── projects/           ← YOUR projects — installed by `bootgly boot`
+│   ├── Benchmark/      ← exportable: false — hidden from the import picker
+│   ├── Demo/           ← exportable: true — importable / refreshable by the wizard
+│   ├── Example/
+│   └── Bootgly.projects.php   ← the consumer registry (allow-list, machine-managed)
+├── public/             ← installed by `bootgly boot`
+├── scripts/            ← installed by `bootgly boot`
+├── storage/            ← installed by `bootgly boot` (cache/, logs/, pids/)
+├── tests/              ← installed by `bootgly boot`
+├── .gitignore
+├── .gitmodules
+├── LICENSE
+├── README.md
+├── bootgly             ← now autoboots Bootgly + Console (+ Web) through the conditional chain
+├── composer.json
+└── index.php
+```
+
+Everything you own lives at the workspace level — `projects/`, `public/`, `storage/` — while the platforms stay untouched inside their submodules. When a project exists both in your `projects/` and in a platform's, **your copy wins on load**: that is why re-importing a platform project simply refreshes your copy.
+
 ## The project wizard
 
 The wizard guides you from an empty kit to a running project:
@@ -42,31 +136,6 @@ php bootgly project create App/API --platform=web --from=scratch --interfaces=WP
 ```
 
 Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of from scratch. See the [Reference](#reference) below for all flags.
-
-## Manual setup (git submodules)
-
-Prefer to do it by hand? Use [bootgly.kit](https://github.com/bootgly/bootgly.kit) as a GitHub template (or clone it), then:
-
-```bash
-git clone https://github.com/bootgly/bootgly.kit
-cd bootgly.kit
-git submodule update --init Bootgly
-php bootgly project create
-```
-
-The kit keeps the platforms as git submodules — `Bootgly/` (the framework), `Console/` and `Web/` — and the wizard initializes the optional ones on demand.
-
-## Using Composer (alternative)
-
-If you need Composer to manage external dependencies:
-
-```bash
-composer create-project bootgly/bootgly.kit --stability=dev
-cd bootgly.kit
-php bootgly project create
-```
-
-Dependencies are installed into `./@imports/` and loaded by the same `bootgly` launcher.
 
 ## Execute the Bootgly CLI
 
@@ -232,7 +301,6 @@ Creates a project. On interactive terminals the wizard fills the missing inputs;
 | `--interfaces=CLI\|WPI` | Interface bound to the new project (from scratch; default `CLI`). |
 | `--port=<port>` | Server port token for `WPI` projects (default `8080`). |
 | `--description=`, `--version=`, `--author=` | Project metadata (from scratch). |
-| `--default` | Flag the project as the Web (WPI) autoboot default. |
 | `--yes` | Skip confirmations (non-interactive). |
 
 ### `bootgly project import`
