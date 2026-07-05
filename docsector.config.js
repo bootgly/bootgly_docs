@@ -34,7 +34,8 @@ export default {
     sponsor: 'https://github.com/sponsors/bootgly',
     explore: [
       { label: '🤯 Bootgly Awesome', url: 'https://github.com/bootgly/bootgly_awesome' },
-      { label: '⏱️ Bootgly Benchmarks (WIP)', url: 'https://github.com/bootgly/bootgly_benchmarks' }
+      { label: '⏱️ Bootgly Benchmarks (WIP)', url: 'https://github.com/bootgly/bootgly_benchmarks' },
+      { label: '🌐 Bootgly Website', url: 'https://bootgly.com' },
     ]
   },
 
