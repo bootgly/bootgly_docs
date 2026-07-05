@@ -93,11 +93,27 @@ php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 
 ### O workspace, antes e depois
 
-Um kit recém-instalado (o que o `curl -fsSL https://bootgly.com/install | bash` — ou `git clone` + `git submodule update --init Bootgly` — deixa pra trás) contém apenas a **plataforma base** e os arquivos do kit:
+Um kit recém-clonado (`git clone` — ou usando o template do GitHub) contém apenas os arquivos do kit — todos os submodules de plataforma ficam **vazios** até serem instalados:
 
 ```text
 bootgly.kit/
-├── Bootgly/            ← plataforma base (git submodule obrigatório)
+├── Bootgly/            ← plataforma base (git submodule OBRIGATÓRIO — vazio, ainda não instalado)
+├── Console/            ← plataforma Console (git submodule opcional — vazio)
+├── Web/                ← plataforma Web (git submodule opcional — vazio)
+├── .gitignore
+├── .gitmodules         ← Bootgly (obrigatório) + Console e Web (plataformas opcionais)
+├── LICENSE
+├── README.md
+├── bootgly             ← o launcher da CLI (autoboota o Bootgly + as plataformas opcionais)
+├── composer.json
+└── index.php           ← o front controller Web
+```
+
+O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly boot` para instalar as suas próprias pastas de recursos:
+
+```text
+bootgly.kit/
+├── Bootgly/            ← plataforma base (submodule instalado)
 │   ├── &/              ← recursos internos do framework
 │   ├── @/              ← meta recursos do framework (certificados, análise estática, ...)
 │   ├── Bootgly/        ← o framework em si — as interfaces I2P, em ordem de dependência:
@@ -120,22 +136,8 @@ bootgly.kit/
 │   ├── bootgly         ← o launcher da CLI do próprio framework
 │   ├── composer.json
 │   └── index.php
-├── .gitignore
-├── .gitmodules         ← Bootgly (obrigatório) + Console e Web (plataformas opcionais)
-├── LICENSE
-├── README.md
-├── bootgly             ← o launcher da CLI (autoboota o Bootgly + as plataformas opcionais)
-├── composer.json
-└── index.php           ← o front controller Web
-```
-
-`Console/` e `Web/` existem apenas como entradas de submodule vazias nesse ponto. A primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly boot` para instalar as suas próprias pastas de recursos:
-
-```text
-bootgly.kit/
-├── Bootgly/            ← plataforma base (submodule — expandido acima)
-├── Console/            ← plataforma Console (inicializada pelo wizard)
-├── Web/                ← plataforma Web (inicializada quando escolhida)
+├── Console/            ← plataforma Console (instalada pelo wizard)
+├── Web/                ← plataforma Web (instalada quando escolhida)
 ├── projects/           ← os SEUS projetos — instalado pelo `bootgly boot`
 │   ├── Benchmark/      ← exportable: false — oculto do picker de importação
 │   ├── Demo/           ← exportable: true — importável / atualizável pelo wizard

@@ -93,11 +93,27 @@ php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 
 ### The workspace, before and after
 
-A freshly installed kit (what `curl -fsSL https://bootgly.com/install | bash` — or `git clone` + `git submodule update --init Bootgly` — leaves behind) contains only the **base platform** and the kit files:
+A freshly cloned kit (`git clone` — or using the GitHub template) contains only the kit files — every platform submodule is **empty** until installed:
 
 ```text
 bootgly.kit/
-├── Bootgly/            ← base platform (required git submodule)
+├── Bootgly/            ← base platform (REQUIRED git submodule — empty, not installed yet)
+├── Console/            ← Console platform (optional git submodule — empty)
+├── Web/                ← Web platform (optional git submodule — empty)
+├── .gitignore
+├── .gitmodules         ← Bootgly (required) + Console and Web (optional platforms)
+├── LICENSE
+├── README.md
+├── bootgly             ← the CLI launcher (autoboots Bootgly + the optional platforms)
+├── composer.json
+└── index.php           ← the Web front controller
+```
+
+The installer initializes the required base platform (`git submodule update --init Bootgly`); the wizard's first run initializes the chosen platform submodules and runs `bootgly boot` to install your own resource folders:
+
+```text
+bootgly.kit/
+├── Bootgly/            ← base platform (installed submodule)
 │   ├── &/              ← internal framework resources
 │   ├── @/              ← framework meta resources (certificates, static analysis, ...)
 │   ├── Bootgly/        ← the framework itself — the I2P interfaces, in dependency order:
@@ -120,22 +136,8 @@ bootgly.kit/
 │   ├── bootgly         ← the framework's own CLI launcher
 │   ├── composer.json
 │   └── index.php
-├── .gitignore
-├── .gitmodules         ← Bootgly (required) + Console and Web (optional platforms)
-├── LICENSE
-├── README.md
-├── bootgly             ← the CLI launcher (autoboots Bootgly + the optional platforms)
-├── composer.json
-└── index.php           ← the Web front controller
-```
-
-`Console/` and `Web/` exist only as empty submodule entries at this point. The wizard's first run initializes the chosen platform submodules and runs `bootgly boot` to install your own resource folders:
-
-```text
-bootgly.kit/
-├── Bootgly/            ← base platform (submodule — expanded above)
-├── Console/            ← Console platform (initialized by the wizard)
-├── Web/                ← Web platform (initialized when chosen)
+├── Console/            ← Console platform (installed by the wizard)
+├── Web/                ← Web platform (installed when chosen)
 ├── projects/           ← YOUR projects — installed by `bootgly boot`
 │   ├── Benchmark/      ← exportable: false — hidden from the import picker
 │   ├── Demo/           ← exportable: true — importable / refreshable by the wizard
