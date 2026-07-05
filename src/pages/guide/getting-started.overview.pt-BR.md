@@ -11,17 +11,18 @@ O instalador:
 1. Verifica seu ambiente (`git` + PHP **8.4+**);
 2. Clona o template inicial [bootgly.kit](https://github.com/bootgly/bootgly.kit) em `./bootgly.kit` (passe outro nome com `curl -fsSL https://bootgly.com/install | bash -s -- meudir`);
 3. Inicializa a **plataforma Bootgly** (git submodule);
-4. Abre o **wizard de projetos** (`php bootgly project create`).
+4. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
+5. Abre o **wizard de projetos** (`php bootgly project create`).
 
 ## O wizard de projetos
 
 O wizard te guia de um kit vazio até um projeto rodando:
 
-1. **Plataforma** — escolha `Console` (apps CLI / TUI) ou `Web` (inclui o Console). O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
+1. **Plataforma** — a **plataforma Bootgly** sempre vem incluída e traz as interfaces `CLI` e `WPI`; aqui você escolhe a **plataforma extra**: `Console` (interface CLI — apps TUI) ou `Web` (interface WPI — apps HTTP; inclui o Console). O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
 2. **Recursos** — ele executa o `bootgly boot` para instalar as pastas de recursos (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) no seu kit;
 3. **Modo** — crie **do zero (from scratch)** ou **importe projetos de plataforma** (como os Demos que acompanham o framework);
 4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. Importando: apenas multi-selecione os projetos (Espaço marca, Enter confirma) — cada um é copiado sob o próprio caminho de plataforma, sem perguntas; cópias existentes são sinalizadas com `(overwrite)` e atualizadas;
-5. **Confirmação** — revise o resumo e confirme. Os projetos ficam em `projects/<Caminho>/` e são registrados em `projects/Bootgly.projects.php`.
+5. **Confirmação** — revise o resumo (modo, importações com a plataforma de origem, overwrites) e confirme. Os projetos ficam em `projects/<Caminho>/` e são registrados em `projects/Bootgly.projects.php`.
 
 Depois, inicie:
 
@@ -240,4 +241,4 @@ Cria um projeto. Em terminais interativos, o wizard preenche as entradas faltant
 bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
 ```
 
-Clona `<url>` (git do sistema), valida a assinatura de projeto Bootgly (`*.project.php` na raiz do repositório), copia para `projects/<Name>/` (padrão: o nome do repositório) e registra.
+Clona `<url>` (git do sistema), valida a assinatura de projeto Bootgly (`*.project.php` na raiz do repositório), mostra um resumo (modo, URL de origem, caminho de destino, interfaces), pede confirmação, copia para `projects/<Name>/` (padrão: o nome do repositório) e registra.

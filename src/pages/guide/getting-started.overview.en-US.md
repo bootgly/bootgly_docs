@@ -11,17 +11,18 @@ The installer:
 1. Checks your environment (`git` + PHP **8.4+**);
 2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./bootgly.kit` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
 3. Initializes the **Bootgly platform** (git submodule);
-4. Opens the **project wizard** (`php bootgly project create`).
+4. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
+5. Opens the **project wizard** (`php bootgly project create`).
 
 ## The project wizard
 
 The wizard guides you from an empty kit to a running project:
 
-1. **Platform** — choose `Console` (CLI / TUI apps) or `Web` (includes Console). The wizard initializes the matching platform submodules (`Console/`, `Web/`);
+1. **Platform** — the **Bootgly platform** is always included and ships the `CLI` and `WPI` interfaces; here you choose the **extra platform**: `Console` (CLI interface — TUI apps) or `Web` (WPI interface — HTTP apps; includes Console). The wizard initializes the matching platform submodules (`Console/`, `Web/`);
 2. **Resources** — it runs `bootgly boot` to install the resource folders (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) into your kit;
 3. **Mode** — create **from scratch** or **import platform projects** (like the Demos shipped with the framework);
 4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. Importing: just multi-select the projects (Space marks, Enter confirms) — each one is copied under its own platform path, no questions asked; existing copies are flagged `(overwrite)` and refreshed;
-5. **Confirm** — review the summary and confirm. Projects land in `projects/<Path>/` and are registered in `projects/Bootgly.projects.php`.
+5. **Confirm** — review the summary (mode, imports with their platform of origin, overwrites) and confirm. Projects land in `projects/<Path>/` and are registered in `projects/Bootgly.projects.php`.
 
 Then boot it:
 
@@ -240,4 +241,4 @@ Creates a project. On interactive terminals the wizard fills the missing inputs;
 bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
 ```
 
-Clones `<url>` (system git), validates the Bootgly project signature (`*.project.php` at the repository root), copies it into `projects/<Name>/` (default: the repository name) and registers it.
+Clones `<url>` (system git), validates the Bootgly project signature (`*.project.php` at the repository root), shows a summary (mode, source URL, target path, interfaces), asks for confirmation, copies it into `projects/<Name>/` (default: the repository name) and registers it.
