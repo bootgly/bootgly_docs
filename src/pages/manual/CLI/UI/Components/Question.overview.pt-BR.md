@@ -1,8 +1,8 @@
 # Componente Question
 
-O componente `Question` pede entradas validadas, baseadas em linha, no terminal. Ele renderiza um prompt (com um valor padrão opcional), lê uma linha e — diferente do [`prompt()` raw do Dialog](/manual/CLI/UI/Components/Dialog/overview) — refaz a pergunta até que a resposta seja válida, a entrada termine (EOF) ou as tentativas se esgotem. Respostas vazias assumem o valor padrão, então ele também funciona com entrada via pipe e permanece determinístico em scripts e CI.
+O componente `Question` pede entradas validadas, baseadas em linha, no terminal. Ele renderiza um prompt (com um valor padrão opcional), lê uma linha e refaz a pergunta até que a resposta seja válida, a entrada termine (EOF) ou as tentativas se esgotem. Respostas vazias assumem o valor padrão, então ele também funciona com entrada via pipe e permanece determinístico em scripts e CI.
 
-Junto com os componentes [Menu](/manual/CLI/UI/Components/Menu/overview) e [Dialog](/manual/CLI/UI/Components/Dialog/overview), o `Question` impulsiona o wizard interativo do `bootgly project create` — eles fazem parte dos componentes UX Interativos da v0.20.0-beta.
+Junto com o componente [Menu](/manual/CLI/UI/Components/Menu/overview), o `Question` impulsiona o wizard interativo do `bootgly project create` — ele é o caminho canônico único para perguntar qualquer coisa ao usuário: linhas validadas, entrada secreta, autocomplete e confirmações yes/no.
 
 Exemplos em estilo de transcript estão disponíveis no [showcase](/manual/CLI/UI/Components/Question/showcase).
 
@@ -83,6 +83,49 @@ $Question->Validator = static function (string $answer): true|string {
 $token = $Question->ask(); // retorna '' (o padrão) após 3 respostas inválidas
 ```
 
+## Mascarando entrada secreta
+
+Defina `mask` para ecoar um caractere de máscara em vez do que é digitado — senhas e tokens nunca aparecem na tela. Em TTYs reais o eco do kernel é desabilitado durante a leitura; em pipes nada é ecoado e o valor é lido verbatim:
+
+```php
+$Question->prompt = 'Password';
+$Question->required = true;
+$Question->mask = '•';
+
+$password = $Question->ask(); // digitar `hunter2` renderiza `•••••••`
+```
+
+Uma pergunta mascarada com `default` nunca o revela — o prompt renderiza a máscara repetida (`Token [•••]: `) e uma resposta vazia ainda assume o valor padrão real.
+
+## Autocompletando com sugestões
+
+Defina `suggestions` para ter um dropdown filtrado interativo em terminais interativos: digitar filtra (`stripos`), `↑`/`↓` miram, `Tab` completa para o match mirado, `Esc` fecha o dropdown mantendo o texto digitado, e Enter submete. Com `strict`, a resposta deve ser uma das sugestões (Enter submete o match mirado):
+
+```php
+$Question->prompt = 'Platform';
+$Question->suggestions = ['Console', 'Web', 'Both'];
+$Question->limit = 5;      // linhas visíveis do dropdown
+$Question->strict = true;  // deve escolher uma resposta listada
+
+$platform = $Question->ask();
+```
+
+Em pipes a pergunta lê uma linha simples — `strict` re-pergunta respostas não listadas com um Alert de Failure, mantendo scripts determinísticos.
+
+## Confirmando (yes/no)
+
+`confirm()` faz uma pergunta yes/no e retorna um `bool` — o prompt renderiza um sufixo ` [Y/n] ` (ou ` [y/N] `) refletindo o valor padrão. `y`/`yes`/`n`/`no` são aceitos sem diferenciar maiúsculas; respostas vazias e EOF assumem o padrão; respostas inválidas re-perguntam em terminais interativos e caem no padrão em pipes:
+
+```php
+$confirmed = $Question->confirm('Create the project?', default: true);
+
+if ($confirmed === false) {
+   // abortado…
+}
+```
+
+É assim que o wizard do `bootgly project create` faz sua confirmação final — e como o controle `Confirm` do [Form](/manual/CLI/UX/Form/overview) funciona.
+
 ## Referência
 
 ### Propriedades
@@ -118,6 +161,30 @@ public null|Closure $Validator
 Config. Closure opcional de validação com a assinatura `fn (string $answer): true|string`. Retornar `true` aceita a resposta; retornar uma string a rejeita e renderiza a string como um Alert de Failure. Padrão: `null`.
 
 ```php
+public null|string $mask
+```
+
+Config. Quando definido, cada caractere digitado ecoa essa máscara em vez do caractere (entrada secreta) e o prompt nunca revela o `default`. Padrão: `null`.
+
+```php
+public array $suggestions
+```
+
+Config. Sugestões de autocomplete (`array<string>`) — terminais interativos ganham um dropdown filtrado; vazio desabilita. Padrão: `[]`.
+
+```php
+public int $limit
+```
+
+Config. Linhas visíveis do dropdown de `suggestions`. Padrão: `5`.
+
+```php
+public bool $strict
+```
+
+Config. Quando `true`, a resposta deve ser uma das `suggestions`. Padrão: `false`.
+
+```php
 public private(set) string $answer
 ```
 
@@ -129,6 +196,12 @@ public private(set) int $attempt
 
 Metadata (somente leitura). O número de tentativas consumidas pela última chamada de `ask()`.
 
+```php
+public private(set) null|bool $confirmed
+```
+
+Metadata (somente leitura). O resultado da última chamada de `confirm()` — `null` antes da primeira chamada.
+
 ### ask()
 
 ```php
@@ -136,3 +209,11 @@ public function ask (): string
 ```
 
 Renderiza `prompt [default]: ` e lê uma linha. Respostas vazias assumem o valor padrão; quando `required` é `true` e não há valor padrão, respostas vazias refazem a pergunta; quando o `Validator` retorna uma string de erro, o erro é renderizado como um Alert de Failure e a pergunta é feita novamente. EOF ou `attempts` esgotadas retornam o valor padrão. Armazena o resultado em `$answer` e o retorna.
+
+### confirm()
+
+```php
+public function confirm (string $prompt = '', bool $default = false): bool
+```
+
+Pede uma confirmação yes/no renderizando `prompt [Y/n] ` (ou ` [y/N] ` quando `$default` é `false`). Um `$prompt` não vazio sobrescreve o configurado. Aceita `y`/`yes`/`n`/`no` sem diferenciar maiúsculas; respostas vazias e EOF assumem o padrão; em entrada não interativa, respostas inválidas também caem no padrão. Armazena o resultado em `$confirmed` e o retorna.

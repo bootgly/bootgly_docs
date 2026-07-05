@@ -94,17 +94,55 @@ $Items->push(
 );
 ```
 
-### Open
+### Rendering
 
-The `open()` method of the component is responsible for rendering the menu and processing the inputs provided by the user. This method returns an array with the indices of the selected options.
-
-Example:
+The `rendering()` Generator renders the menu and processes the user keys until Enter. Drive it with a `foreach`; the selected option indexes land in `$Menu->selected`:
 
 ```php
-$selected = $Menu->open();
+foreach ($Menu->rendering() as $frame);
+
+$selected = $Menu->selected;
 ```
 
-The above example executes the `open()` function of the component and stores the selected options in a variable called `$selected`.
+On non-interactive input (pipes, CI) the menu renders once and returns the pre-selected options — deterministic in scripts.
+
+### Aiming a default
+
+`aim()` sets the initial aim (the `=>` marker) — pair it with Enter-confirm to make an option the default:
+
+```php
+$Options->add(label: 'Console');
+$Options->add(label: 'Web');
+
+$Options->aim(1); // the aim starts at `Web`
+```
+
+Locked options never hold the aim.
+
+### Confirming with Enter
+
+Enter with an empty selection confirms the aimed option — no Space needed. With an explicit selection (Space), Enter keeps it and ignores the aim.
+
+### Viewport (long lists)
+
+Set `viewport` to window long vertical lists to N visible options. The window slides with the aim and dim `↑/↓ N more` indicators count the hidden options:
+
+```php
+$Options->viewport = 5; // 5 visible options at a time
+```
+
+### Type-ahead filter
+
+Typing letters filters the options incrementally: the aim jumps to the first match and non-matching options are hidden while the filter is active. A dim `/filter` hint renders under the prompt. Backspace pops the last character; bare `Esc` clears the filter. Space always selects — it never enters the filter.
+
+### Grid columns
+
+Set `columns` to lay a vertical menu out as a grid — N options per visual line, each cell padded to `Menu::$width / columns`. `←`/`→` move one cell; `↑`/`↓` move one visual line:
+
+```php
+Menu::$width = 60;
+$Options->columns = 3;
+```
 
 ## See it live
 

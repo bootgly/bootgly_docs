@@ -968,6 +968,29 @@ export default {
       }
     }
   },
+  '/CLI/Terminal/Screen': {
+    config: {
+      icon: 'fullscreen',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Control the alternate screen buffer, measure the terminal and watch resizes for full-screen TUIs.',
+          'pt-BR': 'Controle o buffer de tela alternativo, meça o terminal e observe resizes para TUIs full-screen.'
+        }
+      },
+      menu: {
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'CLI Terminal Screen'
+      }
+    }
+  },
   '/CLI/Terminal/Input/Keystrokes': {
     config: {
       icon: 'keyboard',
@@ -988,6 +1011,28 @@ export default {
     data: {
       '*': {
         title: 'Keystrokes'
+      }
+    }
+  },
+  '/CLI/Terminal/Input/Line': {
+    config: {
+      icon: 'short_text',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Drive single-line editing with a pure key/buffer engine — virtual cursor, masking and windowing.',
+          'pt-BR': 'Conduza a edição de linha única com um motor puro de teclas/buffer — cursor virtual, máscara e janelamento.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Line'
       }
     }
   },
@@ -1077,6 +1122,28 @@ export default {
       }
     }
   },
+  '/CLI/Terminal/Output/Window': {
+    config: {
+      icon: 'web_asset',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Compute the visible slice of scrollable lists — slide a window to follow the aimed row.',
+          'pt-BR': 'Compute a fatia visível de listas roláveis — deslize uma janela para seguir a linha mirada.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Window'
+      }
+    }
+  },
   '/CLI/Terminal/Reporting/Mouse': {
     config: {
       icon: 'mouse',
@@ -1133,15 +1200,15 @@ export default {
       }
     }
   },
-  '/CLI/UI/Components/Dialog': {
+  '/CLI/UI/Components/Chart': {
     config: {
-      icon: 'question_answer',
+      icon: 'bar_chart',
       status: 'new',
       version: 'v0.20.0-beta',
       meta: {
         description: {
-          'en-US': 'Confirm actions, prompt for raw answers and pause on alerts in CLI flows.',
-          'pt-BR': 'Confirme ações, solicite respostas raw e pause em alertas nos fluxos de CLI.'
+          'en-US': 'Plot labeled series as ANSI sparklines or horizontal bars in the terminal.',
+          'pt-BR': 'Plote séries rotuladas como sparklines ANSI ou barras horizontais no terminal.'
         }
       },
       menu: {},
@@ -1151,7 +1218,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Dialog'
+        title: 'Chart'
       }
     }
   },
@@ -1261,6 +1328,50 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Scrollarea': {
+    config: {
+      icon: 'swap_vert',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Buffer content into a fixed screen band with its own scrollbar and scrolling.',
+          'pt-BR': 'Armazene conteúdo em uma banda fixa da tela com scrollbar e rolagem próprias.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Scrollarea'
+      }
+    }
+  },
+  '/CLI/UI/Components/Spinner': {
+    config: {
+      icon: 'autorenew',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Animate an indeterminate activity indicator while your CLI code works.',
+          'pt-BR': 'Anime um indicador de atividade indeterminada enquanto seu código de CLI trabalha.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Spinner'
+      }
+    }
+  },
   '/CLI/UI/Components/Table': {
     config: {
       icon: 'table_chart',
@@ -1279,6 +1390,217 @@ export default {
     data: {
       '*': {
         title: 'Table'
+      }
+    }
+  },
+  '/CLI/UI/Components/Text': {
+    config: {
+      icon: 'animation',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Animate terminal text: typewriter, fade-in and a shimmering color wave.',
+          'pt-BR': 'Anime texto no terminal: typewriter, fade-in e uma onda de cor shimmer.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Text'
+      }
+    }
+  },
+  '/CLI/UI/Components/Textarea': {
+    config: {
+      icon: 'edit_note',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Edit multiline text in the terminal — Enter breaks lines, Ctrl+D submits.',
+          'pt-BR': 'Edite texto multilinha no terminal — Enter quebra linhas, Ctrl+D submete.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Textarea'
+      }
+    }
+  },
+  '/CLI/UI/Components/Timeline': {
+    config: {
+      icon: 'timeline',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Guide multi-step CLI flows with per-step state: pending, active, done or failed.',
+          'pt-BR': 'Guie fluxos de CLI multi-etapas com estado por etapa: pending, active, done ou failed.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Timeline'
+      }
+    }
+  },
+  '/CLI/UI/Components/Timer': {
+    config: {
+      icon: 'timer',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Run countdowns with wall-clock precision and a one-shot completion callback.',
+          'pt-BR': 'Rode contagens regressivas com precisão de relógio de parede e callback de conclusão one-shot.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Timer'
+      }
+    }
+  },
+  '/CLI/UX': {
+    config: null,
+    data: {
+      '*': {
+        title: 'CLI UX'
+      }
+    }
+  },
+  '/CLI/UX/Form': {
+    config: {
+      icon: 'dynamic_form',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Ask a declarative list of fields sequentially, with revert and a summary + confirm loop.',
+          'pt-BR': 'Pergunte uma lista declarativa de campos sequencialmente, com revert e um loop de resumo + confirmação.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Form'
+      }
+    }
+  },
+  '/CLI/UX/Prompt': {
+    config: {
+      icon: 'terminal',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Fix the input line at the bottom while buffered content scrolls above — REPL-style.',
+          'pt-BR': 'Fixe a linha de entrada no rodapé enquanto o conteúdo bufferizado rola acima — estilo REPL.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Prompt'
+      }
+    }
+  },
+
+  // Console (platform)
+  '/Console': {
+    config: {
+      icon: 'terminal',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The opinionated TUI platform over the CLI interface: full-screen apps and terminal games.',
+          'pt-BR': 'A plataforma TUI opinativa sobre a interface CLI: apps full-screen e jogos de terminal.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'terminal',
+          label: 'Console'
+        },
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Console'
+      }
+    }
+  },
+  '/Console/App': {
+    config: {
+      icon: 'dashboard',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The TUI application shell: Screens + Router, Keymaps with chords, Statusbar, Toasts, Palette and Tail.',
+          'pt-BR': 'O shell de aplicação TUI: Screens + Router, Keymaps com chords, Statusbar, Toasts, Palette e Tail.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'App'
+      }
+    }
+  },
+  '/Console/Games': {
+    config: {
+      icon: 'sports_esports',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The game shell: fixed-timestep Loop, diff-rendered Canvas, Keyboard held-key heuristics and Scenes.',
+          'pt-BR': 'O shell de jogos: Loop de timestep fixo, Canvas com diff, heurísticas de tecla segurada no Keyboard e Scenes.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Games'
       }
     }
   },

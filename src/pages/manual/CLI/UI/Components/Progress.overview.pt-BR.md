@@ -149,3 +149,31 @@ $Progress->finish();
 ```
 
 Ao chamar este método, o cursor, que fica oculto durante a renderição do progresso, é mostrado novamente.
+
+## Trilhas multi-bar
+
+Adicione Bars de trilha independentes para renderizar vários progressos no mesmo frame — cada trilha tem seus próprios `current`/`total`/`percent`/`description`. `columns` dispõe a grade com N trilhas por linha visual; `tick()` repinta o frame inteiro (com throttle) após as trilhas avançarem:
+
+```php
+$Progress = new Progress($Output);
+$Progress->columns = 2; // 2 trilhas por linha visual
+
+$Download = $Progress->Bars->add('Download');
+$Download->total = 100;
+
+$Extract = $Progress->Bars->add('Extract');
+$Extract->total = 40;
+
+$Progress->start();
+
+while ($working) {
+   $Download->advance();
+   $Extract->advance(0.5);
+
+   $Progress->tick();
+}
+
+$Progress->finish(); // força todas as trilhas a 100%
+```
+
+A linha por trilha é templada pela propriedade `track` (tokens `@description;`, `@bar;`, `@percent;`, `@current;`, `@total;`). Sem Bars de trilha, o template single-bar clássico renderiza — código existente permanece intocado. Uma demo multi-bar ao vivo está no [showcase](/manual/CLI/UI/Components/Progress/showcase).

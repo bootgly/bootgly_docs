@@ -9,7 +9,7 @@ Escolha uma variação nas abas, pressione Run e então **clique no terminal** p
 <d-block-terminal
   engine="bootgly-cli"
   title="Menu — demos ao vivo"
-  commands="Divisores globais:demo 13|Divisores no Builder:demo 14|Seleção única:demo 15|Horizontal:demo 16|Alinhado ao centro:demo 17|Alinhado à direita:demo 18"
+  commands="Viewport + filtro:demo 30|Colunas em grade:demo 31|Divisores globais:demo 13|Divisores no Builder:demo 14|Seleção única:demo 15|Horizontal:demo 16|Alinhado ao centro:demo 17|Alinhado à direita:demo 18"
   height="380"
 >
 Cada aba é um demo oficial: seleção múltipla com divisores globais, divisores por item via Builder, modo de seleção única (estilo radio), orientação horizontal e alinhamento ao centro/à direita. Os índices selecionados são impressos quando você confirma.

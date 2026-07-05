@@ -2,8 +2,8 @@
   "asset": "/wasm/bootgly-cli.zip",
   "version": "0.19.1-beta",
   "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
-  "files": 526,
-  "bytes": 584166,
+  "files": 588,
+  "bytes": 674798,
   "demos": {
     "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
     "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
@@ -30,7 +30,21 @@
     "23": "projects/Demo/CLI/Terminal/Reporting/Mouse-01.demo.php",
     "24": "projects/Demo/CLI/Terminal/Output/Viewport-01.demo.php",
     "25": "projects/Demo/CLI/UI/Logs-01.demo.php",
-    "26": "projects/Demo/CLI/UI/Dialog-01.demo.php",
-    "27": "projects/Demo/CLI/UI/Question-01.demo.php"
+    "26": "projects/Demo/CLI/UI/Question-04.demo.php",
+    "27": "projects/Demo/CLI/UI/Question-01.demo.php",
+    "28": "projects/Demo/CLI/UX/Form-01.demo.php",
+    "29": "projects/Demo/CLI/UI/Question-02.demo.php",
+    "30": "projects/Demo/CLI/UI/Menu-07.demo.php",
+    "31": "projects/Demo/CLI/UI/Menu-08.demo.php",
+    "32": "projects/Demo/CLI/UI/Spinner-01.demo.php",
+    "33": "projects/Demo/CLI/UI/Timer-01.demo.php",
+    "34": "projects/Demo/CLI/UI/Timeline-01.demo.php",
+    "35": "projects/Demo/CLI/UI/Progress-03.demo.php",
+    "36": "projects/Demo/CLI/UI/Chart-01.demo.php",
+    "37": "projects/Demo/CLI/UI/Text-01.demo.php",
+    "38": "projects/Demo/CLI/UI/Question-03.demo.php",
+    "39": "projects/Demo/CLI/UI/Textarea-01.demo.php",
+    "40": "projects/Demo/CLI/UX/Prompt-01.demo.php",
+    "41": "projects/Demo/CLI/UI/Scrollarea-01.demo.php"
   }
 }

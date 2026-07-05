@@ -97,12 +97,28 @@ let pipePort = null
 let pipeChunks = []
 let pipeWaiter = null
 
-globalThis.bootglyPipeRead = () => {
+globalThis.bootglyPipeRead = (timeout = null) => {
   if (pipeChunks.length) {
     return pipeChunks.splice(0).join('')
   }
 
-  return new Promise((resolve) => { pipeWaiter = resolve })
+  // Timed reads resolve '' on expiry — PHP's PipeStream turns that into a
+  // zero-byte read, which Input::relay() yields as null (game frame pacing).
+  if (timeout === null || timeout === undefined) {
+    return new Promise((resolve) => { pipeWaiter = resolve })
+  }
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pipeWaiter = null
+      resolve('')
+    }, Math.max(0, timeout))
+
+    pipeWaiter = (data) => {
+      clearTimeout(timer)
+      resolve(data)
+    }
+  })
 }
 
 globalThis.bootglyPipeWrite = (data) => {
@@ -207,6 +223,7 @@ final class PipeStream
 {
    public $context;
    private string $buffer = '';
+   private null|int $timeout = null; // read timeout in ms (stream_set_timeout)
    private static null|Vrzno $JS = null;
 
    public function stream_open (string $path, string $mode, int $options, null|string &$opened_path): bool
@@ -217,7 +234,7 @@ final class PipeStream
    {
       if ($this->buffer === '') {
          self::$JS ??= new Vrzno;
-         $data = vrzno_await(self::$JS->bootglyPipeRead());
+         $data = vrzno_await(self::$JS->bootglyPipeRead($this->timeout));
          $this->buffer = is_string($data) ? $data : '';
       }
       $chunk = substr($this->buffer, 0, $count);
@@ -242,6 +259,11 @@ final class PipeStream
    }
    public function stream_set_option (int $option, int $arg1, null|int $arg2): bool
    {
+      // stream_set_timeout() → timed reads that expire as zero-byte reads
+      if ($option === STREAM_OPTION_READ_TIMEOUT) {
+         $this->timeout = ($arg1 * 1000) + intdiv((int) $arg2, 1000);
+         return true;
+      }
       return false;
    }
    public function stream_close (): void
@@ -321,6 +343,11 @@ $_SERVER['SCRIPT_FILENAME'] = '/bootgly/bootgly';
 chdir('/bootgly');
 define('BOOTGLY_WORKING_BASE', '/bootgly');
 define('BOOTGLY_WORKING_DIR', '/bootgly/');
+// Optional platforms boot FIRST (kit ordering): command routing happens inside
+// the Bootgly autoboot and Console projects need the platform autoloader.
+if (is_file('/bootgly/Console/autoboot.php')) {
+   require '/bootgly/Console/autoboot.php';
+}
 require '/bootgly/autoboot.php';
 `
 }

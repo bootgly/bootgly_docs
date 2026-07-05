@@ -9,7 +9,7 @@ Pick a variation in the tabs, press Run, then **click the terminal** to give it 
 <d-block-terminal
   engine="bootgly-cli"
   title="Menu — live demos"
-  commands="Global divisors:demo 13|Divisors in Builder:demo 14|Unique selection:demo 15|Horizontal:demo 16|Center aligned:demo 17|Right aligned:demo 18"
+  commands="Viewport + filter:demo 30|Grid columns:demo 31|Global divisors:demo 13|Divisors in Builder:demo 14|Unique selection:demo 15|Horizontal:demo 16|Center aligned:demo 17|Right aligned:demo 18"
   height="380"
 >
 Each tab is one official demo: multiple selection with global divisors, per-item divisors via the Builder, unique (radio-like) selection mode, horizontal orientation, and center/right alignment. The selected indexes are printed when you confirm.

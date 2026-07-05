@@ -17,3 +17,11 @@ Quando `total` é `0`, o Progress muda para o estado indeterminado: a barra cicl
 <d-block-terminal engine="bootgly-cli" title="Progress — indeterminado" command="demo 20" height="300">
 `Progress` com `total = 0` (indeterminado): o loop avança 1 500 vezes com `usleep(5000)` entre os advances.
 </d-block-terminal>
+
+## Grade multi-bar
+
+Quatro trilhas independentes — cada uma com seu total e ritmo — dispostas 2 por linha visual. `tick()` repinta a grade inteira; `finish()` completa todas as trilhas.
+
+<d-block-terminal engine="bootgly-cli" title="Progress — multi-bar" command="demo 35" height="300">
+Bars de trilha adicionadas via `Progress->Bars->add()` avançam independentemente; `columns = 2` monta a grade.
+</d-block-terminal>

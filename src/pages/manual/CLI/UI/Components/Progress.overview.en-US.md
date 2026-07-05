@@ -149,3 +149,31 @@ $Progress->finish();
 ```
 
 When calling this method, the cursor, which is hidden during the rendering of the progress, is shown again.
+
+## Multi-bar tracks
+
+Add independent track Bars to render several progresses in the same frame — each track owns its `current`/`total`/`percent`/`description`. `columns` lays the grid out with N tracks per visual line; `tick()` repaints the whole frame (throttled) after the tracks advance:
+
+```php
+$Progress = new Progress($Output);
+$Progress->columns = 2; // 2 tracks per visual line
+
+$Download = $Progress->Bars->add('Download');
+$Download->total = 100;
+
+$Extract = $Progress->Bars->add('Extract');
+$Extract->total = 40;
+
+$Progress->start();
+
+while ($working) {
+   $Download->advance();
+   $Extract->advance(0.5);
+
+   $Progress->tick();
+}
+
+$Progress->finish(); // forces every track to 100%
+```
+
+The per-track row is templated by the `track` property (`@description;`, `@bar;`, `@percent;`, `@current;`, `@total;` tokens). Without track Bars, the classic single-bar template renders — existing code is untouched. A live multi-bar demo is in the [showcase](/manual/CLI/UI/Components/Progress/showcase).

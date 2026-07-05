@@ -94,17 +94,55 @@ $Items->push(
 );
 ```
 
-### Open
+### Renderizando
 
-O método `open()` do componente é responsável por renderizar o menu e processar as entradas fornecidas pelo usuário. Este método retorna um array com os índices das opções selecionadas.
-
-Exemplo:
+O Generator `rendering()` renderiza o menu e processa as teclas do usuário até o Enter. Conduza-o com um `foreach`; os índices das opções selecionadas ficam em `$Menu->selected`:
 
 ```php
-$selected = $Menu->open();
+foreach ($Menu->rendering() as $frame);
+
+$selected = $Menu->selected;
 ```
 
-O exemplo acima executa a função `open()` do componente e armazena as opções selecionadas em uma variável chamada `$selected`.
+Em entrada não interativa (pipes, CI) o menu renderiza uma vez e retorna as opções pré-selecionadas — determinístico em scripts.
+
+### Mirando um default
+
+`aim()` define a mira inicial (o marcador `=>`) — combine com o Enter-confirma para tornar uma opção o default:
+
+```php
+$Options->add(label: 'Console');
+$Options->add(label: 'Web');
+
+$Options->aim(1); // a mira começa em `Web`
+```
+
+Opções locked nunca seguram a mira.
+
+### Confirmando com Enter
+
+Enter com a seleção vazia confirma a opção mirada — sem precisar de Espaço. Com uma seleção explícita (Espaço), o Enter a mantém e ignora a mira.
+
+### Viewport (listas longas)
+
+Defina `viewport` para janelar listas verticais longas em N opções visíveis. A janela desliza com a mira e indicadores esmaecidos `↑/↓ N more` contam as opções ocultas:
+
+```php
+$Options->viewport = 5; // 5 opções visíveis por vez
+```
+
+### Filtro type-ahead
+
+Digitar letras filtra as opções incrementalmente: a mira pula para o primeiro match e opções que não casam ficam ocultas enquanto o filtro está ativo. Um hint esmaecido `/filtro` renderiza sob o prompt. Backspace remove o último caractere; `Esc` puro limpa o filtro. Espaço sempre seleciona — nunca entra no filtro.
+
+### Colunas em grade
+
+Defina `columns` para dispor um menu vertical em grade — N opções por linha visual, cada célula com padding de `Menu::$width / columns`. `←`/`→` movem uma célula; `↑`/`↓` movem uma linha visual:
+
+```php
+Menu::$width = 60;
+$Options->columns = 3;
+```
 
 ## Veja ao vivo
 

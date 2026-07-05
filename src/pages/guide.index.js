@@ -25,6 +25,32 @@ export default {
     }
   },
 
+  '/console-platform': {
+    config: {
+      icon: 'terminal',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build full-screen terminal apps and games with the opinionated Console platform.',
+          'pt-BR': 'Construa apps e jogos de terminal full-screen com a plataforma Console opinativa.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Console Platform'
+      },
+      'pt-BR': {
+        title: 'Plataforma Console'
+      }
+    }
+  },
+
   '/configuration': {
     config: {
       icon: 'tune',

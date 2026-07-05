@@ -109,6 +109,38 @@ for (const dir of INCLUDE_DIRS) {
   }
 }
 
+// Console platform (sibling repo, override with BOOTGLY_CONSOLE_SRC): mounted
+// under /bootgly/Console/ (mirrors the kit submodule layout) plus its exportable
+// game projects and registry under /bootgly/projects/ (the `project start`
+// allow-list — the framework's own registry is not bundled, so no collision).
+const consoleRoot = resolve(process.env.BOOTGLY_CONSOLE_SRC || join(projectRoot, '..', 'bootgly-console'))
+let games = 0
+
+if (existsSync(join(consoleRoot, 'autoboot.php'))) {
+  for (const file of ['autoboot.php', 'Console.php']) {
+    entries.set(`Console/${file}`, readFileSync(join(consoleRoot, file)))
+  }
+
+  for (const file of collect(join(consoleRoot, 'Console'))) {
+    entries.set(`Console/${relative(consoleRoot, file).replaceAll('\\', '/')}`, readFileSync(file))
+  }
+
+  entries.set('projects/Bootgly.projects.php', readFileSync(join(consoleRoot, 'projects', 'Bootgly.projects.php')))
+
+  for (const entry of readdirSync(join(consoleRoot, 'projects'), { withFileTypes: true })) {
+    if (!entry.isDirectory()) {
+      continue
+    }
+
+    for (const file of collect(join(consoleRoot, 'projects', entry.name))) {
+      entries.set(relative(consoleRoot, file).replaceAll('\\', '/'), readFileSync(file))
+    }
+    games++
+  }
+} else {
+  console.warn(`[wasm:bundle] Console platform source not found at ${consoleRoot} — bundling without games.`)
+}
+
 // Parse BOOTGLY_VERSION from autoboot.php.
 const autoboot = readFileSync(join(bootglyRoot, 'autoboot.php'), 'utf8')
 const version = autoboot.match(/define\('BOOTGLY_VERSION',\s*'([^']+)'\)/)?.[1] ?? 'unknown'
@@ -154,4 +186,4 @@ mkdirSync(dirname(manifestPath), { recursive: true })
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
 
 const raw = [...entries.values()].reduce((total, buffer) => total + buffer.byteLength, 0)
-console.log(`[wasm:bundle] ${entries.size} files, ${(raw / 1048576).toFixed(1)} MB raw → ${(zipped.byteLength / 1048576).toFixed(2)} MB zip (Bootgly ${version}, ${Object.keys(demos).length} demos)`)
+console.log(`[wasm:bundle] ${entries.size} files, ${(raw / 1048576).toFixed(1)} MB raw → ${(zipped.byteLength / 1048576).toFixed(2)} MB zip (Bootgly ${version}, ${Object.keys(demos).length} demos, ${games} games)`)
