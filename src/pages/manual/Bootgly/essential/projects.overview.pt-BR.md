@@ -77,10 +77,11 @@ Para tornar um novo projeto executável, use `bootgly project create` — ele ge
 php bootgly project create
 ```
 
-O wizard prepara o kit na primeira execução (submodules de plataforma + recursos via `bootgly boot`), depois pergunta o modo de criação:
+O wizard prepara o kit na primeira execução (uma multi-seleção dos submodules de plataforma extras — `Console` e/ou `Web` — mais os recursos via `bootgly boot`), depois pergunta o modo de criação:
 
 - **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
-- **Importando projetos de plataforma** — uma multi-seleção sobre os projetos **exportáveis** encontrados nas pastas de plataforma (como os Demos): cada projeto selecionado é copiado recursivamente sob o próprio caminho no `projects/` do seu workspace, sem perguntas. Cópias existentes a nível de usuário — que se sobrepõem às da plataforma no carregamento — são sinalizadas com `(overwrite)` no resumo e atualizadas.
+- **Importando projetos de plataforma** — uma multi-seleção sobre os projetos **exportáveis** encontrados nas pastas de plataforma (como os Demos): cada projeto selecionado é copiado recursivamente sob o próprio caminho no `projects/` do seu workspace, sem perguntas. Cópias existentes a nível de usuário — que se sobrepõem às da plataforma no carregamento — são sinalizadas com `(overwrite)` no resumo e atualizadas;
+- **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly project import`: o repositório é clonado, validado contra a assinatura `*.project.php` e registrado.
 
 Apenas projetos declarados com `exportable: true` na assinatura `new Project(...)` aparecem no picker de importação.
 
@@ -127,11 +128,11 @@ graph LR
 Cria um novo projeto — wizard em terminais interativos, flags caso contrário:
 
 ```bash
-php bootgly project create [<Name>] [--platform=console|web] [--from=scratch|<source>] \
+php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<source>] \
    [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--default] [--yes]
 ```
 
-- `--platform` — plataforma a configurar na primeira execução do kit (inicializa os submodules `Console`/`Web` e roda o `bootgly boot`);
+- `--platform` — plataformas extras a configurar na primeira execução do kit, separadas por vírgula (inicializa os submodules `Console`/`Web` e roda o `bootgly boot`);
 - `--from` — `scratch` (padrão) ou o caminho de um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`). Importações de plataforma mantêm o próprio caminho (`<Name>` é opcional) e atualizam uma cópia existente;
 - `--interfaces` — interface vinculada a um projeto do zero (`CLI` por padrão);
 - `--default` — marca a entrada como padrão de autoboot Web (WPI);

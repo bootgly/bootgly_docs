@@ -112,10 +112,10 @@ Everything you own lives at the workspace level — `projects/`, `public/`, `sto
 
 The wizard guides you from an empty kit to a running project:
 
-1. **Platform** — the **Bootgly base platform** is always included: unopinionated, it ships the `CLI` and `WPI` interfaces. Here you choose the **extra platform** with the opinionated dependencies: `Console` (CLI extras — TUI apps) or `Web` (WPI extras — includes Console). The wizard initializes the matching platform submodules (`Console/`, `Web/`);
+1. **Platforms** — the **Bootgly base platform** is always included: unopinionated, it ships the `CLI` and `WPI` interfaces. Here you multi-select the **extra platforms** with the opinionated dependencies — `Console` (CLI extras — TUI apps) and/or `Web` (WPI extras) — or none, staying base-only. The wizard initializes the matching platform submodules (`Console/`, `Web/`);
 2. **Resources** — it runs `bootgly boot` to install the resource folders (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) into your kit;
-3. **Mode** — create **from scratch** or **import from Platform projects** (like the Demos shipped with the framework);
-4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. Importing: just multi-select the projects (Space marks, Enter confirms) — each one is copied under its own platform path, no questions asked; existing copies are flagged `(overwrite)` and refreshed;
+3. **Mode** — create **from scratch**, **import from Platform projects** (like the Demos shipped with the framework) or **import from a Git remote** (any repository carrying the Bootgly project signature);
+4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. From Platform projects: just multi-select the projects (Space marks, Enter confirms) — each one is copied under its own platform path, no questions asked; existing copies are flagged `(overwrite)` and refreshed. From a Git remote: type the repository URL, the target path and the interface — the repository is cloned and validated (`*.project.php` signature);
 5. **Confirm** — review the summary (mode, imports with their platform of origin, overwrites) and confirm. Projects land in `projects/<Path>/` and are registered in `projects/Bootgly.projects.php`.
 
 Then boot it:
@@ -296,7 +296,7 @@ Creates a project. On interactive terminals the wizard fills the missing inputs;
 
 | Option | Description |
 |---|---|
-| `--platform=console\|web` | Platform to set up on the kit's first run (submodules + resources). |
+| `--platform=console,web` | Extra platforms to set up on the kit's first run (submodules + resources) — one or both, comma-separated. |
 | `--from=scratch\|<source>` | Creation source: from scratch (default) or a platform project (e.g. `Demo/HTTP_Server_CLI`). |
 | `--interfaces=CLI\|WPI` | Interface bound to the new project (from scratch; default `CLI`). |
 | `--port=<port>` | Server port token for `WPI` projects (default `8080`). |

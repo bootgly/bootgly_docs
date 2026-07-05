@@ -77,10 +77,11 @@ To make a new project runnable, use `bootgly project create` — it generates th
 php bootgly project create
 ```
 
-The wizard prepares the kit on first run (platform submodules + `bootgly boot` resources), then asks for the creation mode:
+The wizard prepares the kit on first run (a multi-selection of the extra platform submodules — `Console` and/or `Web` — plus `bootgly boot` resources), then asks for the creation mode:
 
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
-- **Importing platform projects** — a multi-selection over the **exportable** projects found in the platform folders (like the Demos): each selected project is recursively copied under its own path in your workspace's `projects/`, no questions asked. Existing user-level copies — which overwrite the platform ones on load — are flagged `(overwrite)` in the summary and refreshed.
+- **Importing platform projects** — a multi-selection over the **exportable** projects found in the platform folders (like the Demos): each selected project is recursively copied under its own path in your workspace's `projects/`, no questions asked. Existing user-level copies — which overwrite the platform ones on load — are flagged `(overwrite)` in the summary and refreshed;
+- **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly project import`: the repository is cloned, validated against the `*.project.php` signature and registered.
 
 Only projects declared with `exportable: true` in their `new Project(...)` signature appear in the import picker.
 
@@ -127,11 +128,11 @@ graph LR
 Creates a new project — wizard on interactive terminals, flags otherwise:
 
 ```bash
-php bootgly project create [<Name>] [--platform=console|web] [--from=scratch|<source>] \
+php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<source>] \
    [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--default] [--yes]
 ```
 
-- `--platform` — platform to set up on the kit's first run (initializes the `Console`/`Web` submodules and runs `bootgly boot`);
+- `--platform` — extra platforms to set up on the kit's first run, comma-separated (initializes the `Console`/`Web` submodules and runs `bootgly boot`);
 - `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy;
 - `--interfaces` — interface bound to a from-scratch project (`CLI` default);
 - `--default` — flags the entry as the Web (WPI) autoboot default;
