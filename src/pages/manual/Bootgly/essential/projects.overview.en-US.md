@@ -98,21 +98,42 @@ A freshly installed kit (what `curl -fsSL https://bootgly.com/install | bash` �
 ```text
 bootgly.kit/
 ├── Bootgly/            ← base platform (required git submodule)
-│   ├── Bootgly/        ← the framework itself: ABI/ ACI/ ADI/ API/ CLI/ WPI/ + commands/
-│   ├── projects/       ← author-level projects — the import sources (Demo/, Benchmark/, Example/)
-│   ├── public/  scripts/  storage/  tests/   ← resource templates used by `bootgly boot`
-│   └── autoboot.php    ← framework autoboot (required by the kit launcher)
+│   ├── &/              ← internal framework resources
+│   ├── @/              ← framework meta resources (certificates, static analysis, ...)
+│   ├── Bootgly/        ← the framework itself — the I2P interfaces, in dependency order:
+│   │   ├── ABI/        ← Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
+│   │   ├── ACI/        ← Events/ Fakers/ Logs/ Observability/ Process/ Queues/ Schedule/ Tests/
+│   │   ├── ADI/        ← Database/ Databases/ Table/
+│   │   ├── API/        ← Endpoints/ Environment/ Projects/ Security/ Workables/
+│   │   ├── CLI/        ← Commands/ Terminal/ UI/
+│   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
+│   │   └── commands/   ← built-in CLI commands (boot, demo, project, test, ...)
+│   ├── configs/        ← framework configs
+│   ├── docs/           ← framework docs assets
+│   ├── projects/       ← author-level projects — the import sources (Benchmark/, Demo/, Example/)
+│   ├── public/         ← resource template used by `bootgly boot`
+│   ├── scripts/        ← resource template used by `bootgly boot`
+│   ├── storage/        ← resource template used by `bootgly boot`
+│   ├── tests/          ← resource template used by `bootgly boot`
+│   ├── Bootgly.php     ← the framework root entity
+│   ├── autoboot.php    ← framework autoboot (required by the kit launcher)
+│   ├── bootgly         ← the framework's own CLI launcher
+│   ├── composer.json
+│   └── index.php
+├── .gitignore
+├── .gitmodules         ← Bootgly (required) + Console and Web (optional platforms)
+├── LICENSE
+├── README.md
 ├── bootgly             ← the CLI launcher (autoboots Bootgly + the optional platforms)
-├── index.php           ← the Web front controller
 ├── composer.json
-└── README.md
+└── index.php           ← the Web front controller
 ```
 
 `Console/` and `Web/` exist only as empty submodule entries at this point. The wizard's first run initializes the chosen platform submodules and runs `bootgly boot` to install your own resource folders:
 
 ```text
 bootgly.kit/
-├── Bootgly/            ← base platform (submodule)
+├── Bootgly/            ← base platform (submodule — expanded above)
 ├── Console/            ← Console platform (initialized by the wizard)
 ├── Web/                ← Web platform (initialized when chosen)
 ├── projects/           ← YOUR projects — installed by `bootgly boot`
@@ -124,7 +145,13 @@ bootgly.kit/
 ├── scripts/            ← installed by `bootgly boot`
 ├── storage/            ← installed by `bootgly boot` (cache/, logs/, pids/)
 ├── tests/              ← installed by `bootgly boot`
-├── bootgly  index.php  composer.json  README.md
+├── .gitignore
+├── .gitmodules
+├── LICENSE
+├── README.md
+├── bootgly             ← now autoboots Bootgly + Console (+ Web) through the conditional chain
+├── composer.json
+└── index.php
 ```
 
 Everything you own lives at the workspace level — `projects/`, `public/`, `storage/` — while the platforms stay untouched inside their submodules. When a project exists both in your `projects/` and in a platform's, **your copy wins on load**: that is why re-importing a platform project simply refreshes your copy.
