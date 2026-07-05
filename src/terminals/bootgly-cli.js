@@ -17,7 +17,7 @@ export const meta = {
 // Commands that natively fork a Terminal Client/Server pair. In the browser
 // they run as TWO workers (client + server), each with its own PHP, joined by
 // a MessageChannel playing the pipe (see §dual in the worker).
-const DUAL_COMMANDS = new Set(['demo 1', 'project Snake start', 'project Pong start'])
+const DUAL_COMMANDS = new Set(['demo 1', 'project Snake start', 'project Pong start', 'project Invaders start'])
 
 export default async function createEngine ({ onOutput, onError, onStatus }) {
   let worker = null

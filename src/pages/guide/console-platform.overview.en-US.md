@@ -81,15 +81,15 @@ You get the shell for free: alternate screen (your shell scrollback survives), `
 
 ## Play in the browser
 
-The platform ships two complete games as exportable projects — play them right here (PHP WASM, no server):
+The platform ships three complete games as exportable projects — play them right here (PHP WASM, no server):
 
 <d-block-terminal
   engine="bootgly-cli"
   title="Console Games — live"
-  commands="Snake:project Snake start|Pong:project Pong start"
+  commands="Snake:project Snake start|Pong:project Pong start|Invaders:project Invaders start"
   height="560"
 >
-Pick a game and press Run, then **click the terminal to focus it**. Enter starts, `q` quits. Snake: arrows steer, holding accelerates. Pong: hold ↑/↓, first to 5 wins.
+Pick a game and press Run, then **click the terminal to focus it**. Enter starts, `q` quits. Snake: arrows steer, holding accelerates. Pong: hold ↑/↓, first to 5 wins. Invaders: ←/→ move, Space fires.
 </d-block-terminal>
 
 In your own kit, import them with the wizard (**Import projects from Platforms**) and run natively:
@@ -97,12 +97,13 @@ In your own kit, import them with the wizard (**Import projects from Platforms**
 ```bash
 php bootgly project Snake start
 php bootgly project Pong start
+php bootgly project Invaders start
 ```
 
-They are compact references for the **Games** module: fixed-timestep loop, diff-rendered Canvas, held-key detection and scenes.
+They are compact references for the **Games** module: fixed-timestep loop, diff-rendered Canvas, held-key detection, scenes, sprite sheets and 2D math.
 
 ## Going deeper
 
 - [Console](/manual/Console) — how the platform boots and how projects bind to it.
 - [App](/manual/Console/App) — the app shell: Screens + Router, Keymaps, Statusbar, Toasts, Palette, Tail.
-- [Games](/manual/Console/Games) — the game shell: Loop, Canvas (Block/Half/Braille), Keyboard, Scenes.
+- [Games](/manual/Console/Games) — the game shell: Loop, Canvas (Block/Half/Braille), Keyboard, Scenes, Sprites and 2D math.

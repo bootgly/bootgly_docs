@@ -81,15 +81,15 @@ Você ganha o shell de graça: tela alternativa (o scrollback do seu shell sobre
 
 ## Jogue no navegador
 
-A plataforma traz dois jogos completos como projetos exportáveis — jogue-os aqui mesmo (PHP WASM, sem servidor):
+A plataforma traz três jogos completos como projetos exportáveis — jogue-os aqui mesmo (PHP WASM, sem servidor):
 
 <d-block-terminal
   engine="bootgly-cli"
   title="Console Games — ao vivo"
-  commands="Snake:project Snake start|Pong:project Pong start"
+  commands="Snake:project Snake start|Pong:project Pong start|Invaders:project Invaders start"
   height="560"
 >
-Escolha um jogo e pressione Run, depois **clique no terminal para focá-lo**. Enter inicia, `q` sai. Snake: setas dirigem, segurar acelera. Pong: segure ↑/↓, o primeiro a 5 vence.
+Escolha um jogo e pressione Run, depois **clique no terminal para focá-lo**. Enter inicia, `q` sai. Snake: setas dirigem, segurar acelera. Pong: segure ↑/↓, o primeiro a 5 vence. Invaders: ←/→ movem, Space atira.
 </d-block-terminal>
 
 No seu próprio kit, importe-os com o wizard (**Import projects from Platforms**) e rode nativamente:
@@ -97,9 +97,10 @@ No seu próprio kit, importe-os com o wizard (**Import projects from Platforms**
 ```bash
 php bootgly project Snake start
 php bootgly project Pong start
+php bootgly project Invaders start
 ```
 
-Eles são referências compactas para o módulo **Games**: loop de timestep fixo, Canvas com renderização por diff, detecção de tecla segurada e scenes.
+Eles são referências compactas para o módulo **Games**: loop de timestep fixo, Canvas com renderização por diff, detecção de tecla segurada, scenes, sprite sheets e matemática 2D.
 
 ## Indo mais fundo
 

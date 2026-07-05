@@ -1,6 +1,6 @@
 # Console Games
 
-`Console\Games` é o shell de jogos da plataforma Console: um loop de timestep fixo sobre a interface **Client/Server** do Terminal do Bootgly, um **Canvas** com renderização por diff, um **Keyboard** com heurísticas de pressed/held e uma máquina de estados de **Scenes**.
+`Console\Games` é o shell de jogos da plataforma Console: um loop de timestep fixo sobre a interface **Client/Server** do Terminal do Bootgly, um **Canvas** com renderização por diff, um **Keyboard** com heurísticas de pressed/held, uma máquina de estados de **Scenes**, um sheet de **Sprites** Unicode animados e pequenos helpers de matemática 2D — **Vector**, **Zone** e **Timer**.
 
 `run()` forka os dois papéis através de `Input->reading()`: o processo *Client* bombeia teclas para um pipe como tokens delimitados por newline; o processo *Server* é dono da tela e roda o loop do jogo. Runtimes embarcados (ex.: WASM) rodam um papel por processo de forma transparente.
 
@@ -103,13 +103,62 @@ $this->Scenes->add(new Scene(
 ));
 ```
 
-## Os demos Snake e Pong
+## Sprites e matemática 2D
 
-A plataforma traz dois jogos completos como projetos exportáveis (`Console/projects/`): o clássico **Snake** (direção pelas setas, aceleração ao segurar) e o **Pong** contra uma IA simples (raquete por impulso de tecla — toque ajusta, segurar acelera — e deflexão pelo ponto de impacto) — ambos com scenes Menu → Play → Over, tabuleiros de pixels quadrados ajustados e centrados no terminal, e o placar na Statusbar. Jogue-os no [showcase ao vivo](/manual/Console/Games/showcase), importe-os pelo wizard ou rode-os do repo da plataforma:
+A arte de um jogo vive em um sprite sheet — um arquivo `.sprites.php` que retorna instâncias de `Sprite`. Frames são strings multilinha WYSIWYG onde 1 caractere = 1 pixel lógico: espaços são transparentes e o `aspect` do Canvas dobra cada pixel na tela:
+
+```php
+// Invaders.sprites.php
+use Console\Games\Sprite;
+
+return [
+   new Sprite('alien', frames: ["▄█▄\n▀ ▀", "▄█▄\n▝ ▘"], style: "\e[1;32m"),
+   new Sprite('boom', frames: [" ✦ \n✦ ✦", "✧ ✧\n ✧ "], style: "\e[1;33m", FPS: 8.0)
+];
+```
+
+Carregue o sheet no shell e estampe sprites no Canvas. `get()` retorna a instância **compartilhada** — atribua `$frame` uma vez e todos os consumidores viram em lockstep (animação step-driven); use `clone` quando uma entidade precisar de estado independente, e dê a ela um `FPS` para animação por tempo:
+
+```php
+$this->Sprites->load(__DIR__ . '/Invaders.sprites.php');
+
+// Step-driven: a formação inteira vira a cada passo da marcha
+$Alien = $this->Sprites->get('alien');
+$Alien->frame = ($Alien->frame + 1) % 2;
+$Alien->stamp($this->Canvas, $x, $y);
+
+// Por tempo: uma explosão pisca no próprio relógio
+$Boom = clone $this->Sprites->get('boom');
+$Boom->tick($delta);
+```
+
+O trio de matemática 2D cobre o resto da contabilidade de um jogo — `Timer` para cadências, `Vector` para integração sem alocação, `Zone` para colisão AABB:
+
+```php
+use Console\Games\Timer;
+use Console\Games\Vector;
+use Console\Games\Zone;
+
+$March = new Timer(0.75);                    // cadência repetitiva
+if ($March->tick($delta) === true) { /* um passo da marcha */ }
+$March->interval = 0.3;                      // mutável — acelere no meio do jogo
+
+$Position->add($Velocity, $delta);           // passo de Euler — sem alocação
+
+$Hitbox = new Zone($x, $y, 3.0, 2.0);
+$Hitbox->contain($Shot->Position);           // acerto de ponto (arestas inclusivas)
+$Hitbox->check($Hull);                       // sobreposição AABB (arestas estritas)
+$Field->clamp($Ship);                        // prende um ponto dentro de uma zona
+```
+
+## Os demos Snake, Pong e Invaders
+
+A plataforma traz três jogos completos como projetos exportáveis (`Console/projects/`): o clássico **Snake** (direção pelas setas, aceleração ao segurar), o **Pong** contra uma IA simples (raquete por impulso de tecla — toque ajusta, segurar acelera — e deflexão pelo ponto de impacto) e o **Invaders** (uma formação de sprite sheet que marcha mais rápido conforme encolhe — um interval mutável de Timer — com cooldown de tiro one-shot, projéteis integrados por Vector e colisões por Zone) — todos com scenes Menu → Play → Over, tabuleiros de pixels quadrados ajustados e centrados no terminal, e o placar na Statusbar. Jogue-os no [showcase ao vivo](/manual/Console/Games/showcase), importe-os pelo wizard ou rode-os do repo da plataforma:
 
 ```bash
 php bootgly project Snake start
 php bootgly project Pong start
+php bootgly project Invaders start
 ```
 
 ---
@@ -122,7 +171,7 @@ php bootgly project Pong start
 public function __construct (null|Input $Input = null, null|Output $Output = null, int $columns = 80, int $rows = 22, int $aspect = 1)
 ```
 
-Constrói o shell de jogo: Canvas (`$columns`×`$rows` pixels lógicos, `$aspect` células de terminal por pixel), Keyboard, Loop e Scenes sobre o chrome herdado do App. `$columns`/`$rows` funcionam como tetos — o tabuleiro é ajustado ao terminal real (a status bar fica com a última linha) e centrado nele.
+Constrói o shell de jogo: Canvas (`$columns`×`$rows` pixels lógicos, `$aspect` células de terminal por pixel), Keyboard, Loop, Scenes e um sheet vazio de Sprites sobre o chrome herdado do App. `$columns`/`$rows` funcionam como tetos — o tabuleiro é ajustado ao terminal real (a status bar fica com a última linha) e centrado nele.
 
 ```php
 public function run (null|string $screen = null): void
@@ -253,3 +302,109 @@ public function __construct (string $name, null|Closure $enter = null, null|Clos
 ```
 
 Uma scene de jogo: hooks nomeados `enter` / `update` / `render` mais um array `$state`.
+
+### Console\Games\Sprite
+
+```php
+public function __construct (string $name, array $frames, string $style = '', float $FPS = 0.0, string $alpha = ' ')
+```
+
+Um sprite de bitmap Unicode: `$frames` são strings multilinha WYSIWYG — 1 caractere = 1 pixel lógico. `$style` é um prefixo ANSI aplicado a cada pixel, `$alpha` é o caractere transparente (padrão espaço) e `$FPS` dirige o `tick()` (0.0 = só step-driven). `$width`/`$height` expõem o tamanho medido em pixels; `$frame` é público — atribua diretamente para animação step-driven.
+
+```php
+public function tick (float $delta): self
+```
+
+Avança o relógio da animação, movendo frames inteiros e carregando o resto — no-op quando `$FPS` é 0.0 ou o sprite tem um único frame.
+
+```php
+public function stamp (Canvas $Canvas, int $x, int $y): self
+```
+
+Plota o frame atual no ponto lógico (`$x`, `$y`): pixels transparentes são pulados e pixels fora do canvas clipam silenciosamente.
+
+### Console\Games\Sprites
+
+```php
+public function add (Sprite $Sprite): self
+```
+
+Registra um sprite, indexado pelo nome.
+
+```php
+public function get (string $name): Sprite
+```
+
+A instância **compartilhada** do sprite — todos os consumidores veem o mesmo `$frame` (animação em lockstep); use `clone` no resultado para estado de animação por entidade. Lança `InvalidArgumentException` para nomes desconhecidos.
+
+```php
+public function load (string $file): self
+```
+
+Carrega um sheet `.sprites.php` — um arquivo que retorna um array de instâncias de `Sprite` — e registra cada sprite. Lança `InvalidArgumentException` quando o arquivo não existe.
+
+### Console\Games\Timer
+
+```php
+public function __construct (float $interval, bool $repeat = true)
+```
+
+Uma contagem por intervalo para cadências de jogo. `$interval` é público e mutável — cadências podem acelerar no meio do jogo. Com `repeat: false` o timer é one-shot: `$expired` fica `true` após disparar (o estado "pronto" de um cooldown).
+
+```php
+public function tick (float $delta): bool
+```
+
+Avança o timer; retorna se ele disparou neste tick. Timers repetitivos carregam o resto para o próximo ciclo; one-shot disparam uma vez e ficam expirados até o `reset()`.
+
+```php
+public function reset (): self
+```
+
+Rearma o timer (`elapsed` volta a 0, `expired` volta a false).
+
+### Console\Games\Vector
+
+```php
+public function __construct (float $x = 0.0, float $y = 0.0)
+```
+
+Um vetor 2D mutável para hot paths de jogo. `$x`/`$y` são públicos; `$length` é uma propriedade computada somente leitura (comprimento Euclidiano).
+
+```php
+public function add (Vector $Vector, float $factor = 1.0): self
+```
+
+Soma um vetor, opcionalmente escalado — `add($Velocity, $delta)` é o passo de integração de Euler sem alocação; um fator negativo subtrai.
+
+```php
+public function scale (float $factor): self
+```
+
+Multiplica os dois componentes — rampas de velocidade, inversões de direção (`scale(-1.0)`) e normalização (`scale(1.0 / $Vector->length)`).
+
+### Console\Games\Zone
+
+```php
+public function __construct (float $x, float $y, float $width, float $height)
+```
+
+Uma bounding box alinhada aos eixos (AABB) em pixels lógicos — hitboxes, campos de jogo e extensões de formação.
+
+```php
+public function check (Zone $Zone): bool
+```
+
+Se as zonas se sobrepõem — arestas **estritas**: caixas que se tocam não colidem.
+
+```php
+public function contain (Vector $Vector): bool
+```
+
+Se o ponto está dentro da zona — arestas **inclusivas**: projéteis de raspão ainda acertam.
+
+```php
+public function clamp (Vector $Vector): Vector
+```
+
+Prende um ponto dentro da zona — muta e retorna o mesmo Vector.
