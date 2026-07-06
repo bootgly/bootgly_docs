@@ -104,13 +104,19 @@ WebSocket close frame). Each attempt uses capped exponential backoff — `reconn
 `reconnectMaxDelay` — for up to `reconnectAttempts` tries (`0` = unlimited). A **graceful** close (your
 `$Session->close()`, a server close frame, or a protocol fault) does **not** reconnect; the loop ends.
 
+`reconnectTimeout` is a total **wall-clock budget** (in seconds) for the whole campaign — the loop always
+gives up once that many seconds have elapsed since the first drop, even with `reconnectAttempts: 0`
+(unlimited). This guarantees a permanently dead port (connection refused forever) cannot re-dial
+endlessly; set `0` to opt out and reconnect without a time bound.
+
 ```php
 $WS->configure(
    host: '127.0.0.1', port: 8083,
    reconnect: true,
-   reconnectAttempts: 0,    // unlimited
+   reconnectAttempts: 0,    // unlimited attempts...
    reconnectDelay: 1,       // 1s, 2s, 4s, ... capped at reconnectMaxDelay
    reconnectMaxDelay: 30,
+   reconnectTimeout: 60,    // ...but bounded to 60s of wall-clock total (0 = unbounded)
 );
 ```
 
@@ -200,7 +206,9 @@ configure (
    bool $reconnect = false,
    int $reconnectAttempts = 0,
    int $reconnectDelay = 1,
-   int $reconnectMaxDelay = 30
+   int $reconnectMaxDelay = 30,
+   int $reconnectTimeout = 60,
+   int $handshakeTimeout = 10
 ): self
 ```
 
@@ -210,7 +218,10 @@ and a reassembled message — exceeding either closes with `1009`. `compression`
 `permessage-deflate` offer. `secure` is a TLS stream-context array for `wss://` (`peer_name` defaults
 to `host`). `reconnect` auto re-dials after an abrupt drop with capped exponential backoff
 (`reconnectDelay` → `reconnectMaxDelay`, up to `reconnectAttempts`, `0` = unlimited); graceful closes
-do not reconnect.
+do not reconnect. `reconnectTimeout` (60s) is the total wall-clock budget for the whole reconnect
+campaign — the loop always gives up after that many seconds, even with unlimited attempts (`0` =
+unbounded). `handshakeTimeout` (10s) bounds the wait for the server's `101` after each dial (`0` =
+unbounded).
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self

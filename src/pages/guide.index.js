@@ -530,5 +530,31 @@ export default {
         title: 'Docker'
       }
     }
+  },
+
+  '/reload': {
+    config: {
+      icon: 'autorenew',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Graceful hot-reload of a running server — drain in-flight requests, re-exec the master, reload all code with the same PID.',
+          'pt-BR': 'Hot-reload gracioso de um servidor em execução — drena requisições em andamento, re-executa o master, recarrega todo o código com o mesmo PID.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Reload'
+      },
+      'pt-BR': {
+        title: 'Reload'
+      }
+    }
   }
 }

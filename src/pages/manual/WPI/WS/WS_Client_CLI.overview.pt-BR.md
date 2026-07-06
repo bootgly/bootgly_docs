@@ -107,13 +107,19 @@ transporte sem frame de close WebSocket). Cada tentativa usa backoff exponencial
 Um close **gracioso** (seu `$Session->close()`, um frame de close do servidor, ou uma falha de
 protocolo) **não** reconecta; o loop encerra.
 
+`reconnectTimeout` é um **orçamento de tempo de parede** (em segundos) para toda a campanha — o loop
+sempre desiste quando esse tempo se passa desde a primeira queda, mesmo com `reconnectAttempts: 0`
+(ilimitado). Isso garante que uma porta permanentemente morta (conexão recusada para sempre) não possa
+rediscar sem fim; use `0` para não impor limite de tempo.
+
 ```php
 $WS->configure(
    host: '127.0.0.1', port: 8083,
    reconnect: true,
-   reconnectAttempts: 0,    // ilimitado
+   reconnectAttempts: 0,    // tentativas ilimitadas...
    reconnectDelay: 1,       // 1s, 2s, 4s, ... limitado em reconnectMaxDelay
    reconnectMaxDelay: 30,
+   reconnectTimeout: 60,    // ...mas limitado a 60s de tempo de parede total (0 = sem limite)
 );
 ```
 
@@ -204,7 +210,9 @@ configure (
    bool $reconnect = false,
    int $reconnectAttempts = 0,
    int $reconnectDelay = 1,
-   int $reconnectMaxDelay = 30
+   int $reconnectMaxDelay = 30,
+   int $reconnectTimeout = 60,
+   int $handshakeTimeout = 10
 ): self
 ```
 
@@ -214,7 +222,10 @@ entrada e uma mensagem remontada — exceder qualquer um fecha com `1009`. `comp
 de `permessage-deflate`. `secure` é um array de stream-context TLS para `wss://` (o `peer_name` assume
 o `host` por padrão). `reconnect` rediscar após uma queda abrupta com backoff exponencial limitado
 (`reconnectDelay` → `reconnectMaxDelay`, até `reconnectAttempts`, `0` = ilimitado); closes graciosos não
-reconectam.
+reconectam. `reconnectTimeout` (60s) é o orçamento total de tempo de parede para toda a campanha de
+reconexão — o loop sempre desiste após esses segundos, mesmo com tentativas ilimitadas (`0` = sem
+limite). `handshakeTimeout` (10s) limita a espera pelo `101` do servidor após cada disca (`0` = sem
+limite).
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self
