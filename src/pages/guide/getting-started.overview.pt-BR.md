@@ -11,37 +11,9 @@ O instalador:
 1. Verifica seu ambiente (`git` + PHP **8.4+**);
 2. Clona o template inicial [bootgly.kit](https://github.com/bootgly/bootgly.kit) em `./bootgly.kit` (passe outro nome com `curl -fsSL https://bootgly.com/install | bash -s -- meudir`);
 3. Inicializa a **plataforma Bootgly** (git submodule);
-4. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
-5. Abre o **wizard de projetos** (`php bootgly project create`).
-
-<details>
-   <summary><kbd>Configuração manual (git submodules)</kbd></summary><br>
-
-   Prefere fazer na mão? Use o [bootgly.kit](https://github.com/bootgly/bootgly.kit) como template do GitHub (ou clone), e então:
-
-   ```bash
-   git clone https://github.com/bootgly/bootgly.kit
-   cd bootgly.kit
-   git submodule update --init Bootgly
-   php bootgly project create
-   ```
-
-   O kit mantém as plataformas como git submodules — `Bootgly/` (o framework), `Console/` e `Web/` — e o wizard inicializa as opcionais sob demanda.
-</details>
-
-<details>
-   <summary><kbd>Usando Composer (alternativa)</kbd></summary><br>
-
-   Se você precisa do Composer para gerenciar dependências externas:
-
-   ```bash
-   composer create-project bootgly/bootgly.kit --stability=dev
-   cd bootgly.kit
-   php bootgly project create
-   ```
-
-   As dependências são instaladas em `./@imports/` e carregadas pelo mesmo launcher `bootgly`.
-</details>
+4. Faz "boot" de [diretórios recursos](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
+5. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
+6. Abre o **wizard de projetos** (`php bootgly project create`).
 
 Um kit recém-clonado (`git clone` — ou usando o template do GitHub) contém apenas os arquivos do kit — todos os submodules de plataforma ficam **vazios** até serem instalados:
 
@@ -275,38 +247,3 @@ Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/Demo/HT
 ```bash
 sudo bootgly project Demo/HTTPS_Server_CLI start
 ```
-
-## Referência
-
-### Instalador
-
-```bash
-curl -fsSL https://bootgly.com/install | bash [-s -- <dir>]
-```
-
-Verifica `git` + PHP 8.4+, clona o `bootgly.kit` em `<dir>` (padrão `bootgly.kit`), inicializa o submodule `Bootgly` e abre o wizard de projetos em terminais interativos.
-
-### `bootgly project create`
-
-```bash
-bootgly project create [<Name>] [options]
-```
-
-Cria um projeto. Em terminais interativos, o wizard preenche as entradas faltantes; com `--yes` (ou entrada via pipe) tudo vem das flags.
-
-| Opção | Descrição |
-|---|---|
-| `--platform=console,web` | Plataformas extras a configurar na primeira execução do kit (submodules + recursos) — uma ou ambas, separadas por vírgula. |
-| `--from=scratch\|<source>` | Fonte da criação: do zero (padrão) ou um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`). |
-| `--interfaces=CLI\|WPI` | Interface vinculada ao novo projeto (do zero; padrão `CLI`). |
-| `--port=<port>` | Porta do servidor para projetos `WPI` (padrão `8080`). |
-| `--description=`, `--version=`, `--author=` | Metadados do projeto (do zero). |
-| `--yes` | Pula confirmações (não-interativo). |
-
-### `bootgly project import`
-
-```bash
-bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
-```
-
-Clona `<url>` (git do sistema), valida a assinatura de projeto Bootgly (`*.project.php` na raiz do repositório), mostra um resumo (modo, URL de origem, caminho de destino, interfaces), pede confirmação, copia para `projects/<Name>/` (padrão: o nome do repositório) e registra.

@@ -10,38 +10,10 @@ The installer:
 
 1. Checks your environment (`git` + PHP **8.4+**);
 2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./bootgly.kit` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
-3. Initializes the **Bootgly platform** (git submodule);
-4. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
-5. Opens the **project wizard** (`php bootgly project create`).
-
-<details>
-   <summary><kbd>Manual setup (git submodules)</kbd></summary><br>
-
-   Prefer to do it by hand? Use [bootgly.kit](https://github.com/bootgly/bootgly.kit) as a GitHub template (or clone it), then:
-
-   ```bash
-   git clone https://github.com/bootgly/bootgly.kit
-   cd bootgly.kit
-   git submodule update --init Bootgly
-   php bootgly project create
-   ```
-
-   The kit keeps the platforms as git submodules — `Bootgly/` (the framework), `Console/` and `Web/` — and the wizard initializes the optional ones on demand.
-</details>
-
-<details>
-   <summary><kbd>Using Composer (alternative)</kbd></summary><br>
-
-   If you need Composer to manage external dependencies:
-
-   ```bash
-   composer create-project bootgly/bootgly.kit --stability=dev
-   cd bootgly.kit
-   php bootgly project create
-   ```
-
-   Dependencies are installed into `./@imports/` and loaded by the same `bootgly` launcher.
-</details>
+3. Initializes the **Bootgly platform** (git submodule) and other selected Platforms like `Console` and `Web`;
+4. Boot initial [resources dirs](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
+5. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
+6. Opens the **project wizard** (`php bootgly project create`).
 
 A freshly cloned kit (`git clone` — or using the GitHub template) contains only the kit files — every platform submodule is **empty** until installed:
 
@@ -275,38 +247,3 @@ A ready-to-use HTTPS project example is included at `projects/Demo/HTTPS_Server_
 ```bash
 sudo bootgly project Demo/HTTPS_Server_CLI start
 ```
-
-## Reference
-
-### Installer
-
-```bash
-curl -fsSL https://bootgly.com/install | bash [-s -- <dir>]
-```
-
-Checks `git` + PHP 8.4+, clones `bootgly.kit` into `<dir>` (default `bootgly.kit`), initializes the `Bootgly` submodule and opens the project wizard on interactive terminals.
-
-### `bootgly project create`
-
-```bash
-bootgly project create [<Name>] [options]
-```
-
-Creates a project. On interactive terminals the wizard fills the missing inputs; with `--yes` (or piped input) everything comes from the flags.
-
-| Option | Description |
-|---|---|
-| `--platform=console,web` | Extra platforms to set up on the kit's first run (submodules + resources) — one or both, comma-separated. |
-| `--from=scratch\|<source>` | Creation source: from scratch (default) or a platform project (e.g. `Demo/HTTP_Server_CLI`). |
-| `--interfaces=CLI\|WPI` | Interface bound to the new project (from scratch; default `CLI`). |
-| `--port=<port>` | Server port token for `WPI` projects (default `8080`). |
-| `--description=`, `--version=`, `--author=` | Project metadata (from scratch). |
-| `--yes` | Skip confirmations (non-interactive). |
-
-### `bootgly project import`
-
-```bash
-bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
-```
-
-Clones `<url>` (system git), validates the Bootgly project signature (`*.project.php` at the repository root), shows a summary (mode, source URL, target path, interfaces), asks for confirmation, copies it into `projects/<Name>/` (default: the repository name) and registers it.
