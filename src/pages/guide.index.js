@@ -157,6 +157,33 @@ export default {
     }
   },
 
+  '/templates': {
+    config: {
+      icon: 'code',
+      status: 'draft',
+      version: '0.21.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Write @-directive templates compiled to cached PHP — inheritance (@extends/@section/@yield), includes, components with slots, escaped output and template-line error reporting.',
+          'pt-BR': 'Escreva templates com diretivas @ compilados para PHP cacheado — herança (@extends/@section/@yield), includes, componentes com slots, output com escape e erros na linha do template.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Templates'
+      },
+      'pt-BR': {
+        title: 'Templates'
+      }
+    }
+  },
+
   '/queues': {
     config: {
       icon: 'queue',
