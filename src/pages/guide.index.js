@@ -184,6 +184,33 @@ export default {
     }
   },
 
+  '/views': {
+    config: {
+      icon: 'web',
+      status: 'draft',
+      version: '0.21.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Render project views on top of the template engine — default layouts, views/layouts and views/partials conventions, and JSON/XML/HTML content negotiation driven by the Accept header.',
+          'pt-BR': 'Renderize views do projeto sobre o template engine — layouts padrão, convenções views/layouts e views/partials, e content negotiation JSON/XML/HTML guiada pelo header Accept.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Views'
+      },
+      'pt-BR': {
+        title: 'Views'
+      }
+    }
+  },
+
   '/queues': {
     config: {
       icon: 'queue',
