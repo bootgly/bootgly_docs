@@ -13,10 +13,6 @@ export default {
       {
         id: 'v0.20.0-beta',
         current: true,
-        released: false
-      },
-      {
-        id: 'v0.19.1-beta',
         released: true
       },
     ],
