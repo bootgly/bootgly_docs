@@ -265,6 +265,33 @@ export default {
     }
   },
 
+  '/mail': {
+    config: {
+      icon: 'mail',
+      status: 'draft',
+      version: '0.21.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Send emails with the built-in, dependency-free SMTP client — implicit TLS or STARTTLS, AUTH PLAIN/LOGIN/XOAUTH2, typed transient/permanent failures and a delivery Receipt.',
+          'pt-BR': 'Envie e-mails com o cliente SMTP nativo e sem dependências — TLS implícito ou STARTTLS, AUTH PLAIN/LOGIN/XOAUTH2, falhas tipadas transient/permanent e um Receipt de entrega.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Mail'
+      },
+      'pt-BR': {
+        title: 'Mail'
+      }
+    }
+  },
+
   '/events': {
     config: {
       icon: 'podcasts',
