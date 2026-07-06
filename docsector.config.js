@@ -35,6 +35,18 @@ export default {
     ]
   },
 
+  // @ Footer
+  // Legal / compliance links shown in a row above the "Powered by" line.
+  footer: {
+    legalLinks: [
+      { href: 'https://bootgly.com/legal/privacy', label: { 'en-US': 'Privacy', 'pt-BR': 'Privacidade' } },
+      { href: 'https://bootgly.com/legal/cookies', label: { 'en-US': 'Cookies', 'pt-BR': 'Cookies' } },
+      { href: 'https://bootgly.com/legal/trademark', label: { 'en-US': 'Trademark', 'pt-BR': 'Marca' } },
+      { href: 'https://bootgly.com/legal/security', label: { 'en-US': 'Security', 'pt-BR': 'Segurança' } },
+      { href: 'https://bootgly.com/legal/license', label: { 'en-US': 'License', 'pt-BR': 'Licença' } }
+    ]
+  },
+
   // @ GitHub
   github: {
     repo: 'bootgly/bootgly_docs',
