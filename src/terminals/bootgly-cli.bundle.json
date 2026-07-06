@@ -1,9 +1,9 @@
 {
   "asset": "/wasm/bootgly-cli.zip",
-  "version": "0.19.1-beta",
+  "version": "0.20.0-beta",
   "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
   "files": 606,
-  "bytes": 698298,
+  "bytes": 698243,
   "demos": {
     "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
     "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
