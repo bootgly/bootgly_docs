@@ -1500,7 +1500,9 @@ export default {
           'pt-BR': 'Pergunte uma lista declarativa de campos sequencialmente, com revert e um loop de resumo + confirmação.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.CLI.UX'
+      },
       subpages: {
         showcase: true
       }
