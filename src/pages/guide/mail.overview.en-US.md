@@ -7,9 +7,9 @@ package involved.
 
 > [!NOTE]
 > Compose with the `Mail\Message` builder (alternative text/HTML bodies, attachments,
-> inline images) — or pass a **raw RFC 5322 string** with an explicit envelope; both forms
-> ship today. Template-based emails and queue integration are the next cuts of the Mail
-> system.
+> inline images, template-based HTML) — or pass a **raw RFC 5322 string** with an explicit
+> envelope. Deliver synchronously or queue the send for a background worker via
+> `WPI\Services\Mail::dispatch()`. All of it ships today.
 
 ## Send a mail
 
@@ -105,6 +105,32 @@ $Message->html = "<p>Hello!</p><img src=\"{$cid}\">";
 renders. The full nesting — `mixed { related { alternative { text, html }, embeds… },
 attachments… }` — collapses automatically: each level exists only when its parts do.
 
+## Template the body
+
+The HTML body can come from a named template rendered by the
+[ABI template engine](/guide/templates/overview/) — same directives, cache and
+inheritance as web views:
+
+```php
+use Bootgly\ACI\Mail\Message;
+
+Message::$path = BOOTGLY_PROJECT->path . 'mails/';   // once, at boot
+
+$Message = new Message();
+$Message->from = 'no-reply@example.com';
+$Message->to = 'user@example.net';
+$Message->subject = 'Welcome!';
+$Message->text = 'Welcome, Ana!';          // plain-text alternative (manual)
+$Message->template = 'welcome';            // mails/welcome.template.php
+$Message->data = ['name' => 'Ana'];
+```
+
+At `render()` (or `send()`) the template output becomes the `html` body — composing with
+`text`, attachments and embeds exactly like a hand-written HTML body. Template names are
+jailed inside `Message::$path` (`''` falls back to the engine's current `Template::$path`),
+and the web default layout never wraps an email — use an explicit `@extends` in the mail
+template for a shared mail layout.
+
 ## Deterministic renders
 
 `id` (Message-ID), `date` and `boundary` are generated on the first `render()` and
@@ -120,6 +146,44 @@ $Message->boundary = 'seed';
 The rendered output is always pure 7-bit ASCII: non-ASCII headers become RFC 2047
 encoded-words, non-ASCII text bodies quoted-printable and binary parts wrapped base64 —
 regardless of what the server advertises.
+
+## Queue the delivery
+
+SMTP is slow for a request handler. `Bootgly\WPI\Services\Mail` is the web-platform mail
+service: boot it once, then `dispatch()` enqueues the message through the shared
+[`WPI\Queues`](/guide/queues/overview/) messenger (a quick local write or one Redis
+round-trip) and the SMTP delivery runs in the queue worker:
+
+```php
+use Bootgly\WPI\Queues;
+use Bootgly\WPI\Services\Mail;
+
+// once, at boot (HTTP server AND the queue worker bootstrap)
+Queues::boot(['driver' => 'redis', 'host' => '127.0.0.1']);   // the platform queue store
+Mail::boot(['host' => 'smtp.example.com', 'secure' => 'starttls', 'username' => '…', 'password' => '…']);
+
+// in a route handler
+Mail::dispatch($Message);            // → `mail` queue; returns the Job
+Mail::send($Message);                // synchronous alternative, same shared mailer
+```
+
+Run the consumer exactly like any other queue:
+
+```sh
+bootgly queue run mail
+```
+
+The shipped `WPI\Services\Mail\Courier` handler rebuilds the message in the worker
+(`Message::import()` of the Job payload) and sends it through the shared mailer. A
+delivery failure propagates to the queue Worker, which **retries with the configured
+backoff** (`attempts`, `base`, `backoff` queue config) and buries the job as a dead-letter
+once attempts are exhausted — see [Queues](/guide/queues/overview/).
+
+> [!IMPORTANT]
+> The worker process must call `Queues::boot()` and `Mail::boot()` too (the Job carries
+> the message, never the SMTP credentials). Everything a queued message carries —
+> `template` + `data` included — must be serializable; the template itself is rendered in
+> the worker.
 
 ## Choose the TLS mode
 
@@ -281,19 +345,62 @@ for the HTML body. `$cid` = `''` generates a random one; pass it for stable rend
 public function render (): string
 ```
 
-Renders the full raw RFC 5322 message — CRLF line endings, 7-bit safe. Generates and
+Renders the full raw RFC 5322 message — CRLF line endings, 7-bit safe. When `template` is
+set, first renders it (inside `Message::$path`) into the `html` body. Generates and
 persists unset `id`/`date`/`boundary` (idempotent). Throws `InvalidArgumentException` on a
-missing `from`, invalid addresses, header injection or reserved custom header names.
+missing `from`, invalid addresses, header injection or reserved custom header names, and
+`TemplateException` on template problems.
+
+```php
+public function export (): array
+```
+
+Exports the message as a scalars-only array — the shape a queued Job payload carries
+across processes (attachments and embeds included, binary contents intact).
+
+```php
+public static function import (array $data): self
+```
+
+Rebuilds a `Message` from an `export()` array. Unknown keys are ignored and malformed
+values fall back to the property defaults.
 
 | Property | Meaning |
 |---|---|
+| `Message::$path` | static — base directory for mail templates (`''` = engine `Template::$path`) |
 | `from`, `reply` | `a@b` or `Name <a@b>` (`reply` = Reply-To; `''` omits it) |
 | `to`, `cc`, `bcc` | one address or a list; `bcc` is envelope-only |
 | `subject`, `text`, `html` | content — non-ASCII is encoded automatically |
+| `template`, `data` | mail template name + variables — rendered into `html` at render() |
 | `id`, `date`, `boundary` | deterministic overrides (`''` = generated + persisted) |
 | `headers` | extra `name => value` headers (structural names rejected) |
 | `$Attachments`, `$Embeds` | read-only `Attachment` lists |
 | `$sender`, `$recipients` | read-only derived envelope (virtual) |
+
+### WPI\Services\Mail (web service)
+
+```php
+public static function boot (array|Config $config = []): Messenger
+```
+
+Builds and stores the shared `Mail\Messenger` over an `ACI\Mail` mailer. Call it in the
+HTTP server boot **and** in the queue worker bootstrap (it also wires the `Courier` to the
+shared mailer). The queue store is configured separately — once — via `WPI\Queues::boot()`.
+
+```php
+public static function send (string|Message $sender, array|string $recipients = [], string $data = ''): Receipt
+```
+
+Sends synchronously through the shared messenger (lazily created on first use). Same
+signature and behavior as `ACI\Mail::send()`.
+
+```php
+public static function dispatch (Message $Message, string $queue = 'mail'): Job
+```
+
+Exports the message into a Job handled by `WPI\Services\Mail\Courier` and enqueues it
+through the shared `WPI\Queues` messenger — the SMTP delivery happens in the
+`bootgly queue run` worker, never on the HTTP event loop.
 
 ### Config keys
 
@@ -330,13 +437,17 @@ missing `from`, invalid addresses, header injection or reserved custom header na
 - **SMTP_Client** — `Mail\SMTP_Client`: the blocking transport behind the facade, with its
   protocol units `SMTP_Client\Decoder` (incremental reply parser), `Encoder` (command
   writer + dot-stuffing), `Extensions` (EHLO capabilities) and `Mechanisms` (AUTH blobs).
+- **Web units** — `WPI\Services\Mail` (the platform mail service),
+  `WPI\Services\Mail\Messenger` (the shared mailer adapter, dispatching through
+  `WPI\Queues`) and `WPI\Services\Mail\Courier` (the queue `Handler` that delivers
+  exported messages in the worker).
 - **Layering** — `ACI\Mail` depends on nothing above the ABI: raw PHP streams for the
-  socket, `ext-openssl` for TLS. Console commands, queue workers and web handlers can all
-  use it.
+  socket, `ext-openssl` for TLS (templates come from the ABI engine). Console commands,
+  queue workers and web handlers can all use it; the queue facade lives in the WPI.
 
 ## Next references
 
-- **[Queues](/guide/queues/overview/)** — push sends into a background worker; a queue
-  `Handler` calling `Mail->send()` is the natural pairing (native integration is a next cut).
-- **[Templates](/guide/templates/overview/)** — the ABI engine that template-based emails
-  will reuse.
+- **[Queues](/guide/queues/overview/)** — the retry/backoff, drivers and worker behind
+  `Mail::dispatch()` and the `Courier` handler.
+- **[Templates](/guide/templates/overview/)** — the ABI engine behind `Message->template`
+  (directives, inheritance, compilation cache).

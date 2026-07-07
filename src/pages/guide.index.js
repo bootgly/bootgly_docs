@@ -272,8 +272,8 @@ export default {
       version: '0.21.0-beta',
       meta: {
         description: {
-          'en-US': 'Send emails with the built-in, dependency-free SMTP client — implicit TLS or STARTTLS, AUTH PLAIN/LOGIN/XOAUTH2, typed transient/permanent failures and a delivery Receipt.',
-          'pt-BR': 'Envie e-mails com o cliente SMTP nativo e sem dependências — TLS implícito ou STARTTLS, AUTH PLAIN/LOGIN/XOAUTH2, falhas tipadas transient/permanent e um Receipt de entrega.'
+          'en-US': 'Send emails with the built-in, dependency-free Mail system — MIME Message builder with attachments/inline images/templates, SMTP over TLS with typed failures, and queued background delivery.',
+          'pt-BR': 'Envie e-mails com o sistema de Mail nativo e sem dependências — builder MIME com attachments/imagens inline/templates, SMTP sobre TLS com falhas tipadas e entrega em background via fila.'
         }
       },
       book: 'guide',
