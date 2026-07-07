@@ -211,6 +211,33 @@ export default {
     }
   },
 
+  '/theme': {
+    config: {
+      icon: 'palette',
+      status: 'draft',
+      version: '0.21.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Theme terminal output by semantic key — builtin dark/light/mono themes, NO_COLOR support, a swappable Theme::$Current that drives the CLI @:…: color tokens, and custom theme registration.',
+          'pt-BR': 'Tematize a saída do terminal por chave semântica — temas embutidos dark/light/mono, suporte a NO_COLOR, um Theme::$Current trocável que dirige os tokens de cor @:…: da CLI, e registro de temas customizados.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Theme'
+      },
+      'pt-BR': {
+        title: 'Theme'
+      }
+    }
+  },
+
   '/queues': {
     config: {
       icon: 'queue',
