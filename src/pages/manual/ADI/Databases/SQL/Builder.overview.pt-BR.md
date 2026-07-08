@@ -28,7 +28,7 @@ $Query = $Builder->compile();
 `$Query` é um `Bootgly\ADI\Databases\SQL\Builder\Query`:
 
 ```php
-$Query->sql;        // SELECT "id", "name" FROM "users" WHERE "active" = $1
+$Query->SQL;        // SELECT "id", "name" FROM "users" WHERE "active" = $1
 $Query->parameters; // [true]
 ```
 

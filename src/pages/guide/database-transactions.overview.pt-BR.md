@@ -108,6 +108,16 @@ Chamar `begin()` enquanto uma transação já está ativa também cria um savepo
 `commit()` com profundidade maior que `1` libera o savepoint atual em vez de commitar a
 transação externa.
 
+## Notas por engine
+
+- **MySQL/MariaDB** — statements DDL (`CREATE`/`ALTER`/`DROP` ...) dentro de uma transação
+  causam **commit implícito**: mantenha mudanças de schema fora de fluxos de negócio
+  transacionais.
+- **SQLite** — transações e savepoints funcionam no driver síncrono exatamente como nos
+  assíncronos; até DDL é transacional.
+- Identificadores de savepoint são quotados pelo dialeto ativo (`"bootgly_0"` no
+  PostgreSQL/SQLite, `` `bootgly_0` `` no MySQL).
+
 ## Referência
 
 - **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)** — API, estado e

@@ -423,6 +423,108 @@ export default {
       }
     }
   },
+  '/ADI/Databases/SQL/Drivers': {
+    config: {
+      icon: 'cable',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native SQL wire drivers: PostgreSQL, MySQL/MariaDB and SQLite — selection, capabilities and pool notes.',
+          'pt-BR': 'Wire drivers SQL nativos: PostgreSQL, MySQL/MariaDB e SQLite — seleção, capacidades e notas de pool.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.SQL'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Drivers'
+      },
+      'pt-BR': {
+        title: 'Drivers'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/PostgreSQL': {
+    config: {
+      icon: 'dns',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native PostgreSQL Protocol 3.0 driver: SCRAM authentication, TLS, extended protocol and pipelining.',
+          'pt-BR': 'Driver nativo do PostgreSQL Protocol 3.0: autenticação SCRAM, TLS, protocolo estendido e pipelining.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'PostgreSQL'
+      },
+      'pt-BR': {
+        title: 'PostgreSQL'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/MySQL': {
+    config: {
+      icon: 'bolt',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native MySQL/MariaDB driver: caching_sha2 authentication, TLS, binary prepared statements and KILL QUERY.',
+          'pt-BR': 'Driver nativo MySQL/MariaDB: autenticação caching_sha2, TLS, prepared statements binários e KILL QUERY.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'MySQL'
+      },
+      'pt-BR': {
+        title: 'MySQL'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/SQLite': {
+    config: {
+      icon: 'sd_storage',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native SQLite driver over ext-sqlite3: zero-setup file and :memory: databases for tests and prototypes.',
+          'pt-BR': 'Driver nativo SQLite sobre ext-sqlite3: bancos em arquivo e :memory: sem setup para testes e protótipos.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'SQLite'
+      },
+      'pt-BR': {
+        title: 'SQLite'
+      }
+    }
+  },
   '/ADI/Databases/SQL/Transaction': {
     config: {
       icon: 'sync_alt',

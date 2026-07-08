@@ -63,6 +63,22 @@ return new Config(scope: 'database')
                ->Port->bind(key: 'DB_REPLICA_1_PORT', default: null, cast: Types::Integer);
 ```
 
+## Escolher um driver
+
+`DB_CONNECTION` seleciona o bloco de conexão — e com ele o driver nativo, o dialeto do
+Query Builder e o dialeto do Schema. O Bootgly traz três drivers:
+
+```bash
+DB_CONNECTION=pgsql   # PostgreSQL (padrão) — assíncrono, TLS, SCRAM, RETURNING
+DB_CONNECTION=mysql   # MySQL/MariaDB — assíncrono, TLS, caching_sha2, Result->inserted
+DB_CONNECTION=sqlite  # SQLite (ext-sqlite3) — síncrono, zero-setup, DB_NAME=:memory: ou caminho de arquivo
+```
+
+Adicione os blocos `->Connections->MySQL` / `->Connections->SQLite` correspondentes ao
+escopo acima (o projeto demo traz os três). Veja
+**[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para a matriz de
+capacidades.
+
 Dentro de um arquivo `*.project.php`, registre o Database Response Resource built-in ao instanciar
 o `HTTP_Server_CLI`. `DatabaseResource::provide()` é só a ligação: ela lê o escopo `database` do
 diretório `configs/` do projeto e injeta uma instância `SQL` pooled por worker no `DatabaseResource`

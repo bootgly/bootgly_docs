@@ -63,6 +63,21 @@ return new Config(scope: 'database')
                ->Port->bind(key: 'DB_REPLICA_1_PORT', default: null, cast: Types::Integer);
 ```
 
+## Choose a driver
+
+`DB_CONNECTION` selects the connection block — and with it the native driver, the Query
+Builder dialect and the Schema dialect. Bootgly ships three drivers:
+
+```bash
+DB_CONNECTION=pgsql   # PostgreSQL (default) — async, TLS, SCRAM, RETURNING
+DB_CONNECTION=mysql   # MySQL/MariaDB — async, TLS, caching_sha2, Result->inserted
+DB_CONNECTION=sqlite  # SQLite (ext-sqlite3) — synchronous, zero-setup, DB_NAME=:memory: or a file path
+```
+
+Add the matching `->Connections->MySQL` / `->Connections->SQLite` blocks to the scope above
+(the demo project ships all three). See
+**[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for the capability matrix.
+
 Inside a `*.project.php` file, register Bootgly's built-in Database Response Resource while
 instantiating `HTTP_Server_CLI`. `DatabaseResource::provide()` is only wiring: it reads the
 `database` scope from the project `configs/` directory and injects one pooled `SQL` instance per

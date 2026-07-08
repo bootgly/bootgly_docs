@@ -14,8 +14,10 @@ such as `Bootgly\ADI\Databases\SQL` add verbs like `query()`, `table()` and `beg
 - `Connection` - non-blocking stream and protocol state holder.
 - `Pool` / `Pools` - reusable per-driver connection pools with idle, busy and pending
   queues.
-- `Operation` / `Result` - pending work plus rows, columns, affected count and result views.
-- `Driver` / `Drivers` - protocol implementations; PostgreSQL is the current native driver.
+- `Operation` / `Result` - pending work plus rows, columns, affected count, last generated
+  id (`inserted`) and result views.
+- `Driver` / `Drivers` - protocol implementations; PostgreSQL, MySQL/MariaDB and SQLite are
+  the native drivers.
 
 ## Operation lifecycle
 
@@ -43,12 +45,18 @@ the pool promotes pending operations.
 Transactions pin one connection with `lock` and release it with `unlock` after commit or
 rollback.
 
-## PostgreSQL driver
+## Native drivers
 
-The SQL PostgreSQL driver implements Protocol 3.0 with TLS negotiation, cleartext/MD5/SCRAM
-authentication, simple and extended query flows, prepared statement cache, CancelRequest,
-server metadata messages and scalar type conversion. Numeric precision is preserved as a
-string.
+Three native wire drivers execute SQL operations — see
+**[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for the capability matrix:
+
+- **PostgreSQL** — Protocol 3.0 with TLS, cleartext/MD5/SCRAM authentication, extended
+  query flow, prepared statement cache, pipelining and CancelRequest.
+- **MySQL/MariaDB** — handshake v10 with TLS, `mysql_native_password` and
+  `caching_sha2_password` (full auth via TLS or pinned RSA key), binary prepared statements and `KILL QUERY`.
+- **SQLite** — synchronous driver over `ext-sqlite3` for file and `:memory:` databases.
+
+Numeric/decimal precision is preserved as a string on every driver.
 
 ## Result views
 

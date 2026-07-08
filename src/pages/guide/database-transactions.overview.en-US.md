@@ -107,6 +107,15 @@ Calling `begin()` while a transaction is already active also creates a savepoint
 `commit()` while the depth is greater than `1` releases the current savepoint instead of
 committing the outer transaction.
 
+## Engine notes
+
+- **MySQL/MariaDB** — DDL statements (`CREATE`/`ALTER`/`DROP` ...) inside a transaction
+  cause an **implicit commit**: keep schema changes out of transactional business flows.
+- **SQLite** — transactions and savepoints work on the synchronous driver exactly like on
+  the async ones; even DDL is transactional.
+- Savepoint identifiers are quoted by the active dialect (`"bootgly_0"` on
+  PostgreSQL/SQLite, `` `bootgly_0` `` on MySQL).
+
 ## Reference
 
 - **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)** — API, state and

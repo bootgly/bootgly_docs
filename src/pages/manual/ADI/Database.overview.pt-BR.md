@@ -13,9 +13,10 @@ como `Bootgly\ADI\Databases\SQL` adicionam verbos como `query()`, `table()` e `b
 - `Config` - host, porta, credenciais, timeout, TLS e pool.
 - `Connection` - stream não bloqueante e estado de protocolo.
 - `Pool` / `Pools` - pools reutilizáveis por driver com filas idle, busy e pending.
-- `Operation` / `Result` - trabalho pendente mais linhas, colunas, afetados e views de
-  resultado.
-- `Driver` / `Drivers` - implementações de protocolo; PostgreSQL é o driver nativo atual.
+- `Operation` / `Result` - trabalho pendente mais linhas, colunas, afetados, último id
+  gerado (`inserted`) e views de resultado.
+- `Driver` / `Drivers` - implementações de protocolo; PostgreSQL, MySQL/MariaDB e SQLite
+  são os drivers nativos.
 
 ## Ciclo de uma operação
 
@@ -42,12 +43,18 @@ estão ocupadas e `created >= max`, novas operações aguardam em `pending`. Qua
 
 Transações fixam uma conexão com `lock` e liberam com `unlock` depois de commit ou rollback.
 
-## Driver PostgreSQL
+## Drivers nativos
 
-O driver SQL PostgreSQL implementa Protocol 3.0 com negociação TLS, autenticação
-cleartext/MD5/SCRAM, fluxos simple e extended query, cache de prepared statements,
-CancelRequest, mensagens de metadata do servidor e conversão de tipos escalares. Precisão de
-`numeric` é preservada como string.
+Três wire drivers nativos executam operações SQL — veja
+**[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para a matriz de capacidades:
+
+- **PostgreSQL** — Protocol 3.0 com TLS, autenticação cleartext/MD5/SCRAM, extended query,
+  cache de prepared statements, pipelining e CancelRequest.
+- **MySQL/MariaDB** — handshake v10 com TLS, `mysql_native_password` e
+  `caching_sha2_password` (full auth via TLS ou chave RSA pinada), prepared statements binários e `KILL QUERY`.
+- **SQLite** — driver síncrono sobre `ext-sqlite3` para bancos em arquivo e `:memory:`.
+
+Precisão de `numeric`/`decimal` é preservada como string em todos os drivers.
 
 ## Views de resultado
 

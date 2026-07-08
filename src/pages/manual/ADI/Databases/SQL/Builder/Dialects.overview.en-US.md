@@ -113,3 +113,10 @@ Namespace: `Bootgly\ADI\Databases\SQL\Builder\Auxiliaries`.
 
 `Auxiliaries::check($class)` returns whether a class is one of the registered builder
 auxiliary enums.
+
+## Executing the dialects
+
+Since v0.22.0, every dialect has a matching native wire driver — the SQL that MySQL and
+SQLite dialects generate now executes end-to-end, with the same Pool, Transactions and ORM
+used by PostgreSQL. See **[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for
+driver selection and the capability matrix.

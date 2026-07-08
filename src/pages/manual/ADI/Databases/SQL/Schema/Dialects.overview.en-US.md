@@ -92,3 +92,15 @@ PostgreSQL keeps `Types::Json` and `Types::JsonB` distinct (`JSON` vs `JSONB`); 
 engines map both to their JSON type. The migration
 **[Runner](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)** uses the dialect
 advisory `lock()`/`unlock()` only on engines that support it.
+
+## Transactional DDL and advisory locks
+
+| Engine | `transactions` (DDL in a tx) | Advisory lock |
+|--------|------------------------------|---------------|
+| PostgreSQL | yes | `pg_try_advisory_lock` / `pg_advisory_unlock` |
+| MySQL/MariaDB | no — DDL causes implicit commits | `GET_LOCK` / `RELEASE_LOCK` |
+| SQLite | yes | — (local file lock only) |
+
+On engines without an advisory lock, migration/seeder coordination falls back to the local
+file lock. Run migrations with `pool.max = 1` so the advisory lock and its release land on
+the same session.

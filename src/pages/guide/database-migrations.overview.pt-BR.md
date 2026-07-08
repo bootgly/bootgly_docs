@@ -115,6 +115,17 @@ execuções simultâneas; um lock órfão cujo processo dono não existe mais é
 automaticamente. Se o lock estiver realmente ativo você recebe
 `Migration lock is already active.`
 
+## Notas por engine
+
+| Engine | Transação da migration | Guarda de concorrência |
+|--------|------------------------|------------------------|
+| PostgreSQL | cada migration roda em `BEGIN`/`COMMIT` | file lock + `pg_try_advisory_lock` |
+| MySQL/MariaDB | sem transação (DDL comita implicitamente) | file lock + `GET_LOCK` |
+| SQLite | cada migration roda em `BEGIN`/`COMMIT` | file lock |
+
+Rode migrations com `pool.max = 1` para que o advisory lock e sua liberação usem a mesma
+sessão.
+
 ## Referência
 
 - **[Schema](/manual/ADI/Databases/SQL/Schema/overview/)** — a fachada DDL.

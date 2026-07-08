@@ -115,6 +115,17 @@ A local file lock plus a dialect advisory lock (where supported) stop two runs f
 overlapping; a stale lock whose owning process is gone is reclaimed automatically. If a lock
 is genuinely held you get `Migration lock is already active.`
 
+## Engine notes
+
+| Engine | Migration transaction | Concurrency guard |
+|--------|----------------------|-------------------|
+| PostgreSQL | each migration runs in `BEGIN`/`COMMIT` | file lock + `pg_try_advisory_lock` |
+| MySQL/MariaDB | no transaction (DDL commits implicitly) | file lock + `GET_LOCK` |
+| SQLite | each migration runs in `BEGIN`/`COMMIT` | file lock |
+
+Run migrations with `pool.max = 1` so the advisory lock and its release use the same
+session.
+
 ## Reference
 
 - **[Schema](/manual/ADI/Databases/SQL/Schema/overview/)** — the DDL facade.
