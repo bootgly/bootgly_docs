@@ -180,6 +180,18 @@ First access to one lazy relation in a mapped-result window batch-loads that rel
 
 Relation names are single-level in v0.16. Nested paths such as `posts.comments` are intentionally out of scope.
 
+## Paginate
+
+Repositories paginate in page mode (`LIMIT`/`OFFSET` + pipelined `COUNT(*)` total) or cursor mode (keyset predicate + opaque token, no count). In HTTP routes, one call reads `?page`, `?limit` and `?cursor`, emits the `X-Total-Count`/`Link` headers and returns a negotiable body:
+
+```php
+return $Response->Negotiation->send(
+   $Response->Database->paginate(User::class)
+);
+```
+
+See **[ORM Pagination](/manual/ADI/Databases/SQL/Repository/Pagination/overview/)** for filtered selections, cursor walks and the ADI-level API.
+
 ## Demo project
 
 `projects/Demo/HTTP_Server_CLI/router/routes/Database.php` exposes ORM examples:
@@ -199,4 +211,5 @@ Run `/deferred/database/setup` first. The Postman collection in `projects/Demo/H
 - **[ORM Model](/manual/ADI/Databases/SQL/Model/overview/)** - attributes and metadata compilation.
 - **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)** - selections, save, delete and hydration.
 - **[ORM Relations](/manual/ADI/Databases/SQL/Repository/Relations/overview/)** - explicit batch relation loading.
+- **[ORM Pagination](/manual/ADI/Databases/SQL/Repository/Pagination/overview/)** - page/cursor pagination and REST headers.
 - **[Database DBAL](/guide/database-dbal/overview/)** - async database resource in HTTP routes.

@@ -180,6 +180,18 @@ O primeiro acesso a uma relação lazy em uma janela de resultado mapeado carreg
 
 Nomes de relação são single-level no v0.16. Caminhos aninhados como `posts.comments` ficam intencionalmente fora do escopo.
 
+## Pagine
+
+Repositories paginam em modo página (`LIMIT`/`OFFSET` + total `COUNT(*)` em pipeline) ou modo cursor (predicado keyset + token opaco, sem contagem). Em rotas HTTP, uma chamada lê `?page`, `?limit` e `?cursor`, emite os headers `X-Total-Count`/`Link` e retorna um body negociável:
+
+```php
+return $Response->Negotiation->send(
+   $Response->Database->paginate(User::class)
+);
+```
+
+Veja **[Paginação ORM](/manual/ADI/Databases/SQL/Repository/Pagination/overview/)** para selections filtradas, caminhadas com cursor e a API na camada ADI.
+
 ## Projeto demo
 
 `projects/Demo/HTTP_Server_CLI/router/routes/Database.php` expõe exemplos ORM:
@@ -199,4 +211,5 @@ Rode `/deferred/database/setup` primeiro. A coleção Postman em `projects/Demo/
 - **[ORM Model](/manual/ADI/Databases/SQL/Model/overview/)** - attributes e compilação de metadata.
 - **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)** - selections, save, delete e hidratação.
 - **[Relações ORM](/manual/ADI/Databases/SQL/Repository/Relations/overview/)** - carregamento explícito de relações em lote.
+- **[Paginação ORM](/manual/ADI/Databases/SQL/Repository/Pagination/overview/)** - paginação página/cursor e headers REST.
 - **[DBAL de banco](/guide/database-dbal/overview/)** - database resource async em rotas HTTP.

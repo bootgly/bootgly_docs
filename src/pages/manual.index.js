@@ -884,6 +884,31 @@ export default {
       }
     }
   },
+  '/ADI/Databases/SQL/Repository/Pagination': {
+    config: {
+      icon: 'last_page',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Paginate ORM repositories with page/cursor modes, pipelined totals and REST-ready bodies, headers and opaque keyset tokens.',
+          'pt-BR': 'Pagine repositories ORM com modos página/cursor, totais em pipeline e bodies REST, headers e tokens keyset opacos.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Pagination'
+      },
+      'pt-BR': {
+        title: 'Paginação ORM'
+      }
+    }
+  },
   '/ADI/Databases/SQL/Repository/Relations': {
     config: {
       icon: 'hub',
