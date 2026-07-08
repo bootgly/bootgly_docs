@@ -511,7 +511,9 @@ export default {
           'pt-BR': 'Driver nativo SQLite sobre ext-sqlite3: bancos em arquivo e :memory: sem setup para testes e protótipos.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -536,9 +538,7 @@ export default {
           'pt-BR': 'Use transações SQL e savepoints em uma conexão fixada do pool.'
         }
       },
-      menu: {
-        separator: true
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
