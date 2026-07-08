@@ -67,6 +67,10 @@ compartilham o socket e resolvem em ordem FIFO conforme as mensagens do backend 
 Pool co-localiza operações em conexões ocupadas automaticamente quando o pool está no
 limite.
 
+Em uma falha de transporte (erro de escrita/leitura no socket, peer fechado, corrupção de
+framing) o driver falha todas as operações em pipeline, reseta o estado da sessão e
+desconecta, para que o Pool descarte a conexão morta em vez de mantê-la ocupada.
+
 ## Cancelamento
 
 ```php

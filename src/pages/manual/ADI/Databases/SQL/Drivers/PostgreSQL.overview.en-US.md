@@ -66,6 +66,10 @@ Co-located operations pipeline on one connection: multiple in-flight commands sh
 socket and resolve in FIFO order as backend messages arrive. The Pool co-locates
 operations onto busy connections automatically when the pool is at capacity.
 
+On a transport failure (socket write/read error, peer close, framing corruption) the
+driver fails every pipelined operation, resets its session state and disconnects, so the
+Pool drops the dead connection instead of keeping it busy.
+
 ## Cancellation
 
 ```php
