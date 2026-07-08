@@ -37,8 +37,8 @@ Driver aliases accepted by the config adapter: `pgsql`/`postgres`/`postgresql`,
 | TLS | yes (`secure` modes) | yes (`secure` modes) | — |
 | Authentication | cleartext, MD5, SCRAM-SHA-256 | `mysql_native_password`, `caching_sha2_password` (full auth via TLS or pinned RSA key) | — |
 | Prepared statements | extended protocol + LRU cache | binary protocol + LRU cache | `SQLite3Stmt` + LRU cache |
-| `RETURNING` | yes | no — `Result->inserted` instead | yes (libsqlite ≥ 3.35) |
-| Generated keys | `RETURNING` rows | `Result->inserted` (OK packet) | `Result->inserted` + `RETURNING` |
+| `RETURNING` | yes | no — `Result->inserted` instead | no — the `sqlite3` extension would run it twice |
+| Generated keys | `RETURNING` rows | `Result->inserted` (OK packet) | `Result->inserted` (`lastInsertRowID`) |
 | Cancellation | `CancelRequest` side channel | `KILL QUERY` side channel | not supported |
 | Transactional DDL | yes | no (implicit commits) | yes |
 | Advisory locks | `pg_advisory_lock` | `GET_LOCK` | — (file lock only) |
@@ -49,9 +49,10 @@ three engines.
 
 ## Generated keys without RETURNING
 
-The MySQL dialect does not emit `RETURNING`. Instead, the driver reports the generated id
-through `Result->inserted`, and the ORM Repository backfills the entity key transparently
-at `hydrate()`:
+The MySQL and SQLite dialects do not emit `RETURNING` (on SQLite the `sqlite3` extension
+executes such statements twice, duplicating the write — the driver fails them fast).
+Instead, the driver reports the generated id through `Result->inserted`, and the ORM
+Repository backfills the entity key transparently at `hydrate()`:
 
 ```php
 $Repository = $Database->map(User::class);

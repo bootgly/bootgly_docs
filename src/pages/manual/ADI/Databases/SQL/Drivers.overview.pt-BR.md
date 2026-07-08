@@ -37,8 +37,8 @@ Aliases de driver aceitos pelo adaptador de config: `pgsql`/`postgres`/`postgres
 | TLS | sim (modos `secure`) | sim (modos `secure`) | — |
 | Autenticação | cleartext, MD5, SCRAM-SHA-256 | `mysql_native_password`, `caching_sha2_password` (full auth via TLS ou chave RSA pinada) | — |
 | Prepared statements | protocolo estendido + cache LRU | protocolo binário + cache LRU | `SQLite3Stmt` + cache LRU |
-| `RETURNING` | sim | não — `Result->inserted` no lugar | sim (libsqlite ≥ 3.35) |
-| Chaves geradas | linhas do `RETURNING` | `Result->inserted` (pacote OK) | `Result->inserted` + `RETURNING` |
+| `RETURNING` | sim | não — `Result->inserted` no lugar | não — a extensão `sqlite3` executaria 2 vezes |
+| Chaves geradas | linhas do `RETURNING` | `Result->inserted` (pacote OK) | `Result->inserted` (`lastInsertRowID`) |
 | Cancelamento | side channel `CancelRequest` | side channel `KILL QUERY` | não suportado |
 | DDL transacional | sim | não (commits implícitos) | sim |
 | Advisory locks | `pg_advisory_lock` | `GET_LOCK` | — (somente file lock) |
@@ -48,9 +48,10 @@ Migrations e Seeders — é agnóstico de driver e funciona de forma idêntica n
 
 ## Chaves geradas sem RETURNING
 
-O dialeto MySQL não emite `RETURNING`. Em vez disso, o driver reporta o id gerado em
-`Result->inserted`, e o ORM Repository preenche a chave da entidade de forma transparente
-no `hydrate()`:
+Os dialetos MySQL e SQLite não emitem `RETURNING` (no SQLite a extensão `sqlite3` executa
+esses statements duas vezes, duplicando a escrita — o driver os falha de imediato). Em vez
+disso, o driver reporta o id gerado em `Result->inserted`, e o ORM Repository preenche a
+chave da entidade de forma transparente no `hydrate()`:
 
 ```php
 $Repository = $Database->map(User::class);

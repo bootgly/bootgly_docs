@@ -56,7 +56,7 @@ INSERT INTO "users" ("id", "name") VALUES (?1, ?2) ON CONFLICT ("id") DO UPDATE 
 |---------|------------|-------|--------|
 | Quote de identificador | `"name"` | `` `name` `` | `"name"` |
 | Placeholders | `$1`, `$2` | `?`, `?` | `?1`, `?2` |
-| `output()` | `RETURNING` | rejeitado | `RETURNING` |
+| `output()` | `RETURNING` | rejeitado | rejeitado (a extensão `sqlite3` executaria 2 vezes) |
 | `upsert()` | `ON CONFLICT` | `ON DUPLICATE KEY UPDATE` | `ON CONFLICT` |
 | `Matches::Insensitive` | `ILIKE` | `LOWER(...) LIKE LOWER(...)` | `LIKE ... COLLATE NOCASE` |
 | `Matches::Text` | `to_tsvector(...) @@ plainto_tsquery(...)` | `MATCH (...) AGAINST (...)` | `MATCH` |

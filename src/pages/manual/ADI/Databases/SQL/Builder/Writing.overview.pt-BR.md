@@ -56,14 +56,15 @@ $Database
    ->output(Columns::Id, Columns::Name);
 ```
 
-PostgreSQL e SQLite adicionam `RETURNING`:
+PostgreSQL adiciona `RETURNING`:
 
 ```sql
 INSERT INTO "users" ("id", "name") VALUES ($1, $2) RETURNING "id", "name"
 ```
 
-MySQL não suporta o caminho canônico de `RETURNING`, então o builder rejeita `output()`
-quando o dialeto configurado é MySQL.
+MySQL e SQLite rejeitam `output()`: MySQL não tem caminho canônico de `RETURNING`, e no
+SQLite a extensão `sqlite3` executaria o statement duas vezes, duplicando a escrita. Em
+ambos, as chaves geradas chegam via `Result->inserted`.
 
 ## Atualizar linhas
 

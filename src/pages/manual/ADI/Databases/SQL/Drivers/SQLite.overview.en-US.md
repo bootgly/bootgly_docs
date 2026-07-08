@@ -56,10 +56,13 @@ emitted by the Schema behave like PostgreSQL/MySQL — an orphan child insert fa
 ```php
 $Insert = $Database->query("INSERT INTO fruits (name) VALUES ('fig')");
 $Insert->Result->inserted; // last generated row id
-
-$Returned = $Database->query("INSERT INTO fruits (name) VALUES ('date') RETURNING id");
-$Returned->Result->cell;   // RETURNING also works (libsqlite ≥ 3.35)
 ```
+
+> **RETURNING is blocked** — the `sqlite3` extension executes statements with a
+> `RETURNING` clause twice (an internal step + reset runs before the fetch), which
+> would silently duplicate the write. The driver fails such statements fast, and
+> the SQLite dialect keeps the Builder `output()` capability disabled — the ORM
+> backfills generated keys from `Result->inserted` automatically, like on MySQL.
 
 ## Transactions and migrations
 

@@ -56,10 +56,13 @@ falha com `FOREIGN KEY constraint failed`.
 ```php
 $Insert = $Database->query("INSERT INTO fruits (name) VALUES ('fig')");
 $Insert->Result->inserted; // último row id gerado
-
-$Returned = $Database->query("INSERT INTO fruits (name) VALUES ('date') RETURNING id");
-$Returned->Result->cell;   // RETURNING também funciona (libsqlite ≥ 3.35)
 ```
+
+> **RETURNING é bloqueado** — a extensão `sqlite3` executa statements com cláusula
+> `RETURNING` duas vezes (um step interno + reset roda antes do fetch), o que
+> duplicaria a escrita silenciosamente. O driver falha esses statements de imediato,
+> e o dialeto SQLite mantém a capability `output()` do Builder desligada — o ORM
+> preenche as chaves geradas via `Result->inserted` automaticamente, como no MySQL.
 
 ## Transações e migrations
 
