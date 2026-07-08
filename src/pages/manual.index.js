@@ -536,7 +536,9 @@ export default {
           'pt-BR': 'Use transações SQL e savepoints em uma conexão fixada do pool.'
         }
       },
-      menu: {},
+      menu: {
+        separator: true
+      },
       subpages: {
         showcase: false
       }
@@ -561,9 +563,7 @@ export default {
           'pt-BR': 'Monte SELECT, INSERT, UPDATE e DELETE parametrizados com o Query Builder SQL.'
         }
       },
-      menu: {
-        subheader: '.ADI.Databases.SQL'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
