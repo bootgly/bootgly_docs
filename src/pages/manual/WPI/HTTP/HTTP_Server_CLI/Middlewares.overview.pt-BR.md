@@ -283,10 +283,10 @@ $masked = CSRF::mask($Request->Session->get('_csrf_token'));
 Validação de requisição fail-closed. Executa um conjunto de regras contra uma fonte do Request (`Fields`, `Queries`, `Headers`, `Cookies` ou `Files`) e curto-circuita com uma resposta JSON de erro se alguma regra falhar — o handler da rota nunca executa.
 
 ```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Required;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 
 new Validator(
    rules: [
@@ -300,7 +300,7 @@ new Validator(
 
 A resposta padrão de falha é `422 Unprocessable Entity` com corpo `{"errors": {"email": ["email must be a valid email address."]}}`. Forneça uma closure em `fallback` para renderizar uma resposta de erro customizada mantendo a rota fail-closed.
 
-Consulte a seção [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) para o catálogo completo de validadores, regras customizadas e exemplos end-to-end.
+Consulte a seção [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) para exemplos end-to-end, e a página [ADI Validation](/manual/ADI/Validation/overview/) para o catálogo completo de regras e regras customizadas.
 
 **Fase:** Pré-processamento — valida a entrada antes do handler executar.
 

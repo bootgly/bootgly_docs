@@ -198,6 +198,17 @@ Available options:
 | `-i` | Run in interactive mode |
 | `-m` | Run in monitor mode |
 
+#### Multiple instances
+
+A server project can run **multiple instances at once** — one per port. The bound port is the instance qualifier, so start extra instances by overriding the `PORT` environment variable:
+
+```bash
+php bootgly project start Blog             # instance on the project's default port (8080)
+PORT=8081 php bootgly project start Blog   # second instance on 8081
+```
+
+Starting a second instance on a port that is already in use by the same setup fails with a clean error — the server takes a non-blocking lock on the port-qualified state files before booting workers.
+
 ### `project stop`
 
 Stops a running project by sending SIGTERM to the master process. If the process does not terminate within 5 seconds, it sends SIGKILL:
@@ -206,11 +217,15 @@ Stops a running project by sending SIGTERM to the master process. If the process
 php bootgly project Demo/HTTP_Server_CLI stop
 ```
 
-This stops **all running instances** of the project (primary and any named instances like test servers).
+This stops **all running instances** of the project. To stop a single instance, pass its qualifier — the bound port for servers (or the master PID for TUI projects):
+
+```bash
+php bootgly project stop Blog 8081   # stops only the instance on port 8081
+```
 
 ### `project show`
 
-Shows the current status of a running project, including PID, workers, address and uptime:
+Shows the current status of a running project — one status card per instance — including PID, workers, address and uptime:
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI show
@@ -232,24 +247,26 @@ Example output:
 
 ### Process state (PID files)
 
-When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide — running `Demo/HTTP_Server_CLI` creates `storage/pids/Demo~HTTP_Server_CLI.json`.
+When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide, plus an **instance qualifier**: the bound port for servers, the master PID for TUI projects. Running `Demo/HTTP_Server_CLI` on port 8082 creates `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
 
-For named instances (like test servers), the file gains an instance qualifier: `Demo~HTTP_Server_CLI.test.json`. The `project stop` and `project show` commands automatically discover all instances (primary + named) for a given project path.
+The `project stop`, `project show`, `project reload` and `project restart` commands automatically discover all instances for a given project path (legacy unqualified `<project>.json` files are still recognized).
 
 ### `project reload`
 
-Sends a hot-reload signal (SIGUSR2) to a running project, allowing it to reload its code without a full restart:
+Sends a hot-reload signal (SIGUSR2) to all running instances of a project, allowing them to reload code without a full restart — or to a single instance when a port is given:
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI reload
+php bootgly project reload Blog 8081   # reloads only the instance on port 8081
 ```
 
 ### `project restart`
 
-Stops and then starts a project again. Accepts the same options as `project start`:
+Stops and then starts a project again, preserving the instance's port. With a single running instance the port is derived automatically; with multiple instances, pass the port of the one to restart:
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI restart
+php bootgly project restart Blog 8081   # restarts only the instance on port 8081
 ```
 
 ### `project info`

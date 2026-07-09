@@ -934,6 +934,33 @@ export default {
       }
     }
   },
+  '/ADI/Validation': {
+    config: {
+      icon: 'rule',
+      status: 'done',
+      version: 'v0.23.0',
+      meta: {
+        description: {
+          'en-US': 'Standalone data validation with composable rule objects — the same rules validate HTTP requests, CLI input, jobs and seeders.',
+          'pt-BR': 'Validação de dados standalone com objetos de regra componíveis — as mesmas regras validam requisições HTTP, input de CLI, jobs e seeders.'
+        }
+      },
+      menu: {
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Validation'
+      },
+      'pt-BR': {
+        title: 'Validation'
+      }
+    }
+  },
 
   // CLI
   '/CLI': {

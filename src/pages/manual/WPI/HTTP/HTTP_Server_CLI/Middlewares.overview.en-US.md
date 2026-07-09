@@ -282,10 +282,10 @@ $masked = CSRF::mask($Request->Session->get('_csrf_token'));
 Fail-closed request validation. Runs a set of rules against one Request source (`Fields`, `Queries`, `Headers`, `Cookies`, or `Files`) and short-circuits with a JSON error response if any rule fails — the route handler never runs.
 
 ```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Required;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 
 new Validator(
    rules: [
@@ -299,7 +299,7 @@ new Validator(
 
 The default failure response is `422 Unprocessable Entity` with body `{"errors": {"email": ["email must be a valid email address."]}}`. Provide a `fallback` closure to render a custom error response while keeping the route fail-closed.
 
-See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for the full validator catalog, custom rules, and end-to-end examples.
+See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples, and the [ADI Validation](/manual/ADI/Validation/overview/) page for the full rule catalog and custom rules.
 
 **Phase:** Pre-processing — validates input before the handler runs.
 

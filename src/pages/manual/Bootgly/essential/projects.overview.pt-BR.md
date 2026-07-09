@@ -198,6 +198,17 @@ Opções disponíveis:
 | `-i` | Executa em modo interativo |
 | `-m` | Executa em modo monitor |
 
+#### Múltiplas instâncias
+
+Um projeto servidor pode rodar **múltiplas instâncias ao mesmo tempo** — uma por porta. A porta bound é o qualificador de instância, então inicie instâncias extras sobrescrevendo a variável de ambiente `PORT`:
+
+```bash
+php bootgly project start Blog             # instância na porta padrão do projeto (8080)
+PORT=8081 php bootgly project start Blog   # segunda instância na 8081
+```
+
+Iniciar uma segunda instância em uma porta já em uso pelo mesmo setup falha com um erro limpo — o servidor obtém um lock não-bloqueante nos arquivos de estado qualificados por porta antes de subir os workers.
+
 ### `project stop`
 
 Para um projeto em execução enviando SIGTERM ao processo master. Se o processo não terminar em 5 segundos, envia SIGKILL:
@@ -206,11 +217,15 @@ Para um projeto em execução enviando SIGTERM ao processo master. Se o processo
 php bootgly project Demo/HTTP_Server_CLI stop
 ```
 
-Isso para **todas as instâncias em execução** do projeto (primária e quaisquer instâncias nomeadas, como servidores de teste).
+Isso para **todas as instâncias em execução** do projeto. Para parar uma única instância, passe o qualificador dela — a porta bound para servidores (ou o PID do master para projetos TUI):
+
+```bash
+php bootgly project stop Blog 8081   # para apenas a instância na porta 8081
+```
 
 ### `project show`
 
-Mostra o status atual de um projeto em execução, incluindo PID, workers, endereço e uptime:
+Mostra o status atual de um projeto em execução — um card de status por instância — incluindo PID, workers, endereço e uptime:
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI show
@@ -232,24 +247,26 @@ Exemplo de saída:
 
 ### Estado de processo (arquivos PID)
 
-Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam — executar `Demo/HTTP_Server_CLI` cria `storage/pids/Demo~HTTP_Server_CLI.json`.
+Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam, mais um **qualificador de instância**: a porta bound para servidores, o PID do master para projetos TUI. Executar `Demo/HTTP_Server_CLI` na porta 8082 cria `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
 
-Para instâncias nomeadas (como servidores de teste), o arquivo ganha um qualificador de instância: `Demo~HTTP_Server_CLI.test.json`. Os comandos `project stop` e `project show` descobrem automaticamente todas as instâncias (primária + nomeadas) de um dado caminho de projeto.
+Os comandos `project stop`, `project show`, `project reload` e `project restart` descobrem automaticamente todas as instâncias de um dado caminho de projeto (arquivos legados sem qualificador, `<project>.json`, ainda são reconhecidos).
 
 ### `project reload`
 
-Envia um sinal de hot-reload (SIGUSR2) a um projeto em execução, permitindo recarregar o código sem um restart completo:
+Envia um sinal de hot-reload (SIGUSR2) a todas as instâncias em execução de um projeto, permitindo recarregar o código sem um restart completo — ou a uma única instância quando uma porta é passada:
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI reload
+php bootgly project reload Blog 8081   # recarrega apenas a instância na porta 8081
 ```
 
 ### `project restart`
 
-Para e então inicia o projeto novamente. Aceita as mesmas opções de `project start`:
+Para e então inicia o projeto novamente, preservando a porta da instância. Com uma única instância em execução a porta é derivada automaticamente; com múltiplas instâncias, passe a porta da que deve reiniciar:
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI restart
+php bootgly project restart Blog 8081   # reinicia apenas a instância na porta 8081
 ```
 
 ### `project info`

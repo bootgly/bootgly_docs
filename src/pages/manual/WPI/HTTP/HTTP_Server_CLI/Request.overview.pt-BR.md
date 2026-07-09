@@ -525,21 +525,21 @@ $Request->Session; // Objeto Session
 
 O Bootgly fornece um sistema de validação fluente para verificar dados da requisição antes do seu handler executar. Ele gira em torno de três peças:
 
-- `Validation` — executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo.
-- `Validators\*` — classes de regra built-in (`Required`, `Email`, `Integer`, `Minimum`, `Maximum`, `Regex`, `Size`, `MIME`, `Extension`).
+- [`Bootgly\ADI\Validation`](/manual/ADI/Validation/overview/) — a engine standalone: executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo. Ela vive na camada ADI, então as mesmas regras validam input de CLI, jobs e seeders.
+- `Bootgly\ADI\Validators\*` — classes de regra built-in (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
 - Middleware `Validator` — aplica validação a uma fonte do Request e falha rapidamente (padrão `422 Unprocessable Entity`) se inválido. Veja [Middlewares → Validator](../Middlewares/#validator).
 
 ### Validação Standalone
 
-Execute validação diretamente em qualquer array associativo — útil em scripts CLI, jobs, ou quando você precisa do resultado da validação dentro do handler:
+Execute validação diretamente em qualquer array associativo — útil quando você precisa do resultado da validação dentro do handler:
 
 ```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Integer;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Maximum;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Minimum;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Integer;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\ADI\Validators\Required;
 
 $Validation = new Validation(
    source: $Request->fields,
@@ -553,7 +553,7 @@ $Validation->valid;  // true | false
 $Validation->errors; // ['email' => ['email must be a valid email address.'], ...]
 ```
 
-Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada).
+Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada). A referência completa da engine — semântica opcional/implícita, mensagens customizadas e receitas não-HTTP — vive na página [ADI Validation](/manual/ADI/Validation/overview/).
 
 ### Fontes Disponíveis
 
@@ -568,137 +568,21 @@ A enum `Sources` identifica qual propriedade do Request o middleware `Validator`
 | `Sources::Files` | `$Request->files` | Estruturas de arquivos enviados |
 
 ```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 ```
 
 ### Validadores Built-in
 
-Todas as regras built-in vivem em `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão.
-
----
-
-#### Required
-
-Rejeita `null`, strings vazias (após `trim`) e arrays vazios. Implícita — executa mesmo quando o campo está ausente.
-
-```php
-new Required;
-new Required('Name cannot be empty.');
-```
-
-Mensagem padrão: `"{field} is required."`
-
----
-
-#### Email
-
-Valida com `filter_var($value, FILTER_VALIDATE_EMAIL)` do PHP.
-
-```php
-new Email;
-```
-
-Mensagem padrão: `"{field} must be a valid email address."`
-
----
-
-#### Integer
-
-Aceita `int` nativo ou strings que correspondem a `/\A[-+]?\d+\z/`.
-
-```php
-new Integer;
-```
-
-Mensagem padrão: `"{field} must be an integer."`
-
----
-
-#### Minimum
-
-Regra de limite inferior. Compara valores numéricos por valor, strings não-numéricas por `strlen`, e arrays por `count`.
-
-```php
-new Minimum(18);
-new Minimum(8, 'Password must be at least 8 characters.');
-```
-
-Mensagem padrão: `"{field} must be at least {limit}."`
-
----
-
-#### Maximum
-
-Contraparte de `Minimum` para limite superior, com o mesmo dispatch (numérico, comprimento de string ou contagem de array).
-
-```php
-new Maximum(120);
-new Maximum(500, 'Bio cannot exceed 500 characters.');
-```
-
-Mensagem padrão: `"{field} must be at most {limit}."`
-
----
-
-#### Regex
-
-Faz matching do valor contra um padrão PCRE. Lança `InvalidArgumentException` no momento da construção se o padrão for inválido.
-
-```php
-new Regex('/\A[a-z0-9_-]+\z/');
-new Regex('/\A[a-z0-9_]{3,}\z/', 'Username must be alphanumeric, 3+ chars.');
-```
-
-Mensagem padrão: `"{field} has an invalid format."`
-
----
-
-#### Size
-
-Valida estruturas de upload (`['name', 'type', 'size', 'error', 'tmp_name']`). Passa quando `error === 0` e `size <= $limit` (em bytes).
-
-```php
-new Size(2 * 1024 * 1024); // 2 MB
-```
-
-Mensagem padrão: `"{field} must be at most {limit} bytes."`
-
----
-
-#### MIME
-
-Valida estruturas de upload contra uma allowlist de tipos MIME (case-sensitive).
-
-```php
-new MIME('application/pdf');
-new MIME(['image/jpeg', 'image/png']);
-```
-
-Mensagem padrão: `"{field} must have an allowed MIME type."`
-
----
-
-#### Extension
-
-Valida estruturas de upload contra uma allowlist de extensões de arquivo (case-insensitive; um `.` inicial é aceito e removido).
-
-```php
-new Extension('zip');
-new Extension(['jpg', 'jpeg', 'png']);
-```
-
-Mensagem padrão: `"{field} must have an allowed extension."`
-
----
+Todas as regras built-in vivem em `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` e `Extension`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão. O catálogo bloco-a-bloco (argumentos, semântica e mensagens padrão) vive na [referência ADI Validation](/manual/ADI/Validation/overview/).
 
 ### Regras Customizadas
 
-Estenda `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Condition` para adicionar sua própria regra. Implemente `validate()` (retorna `true` se válido) e `format()` (retorna a mensagem de erro).
+Estenda `Bootgly\ADI\Validators` e implemente `validate()` (retorna `true` se válido) e `format()` (retorna a mensagem de erro):
 
 ```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Condition;
+use Bootgly\ADI\Validators;
 
-$InviteCode = new class extends Condition {
+$InviteCode = new class extends Validators {
    /**
     * @param array<string,mixed> $data  Array completo da fonte — útil para regras cross-field.
     */
@@ -721,11 +605,11 @@ Defina `$implicit = true` na sua subclasse quando a regra precisar executar mesm
 Para plugar validação diretamente em uma rota, use o middleware `Validator`. O handler é pulado se alguma regra falhar:
 
 ```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Required;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 
 yield $Router->route('/users', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['created' => true, 'user' => $Request->fields]);
@@ -746,23 +630,23 @@ Um router completo demonstrando todos os modos de validação — corpo, query s
 ```php
 use function is_string;
 
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Extension;
+use Bootgly\ADI\Validators\Integer;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\MIME;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\ADI\Validators\Regex;
+use Bootgly\ADI\Validators\Required;
+use Bootgly\ADI\Validators\Size;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validation\Sources;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Email;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Extension;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Integer;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Maximum;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\MIME;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Minimum;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Regex;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Required;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Validators\Size;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 
 $Custom = new class extends Validators {
    public function validate (string $field, mixed $value, array $data): bool
