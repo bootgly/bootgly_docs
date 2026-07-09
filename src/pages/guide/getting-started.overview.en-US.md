@@ -15,6 +15,8 @@ The installer:
 5. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
 6. Opens the **project wizard** (`php bootgly project create`).
 
+> **Re-running is safe.** If the installation was interrupted at any step, run the same command again: when the target directory is already a Bootgly Kit checkout, the installer **resumes** — it prints a checklist of what is done, initializes whatever is missing (submodules, resources) and re-opens the wizard (skipping it when a project is already registered). The wizard only offers the platforms not set up yet.
+
 A freshly cloned kit (`git clone` — or using the GitHub template) contains only the kit files — every platform submodule is **empty** until installed:
 
 ```text
@@ -41,7 +43,7 @@ bootgly.kit/
 │   ├── Bootgly/        ← the framework itself — the I2P interfaces, in dependency order:
 │   │   ├── ABI/        ← Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
 │   │   ├── ACI/        ← Events/ Fakers/ Logs/ Observability/ Process/ Queues/ Schedule/ Tests/
-│   │   ├── ADI/        ← Database/ Databases/ Table/
+│   │   ├── ADI/        ← Database/ Databases/ Table/ Validation/ Validators/
 │   │   ├── API/        ← Endpoints/ Environment/ Projects/ Security/ Workables/
 │   │   ├── CLI/        ← Commands/ Terminal/ UI/
 │   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
