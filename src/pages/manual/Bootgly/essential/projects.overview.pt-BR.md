@@ -247,7 +247,9 @@ Exemplo de saída:
 
 ### Estado de processo (arquivos PID)
 
-Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam, mais um **qualificador de instância**: a porta bound para servidores, o PID do master para projetos TUI. Executar `Demo/HTTP_Server_CLI` na porta 8082 cria `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
+Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam, mais um **qualificador de instância**: a porta bound para servidores, o PID do processo para projetos TUI e clients WPI. Executar `Demo/HTTP_Server_CLI` na porta 8082 cria `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
+
+Como clients qualificam por PID, qualquer número de processos client do mesmo projeto pode rodar ao mesmo tempo — incluindo geradores de carga com fork, onde cada filho forkado constrói sua própria instância de client.
 
 Os comandos `project stop`, `project show`, `project reload` e `project restart` descobrem automaticamente todas as instâncias de um dado caminho de projeto (arquivos legados sem qualificador, `<project>.json`, ainda são reconhecidos).
 

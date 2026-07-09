@@ -247,7 +247,9 @@ Example output:
 
 ### Process state (PID files)
 
-When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide, plus an **instance qualifier**: the bound port for servers, the master PID for TUI projects. Running `Demo/HTTP_Server_CLI` on port 8082 creates `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
+When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide, plus an **instance qualifier**: the bound port for servers, the process PID for TUI projects and WPI clients. Running `Demo/HTTP_Server_CLI` on port 8082 creates `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
+
+Because clients qualify by PID, any number of client processes of the same project can run at once — including forked load generators, where every forked child constructs its own client instance.
 
 The `project stop`, `project show`, `project reload` and `project restart` commands automatically discover all instances for a given project path (legacy unqualified `<project>.json` files are still recognized).
 
