@@ -129,6 +129,33 @@ export default {
     }
   },
 
+  '/cryptography': {
+    config: {
+      icon: 'key',
+      status: 'draft',
+      version: '0.24.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Encrypt values with AES-256-GCM key rotation and hash passwords with argon2id rehash-on-verify in Bootgly.',
+          'pt-BR': 'Criptografe valores com AES-256-GCM e rotação de chaves e faça hash de senhas com argon2id rehash-on-verify no Bootgly.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Cryptography'
+      },
+      'pt-BR': {
+        title: 'Criptografia'
+      }
+    }
+  },
+
   '/cache': {
     config: {
       icon: 'cached',
@@ -260,6 +287,33 @@ export default {
       },
       'pt-BR': {
         title: 'Theme'
+      }
+    }
+  },
+
+  '/i18n': {
+    config: {
+      icon: 'language',
+      status: 'draft',
+      version: '0.24.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Translate messages with natural-source keys — PHP array catalogs per locale/domain, {token} placeholders, pipe plurals, Accept-Language negotiation, localized validation messages, @translate templates and error pages.',
+          'pt-BR': 'Traduza mensagens com keys naturais da língua-fonte — catálogos PHP por locale/domain, placeholders {token}, plurais com pipe, negociação de Accept-Language, mensagens de validação localizadas, templates @translate e páginas de erro.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'i18n'
+      },
+      'pt-BR': {
+        title: 'i18n'
       }
     }
   },
