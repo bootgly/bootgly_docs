@@ -902,10 +902,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'ORM Pagination'
+        title: 'ORM Repository Pagination'
       },
       'pt-BR': {
-        title: 'Paginação ORM'
+        title: 'ORM Repository Pagination'
       }
     }
   },
@@ -927,10 +927,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'ORM Relations'
+        title: 'ORM Repository Relations'
       },
       'pt-BR': {
-        title: 'ORM Relations'
+        title: 'ORM Repository Relations'
       }
     }
   },
