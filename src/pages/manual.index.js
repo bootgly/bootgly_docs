@@ -1734,6 +1734,77 @@ export default {
     }
   },
 
+  // Web (platform)
+  '/Web': {
+    config: {
+      icon: 'public',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The opinionated web platform over the WPI interface: MVC apps and REST APIs.',
+          'pt-BR': 'A plataforma web opinativa sobre a interface WPI: apps MVC e APIs REST.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'public',
+          label: 'Web'
+        },
+        separator: true
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Web'
+      }
+    }
+  },
+  '/Web/App': {
+    config: {
+      icon: 'dashboard',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics and view conventions.',
+          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics e convenções de views.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'App'
+      }
+    }
+  },
+  '/Web/API': {
+    config: {
+      icon: 'api',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The REST shell: Action dispatch, REST routes, RFC 9457 problems and Resource transformers.',
+          'pt-BR': 'O shell REST: dispatch de Action, rotas REST, problems RFC 9457 e transformadores Resource.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'API'
+      }
+    }
+  },
+
   // WPI
   '/WPI': {
     config: {

@@ -51,6 +51,32 @@ export default {
     }
   },
 
+  '/web-platform': {
+    config: {
+      icon: 'language',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Build MVC sites and REST APIs with the opinionated Web platform.',
+          'pt-BR': 'Construa sites MVC e APIs REST com a plataforma Web opinativa.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Web Platform'
+      },
+      'pt-BR': {
+        title: 'Plataforma Web'
+      }
+    }
+  },
+
   '/configuration': {
     config: {
       icon: 'tune',
