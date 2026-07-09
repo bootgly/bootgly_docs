@@ -319,6 +319,33 @@ export default {
     }
   },
 
+  '/error-handling': {
+    config: {
+      icon: 'bug_report',
+      status: 'draft',
+      version: '0.23.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Environment-aware error handling — built-in Whoops-style debug page in development (HTML or JSON), clean pages and views/errors overrides in production, plus exception reporting to log channels, Observability metrics and custom reporters.',
+          'pt-BR': 'Tratamento de erros por ambiente — página de debug estilo Whoops embutida em development (HTML ou JSON), páginas limpas e overrides em views/errors em production, além de reporting de exceções para canais de log, métricas de Observability e reporters customizados.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Error handling'
+      },
+      'pt-BR': {
+        title: 'Tratamento de erros'
+      }
+    }
+  },
+
   '/events': {
     config: {
       icon: 'podcasts',
