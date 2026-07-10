@@ -115,6 +115,12 @@ Múltiplos processos podem compartilhar o ring injetando as mesmas chaves em tod
 id dentro do envelope seleciona a chave certa de forma determinística, nunca por
 tentativa de descriptografia.
 
+Compartilhar traz um limite operacional: IVs GCM aleatórios de 96 bits carregam um
+orçamento de uso (NIST SP 800-38D) de no máximo **2^32 criptografias por chave raw**,
+agregado entre todos os processos, hosts e key ids que compartilham o mesmo material de
+32 bytes. Rotacione as chaves bem antes desse limite — para uma chave compartilhada de
+alto volume, agende a rotação como manutenção de rotina, não como resposta a incidente.
+
 ## Faça hash de senhas
 
 `Password` usa argon2id. Os padrões seguem os próprios padrões de Argon2 do PHP (64 MiB
@@ -183,8 +189,8 @@ public function __construct (#[\SensitiveParameter] string|Key|Keyring $key)
 ```
 
 Cria um encrypter. Aceita material raw de chave com 32 bytes, uma `Key` única ou um
-`Keyring` completo. Lança `RuntimeException` quando a criptografia simétrica do OpenSSL
-não está disponível.
+`Keyring` completo. Lança `InvalidArgumentException` quando o material raw é inválido e
+`RuntimeException` quando a criptografia simétrica do OpenSSL não está disponível.
 
 ```php
 public function encrypt (#[\SensitiveParameter] string $plaintext, string $AAD = ''): string
@@ -192,7 +198,8 @@ public function encrypt (#[\SensitiveParameter] string $plaintext, string $AAD =
 
 Criptografa um payload com a chave primária do keyring em um envelope
 `v1.<kid>.<blob>`. O prefixo do envelope e o AAD do chamador são autenticados juntos.
-Lança `RuntimeException` apenas em falha ambiental do OpenSSL.
+Falhas ambientais lançam: `Random\RandomException` quando a fonte de aleatoriedade
+falha, `RuntimeException` quando a criptografia do OpenSSL falha.
 
 ```php
 public function decrypt (string $ciphertext, string $AAD = ''): null|string
@@ -219,24 +226,50 @@ public function __construct (#[\SensitiveParameter] string $material, null|strin
 
 Encapsula material raw de chave. O material deve ter exatamente 32 bytes; o id opcional
 deve seguir `[A-Za-z0-9_-]` com no máximo 64 caracteres (ele viaja como metadado público
-do envelope). Lança `InvalidArgumentException` caso contrário. O material é estado
-privado — é redigido no `var_dump`, ausente do JSON e a chave recusa `serialize()`.
+do envelope). Lança `InvalidArgumentException` caso contrário, e `RuntimeException`
+quando o OpenSSL não está disponível. O material é estado privado — é redigido no
+`var_dump`, ausente do JSON e a chave recusa tanto `serialize()` quanto `unserialize()`.
+Reflection no mesmo processo (`var_export`, `ReflectionProperty`) não pode ser bloqueada
+em PHP e está fora dessa fronteira.
 
 ```php
 public static function generate (null|string $id = null): self
 ```
 
-Cria uma chave com 32 bytes de material CSPRNG novo.
+Cria uma chave com 32 bytes de material CSPRNG novo. **A chave gerada é efêmera por
+design**: não existe API de exportação suportada para o material, então qualquer coisa
+criptografada com ela fica indescriptografável quando o processo termina. Para dados
+persistidos, provisione o material antes (`base64_encode(random_bytes(32))`) e construa
+via `import()`. Lança `Random\RandomException` (fonte de aleatoriedade),
+`InvalidArgumentException` (id inválido) ou `RuntimeException` (OpenSSL indisponível).
 
 ```php
 public static function import (#[\SensitiveParameter] string $encoded, null|string $id = null): self
 ```
 
 Constrói uma chave a partir de material codificado em base64 (decodificação estrita).
-Lança `InvalidArgumentException` em base64 inválido ou tamanho decodificado errado. O
-material não pode ser lido de volta de uma `Key` — quando uma chave precisa ser
-persistida, codifique os bytes raw antes (`base64_encode($material)`) e só então
-construa a chave.
+Lança `InvalidArgumentException` em base64 inválido, tamanho decodificado errado ou id
+inválido, e `RuntimeException` quando o OpenSSL não está disponível. Uma `Key` não oferece API
+suportada para ler o material de volta — quando uma chave precisa ser persistida,
+codifique os bytes raw antes (`base64_encode($material)`) e só então construa a chave.
+
+```php
+public function seal (#[\SensitiveParameter] string $plaintext, string $AAD): string
+```
+
+Primitivo AEAD de baixo nível: sela um payload e retorna os bytes raw
+`IV ∥ ciphertext ∥ tag`. Um IV aleatório novo de 12 bytes é gerado internamente a cada
+chamada — o chamador não pode escolher nem reutilizar um intencionalmente (o orçamento
+de 2^32 por chave acima continua valendo). O `Encrypter` constrói seus envelopes sobre
+este método. Falhas ambientais lançam `Random\RandomException` ou `RuntimeException`.
+
+```php
+public function open (string $sealed, string $AAD): null|string
+```
+
+Primitivo AEAD de baixo nível: abre bytes raw `IV ∥ ciphertext ∥ tag`, sempre
+autenticando a tag completa de 16 bytes (tags truncadas são estruturalmente
+impossíveis). Retorna `null` em qualquer falha.
 
 ### Encrypter\Keyring
 
@@ -245,7 +278,8 @@ public function __construct (Key $Key, Key ...$Keys)
 ```
 
 Cria um keyring. A primeira chave vira a primária (usada para criptografar); toda chave —
-inclusive a primária — é registrada para descriptografia.
+inclusive a primária — é registrada para descriptografia. Lança
+`InvalidArgumentException` em id duplicado ou em uma segunda chave sem id.
 
 ```php
 public function add (Key $Key): self
@@ -259,8 +293,8 @@ public function rotate (Key $Key): self
 ```
 
 Registra a chave e a promove a primária. A primária anterior continua registrada, então
-seus envelopes continuam descriptografando. Conflitos de id lançam antes da troca da
-primária.
+seus envelopes continuam descriptografando. Rotação exige id explícito — chave sem id
+lança, e conflitos de id lançam antes da troca da primária.
 
 ```php
 public function resolve (null|string $id): null|Key

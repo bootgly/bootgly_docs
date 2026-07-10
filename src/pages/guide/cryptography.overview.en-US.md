@@ -110,6 +110,12 @@ The rotation runbook:
 Multiple processes can share the ring by injecting the same keys everywhere — the key id
 inside the envelope selects the right key deterministically, never by trial decryption.
 
+One operational limit comes with sharing: random 96-bit GCM IVs carry a usage budget
+(NIST SP 800-38D) of at most **2^32 encryptions per raw key**, aggregated across every
+process, host and key id that shares the same 32-byte material. Rotate keys well before
+that bound — for a high-volume shared key, schedule rotation as routine maintenance, not
+as an incident response.
+
 ## Hash passwords
 
 `Password` hashes with argon2id. The defaults match PHP's own Argon2 defaults (64 MiB
@@ -177,15 +183,17 @@ public function __construct (#[\SensitiveParameter] string|Key|Keyring $key)
 ```
 
 Creates an encrypter. Accepts raw 32-byte key material, a single `Key` or a full
-`Keyring`. Throws a `RuntimeException` when OpenSSL symmetric encryption is unavailable.
+`Keyring`. Throws an `InvalidArgumentException` when raw material is invalid and a
+`RuntimeException` when OpenSSL symmetric encryption is unavailable.
 
 ```php
 public function encrypt (#[\SensitiveParameter] string $plaintext, string $AAD = ''): string
 ```
 
 Encrypts a payload with the keyring's primary key into a `v1.<kid>.<blob>` envelope. The
-envelope prefix and the caller AAD are authenticated together. Throws a `RuntimeException`
-only on environmental OpenSSL failure.
+envelope prefix and the caller AAD are authenticated together. Environmental failures
+throw: `Random\RandomException` when the randomness source fails, `RuntimeException` when
+the OpenSSL encryption fails.
 
 ```php
 public function decrypt (string $ciphertext, string $AAD = ''): null|string
@@ -212,23 +220,50 @@ public function __construct (#[\SensitiveParameter] string $material, null|strin
 
 Wraps raw key material. The material must be exactly 32 bytes; the optional id must match
 `[A-Za-z0-9_-]` with at most 64 characters (it travels as public envelope metadata).
-Throws an `InvalidArgumentException` otherwise. The material is private state — it is
-redacted from `var_dump`, absent from JSON and the key refuses `serialize()`.
+Throws an `InvalidArgumentException` otherwise, and a `RuntimeException` when OpenSSL is
+unavailable. The material is private state — it is redacted from `var_dump`, absent from
+JSON and the key refuses both `serialize()` and `unserialize()`. Same-process reflection
+(`var_export`, `ReflectionProperty`) cannot be blocked in PHP and is outside this
+boundary.
 
 ```php
 public static function generate (null|string $id = null): self
 ```
 
-Mints a key with 32 bytes of fresh CSPRNG material.
+Mints a key with 32 bytes of fresh CSPRNG material. **The generated key is ephemeral by
+design**: there is no supported export API for its material, so anything encrypted with
+it is undecryptable after the process ends. For persisted data, provision the material
+first (`base64_encode(random_bytes(32))`) and construct via `import()`. Throws
+`Random\RandomException` (randomness source), `InvalidArgumentException` (invalid id) or
+`RuntimeException` (OpenSSL unavailable).
 
 ```php
 public static function import (#[\SensitiveParameter] string $encoded, null|string $id = null): self
 ```
 
 Builds a key from base64-encoded material (strict decoding). Throws an
-`InvalidArgumentException` on invalid base64 or wrong decoded length. Material cannot be
-read back from a `Key` — when a key must be persisted, encode the raw bytes first
+`InvalidArgumentException` on invalid base64, wrong decoded length or an invalid id, and
+a `RuntimeException` when OpenSSL is unavailable. A `Key` offers no supported API to read
+its material back — when a key must be persisted, encode the raw bytes first
 (`base64_encode($material)`) and only then construct the key.
+
+```php
+public function seal (#[\SensitiveParameter] string $plaintext, string $AAD): string
+```
+
+Low-level AEAD primitive: seals a payload and returns the raw `IV ∥ ciphertext ∥ tag`
+bytes. A fresh random 12-byte IV is generated internally on every call — callers cannot
+choose or intentionally reuse one (the 2^32 per-key budget above still applies).
+`Encrypter` builds its envelopes on top of this method. Environmental failures throw
+`Random\RandomException` or `RuntimeException`.
+
+```php
+public function open (string $sealed, string $AAD): null|string
+```
+
+Low-level AEAD primitive: opens raw `IV ∥ ciphertext ∥ tag` bytes, always authenticating
+the full 16-byte tag (truncated tags are structurally impossible). Returns `null` on any
+failure.
 
 ### Encrypter\Keyring
 
@@ -237,7 +272,8 @@ public function __construct (Key $Key, Key ...$Keys)
 ```
 
 Creates a keyring. The first key becomes the primary (used to encrypt); every key —
-including the primary — is registered for decryption.
+including the primary — is registered for decryption. Throws an
+`InvalidArgumentException` on a duplicate id or a second id-less key.
 
 ```php
 public function add (Key $Key): self
@@ -251,7 +287,8 @@ public function rotate (Key $Key): self
 ```
 
 Registers the key and promotes it to primary. The previous primary stays registered, so
-its envelopes keep decrypting. Id conflicts throw before the primary changes.
+its envelopes keep decrypting. Rotation requires an explicit key id — an id-less key
+throws, and id conflicts throw before the primary changes.
 
 ```php
 public function resolve (null|string $id): null|Key
