@@ -200,6 +200,9 @@ public function decrypt (string $ciphertext, string $AAD = ''): null|string
 
 Descriptografa um envelope. Retorna o plaintext, ou `null` em qualquer falha — envelope
 malformado, key id desconhecido, dados adulterados ou AAD divergente. Nunca lança.
+Envelopes são canônicos: encodings textuais alternativos dos mesmos bytes selados
+(padding, base64 padrão, trailing bits sobrando) são rejeitados, então a string do
+envelope pode ser usada com segurança como chave de cache/revogação.
 
 ```php
 public private(set) Keyring $Keyring;
@@ -215,7 +218,9 @@ public function __construct (#[\SensitiveParameter] string $material, null|strin
 ```
 
 Encapsula material raw de chave. O material deve ter exatamente 32 bytes; o id opcional
-deve ser uma string não vazia sem pontos. Lança `InvalidArgumentException` caso contrário.
+deve seguir `[A-Za-z0-9_-]` com no máximo 64 caracteres (ele viaja como metadado público
+do envelope). Lança `InvalidArgumentException` caso contrário. O material é estado
+privado — é redigido no `var_dump`, ausente do JSON e a chave recusa `serialize()`.
 
 ```php
 public static function generate (null|string $id = null): self
@@ -228,8 +233,10 @@ public static function import (#[\SensitiveParameter] string $encoded, null|stri
 ```
 
 Constrói uma chave a partir de material codificado em base64 (decodificação estrita).
-Lança `InvalidArgumentException` em base64 inválido ou tamanho decodificado errado. Para
-exportar uma chave, use `base64_encode($Key->material)`.
+Lança `InvalidArgumentException` em base64 inválido ou tamanho decodificado errado. O
+material não pode ser lido de volta de uma `Key` — quando uma chave precisa ser
+persistida, codifique os bytes raw antes (`base64_encode($material)`) e só então
+construa a chave.
 
 ### Encrypter\Keyring
 

@@ -192,7 +192,10 @@ public function decrypt (string $ciphertext, string $AAD = ''): null|string
 ```
 
 Decrypts an envelope. Returns the plaintext, or `null` on any failure — malformed
-envelope, unknown key id, tampered data or AAD mismatch. Never throws.
+envelope, unknown key id, tampered data or AAD mismatch. Never throws. Envelopes are
+canonical: alternate textual encodings of the same sealed bytes (padding, standard
+base64, stray trailing bits) are rejected, so an envelope string can safely be used as
+a cache/revocation key.
 
 ```php
 public private(set) Keyring $Keyring;
@@ -207,8 +210,10 @@ The encrypter's key collection — publicly readable for rotation
 public function __construct (#[\SensitiveParameter] string $material, null|string $id = null)
 ```
 
-Wraps raw key material. The material must be exactly 32 bytes; the optional id must be a
-non-empty string without dots. Throws an `InvalidArgumentException` otherwise.
+Wraps raw key material. The material must be exactly 32 bytes; the optional id must match
+`[A-Za-z0-9_-]` with at most 64 characters (it travels as public envelope metadata).
+Throws an `InvalidArgumentException` otherwise. The material is private state — it is
+redacted from `var_dump`, absent from JSON and the key refuses `serialize()`.
 
 ```php
 public static function generate (null|string $id = null): self
@@ -221,8 +226,9 @@ public static function import (#[\SensitiveParameter] string $encoded, null|stri
 ```
 
 Builds a key from base64-encoded material (strict decoding). Throws an
-`InvalidArgumentException` on invalid base64 or wrong decoded length. To export a key, use
-`base64_encode($Key->material)`.
+`InvalidArgumentException` on invalid base64 or wrong decoded length. Material cannot be
+read back from a `Key` — when a key must be persisted, encode the raw bytes first
+(`base64_encode($material)`) and only then construct the key.
 
 ### Encrypter\Keyring
 
