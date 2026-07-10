@@ -8,6 +8,50 @@ um-arquivo-por-worker mescla as métricas de toda a frota do servidor. Tudo é n
 Composer, e o coletor vive uma camada abaixo do servidor web (`WPI` alimenta o `ACI`, nunca o
 contrário).
 
+## Endpoint de health embutido (probes K8s)
+
+O servidor HTTP responde probes de health nativamente — sem rota, sem middleware, sem o
+registry de Observability. Opte com o parâmetro `health:` do `configure()`:
+
+```php
+$HTTP_Server_CLI->configure(
+   host: '0.0.0.0',
+   port: 8080,
+   workers: 4,
+   health: '/health'   // ← endpoint de probe embutido (null = desativado, o default)
+);
+```
+
+Na plataforma Web (`Web\App`) ele vem **ligado por default** em `/health` — passe
+`health: null` ao `configure()` para desativar.
+
+```bash
+curl -s http://127.0.0.1:8080/health
+# {"status":"ok"}
+```
+
+O guard responde `GET`/`HEAD` no path exato configurado **antes do pipeline de
+middlewares** — RateLimit, Authentication ou qualquer middleware do usuário jamais quebra
+um probe — e sempre com `Cache-Control: no-store`. O body é deliberadamente mínimo: o
+endpoint é à prova de middleware (auth não consegue protegê-lo), então nunca vaza
+internals do processo; vitals ricos (pid, memória, conexões) vivem no conjunto de rotas
+Observability abaixo, onde a proteção por middleware se aplica. Um worker alcançável que
+aceita e serve a requisição *é* o sinal de health, o que torna um único endpoint válido
+para os dois probes do Kubernetes:
+
+```yaml
+livenessProbe:
+  httpGet: { path: /health, port: 8080 }
+  periodSeconds: 10
+readinessProbe:
+  httpGet: { path: /health, port: 8080 }
+  periodSeconds: 5
+```
+
+Quando configurado, o path do framework sombreia uma rota idêntica do usuário. Readiness
+profunda (pings de banco, profundidade de fila) continua sendo responsabilidade da
+aplicação — o conjunto de rotas Observability abaixo é a opção rica.
+
 ## Exponha `/health` e `/metrics`
 
 Os endpoints vêm como um conjunto de rotas no projeto demo. Ative-os adicionando `'Observability'` ao

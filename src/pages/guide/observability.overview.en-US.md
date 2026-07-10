@@ -8,6 +8,49 @@ and a file-per-worker model merges metrics across the whole server fleet. Everyt
 no Composer dependency, and the collector lives one layer below the web server (`WPI` feeds `ACI`,
 never the other way around).
 
+## Built-in health endpoint (K8s probes)
+
+The HTTP server answers health probes natively — no route, no middleware, no
+Observability registry required. Opt in with the `health:` parameter of `configure()`:
+
+```php
+$HTTP_Server_CLI->configure(
+   host: '0.0.0.0',
+   port: 8080,
+   workers: 4,
+   health: '/health'   // ← built-in probe endpoint (null = disabled, the default)
+);
+```
+
+On the Web platform (`Web\App`) it is **on by default** at `/health` — pass
+`health: null` to `configure()` to disable it.
+
+```bash
+curl -s http://127.0.0.1:8080/health
+# {"status":"ok"}
+```
+
+The guard answers `GET`/`HEAD` on the exact configured path **before the middleware
+pipeline** — RateLimit, Authentication or any user middleware can never break a probe —
+and always with `Cache-Control: no-store`. The body is deliberately minimal: the
+endpoint is middleware-proof (auth cannot gate it), so it never leaks process internals;
+rich vitals (pid, memory, connections) live in the Observability route set below, where
+middleware protection applies. A reachable worker that accepts and serves the request
+*is* the health signal, which makes one endpoint valid for both Kubernetes probes:
+
+```yaml
+livenessProbe:
+  httpGet: { path: /health, port: 8080 }
+  periodSeconds: 10
+readinessProbe:
+  httpGet: { path: /health, port: 8080 }
+  periodSeconds: 5
+```
+
+When configured, the framework path shadows an identical user route. Deep readiness
+(database pings, queue depth) stays an application concern — the Observability route set
+below is the rich option.
+
 ## Expose `/health` and `/metrics`
 
 The endpoints ship as a route set in the demo project. Enable them by adding `'Observability'` to

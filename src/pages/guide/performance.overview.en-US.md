@@ -135,6 +135,44 @@ A blocking call can stall a worker. An async database operation lets the worker 
 - Add indexes for real predicates before increasing pool size.
 - Measure the route with realistic result sizes; `SELECT 1` tests protocol and scheduling overhead, not application data access.
 
+## Preload assets with 103 Early Hints
+
+While a handler is still producing its response — waiting on a database, rendering a
+template — the browser can already be downloading the page's CSS and JS. Send an interim
+`103 Early Hints` response (RFC 8297) with `Response->hint()` before the heavy work:
+
+```php
+$Router->route('/page', function (Request $Request, Response $Response): Response {
+   $Response->hint([
+      '</assets/app.css>; rel=preload; as=style',
+      '</assets/app.js>; rel=preload; as=script'
+   ]);
+
+   // ...expensive work: queries, rendering...
+
+   return $Response->send($HTML);
+}, GET);
+```
+
+The interim response goes out on the wire immediately — before the final status is known
+— and the final response follows untouched. `hint()` is repeatable (each call is one
+interim response), works on HTTP/1.1 and HTTP/2, and is a safe no-op for HTTP/1.0
+clients or after the response was sent.
+
+The win scales with the gap between "request arrived" and "response head ready": a route
+that spends 50ms on database time gives the browser 50ms of free preload.
+
+### Reference
+
+```php
+public function hint (string|array $links = []): self
+```
+
+Sends one interim `103 Early Hints` response carrying the given `Link` header value(s)
+directly on the transport. CR/LF in values is stripped (response-splitting guard). No-op
+when no transport is bound, the final response was already sent, the client speaks
+HTTP/1.0, or the HTTP/2 stream was reset.
+
 ## Read benchmark numbers carefully
 
 A high static-route number and a lower database-route number can both be correct. Static routes mostly measure HTTP parsing, routing and response writes. Database routes add at least one network round trip, PostgreSQL execution, result decoding and JSON serialization.

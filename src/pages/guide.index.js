@@ -318,6 +318,33 @@ export default {
     }
   },
 
+  '/sse': {
+    config: {
+      icon: 'stream',
+      status: 'draft',
+      version: '0.24.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Push live events to browsers over plain HTTP with Server-Sent Events — the text/event-stream Response resource with heartbeat, retry and Last-Event-ID resume, on HTTP/1.1 and HTTP/2.',
+          'pt-BR': 'Envie eventos ao vivo para navegadores sobre HTTP puro com Server-Sent Events — o resource de Response text/event-stream com heartbeat, retry e resume via Last-Event-ID, em HTTP/1.1 e HTTP/2.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Server-Sent Events'
+      },
+      'pt-BR': {
+        title: 'Server-Sent Events'
+      }
+    }
+  },
+
   '/queues': {
     config: {
       icon: 'queue',

@@ -137,6 +137,44 @@ Uma chamada bloqueante pode parar um worker. Uma operação assíncrona de banco
 - Adicione índices para predicados reais antes de aumentar pool.
 - Meça a rota com tamanhos de resultado realistas; `SELECT 1` testa protocolo e scheduling, não acesso a dados de aplicação.
 
+## Faça preload de assets com 103 Early Hints
+
+Enquanto um handler ainda produz sua resposta — esperando um banco, renderizando um
+template — o navegador já pode estar baixando o CSS e o JS da página. Envie uma resposta
+interim `103 Early Hints` (RFC 8297) com `Response->hint()` antes do trabalho pesado:
+
+```php
+$Router->route('/page', function (Request $Request, Response $Response): Response {
+   $Response->hint([
+      '</assets/app.css>; rel=preload; as=style',
+      '</assets/app.js>; rel=preload; as=script'
+   ]);
+
+   // ...trabalho caro: queries, renderização...
+
+   return $Response->send($HTML);
+}, GET);
+```
+
+A resposta interim sai no fio imediatamente — antes de o status final ser conhecido — e
+a resposta final segue intocada. `hint()` é repetível (cada chamada é uma resposta
+interim), funciona em HTTP/1.1 e HTTP/2, e é um no-op seguro para clientes HTTP/1.0 ou
+depois que a resposta foi enviada.
+
+O ganho escala com o intervalo entre "requisição chegou" e "head da resposta pronto":
+uma rota que gasta 50ms em banco dá ao navegador 50ms de preload de graça.
+
+### Reference
+
+```php
+public function hint (string|array $links = []): self
+```
+
+Envia uma resposta interim `103 Early Hints` carregando o(s) valor(es) do header `Link`
+diretamente no transporte. CR/LF nos valores é removido (guarda contra response
+splitting). No-op quando não há transporte vinculado, a resposta final já foi enviada, o
+cliente fala HTTP/1.0 ou o stream HTTP/2 foi resetado.
+
 ## Leia os números de benchmark com cuidado
 
 Um número alto em rota estática e um número menor em rota de banco podem estar ambos corretos. Rotas estáticas medem principalmente parsing HTTP, roteamento e escrita da resposta. Rotas de banco adicionam pelo menos um round-trip de rede, execução no PostgreSQL, decodificação do resultado e serialização JSON.
