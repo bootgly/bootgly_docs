@@ -10,18 +10,6 @@ The [canonical installer](/guide/getting-started) can install it right away — 
 curl -fsSL https://bootgly.com/install | bash
 ```
 
-Didn't pick it at install time? Add it later to an existing kit:
-
-```bash
-git submodule update --init Web
-```
-
-Or through the wizard flag:
-
-```bash
-php bootgly project create --platform=web
-```
-
 ## Your first web app
 
 Create a project (interface **WPI**) with the wizard, then make its `.project.php` boot a `Web\App`:

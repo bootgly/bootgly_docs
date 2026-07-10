@@ -10,18 +10,6 @@ O [instalador canônico](/guide/getting-started) já a instala na hora — ele p
 curl -fsSL https://bootgly.com/install | bash
 ```
 
-Não escolheu na instalação? Adicione depois em um kit existente:
-
-```bash
-git submodule update --init Console
-```
-
-Ou pela flag do wizard:
-
-```bash
-php bootgly project create --platform=console
-```
-
 ## Seu primeiro app TUI
 
 Crie um projeto (interface **CLI**) com o wizard e faça o `.project.php` dele bootar um `Console\App`:
