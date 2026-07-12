@@ -1370,6 +1370,50 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Frame': {
+    config: {
+      icon: 'picture_in_picture',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Paint bordered boxes with isolated, individual Outputs — host any component inside.',
+          'pt-BR': 'Pinte caixas com bordas e Outputs isolados e individuais — hospede qualquer componente dentro.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Frame'
+      }
+    }
+  },
+  '/CLI/UI/Components/Grid': {
+    config: {
+      icon: 'grid_view',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Lay frames out on weighted tracks — btop-like dashboards with gap and resize reflow.',
+          'pt-BR': 'Distribua frames em trilhas com pesos — dashboards estilo btop com gap e reflow no resize.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Grid'
+      }
+    }
+  },
   '/CLI/UI/Components/Logs': {
     config: {
       icon: 'subject',
