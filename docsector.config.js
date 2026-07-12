@@ -11,8 +11,12 @@ export default {
     version: 'v0.24.0-beta',
     versions: [
       {
-        id: 'v0.24.0-beta',
+        id: 'v1.0.0-beta',
         current: true,
+        released: false
+      },
+      {
+        id: 'v0.24.0-beta',
         released: true
       },
       {
