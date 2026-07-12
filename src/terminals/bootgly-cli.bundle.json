@@ -1,9 +1,9 @@
 {
   "asset": "/wasm/bootgly-cli.zip",
-  "version": "0.21.0-beta",
+  "version": "0.24.0-beta",
   "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
-  "files": 638,
-  "bytes": 774147,
+  "files": 654,
+  "bytes": 815747,
   "demos": {
     "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
     "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
@@ -48,6 +48,8 @@
     "41": "projects/Demo/CLI/UI/Scrollarea-01.demo.php",
     "42": "projects/Demo/CLI/UI/Chart-02.demo.php",
     "43": "projects/Demo/CLI/UI/Chart-03.demo.php",
-    "44": "projects/Demo/CLI/UI/Chart-04.demo.php"
+    "44": "projects/Demo/CLI/UI/Chart-04.demo.php",
+    "45": "projects/Demo/CLI/UI/Frame-01.demo.php",
+    "46": "projects/Demo/CLI/UI/Grid-01.demo.php"
   }
 }
