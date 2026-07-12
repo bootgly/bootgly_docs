@@ -131,6 +131,33 @@ export default {
     }
   },
 
+  '/auto-tls': {
+    config: {
+      icon: 'https',
+      status: 'draft',
+      version: '1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Automatic HTTPS: the server obtains, hot-swaps and renews Let\'s Encrypt certificates natively (ACME v2, HTTP-01) — no certbot, no cron.',
+          'pt-BR': 'HTTPS automático: o servidor obtém, troca a quente e renova certificados Let\'s Encrypt nativamente (ACME v2, HTTP-01) — sem certbot, sem cron.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Auto-TLS'
+      },
+      'pt-BR': {
+        title: 'Auto-TLS'
+      }
+    }
+  },
+
   '/cryptography': {
     config: {
       icon: 'key',
