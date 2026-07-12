@@ -43,7 +43,7 @@ If the CA is unreachable, the server keeps serving on its current certificate an
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\ACME_Client\Challenges;
 
-Challenges::$path = '/path/to/storage/security/tls/challenges/';
+Challenges::configure('/path/to/storage/security/tls/challenges/');
 ```
 
   With it set, that instance answers `/.well-known/acme-challenge/` before any middleware or route — nothing you configure can break a validation.
@@ -124,6 +124,7 @@ public function __construct (
    bool $staging = false,
    null|string $directory = null,
    null|string $path = null,
+   null|string $challenges = null,
    int $threshold = 30,
    int $bits = 2048,
    bool $agreement = true,
@@ -133,7 +134,7 @@ public function __construct (
 )
 ```
 
-Validates the whole configuration at construction (`InvalidArgumentException` on any invalid value — misconfiguration never reaches the CA). `domains` is the SAN set; `domains[0]` is the Common Name and names the certificate directory. `directory` overrides `staging`. `threshold` is the renew-when-fewer-days-remain trigger (1–89). `bits` sizes the RSA account and certificate keys (≥ 2048). `agreement` is the RFC 8555 Terms-of-Service agreement — configuring Auto-TLS implies it (the Caddy model), so it defaults to `true` and passing `false` throws. `port` is the HTTP-01 validation port the CA connects to. `verify` controls TLS peer verification toward the ACME directory. `options` are extra SSL context options merged into the server socket context (explicit options win over managed values).
+Validates the whole configuration at construction (`InvalidArgumentException` on any invalid value — misconfiguration never reaches the CA). `domains` is the SAN set; `domains[0]` is the Common Name and names the certificate directory. `directory` overrides `staging`. `threshold` is the renew-when-fewer-days-remain trigger (1–89). `bits` sizes the RSA account and certificate keys (≥ 2048). `agreement` is the RFC 8555 Terms-of-Service agreement — configuring Auto-TLS implies it (the Caddy model), so it defaults to `true` and passing `false` throws. `port` is the HTTP-01 validation port the CA connects to. `verify` controls TLS peer verification toward the ACME directory. `challenges` overrides the HTTP-01 token spool directory — instances sharing one validation port must point at the same spool. `options` are extra SSL context options merged into the server socket context (explicit options win over managed values) — except the credential-selecting keys `local_cert`, `local_pk`, `passphrase` and `SNI_server_certs`, which are managed by Auto-TLS and rejected at construction: no accepted option can serve a certificate outside the validated, acknowledged generation.
 
 ```php
 public function check (): bool

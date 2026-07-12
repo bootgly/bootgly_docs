@@ -43,7 +43,7 @@ A validação `HTTP-01` sempre chega por HTTP puro na porta 80, então o servido
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\ACME_Client\Challenges;
 
-Challenges::$path = '/caminho/para/storage/security/tls/challenges/';
+Challenges::configure('/caminho/para/storage/security/tls/challenges/');
 ```
 
   Com isso definido, essa instância responde `/.well-known/acme-challenge/` antes de qualquer middleware ou rota — nada que você configure quebra uma validação.
@@ -124,6 +124,7 @@ public function __construct (
    bool $staging = false,
    null|string $directory = null,
    null|string $path = null,
+   null|string $challenges = null,
    int $threshold = 30,
    int $bits = 2048,
    bool $agreement = true,
@@ -133,7 +134,7 @@ public function __construct (
 )
 ```
 
-Valida toda a configuração na construção (`InvalidArgumentException` em qualquer valor inválido — configuração errada nunca chega à CA). `domains` é o conjunto SAN; `domains[0]` é o Common Name e nomeia o diretório do certificado. `directory` sobrescreve `staging`. `threshold` é o gatilho de renovação em dias restantes (1–89). `bits` dimensiona as chaves RSA de conta e certificado (≥ 2048). `agreement` é o aceite dos Termos de Serviço da RFC 8555 — configurar o Auto-TLS já o implica (modelo Caddy), então o default é `true` e passar `false` lança exceção. `port` é a porta de validação HTTP-01 em que a CA conecta. `verify` controla a verificação TLS do peer em direção ao directory ACME. `options` são opções extras de contexto SSL mescladas no contexto do socket do servidor (opções explícitas vencem os valores gerenciados).
+Valida toda a configuração na construção (`InvalidArgumentException` em qualquer valor inválido — configuração errada nunca chega à CA). `domains` é o conjunto SAN; `domains[0]` é o Common Name e nomeia o diretório do certificado. `directory` sobrescreve `staging`. `threshold` é o gatilho de renovação em dias restantes (1–89). `bits` dimensiona as chaves RSA de conta e certificado (≥ 2048). `agreement` é o aceite dos Termos de Serviço da RFC 8555 — configurar o Auto-TLS já o implica (modelo Caddy), então o default é `true` e passar `false` lança exceção. `port` é a porta de validação HTTP-01 em que a CA conecta. `verify` controla a verificação TLS do peer em direção ao directory ACME. `challenges` sobrescreve o diretório de tokens HTTP-01 — instâncias que compartilham uma porta de validação devem apontar para o mesmo spool. `options` são opções extras de contexto SSL mescladas no contexto do socket do servidor (opções explícitas vencem os valores gerenciados) — exceto as chaves seletoras de credencial `local_cert`, `local_pk`, `passphrase` e `SNI_server_certs`, que são gerenciadas pelo Auto-TLS e rejeitadas na construção: nenhuma opção aceita pode servir um certificado fora da geração validada e confirmada.
 
 ```php
 public function check (): bool
