@@ -171,10 +171,10 @@ Data (somente leitura). Os frames posicionados (instâncias de `Cell`), em ordem
 ### place()
 
 ```php
-public function place (Frame $Frame, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
+public function place (Boxing $Box, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
 ```
 
-Posiciona um Frame sobre as trilhas do grid e atribui sua geometria imediatamente. Encadeável; sobreposições pintam na ordem de posicionamento.
+Posiciona uma caixa sobre as trilhas do grid e atribui sua geometria imediatamente. Qualquer implementador de `Boxing` serve — um [Frame](/manual/CLI/UI/Components/Frame/overview), um [Tabs](/manual/CLI/UX/Tabs/overview), ... Encadeável; sobreposições pintam na ordem de posicionamento.
 
 ### arrange()
 
@@ -203,7 +203,7 @@ Arranja o layout e renderiza cada Frame posicionado, em ordem de posicionamento.
 ### Cell
 
 ```php
-public Frame $Frame
+public Boxing $Box
 ```
 
-O value object `Grid\Cell` guarda um posicionamento: o `Frame` (gravável — designs empilhados podem redirecionar a célula) mais as trilhas `row`, `column`, `rowspan` e `colspan`.
+O value object `Grid\Cell` guarda um posicionamento: a caixa (gravável — designs de overlay podem redirecionar a célula) mais as trilhas `row`, `column`, `rowspan` e `colspan`.

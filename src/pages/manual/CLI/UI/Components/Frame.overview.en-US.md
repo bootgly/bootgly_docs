@@ -177,6 +177,14 @@ public int $lines
 
 Metadata (read-only). The inner height, in lines (`height` minus the borders).
 
+### drain()
+
+```php
+public function drain (): void
+```
+
+Pulls the pending isolated-Output writes into the line buffer without painting — sanitized, split into logical lines and capped to the capacity. Coordinators (like [Tabs](/manual/CLI/UX/Tabs/overview)) drain inactive frames to keep their streams bounded; `render()` always drains first, so direct calls are only needed for hidden frames.
+
 ### clear()
 
 ```php

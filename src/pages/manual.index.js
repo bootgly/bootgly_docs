@@ -1706,6 +1706,28 @@ export default {
       }
     }
   },
+  '/CLI/UX/Tabs': {
+    config: {
+      icon: 'tab',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Multiplex labeled frames over one rectangle — the bar rides the active border, btop-style.',
+          'pt-BR': 'Multiplexe frames rotulados em um retângulo — a barra vive na borda ativa, estilo btop.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Tabs'
+      }
+    }
+  },
 
   // Console (platform)
   '/Console': {

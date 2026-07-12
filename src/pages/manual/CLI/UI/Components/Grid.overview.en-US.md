@@ -171,10 +171,10 @@ Data (read-only). The placed frames (`Cell` instances), in paint order.
 ### place()
 
 ```php
-public function place (Frame $Frame, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
+public function place (Boxing $Box, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
 ```
 
-Places a Frame over the grid tracks and assigns its geometry immediately. Chainable; overlaps paint in placement order.
+Places a box over the grid tracks and assigns its geometry immediately. Any `Boxing` implementer fits — a [Frame](/manual/CLI/UI/Components/Frame/overview), a [Tabs](/manual/CLI/UX/Tabs/overview), ... Chainable; overlaps paint in placement order.
 
 ### arrange()
 
@@ -203,7 +203,7 @@ Arranges the layout and renders every placed Frame, in placement order. With `RE
 ### Cell
 
 ```php
-public Frame $Frame
+public Boxing $Box
 ```
 
-The `Grid\Cell` value object holds one placement: the `Frame` (writable — stacked designs can retarget the cell) plus the `row`, `column`, `rowspan` and `colspan` tracks.
+The `Grid\Cell` value object holds one placement: the box (writable — overlay designs can retarget the cell) plus the `row`, `column`, `rowspan` and `colspan` tracks.
