@@ -212,7 +212,8 @@ configure (
    int $reconnectDelay = 1,
    int $reconnectMaxDelay = 30,
    int $reconnectTimeout = 60,
-   int $handshakeTimeout = 10
+   int $handshakeTimeout = 10,
+   float $closeTimeout = 5.0
 ): self
 ```
 
@@ -225,7 +226,9 @@ o `host` por padrão). `reconnect` rediscar após uma queda abrupta com backoff 
 reconectam. `reconnectTimeout` (60s) é o orçamento total de tempo de parede para toda a campanha de
 reconexão — o loop sempre desiste após esses segundos, mesmo com tentativas ilimitadas (`0` = sem
 limite). `handshakeTimeout` (10s) limita a espera pelo `101` do servidor após cada disca (`0` = sem
-limite).
+limite). `closeTimeout` (5s) limita quanto tempo um close frame enfileirado pode esperar um socket
+congestionado drenar antes do transporte ser fechado à força (`0` = fecha à força imediatamente
+quando o frame não pode ser escrito de forma síncrona).
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self

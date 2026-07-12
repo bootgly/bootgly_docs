@@ -208,7 +208,8 @@ configure (
    int $reconnectDelay = 1,
    int $reconnectMaxDelay = 30,
    int $reconnectTimeout = 60,
-   int $handshakeTimeout = 10
+   int $handshakeTimeout = 10,
+   float $closeTimeout = 5.0
 ): self
 ```
 
@@ -221,7 +222,9 @@ to `host`). `reconnect` auto re-dials after an abrupt drop with capped exponenti
 do not reconnect. `reconnectTimeout` (60s) is the total wall-clock budget for the whole reconnect
 campaign — the loop always gives up after that many seconds, even with unlimited attempts (`0` =
 unbounded). `handshakeTimeout` (10s) bounds the wait for the server's `101` after each dial (`0` =
-unbounded).
+unbounded). `closeTimeout` (5s) bounds how long a queued close frame may wait for a congested
+socket to drain before the transport is force-closed (`0` = force-close immediately when the frame
+cannot be written synchronously).
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self
