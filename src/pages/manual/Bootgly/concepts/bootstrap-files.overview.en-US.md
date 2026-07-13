@@ -4,4 +4,6 @@ There are two main bootstrap files for Bootgly: `bootgly` and `index.php`. The `
 
 ## Bootstrap files in Resource dirs
 
-In addition to the main bootstrap files, there are other files that are used to initialize or index some other internal resource of Bootgly like test suites for example. These resource bootstrap files have a fixed pattern in their name and must start with an at sign: `@.php`. These bootstrap files can be found at the first level of the Bootgly Resource dirs.
+In addition to the main bootstrap files, every Bootgly directory that needs to initialize or index an internal resource — test suites, command registries, template directives, and so on — has its own entry file with a single, canonical name: `autoboot.php`. This is the one file Bootgly automatically loads when it reaches a directory, so there is exactly one name to remember across the whole framework — from the platform bootstrap down to each resource dir.
+
+These `autoboot.php` files live at the first level of each Bootgly Resource dir. The name is fixed and exposed as the `Bootgly\ABI\BOOTSTRAP_FILENAME` constant, so framework code never hardcodes it. The lowercase name is deliberate: it sorts *after* the uppercase entity files of a directory, so a directory's entities are defined before its `autoboot.php` runs.

@@ -41,11 +41,11 @@ O `run()` retorna `true` em caso de sucesso e `false` em caso de falha — um `f
 
 ## Registrando comandos
 
-O boot do CLI procura um arquivo `projects/Bootgly/commands/@.php` no seu diretório de trabalho. Ele deve retornar um array de instâncias de comandos:
+O boot do CLI procura um arquivo `projects/Bootgly/commands/autoboot.php` no seu diretório de trabalho. Ele deve retornar um array de instâncias de comandos:
 
 ```php
 <?php
-// projects/Bootgly/commands/@.php
+// projects/Bootgly/commands/autoboot.php
 
 return [
    new \projects\commands\GreetCommand,
@@ -113,7 +113,7 @@ class TimerMiddleware implements Middleware
 }
 ```
 
-Registre-o no gerenciador de comandos antes do roteamento (por exemplo, no seu bootstrap `@.php`):
+Registre-o no gerenciador de comandos antes do roteamento (por exemplo, no seu bootstrap `autoboot.php`):
 
 ```php
 use const Bootgly\CLI;
@@ -135,7 +135,7 @@ O gerenciador de comandos vive em `CLI->Commands` (`Bootgly\CLI\Commands`):
 public function register (Command $Command, null|object $Script = null, null|object $Context = null): bool
 ```
 
-Registra uma instância de comando sob um namespace de script (o framework usa isso para os próprios comandos e para os retornados pelo seu `@.php`). Quando um objeto `$Context` é passado, ele é injetado no comando.
+Registra uma instância de comando sob um namespace de script (o framework usa isso para os próprios comandos e para os retornados pelo seu `autoboot.php`). Quando um objeto `$Context` é passado, ele é injetado no comando.
 
 ```php
 public function route (null|array $route = null, null|object $From = null): bool
@@ -159,7 +159,7 @@ Lista os comandos registrados por `$From`, ou todos os comandos registrados agru
 public function autoload (string $location, null|object $Context = null, null|object $Script = null): bool
 ```
 
-Carrega comandos a partir de um arquivo de mapa `commands/@.php` dentro de `$location` (relativo à raiz do Bootgly), onde cada entrada é um arquivo que retorna uma instância de `Command`. Usado para inicializar conjuntos de comandos de outras localizações sob demanda.
+Carrega comandos a partir de um arquivo de mapa `commands/autoboot.php` dentro de `$location` (relativo à raiz do Bootgly), onde cada entrada é um arquivo que retorna uma instância de `Command`. Usado para inicializar conjuntos de comandos de outras localizações sob demanda.
 
 O pipeline de middlewares vive em `CLI->Commands->Middlewares` (`Bootgly\CLI\Commands\Middlewares`):
 

@@ -35,11 +35,11 @@ const INCLUDE_FILES = [
   'bootgly',
   'autoboot.php',
   'Bootgly.php',
-  'Bootgly/autoload.php',
+  'Bootgly/autoboot.php',
   'Bootgly/CLI.php',
   'Bootgly/WPI.php',
-  'Bootgly/WPI/autoload.php',
-  'Bootgly/ADI/autoload.php',
+  'Bootgly/WPI/autoboot.php',
+  'Bootgly/ADI/autoboot.php',
   'Bootgly/ADI/Table.php',
   'scripts/@.php'
 ]
@@ -166,7 +166,7 @@ if (wasmFile) {
 
 // No dynamic extensions are shipped: loading .so files does not survive
 // pib_refresh between runs, so multibyte support relies on Bootgly's pure-PHP
-// mb_* polyfill (ABI/autoload.php) instead.
+// mb_* polyfill (ABI/autoboot.php) instead.
 
 const zipped = zipSync(Object.fromEntries(entries), { level: 9 })
 

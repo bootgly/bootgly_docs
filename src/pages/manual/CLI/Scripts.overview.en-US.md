@@ -7,11 +7,11 @@ Scripts are the executable files allowed to boot and use the Bootgly runtime. Th
 
 ## Registering scripts
 
-The registry is the `scripts/@.php` bootstrap file. Bootgly loads its own (framework root) and, when you run from a project, yours (working directory). It returns the allowed filenames grouped by where they live:
+The registry is the `scripts/autoboot.php` bootstrap file. Bootgly loads its own (framework root) and, when you run from a project, yours (working directory). It returns the allowed filenames grouped by where they live:
 
 ```php
 <?php
-// scripts/@.php
+// scripts/autoboot.php
 
 return [
    'scripts' => [
@@ -49,7 +49,7 @@ If `deploy.php` is registered under `user`, the boot proceeds. If it is not, the
 
 ```text
 Invalid script: script `scripts/deploy.php` not registered in bootstrap file!
-Please, register it in `scripts/@.php`.
+Please, register it in `scripts/autoboot.php`.
 ```
 
 Registered non-`bootgly` scripts run in **external script mode**: the framework boots (autoloader, Terminal, projects) but does not route commands — your script drives the flow.

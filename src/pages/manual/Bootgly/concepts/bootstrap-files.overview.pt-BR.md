@@ -4,4 +4,6 @@ São dois os arquivos de bootstrap principais do Bootgly: `bootgly` e `index.php
 
 ## Arquivos de Bootstrap em Diretórios Recurso
 
-Além dos arquivos de bootstrap principais, existem outros arquivos que são utilizados para inicializar ou indexar algum outro recurso interno do Bootgly como suites de testes por exemplo. Esse arquivos possuem um padrão fixo em seu nome e devem começar com um arroba: `@.php`. Esses arquivos de bootstrap podem ser encontrados no primeiro nível dos Diretórios Recurso do Bootgly.
+Além dos arquivos de bootstrap principais, todo diretório do Bootgly que precisa inicializar ou indexar um recurso interno — suites de testes, registros de comandos, diretivas de template, e assim por diante — possui seu próprio arquivo de entrada com um único nome canônico: `autoboot.php`. Esse é o arquivo que o Bootgly carrega automaticamente ao entrar em um diretório, então há exatamente um nome a memorizar em todo o framework — do bootstrap da plataforma até cada diretório recurso.
+
+Esses arquivos `autoboot.php` ficam no primeiro nível de cada Diretório Recurso do Bootgly. O nome é fixo e exposto pela constante `Bootgly\ABI\BOOTSTRAP_FILENAME`, de modo que o código do framework nunca o hardcoda. O nome em minúsculas é proposital: ele é ordenado *depois* dos arquivos de entidade em maiúsculo do diretório, de forma que as entidades de um diretório são definidas antes de seu `autoboot.php` executar.

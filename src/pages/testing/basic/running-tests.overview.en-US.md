@@ -15,17 +15,17 @@ Run every registered suite from the repository root:
 php bootgly test
 ```
 
-The runner loads `tests/@.php`, iterates over each suite directory, and prints the summary at the end. The exit code is non-zero when at least one specification fails.
+The runner loads `tests/autoboot.php`, iterates over each suite directory, and prints the summary at the end. The exit code is non-zero when at least one specification fails.
 
 ## Run a specific suite
 
-Each suite directory listed in `tests/@.php` is addressable by its 1-based index:
+Each suite directory listed in `tests/autoboot.php` is addressable by its 1-based index:
 
 ```bash
 php bootgly test 16
 ```
 
-The example above runs only suite `16`. Indexes follow the order declared inside the root `tests/@.php` `Suites(...)` constructor.
+The example above runs only suite `16`. Indexes follow the order declared inside the root `tests/autoboot.php` `Suites(...)` constructor.
 
 ## Run a single test case
 

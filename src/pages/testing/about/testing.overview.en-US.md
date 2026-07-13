@@ -4,7 +4,7 @@ Bootgly has two testing APIs, a Basic API and an Advanced API. Before implementi
 
 ## Structure of test files and directories
 
-Tests implemented in each module should be placed inside a same-level directory named `tests`. In each `tests` directory, there should be a suite bootstrap file named `@.php`. Files that implement test cases live inside the `tests` directory and follow the `*.test.php` pattern.
+Tests implemented in each module should be placed inside a same-level directory named `tests`. In each `tests` directory, there should be a suite bootstrap file named `autoboot.php`. Files that implement test cases live inside the `tests` directory and follow the `*.test.php` pattern.
 
 You can define any test case file name, but following the existing pattern is recommended. A real example is `1.01-request_as_response-address.test.php`.
 
@@ -12,7 +12,7 @@ You can define any test case file name, but following the existing pattern is re
 
 ```txt
 tests
-└── @.php  # Bootstrap file for the suite
+└── autoboot.php  # Bootstrap file for the suite
 └── 1.1-some_case-part1.test.php  # Test Case file
 └── 1.2-other_case-part2.test.php  # Test Case file
 └── 2.1-another_case.test.php  # Test Case file
@@ -38,7 +38,7 @@ Test Suite
 
 ```txt
 tests
-└── @.php  # Bootstrap file for the suite
+└── autoboot.php  # Bootstrap file for the suite
 └── 1.1-some_case.test.php  # Test Case files
     └-- Assertions
        ├-- Assertion
@@ -74,7 +74,7 @@ return new Suite(
 Real example of a test suite defined in Bootgly:
 
 ```php
-<?php # Bootgly/ABI/Data/__String/tests/@.php
+<?php # Bootgly/ABI/Data/__String/tests/autoboot.php
 
 namespace Bootgly\ABI\Data\__String;
 

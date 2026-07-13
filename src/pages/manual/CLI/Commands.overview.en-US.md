@@ -41,11 +41,11 @@ class GreetCommand extends Command
 
 ## Registering commands
 
-The CLI boot looks for a `projects/Bootgly/commands/@.php` file in your working directory. It must return an array of command instances:
+The CLI boot looks for a `projects/Bootgly/commands/autoboot.php` file in your working directory. It must return an array of command instances:
 
 ```php
 <?php
-// projects/Bootgly/commands/@.php
+// projects/Bootgly/commands/autoboot.php
 
 return [
    new \projects\commands\GreetCommand,
@@ -113,7 +113,7 @@ class TimerMiddleware implements Middleware
 }
 ```
 
-Register it on the commands manager before routing (e.g. in your `@.php` bootstrap):
+Register it on the commands manager before routing (e.g. in your `autoboot.php` bootstrap):
 
 ```php
 use const Bootgly\CLI;
@@ -135,7 +135,7 @@ The commands manager lives at `CLI->Commands` (`Bootgly\CLI\Commands`):
 public function register (Command $Command, null|object $Script = null, null|object $Context = null): bool
 ```
 
-Registers a command instance under a script namespace (the framework uses this for its own commands and for the ones returned by your `@.php`). When a `$Context` object is given, it is injected into the command.
+Registers a command instance under a script namespace (the framework uses this for its own commands and for the ones returned by your `autoboot.php`). When a `$Context` object is given, it is injected into the command.
 
 ```php
 public function route (null|array $route = null, null|object $From = null): bool
@@ -159,7 +159,7 @@ Lists the commands registered by `$From`, or every registered command grouped by
 public function autoload (string $location, null|object $Context = null, null|object $Script = null): bool
 ```
 
-Loads commands from a `commands/@.php` map file inside `$location` (relative to the Bootgly root), where each entry is a file returning a `Command` instance. Used to lazily bootstrap command sets from other locations.
+Loads commands from a `commands/autoboot.php` map file inside `$location` (relative to the Bootgly root), where each entry is a file returning a `Command` instance. Used to lazily bootstrap command sets from other locations.
 
 The middleware pipeline lives at `CLI->Commands->Middlewares` (`Bootgly\CLI\Commands\Middlewares`):
 

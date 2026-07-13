@@ -4,7 +4,7 @@ O Bootgly possui duas APIs para testes, uma API Básica e uma API Avançada. Ant
 
 ## Estrutura dos testes no Bootgly
 
-Os testes implementados em cada módulo devem ser colocados em uma pasta de mesmo nível chamada `tests`. Em cada pasta `tests`, deve existir o arquivo de bootstrap da suíte, nomeado como `@.php`. Os arquivos que implementam os casos de teste ficam dentro da pasta `tests` e seguem o padrão `*.test.php`.
+Os testes implementados em cada módulo devem ser colocados em uma pasta de mesmo nível chamada `tests`. Em cada pasta `tests`, deve existir o arquivo de bootstrap da suíte, nomeado como `autoboot.php`. Os arquivos que implementam os casos de teste ficam dentro da pasta `tests` e seguem o padrão `*.test.php`.
 
 Você pode definir o nome dos arquivos de caso de teste, mas é recomendado seguir o padrão existente. Um exemplo real é `1.01-request_as_response-address.test.php`.
 
@@ -12,7 +12,7 @@ Você pode definir o nome dos arquivos de caso de teste, mas é recomendado segu
 
 ```txt
 tests
-└── @.php  # Bootstrap file for the suite
+└── autoboot.php  # Bootstrap file for the suite
 └── 1.1-some_case-part1.test.php  # Test Case file
 └── 1.2-other_case-part2.test.php  # Test Case file
 └── 2.1-another_case.test.php  # Test Case file
@@ -38,7 +38,7 @@ Test Suite
 
 ```txt
 tests
-└── @.php  # Bootstrap file for the suite
+└── autoboot.php  # Bootstrap file for the suite
 └── 1.1-some_case.test.php  # Test Case files
    └-- Assertions
       ├-- Assertion
@@ -74,7 +74,7 @@ return new Suite(
 Exemplo real de uma suíte de testes definida no Bootgly:
 
 ```php
-<?php # Bootgly/ABI/Data/__String/tests/@.php
+<?php # Bootgly/ABI/Data/__String/tests/autoboot.php
 
 namespace Bootgly\ABI\Data\__String;
 

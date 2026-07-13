@@ -15,17 +15,17 @@ Execute todas as suítes registradas a partir da raiz do repositório:
 php bootgly test
 ```
 
-O runner carrega `tests/@.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos uma `Specification` falha.
+O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos uma `Specification` falha.
 
 ## Executar uma suíte específica
 
-Cada diretório de suíte listado em `tests/@.php` é endereçável pelo seu índice (começando em 1):
+Cada diretório de suíte listado em `tests/autoboot.php` é endereçável pelo seu índice (começando em 1):
 
 ```bash
 php bootgly test 16
 ```
 
-O exemplo acima executa somente a suíte `16`. Os índices seguem a ordem declarada no construtor `Suites(...)` do `tests/@.php` raiz.
+O exemplo acima executa somente a suíte `16`. Os índices seguem a ordem declarada no construtor `Suites(...)` do `tests/autoboot.php` raiz.
 
 ## Executar um caso de teste específico
 
