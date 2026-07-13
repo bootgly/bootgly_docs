@@ -105,6 +105,33 @@ export default {
     }
   },
 
+  '/authentication': {
+    config: {
+      icon: 'login',
+      status: 'draft',
+      version: '1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Session/cookie authentication scaffolding: registration, e-mail verification, login + remember-me and password reset — argon2id + single-use selector/verifier tokens.',
+          'pt-BR': 'Scaffolding de autenticação por sessão/cookie: registro, verificação de e-mail, login + remember-me e redefinição de senha — argon2id + tokens selector/verifier de uso único.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Authentication'
+      },
+      'pt-BR': {
+        title: 'Authentication'
+      }
+    }
+  },
+
   '/authorization': {
     config: {
       icon: 'verified_user',

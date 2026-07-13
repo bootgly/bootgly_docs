@@ -93,7 +93,7 @@ When any guard authenticates successfully, the route handler runs. When all guar
 
 `Authentication` requires at least one guard. Creating it with an empty `Authenticating` strategy throws `InvalidArgumentException` so protected routes cannot fail closed silently because of misconfiguration.
 
-Custom fallback callbacks may render a body or extra headers for denied requests, but the middleware normalizes the returned response to `401 Unauthorized` before and after the callback. This prevents accidental `200 OK` responses on authentication failure.
+Custom fallback callbacks may render a body or extra headers for denied requests, but the middleware normalizes the returned response to `401 Unauthorized` before and after the callback. This prevents accidental `200 OK` responses on authentication failure. Redirecting fallbacks are the one exception: a callback result that is already a redirect (3xx status + `Location` header) is returned untouched, so browser/session flows can send guests to a sign-in page with a real `303`.
 
 ```php
 $Auth = new Authentication(
@@ -352,6 +352,28 @@ yield $Router->route('/account', function ($Request, $Response) {
 
 Session failures return a generic `401 Unauthorized` response without a `WWW-Authenticate` header.
 
+## Remember guard
+
+Use the Remember guard to revive sessions from a persistent trusted-device cookie (remember-me). It validates and rotates the token through the `Bootgly\API\Security\Tokens\Trust` store, regenerates the session id (fixation defense), installs the identity in the session and re-emits the rotated cookie.
+
+```php
+use Bootgly\API\Security\Tokens\Trust;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Remember;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Session as SessionGuard;
+
+$Trust = new Trust($Response->Database->Database);
+$Auth = new Authentication(new Authenticating(
+   new SessionGuard,          // cheap session check wins
+   new Remember($Trust)       // cookie revival only on session miss
+));
+```
+
+The guard owns the remember cookie: login flows call `emit()` after `Trust->issue()` and logout flows call `forget()`. The cookie policy is framework-owned through statics (`Remember::$name`, `$lifetime`, `$secure`, `$httpOnly`, `$sameSite`) — hardened defaults that php.ini cannot downgrade.
+
+A known series presented with a wrong validator is the stolen-cookie signature: the store revokes every device of the user, the guard clears the cookie and declines. See the **[Authentication guide](/guide/authentication/overview/)** for the full session/cookie scaffold.
+
 ## Multiple guards
 
 You can compose guards in order:
@@ -374,3 +396,5 @@ The repository includes working examples in `projects/Demo/HTTP_Server_CLI`:
 - `router/routes/Authentication.php`
 
 Add `'Authentication'` to `router/router.index.php`, start the demo server, then open `GET /auth` to see runnable commands for Bearer, JWT, and Basic routes.
+
+For the session/cookie flows (registration, e-mail verification, login + remember-me, password reset), see the exportable **Auth** demo in `bootgly-web/projects/Auth` and the **[Authentication guide](/guide/authentication/overview/)**.
