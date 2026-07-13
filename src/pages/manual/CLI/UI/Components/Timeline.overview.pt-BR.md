@@ -133,3 +133,19 @@ public function fail (string $note = ''): void
 ```
 
 Marca a etapa ativa como falha e para o fluxo.
+
+### render()
+
+```php
+public function render (int $mode = self::WRITE_OUTPUT): null|string
+```
+
+Renderiza o frame da timeline — compostos (como o [Wizard](/manual/CLI/UX/Wizard/overview)) obtêm o frame de markup raw com `RETURN_OUTPUT` e assumem a apresentação.
+
+### Steps->insert()
+
+```php
+public function insert (string $label, int $at): Step
+```
+
+Insere um Step em uma posição 0-based — os Steps seguintes deslocam para frente; posições no Step atual ou antes dele são ajustadas para logo depois dele (o prefixo já percorrido é imutável).

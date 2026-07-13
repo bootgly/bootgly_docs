@@ -1728,6 +1728,28 @@ export default {
       }
     }
   },
+  '/CLI/UX/Wizard': {
+    config: {
+      icon: 'checklist',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Declarative multi-step flows on the Timeline spine — fixed frame, any component per step, dynamic branches.',
+          'pt-BR': 'Fluxos multi-etapas declarativos sobre a espinha do Timeline — frame fixo, qualquer componente por step, ramificações dinâmicas.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Wizard'
+      }
+    }
+  },
 
   // Console (platform)
   '/Console': {

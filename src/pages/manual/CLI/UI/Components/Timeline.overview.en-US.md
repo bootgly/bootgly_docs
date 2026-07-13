@@ -133,3 +133,19 @@ public function fail (string $note = ''): void
 ```
 
 Marks the active step as failed and stops the flow.
+
+### render()
+
+```php
+public function render (int $mode = self::WRITE_OUTPUT): null|string
+```
+
+Renders the timeline frame — composites (like the [Wizard](/manual/CLI/UX/Wizard/overview)) grab the raw markup frame with `RETURN_OUTPUT` and own the presentation.
+
+### Steps->insert()
+
+```php
+public function insert (string $label, int $at): Step
+```
+
+Inserts a Step at a 0-based position — later Steps shift forward; positions at or before the current Step clamp to right after it (the walked prefix is immutable).
