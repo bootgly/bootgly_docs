@@ -45,7 +45,7 @@ Rotas vivem na pasta de router padrão. Declare um recurso CRUD completo com uma
 use Web\App\Controllers;
 use Web\App\Statics;
 
-use projects\Hello\Controllers\Posts;
+use Hello\Controllers\Posts;
 
 
 return static function (Request $Request, Response $Response, Router $Router): Generator

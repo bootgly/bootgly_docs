@@ -8,7 +8,7 @@ A command is a class extending `Bootgly\CLI\Command` that defines a `$name`, a `
 
 ```php
 <?php
-namespace projects\commands;
+namespace commands;
 
 use const Bootgly\CLI;
 use Bootgly\CLI\Command;
@@ -90,7 +90,7 @@ Every command execution flows through a middleware pipeline — a good place for
 
 ```php
 <?php
-namespace projects\commands;
+namespace commands;
 
 use Closure;
 use Bootgly\CLI\Command;

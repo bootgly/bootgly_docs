@@ -65,7 +65,7 @@ E dê a ele uma assinatura `.project.php` cuja closure `boot` executa o app:
 ```php
 use Bootgly\API\Projects\Project;
 
-use projects\Snake\Snake;
+use Snake\Snake;
 
 
 return new Project(

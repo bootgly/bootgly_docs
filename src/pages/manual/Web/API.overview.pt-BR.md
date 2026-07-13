@@ -10,7 +10,7 @@ Declare o recurso em um route set — leituras públicas, mutações atrás de J
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
 use Web\API\Routes;
 
-use projects\Tasks\Controllers\Tasks;
+use Tasks\Controllers\Tasks;
 
 
 return static function (Request $Request, Response $Response, Router $Router) use ($JWTStrategy): Generator

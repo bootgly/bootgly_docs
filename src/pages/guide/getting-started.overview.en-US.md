@@ -174,6 +174,38 @@ return new Project(
 
 This is exactly what the wizard generates for a `WPI` project (plus a `router/` with a welcome route). Only project paths registered in `projects/Bootgly.projects.php` can be started — the wizard registers them for you.
 
+## Project namespaces
+
+A project's own classes — controllers, models, resources, games — use a **bare namespace that mirrors the project path**, with no `projects\` prefix. A class at `projects/Blog/Controllers/Posts.php` declares:
+
+```php
+namespace Blog\Controllers;
+
+class Posts { /* ... */ }
+```
+
+and is imported from anywhere in the project as:
+
+```php
+use Blog\Controllers\Posts;
+```
+
+The first segment is the project root (`Blog`), matching the folder under `projects/`. Nested paths mirror the folders too — `projects/Demo/HTTP_Server_CLI/Models/DemoPost.php` → `namespace Demo\HTTP_Server_CLI\Models;`.
+
+Bootgly resolves these classes through a dedicated autoloader anchored on the **booted project's absolute path** (`BOOTGLY_PROJECT->path`), so a project keeps working when it lives as its own isolated repository — cloned or imported anywhere, not only inside the monorepo `projects/`.
+
+> [!NOTE]
+> Signature files (`<Leaf>.project.php`) and pure route files declare no class, so they carry no namespace. Only files that declare a class, function or constant do.
+
+### Reserved names
+
+A project path may **not** start with a reserved platform namespace root — those would shadow the framework and platform namespaces the autoloader owns:
+
+- `Bootgly`, `Console`, `Web` — the framework and current platforms.
+- `Data`, `Graphics`, `Embedded`, `Mobile` — reserved for future platforms.
+
+`php bootgly project create Web` (also `Web/App`, `console`, `MOBILE`, …) is rejected with a clear message — pick a distinct name like `Website` or `MyWeb`.
+
 ## Importing projects
 
 Any git repository carrying the project signature (`*.project.php` at its root) can be imported directly:

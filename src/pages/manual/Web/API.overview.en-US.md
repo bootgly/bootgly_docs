@@ -10,7 +10,7 @@ Declare the resource in a route set — reads public, mutations behind JWT:
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
 use Web\API\Routes;
 
-use projects\Tasks\Controllers\Tasks;
+use Tasks\Controllers\Tasks;
 
 
 return static function (Request $Request, Response $Response, Router $Router) use ($JWTStrategy): Generator

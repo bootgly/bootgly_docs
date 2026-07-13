@@ -45,7 +45,7 @@ Routes live in the standard router folder. Declare a full CRUD resource with one
 use Web\App\Controllers;
 use Web\App\Statics;
 
-use projects\Hello\Controllers\Posts;
+use Hello\Controllers\Posts;
 
 
 return static function (Request $Request, Response $Response, Router $Router): Generator

@@ -50,7 +50,7 @@ When the project ships `configs/database/` (or `configs/kv/`), the **Database** 
 A controller is a plural noun of its resource; actions are single-word verbs receiving `(Request, Response)` — the same calling convention as closure handlers:
 
 ```php
-namespace projects\Blog\Controllers;
+namespace Blog\Controllers;
 
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
@@ -85,7 +85,7 @@ A **fresh controller instance is constructed per request** — the server is pre
 ```php
 use Web\App\Controllers;
 
-use projects\Blog\Controllers\Posts;
+use Blog\Controllers\Posts;
 
 
 return static function (Request $Request, Response $Response, Router $Router): Generator

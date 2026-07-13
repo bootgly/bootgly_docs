@@ -50,7 +50,7 @@ Quando o projeto inclui `configs/database/` (ou `configs/kv/`), o response resou
 Um controller é um substantivo plural do seu recurso; as ações são verbos de uma palavra recebendo `(Request, Response)` — a mesma convenção de chamada dos handlers em closure:
 
 ```php
-namespace projects\Blog\Controllers;
+namespace Blog\Controllers;
 
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
@@ -85,7 +85,7 @@ Uma **instância nova do controller é construída a cada request** — o servid
 ```php
 use Web\App\Controllers;
 
-use projects\Blog\Controllers\Posts;
+use Blog\Controllers\Posts;
 
 
 return static function (Request $Request, Response $Response, Router $Router): Generator

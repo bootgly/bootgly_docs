@@ -174,6 +174,38 @@ return new Project(
 
 Isso é exatamente o que o wizard gera para um projeto `WPI` (mais um `router/` com uma rota de boas-vindas). Apenas caminhos de projeto registrados em `projects/Bootgly.projects.php` podem ser iniciados — o wizard registra por você.
 
+## Namespaces de projeto
+
+As classes do próprio projeto — controllers, models, resources, games — usam um **namespace simples que espelha o caminho do projeto**, sem o prefixo `projects\`. Uma classe em `projects/Blog/Controllers/Posts.php` declara:
+
+```php
+namespace Blog\Controllers;
+
+class Posts { /* ... */ }
+```
+
+e é importada de qualquer lugar do projeto como:
+
+```php
+use Blog\Controllers\Posts;
+```
+
+O primeiro segmento é a raiz do projeto (`Blog`), correspondendo à pasta dentro de `projects/`. Caminhos aninhados também espelham as pastas — `projects/Demo/HTTP_Server_CLI/Models/DemoPost.php` → `namespace Demo\HTTP_Server_CLI\Models;`.
+
+O Bootgly resolve essas classes por meio de um autoloader dedicado ancorado no **caminho absoluto do projeto iniciado** (`BOOTGLY_PROJECT->path`), de modo que um projeto continua funcionando quando vive como seu próprio repositório isolado — clonado ou importado em qualquer lugar, não apenas dentro do `projects/` do monorepo.
+
+> [!NOTE]
+> Arquivos de assinatura (`<Leaf>.project.php`) e arquivos de rota puros não declaram classe, então não têm namespace. Só carregam namespace os arquivos que declaram uma classe, função ou constante.
+
+### Nomes reservados
+
+O caminho de um projeto **não** pode começar com uma raiz de namespace de plataforma reservada — elas sombreariam os namespaces do framework e das plataformas que o autoloader controla:
+
+- `Bootgly`, `Console`, `Web` — o framework e as plataformas atuais.
+- `Data`, `Graphics`, `Embedded`, `Mobile` — reservados para plataformas futuras.
+
+`php bootgly project create Web` (também `Web/App`, `console`, `MOBILE`, …) é rejeitado com uma mensagem clara — escolha um nome distinto como `Website` ou `MyWeb`.
+
 ## Importando projetos
 
 Qualquer repositório git que carregue a assinatura de projeto (`*.project.php` na raiz) pode ser importado diretamente:
