@@ -12,14 +12,33 @@ The Docker assets live in the `bootgly/` repository itself (`Dockerfile` and `do
 image stays dependency-free: no third-party runtime packages, no database, no external
 benchmark frameworks.
 
+## Install — the one canonical way
+
+Bootgly has **one** canonical install and first-time setup path: the **installer wizard**.
+In Docker, a bare interactive run opens it on the first run:
+
+```bash
+docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly
+```
+
+It is the same wizard behind [`bootgly project create`](/guide/getting-started) — a fixed
+timeline guides you through the start mode (from scratch, import from the platforms or
+from a Git remote), project path, interface (CLI or WPI), metadata and scaffolding. The
+project — and the `projects/.initialized` first-run marker — land in your mounted
+`projects/` directory, so later bare runs open the CLI directly, and explicit commands
+always bypass the wizard.
+
+The `-it` flags are required: without a TTY the wizard cannot open (the container prints
+a hint instead). With Compose, set `stdin_open: true` and `tty: true`.
+
 ## Pull from Docker Hub
 
 The images are published as `bootgly/bootgly` — pull and run, nothing to install:
 
 ```bash
-# benchmark Bootgly against itself
-docker run --rm bootgly/bootgly:full test benchmark HTTP_Server_CLI \
-  --opponents=bootgly --loads=benchmark:1 --runner=TCP_Client --server-workers=15
+# run your wizard-created project
+docker run --rm -p 8082:8082 -v "$PWD/projects:/bootgly/projects" \
+  bootgly/bootgly project <Name> start -f
 
 # run the demo HTTP server
 docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo/HTTP_Server_CLI start -f
