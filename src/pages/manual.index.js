@@ -1660,6 +1660,30 @@ export default {
       }
     }
   },
+  '/CLI/UX/Dialog': {
+    config: {
+      icon: 'picture_in_picture',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Modal box over the running interface — covered components repaint on close; confirm/alert/prompt variants.',
+          'pt-BR': 'Caixa modal sobre a interface em execução — componentes cobertos repintam ao fechar; variantes confirm/alert/prompt.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UX'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Dialog'
+      }
+    }
+  },
   '/CLI/UX/Form': {
     config: {
       icon: 'dynamic_form',
@@ -1671,9 +1695,7 @@ export default {
           'pt-BR': 'Pergunte uma lista declarativa de campos sequencialmente, com revert e um loop de resumo + confirmação.'
         }
       },
-      menu: {
-        subheader: '.CLI.UX'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
