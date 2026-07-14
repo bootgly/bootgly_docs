@@ -41,7 +41,7 @@ const INCLUDE_FILES = [
   'Bootgly/WPI/autoboot.php',
   'Bootgly/ADI/autoboot.php',
   'Bootgly/ADI/Table.php',
-  'scripts/@.php'
+  'scripts/autoboot.php'
 ]
 
 const INCLUDE_DIRS = [

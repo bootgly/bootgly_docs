@@ -54,12 +54,29 @@ const decoder = new TextDecoder()
 let inputChunks = []
 let inputWaiter = null
 
-globalThis.bootglyStdin = () => {
+// Timed reads (non-blocking stdin) resolve '' on expiry — timeout 0 still spends
+// one event-loop turn, so keystroke messages queued while WASM was spinning land
+// (feedInput resolves the waiter) before the timer declares the queue empty.
+globalThis.bootglyStdin = (timeout = null) => {
   if (inputChunks.length) {
     return inputChunks.splice(0).join('')
   }
 
-  return new Promise((resolve) => { inputWaiter = resolve })
+  if (timeout === null || timeout === undefined) {
+    return new Promise((resolve) => { inputWaiter = resolve })
+  }
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      inputWaiter = null
+      resolve('')
+    }, Math.max(0, timeout))
+
+    inputWaiter = (data) => {
+      clearTimeout(timer)
+      resolve(data)
+    }
+  })
 }
 
 function feedInput (data) {
@@ -281,10 +298,14 @@ putenv('LINES=${Math.max(5, rows | 0)}');
 // STDIN is a userland stream wrapper: reads await the worker's bootglyStdin()
 // promise through vrzno (Asyncify), which frees the event loop until a key
 // arrives — php://stdin would either latch EOF or starve the message queue.
+// stream_set_blocking(false) (Input->configure) flips reads to a 0ms-timeout
+// await: queued keystrokes resolve instantly, an idle queue resolves '' — the
+// zero-byte read tick-driven UIs (Tabs) poll between repaints.
 final class TerminalStream
 {
    public $context;
    private string $buffer = '';
+   private bool $blocking = true;
    private static null|Vrzno $JS = null;
 
    public function stream_open (string $path, string $mode, int $options, null|string &$opened_path): bool
@@ -295,7 +316,7 @@ final class TerminalStream
    {
       if ($this->buffer === '') {
          self::$JS ??= new Vrzno;
-         $data = vrzno_await(self::$JS->bootglyStdin());
+         $data = vrzno_await(self::$JS->bootglyStdin($this->blocking ? null : 0));
          $this->buffer = is_string($data) ? $data : '';
       }
       $chunk = substr($this->buffer, 0, $count);
@@ -326,6 +347,11 @@ final class TerminalStream
    }
    public function stream_set_option (int $option, int $arg1, null|int $arg2): bool
    {
+      // stream_set_blocking() → non-blocking reads poll instead of awaiting keys
+      if ($option === STREAM_OPTION_BLOCKING) {
+         $this->blocking = ($arg1 !== 0);
+         return true;
+      }
       return false;
    }
    public function stream_close (): void
