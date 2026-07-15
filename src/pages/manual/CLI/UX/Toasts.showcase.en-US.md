@@ -4,16 +4,17 @@ The official Toasts demo runs live below — real framework code on PHP 8.4 WebA
 
 ## Corner toast notifications
 
-A dashboard frame keeps running its tick loop while toasts of every severity join the top-right stack on staggered lifetimes — watch a mid-stack toast expire and the survivors recompact toward the corner, the dashboard repainting intact underneath. A blocking `flash()` closes the show.
+A dashboard frame keeps running its tick loop while toasts of every severity join the stack on staggered lifetimes — watch a mid-stack toast expire and the survivors recompact toward the anchor, the dashboard repainting intact underneath. Pick a position in the tab strip and press Run: the same overlay drives every corner and center. TopRight runs the full showcase with a blocking `flash()`; the variations change only the `Positions` (and one companion setting) — TopLeft adds a `gap` between boxes, Center centers the whole block with `limit = 2`, BottomRight right-aligns each box to a ragged left edge.
 
-<d-block-terminal engine="bootgly-cli" title="Toasts — live demo" command="demo 50" height="480">
-`add()` enqueues with a deadline; `render()` per frame dismisses expired toasts, blanking their cells and repainting the covered frame. Just watch — toasts never trap the keyboard.
+<d-block-terminal
+  engine="bootgly-cli"
+  title="Toasts — live demos"
+  commands="TopRight (full):demo 50|TopLeft (gap):demo 50.1|Center (limit 2):demo 50.2|BottomRight (ragged):demo 50.3"
+  height="480"
+>
+`add()` enqueues with a deadline; `render()` per frame dismisses expired toasts, blanking their cells and repainting the covered frame. Just watch — toasts never trap the keyboard. Use the source button to read each demo's PHP file.
 </d-block-terminal>
 
 On non-interactive output (pipes, CI) each toast streams one plain classified line — `[SUCCESS] Cache warmed`.
-
-### Position variations
-
-The same overlay drives every screen position — run `demo 50.1` (TopLeft, with a gap between boxes), `demo 50.2` (Center, limit 2) and `demo 50.3` (BottomRight, ragged right-aligned widths) to compare.
 
 The component is documented in the [Toasts overview](/manual/CLI/UX/Toasts/overview).
