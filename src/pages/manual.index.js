@@ -1750,6 +1750,28 @@ export default {
       }
     }
   },
+  '/CLI/UX/Toasts': {
+    config: {
+      icon: 'notifications',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Transient corner notifications — tick-driven stack of auto-sized boxes with severity, ttl and covered-component restore.',
+          'pt-BR': 'Notificações transientes de canto — pilha tick-driven de caixas auto-dimensionadas com severidade, ttl e restauração dos componentes cobertos.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Toasts'
+      }
+    }
+  },
   '/CLI/UX/Wizard': {
     config: {
       icon: 'checklist',

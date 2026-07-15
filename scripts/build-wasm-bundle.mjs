@@ -149,7 +149,8 @@ const version = autoboot.match(/define\('BOOTGLY_VERSION',\s*'([^']+)'\)/)?.[1] 
 const demoCommand = readFileSync(join(bootglyRoot, 'Bootgly/commands/DemoCommand.php'), 'utf8')
 const examplesBlock = demoCommand.match(/\$examples\s*=\s*\[([\s\S]*?)\];/)?.[1] ?? ''
 const demos = {}
-for (const match of examplesBlock.matchAll(/(\d+)\s*=>\s*'([^']+)'/g)) {
+// Keys may be plain ints (50) or quoted decimals for sub-examples ('50.1').
+for (const match of examplesBlock.matchAll(/'?(\d+(?:\.\d+)?)'?\s*=>\s*'([^']+)'/g)) {
   demos[match[1]] = `projects/Demo/CLI/${match[2]}`
 }
 
