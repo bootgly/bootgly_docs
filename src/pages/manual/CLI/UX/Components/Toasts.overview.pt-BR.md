@@ -192,6 +192,14 @@ public function render (int $mode = self::WRITE_OUTPUT, null|float $at = null): 
 
 O tick: expira toasts mortos, apaga as células desocupadas, repinta os componentes cobertos uma vez por reflow e faz diff-blit das caixas de pé. Um tick ocioso escreve zero bytes. `RETURN_OUTPUT` retorna as caixas concatenadas em vez de escrever.
 
+### overlay()
+
+```php
+public function overlay (null|float $at = null): array
+```
+
+Compõe a stack visível como linhas absolutas de tela — a costura para hosts que recompõem o frame inteiro a cada tick (o App shell da plataforma Console) em vez de deixar a stack se auto-blitar. Pura: expira, ancora e retorna; nada toca a tela. Retorna `linha de tela (1-based) => conteúdo com padding` — cada linha vem com padding à esquerda até a coluna da caixa, pronta pra sobrepor.
+
 ### flash()
 
 ```php

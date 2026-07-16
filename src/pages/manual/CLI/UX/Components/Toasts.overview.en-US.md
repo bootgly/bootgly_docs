@@ -192,6 +192,14 @@ public function render (int $mode = self::WRITE_OUTPUT, null|float $at = null): 
 
 The tick: expires dead toasts, blanks the vacated cells, repaints the covered components once per reflow and diff-blits the standing boxes. An idle tick writes zero bytes. `RETURN_OUTPUT` returns the concatenated boxes instead of writing.
 
+### overlay()
+
+```php
+public function overlay (null|float $at = null): array
+```
+
+Composes the visible stack as absolute screen rows — the seam for hosts that rebuild their whole frame every tick (the Console platform's App shell) instead of letting the stack self-blit. Pure: expires, anchors and returns; nothing touches the screen. Returns `screen row (1-based) => padded row content` — each row is left-padded to its box column, ready to overlay.
+
 ### flash()
 
 ```php
