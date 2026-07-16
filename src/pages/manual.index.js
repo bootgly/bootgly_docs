@@ -1458,6 +1458,28 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Markdown': {
+    config: {
+      icon: 'article',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Render markdown in the terminal — headings, lists, tables, quotes and fenced code, styled with raw SGR.',
+          'pt-BR': 'Renderize markdown no terminal — headings, listas, tabelas, quotes e código cercado, estilizados com SGR raw.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Markdown'
+      }
+    }
+  },
   '/CLI/UI/Components/Menu': {
     config: {
       icon: 'menu',
