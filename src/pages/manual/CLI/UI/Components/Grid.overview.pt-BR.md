@@ -1,6 +1,6 @@
 # Componente Grid
 
-O componente `Grid` é um layout de trilhas com pesos que posiciona [Frames](/manual/CLI/UI/Components/Frame/overview) na tela — um dashboard estilo btop em poucas linhas. Linhas e colunas são arrays de pesos de trilha, cada Frame posicionado ancora em uma trilha e pode ocupar várias delas, e os tamanhos das trilhas sempre somam exatamente o retângulo do grid, qualquer que seja o tamanho do terminal.
+O componente `Grid` é um layout de trilhas com pesos que posiciona [Frames](/manual/CLI/UI/Base/Frame/overview) na tela — um dashboard estilo btop em poucas linhas. Linhas e colunas são arrays de pesos de trilha, cada Frame posicionado ancora em uma trilha e pode ocupar várias delas, e os tamanhos das trilhas sempre somam exatamente o retângulo do grid, qualquer que seja o tamanho do terminal.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UI/Components/Grid/showcase).
 
@@ -9,7 +9,7 @@ Uma demo ao vivo está disponível no [showcase](/manual/CLI/UI/Components/Grid/
 ```php
 use const Bootgly\CLI;
 use Bootgly\CLI\UI\Components\Charts\Graph;
-use Bootgly\CLI\UI\Components\Frame;
+use Bootgly\CLI\UI\Base\Frame;
 use Bootgly\CLI\UI\Components\Grid;
 
 $Terminal = CLI->Terminal;
@@ -174,7 +174,7 @@ Data (somente leitura). Os frames posicionados (instâncias de `Cell`), em ordem
 public function place (Boxing $Box, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
 ```
 
-Posiciona uma caixa sobre as trilhas do grid e atribui sua geometria imediatamente. Qualquer implementador de `Boxing` serve — um [Frame](/manual/CLI/UI/Components/Frame/overview), um [Tabs](/manual/CLI/UX/Tabs/overview), ... Encadeável; sobreposições pintam na ordem de posicionamento.
+Posiciona uma caixa sobre as trilhas do grid e atribui sua geometria imediatamente. Qualquer implementador de `Boxing` serve — um [Frame](/manual/CLI/UI/Base/Frame/overview), um [Tabs](/manual/CLI/UX/Components/Tabs/overview), ... Encadeável; sobreposições pintam na ordem de posicionamento.
 
 ### arrange()
 

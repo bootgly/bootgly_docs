@@ -1,6 +1,6 @@
 # Grid Component
 
-The `Grid` component is a weighted track layout that places [Frames](/manual/CLI/UI/Components/Frame/overview) on the screen — a btop-like dashboard in a few lines. Rows and columns are arrays of track weights, each placed Frame anchors at a track and can span several of them, and the track sizes always sum exactly to the grid rectangle, whatever the terminal size.
+The `Grid` component is a weighted track layout that places [Frames](/manual/CLI/UI/Base/Frame/overview) on the screen — a btop-like dashboard in a few lines. Rows and columns are arrays of track weights, each placed Frame anchors at a track and can span several of them, and the track sizes always sum exactly to the grid rectangle, whatever the terminal size.
 
 A live demo is available in the [showcase](/manual/CLI/UI/Components/Grid/showcase).
 
@@ -9,7 +9,7 @@ A live demo is available in the [showcase](/manual/CLI/UI/Components/Grid/showca
 ```php
 use const Bootgly\CLI;
 use Bootgly\CLI\UI\Components\Charts\Graph;
-use Bootgly\CLI\UI\Components\Frame;
+use Bootgly\CLI\UI\Base\Frame;
 use Bootgly\CLI\UI\Components\Grid;
 
 $Terminal = CLI->Terminal;
@@ -174,7 +174,7 @@ Data (read-only). The placed frames (`Cell` instances), in paint order.
 public function place (Boxing $Box, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
 ```
 
-Places a box over the grid tracks and assigns its geometry immediately. Any `Boxing` implementer fits — a [Frame](/manual/CLI/UI/Components/Frame/overview), a [Tabs](/manual/CLI/UX/Tabs/overview), ... Chainable; overlaps paint in placement order.
+Places a box over the grid tracks and assigns its geometry immediately. Any `Boxing` implementer fits — a [Frame](/manual/CLI/UI/Base/Frame/overview), a [Tabs](/manual/CLI/UX/Components/Tabs/overview), ... Chainable; overlaps paint in placement order.
 
 ### arrange()
 

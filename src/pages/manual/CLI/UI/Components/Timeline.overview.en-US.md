@@ -140,7 +140,7 @@ Marks the active step as failed and stops the flow.
 public function render (int $mode = self::WRITE_OUTPUT): null|string
 ```
 
-Renders the timeline frame — composites (like the [Wizard](/manual/CLI/UX/Wizard/overview)) grab the raw markup frame with `RETURN_OUTPUT` and own the presentation.
+Renders the timeline frame — composites (like the [Wizard](/manual/CLI/UX/Components/Wizard/overview)) grab the raw markup frame with `RETURN_OUTPUT` and own the presentation.
 
 ### Steps->insert()
 

@@ -140,7 +140,7 @@ Marca a etapa ativa como falha e para o fluxo.
 public function render (int $mode = self::WRITE_OUTPUT): null|string
 ```
 
-Renderiza o frame da timeline — compostos (como o [Wizard](/manual/CLI/UX/Wizard/overview)) obtêm o frame de markup raw com `RETURN_OUTPUT` e assumem a apresentação.
+Renderiza o frame da timeline — compostos (como o [Wizard](/manual/CLI/UX/Components/Wizard/overview)) obtêm o frame de markup raw com `RETURN_OUTPUT` e assumem a apresentação.
 
 ### Steps->insert()
 

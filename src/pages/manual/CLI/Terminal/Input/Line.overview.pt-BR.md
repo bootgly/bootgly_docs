@@ -1,6 +1,6 @@
 # Line
 
-`Line` é o motor de edição de linha única por trás das entradas interativas do Bootgly — uma máquina de estados pura de teclas/buffer com um cursor virtual. Ele **não faz I/O de stream**: seu código é dono do loop de leitura, alimenta os bytes imprimíveis, encaminha as teclas de controle e escreve o frame renderizado. Essa pureza é o que o torna testável e reutilizável — o editor de sugestões do [Question](/manual/CLI/UI/Components/Question/overview), as linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) e a linha de entrada do [Prompt](/manual/CLI/UX/Prompt/overview) são todos guiados por ele.
+`Line` é o motor de edição de linha única por trás das entradas interativas do Bootgly — uma máquina de estados pura de teclas/buffer com um cursor virtual. Ele **não faz I/O de stream**: seu código é dono do loop de leitura, alimenta os bytes imprimíveis, encaminha as teclas de controle e escreve o frame renderizado. Essa pureza é o que o torna testável e reutilizável — o editor de sugestões do [Question](/manual/CLI/UI/Components/Question/overview), as linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) e a linha de entrada do [Prompt](/manual/CLI/UX/Components/Prompt/overview) são todos guiados por ele.
 
 ## Editando uma linha
 

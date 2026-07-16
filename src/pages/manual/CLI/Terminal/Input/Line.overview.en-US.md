@@ -1,6 +1,6 @@
 # Line
 
-`Line` is the single-line editor engine behind Bootgly's interactive inputs — a pure key/buffer state machine with a virtual cursor. It performs **no stream I/O**: your code owns the read loop, feeds printable bytes in, forwards control keys, and writes the rendered frame out. That purity is what makes it unit-testable and reusable — the [Question](/manual/CLI/UI/Components/Question/overview) suggestions editor, the [Textarea](/manual/CLI/UI/Components/Textarea/overview) rows and the [Prompt](/manual/CLI/UX/Prompt/overview) input line are all driven by it.
+`Line` is the single-line editor engine behind Bootgly's interactive inputs — a pure key/buffer state machine with a virtual cursor. It performs **no stream I/O**: your code owns the read loop, feeds printable bytes in, forwards control keys, and writes the rendered frame out. That purity is what makes it unit-testable and reusable — the [Question](/manual/CLI/UI/Components/Question/overview) suggestions editor, the [Textarea](/manual/CLI/UI/Components/Textarea/overview) rows and the [Prompt](/manual/CLI/UX/Components/Prompt/overview) input line are all driven by it.
 
 ## Editing a line
 

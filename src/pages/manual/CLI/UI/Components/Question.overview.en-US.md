@@ -124,7 +124,7 @@ if ($confirmed === false) {
 }
 ```
 
-This is how the `bootgly project create` wizard asks its final confirmation — and how the [Form](/manual/CLI/UX/Form/overview) `Confirm` control works.
+This is how the `bootgly project create` wizard asks its final confirmation — and how the [Form](/manual/CLI/UX/Components/Form/overview) `Confirm` control works.
 
 ## Reference
 

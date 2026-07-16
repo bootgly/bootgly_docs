@@ -1,6 +1,6 @@
 # Componente Scrollarea
 
-O componente `Scrollarea` armazena conteúdo em uma banda fixa da tela com rolagem própria — independente do scrollback nativo do terminal. Linhas alimentadas são quebradas em linhas visuais e mantidas em um buffer limitado; a banda segue as linhas mais novas enquanto grudada no rodapé, mantém a posição enquanto rolada para cima e renderiza uma scrollbar na borda direita. É o engine de conteúdo por trás da banda REPL do [Prompt](/manual/CLI/UX/Prompt/overview). Em saída não interativa (pipes, CI) degrada para escritas planas.
+O componente `Scrollarea` armazena conteúdo em uma banda fixa da tela com rolagem própria — independente do scrollback nativo do terminal. Linhas alimentadas são quebradas em linhas visuais e mantidas em um buffer limitado; a banda segue as linhas mais novas enquanto grudada no rodapé, mantém a posição enquanto rolada para cima e renderiza uma scrollbar na borda direita. É o engine de conteúdo por trás da banda REPL do [Prompt](/manual/CLI/UX/Components/Prompt/overview). Em saída não interativa (pipes, CI) degrada para escritas planas.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UI/Components/Scrollarea/showcase).
 
@@ -39,7 +39,7 @@ $Scrollarea->scroll(+11);  // uma página para baixo
 $Scrollarea->stick();      // seguir as linhas mais novas de novo
 ```
 
-O componente é somente de renderização: ligue as teclas no seu próprio loop de leitura (o [Prompt](/manual/CLI/UX/Prompt/overview) faz isso com `PgUp`/`PgDn` e o mouse).
+O componente é somente de renderização: ligue as teclas no seu próprio loop de leitura (o [Prompt](/manual/CLI/UX/Components/Prompt/overview) faz isso com `PgUp`/`PgDn` e o mouse).
 
 ## Scrollbar
 
@@ -59,7 +59,7 @@ match ($Scrollarea->hit($column, $line)) {
 $Scrollarea->hover($Scrollarea->hit($column, $line) === 'thumb');
 ```
 
-O [Prompt](/manual/CLI/UX/Prompt/overview) já liga tudo (roda do mouse, hover, clique e arrasto); a demo do showcase conduz standalone.
+O [Prompt](/manual/CLI/UX/Components/Prompt/overview) já liga tudo (roda do mouse, hover, clique e arrasto); a demo do showcase conduz standalone.
 
 ## Saída não interativa
 

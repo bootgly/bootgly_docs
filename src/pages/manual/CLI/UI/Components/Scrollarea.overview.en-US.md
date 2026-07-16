@@ -1,6 +1,6 @@
 # Scrollarea Component
 
-The `Scrollarea` component buffers content into a fixed screen band with its own scrolling — independent from the native terminal scrollback. Fed lines are wrapped into visual rows and kept in a bounded buffer; the band follows the newest rows while stuck to the bottom, holds the position while scrolled up, and renders a scrollbar on its right edge. It is the content engine behind the [Prompt](/manual/CLI/UX/Prompt/overview) REPL band. On non-interactive output (pipes, CI) it degrades to plain writes.
+The `Scrollarea` component buffers content into a fixed screen band with its own scrolling — independent from the native terminal scrollback. Fed lines are wrapped into visual rows and kept in a bounded buffer; the band follows the newest rows while stuck to the bottom, holds the position while scrolled up, and renders a scrollbar on its right edge. It is the content engine behind the [Prompt](/manual/CLI/UX/Components/Prompt/overview) REPL band. On non-interactive output (pipes, CI) it degrades to plain writes.
 
 A live demo is available in the [showcase](/manual/CLI/UI/Components/Scrollarea/showcase).
 
@@ -39,7 +39,7 @@ $Scrollarea->scroll(+11);  // one page down
 $Scrollarea->stick();      // follow the newest rows again
 ```
 
-The component is render-only: wire the keys in your own read loop (the [Prompt](/manual/CLI/UX/Prompt/overview) does this with `PgUp`/`PgDn` and the mouse).
+The component is render-only: wire the keys in your own read loop (the [Prompt](/manual/CLI/UX/Components/Prompt/overview) does this with `PgUp`/`PgDn` and the mouse).
 
 ## Scrollbar
 
@@ -59,7 +59,7 @@ match ($Scrollarea->hit($column, $line)) {
 $Scrollarea->hover($Scrollarea->hit($column, $line) === 'thumb');
 ```
 
-The [Prompt](/manual/CLI/UX/Prompt/overview) wires all of it (wheel, hover, click and drag) out of the box; the showcase demo drives it standalone.
+The [Prompt](/manual/CLI/UX/Components/Prompt/overview) wires all of it (wheel, hover, click and drag) out of the box; the showcase demo drives it standalone.
 
 ## Non-interactive output
 

@@ -939,7 +939,6 @@ export default {
   '/CLI': {
     config: {
       icon: 'terminal',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Build command-line apps with Bootgly terminal APIs, commands, scripts and interactive UI components.',
@@ -967,7 +966,6 @@ export default {
   '/CLI/Commands': {
     config: {
       icon: 'keyboard_command_key',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Define and route Bootgly CLI commands with arguments, options and predictable execution flow.',
@@ -988,7 +986,6 @@ export default {
   '/CLI/Scripts': {
     config: {
       icon: 'description',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Organize reusable CLI scripts and automate project tasks inside the Bootgly runtime.',
@@ -1009,7 +1006,6 @@ export default {
   '/CLI/Terminal': {
     config: {
       icon: 'terminal',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Handle terminal input, output and reporting to build interactive command-line experiences.',
@@ -1033,7 +1029,6 @@ export default {
   '/CLI/Terminal/Input': {
     config: {
       icon: 'input',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Read terminal input in blocking or event-driven modes for interactive Bootgly CLI tools.',
@@ -1054,7 +1049,6 @@ export default {
   '/CLI/Terminal/Output': {
     config: {
       icon: 'output',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Render colored text, cursor moves and paced output for richer terminal interfaces.',
@@ -1075,7 +1069,6 @@ export default {
   '/CLI/Terminal/Reporting': {
     config: {
       icon: 'report',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Track terminal events and feedback flows that support observability in Bootgly CLI sessions.',
@@ -1098,16 +1091,13 @@ export default {
   '/CLI/Terminal/Screen': {
     config: {
       icon: 'fullscreen',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Control the alternate screen buffer, measure the terminal and watch resizes for full-screen TUIs.',
           'pt-BR': 'Controle o buffer de tela alternativo, meça o terminal e observe resizes para TUIs full-screen.'
         }
       },
-      menu: {
-        separator: true
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
@@ -1121,7 +1111,6 @@ export default {
   '/CLI/Terminal/Input/Keystrokes': {
     config: {
       icon: 'keyboard',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Capture key presses and keyboard-driven interactions for responsive terminal controls.',
@@ -1166,7 +1155,6 @@ export default {
   '/CLI/Terminal/Input/Mousestrokes': {
     config: {
       icon: 'mouse',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Interpret mouse actions in the terminal to support selection, clicks and richer CLI UX.',
@@ -1187,7 +1175,6 @@ export default {
   '/CLI/Terminal/Output/Cursor': {
     config: {
       icon: 'fas fa-i-cursor',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Move, hide and style the terminal cursor to orchestrate dynamic CLI layouts.',
@@ -1210,7 +1197,6 @@ export default {
   '/CLI/Terminal/Output/Text': {
     config: {
       icon: 'text_fields',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Write styled text, clear lines and control output pacing in Bootgly terminal views.',
@@ -1231,7 +1217,6 @@ export default {
   '/CLI/Terminal/Output/Viewport': {
     config: {
       icon: 'wysiwyg',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Work with terminal viewport space to align, refresh and compose screen-based interfaces.',
@@ -1274,7 +1259,6 @@ export default {
   '/CLI/Terminal/Reporting/Mouse': {
     config: {
       icon: 'mouse',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Report mouse events from the terminal so Bootgly components can react in real time.',
@@ -1296,6 +1280,70 @@ export default {
     }
   },
 
+  '/CLI/UI/Atoms': {
+    config: null,
+    data: {
+      '*': {
+        title: 'CLI UI Atoms'
+      }
+    }
+  },
+  '/CLI/UI/Atoms/Text': {
+    config: {
+      icon: 'animation',
+      status: 'new',
+      version: 'v0.20.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Animate terminal text: typewriter, fade-in and a shimmering color wave.',
+          'pt-BR': 'Anime texto no terminal: typewriter, fade-in e uma onda de cor shimmer.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Text'
+      }
+    }
+  },
+  '/CLI/UI/Base': {
+    config: null,
+    data: {
+      '*': {
+        title: 'CLI UI Base'
+      }
+    }
+  },
+  '/CLI/UI/Base/Frame': {
+    config: {
+      icon: 'picture_in_picture',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Paint bordered boxes with isolated, individual Outputs — host any component inside.',
+          'pt-BR': 'Pinte caixas com bordas e Outputs isolados e individuais — hospede qualquer componente dentro.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Base'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Frame'
+      }
+    }
+  },
   '/CLI/UI/Components': {
     config: null,
     data: {
@@ -1307,7 +1355,6 @@ export default {
   '/CLI/UI/Components/Alert': {
     config: {
       icon: 'notification_important',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Surface success, failure and attention states with styled CLI alerts.',
@@ -1352,7 +1399,6 @@ export default {
   '/CLI/UI/Components/Fieldset': {
     config: {
       icon: 'crop_square',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Group prompts and form-like inputs into structured terminal sections.',
@@ -1367,28 +1413,6 @@ export default {
     data: {
       '*': {
         title: 'Fieldset'
-      }
-    }
-  },
-  '/CLI/UI/Components/Frame': {
-    config: {
-      icon: 'picture_in_picture',
-      status: 'new',
-      version: 'v1.0.0-beta',
-      meta: {
-        description: {
-          'en-US': 'Paint bordered boxes with isolated, individual Outputs — host any component inside.',
-          'pt-BR': 'Pinte caixas com bordas e Outputs isolados e individuais — hospede qualquer componente dentro.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Frame'
       }
     }
   },
@@ -1417,7 +1441,6 @@ export default {
   '/CLI/UI/Components/Logs': {
     config: {
       icon: 'subject',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Tail and filter structured logs live in the terminal — the Monitor-mode viewer.',
@@ -1438,7 +1461,6 @@ export default {
   '/CLI/UI/Components/Menu': {
     config: {
       icon: 'menu',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Build keyboard-friendly terminal menus for selection and navigation flows.',
@@ -1459,7 +1481,6 @@ export default {
   '/CLI/UI/Components/Progress': {
     config: {
       icon: 'downloading',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Show live progress, ETA and rates for long-running CLI work.',
@@ -1546,7 +1567,6 @@ export default {
   '/CLI/UI/Components/Table': {
     config: {
       icon: 'table_chart',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Present structured datasets in readable terminal tables.',
@@ -1561,28 +1581,6 @@ export default {
     data: {
       '*': {
         title: 'Table'
-      }
-    }
-  },
-  '/CLI/UI/Components/Text': {
-    config: {
-      icon: 'animation',
-      status: 'new',
-      version: 'v0.20.0-beta',
-      meta: {
-        description: {
-          'en-US': 'Animate terminal text: typewriter, fade-in and a shimmering color wave.',
-          'pt-BR': 'Anime texto no terminal: typewriter, fade-in e uma onda de cor shimmer.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Text'
       }
     }
   },
@@ -1682,7 +1680,15 @@ export default {
       }
     }
   },
-  '/CLI/UX/Dialog': {
+  '/CLI/UX/Components': {
+    config: null,
+    data: {
+      '*': {
+        title: 'CLI UX Components'
+      }
+    }
+  },
+  '/CLI/UX/Components/Dialog': {
     config: {
       icon: 'picture_in_picture',
       status: 'new',
@@ -1694,7 +1700,7 @@ export default {
         }
       },
       menu: {
-        subheader: '.CLI.UX'
+        subheader: '.CLI.UX.Components'
       },
       subpages: {
         showcase: true
@@ -1706,7 +1712,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Filepicker': {
+  '/CLI/UX/Components/Filepicker': {
     config: {
       icon: 'folder_open',
       status: 'new',
@@ -1728,7 +1734,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Finder': {
+  '/CLI/UX/Components/Finder': {
     config: {
       icon: 'search',
       status: 'new',
@@ -1750,7 +1756,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Form': {
+  '/CLI/UX/Components/Form': {
     config: {
       icon: 'dynamic_form',
       status: 'new',
@@ -1772,7 +1778,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Prompt': {
+  '/CLI/UX/Components/Prompt': {
     config: {
       icon: 'terminal',
       status: 'new',
@@ -1794,7 +1800,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Tabs': {
+  '/CLI/UX/Components/Tabs': {
     config: {
       icon: 'tab',
       status: 'new',
@@ -1816,7 +1822,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Toasts': {
+  '/CLI/UX/Components/Toasts': {
     config: {
       icon: 'notifications',
       status: 'new',
@@ -1838,7 +1844,7 @@ export default {
       }
     }
   },
-  '/CLI/UX/Wizard': {
+  '/CLI/UX/Components/Wizard': {
     config: {
       icon: 'checklist',
       status: 'new',
