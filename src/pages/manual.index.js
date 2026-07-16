@@ -1288,6 +1288,30 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Dumper': {
+    config: {
+      icon: 'data_object',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Dump any PHP value as colorized, structured terminal output — visibility sigils, cycles, caps and themes.',
+          'pt-BR': 'Dump de qualquer valor PHP como saída estruturada e colorizada no terminal — sigilos de visibilidade, ciclos, caps e temas.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Dumper'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Highlighter': {
     config: {
       icon: 'code',
