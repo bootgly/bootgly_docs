@@ -1706,6 +1706,28 @@ export default {
       }
     }
   },
+  '/CLI/UX/Filepicker': {
+    config: {
+      icon: 'folder_open',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Filesystem picker — a Tree preconfigured for the filesystem: lazy directory scans, icons, extension filtering.',
+          'pt-BR': 'Seletor de sistema de arquivos — um Tree pré-configurado para o filesystem: varreduras lazy, ícones, filtro de extensões.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Filepicker'
+      }
+    }
+  },
   '/CLI/UX/Form': {
     config: {
       icon: 'dynamic_form',
