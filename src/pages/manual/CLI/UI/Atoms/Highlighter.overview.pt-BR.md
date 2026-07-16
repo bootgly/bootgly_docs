@@ -47,6 +47,26 @@ $Highlighter->after = 2;     // linhas da janela depois
 $Highlighter->render();
 ```
 
+## Temas
+
+A paleta é um **tema de highlight nomeado**. Dois builtins acompanham o framework: `bootgly` (a paleta default, nível editor) e `plain` (incolor). Registre o seu mapeando grupos de token para códigos de cor SGR e selecione pelo nome:
+
+```php
+use Bootgly\ABI\Data\__String\Tokens;
+
+Tokens\Highlighter::$Themes['dracula'] = [
+   Tokens::TOKEN_STRING   => '38;2;241;250;140',
+   Tokens::TOKEN_VARIABLE => '38;2;139;233;253',
+   Tokens::TOKEN_COMMENT  => '38;2;98;114;164',
+   Tokens::TOKEN_NUMBER   => '38;2;189;147;249',
+];
+
+$Highlighter->theme = 'dracula';
+$Highlighter->render();
+```
+
+Os valores aceitam qualquer código SGR — cores nomeadas (`31`), variantes bright (`91`) ou truecolor (`38;2;R;G;B`). Grupos de token sem entrada renderizam sem estilo. Selecionar um nome não registrado lança um `ValueError`.
+
 ## Saída não-interativa
 
 Em pipes e CI o render mantém a estrutura (números, divisor, marcador) com **zero escape codes**. `decoration` é tri-state: `null` (default) segue o TTY, `false` força plano, `true` força cores. Sem a extensão tokenizer o render degrada para o source verbatim.
@@ -84,6 +104,12 @@ public int $after = 4;
 ```
 
 Config. Linhas da janela depois da linha marcada.
+
+```php
+public string $theme = 'bootgly';
+```
+
+Config. Tema de highlight nomeado — resolvido do registro público `Tokens\Highlighter::$Themes` (grupo de token → códigos SGR; builtins `bootgly` e `plain`). Nomes desconhecidos lançam `ValueError` no render.
 
 ```php
 public string $source = '';
