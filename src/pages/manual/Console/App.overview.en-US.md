@@ -79,12 +79,16 @@ $App->Keymaps->bind(['g', 'g'], 'Go to top', fn () => $App->Toasts->add('Top!'))
 
 ## Chrome widgets
 
+The status row and the toast stack ARE the core components — the App composes the [Statusbar Atom](/manual/CLI/UI/Atoms/Statusbar) on the last row and merges the [Toasts](/manual/CLI/UX/Components/Toasts) stack through its `overlay()` seam (bordered boxes, screen positions, `Alert\Type` severity):
+
 ```php
+use Bootgly\CLI\UI\Components\Alert\Type;
+
 $App->Statusbar->left = ['Snake', 'Score: 3'];
 $App->Statusbar->right = ['[?] help'];
 
-$App->Toasts->add('Saved!');                    // info, expires in 3s
-$App->Toasts->add('Disk full', level: 'error'); // info | warning | error
+$App->Toasts->add('Saved!');                   // default type, expires in 3s
+$App->Toasts->add('Disk full', Type::Failure); // Success | Attention | Failure
 ```
 
 The **Palette** (`Ctrl+P`) searches the registered keymaps incrementally — type to filter, `↑`/`↓` to select, `Enter` to run, `Esc` to dismiss.
@@ -100,6 +104,28 @@ $Tail->follow(fn (): string|false => $LogPipe->read(65536));
 $Tail->pull();    // drain the source each frame
 $Tail->render();  // full frame (or anchor with $Tail->row / $Tail->rows)
 ```
+
+## Core widgets as screen content
+
+Any non-interactive core widget renders straight into a view — `RETURN_OUTPUT` hands the string to the frame. Help screens in [Markdown](/manual/CLI/UI/Components/Markdown), state dumps with the [Dumper](/manual/CLI/UI/Atoms/Dumper), banners with [Figlet](/manual/CLI/UI/Atoms/Figlet), code views with the [Highlighter](/manual/CLI/UI/Atoms/Highlighter), tables and charts — no glue needed:
+
+```php
+// screens/State.php
+use const Bootgly\CLI;
+use Bootgly\API\Component;
+use Bootgly\CLI\UI\Atoms\Dumper;
+use Console\App;
+use Console\App\Screens\Screen;
+
+return static function (App $App, Screen $Screen): string {
+   $Dumper = new Dumper(CLI->Terminal->Output);
+   $Dumper->value = $Screen->state;
+
+   return "App state:\n" . (string) $Dumper->render(Component::RETURN_OUTPUT);
+};
+```
+
+The one rule: widgets that run their **own read loop** (Menu, Form, Question, Finder) never render inside a view — the App loop already owns stdin. Screens render strings; actions live in keymaps.
 
 ## Behavior notes
 
@@ -222,33 +248,9 @@ public function list (): array
 
 Lists the bindings (`keys`, `label`, `handler`) — feeds the help overlay and the Palette.
 
-### Console\App\Statusbar
+### Statusbar and Toasts
 
-```php
-public function render (int $mode = self::RETURN_OUTPUT): null|string
-```
-
-Renders the status row: `$left` segments ▏-separated, `$right` segments right-aligned to the terminal width.
-
-### Console\App\Toasts
-
-```php
-public function add (string $message, string $level = 'info', null|float $ttl = null, null|float $at = null): self
-```
-
-Queues a toast (`info` | `warning` | `error`), expiring after `$ttl` seconds (default `$ttl` property, 3s).
-
-```php
-public function expire (null|float $at = null): void
-```
-
-Drops expired toasts.
-
-```php
-public function render (int $mode = self::RETURN_OUTPUT): null|string
-```
-
-Renders the visible toasts (up to `$limit`) as right-aligned overlay rows.
+The status row and the toast stack are the CORE components, composed by the App pinned to `RETURN_OUTPUT` — see the [Statusbar Atom](/manual/CLI/UI/Atoms/Statusbar) and [Toasts](/manual/CLI/UX/Components/Toasts) references. The App merges the toast boxes through `Toasts::overlay()` (absolute 1-based rows) and relies on `add()`'s plain classified streaming on non-interactive output.
 
 ### Console\App\Palette
 
