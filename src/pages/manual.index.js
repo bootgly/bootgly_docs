@@ -1323,9 +1323,7 @@ export default {
           'pt-BR': 'Colorize código PHP no terminal via tokenizer nativo — gutter, linha marcada e janela de excerpt.'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Atoms'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
