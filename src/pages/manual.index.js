@@ -1652,6 +1652,28 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Tree': {
+    config: {
+      icon: 'account_tree',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Hierarchical view with expand/collapse, lazy children, programmable Enter actions and an interactive picker.',
+          'pt-BR': 'Visão hierárquica com expandir/recolher, filhos lazy, ações programáveis no Enter e um seletor interativo.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Tree'
+      }
+    }
+  },
   '/CLI/UX': {
     config: null,
     data: {
