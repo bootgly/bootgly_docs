@@ -1090,9 +1090,7 @@ export default {
         }
       },
       menu: {
-        separators: {
-          lineBottom: true
-        }
+        separators: {}
       },
       subpages: {
         showcase: false
