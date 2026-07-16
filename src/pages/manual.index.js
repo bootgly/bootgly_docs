@@ -2041,7 +2041,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'App'
+        title: 'Console App'
       }
     }
   },
@@ -2062,7 +2062,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Games'
+        title: 'Console Games'
       }
     }
   },
@@ -2679,7 +2679,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'App'
+        title: 'Web App'
       }
     }
   },
@@ -2700,7 +2700,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'API'
+        title: 'Web API'
       }
     }
   },
