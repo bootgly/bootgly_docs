@@ -63,7 +63,9 @@ export default {
       },
       book: 'guide',
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -602,7 +604,9 @@ export default {
       },
       book: 'guide',
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -630,7 +634,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -736,7 +742,9 @@ export default {
       },
       book: 'guide',
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -816,7 +824,9 @@ export default {
       },
       book: 'guide',
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false

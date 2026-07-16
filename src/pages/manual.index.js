@@ -369,7 +369,9 @@ export default {
           icon: 'data_array',
           label: 'Bootgly ADI'
         },
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -512,7 +514,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -664,7 +668,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -763,7 +769,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -787,7 +795,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -950,7 +960,9 @@ export default {
           icon: 'terminal',
           label: 'Bootgly CLI'
         },
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: true
@@ -1013,7 +1025,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -1076,7 +1090,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -1267,7 +1283,9 @@ export default {
       },
       menu: {
         subheader: '.CLI.Terminal.Reporting',
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: true
@@ -1992,7 +2010,9 @@ export default {
           icon: 'terminal',
           label: 'Console'
         },
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -2063,7 +2083,9 @@ export default {
           icon: 'language',
           label: 'Bootgly WPI'
         },
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -2290,7 +2312,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -2456,7 +2480,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -2480,7 +2506,9 @@ export default {
         }
       },
       menu: {
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -2512,7 +2540,9 @@ export default {
       },
       menu: {
         subheader: '.WPI.TCP',  
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       
       },
       subpages: {
@@ -2565,7 +2595,9 @@ export default {
         }
       },
       menu: {
-        separator: true,
+        separators: {
+          lineBottom: true
+        },
         subheader: '.WPI.UDP'
       },
       subpages: {
@@ -2616,7 +2648,9 @@ export default {
           icon: 'public',
           label: 'Web'
         },
-        separator: true
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false

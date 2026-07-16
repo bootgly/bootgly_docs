@@ -124,7 +124,9 @@ export default {
         }
       },
       menu: {
-        separator: true,
+        separators: {
+          lineBottom: true
+        },
         subheader: '.core'
       },
       subpages: {
