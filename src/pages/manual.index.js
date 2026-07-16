@@ -1312,6 +1312,30 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Figlet': {
+    config: {
+      icon: 'title',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Large block-drawing text — banners, versions, scores — with named figlet fonts (A-Z and 0-9 builtin).',
+          'pt-BR': 'Texto grande em block-drawing — banners, versões, scores — com fontes figlet nomeadas (A-Z e 0-9 builtin).'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Figlet'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Highlighter': {
     config: {
       icon: 'code',
