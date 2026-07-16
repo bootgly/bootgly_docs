@@ -1323,9 +1323,6 @@ export default {
           'pt-BR': 'Anime texto no terminal: typewriter, fade-in e uma onda de cor shimmer.'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Atoms'
-      },
       subpages: {
         showcase: true
       }
