@@ -1728,6 +1728,28 @@ export default {
       }
     }
   },
+  '/CLI/UX/Finder': {
+    config: {
+      icon: 'search',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Live search selector — type to filter options (static or from a dynamic source), aim and confirm one value.',
+          'pt-BR': 'Seletor com busca ao vivo — digite para filtrar opções (estáticas ou de uma fonte dinâmica), mire e confirme um valor.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Finder'
+      }
+    }
+  },
   '/CLI/UX/Form': {
     config: {
       icon: 'dynamic_form',
