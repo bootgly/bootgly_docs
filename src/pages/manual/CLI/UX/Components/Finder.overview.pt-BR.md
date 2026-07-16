@@ -107,7 +107,7 @@ $Finder->options = ['Alpha', 'Beta']; // chaves int — Enter retorna 'Alpha' ou
 
 Em pipes e CI o `find()` degrada para uma linha digitada (semântica do [Question](/manual/CLI/UI/Components/Question/overview)): a linha digitada resolve por **match exato de label** case-insensitive para o seu valor — linha vazia ou desconhecida retorna `null`. Scripts continuam automatizáveis:
 
-```bash
+```bash :toolbar="true";
 echo "Finder" | php app.php
 ```
 

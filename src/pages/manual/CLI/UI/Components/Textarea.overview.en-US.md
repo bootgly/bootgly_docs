@@ -34,7 +34,7 @@ While editing: Enter breaks the line at the cursor; Backspace at a line start me
 
 On pipes and CI, `ask()` reads stdin lines until EOF and joins them — deterministic:
 
-```bash
+```bash :toolbar="true";
 printf 'first line\nsecond line\n' | php app.php
 ```
 

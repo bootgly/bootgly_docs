@@ -172,7 +172,7 @@ All attached filters must pass for the record to be written. `Filters\Callback` 
 Start an `HTTP_Server_CLI` in **Monitor** mode and its terminal becomes a real-time, filterable
 log dashboard. Master **and** every worker stream their records to the master, which renders them:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -m
 ```
 

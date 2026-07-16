@@ -169,7 +169,7 @@ Mail::send($Message);                // synchronous alternative, same shared mai
 
 Run the consumer exactly like any other queue:
 
-```sh
+```sh :toolbar="true";
 bootgly queue run mail
 ```
 

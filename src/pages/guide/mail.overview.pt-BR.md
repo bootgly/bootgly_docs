@@ -172,7 +172,7 @@ Mail::send($Message);                // alternativa síncrona, mesmo mailer comp
 
 Rode o consumidor exatamente como qualquer outra fila:
 
-```sh
+```sh :toolbar="true";
 bootgly queue run mail
 ```
 

@@ -6,7 +6,7 @@ Build full-screen terminal apps — dashboards, tools, even games — with Bootg
 
 The [canonical installer](/guide/getting-started) can install it right away — it asks which platforms to set up, so just pick **Console**:
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
@@ -61,7 +61,7 @@ return static function (App $App, Screen $Screen): string {
 
 Start it:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Hello start
 ```
 

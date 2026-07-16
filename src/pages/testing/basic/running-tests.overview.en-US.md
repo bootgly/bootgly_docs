@@ -11,7 +11,7 @@ Bootgly ships its own built-in test framework — no PHPUnit, no Composer script
 
 Run every registered suite from the repository root:
 
-```bash
+```bash :toolbar="true";
 php bootgly test
 ```
 
@@ -21,7 +21,7 @@ The runner loads `tests/autoboot.php`, iterates over each suite directory, and p
 
 Each suite directory listed in `tests/autoboot.php` is addressable by its 1-based index:
 
-```bash
+```bash :toolbar="true";
 php bootgly test 16
 ```
 
@@ -31,7 +31,7 @@ The example above runs only suite `16`. Indexes follow the order declared inside
 
 Pass the suite index followed by the test (case) index to execute one specification:
 
-```bash
+```bash :toolbar="true";
 php bootgly test 16 1
 ```
 
@@ -77,7 +77,7 @@ php bootgly test benchmark <CASE> --help
 
 Test files must remain free of static-analysis errors. Run PHPStan with the project configuration after writing or changing tests:
 
-```bash
+```bash :toolbar="true";
 vendor/bin/phpstan analyse -c @/phpstan.neon
 ```
 

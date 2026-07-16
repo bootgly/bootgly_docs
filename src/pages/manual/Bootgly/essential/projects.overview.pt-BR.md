@@ -73,7 +73,7 @@ Para tornar um novo projeto executável, use `bootgly project create` — ele ge
 
 `bootgly project create` é a maneira canônica de iniciar um novo projeto. Em terminais interativos, ele abre um **wizard**:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create
 ```
 
@@ -96,7 +96,7 @@ php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 
 Qualquer diretório que carregue a **assinatura de projeto Bootgly** — um arquivo `*.project.php` na raiz — é um projeto importável. O `bootgly project import` busca um a partir de uma URL de repositório git:
 
-```bash
+```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
@@ -150,7 +150,7 @@ php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--
 
 Lista todos os projetos registrados, agrupados por interface (CLI, WPI ou ambas):
 
-```bash
+```bash :toolbar="true";
 php bootgly project list
 ```
 
@@ -213,13 +213,13 @@ Iniciar uma segunda instância em uma porta já em uso pelo mesmo setup falha co
 
 Para um projeto em execução enviando SIGTERM ao processo master. Se o processo não terminar em 5 segundos, envia SIGKILL:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI stop
 ```
 
 Isso para **todas as instâncias em execução** do projeto. Para parar uma única instância, passe o qualificador dela — a porta bound para servidores (ou o PID do master para projetos TUI):
 
-```bash
+```bash :toolbar="true";
 php bootgly project stop Blog 8081   # para apenas a instância na porta 8081
 ```
 
@@ -227,7 +227,7 @@ php bootgly project stop Blog 8081   # para apenas a instância na porta 8081
 
 Mostra o status atual de um projeto em execução — um card de status por instância — incluindo PID, workers, endereço e uptime:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI show
 ```
 
@@ -275,7 +275,7 @@ php bootgly project restart Blog 8081   # reinicia apenas a instância na porta 
 
 Exibe metadados detalhados de um projeto em um Fieldset:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI info
 ```
 

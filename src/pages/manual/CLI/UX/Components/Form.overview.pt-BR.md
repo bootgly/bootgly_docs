@@ -95,7 +95,7 @@ Depois do último campo, o Form renderiza as respostas em um quadro Fieldset e o
 
 Em pipes e CI não há revert nem loop de resumo — cada campo consome exatamente uma linha do stdin, então scripts permanecem determinísticos. Campos `Select` aceitam o índice da opção, o label exato da opção ou uma linha vazia para o default:
 
-```bash
+```bash :toolbar="true";
 printf 'MyApp\nsecret\nWeb\ny\n' | php app.php
 ```
 

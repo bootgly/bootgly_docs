@@ -172,7 +172,7 @@ qualquer `Closure(Record): bool` e `Filters\Tags` casa tags lidas de `context['t
 Inicie um `HTTP_Server_CLI` em modo **Monitor** e seu terminal vira um painel de logs em tempo
 real e filtrável. O master **e** cada worker transmitem seus records ao master, que os renderiza:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -m
 ```
 

@@ -62,19 +62,19 @@ return new Project(
 
 Para iniciar o servidor, execute:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start
 ```
 
 Modo interativo:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -i
 ```
 
 Modo monitor:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -m
 ```
 

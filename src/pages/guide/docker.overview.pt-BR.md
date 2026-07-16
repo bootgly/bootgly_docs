@@ -17,7 +17,7 @@ dados, nenhum framework de benchmark externo.
 O Bootgly tem **um** caminho canônico de instalação e configuração inicial: o **wizard
 instalador**. No Docker, uma execução interativa sem argumentos o abre na primeira vez:
 
-```bash
+```bash :toolbar="true";
 docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly
 ```
 
@@ -79,13 +79,13 @@ encerra imediatamente. Em primeiro plano o servidor envia logs para o stdout e p
 limpa com `SIGTERM` (`docker stop`). (Use `-i` apenas para um REPL interativo com TTY, ex.:
 `docker run -it`.)
 
-```bash
+```bash :toolbar="true";
 docker run --rm -p 8082:8082 bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
 Depois, em outro terminal:
 
-```bash
+```bash :toolbar="true";
 curl http://localhost:8082
 ```
 
@@ -101,7 +101,7 @@ Todo servidor demo lê a variável de ambiente `PORT` (com fallback para o padr�
 
 Troque a porta sem reconstruir a imagem:
 
-```bash
+```bash :toolbar="true";
 docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
@@ -220,7 +220,7 @@ docker run --rm \
 
 Para construir você mesmo, a partir de `bootgly_benchmarks/` (com `bootgly:full` já construído):
 
-```bash
+```bash :toolbar="true";
 docker build -f Dockerfile.laravel -t bootgly_benchmarks:laravel ..
 ```
 

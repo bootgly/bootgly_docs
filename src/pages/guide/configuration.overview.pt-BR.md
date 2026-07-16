@@ -92,7 +92,7 @@ DB_PORT=3306
 DB_PASS=secret
 ```
 
-```bash
+```bash :toolbar="true";
 BOOTGLY_ENV=production php bootgly
 ```
 

@@ -195,7 +195,7 @@ nunca chame `advance()` manualmente.
 Faça profiling de cada driver em todo o conjunto de operações (store, fetch, increment,
 tags, resolve, ...) com o caso de benchmark `Cache`:
 
-```bash
+```bash :toolbar="true";
 ./bootgly test benchmark Cache
 ```
 

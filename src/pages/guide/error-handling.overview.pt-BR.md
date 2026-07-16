@@ -18,7 +18,7 @@ A chave é a variável de ambiente `BOOTGLY_ENVIRONMENT`, lida uma vez no boot p
 `BOOTGLY_ENVIRONMENT`. Valores reconhecidos: `development`, `staging`, `test`, `production`
 (qualquer outro valor cai em `production`; `staging` se comporta como `production`):
 
-```bash
+```bash :toolbar="true";
 BOOTGLY_ENVIRONMENT=development bootgly project start Demo/HTTP_Server_CLI -f
 ```
 

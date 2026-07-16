@@ -22,19 +22,19 @@ framework:
 Em um kit Bootgly, importe o projeto Auth pelo wizard — ele aparece no picker
 "Import projects from Platforms":
 
-```bash
+```bash :toolbar="true";
 php bootgly project create
 ```
 
 Ou de forma não interativa:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create Auth --from=Auth --yes
 ```
 
 Depois inicie:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Auth start
 ```
 

@@ -192,7 +192,7 @@ it from `$Response->defer()` like any other async resource so route code never c
 Profile every driver across the full operation set (store, fetch, increment, tags,
 resolve, ...) with the `Cache` benchmark case:
 
-```bash
+```bash :toolbar="true";
 ./bootgly test benchmark Cache
 ```
 

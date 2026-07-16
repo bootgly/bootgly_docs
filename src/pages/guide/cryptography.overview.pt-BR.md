@@ -16,7 +16,7 @@ preocupações de HTTP.
 Uma chave do `Encrypter` são exatamente 32 bytes de material aleatório. Gere uma e
 mantenha-a fora do repositório — uma variável de ambiente é o lugar canônico:
 
-```bash
+```bash :toolbar="true";
 php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"
 ```
 

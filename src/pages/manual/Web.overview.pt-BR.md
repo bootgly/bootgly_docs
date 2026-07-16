@@ -10,19 +10,19 @@ Ela é distribuída como um git submodule opcional do starter kit — o wizard d
 
 O instalador canônico já a oferece — ele pergunta quais plataformas configurar, e escolher **Web** inicializa o submodule imediatamente:
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
 Não escolheu na instalação? Adicione depois a um kit existente:
 
-```bash
+```bash :toolbar="true";
 git submodule update --init Web
 ```
 
 Ou pelo wizard, de forma não interativa:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create --platform=web
 ```
 
@@ -82,7 +82,7 @@ return new Project(
 
 Inicie-o como qualquer projeto:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Site start
 ```
 

@@ -41,7 +41,7 @@ Os grupos resolvem para caminhos-base diferentes:
 
 Quando o CLI inicializa, ele valida o script que o PHP está executando:
 
-```bash
+```bash :toolbar="true";
 php scripts/deploy.php
 ```
 

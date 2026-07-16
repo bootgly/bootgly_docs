@@ -55,7 +55,7 @@ Renewal is automatic — nothing to schedule. The swap applies to **new** handsh
 
 A swap only counts as applied once **every live worker acknowledges the exact certificate it activated**. Each worker copies the validated bytes into a private artifact, probes it and reports back; the master keeps the generation pending until all of them converge. If they do not, the master retries and then falls back on its own to a bounded graceful reload. You can also force a full re-read from disk at any time:
 
-```bash
+```bash :toolbar="true";
 bootgly project reload   # SIGUSR2 — graceful re-exec, re-reads the secure config
 ```
 

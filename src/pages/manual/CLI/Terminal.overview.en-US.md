@@ -40,7 +40,7 @@ The resolution order for each dimension is:
 
 This makes the size reliable in every runtime: interactive TTYs get the real size via `tput`, while pipes, CI jobs and embedded runtimes (like the [live showcase](/manual/CLI/showcase) running on PHP WASM) can set the size explicitly:
 
-```bash
+```bash :toolbar="true";
 COLUMNS=100 LINES=40 bootgly demo 12
 ```
 

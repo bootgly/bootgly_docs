@@ -2,7 +2,7 @@
 
 Bootgly has **one canonical way** to start: a single command that installs everything and opens the **project wizard**.
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
@@ -105,7 +105,7 @@ You can rerun the wizard anytime with `php bootgly project create` — everythin
 
 All wizard inputs are available as flags — with `--yes` (or piped input) nothing is asked:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
 
@@ -115,7 +115,7 @@ Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of fr
 
 To make sure everything was loaded correctly, run the initial screen of the Bootgly CLI from your kit directory:
 
-```bash
+```bash :toolbar="true";
 php bootgly
 ```
 
@@ -123,7 +123,7 @@ php bootgly
 
 To use `bootgly` as a global command (and with `sudo` for privileged ports), run the setup command:
 
-```bash
+```bash :toolbar="true";
 sudo php bootgly setup
 ```
 
@@ -131,13 +131,13 @@ This creates a wrapper script at `/usr/local/bin/bootgly` with the absolute path
 
 After setup, you can use `bootgly` directly from any directory:
 
-```bash
+```bash :toolbar="true";
 bootgly help
 ```
 
 To uninstall:
 
-```bash
+```bash :toolbar="true";
 sudo bootgly setup --uninstall
 ```
 
@@ -210,7 +210,7 @@ A project path may **not** start with a reserved platform namespace root — tho
 
 Any git repository carrying the project signature (`*.project.php` at its root) can be imported directly:
 
-```bash
+```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
@@ -227,7 +227,7 @@ Ports below 1024 require special permissions on Linux. There are two approaches:
 
 After running `sudo php bootgly setup`, you can start the server with sudo:
 
-```bash
+```bash :toolbar="true";
 sudo bootgly project MyApp start
 ```
 
@@ -246,7 +246,7 @@ $Server->configure(
 
 Grant PHP the ability to bind privileged ports without root:
 
-```bash
+```bash :toolbar="true";
 sudo php bootgly setup --capabilities
 ```
 
@@ -278,6 +278,6 @@ $Server->configure(
 
 A ready-to-use HTTPS project example is included at `projects/Demo/HTTPS_Server_CLI/`:
 
-```bash
+```bash :toolbar="true";
 sudo bootgly project Demo/HTTPS_Server_CLI start
 ```

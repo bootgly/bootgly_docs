@@ -47,7 +47,7 @@ $target = $Filepicker->pick();
 
 On pipes and CI `pick()` degrades to a typed line (Question semantics): the user types the path, which is validated with `realpath` — a non-existing or empty answer returns `null`. Scripts stay automatable:
 
-```bash
+```bash :toolbar="true";
 echo "/etc/ssl/certs/server.pem" | php installer.php
 ```
 

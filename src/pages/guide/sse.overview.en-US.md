@@ -63,7 +63,7 @@ source.addEventListener('tick', (event) => {
 
 Or watch the raw stream with curl:
 
-```bash
+```bash :toolbar="true";
 curl -N http://localhost:8082/events
 ```
 

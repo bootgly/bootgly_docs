@@ -6,7 +6,7 @@ Build web applications — MVC sites and REST APIs — with Bootgly's opinionate
 
 The [canonical installer](/guide/getting-started) can install it right away — it asks which platforms to set up, so just pick **Web**:
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
@@ -82,7 +82,7 @@ class Posts extends Controller
 
 Views render through the template engine, wrapped by the `views/layouts/main.template.php` layout. Start it:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Hello start
 ```
 

@@ -187,7 +187,7 @@ return [
 
 Depois inicie o servidor demo:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -i
 ```
 

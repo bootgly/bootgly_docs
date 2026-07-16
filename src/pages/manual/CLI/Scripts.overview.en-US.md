@@ -41,7 +41,7 @@ The groups resolve to different base paths:
 
 When the CLI boots, it validates the script that PHP is executing:
 
-```bash
+```bash :toolbar="true";
 php scripts/deploy.php
 ```
 

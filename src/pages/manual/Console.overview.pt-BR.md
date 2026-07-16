@@ -8,19 +8,19 @@ Ela é distribuída como submódulo git opcional do kit inicial — o wizard de 
 
 O instalador canônico já a oferece — ele pergunta quais plataformas configurar, e escolher **Console** inicializa o submódulo na hora:
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
 Não escolheu na instalação? Adicione depois em um kit existente:
 
-```bash
+```bash :toolbar="true";
 git submodule update --init Console
 ```
 
 Ou pelo wizard, de forma não interativa:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create --platform=console
 ```
 
@@ -84,7 +84,7 @@ return new Project(
 
 Inicie-o como qualquer projeto:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Snake start
 ```
 

@@ -21,7 +21,7 @@ $SQLite = new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 Em um projeto, vincule o driver pelo escopo de config `database` — `DB_CONNECTION`
 seleciona o bloco de conexão que será lido:
 
-```bash
+```bash :toolbar="true";
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly boot
 ```
 

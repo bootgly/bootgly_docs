@@ -14,7 +14,7 @@ its workers write to via `ACI\Logs\Handlers\Pipe`.
 The component is driven by `TCP_Server_CLI::monitoring()` (inherited by `HTTP_Server_CLI`), so the
 common path is simply starting a server in Monitor mode — no manual wiring:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -m
 ```
 

@@ -11,7 +11,7 @@ O Bootgly traz seu próprio framework de testes embutido — sem PHPUnit, sem sc
 
 Execute todas as suítes registradas a partir da raiz do repositório:
 
-```bash
+```bash :toolbar="true";
 php bootgly test
 ```
 
@@ -21,7 +21,7 @@ O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e i
 
 Cada diretório de suíte listado em `tests/autoboot.php` é endereçável pelo seu índice (começando em 1):
 
-```bash
+```bash :toolbar="true";
 php bootgly test 16
 ```
 
@@ -31,7 +31,7 @@ O exemplo acima executa somente a suíte `16`. Os índices seguem a ordem declar
 
 Passe o índice da suíte seguido do índice do caso de teste para executar uma única `Specification`:
 
-```bash
+```bash :toolbar="true";
 php bootgly test 16 1
 ```
 
@@ -77,7 +77,7 @@ php bootgly test benchmark <CASE> --help
 
 Arquivos de teste devem permanecer livres de erros de análise estática. Execute o PHPStan com a configuração do projeto após escrever ou alterar testes:
 
-```bash
+```bash :toolbar="true";
 vendor/bin/phpstan analyse -c @/phpstan.neon
 ```
 

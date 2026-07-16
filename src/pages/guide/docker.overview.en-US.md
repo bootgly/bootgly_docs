@@ -17,7 +17,7 @@ benchmark frameworks.
 Bootgly has **one** canonical install and first-time setup path: the **installer wizard**.
 In Docker, a bare interactive run opens it on the first run:
 
-```bash
+```bash :toolbar="true";
 docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly
 ```
 
@@ -77,13 +77,13 @@ Without it the demo servers daemonize (fork and detach) and the container exits 
 In the foreground the server logs to stdout and stops cleanly on `SIGTERM` (`docker stop`).
 (`-i` instead gives an interactive REPL and needs a TTY, e.g. `docker run -it`.)
 
-```bash
+```bash :toolbar="true";
 docker run --rm -p 8082:8082 bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
 Then, from another terminal:
 
-```bash
+```bash :toolbar="true";
 curl http://localhost:8082
 ```
 
@@ -99,7 +99,7 @@ binds `0.0.0.0`:
 
 Change the port without rebuilding:
 
-```bash
+```bash :toolbar="true";
 docker run --rm -e PORT=9090 -p 9090:9090 bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
@@ -218,7 +218,7 @@ docker run --rm \
 
 Build it yourself from `bootgly_benchmarks/` (with `bootgly:full` built first):
 
-```bash
+```bash :toolbar="true";
 docker build -f Dockerfile.laravel -t bootgly_benchmarks:laravel ..
 ```
 

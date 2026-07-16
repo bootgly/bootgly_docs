@@ -71,7 +71,6 @@
 
   // @
   system: {
-    documentation: 'Official Documentation',
     support: 'Sponsor Bootgly',
     backToTop: 'Back to top'
   },

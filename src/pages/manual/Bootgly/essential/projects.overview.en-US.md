@@ -73,7 +73,7 @@ To make a new project runnable, use `bootgly project create` — it generates th
 
 `bootgly project create` is the canonical way to start a new project. On interactive terminals it opens a **wizard**:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create
 ```
 
@@ -96,7 +96,7 @@ php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 
 Any directory carrying the **Bootgly project signature** — a `*.project.php` file at its root — is an importable project. `bootgly project import` fetches one from a git repository URL:
 
-```bash
+```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
@@ -150,7 +150,7 @@ php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--
 
 Lists every registered project, grouped by interface (CLI, WPI or both):
 
-```bash
+```bash :toolbar="true";
 php bootgly project list
 ```
 
@@ -213,13 +213,13 @@ Starting a second instance on a port that is already in use by the same setup fa
 
 Stops a running project by sending SIGTERM to the master process. If the process does not terminate within 5 seconds, it sends SIGKILL:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI stop
 ```
 
 This stops **all running instances** of the project. To stop a single instance, pass its qualifier — the bound port for servers (or the master PID for TUI projects):
 
-```bash
+```bash :toolbar="true";
 php bootgly project stop Blog 8081   # stops only the instance on port 8081
 ```
 
@@ -227,7 +227,7 @@ php bootgly project stop Blog 8081   # stops only the instance on port 8081
 
 Shows the current status of a running project — one status card per instance — including PID, workers, address and uptime:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI show
 ```
 
@@ -275,7 +275,7 @@ php bootgly project restart Blog 8081   # restarts only the instance on port 808
 
 Displays detailed metadata about a project in a Fieldset:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI info
 ```
 

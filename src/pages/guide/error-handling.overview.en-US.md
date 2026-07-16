@@ -17,7 +17,7 @@ The switch is the `BOOTGLY_ENVIRONMENT` environment variable, read once at boot 
 `BOOTGLY_ENVIRONMENT` constant. Recognized values: `development`, `staging`, `test`,
 `production` (anything else falls back to `production`; `staging` behaves like `production`):
 
-```bash
+```bash :toolbar="true";
 BOOTGLY_ENVIRONMENT=development bootgly project start Demo/HTTP_Server_CLI -f
 ```
 

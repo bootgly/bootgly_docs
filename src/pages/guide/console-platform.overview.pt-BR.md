@@ -6,7 +6,7 @@ Construa apps de terminal full-screen — dashboards, ferramentas e até jogos �
 
 O [instalador canônico](/guide/getting-started) já a instala na hora — ele pergunta quais plataformas configurar, é só escolher **Console**:
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
@@ -61,7 +61,7 @@ return static function (App $App, Screen $Screen): string {
 
 Inicie:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Hello start
 ```
 

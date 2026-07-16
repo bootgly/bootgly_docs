@@ -55,7 +55,7 @@ A renovação é automática — nada para agendar. O swap vale para **novos** h
 
 Um swap só conta como aplicado quando **todo worker vivo confirma exatamente o certificado que ativou**. Cada worker copia os bytes validados para um artefato privado, faz um probe nele e reporta de volta; o master mantém a geração pendente até todos convergirem. Se não convergirem, o master tenta de novo e então cai sozinho para um reload gracioso limitado. Você também pode forçar a releitura completa do disco quando quiser:
 
-```bash
+```bash :toolbar="true";
 bootgly project reload   # SIGUSR2 — re-exec gracioso, relê a config secure
 ```
 

@@ -22,7 +22,7 @@ Coverage measures which executable lines were reached while tests run and render
 
 Generate a text report with the auto-detected driver:
 
-```bash
+```bash :toolbar="true";
 php bootgly test --coverage --coverage-report=text
 ```
 
@@ -38,7 +38,7 @@ php bootgly test 11 --coverage-driver=nothing --coverage-report=text
 
 The `Native` driver is the extension-free backend. It instruments PHP files as Bootgly autoloads them.
 
-```bash
+```bash :toolbar="true";
 php -d opcache.enable_cli=0 bootgly test 11 --coverage-driver=native --coverage-report=text
 ```
 

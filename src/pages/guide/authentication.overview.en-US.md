@@ -22,19 +22,19 @@ in the framework:
 In a Bootgly kit, import the Auth project through the wizard — it appears in
 the "Import projects from Platforms" picker:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create
 ```
 
 Or non-interactively:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create Auth --from=Auth --yes
 ```
 
 Then start it:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Auth start
 ```
 

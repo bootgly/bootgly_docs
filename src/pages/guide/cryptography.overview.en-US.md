@@ -15,7 +15,7 @@ database columns, cookies, queue payloads — without touching HTTP concerns.
 An `Encrypter` key is exactly 32 bytes of random material. Generate one and keep it
 outside the repository — an environment variable is the canonical place:
 
-```bash
+```bash :toolbar="true";
 php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"
 ```
 

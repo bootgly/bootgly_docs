@@ -140,7 +140,7 @@ yield $Router->route('/auth/bearer', function (Request $Request, Response $Respo
 
 Teste:
 
-```bash
+```bash :toolbar="true";
 curl -H 'Authorization: Bearer demo-bearer-token' http://localhost:8082/auth/bearer
 ```
 
@@ -328,7 +328,7 @@ yield $Router->route('/auth/basic', function (Request $Request, Response $Respon
 
 Teste:
 
-```bash
+```bash :toolbar="true";
 curl -u demo:secret http://localhost:8082/auth/basic
 ```
 

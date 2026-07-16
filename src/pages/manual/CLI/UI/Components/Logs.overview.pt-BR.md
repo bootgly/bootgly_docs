@@ -14,7 +14,7 @@ workers escrevem via `ACI\Logs\Handlers\Pipe`.
 O componente é dirigido por `TCP_Server_CLI::monitoring()` (herdado por `HTTP_Server_CLI`), então o
 caminho comum é apenas iniciar um servidor em modo Monitor — sem fiação manual:
 
-```bash
+```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI start -m
 ```
 

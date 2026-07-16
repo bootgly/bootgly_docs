@@ -95,7 +95,7 @@ After the last field, the Form renders the answers in a Fieldset frame and offer
 
 On pipes and CI there is no revert and no summary loop — each field consumes exactly one stdin line, so scripts stay deterministic. `Select` fields accept the option index, the exact option label or an empty line for the default:
 
-```bash
+```bash :toolbar="true";
 printf 'MyApp\nsecret\nWeb\ny\n' | php app.php
 ```
 

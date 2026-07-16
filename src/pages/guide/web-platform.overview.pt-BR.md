@@ -6,7 +6,7 @@ Construa aplicações web — sites MVC e APIs REST — com a plataforma Web opi
 
 O [instalador canônico](/guide/getting-started) pode instalá-la de imediato — ele pergunta quais plataformas configurar, então basta escolher **Web**:
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
@@ -82,7 +82,7 @@ class Posts extends Controller
 
 Views renderizam pelo template engine, envolvidas pelo layout `views/layouts/main.template.php`. Inicie:
 
-```bash
+```bash :toolbar="true";
 php bootgly project Hello start
 ```
 

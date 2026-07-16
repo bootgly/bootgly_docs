@@ -2,7 +2,7 @@
 
 O Bootgly tem **uma única maneira canônica** de começar: um único comando que instala tudo e abre o **wizard de projetos**.
 
-```bash
+```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
 ```
 
@@ -105,7 +105,7 @@ Você pode rodar o wizard novamente a qualquer momento com `php bootgly project 
 
 Todas as entradas do wizard existem como flags — com `--yes` (ou entrada via pipe) nada é perguntado:
 
-```bash
+```bash :toolbar="true";
 php bootgly project create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
 
@@ -115,7 +115,7 @@ Use `--from=Demo/HTTP_Server_CLI` para partir de um projeto de plataforma em vez
 
 Para garantir que tudo foi carregado corretamente, execute a tela inicial da CLI do Bootgly a partir do diretório do seu kit:
 
-```bash
+```bash :toolbar="true";
 php bootgly
 ```
 
@@ -123,7 +123,7 @@ php bootgly
 
 Para usar `bootgly` como um comando global (e com `sudo` para portas privilegiadas), execute o comando de setup:
 
-```bash
+```bash :toolbar="true";
 sudo php bootgly setup
 ```
 
@@ -131,13 +131,13 @@ Isso cria um script wrapper em `/usr/local/bin/bootgly` com o caminho absoluto d
 
 Após o setup, você pode usar `bootgly` diretamente de qualquer diretório:
 
-```bash
+```bash :toolbar="true";
 bootgly help
 ```
 
 Para desinstalar:
 
-```bash
+```bash :toolbar="true";
 sudo bootgly setup --uninstall
 ```
 
@@ -210,7 +210,7 @@ O caminho de um projeto **não** pode começar com uma raiz de namespace de plat
 
 Qualquer repositório git que carregue a assinatura de projeto (`*.project.php` na raiz) pode ser importado diretamente:
 
-```bash
+```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
@@ -227,7 +227,7 @@ Portas abaixo de 1024 exigem permissões especiais no Linux. Existem duas aborda
 
 Depois de executar `sudo php bootgly setup`, você pode iniciar o servidor com sudo:
 
-```bash
+```bash :toolbar="true";
 sudo bootgly project MyApp start
 ```
 
@@ -246,7 +246,7 @@ $Server->configure(
 
 Conceda ao PHP a capacidade de vincular portas privilegiadas sem root:
 
-```bash
+```bash :toolbar="true";
 sudo php bootgly setup --capabilities
 ```
 
@@ -278,6 +278,6 @@ $Server->configure(
 
 Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/Demo/HTTPS_Server_CLI/`:
 
-```bash
+```bash :toolbar="true";
 sudo bootgly project Demo/HTTPS_Server_CLI start
 ```
