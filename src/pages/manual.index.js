@@ -1323,9 +1323,7 @@ export default {
           'pt-BR': 'Texto grande em block-drawing — banners, versões, scores — com fontes figlet nomeadas (A-Z e 0-9 builtin).'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Atoms'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
@@ -1369,9 +1367,7 @@ export default {
           'pt-BR': 'Barra de status de linha única — segmentos à esquerda, hints alinhados à direita, fundo estilizado; a status row do Console App.'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Atoms'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
