@@ -1334,6 +1334,30 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Statusbar': {
+    config: {
+      icon: 'call_to_action',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Single-row status bar — left segments, right-aligned hints, styled background; the Console App status row.',
+          'pt-BR': 'Barra de status de linha única — segmentos à esquerda, hints alinhados à direita, fundo estilizado; a status row do Console App.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Statusbar'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Text': {
     config: {
       icon: 'animation',
