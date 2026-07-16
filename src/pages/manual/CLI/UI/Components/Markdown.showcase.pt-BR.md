@@ -4,7 +4,7 @@ A demo oficial do Markdown roda ao vivo abaixo — código real do framework em 
 
 ## Markdown renderizado no terminal
 
-Um documento completo renderiza de uma vez: headings estilizados, parágrafos com wrap, ênfases e código inline, listas aninhadas e tasks, um bloco PHP cercado, quotes empilhados, uma tabela alinhada e uma régua.
+Um documento completo renderiza de uma vez: headings estilizados, parágrafos com wrap, ênfases e código inline, listas aninhadas e tasks, um bloco PHP com syntax highlighting, quotes empilhados, uma tabela alinhada e uma régua.
 
 <d-block-terminal
   engine="bootgly-cli"
@@ -12,7 +12,7 @@ Um documento completo renderiza de uma vez: headings estilizados, parágrafos co
   command="demo 54"
   height="520"
 >
-Um documento markdown pintado com SGR raw: headings, listas, tasks, quotes, código cercado, tabela alinhada e links. Use o botão de source para ler o arquivo PHP.
+Um documento markdown pintado com SGR raw: headings, listas, tasks, quotes, código cercado com highlight, tabela alinhada e links. Use o botão de source para ler o arquivo PHP.
 </d-block-terminal>
 
 Em saída não-interativa (pipes, CI) o mesmo render degrada para texto plano estruturado com zero escape codes.

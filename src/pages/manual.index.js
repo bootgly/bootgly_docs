@@ -1288,6 +1288,30 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Highlighter': {
+    config: {
+      icon: 'code',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Colorize PHP source in the terminal via the native tokenizer — gutter, marked line and excerpt window.',
+          'pt-BR': 'Colorize código PHP no terminal via tokenizer nativo — gutter, linha marcada e janela de excerpt.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Highlighter'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Text': {
     config: {
       icon: 'animation',

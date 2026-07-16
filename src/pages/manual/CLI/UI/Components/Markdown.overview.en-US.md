@@ -50,6 +50,20 @@ $Markdown->styles['code'] = ['96'];       // bright cyan inline code
 
 Keys: `h1`-`h6`, `bold`, `italic`, `strike`, `code`, `fence`, `source`, `link`, `url`, `image`, `quote`, `marker`, `checked`, `unchecked`, `rule`, `header`, `border`.
 
+## Syntax highlighting
+
+Fenced `php` blocks colorize automatically via the framework's native tokenizer (the ABI `Tokens\Highlighter` — `token_get_all`, zero dependencies). The language infoword matches case-insensitively, and tagless snippets colorize as pure PHP.
+
+Plug other languages through the public `$Highlighters` map — one callable per lowercase infoword; return `null` to fall back to the dimmed source:
+
+```php
+$Markdown->Highlighters['ini'] = static function (string $source): null|string {
+   return colorize($source);   // bare colored lines
+};
+```
+
+Unplugged languages and bare fences render verbatim and dimmed; plain output never highlights.
+
 ## Safety
 
 The source is treated as **untrusted text**: raw control bytes (including `ESC`) are stripped, so markdown can never inject cursor movements or stray styling into your terminal — and content never passes through the Template markup engine.
@@ -58,7 +72,7 @@ The source is treated as **untrusted text**: raw control bytes (including `ESC`)
 
 - Supported subset: ATX headings, paragraphs (hard breaks with two trailing spaces), fenced code blocks, blockquotes (nested + lazy), tight nested lists + `- [x]` tasks, GFM tables with `:---:` alignments, horizontal rules, emphasis/code/links/images.
 - Out of scope (v1): setext headings, indented code blocks, reference links, autolinks, raw HTML (kept as literal text) and loose lists.
-- Fenced code renders verbatim and dimmed — syntax highlighting is a planned follow-up.
+- Fenced `php` code colorizes via the native tokenizer; other languages and bare fences render verbatim and dimmed. The highlight palette is fixed in v1 — `$styles['fence']` keeps theming the fence markers.
 - The parser is reusable on its own: `Bootgly\ABI\Data\__String\Markdown::parse()` returns a pure AST (`Node` trees) with no styling attached.
 
 ## Reference
@@ -98,3 +112,9 @@ public array $styles = [...];
 ```
 
 SGR code lists per element key — override any entry to theme the render.
+
+```php
+public array $Highlighters = ['php' => ...];
+```
+
+Fence highlighters by lowercase language infoword — each entry is a `callable(string $source): null|string` returning bare colored lines (`null` falls back to the dimmed source). The `php` default reuses the ABI `Tokens\Highlighter`, probing `token_get_all` once.

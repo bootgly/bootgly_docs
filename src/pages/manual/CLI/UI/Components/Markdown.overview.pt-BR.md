@@ -50,6 +50,20 @@ $Markdown->styles['code'] = ['96'];       // código inline em ciano brilhante
 
 Chaves: `h1`-`h6`, `bold`, `italic`, `strike`, `code`, `fence`, `source`, `link`, `url`, `image`, `quote`, `marker`, `checked`, `unchecked`, `rule`, `header`, `border`.
 
+## Syntax highlighting
+
+Blocos cercados `php` colorizam automaticamente via o tokenizer nativo do framework (o `Tokens\Highlighter` do ABI — `token_get_all`, zero dependências). O infoword de linguagem casa sem diferenciar maiúsculas, e snippets sem tag colorizam como PHP puro.
+
+Plugue outras linguagens pelo mapa público `$Highlighters` — um callable por infoword em minúsculas; retorne `null` para cair no source esmaecido:
+
+```php
+$Markdown->Highlighters['ini'] = static function (string $source): null|string {
+   return colorize($source);   // linhas coloridas, sem gutter
+};
+```
+
+Linguagens sem plug e fences sem infoword renderizam verbatim e esmaecidas; saída plana nunca coloriza.
+
 ## Segurança
 
 O source é tratado como **texto não-confiável**: bytes de controle raw (incluindo `ESC`) são removidos, então markdown nunca injeta movimentos de cursor ou estilos perdidos no seu terminal — e o conteúdo nunca passa pelo engine de markup de Template.
@@ -58,7 +72,7 @@ O source é tratado como **texto não-confiável**: bytes de controle raw (inclu
 
 - Subconjunto suportado: headings ATX, parágrafos (hard breaks com dois espaços no fim), blocos de código cercados, blockquotes (aninhados + lazy), listas tight aninhadas + tasks `- [x]`, tabelas GFM com alinhamentos `:---:`, réguas horizontais, ênfases/código/links/imagens.
 - Fora do escopo (v1): setext headings, código indentado, reference links, autolinks, HTML raw (mantido como texto literal) e loose lists.
-- Código cercado renderiza verbatim e esmaecido — syntax highlighting é um follow-up planejado.
+- Código cercado `php` coloriza via o tokenizer nativo; outras linguagens e fences sem infoword renderizam verbatim e esmaecidas. A paleta do highlight é fixa na v1 — `$styles['fence']` segue tematizando os marcadores do fence.
 - O parser é reutilizável sozinho: `Bootgly\ABI\Data\__String\Markdown::parse()` retorna uma AST pura (árvores de `Node`) sem nenhum estilo.
 
 ## Reference
@@ -98,3 +112,9 @@ public array $styles = [...];
 ```
 
 Listas de códigos SGR por chave de elemento — sobrescreva qualquer entrada para tematizar o render.
+
+```php
+public array $Highlighters = ['php' => ...];
+```
+
+Highlighters de fence por infoword de linguagem em minúsculas — cada entrada é um `callable(string $source): null|string` que retorna linhas coloridas sem gutter (`null` cai no source esmaecido). O default `php` reusa o `Tokens\Highlighter` do ABI, sondando `token_get_all` uma vez.
