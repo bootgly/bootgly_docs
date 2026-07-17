@@ -1,6 +1,6 @@
 # Componente Form
 
-O componente `Form` pergunta uma lista declarativa de campos, um por vez, reutilizando [Question](/manual/CLI/UI/Components/Question/overview) e [Menu](/manual/CLI/UI/Components/Menu/overview) como editores de campo. Em terminais interativos, permite voltar ao campo anterior (`↑` + Enter) e termina com um resumo em [Fieldset](/manual/CLI/UI/Components/Fieldset/overview) mais um Menu de confirmação — qualquer campo pode ser editado antes de submeter. Em entrada não interativa (pipes, CI), lê exatamente uma linha do stdin por campo, deterministicamente.
+O componente `Form` pergunta uma lista declarativa de campos, um por vez. Em terminais interativos, cada campo é editado dentro de um **quadro fieldset** — o label como legend na borda superior, o editor dentro: um editor de linha raw para campos `Text`/`Secret` (o quadro repinta por tecla, sempre completo) e uma lista radio para campos `Select`/`Confirm`. Campos respondidos assentam como quadros esmaecidos que ficam na tela. Permite voltar ao campo anterior (`↑` + Enter) e termina com um resumo em [Fieldset](/manual/CLI/UI/Components/Fieldset/overview) mais um Menu de confirmação — qualquer campo pode ser editado antes de submeter. Em entrada não interativa (pipes, CI), lê exatamente uma linha do stdin por campo, deterministicamente — editores planos, sem quadros.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UX/Components/Form/showcase).
 
@@ -35,7 +35,21 @@ $answers = $Form->ask();
 // ['Name' => '...', 'Platform' => '...', 'Git' => 'yes'|'no']
 ```
 
-Cada controle de campo mapeia para seu editor: `Text` e `Secret` usam Question, `Select` usa um Menu de seleção única e `Confirm` usa `Question->confirm()`.
+Cada campo renderiza como um quadro fieldset em terminais interativos — o campo ativo carrega uma legend ciano; campos respondidos assentam esmaecidos, mantendo a resposta gravada visível:
+
+```text
+┌ Name ────────────────────────────────┐
+│ MyApp                                │
+└──────────────────────────────────────┘
+
+┌ Platform ────────────────────────────┐
+│ › ● Console                          │
+│   ○ Web                              │
+│   ○ Both                             │
+└──────────────────────────────────────┘
+```
+
+Campos `Select` miram com `↑`/`↓` e selecionam com Enter. Campos `Confirm` são um radio Yes/No com hotkeys `y`/`n`. Defaults de texto renderizam como um placeholder esmaecido `[default]` até você digitar.
 
 ## Validando campos
 
@@ -66,13 +80,7 @@ $Form->add('PIN', Controls::Secret, mask: '*');
 
 ## Voltando
 
-Durante as respostas, digite `↑` e Enter para voltar um campo. A resposta anterior vira o default do campo reperguntado, então Enter a aceita de novo:
-
-```text
-Name: MyApp
-Platform: (↑ + Enter)   ← volta
-Name [MyApp]:           ← resposta anterior como default
-```
+Enquanto responde um campo `Text`/`Secret`, pressione `↑` e depois Enter para voltar um campo. O quadro assentado do campo anterior é apagado e o campo reabre com a resposta anterior como placeholder esmaecido `[MyApp]` — Enter a aceita de novo. Campos `Select` e `Confirm` usam `↑` para mirar, então o revert está disponível apenas em campos `Text`/`Secret`.
 
 ## Resumo e confirmação
 
@@ -113,7 +121,7 @@ enum Bootgly\CLI\UX\Form\Controls
 }
 ```
 
-O controle do campo — decide qual editor pergunta o campo: `Text`/`Secret` → Question, `Select` → Menu (seleção única), `Confirm` → Question (yes/no).
+O controle do campo — decide o editor dentro do quadro: `Text`/`Secret` → editor de linha raw (echo mascarado no `Secret`), `Select` → lista radio, `Confirm` → radio Yes/No com hotkeys `y`/`n`. Em entrada não interativa todos os controles leem uma linha do stdin (`Text`/`Secret` via Question, `Confirm` via `Question->confirm()`).
 
 ### Propriedades do Form
 
@@ -127,7 +135,13 @@ Config. O título do Fieldset de resumo. Default: `''` (renderiza como `Summary`
 public int $attempts
 ```
 
-Config. Tentativas por campo repassadas ao Question — `0` significa ilimitado. Default: `0`.
+Config. Tentativas por campo repassadas aos editores de campo — `0` significa ilimitado. Default: `0`.
+
+```php
+public null|int $width
+```
+
+Config. A largura do quadro de campo, em colunas — `null` segue a largura do terminal (80 em streams sem uma). Default: `null`.
 
 ```php
 public Fields $Fields

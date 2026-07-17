@@ -1,6 +1,6 @@
 # Form Component
 
-The `Form` component asks a declarative list of fields, one at a time, reusing [Question](/manual/CLI/UI/Components/Question/overview) and [Menu](/manual/CLI/UI/Components/Menu/overview) as field editors. On interactive terminals it supports going back to the previous field (`↑` + Enter) and ends with a [Fieldset](/manual/CLI/UI/Components/Fieldset/overview) summary plus a confirm Menu — any field can be edited before submitting. On non-interactive input (pipes, CI) it reads exactly one stdin line per field, deterministically.
+The `Form` component asks a declarative list of fields, one at a time. On interactive terminals every field is edited inside a **fieldset frame** — the label as the legend on the top border, the editor inside: a raw line editor for `Text`/`Secret` fields (the frame repaints per keystroke, always complete) and a radio list for `Select`/`Confirm` fields. Answered fields settle as dim frames that stay on screen. It supports going back to the previous field (`↑` + Enter) and ends with a [Fieldset](/manual/CLI/UI/Components/Fieldset/overview) summary plus a confirm Menu — any field can be edited before submitting. On non-interactive input (pipes, CI) it reads exactly one stdin line per field, deterministically — plain editors, no frames.
 
 A live demo is available in the [showcase](/manual/CLI/UX/Components/Form/showcase).
 
@@ -35,7 +35,21 @@ $answers = $Form->ask();
 // ['Name' => '...', 'Platform' => '...', 'Git' => 'yes'|'no']
 ```
 
-Each field control maps to its editor: `Text` and `Secret` use Question, `Select` uses a unique-selection Menu and `Confirm` uses `Question->confirm()`.
+Each field renders as a fieldset frame on interactive terminals — the active field carries a cyan legend; answered fields settle dim, keeping the recorded answer visible:
+
+```text
+┌ Name ────────────────────────────────┐
+│ MyApp                                │
+└──────────────────────────────────────┘
+
+┌ Platform ────────────────────────────┐
+│ › ● Console                          │
+│   ○ Web                              │
+│   ○ Both                             │
+└──────────────────────────────────────┘
+```
+
+`Select` fields aim with `↑`/`↓` and select with Enter. `Confirm` fields are a Yes/No radio with `y`/`n` hotkeys. Text defaults render as a dim `[default]` placeholder until you type.
 
 ## Validating fields
 
@@ -66,13 +80,7 @@ $Form->add('PIN', Controls::Secret, mask: '*');
 
 ## Going back
 
-While answering, type `↑` then Enter to go back one field. The previous answer becomes the default of the re-asked field, so Enter re-accepts it:
-
-```text
-Name: MyApp
-Platform: (↑ + Enter)   ← goes back
-Name [MyApp]:           ← previous answer as default
-```
+While answering a `Text`/`Secret` field, press `↑` then Enter to go back one field. The settled frame of the previous field is erased and the field re-opens with the previous answer as a dim `[MyApp]` placeholder — Enter re-accepts it. `Select` and `Confirm` fields use `↑` to aim, so revert is available on `Text`/`Secret` fields only.
 
 ## Summary and confirm
 
@@ -113,7 +121,7 @@ enum Bootgly\CLI\UX\Form\Controls
 }
 ```
 
-The field control — decides which editor asks the field: `Text`/`Secret` → Question, `Select` → Menu (unique selection), `Confirm` → Question (yes/no).
+The field control — decides the editor inside the frame: `Text`/`Secret` → raw line editor (masked echo on `Secret`), `Select` → radio list, `Confirm` → Yes/No radio with `y`/`n` hotkeys. On non-interactive input all controls read one stdin line (`Text`/`Secret` via Question, `Confirm` via `Question->confirm()`).
 
 ### Form properties
 
@@ -127,7 +135,13 @@ Config. The summary Fieldset title. Default: `''` (renders as `Summary`).
 public int $attempts
 ```
 
-Config. Per-field attempts forwarded to Question — `0` means unlimited. Default: `0`.
+Config. Per-field attempts forwarded to the field editors — `0` means unlimited. Default: `0`.
+
+```php
+public null|int $width
+```
+
+Config. The field frame width, in columns — `null` follows the terminal width (80 on streams without one). Default: `null`.
 
 ```php
 public Fields $Fields
