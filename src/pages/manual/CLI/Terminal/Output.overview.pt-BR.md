@@ -107,3 +107,14 @@ $Output->render('@#green: Esse texto será apresentado pelo Terminal na cor verd
 ## Veja ao vivo
 
 O demo oficial de Output roda no [showcase ao vivo](/manual/CLI/Terminal/Output/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.
+
+## Regiões aninhadas
+
+`Output\Region` aninha a saída de um componente dentro de uma área hospedeira — cada linha escrita carrega um gutter esquerdo pintado e desloca à direita pela largura do gutter. O stream de bytes é traduzido em tempo real (quebras de linha reentram após o gutter, movimentos de coluna deslocam pelo offset, apagamentos de linha repintam o gutter), então componentes que usam o idioma de repaint de bloco renderizam dentro da região sem alteração. O Wizard o usa para aninhar o conteúdo dos steps dentro da timeline:
+
+```php
+use Bootgly\CLI\Terminal\Output\Region;
+
+$Region = new Region($Output->stream, $gutter, 3);
+// componentes construídos com $Region renderizam atrás do gutter
+```

@@ -71,6 +71,18 @@ public array $glyphs
 Config. Os glifos de estado, chaveados por `pending`, `active`, `done` e `failed`. Padrão: `○ ◉ ✔ ✖`.
 
 ```php
+public null|int $from
+```
+
+Config. Renderiza steps apenas a partir deste índice (`null` começa no primeiro) — para consumidores de frame dividido como o Wizard, que aninha uma área de conteúdo dentro da timeline. Padrão: `null`.
+
+```php
+public null|int $until
+```
+
+Config. Renderiza steps apenas até este índice (`null` renderiza todos) — para consumidores de frame dividido como o Wizard, que aninha uma área de conteúdo dentro da timeline. Padrão: `null`.
+
+```php
 public bool $append
 ```
 

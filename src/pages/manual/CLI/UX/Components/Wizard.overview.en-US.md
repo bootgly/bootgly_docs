@@ -1,6 +1,6 @@
 # Wizard Component
 
-The `Wizard` component is a declarative multi-step guided flow on the [Timeline](/manual/CLI/UI/Components/Timeline/overview) spine: each step binds a label to a handler, and `run()` walks them forward-only with the timeline fixed at the top of the screen — past steps with a green `✔`, the active one with a cyan `◉`, future ones muted in gray `○`. Each activation repaints a fresh screen, so the active step's content — any component the handler renders — always sits right below the frame, and the whole flow map stays visible while the user answers. It is the component behind the canonical project installer (`bootgly project create`).
+The `Wizard` component is a declarative multi-step guided flow on the [Timeline](/manual/CLI/UI/Components/Timeline/overview) spine: each step binds a label to a handler, and `run()` walks them forward-only with the timeline fixed at the top of the screen — past steps with a green `✔` (and their notes), the active one with a cyan `◉` and the upcoming ones muted in gray `○`. The step content is **nested inside the timeline**: the handler's editor renders through a nested output region — every content row carries the dim `│` guide and shifts into the content area — with the upcoming steps always visible below, no matter how many steps the wizard carries. It is the component behind the canonical project installer (`bootgly project create`).
 
 A live demo is available in the [showcase](/manual/CLI/UX/Components/Wizard/showcase).
 
@@ -36,7 +36,25 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 
 ## Running
 
-`run()` walks the steps in order: each activation clears the screen, paints the title and the full frame — the upcoming steps already visible in gray — and invokes the handler right below it. Completion closes on a fresh screen with the final all-done frame; a failure appends the final frame instead, preserving the failed step's content and Alerts:
+`run()` walks the steps in order: each activation clears the screen, paints the title and the full frame — past + active steps, the guide-row content area, the upcoming steps — and anchors the cursor inside the content area (relative movements only, safe on scrolled and embedded terminals). The handler's editor renders right there, between the active step and the next one:
+
+```text
+✔ Name (App)
+│
+◉ Interface
+│
+│  Which interface?
+│  (↑/↓ to move, Enter to confirm)
+│
+│  => [ ] CLI — Console app
+│     [ ] WPI — Web (HTTP) server
+│
+○ Confirm
+│
+○ Build
+```
+
+The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. Steps with taller editors declare their own height with `rows` on `add()` (e.g. a 5-line Menu wants `rows: 6`). While a handler runs, its components write through a nested `Region` output: rows gain the guide automatically and `Terminal::$width` shrinks by the guide width, so width-aware components fit without knowing they are embedded. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
 
 ```php
 $done = $Wizard->run();
@@ -142,13 +160,19 @@ public private(set) bool $finished
 
 Metadata (read-only). Whether the flow ended (completed or failed).
 
+```php
+public int $reserve
+```
+
+Config. The default content area height, in guide rows, nested between the active step and the next (minimum 2: guide + content). Default: `3`.
+
 ### add()
 
 ```php
-public function add (string $label, Closure $handler): Step
+public function add (string $label, Closure $handler, int $rows = 0): Step
 ```
 
-Adds a step: the label enters the timeline and the handler is invoked when the step activates. Callable before and during `run()` — mid-run additions insert right after the active step, in add order. Returns the Timeline `Step`.
+Adds a step: the label enters the timeline and the handler is invoked when the step activates. `rows` reserves this step's content area height (`0` follows the wizard `reserve`) — size it to the step's tallest editor. Callable before and during `run()` — mid-run additions insert right after the active step, in add order. Returns the Timeline `Step`.
 
 ### run()
 

@@ -150,7 +150,7 @@ $Text->insert(lines: 3, spaces: 5);
 ### Limpando o display
 
 ```php
-clear ([ bool $up = false [, bool $down = false ]]) : Output
+clear ([ bool $up = false [, bool $down = false [, int $lines = 0 ]]] ) : Output
 ```
 
 Você pode utilizar o método `clear` para limpar uma ou mais partes do terminal:
@@ -170,6 +170,10 @@ $Text->clear(up: true, down: true);
 
 // Isso também limpa todas as linhas acima e abaixo da posição atual do cursor no terminal.
 $Text->clear();
+
+// Isto limpa exatamente 3 linhas (linha do cursor + 2 abaixo) e retorna o
+// cursor à linha inicial — tudo abaixo das 3 linhas sobrevive (delimitado).
+$Text->clear(lines: 3);
 ```
 
 ### Removendo caracteres

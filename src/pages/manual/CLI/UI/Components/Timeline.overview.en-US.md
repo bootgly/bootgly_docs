@@ -71,6 +71,18 @@ public array $glyphs
 Config. The state glyphs, keyed by `pending`, `active`, `done` and `failed`. Default: `○ ◉ ✔ ✖`.
 
 ```php
+public null|int $from
+```
+
+Config. Renders steps only from this index (`null` starts at the first) — for split-frame consumers like the Wizard, which nests a content area inside the timeline. Default: `null`.
+
+```php
+public null|int $until
+```
+
+Config. Renders steps only up to this index (`null` renders all) — for split-frame consumers like the Wizard, which nests a content area inside the timeline. Default: `null`.
+
+```php
 public bool $append
 ```
 

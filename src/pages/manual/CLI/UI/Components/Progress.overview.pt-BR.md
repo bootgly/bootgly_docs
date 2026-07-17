@@ -69,7 +69,7 @@ Essa composição é feita definindo a posição onde cada parte irá ficar usan
 
 ```php
 $Progress->template = <<<'TEMPLATE'
-@described;
+@description;
 @current;/@total; [@bar;] @percent;%
 ⏱️ @elapsed;s - 🏁 @eta;s - 📈 @rate; loops/s
 TEMPLATE;
@@ -81,7 +81,7 @@ Cada token deve começar com o caractere `@` e terminar com o caractere `;`.
 
 Segue abaixo o que cada token representa:
 
-`@described;`: última descrição chamada pelo método `describe()`.
+`@description;`: última descrição chamada pelo método `describe()`.
 
 `@current;`: quantidade atual da operação em andamento.
 

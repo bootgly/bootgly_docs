@@ -106,3 +106,14 @@ $Output->render('@#green: This text will be presented by the Terminal in green c
 ## See it live
 
 The official Output demo runs in the [live showcase](/manual/CLI/Terminal/Output/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.
+
+## Nested regions
+
+`Output\Region` nests a component's output inside a host area — every row it writes carries a painted left gutter and shifts right by the gutter width. The byte stream is translated on the fly (line breaks re-enter after the gutter, column moves shift by the offset, line erases repaint the gutter), so components using the block-repaint idiom render inside the region untouched. The Wizard uses it to nest step content inside its timeline:
+
+```php
+use Bootgly\CLI\Terminal\Output\Region;
+
+$Region = new Region($Output->stream, $gutter, 3);
+// components constructed with $Region render behind the gutter
+```

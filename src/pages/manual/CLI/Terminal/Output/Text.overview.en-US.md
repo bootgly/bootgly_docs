@@ -148,13 +148,14 @@ $Text->insert(lines: 3, spaces: 5);
 ### Clearing the display
 
 ```php
-clear ([ bool $up = false [, bool $down = false ]]) : Output
+clear ([ bool $up = false [, bool $down = false [, int $lines = 0 ]]] ) : Output
 ```
 
 You can use the `clear` method to clear one or more parts of the terminal:
 
 If `up` is `true`: the lines above the current line will be cleared.
 If `down` is `true`: the lines below the current line will be cleared.
+If `lines` is greater than `0`: exactly that many rows are cleared, from the cursor row down — **bounded**: content below the cleared block is preserved and the cursor returns to the starting row. This is the block-repaint idiom used by the interactive components (move up N rows, clear exactly N rows, rewrite), so components never destroy content rendered below their own block.
 
 ```php
 // This clears all lines above the current cursor position in the terminal.
@@ -168,6 +169,10 @@ $Text->clear(up: true, down: true);
 
 // This also clears all lines above and below the current cursor position in the terminal.
 $Text->clear();
+
+// This clears exactly 3 rows (cursor row + 2 below) and returns the cursor
+// to the starting row — anything below the 3 rows survives.
+$Text->clear(lines: 3);
 ```
 
 ### Removing characters

@@ -1,6 +1,6 @@
 # Componente Wizard
 
-O componente `Wizard` é um fluxo guiado multi-etapas declarativo sobre a espinha do [Timeline](/manual/CLI/UI/Components/Timeline/overview): cada step vincula um rótulo a um handler, e `run()` os percorre só para frente com a timeline fixa no topo da tela — steps passados com `✔` verde, o ativo com `◉` ciano, os futuros esmaecidos em cinza `○`. Cada ativação repinta uma tela nova, então o conteúdo do step ativo — qualquer componente que o handler renderize — fica sempre logo abaixo do frame, e o mapa completo do fluxo permanece visível enquanto o usuário responde. É o componente por trás do instalador canônico de projetos (`bootgly project create`).
+O componente `Wizard` é um fluxo guiado multi-etapas declarativo sobre a espinha do [Timeline](/manual/CLI/UI/Components/Timeline/overview): cada step vincula um rótulo a um handler, e `run()` os percorre só para frente com a timeline fixa no topo da tela — steps passados com `✔` verde (e suas notas), o ativo com `◉` ciano e os próximos esmaecidos em cinza `○`. O conteúdo do step fica **aninhado dentro da timeline**: o editor do handler renderiza através de uma região de saída aninhada — cada linha de conteúdo carrega a guia `│` esmaecida e desloca para a área de conteúdo — com os próximos steps sempre visíveis abaixo, não importa quantos steps o wizard carregue. É o componente por trás do instalador canônico de projetos (`bootgly project create`).
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UX/Components/Wizard/showcase).
 
@@ -36,7 +36,25 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 
 ## Executando
 
-`run()` percorre os steps em ordem: cada ativação limpa a tela, pinta o título e o frame completo — com os steps futuros já visíveis em cinza — e invoca o handler logo abaixo. A conclusão fecha em uma tela nova com o frame final todo concluído; uma falha anexa o frame final, preservando o conteúdo e os Alerts do step que falhou:
+`run()` percorre os steps em ordem: cada ativação limpa a tela, pinta o título e o frame completo — steps passados + ativo, a área de conteúdo com linhas-guia, os próximos steps — e ancora o cursor dentro da área de conteúdo (só movimentos relativos, seguro em terminais com scroll ou embutidos). O editor do handler renderiza ali, entre o step ativo e o próximo:
+
+```text
+✔ Name (App)
+│
+◉ Interface
+│
+│  Which interface?
+│  (↑/↓ to move, Enter to confirm)
+│
+│  => [ ] CLI — Console app
+│     [ ] WPI — Web (HTTP) server
+│
+○ Confirm
+│
+○ Build
+```
+
+A área de conteúdo tem `reserve` linhas de altura (3 por padrão, mais uma guia de respiro de cada lado) — linhas não usadas leem como o conector. Steps com editores mais altos declaram a própria altura com `rows` no `add()` (ex.: um Menu de 5 linhas quer `rows: 6`). Enquanto um handler roda, seus componentes escrevem através de um Output `Region` aninhado: as linhas ganham a guia automaticamente e `Terminal::$width` encolhe pela largura da guia, então componentes sensíveis à largura cabem sem saber que estão embutidos. A conclusão fecha em uma tela nova com o frame vertical final completo; uma falha anexa o frame final abaixo, preservando o conteúdo e os Alerts do step que falhou:
 
 ```php
 $done = $Wizard->run();
@@ -142,13 +160,19 @@ public private(set) bool $finished
 
 Metadata (somente leitura). Se o fluxo terminou (completo ou falho).
 
+```php
+public int $reserve
+```
+
+Config. A altura padrão da área de conteúdo, em linhas-guia, aninhada entre o step ativo e o próximo (mínimo 2: guia + conteúdo). Padrão: `3`.
+
 ### add()
 
 ```php
-public function add (string $label, Closure $handler): Step
+public function add (string $label, Closure $handler, int $rows = 0): Step
 ```
 
-Adiciona um step: o rótulo entra na timeline e o handler é invocado quando o step ativa. Chamável antes e durante o `run()` — adições mid-run inserem logo após o step ativo, na ordem de adição. Retorna o `Step` do Timeline.
+Adiciona um step: o rótulo entra na timeline e o handler é invocado quando o step ativa. `rows` reserva a altura da área de conteúdo deste step (`0` segue o `reserve` do wizard) — dimensione pelo editor mais alto do step. Chamável antes e durante o `run()` — adições mid-run inserem logo após o step ativo, na ordem de adição. Retorna o `Step` do Timeline.
 
 ### run()
 
