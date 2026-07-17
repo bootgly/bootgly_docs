@@ -133,6 +133,14 @@ public function tick (): void
 
 Advances the Shimmer wave one step, throttled by `interval` — call it from the waiting loop. No-op on non-interactive output.
 
+### shimmer()
+
+```php
+public function shimmer (int $frame): string
+```
+
+Composes one Shimmer frame — the bright window sliding over the dimmed content — as Template markup, at the given wave phase. Consumers animating their own lines (e.g. the Spinner description effect) paint one frame per own tick.
+
 ### finish()
 
 ```php

@@ -41,28 +41,90 @@ $Spinner->finish('@#Green:✔@; Dependencies ready.');
 $Spinner->describe('Downloading packages...');
 ```
 
-## Custom frames
+## Named animation sets
 
-The animation frames are plain strings — swap them for any charset:
+Visuals are **named sets** resolved from the `Spinner::$Sets` registry — `braille` (default), `star` (assistant style), `line`, `arc` and `dots` builtins. Register your own set and select it by name; `$frames` stays available as the raw escape hatch:
 
 ```php
-$Spinner->frames = ['-', '\\', '|', '/'];
-$Spinner->throttle = 0.12;
+$Spinner->set = 'star';                         // ✢ ✳ ✶ ✻ ✽ …
+
+Spinner::$Sets['clock'] = ['🕐', '🕑', '🕒'];    // register…
+$Spinner->set = 'clock';                        // …and select
+
+$Spinner->frames = ['-', '\\', '|', '/'];        // or raw frames directly
 ```
+
+Unknown names throw a `ValueError`.
+
+## Live status
+
+`status` renders a dim parenthetical after the description — reassign it anytime, the next repaint carries it. The `@elapsed;` token formats the running time automatically (`47s`, `2m 07s`):
+
+```php
+$Spinner->status = '@elapsed; · ↓ 2.1k tokens';
+
+// later, from the working loop — updates in real time:
+$Spinner->status = '@elapsed; · ↓ 4.7k tokens';
+```
+
+```text
+✶ Processing… (47s · ↓ 2.1k tokens)
+```
+
+## Tips
+
+`tips` renders a dim guide row below the spinner and rotates through the pool while the work runs (`rotation` seconds each):
+
+```php
+$Spinner->tips = [
+   'Tip: you can control how big a workflow gets in /config.',
+   'Tip: press Esc to interrupt the run at any time.'
+];
+$Spinner->rotation = 10.0;
+```
+
+```text
+✶ Processing… (47s · ↓ 2.1k tokens)
+  └ Tip: you can control how big a workflow gets in /config.
+```
+
+## Text effects
+
+`effect` animates the description with a [Text](/manual/CLI/UI/Atoms/Text) effect: `Effects::Shimmer` slides a bright wave over the dimmed text (assistant style) and `Effects::Fade` breathes dim → plain → bold:
+
+```php
+use Bootgly\CLI\UI\Atoms\Text\Effects;
+
+$Spinner->effect = Effects::Shimmer;
+```
+
+The effect animates on the plain description text (embedded markup is stripped for the wave).
 
 ## Non-interactive output
 
-On pipes and CI, `start()` prints the description once, `spin()` is a no-op and `finish()` prints the resolution line — one line each, no repaints, deterministic.
+On pipes and CI, `start()` prints the description once, `spin()` is a no-op and `finish()` prints the resolution line — one line each, no repaints, no status/tips/effects, deterministic.
 
 ## Reference
 
 ### Properties
 
 ```php
+public static array $Sets
+```
+
+Config. The named animation sets registry — `braille`, `star`, `line`, `arc` and `dots` builtins; register your own (`name` → frames array).
+
+```php
+public string $set
+```
+
+Config. The named animation set — resolved from `Spinner::$Sets`, writes `$frames`. Unknown names throw a `ValueError`. Default: `'braille'`.
+
+```php
 public array $frames
 ```
 
-Config. The animation frames (one string per tick). Default: braille dots (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`).
+Config. The animation frames (one string per tick) — the raw escape hatch under `$set`. Default: braille dots (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`).
 
 ```php
 public float $throttle
@@ -71,10 +133,34 @@ public float $throttle
 Config. Minimum seconds between repaints. Default: `0.08`.
 
 ```php
+public string $status
+```
+
+Config. The live status — rendered dim between parentheses after the description; the `@elapsed;` token resolves to the formatted running time on every repaint. Default: `''` (no segment).
+
+```php
+public array $tips
+```
+
+Config. The rotating tip lines — rendered as a dim `└` guide row below the spinner. Default: `[]` (no row).
+
+```php
+public float $rotation
+```
+
+Config. Seconds each tip stays before rotating to the next. Default: `10.0`.
+
+```php
+public null|Effects $effect
+```
+
+Config. The description text effect — `Effects::Shimmer` (sliding bright wave) or `Effects::Fade` (dim → plain → bold pulse). Default: `null` (plain).
+
+```php
 public string $template
 ```
 
-Config. The frame template with the `@spinner;` and `@description;` tokens. Default: `'@spinner; @description;'`.
+Config. The frame template with the `@spinner;`, `@description;` and `@status;` tokens. Default: `'@spinner; @description;@status;'`.
 
 ```php
 public private(set) int $frame
@@ -100,7 +186,7 @@ Metadata (read-only). `true` after `finish()`.
 public function start (string $description = ''): void
 ```
 
-Starts the spinner: records the description, reserves the line and hides the cursor. Non-interactive output renders the description once instead.
+Starts the spinner: records the description, reserves the rows (spinner + tip) and hides the cursor. Non-interactive output renders the description once instead.
 
 ### spin()
 
