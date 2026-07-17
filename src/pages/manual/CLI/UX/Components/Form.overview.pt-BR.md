@@ -53,7 +53,7 @@ Campos `Select` miram com `↑`/`↓` e selecionam com Enter. Campos `Confirm` s
 
 ## Validando campos
 
-Campos de texto aceitam o mesmo contrato de Validator do Question — uma Closure que recebe a resposta candidata e retorna `true` ou uma mensagem de erro. Respostas inválidas perguntam o campo novamente:
+Campos de texto aceitam um Validator — uma Closure que recebe a resposta candidata e retorna `true` ou uma mensagem de erro. A validação se comporta como um form HTML: o alerta de erro renderiza **abaixo** do quadro fieldset e some assim que você volta a digitar, e a linha do fieldset fica **verde** enquanto o valor digitado passa no Validator — tanto ao vivo quanto no quadro assentado:
 
 ```php
 $Form->add(

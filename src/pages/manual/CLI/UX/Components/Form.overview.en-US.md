@@ -53,7 +53,7 @@ Each field renders as a fieldset frame on interactive terminals — the active f
 
 ## Validating fields
 
-Text fields accept the same Validator contract as Question — a Closure receiving the candidate answer and returning `true` or an error message. Invalid answers re-ask the field:
+Text fields accept a Validator — a Closure receiving the candidate answer and returning `true` or an error message. Validation behaves like an HTML form: the error alert renders **below** the fieldset frame and dismisses as soon as you type again, and the fieldset line turns **green** while the typed value passes the Validator — both live and on the settled frame:
 
 ```php
 $Form->add(
