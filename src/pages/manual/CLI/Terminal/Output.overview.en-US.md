@@ -109,11 +109,4 @@ The official Output demo runs in the [live showcase](/manual/CLI/Terminal/Output
 
 ## Nested regions
 
-`Output\Region` nests a component's output inside a host area — every row it writes carries a painted left gutter and shifts right by the gutter width. The byte stream is translated on the fly (line breaks re-enter after the gutter, column moves shift by the offset, line erases repaint the gutter), so components using the block-repaint idiom render inside the region untouched. The Wizard uses it to nest step content inside its timeline:
-
-```php
-use Bootgly\CLI\Terminal\Output\Region;
-
-$Region = new Region($Output->stream, $gutter, 3);
-// components constructed with $Region render behind the gutter
-```
+[`Output\Region`](/manual/CLI/Terminal/Output/Region/overview) is an Output that writes inside a host area: every row carries a painted left gutter and shifts right by the gutter width. Hand a Region to a component instead of this Output and it renders nested, untouched — the byte stream is translated on the fly.

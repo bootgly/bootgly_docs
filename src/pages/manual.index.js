@@ -1208,6 +1208,28 @@ export default {
       }
     }
   },
+  '/CLI/Terminal/Output/Region': {
+    config: {
+      icon: 'vertical_split',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Nest a component output inside a host area — a painted gutter on every row, no component changes.',
+          'pt-BR': 'Aninhe a saída de um componente dentro de uma área hospedeira — gutter pintado em cada linha, sem mudar o componente.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Region'
+      }
+    }
+  },
   '/CLI/Terminal/Output/Text': {
     config: {
       icon: 'text_fields',

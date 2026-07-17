@@ -110,11 +110,4 @@ O demo oficial de Output roda no [showcase ao vivo](/manual/CLI/Terminal/Output/
 
 ## Regiões aninhadas
 
-`Output\Region` aninha a saída de um componente dentro de uma área hospedeira — cada linha escrita carrega um gutter esquerdo pintado e desloca à direita pela largura do gutter. O stream de bytes é traduzido em tempo real (quebras de linha reentram após o gutter, movimentos de coluna deslocam pelo offset, apagamentos de linha repintam o gutter), então componentes que usam o idioma de repaint de bloco renderizam dentro da região sem alteração. O Wizard o usa para aninhar o conteúdo dos steps dentro da timeline:
-
-```php
-use Bootgly\CLI\Terminal\Output\Region;
-
-$Region = new Region($Output->stream, $gutter, 3);
-// componentes construídos com $Region renderizam atrás do gutter
-```
+[`Output\Region`](/manual/CLI/Terminal/Output/Region/overview) é um Output que escreve dentro de uma área hospedeira: cada linha carrega um gutter esquerdo pintado e desloca à direita pela largura do gutter. Entregue uma Region a um componente no lugar deste Output e ele renderiza aninhado, sem alteração — o stream de bytes é traduzido em tempo real.
