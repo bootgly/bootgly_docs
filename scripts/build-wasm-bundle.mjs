@@ -13,6 +13,7 @@
  * script warns and exits 0 so predev/prebuild keep working there.
  */
 
+import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -174,8 +175,14 @@ const zipped = zipSync(Object.fromEntries(entries), { level: 9 })
 mkdirSync(dirname(zipPath), { recursive: true })
 writeFileSync(zipPath, zipped)
 
+// Content-hash query busts the browser HTTP cache when the zip changes: the
+// manifest is compiled into the app bundle, so a new build carries the new
+// URL — a plain reload (or the update notification) would otherwise keep
+// serving the stale zip and unknown demo ids die silently as blank runs.
+const contentHash = createHash('sha256').update(zipped).digest('hex').slice(0, 8)
+
 const manifest = {
-  asset: '/wasm/bootgly-cli.zip',
+  asset: `/wasm/bootgly-cli.zip?v=${contentHash}`,
   version,
   wasm: wasmFile ? `/wasm/${wasmFile}` : '',
   files: entries.size,
