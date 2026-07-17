@@ -136,7 +136,7 @@ export default {
       namespace: '',
       accountIdEnv: 'CLOUDFLARE_ACCOUNT_ID',
       apiTokenEnv: 'CLOUDFLARE_API_TOKEN',
-      model: '@cf/meta/llama-4-scout-17b-16e-instruct',
+      model: '@cf/zai-org/glm-4.7-flash',
       retrievalType: 'vector',
       maxResults: 10,
       matchThreshold: 0.4,
