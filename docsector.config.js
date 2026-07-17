@@ -126,7 +126,7 @@ export default {
       showCitations: true,
       suggestedPrompts: [
         'How do I get started?',
-        'Summarize this page.',
+        { text: 'Summarize this page.', pageContext: true },
         'What is the I2P architecture?',
       ]
     },
