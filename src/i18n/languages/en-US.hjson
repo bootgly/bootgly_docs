@@ -75,20 +75,9 @@
     backToTop: 'Back to top'
   },
   changelog: {},
-  settings: {
-    general: {
-      _: 'General Settings',
-      language: {
-        _: 'Language'
-      }
-    },
-    appearance: {
-      _: 'Appearance',
-      background: {
-        _: 'Background Color'
-      }
-    }
-  },
+  // settings.* comes from the Docsector engine defaults — override a key here
+  // only to reword it (the old `appearance.background` key is no longer read).
+
 
   _a: ' and ',
   _o: ' or ',

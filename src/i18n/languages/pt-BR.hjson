@@ -74,20 +74,9 @@
     backToTop: 'Voltar para o topo'
   },
   changelog: {},
-  settings: {
-    general: {
-      _: 'Configurações gerais',
-      language: {
-        _: 'Idioma'
-      }
-    },
-    appearance: {
-      _: 'Aparência',
-      background: {
-        _: 'Cor de fundo'
-      }
-    }
-  },
+  // settings.* vem dos defaults do engine Docsector — sobrescreva uma chave aqui
+  // apenas para mudar o texto (a antiga `appearance.background` não é mais lida).
+
 
   _a: ' e ',
   _o: ' ou ',
