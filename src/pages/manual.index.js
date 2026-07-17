@@ -1304,6 +1304,30 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Differ': {
+    config: {
+      icon: 'difference',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Diff two texts in the terminal — unified hunks or side-by-side columns with line numbers and word highlight.',
+          'pt-BR': 'Diff de dois textos no terminal — hunks unified ou colunas side-by-side com números de linha e destaque por palavra.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Differ'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Dumper': {
     config: {
       icon: 'data_object',
@@ -1315,9 +1339,7 @@ export default {
           'pt-BR': 'Dump de qualquer valor PHP como saída estruturada e colorizada no terminal — sigilos de visibilidade, ciclos, caps e temas.'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Atoms'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
