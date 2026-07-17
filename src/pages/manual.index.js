@@ -1188,7 +1188,7 @@ export default {
   },
   '/CLI/Terminal/Output/Cursor': {
     config: {
-      icon: 'fas fa-i-cursor',
+      icon: 'keyboard_tab',
       meta: {
         description: {
           'en-US': 'Move, hide and style the terminal cursor to orchestrate dynamic CLI layouts.',
