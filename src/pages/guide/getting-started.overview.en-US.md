@@ -38,7 +38,6 @@ The installer initializes the required base platform (`git submodule update --in
 ```text
 bootgly.kit/
 ├── Bootgly/            ← base platform (installed submodule)
-│   ├── &/              ← internal framework resources
 │   ├── @/              ← framework meta resources (certificates, static analysis, ...)
 │   ├── Bootgly/        ← the framework itself — the I2P interfaces, in dependency order:
 │   │   ├── ABI/        ← Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
@@ -49,7 +48,6 @@ bootgly.kit/
 │   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
 │   │   └── commands/   ← built-in CLI commands (boot, demo, project, test, ...)
 │   ├── configs/        ← framework configs
-│   ├── docs/           ← framework docs assets
 │   ├── projects/       ← author-level projects — the import sources (Benchmark/, Demo/, Example/)
 │   ├── public/         ← resource template used by `bootgly boot`
 │   ├── scripts/        ← resource template used by `bootgly boot`
@@ -62,11 +60,7 @@ bootgly.kit/
 │   └── index.php
 ├── Console/            ← Console platform (installed by the wizard)
 ├── Web/                ← Web platform (installed when chosen)
-├── projects/           ← YOUR projects — installed by `bootgly boot`
-│   ├── Benchmark/      ← exportable: false — hidden from the import picker
-│   ├── Demo/           ← exportable: true — importable / refreshable by the wizard
-│   ├── Example/
-│   └── Bootgly.projects.php   ← the consumer registry (allow-list, machine-managed)
+├── projects/           ← YOUR projects — created or imported by the wizard (registered in `Bootgly.projects.php`)
 ├── public/             ← installed by `bootgly boot`
 ├── scripts/            ← installed by `bootgly boot`
 ├── storage/            ← installed by `bootgly boot` (cache/, logs/, pids/)
