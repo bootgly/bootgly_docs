@@ -37,6 +37,16 @@ php bootgly test 16 1
 
 Ambos os índices começam em 1. Use esta forma para focar em um único caso falhando durante o desenvolvimento, sem reexecutar a suíte inteira.
 
+## Ajuda
+
+Liste os argumentos e opções aceitos direto do terminal:
+
+```bash :toolbar="true";
+php bootgly test --help
+```
+
+`-h` é a forma curta da mesma flag. A ajuda imprime as tabelas de argumentos e opções e sai com sucesso — nenhuma suíte é executada. Para as opções específicas de benchmark, use `php bootgly test benchmark --help` (veja a seção Benchmarks abaixo).
+
 ## Cobertura (Coverage)
 
 O runner aceita flags de cobertura tratadas por `Bootgly\ACI\Tests\Coverage`:

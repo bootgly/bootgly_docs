@@ -37,6 +37,16 @@ php bootgly test 16 1
 
 Both indexes are 1-based. Use this form to focus on a single failing case during development without re-running the whole suite.
 
+## Help
+
+List the accepted arguments and options straight from the terminal:
+
+```bash :toolbar="true";
+php bootgly test --help
+```
+
+`-h` is the short form of the same flag. The help prints the argument and option tables and exits with success — no suite is executed. For benchmark-specific options, use `php bootgly test benchmark --help` (see the Benchmarks section below).
+
 ## Coverage
 
 The runner accepts coverage flags handled by `Bootgly\ACI\Tests\Coverage`:
