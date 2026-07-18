@@ -224,6 +224,12 @@ export default {
   // @ Default language
   defaultLanguage: 'en-US',
 
+  // @ SSR — every route is rendered to hydration-ready static HTML at build
+  // time (no Node server in production; output stays in dist/spa)
+  ssr: {
+    enabled: true
+  },
+
   // @ Site URL (used for sitemap.xml generation)
   siteUrl: 'https://docs.bootgly.com'
 }
