@@ -47,6 +47,21 @@ php bootgly test --help
 
 `-h` é a forma curta da mesma flag. A ajuda imprime as tabelas de argumentos e opções e sai com sucesso — nenhuma suíte é executada. Para as opções específicas de benchmark, use `php bootgly test benchmark --help` (veja a seção Benchmarks abaixo).
 
+## Visualização (View)
+
+Escolha como os resultados são renderizados com `--view=`:
+
+```bash :toolbar="true";
+php bootgly test --view=heatmap
+```
+
+| Modo | Comportamento |
+| ---- | ------------- |
+| `list` | Imprime cada caso conforme executa e para no primeiro caso que falhar. Padrão para runs focados (`php bootgly test <suite>` / `<suite> <case>`). |
+| `heatmap` | Renderiza um card de dashboard por suíte — moldura arredondada, medidor de score e um quadrado colorido por assertion (rosa passed, vermelho suave failed, bege skipped). Todas as suítes executam até o fim, as falhas são listadas sob cada card, e o código de saída é diferente de zero quando algum caso falhou. Padrão para full runs (`php bootgly test`). |
+
+O heatmap é renderizado pelo [componente Heatmap](/manual/CLI/UI/Components/Heatmap). Agentes de IA (`AI_AGENT=1`) sempre recebem o documento JSON de resultados, independentemente da view.
+
 ## Cobertura (Coverage)
 
 O runner aceita flags de cobertura tratadas por `Bootgly\ACI\Tests\Coverage`:

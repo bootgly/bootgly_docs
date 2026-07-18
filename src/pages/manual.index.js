@@ -1585,6 +1585,28 @@ export default {
       }
     }
   },
+  '/CLI/UI/Components/Heatmap': {
+    config: {
+      icon: 'grid_on',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Dashboard cards with a score gauge and a dense grid of state-colored cells — the test heatmap view.',
+          'pt-BR': 'Cards de dashboard com medidor de score e uma grade densa de células coloridas por estado — a view heatmap dos testes.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Heatmap'
+      }
+    }
+  },
   '/CLI/UI/Components/Logs': {
     config: {
       icon: 'subject',
