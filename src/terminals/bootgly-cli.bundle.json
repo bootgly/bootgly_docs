@@ -1,9 +1,9 @@
 {
-  "asset": "/wasm/bootgly-cli.zip?v=01d768f9",
+  "asset": "/wasm/bootgly-cli.zip?v=df2500b4",
   "version": "0.24.0-beta",
   "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
-  "files": 717,
-  "bytes": 989691,
+  "files": 719,
+  "bytes": 995804,
   "demos": {
     "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
     "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
@@ -70,6 +70,8 @@
     "32.3": "projects/Demo/CLI/UI/Spinner-04.demo.php",
     "50.1": "projects/Demo/CLI/UX/Toasts-02.demo.php",
     "50.2": "projects/Demo/CLI/UX/Toasts-03.demo.php",
-    "50.3": "projects/Demo/CLI/UX/Toasts-04.demo.php"
+    "50.3": "projects/Demo/CLI/UX/Toasts-04.demo.php",
+    "60.1": "projects/Demo/CLI/UI/Heatmap-02.demo.php",
+    "60.2": "projects/Demo/CLI/UI/Heatmap-03.demo.php"
   }
 }

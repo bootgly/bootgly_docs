@@ -58,9 +58,9 @@ php bootgly test --view=heatmap
 | Mode | Behavior |
 | ---- | -------- |
 | `list` | Prints each case as it runs and stops at the first failing case. Default for targeted runs (`php bootgly test <suite>` / `<suite> <case>`). |
-| `heatmap` | Renders one dashboard card per suite — rounded frame, score gauge and one colored square per assertion (pink passed, soft-red failed, beige skipped). All suites run to the end, failures are listed under each card, and the exit code is non-zero when any case failed. Default for full runs (`php bootgly test`). |
+| `heatmap` | Renders one dashboard card per suite — rounded frame, a progress gauge and one colored square per assertion (green passed, soft-red failed, beige skipped). The gauge fills deterministically by **test cases** (their count is known upfront), while the squares are the individual **assertions** discovered as each case runs — so a suite of 63 cases can show 254 assertions. On interactive terminals the card paints live as cases run. All suites run to the end, failures are listed under each card, and the exit code is non-zero when any case failed. Default for full runs (`php bootgly test`). |
 
-The heatmap is rendered by the [Heatmap component](/manual/CLI/UI/Components/Heatmap). AI agents (`AI_AGENT=1`) always receive the JSON results document, regardless of the view.
+The card is composed by the runner from three components: a [Fieldset](/manual/CLI/UI/Base/Fieldset) boxes a [Charts Meter](/manual/CLI/UI/Components/Charts) (the cases progress) and a [Heatmap](/manual/CLI/UI/Components/Heatmap) (the assertions grid). AI agents (`AI_AGENT=1`) always receive the JSON results document, regardless of the view.
 
 ## Coverage
 

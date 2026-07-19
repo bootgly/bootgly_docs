@@ -64,6 +64,17 @@ $Meter->value = 92.0;
 $Meter->render(); // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■(dim)■■
 ```
 
+Labels de canto opcionais emolduram a barra — `heading`/`summary` acima (esquerda/direita), `caption`/`note` abaixo — todos entendem markup, com os labels da direita alinhados rente à largura da barra. A view heatmap do `bootgly test` rotula seu meter de progresso por suíte exatamente assim:
+
+```php
+$Meter->heading = '@#White:Cases@;';
+$Meter->summary = '@:error:1 failed@;, @:success:3 passed@;';
+$Meter->caption = '@#Black:3 / 4 cases@;';
+$Meter->note = '75%';
+
+$Meter->render();
+```
+
 ## Transmitindo um graph ao vivo
 
 `Graph` é o monitor estilo btop: um gráfico de área multi-linha onde cada célula braille codifica dois valores consecutivos como um par de pontos (anterior, atual) — o dobro de resolução horizontal. `start()` reserva o frame, `feed()` desliza o histórico e repinta (com throttle), `finish()` restaura o cursor:
@@ -214,10 +225,34 @@ public bool $inverted
 Config. Amostra o gradiente da ponta alta para baixo. Padrão: `false`.
 
 ```php
+public string $heading
+```
+
+Config. Label acima da barra, alinhado à esquerda (aceita markup). Padrão: `''`.
+
+```php
+public string $summary
+```
+
+Config. Label acima da barra, alinhado à direita (aceita markup). Padrão: `''`.
+
+```php
+public string $caption
+```
+
+Config. Label abaixo da barra, alinhado à esquerda (aceita markup). Padrão: `''`.
+
+```php
+public string $note
+```
+
+Config. Label abaixo da barra, alinhado à direita (aceita markup). Padrão: `''`.
+
+```php
 public function render (int $mode = self::WRITE_OUTPUT): mixed
 ```
 
-Renderiza o gauge — células preenchidas amostram o gradiente na sua posição, células vazias renderizam esmaecidas.
+Renderiza o gauge — células preenchidas amostram o gradiente na sua posição, células vazias renderizam esmaecidas. Labels definidos adicionam linhas de heading/caption ao redor da barra.
 
 ### Graph
 

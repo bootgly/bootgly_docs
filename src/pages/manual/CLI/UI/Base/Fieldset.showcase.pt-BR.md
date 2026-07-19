@@ -10,4 +10,4 @@ Três variações de moldura (conteúdo mais largo que o título, título mais l
 O `Fieldset` desenha uma caixa ao redor de `$Fieldset->content`, embutindo o `$Fieldset->title` na borda superior. Qualquer string serve como conteúdo — inclusive a saída renderizada de outro componente.
 </d-block-terminal>
 
-O componente está documentado no [overview do Fieldset](/manual/CLI/UI/Components/Fieldset/overview).
+O componente está documentado no [overview do Fieldset](/manual/CLI/UI/Base/Fieldset/overview).

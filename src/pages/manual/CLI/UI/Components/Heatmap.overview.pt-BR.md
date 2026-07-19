@@ -1,8 +1,8 @@
 # Heatmap
 
-O `Heatmap` renderiza um card de dashboard com borda: uma moldura arredondada com título em negrito e percentual de score no cabeçalho, um medidor Meter em células `■`, uma grade densa de células coloridas por estado (com quebra automática de linha) e um rodapé discreto de contagens. As cores são truecolor (com fallback automático para 256 cores), as células mapeiam estados por uma paleta configurável, e o render é one-shot e sem cursor — idêntico em terminais, pipes e logs de CI.
+O `Heatmap` renderiza uma grade densa de células coloridas por estado, com quebra automática de linha — um `■` por entrada, em ordem de execução. Labels de canto opcionais emolduram a grade: `heading`/`summary` acima (esquerda/direita), `caption`/`note` abaixo. As cores são truecolor (com fallback automático para 256 cores), as células mapeiam estados por uma paleta configurável, e os frames são strings sem cursor — idênticos em terminais, pipes e logs de CI. Em terminais interativos a grade também pode pintar ao vivo conforme as células chegam.
 
-É o componente por trás do `bootgly test --view=heatmap`, onde cada suíte de testes vira um card e cada assertion vira uma célula. Demos ao vivo estão disponíveis no [showcase](/manual/CLI/UI/Components/Heatmap/showcase).
+É a grade de assertions do `bootgly test --view=heatmap`, onde cada assertion vira uma célula. Demos ao vivo estão disponíveis no [showcase](/manual/CLI/UI/Components/Heatmap/showcase).
 
 ## Instância
 
@@ -15,12 +15,11 @@ use Bootgly\CLI\UI\Components\Heatmap;
 $Heatmap = new Heatmap(CLI->Terminal->Output);
 ```
 
-## Montando um card
+## Montando uma grade
 
-Atribua um título e as células — chaves de estado em ordem de execução — e renderize. O score deriva da fração de células `positive` (`passed` por padrão), o Meter o mede, e o rodapé conta positivas sobre o total:
+Atribua as células — chaves de estado em ordem de execução — e renderize. A grade quebra automaticamente pela largura; cada célula ocupa duas colunas (`■` mais um espaço). Com `width` em `null`, a grade segue a largura do terminal, limitada a 100 colunas:
 
 ```php
-$Heatmap->title = 'http';
 $Heatmap->width = 64;
 $Heatmap->cells = [
    'passed', 'passed', 'passed', 'failed', 'passed', 'skipped',
@@ -30,11 +29,24 @@ $Heatmap->cells = [
 $Heatmap->render();
 ```
 
-A grade quebra automaticamente na largura do card — cada célula ocupa duas colunas (`■` mais um espaço). Com `width` em `null`, o card segue a largura do terminal, limitada a 100 colunas.
+## Labels de canto
 
-## Estados e cores personalizados
+Quatro labels opcionais emolduram a grade — todos aceitam markup e têm `''` (ausente) como padrão. Labels da direita alinham rente à largura:
 
-A paleta mapeia qualquer chave de estado para uma cor `#RRGGBB`; estados desconhecidos renderizam esmaecidos. Aponte `positive` para o estado que o score e o Meter devem medir:
+```php
+$Heatmap->heading = '@#White:Assertions@;';
+$Heatmap->summary = '@:error:2 failed@;';
+$Heatmap->caption = '@#Black:9 / 12 assertions@;';
+$Heatmap->note = '@#Black:suite 4@;';
+
+$Heatmap->render();
+```
+
+Os labels são propriedades simples — o host os atualiza a qualquer momento, inclusive entre repaints ao vivo.
+
+## Estados e cores customizados
+
+A paleta mapeia qualquer chave de estado para uma cor `#RRGGBB`; estados desconhecidos renderizam esmaecidos:
 
 ```php
 $Heatmap->palette = [
@@ -42,15 +54,30 @@ $Heatmap->palette = [
    'warn' => '#e5c07b',
    'bad'  => '#e06c75',
 ];
-$Heatmap->positive = 'ok';
 $Heatmap->cells = ['ok', 'ok', 'warn', 'ok', 'bad', 'ok'];
 
 $Heatmap->render();
 ```
 
+## Streaming ao vivo
+
+A grade pode pintar conforme os resultados chegam — `start()` a coloca na tela, `feed()` acrescenta células e repinta no lugar (com throttle; a grade cresce conforme enche), e `finish()` pinta o frame final e restaura o cursor:
+
+```php
+$Heatmap->start();
+
+foreach ($results as $state) {
+   $Heatmap->feed($state);
+}
+
+$Heatmap->finish();
+```
+
+O streaming só engata em terminais interativos — em saída plana (pipes, CI) o `feed()` fica em silêncio e o frame único final é renderizado no `finish()`. Force qualquer um dos comportamentos com `decoration`.
+
 ## O dashboard de testes
 
-O runner de testes usa este componente como view de resultados — um card por suíte, uma célula por assertion, falhas listadas sob cada card:
+O runner de testes compõe a view heatmap com três peças: um [Fieldset](/manual/CLI/UI/Base/Fieldset) encaixota um [Meter](/manual/CLI/UI/Components/Charts) de Charts (progresso por cases) e este Heatmap (uma célula por assertion), repintando o card ao vivo a cada case:
 
 ```bash
 php bootgly test --view=heatmap
@@ -61,28 +88,52 @@ Veja [Executando Testes](/testing/basic/running-tests) para o comportamento do l
 ## Referência
 
 ```php
-public string $title;
-```
-
-Título do card, renderizado em negrito no canto superior esquerdo do cabeçalho. Padrão `''`.
-
-```php
 public null|int $width;
 ```
 
-Colunas do card. `null` (padrão) segue a largura do terminal, limitada a 100. Valores abaixo de 20 são elevados a 20.
+Colunas da grade. `null` (padrão) segue a largura do terminal, limitada a 100.
 
 ```php
 public array $palette;
 ```
 
-Mapa estado ⇒ cor `#RRGGBB` usado pelas células e pelo Meter. Padrões: `passed` (rosa), `failed` (vermelho suave) e `skipped` (bege).
+Mapa estado ⇒ cor `#RRGGBB` usado pelas células. Padrão: `passed` (verde), `failed` (vermelho suave) e `skipped` (bege).
 
 ```php
-public string $positive;
+public string $heading;
 ```
 
-O estado medido pelo Meter e pelo score derivado. Padrão `'passed'`.
+Label acima da grade, alinhado à esquerda. Aceita markup. Padrão `''`.
+
+```php
+public string $summary;
+```
+
+Label acima da grade, alinhado à direita. Aceita markup. Padrão `''`.
+
+```php
+public string $caption;
+```
+
+Label abaixo da grade, alinhado à esquerda. Aceita markup. Padrão `''`.
+
+```php
+public string $note;
+```
+
+Label abaixo da grade, alinhado à direita. Aceita markup. Padrão `''`.
+
+```php
+public null|bool $decoration;
+```
+
+Chave do streaming ao vivo — `null` (padrão) segue o TTY, `false` força saída plana, `true` força repaints ao vivo.
+
+```php
+public float $throttle;
+```
+
+Segundos mínimos entre repaints ao vivo. Padrão `0.1`.
 
 ```php
 public array $cells;
@@ -91,13 +142,25 @@ public array $cells;
 Células em ordem de execução — cada entrada é uma chave de estado da paleta. Padrão `[]`.
 
 ```php
-public null|float $score;
-```
-
-Percentual de score exibido no cabeçalho e medido pelo Meter. `null` (padrão) o deriva da fração de células `positive`.
-
-```php
 public function render (int $mode = self::WRITE_OUTPUT): null|string
 ```
 
-Renderiza o card. `WRITE_OUTPUT` escreve o frame no `Output`; `RETURN_OUTPUT` retorna a string bruta do frame.
+Renderiza a grade. `WRITE_OUTPUT` escreve o frame no `Output`; `RETURN_OUTPUT` retorna a string crua do frame.
+
+```php
+public function start (): void
+```
+
+Inicia a grade ao vivo — pinta o frame inicial e esconde o cursor. Saída plana inicia em silêncio (o frame final é renderizado no `finish()`).
+
+```php
+public function feed (string ...$states): self
+```
+
+Acrescenta células e repinta a grade no lugar em terminais interativos, com throttle por `throttle`. Células nunca se perdem — a saída plana só pula a pintura.
+
+```php
+public function finish (): void
+```
+
+Finaliza a grade ao vivo — pinta o frame final e restaura o cursor. Saída plana renderiza seu frame único aqui.

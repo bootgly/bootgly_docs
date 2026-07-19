@@ -10,4 +10,4 @@ Three framing variations (content wider than the title, title wider than the con
 `Fieldset` draws a box around `$Fieldset->content`, embedding `$Fieldset->title` in the top border. Any string works as content — including the rendered output of another component.
 </d-block-terminal>
 
-The component is documented in the [Fieldset overview](/manual/CLI/UI/Components/Fieldset/overview).
+The component is documented in the [Fieldset overview](/manual/CLI/UI/Base/Fieldset/overview).

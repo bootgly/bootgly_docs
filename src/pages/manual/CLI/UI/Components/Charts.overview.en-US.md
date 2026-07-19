@@ -64,6 +64,17 @@ $Meter->value = 92.0;
 $Meter->render(); // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■(dim)■■
 ```
 
+Optional corner labels frame the bar — `heading`/`summary` above (left/right), `caption`/`note` below — all markup-aware, with right labels aligned flush to the bar width. The `bootgly test` heatmap view labels its per-suite progress meter this way:
+
+```php
+$Meter->heading = '@#White:Cases@;';
+$Meter->summary = '@:error:1 failed@;, @:success:3 passed@;';
+$Meter->caption = '@#Black:3 / 4 cases@;';
+$Meter->note = '75%';
+
+$Meter->render();
+```
+
 ## Streaming a live graph
 
 `Graph` is the btop-style monitor: a multi-row area graph where each braille cell encodes two consecutive values as a (previous, current) dot pair — double horizontal resolution. `start()` reserves the frame, `feed()` slides the history and repaints (throttled), `finish()` restores the cursor:
@@ -214,10 +225,34 @@ public bool $inverted
 Config. Samples the gradient from the high end down. Default: `false`.
 
 ```php
+public string $heading
+```
+
+Config. Label above the bar, left-aligned (accepts markup). Default: `''`.
+
+```php
+public string $summary
+```
+
+Config. Label above the bar, right-aligned (accepts markup). Default: `''`.
+
+```php
+public string $caption
+```
+
+Config. Label below the bar, left-aligned (accepts markup). Default: `''`.
+
+```php
+public string $note
+```
+
+Config. Label below the bar, right-aligned (accepts markup). Default: `''`.
+
+```php
 public function render (int $mode = self::WRITE_OUTPUT): mixed
 ```
 
-Renders the gauge — filled cells sample the gradient at their position, empty cells render dim.
+Renders the gauge — filled cells sample the gradient at their position, empty cells render dim. Set labels add heading/caption rows around the bar.
 
 ### Graph
 

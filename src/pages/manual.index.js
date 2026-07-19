@@ -1467,6 +1467,28 @@ export default {
       }
     }
   },
+  '/CLI/UI/Base/Fieldset': {
+    config: {
+      icon: 'crop_square',
+      meta: {
+        description: {
+          'en-US': 'Box markup content in bordered, titled frames — the layout block behind help tables and dashboards.',
+          'pt-BR': 'Encaixote conteúdo com markup em molduras com borda e título — o bloco de layout por trás de tabelas de ajuda e dashboards.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Base'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Fieldset'
+      }
+    }
+  },
   '/CLI/UI/Base/Frame': {
     config: {
       icon: 'picture_in_picture',
@@ -1478,9 +1500,7 @@ export default {
           'pt-BR': 'Pinte caixas com bordas e Outputs isolados e individuais — hospede qualquer componente dentro.'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Base'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
@@ -1543,26 +1563,6 @@ export default {
       }
     }
   },
-  '/CLI/UI/Components/Fieldset': {
-    config: {
-      icon: 'crop_square',
-      meta: {
-        description: {
-          'en-US': 'Group prompts and form-like inputs into structured terminal sections.',
-          'pt-BR': 'Agrupe prompts e entradas em formato de formulário dentro de seções estruturadas de terminal.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Fieldset'
-      }
-    }
-  },
   '/CLI/UI/Components/Grid': {
     config: {
       icon: 'grid_view',
@@ -1592,8 +1592,8 @@ export default {
       version: 'v1.0.0-beta',
       meta: {
         description: {
-          'en-US': 'Dashboard cards with a score gauge and a dense grid of state-colored cells — the test heatmap view.',
-          'pt-BR': 'Cards de dashboard com medidor de score e uma grade densa de células coloridas por estado — a view heatmap dos testes.'
+          'en-US': 'Dense grids of state-colored cells with corner labels — the assertions grid of the test heatmap view.',
+          'pt-BR': 'Grades densas de células coloridas por estado com labels de canto — a grade de assertions da view heatmap dos testes.'
         }
       },
       menu: {},
