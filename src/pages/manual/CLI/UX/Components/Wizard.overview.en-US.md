@@ -54,7 +54,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 ○ Build
 ```
 
-The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. Steps with taller editors declare their own height with `rows` on `add()` (e.g. a 5-line Menu wants `rows: 6`). While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically and `Terminal::$width` shrinks by the guide width, so width-aware components fit without knowing they are embedded. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
+The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. Steps with taller editors declare their own height with `rows` on `add()` (e.g. a 5-line Menu wants `rows: 6`). While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically and `Terminal::$width` shrinks by the guide width, so width-aware components fit without knowing they are embedded. The Terminal's global `Output` is swapped to the same `Region` while the handler runs (and restored right after), so command-level code that reads `CLI->Terminal->Output` at call time nests too — no rewiring needed. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
 
 ```php
 $done = $Wizard->run();
