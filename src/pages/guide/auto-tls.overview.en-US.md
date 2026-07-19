@@ -20,7 +20,7 @@ $Server->configure(
 );
 ```
 
-That is the whole setup. `secure` still accepts the raw SSL context array (`local_cert` / `local_pk`) exactly as before — `AutoTLS` is the managed alternative. Every WPI project scaffold (and the shipped Web projects) carries this `secure:` block commented in its `configure()` — set your domain and uncomment.
+That is the whole setup. `secure` still accepts the raw SSL context array (`local_cert` / `local_pk`) exactly as before — `AutoTLS` is the managed alternative. Every WPI project scaffold (and the shipped Web projects) carries this `secure:` block commented in its `configure()` — set your domain and uncomment. The scaffolded block ships with `staging: true`: validate the flow against the staging CA first, then flip it to `false` for the real certificate.
 
 ## What happens on first boot
 
@@ -48,6 +48,16 @@ Challenges::configure('/path/to/storage/security/tls/challenges/');
 
   With it set, that instance answers `/.well-known/acme-challenge/` before any middleware or route — nothing you configure can break a validation.
 - **Another server (nginx, etc.) on port 80** — proxy `/.well-known/acme-challenge/` to this host; Auto-TLS logs a notice and keeps working through the proxy.
+
+### Privileged ports without root
+
+Prefer granting PHP the bind capability and running the whole server as a regular user — no root, no demotion, no ownership split:
+
+```bash :toolbar="true";
+sudo setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which php)")"
+```
+
+Starting as root also works: pass `user:`/`group:` (required with Auto-TLS) and the privileged boot hands the whole credential store — including its parent directories — to that runtime identity before demoting. A startup that cannot reach the store fails naming the exact path and owner, on the terminal that launched it.
 
 ## Renewal and the reload fallback
 
@@ -166,7 +176,7 @@ The SSL stream-context options for the server socket — the installed certifica
 public function configure (string $host, int $port, int $workers, null|array|AutoTLS $secure = null, ...): self
 ```
 
-`secure` accepts the raw SSL context array (as before) or an `AutoTLS` instance — the server then owns the certificate lifecycle (bootstrap, background issuance, hot swap, renewal).
+`secure` accepts the raw SSL context array (as before) or an `AutoTLS` instance — the server then owns the certificate lifecycle (bootstrap, background issuance, hot swap, renewal). In both forms the server socket never requests a **client** certificate: `verify_peer` and `verify_peer_name` default to `false` server-side (PHP's inherited `true` would make browsers prompt for mTLS). Enable mTLS deliberately via `options: ['verify_peer' => true, 'cafile' => ...]` — explicit options always win.
 
 ```php
 public function swap (array $secure): bool

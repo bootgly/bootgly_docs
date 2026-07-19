@@ -20,7 +20,7 @@ $Server->configure(
 );
 ```
 
-Essa é toda a configuração. `secure` continua aceitando o array raw de contexto SSL (`local_cert` / `local_pk`) exatamente como antes — `AutoTLS` é a alternativa gerenciada. Todo scaffold de projeto WPI (e os projetos Web inclusos) carrega esse bloco `secure:` comentado no seu `configure()` — defina seu domínio e descomente.
+Essa é toda a configuração. `secure` continua aceitando o array raw de contexto SSL (`local_cert` / `local_pk`) exatamente como antes — `AutoTLS` é a alternativa gerenciada. Todo scaffold de projeto WPI (e os projetos Web inclusos) carrega esse bloco `secure:` comentado no seu `configure()` — defina seu domínio e descomente. O bloco do scaffold vem com `staging: true`: valide o fluxo contra a CA de staging primeiro e depois troque para `false` para o certificado real.
 
 ## O que acontece no primeiro boot
 
@@ -48,6 +48,16 @@ Challenges::configure('/caminho/para/storage/security/tls/challenges/');
 
   Com isso definido, essa instância responde `/.well-known/acme-challenge/` antes de qualquer middleware ou rota — nada que você configure quebra uma validação.
 - **Outro servidor (nginx, etc.) na porta 80** — faça proxy de `/.well-known/acme-challenge/` para este host; o Auto-TLS loga um aviso e segue funcionando através do proxy.
+
+### Portas privilegiadas sem root
+
+Prefira conceder ao PHP a capability de bind e rodar o servidor inteiro como um usuário comum — sem root, sem demotion, sem divisão de ownership:
+
+```bash :toolbar="true";
+sudo setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which php)")"
+```
+
+Iniciar como root também funciona: passe `user:`/`group:` (obrigatório com Auto-TLS) e o boot privilegiado entrega o credential store inteiro — incluindo os diretórios pais — para essa identidade de runtime antes da demotion. Um startup que não consegue alcançar o store falha nomeando o path e o dono exatos, no terminal que o lançou.
 
 ## Renovação e o fallback de reload
 
@@ -166,7 +176,7 @@ As opções de contexto SSL para o socket do servidor — o certificado instalad
 public function configure (string $host, int $port, int $workers, null|array|AutoTLS $secure = null, ...): self
 ```
 
-`secure` aceita o array raw de contexto SSL (como antes) ou uma instância `AutoTLS` — o servidor então assume o ciclo de vida do certificado (bootstrap, emissão em background, hot swap, renovação).
+`secure` aceita o array raw de contexto SSL (como antes) ou uma instância `AutoTLS` — o servidor então assume o ciclo de vida do certificado (bootstrap, emissão em background, hot swap, renovação). Nas duas formas o socket do servidor nunca pede certificado de **cliente**: `verify_peer` e `verify_peer_name` ficam `false` por padrão no lado servidor (o `true` herdado do PHP faria os navegadores pedirem mTLS). Habilite mTLS deliberadamente via `options: ['verify_peer' => true, 'cafile' => ...]` — opções explícitas sempre vencem.
 
 ```php
 public function swap (array $secure): bool
