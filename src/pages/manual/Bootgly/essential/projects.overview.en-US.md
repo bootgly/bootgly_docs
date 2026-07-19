@@ -140,7 +140,7 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 
 ### `project import`
 
-Imports a project from a git repository URL carrying the `*.project.php` signature:
+Imports a project from a git repository URL carrying the `*.project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
 
 ```bash
 php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
