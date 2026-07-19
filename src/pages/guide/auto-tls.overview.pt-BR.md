@@ -20,7 +20,7 @@ $Server->configure(
 );
 ```
 
-Essa é toda a configuração. `secure` continua aceitando o array raw de contexto SSL (`local_cert` / `local_pk`) exatamente como antes — `AutoTLS` é a alternativa gerenciada.
+Essa é toda a configuração. `secure` continua aceitando o array raw de contexto SSL (`local_cert` / `local_pk`) exatamente como antes — `AutoTLS` é a alternativa gerenciada. Todo scaffold de projeto WPI (e os projetos Web inclusos) carrega esse bloco `secure:` comentado no seu `configure()` — defina seu domínio e descomente.
 
 ## O que acontece no primeiro boot
 

@@ -227,6 +227,7 @@ O método `on()` registra callbacks para o ciclo de vida do servidor e o tratame
 | Evento | Callback | Descrição |
 |---|---|---|
 | `Events::RequestReceived` | `callable` | Obrigatório — trata cada requisição HTTP recebida. |
+| `Events::ServerAdvertised` | `?callable` | Opcional — banner de inicialização; disparado no processo que possui o terminal (no modo Daemon, o launcher). |
 | `Events::ServerStarted` | `?callable` | Opcional — disparado após todos os workers estarem ativos. |
 | `Events::ServerStopped` | `?callable` | Opcional — disparado após todos os workers serem encerrados. |
 
@@ -293,9 +294,28 @@ Router::load (string $path): Closure
 
 Lê `$path/router.index.php` (um manifesto de nomes de route sets), resolve cada nome para `$path/routes/<Name>.php`, e retorna um único handler closure (compondo múltiplos sets com `yield from`). Lança `InvalidArgumentException` quando o index ou um set nomeado não existe, ou quando um set não retorna um `Closure`.
 
+### serverAdvertised
+
+Disparado uma vez na inicialização, no processo que **possui o terminal** — no modo Daemon, o launcher (então o banner sobrevive ao detach); nos outros modos, o master logo antes do seu loop. Componha o banner de inicialização do projeto aqui e chame `advertise()` para as linhas de endereço:
+
+```php
+use const Bootgly\CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
+
+$Server->on(
+   Events::ServerAdvertised,
+   function ($Server) {
+      CLI->Terminal->Output->render('@.;@#green:✓ Meu projeto iniciado@;@.;');
+      $Server->advertise();
+   }
+);
+```
+
+`advertise()` imprime o endpoint vinculado: `Local:` sempre e `Network:` quando o bind cobre interfaces externas — o primeiro IPv4 não-loopback da máquina, também exposto como `$Server->network`. Fica mudo no runner de testes e com a saída totalmente silenciada.
+
 ### serverStarted
 
-Disparado no processo **master** após todos os workers terem sido criados via fork e o socket do servidor estar vinculado. Use para exibir informações de inicialização, registrar timers ou configurar estado no lado do master.
+Disparado no processo **master** após todos os workers terem sido criados via fork e o socket do servidor estar vinculado. Use para registrar timers ou configurar estado no lado do master. No modo Daemon o terminal do master já está desconectado — renderize o banner de inicialização em `serverAdvertised`.
 
 Propriedades do `$Server` disponíveis no callback:
 
@@ -304,23 +324,15 @@ Propriedades do `$Server` disponíveis no callback:
 | `$Server->host` | `string` | Endereço de host vinculado. |
 | `$Server->port` | `int` | Número da porta vinculada. |
 | `$Server->socket` | `string` | Prefixo do esquema — `http://` ou `https://`. |
+| `$Server->network` | `null\|string` | Primeiro IPv4 não-loopback da máquina — `null` quando nenhum é resolvível. |
 
 ```php
-use const Bootgly\CLI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 $Server->on(
    Events::ServerStarted,
    function ($Server) {
-      $Output = CLI->Terminal->Output;
-
-      $protocol = $Server->socket ?? 'http://';
-      $host     = $Server->host   ?? '0.0.0.0';
-      $port     = $Server->port   ?? 0;
-
-      $Output->render('@.;@#green:✓ HTTP Server iniciado@;@.;');
-      $Output->render('  Escutando em @#cyan:' . $protocol . $host . ':' . $port . '@;@.;');
-      $Output->render('  @#green:● Pronto para conexões@;@..;');
+      // Configuração no lado do master — timers, schedulers, registries...
    }
 );
 ```

@@ -154,10 +154,10 @@ public function __construct (Modes $Mode = Modes::Daemon)
 Creates the shell: a `HTTP_Server_CLI` in the given mode, the `Views` conventions and the default middleware stack (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`).
 
 ```php
-public function configure (string $host = '0.0.0.0', int $port = 8080, int $workers = 2, null|array $middlewares = null, null|array $secure = null, null|array $resources = null): self
+public function configure (string $host = '0.0.0.0', int $port = 8080, int $workers = 2, null|array $middlewares = null, null|array|AutoTLS $secure = null, null|array $resources = null, null|string $health = '/health'): self
 ```
 
-Configures the underlying HTTP Server. `middlewares:` replaces the default stack wholesale; `secure:` takes the TLS context options; `resources:` adds response resources (name => provider) — Database/KV are auto-provided when the project ships their configs.
+Configures the underlying HTTP Server. `middlewares:` replaces the default stack wholesale; `secure:` takes the TLS context options — or an `AutoTLS` instance for automatic HTTPS via Let's Encrypt; `resources:` adds response resources (name => provider) — Database/KV are auto-provided when the project ships their configs; `health:` sets the built-in health-check endpoint (`null` disables it).
 
 ```php
 public function load (string $path): self
@@ -169,7 +169,7 @@ Loads the project router folder (`router.index.php` + `routes/*.php`) and keeps 
 public function start (): void
 ```
 
-Registers the global log sink, wires the platform events (view conventions + global middleware stack on the first-request drain, start/stop banners) and starts the server. Throws when no router was loaded.
+Registers the global log sink, wires the platform events (view conventions + global middleware stack on the first-request drain, the launch banner on `Events::ServerAdvertised` — rendered by the process that owns the terminal, so it survives the Daemon detach — and the stop banner) and starts the server. Throws when no router was loaded.
 
 ### Web\App\Controller
 

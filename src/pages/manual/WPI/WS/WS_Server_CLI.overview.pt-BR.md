@@ -124,9 +124,11 @@ Os clientes então conectam com `new WebSocket('wss://host:8443')`.
 use Bootgly\WPI\Nodes\WS_Server_CLI\Events;
 ```
 
-`Connected`, `MessageReceived`, `Disconnected`, `ServerStarted`, `ServerStopped`. Registre cada um
-com `on()`. `Connected`/`Disconnected` recebem `($Session)`; `MessageReceived` recebe
-`($Session, $Message)`; `ServerStarted`/`ServerStopped` recebem `($Server)`.
+`Connected`, `MessageReceived`, `Disconnected`, `ServerAdvertised`, `ServerStarted`, `ServerStopped`.
+Registre cada um com `on()`. `Connected`/`Disconnected` recebem `($Session)`; `MessageReceived` recebe
+`($Session, $Message)`; `ServerAdvertised`/`ServerStarted`/`ServerStopped` recebem `($Server)` —
+`ServerAdvertised` dispara no processo que possui o terminal (no modo Daemon, o launcher):
+componha o banner de inicialização ali e chame `$Server->advertise()` para as linhas de endereço.
 
 ### Métodos
 

@@ -226,6 +226,7 @@ The `on()` method registers callbacks for server lifecycle and request handling:
 | Event | Callback | Description |
 |---|---|---|
 | `Events::RequestReceived` | `callable` | Required — handles each incoming HTTP request. |
+| `Events::ServerAdvertised` | `?callable` | Optional — launch banner; fires on the process that owns the terminal (on Daemon mode, the launcher). |
 | `Events::ServerStarted` | `?callable` | Optional — fires after all workers are up. |
 | `Events::ServerStopped` | `?callable` | Optional — fires after all workers are stopped. |
 
@@ -292,9 +293,28 @@ Router::load (string $path): Closure
 
 Reads `$path/router.index.php` (a manifest of route set names), resolves each name to `$path/routes/<Name>.php`, and returns a single handler closure (composing multiple sets with `yield from`). Throws `InvalidArgumentException` when the index or a named set is missing, or when a set does not return a `Closure`.
 
+### serverAdvertised
+
+Fires once at launch on the process that **owns the terminal** — on Daemon mode, the launcher (so the banner survives the detach); on the other modes, the master right before its loop. Compose the project's launch banner here and call `advertise()` for the endpoint lines:
+
+```php
+use const Bootgly\CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
+
+$Server->on(
+   Events::ServerAdvertised,
+   function ($Server) {
+      CLI->Terminal->Output->render('@.;@#green:✓ My project started@;@.;');
+      $Server->advertise();
+   }
+);
+```
+
+`advertise()` prints the bound endpoint: `Local:` always and `Network:` when the bind covers external interfaces — the machine's first non-loopback IPv4, also exposed as `$Server->network`. It is muted on the Test runner and on fully muted output.
+
 ### serverStarted
 
-Fires in the **master** process after all workers have been forked and the server socket is bound. Use it to print startup info, register timers, or set up master-side state.
+Fires in the **master** process after all workers have been forked and the server socket is bound. Use it to register timers or set up master-side state. On Daemon mode the master's terminal is already detached — render the launch banner in `serverAdvertised` instead.
 
 Available `$Server` properties inside the callback:
 
@@ -303,23 +323,15 @@ Available `$Server` properties inside the callback:
 | `$Server->host` | `string` | Bound host address. |
 | `$Server->port` | `int` | Bound port number. |
 | `$Server->socket` | `string` | Scheme prefix — `http://` or `https://`. |
+| `$Server->network` | `null\|string` | First non-loopback IPv4 of the machine — `null` when none is resolvable. |
 
 ```php
-use const Bootgly\CLI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 $Server->on(
    Events::ServerStarted,
    function ($Server) {
-      $Output = CLI->Terminal->Output;
-
-      $protocol = $Server->socket ?? 'http://';
-      $host     = $Server->host   ?? '0.0.0.0';
-      $port     = $Server->port   ?? 0;
-
-      $Output->render('@.;@#green:✓ HTTP Server started@;@.;');
-      $Output->render('  Listening on @#cyan:' . $protocol . $host . ':' . $port . '@;@.;');
-      $Output->render('  @#green:● Ready for connections@;@..;');
+      // Master-side setup — timers, schedulers, registries...
    }
 );
 ```

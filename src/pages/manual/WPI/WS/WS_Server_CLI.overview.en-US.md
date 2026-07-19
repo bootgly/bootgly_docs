@@ -123,9 +123,11 @@ Clients then connect with `new WebSocket('wss://host:8443')`.
 use Bootgly\WPI\Nodes\WS_Server_CLI\Events;
 ```
 
-`Connected`, `MessageReceived`, `Disconnected`, `ServerStarted`, `ServerStopped`. Register each with
-`on()`. `Connected`/`Disconnected` receive `($Session)`; `MessageReceived` receives
-`($Session, $Message)`; `ServerStarted`/`ServerStopped` receive `($Server)`.
+`Connected`, `MessageReceived`, `Disconnected`, `ServerAdvertised`, `ServerStarted`, `ServerStopped`.
+Register each with `on()`. `Connected`/`Disconnected` receive `($Session)`; `MessageReceived` receives
+`($Session, $Message)`; `ServerAdvertised`/`ServerStarted`/`ServerStopped` receive `($Server)` —
+`ServerAdvertised` fires on the process that owns the terminal (on Daemon mode, the launcher):
+compose the launch banner there and call `$Server->advertise()` for the endpoint lines.
 
 ### Methods
 

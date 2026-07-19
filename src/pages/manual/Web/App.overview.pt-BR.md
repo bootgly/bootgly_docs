@@ -154,10 +154,10 @@ public function __construct (Modes $Mode = Modes::Daemon)
 Cria o shell: um `HTTP_Server_CLI` no modo dado, as convenções `Views` e a stack de middlewares padrão (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`).
 
 ```php
-public function configure (string $host = '0.0.0.0', int $port = 8080, int $workers = 2, null|array $middlewares = null, null|array $secure = null, null|array $resources = null): self
+public function configure (string $host = '0.0.0.0', int $port = 8080, int $workers = 2, null|array $middlewares = null, null|array|AutoTLS $secure = null, null|array $resources = null, null|string $health = '/health'): self
 ```
 
-Configura o HTTP Server subjacente. `middlewares:` substitui a stack padrão por inteiro; `secure:` recebe as opções de contexto TLS; `resources:` adiciona response resources (nome => provider) — Database/KV são providos automaticamente quando o projeto inclui suas configs.
+Configura o HTTP Server subjacente. `middlewares:` substitui a stack padrão por inteiro; `secure:` recebe as opções de contexto TLS — ou uma instância de `AutoTLS` para HTTPS automático via Let's Encrypt; `resources:` adiciona response resources (nome => provider) — Database/KV são providos automaticamente quando o projeto inclui suas configs; `health:` define o endpoint embutido de health-check (`null` desabilita).
 
 ```php
 public function load (string $path): self
@@ -169,7 +169,7 @@ Carrega a pasta de router do projeto (`router.index.php` + `routes/*.php`) e gua
 public function start (): void
 ```
 
-Registra o sink global de logs, conecta os eventos da plataforma (convenções de views + stack global de middlewares no drain do primeiro request, banners de start/stop) e inicia o servidor. Lança quando nenhum router foi carregado.
+Registra o sink global de logs, conecta os eventos da plataforma (convenções de views + stack global de middlewares no drain do primeiro request, o banner de inicialização em `Events::ServerAdvertised` — renderizado pelo processo que possui o terminal, então sobrevive ao detach do Daemon — e o banner de parada) e inicia o servidor. Lança quando nenhum router foi carregado.
 
 ### Web\App\Controller
 

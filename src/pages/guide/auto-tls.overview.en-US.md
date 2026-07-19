@@ -20,7 +20,7 @@ $Server->configure(
 );
 ```
 
-That is the whole setup. `secure` still accepts the raw SSL context array (`local_cert` / `local_pk`) exactly as before — `AutoTLS` is the managed alternative.
+That is the whole setup. `secure` still accepts the raw SSL context array (`local_cert` / `local_pk`) exactly as before — `AutoTLS` is the managed alternative. Every WPI project scaffold (and the shipped Web projects) carries this `secure:` block commented in its `configure()` — set your domain and uncomment.
 
 ## What happens on first boot
 
