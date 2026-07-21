@@ -41,17 +41,17 @@ export default {
 
   // @ Links
   links: {
-    website: 'https://bootgly.com',
-    github: 'https://github.com/bootgly/bootgly',
-    discussions: 'https://github.com/bootgly/bootgly/discussions',
+    website: 'https://bootgly.com/',
+    github: 'https://github.com/bootgly/bootgly/',
+    discussions: 'https://github.com/bootgly/bootgly/discussions/',
     chat: 'https://t.me/bootgly/',
     email: 'public@bootgly.com',
-    changelog: 'https://github.com/bootgly/bootgly/blob/main/CHANGELOG.md',
-    roadmap: 'https://github.com/bootgly/bootgly/milestones',
-    sponsor: 'https://github.com/sponsors/bootgly',
+    changelog: 'https://github.com/bootgly/bootgly/releases/',
+    roadmap: 'https://github.com/bootgly/bootgly/milestones/',
+    sponsor: 'https://github.com/sponsors/bootgly/',
     explore: [
-      { label: '🤯 Bootgly Awesome', url: 'https://github.com/bootgly/bootgly_awesome' },
-      { label: '⏱️ Bootgly Benchmarks (WIP)', url: 'https://github.com/bootgly/bootgly_benchmarks' }
+      { label: '🤯 Bootgly Awesome', url: 'https://github.com/bootgly/bootgly_awesome/' },
+      { label: '⏱️ Bootgly Benchmarks', url: 'https://github.com/bootgly/bootgly_benchmarks/' }
     ]
   },
 
