@@ -73,7 +73,7 @@ The source is treated as **untrusted text**: raw control bytes (including `ESC`)
 - Supported subset: ATX headings, paragraphs (hard breaks with two trailing spaces), fenced code blocks, blockquotes (nested + lazy), tight nested lists + `- [x]` tasks, GFM tables with `:---:` alignments, horizontal rules, emphasis/code/links/images.
 - Out of scope (v1): setext headings, indented code blocks, reference links, autolinks, raw HTML (kept as literal text) and loose lists.
 - Fenced `php` code colorizes via the native tokenizer; other languages and bare fences render verbatim and dimmed. The highlight palette is fixed in v1 — `$styles['fence']` keeps theming the fence markers.
-- The parser is reusable on its own: `Bootgly\ABI\Data\__String\Markdown::parse()` returns a pure AST (`Node` trees) with no styling attached.
+- The parser is reusable on its own: `Bootgly\ABI\Code\__String\Markdown::parse()` returns a pure AST (`Node` trees) with no styling attached.
 
 ## Reference
 

@@ -74,9 +74,9 @@ return new Suite(
 Real example of a test suite defined in Bootgly:
 
 ```php
-<?php # Bootgly/ABI/Data/__String/tests/autoboot.php
+<?php # Bootgly/ABI/Code/__String/tests/autoboot.php
 
-namespace Bootgly\ABI\Data\__String;
+namespace Bootgly\ABI\Code\__String;
 
 use Bootgly\ACI\Tests\Suite;
 

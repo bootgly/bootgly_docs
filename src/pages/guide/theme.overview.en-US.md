@@ -1,6 +1,6 @@
 # Theme
 
-Bootgly ships a native, dependency-free theme system at `Bootgly\ABI\Data\__String\Theme`.
+Bootgly ships a native, dependency-free theme system at `Bootgly\ABI\Code\__String\Theme`.
 A theme maps **semantic keys** (`success`, `info`, `notice`, `warning`, `error`, `debug`) to
 terminal decorations, so the same output re-colors when you switch themes. Three themes are
 built in — `dark`, `light` and `mono` (colorless) — and the CLI markup renderer resolves its
@@ -18,7 +18,7 @@ Alerts, Text — colors its `@:success:`/`@:error:`/… tokens through `Theme::$
 once and the whole UI follows:
 
 ```php
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Theme;
 
 Theme::$Current->select(Theme::LIGHT); // non-bright colors, for light terminals
 Theme::$Current->select(Theme::DARK);  // bright colors (default)
@@ -29,7 +29,7 @@ Theme::$Current->select(Theme::DARK);  // bright colors (default)
 `mono` emits no ANSI at all — the right choice for pipes, CI logs or plain files:
 
 ```php
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Theme;
 
 Theme::$Current->select(Theme::MONO);
 ```
@@ -43,7 +43,7 @@ Any theme instance decorates a string by semantic key. `apply()` wraps content w
 opening decoration and the closing reset:
 
 ```php
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Theme;
 
 $Theme = new Theme(Theme::DARK);
 
@@ -62,8 +62,8 @@ A theme is a `name => specifications` entry. `options` says how to **open** (`pr
 callback. `add()` accepts one or many at once:
 
 ```php
-use Bootgly\ABI\Data\__String\Escapeable\Text\Formattable;
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Escapeable\Text\Formattable;
+use Bootgly\ABI\Code\__String\Theme;
 
 $Theme = new Theme;
 $Theme->add(['ocean' => [
@@ -87,7 +87,7 @@ A `prepending`/`appending` `value` is either a `string` (emitted verbatim) or a 
 
 ## Reference
 
-### `Bootgly\ABI\Data\__String\Theme`
+### `Bootgly\ABI\Code\__String\Theme`
 
 ```php
 public function __construct (null|string $name = null)

@@ -73,7 +73,7 @@ O source é tratado como **texto não-confiável**: bytes de controle raw (inclu
 - Subconjunto suportado: headings ATX, parágrafos (hard breaks com dois espaços no fim), blocos de código cercados, blockquotes (aninhados + lazy), listas tight aninhadas + tasks `- [x]`, tabelas GFM com alinhamentos `:---:`, réguas horizontais, ênfases/código/links/imagens.
 - Fora do escopo (v1): setext headings, código indentado, reference links, autolinks, HTML raw (mantido como texto literal) e loose lists.
 - Código cercado `php` coloriza via o tokenizer nativo; outras linguagens e fences sem infoword renderizam verbatim e esmaecidas. A paleta do highlight é fixa na v1 — `$styles['fence']` segue tematizando os marcadores do fence.
-- O parser é reutilizável sozinho: `Bootgly\ABI\Data\__String\Markdown::parse()` retorna uma AST pura (árvores de `Node`) sem nenhum estilo.
+- O parser é reutilizável sozinho: `Bootgly\ABI\Code\__String\Markdown::parse()` retorna uma AST pura (árvores de `Node`) sem nenhum estilo.
 
 ## Reference
 

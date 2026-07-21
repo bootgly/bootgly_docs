@@ -1,7 +1,7 @@
 # Theme
 
 O Bootgly traz um sistema de temas nativo e sem dependências em
-`Bootgly\ABI\Data\__String\Theme`. Um tema mapeia **chaves semânticas** (`success`, `info`,
+`Bootgly\ABI\Code\__String\Theme`. Um tema mapeia **chaves semânticas** (`success`, `info`,
 `notice`, `warning`, `error`, `debug`) para decorações de terminal, então a mesma saída muda de
 cor quando você troca de tema. Três temas já vêm embutidos — `dark`, `light` e `mono` (sem
 cor) — e o renderizador de markup da CLI resolve seus tokens de cor `@:…:` através do tema
@@ -18,7 +18,7 @@ Alerts, Text — colore seus tokens `@:success:`/`@:error:`/… através de `The
 uma vez e a UI inteira segue:
 
 ```php
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Theme;
 
 Theme::$Current->select(Theme::LIGHT); // cores não-bright, para terminais claros
 Theme::$Current->select(Theme::DARK);  // cores bright (padrão)
@@ -29,7 +29,7 @@ Theme::$Current->select(Theme::DARK);  // cores bright (padrão)
 `mono` não emite nenhum ANSI — a escolha certa para pipes, logs de CI ou arquivos simples:
 
 ```php
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Theme;
 
 Theme::$Current->select(Theme::MONO);
 ```
@@ -43,7 +43,7 @@ Qualquer instância de tema decora uma string por chave semântica. `apply()` en
 com a decoração de abertura da chave e o reset de fechamento:
 
 ```php
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Theme;
 
 $Theme = new Theme(Theme::DARK);
 
@@ -62,8 +62,8 @@ Um tema é uma entrada `name => specifications`. `options` diz como **abrir** (`
 de abertura. `add()` aceita um ou vários de uma vez:
 
 ```php
-use Bootgly\ABI\Data\__String\Escapeable\Text\Formattable;
-use Bootgly\ABI\Data\__String\Theme;
+use Bootgly\ABI\Code\__String\Escapeable\Text\Formattable;
+use Bootgly\ABI\Code\__String\Theme;
 
 $Theme = new Theme;
 $Theme->add(['ocean' => [
@@ -87,7 +87,7 @@ O `value` de `prepending`/`appending` é uma `string` (emitida como está) ou um
 
 ## Referência
 
-### `Bootgly\ABI\Data\__String\Theme`
+### `Bootgly\ABI\Code\__String\Theme`
 
 ```php
 public function __construct (null|string $name = null)

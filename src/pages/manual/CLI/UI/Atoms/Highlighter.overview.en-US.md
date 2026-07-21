@@ -52,7 +52,7 @@ $Highlighter->render();
 The palette is a **named highlight theme**. Two builtins ship with the framework: `bootgly` (the default editor-grade palette) and `plain` (colorless). Register your own by mapping token groups to SGR color codes and select it by name:
 
 ```php
-use Bootgly\ABI\Data\__String\Tokens;
+use Bootgly\ABI\Code\__String\Tokens;
 
 Tokens\Highlighter::$Themes['dracula'] = [
    Tokens::TOKEN_STRING   => '38;2;241;250;140',

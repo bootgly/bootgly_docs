@@ -52,7 +52,7 @@ $Highlighter->render();
 A paleta é um **tema de highlight nomeado**. Dois builtins acompanham o framework: `bootgly` (a paleta default, nível editor) e `plain` (incolor). Registre o seu mapeando grupos de token para códigos de cor SGR e selecione pelo nome:
 
 ```php
-use Bootgly\ABI\Data\__String\Tokens;
+use Bootgly\ABI\Code\__String\Tokens;
 
 Tokens\Highlighter::$Themes['dracula'] = [
    Tokens::TOKEN_STRING   => '38;2;241;250;140',

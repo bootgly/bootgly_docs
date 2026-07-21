@@ -23,7 +23,7 @@ Use regex when a rule must validate format, variable prefixes, groups or optiona
 `VariadicDirPath` validates directory paths with variadic patterns.
 
 ```php
-use Bootgly\ABI\Data\__String\Path;
+use Bootgly\ABI\Code\__String\Path;
 use Bootgly\ACI\Tests\Assertion\Expectations\Matchers\VariadicDirPath;
 
 $Path = new Path('/etc/php/');
