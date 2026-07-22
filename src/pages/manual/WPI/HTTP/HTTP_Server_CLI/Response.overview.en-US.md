@@ -120,11 +120,7 @@ See **[Response Resources](./Resources/)** for built-in resources and the DBAL b
 ### Upload files
 
 ```php
-public function upload (string|File $file, int $offset = 0, ? int $length = null) : self;
-```
-
-```php
-public function upload (string|File $file, int $offset = 0, ? int $length = null, bool $close = true) : self;
+public function upload (string $file, int $offset = 0, null|int $length = null, bool $close = true) : self;
 ```
 
 **Description:**
@@ -133,7 +129,7 @@ Upload a file to the HTTP client.
 
 **Parameters:**
 
-- `$file` (string|File): The file or file path to upload.
+- `$file` (string): The file path to upload.
 - `$offset` (int): The data offset.
 - `$length` (int|null): The length of the data to upload.
 - `$close` (bool): Close the connection after sending.
@@ -149,6 +145,10 @@ return $Response->upload('/path/to/file.pdf');
 ```php
 return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 ```
+
+**Byte ranges:**
+
+A client `Range` header overrides `$offset` / `$length`. The accepted set is coalesced — overlapping and adjacent ranges are merged — and a set larger than [`Request::$maxRanges`](../Request/#byte-range-limit) (16 by default) is rejected with `416 Range Not Satisfiable`.
 
 ### HTTP Authentication
 

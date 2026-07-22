@@ -120,11 +120,7 @@ Veja **[Response Resources](./Resources/)** para resources built-in e a ponte co
 ### Enviando arquivos
 
 ```php
-public function upload (string|File $file, int $offset = 0, ? int $length = null) : self;
-```
-
-```php
-public function upload (string|File $file, int $offset = 0, ? int $length = null, bool $close = true) : self;
+public function upload (string $file, int $offset = 0, null|int $length = null, bool $close = true) : self;
 ```
 
 **Descrição:**
@@ -133,7 +129,7 @@ Envia arquivo para o cliente HTTP.
 
 **Parâmetros:**
 
-- `$file` (string|File): O arquivo ou caminho do arquivo para upload.
+- `$file` (string): O caminho do arquivo para upload.
 - `$offset` (int): O deslocamento dos dados.
 - `$length` (int|null): O comprimento dos dados para upload.
 - `$close` (bool): Fechar a conexão após o envio.
@@ -149,6 +145,10 @@ return $Response->upload('/caminho/para/arquivo.pdf');
 ```php
 return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 ```
+
+**Byte-ranges:**
+
+Um cabeçalho `Range` do cliente sobrepõe `$offset` / `$length`. O conjunto aceito é coalescido — ranges sobrepostos e adjacentes são fundidos — e um conjunto maior que [`Request::$maxRanges`](../Request/#limite-de-byte-ranges) (16 por padrão) é rejeitado com `416 Range Not Satisfiable`.
 
 ### HTTP Authentication
 

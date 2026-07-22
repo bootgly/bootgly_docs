@@ -511,6 +511,49 @@ Request::$allowedHosts = [];
 
 > **Nota:** Defina `$allowedHosts` antes do servidor iniciar (ex: no seu bootstrap ou arquivo de projeto). O valor é herdado por todos os processos worker.
 
+### Limite de Byte-ranges
+
+```php
+public static int $maxRanges = 16;
+```
+
+Número máximo de membros aceitos em um único cabeçalho `Range`. Uma requisição cujo conjunto de ranges excede o limite é respondida com `416 Range Not Satisfiable` (`Content-Range: bytes */<tamanho>`) — o arquivo nunca é lido e nenhum corpo é produzido.
+
+Isso limita a amplificação de resposta: sem ele, algumas centenas de bytes de cabeçalho `Range` repetindo o mesmo range se transformariam em uma leitura de arquivo e uma cópia do corpo **por membro** (RFC 9110 §14.2). Um conjunto de 32 membros contra um arquivo de 82 KB já é uma resposta de ~2,6 MB a partir de um cabeçalho de 261 bytes.
+
+O limite é aplicado antes de o conjunto ser interpretado — o cabeçalho é dividido no máximo `$maxRanges + 1` vezes — então um conjunto excessivo não custa nada além da própria verificação.
+
+#### Exemplo
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+
+// ? Restringir o limite em um servidor de arquivos estáticos
+Request::$maxRanges = 4;
+// @ `Range: bytes=0-9,20-29,40-49,60-69,80-89` (5 membros) agora recebe 416 Range Not Satisfiable
+```
+
+#### Coalescência
+
+Dentro do limite, `Response::upload()` combina o conjunto aceito: ranges sobrepostos e adjacentes são fundidos em uma única parte, mantendo cada parte fundida na sua posição de requisição mais antiga. Ranges duplicados, portanto, não podem multiplicar o corpo da resposta.
+
+```php
+// @ `Range: bytes=0-9,5-14,15-19` → uma parte: `Content-Range: bytes 0-19/<tamanho>`
+```
+
+Quando a coalescência resulta em um único range, a resposta é um `206 Partial Content` simples com o cabeçalho `Content-Range`, em vez de um corpo `multipart/byteranges`.
+
+#### Desabilitando byte-ranges
+
+Qualquer valor abaixo de `1` rejeita todo cabeçalho `Range` com `416`:
+
+```php
+// : Recusar todas as requisições de range
+Request::$maxRanges = 0;
+```
+
+> **Nota:** Defina `$maxRanges` antes do servidor iniciar (ex: no seu bootstrap ou arquivo de projeto). O valor é herdado por todos os processos worker.
+
 ## Sessão
 
 `Session`: O objeto de sessão, inicializado sob demanda e baseado em arquivos.

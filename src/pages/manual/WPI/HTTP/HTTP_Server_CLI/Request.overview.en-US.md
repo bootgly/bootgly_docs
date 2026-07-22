@@ -511,6 +511,49 @@ Request::$allowedHosts = [];
 
 > **Note:** Set `$allowedHosts` before the server starts (e.g. in your bootstrap or project file). The value is inherited by all worker processes.
 
+### Byte-range Limit
+
+```php
+public static int $maxRanges = 16;
+```
+
+Maximum number of members accepted in a single `Range` header. A request whose range set exceeds the limit is answered with `416 Range Not Satisfiable` (`Content-Range: bytes */<size>`) — the file is never read and no body is produced.
+
+This bounds response amplification: without it, a few hundred bytes of `Range` header repeating the same range over and over would turn into one file read and one body copy **per member** (RFC 9110 §14.2). A 32-member set against an 82 KB file is already a ~2.6 MB response from a 261-byte header.
+
+The limit is enforced before the set is parsed — the header is split at most `$maxRanges + 1` times — so an oversized set costs nothing beyond the check itself.
+
+#### Example
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+
+// ? Tighten the limit on a static-file server
+Request::$maxRanges = 4;
+// @ `Range: bytes=0-9,20-29,40-49,60-69,80-89` (5 members) now receives 416 Range Not Satisfiable
+```
+
+#### Coalescing
+
+Within the limit, `Response::upload()` combines the accepted set: overlapping and adjacent ranges are merged into a single part, keeping each merged part at its earliest requested position. Duplicated ranges therefore cannot multiply the response body.
+
+```php
+// @ `Range: bytes=0-9,5-14,15-19` → one part: `Content-Range: bytes 0-19/<size>`
+```
+
+When coalescing leaves a single range, the response is a plain `206 Partial Content` with a `Content-Range` header instead of a `multipart/byteranges` body.
+
+#### Disabling byte ranges
+
+Any value below `1` rejects every `Range` header with `416`:
+
+```php
+// : Refuse all range requests
+Request::$maxRanges = 0;
+```
+
+> **Note:** Set `$maxRanges` before the server starts (e.g. in your bootstrap or project file). The value is inherited by all worker processes.
+
 ## Session
 
 `Session`: The session object, lazy-initialized and file-based.
