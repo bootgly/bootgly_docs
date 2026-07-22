@@ -71,12 +71,9 @@ in pure PHP** — exactly what the **Performance** gap reflects (≈ 150× Larav
 > [HTTP_Server_CLI benchmark case](https://github.com/bootgly/bootgly_benchmarks/tree/main/HTTP_Server_CLI),
 > full per-opponent runs under [results](https://github.com/bootgly/bootgly_benchmarks/tree/main/HTTP_Server_CLI/results).
 
-Peak req/s per route, at each framework's best worker count. Versions: **Bootgly
-v0.19.1-beta**, **Swoole 6.2.0** (ext-swoole), **Hyperf v3.2.0-beta.1** (Swoole engine),
-**ReactPHP** (react/http v1.11.0), **AMPHP** (amphp/http-server v3.4.6) and
-**Laravel v13.16.1 + Octane v2.17.5** (Swoole engine):
+Peak req/s per route, at each framework's best worker count:
 
-| Route (req/s) | Bootgly v0.19.1-beta | Swoole 6.2.0 | Hyperf v3.2.0-beta.1 | ReactPHP v1.11.0 | AMPHP v3.4.6 | Laravel Octane v2.17.5 |
+| Route (req/s) | Bootgly | Swoole | Hyperf | ReactPHP | AMPHP | Laravel Octane |
 |---|--:|--:|--:|--:|--:|--:|
 | `/plaintext` | 1,030,930 | 964,908 | 358,576 | 267,158 | 99,093 | 11,482 |
 | `/json` | 1,037,342 | 979,082 | 347,233 | 269,292 | 99,244 | 11,413 |
@@ -85,10 +82,24 @@ v0.19.1-beta**, **Swoole 6.2.0** (ext-swoole), **Hyperf v3.2.0-beta.1** (Swoole 
 | `/fortunes` | 131,263 | 98,557 | 75,650 | 42,550 | 14,954 | 7,695 |
 | `/updates` (20×) | 5,782 | 3,721 | 3,499 | 1,086 | 809 | 321 |
 
-Bootgly leads **every route against every framework**. Against Swoole — the closest
-competitor — the lead ranges from +6.0% (`/json`) and +6.8% (`/plaintext`) to +33.2%
+> [!NOTE]
+> **Versions** — Bootgly v0.19.1-beta · Swoole 6.2.0 (ext-swoole) · Hyperf v3.2.0-beta.1
+> (Swoole engine) · ReactPHP react/http v1.11.0 · AMPHP amphp/http-server v3.4.6 ·
+> Laravel v13.16.1 + Octane v2.17.5 (Swoole engine).
+
+In this sweep Bootgly led **every route against every framework**. Against Swoole — the
+closest competitor — the lead ranged from +6.0% (`/json`) and +6.8% (`/plaintext`) to +33.2%
 (`/fortunes`), +44.6% (`/query`), +55.4% (`/updates`) and **+74.2%** (`/db`). Laravel
 (Octane) is shown; on nginx + PHP-FPM the gap widens to ≈ 150× on `/plaintext`.
+
+> [!IMPORTANT]
+> **Update (2026-07-22, v1.0.0 claim protocol)** — re-measured on the v1.0.0 hot path under
+> a stricter protocol (fresh boot, medians of 4 alternated full runs, 18 server workers,
+> PHP 8.4.23, same machine, 514 connections), raw `/plaintext` is a **statistical tie**:
+> Bootgly **919,360** vs Swoole **919,650** req/s medians (paired-run median +0.9% for
+> Bootgly — inside the noise band). Both servers are machine-bound on this shared box, so
+> the honest headline for the raw hot path is **pure PHP matching the C extension** — while
+> the database routes above, where the async core dominates, keep their leads.
 
 Full sweep charts (server-workers 1→24, click for the complete report):
 

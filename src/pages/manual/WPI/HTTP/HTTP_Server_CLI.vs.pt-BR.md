@@ -72,12 +72,9 @@ O Bootgly é a única stack aqui que combina um framework completo, com baterias
 > [caso de benchmark HTTP_Server_CLI](https://github.com/bootgly/bootgly_benchmarks/tree/main/HTTP_Server_CLI),
 > com as execuções completas por oponente em [results](https://github.com/bootgly/bootgly_benchmarks/tree/main/HTTP_Server_CLI/results).
 
-Pico de req/s por rota, na melhor contagem de workers de cada framework. Versões: **Bootgly
-v0.19.1-beta**, **Swoole 6.2.0** (ext-swoole), **Hyperf v3.2.0-beta.1** (engine Swoole),
-**ReactPHP** (react/http v1.11.0), **AMPHP** (amphp/http-server v3.4.6) e
-**Laravel v13.16.1 + Octane v2.17.5** (engine Swoole):
+Pico de req/s por rota, na melhor contagem de workers de cada framework:
 
-| Rota (req/s) | Bootgly v0.19.1-beta | Swoole 6.2.0 | Hyperf v3.2.0-beta.1 | ReactPHP v1.11.0 | AMPHP v3.4.6 | Laravel Octane v2.17.5 |
+| Rota (req/s) | Bootgly | Swoole | Hyperf | ReactPHP | AMPHP | Laravel Octane |
 |---|--:|--:|--:|--:|--:|--:|
 | `/plaintext` | 1.030.930 | 964.908 | 358.576 | 267.158 | 99.093 | 11.482 |
 | `/json` | 1.037.342 | 979.082 | 347.233 | 269.292 | 99.244 | 11.413 |
@@ -86,10 +83,26 @@ v0.19.1-beta**, **Swoole 6.2.0** (ext-swoole), **Hyperf v3.2.0-beta.1** (engine 
 | `/fortunes` | 131.263 | 98.557 | 75.650 | 42.550 | 14.954 | 7.695 |
 | `/updates` (20×) | 5.782 | 3.721 | 3.499 | 1.086 | 809 | 321 |
 
-O Bootgly lidera **todas as rotas contra todos os frameworks**. Contra o Swoole — o
-concorrente mais próximo — a vantagem vai de +6,0% (`/json`) e +6,8% (`/plaintext`) a +33,2%
-(`/fortunes`), +44,6% (`/query`), +55,4% (`/updates`) e **+74,2%** (`/db`). Laravel (Octane)
-mostrado; em nginx + PHP-FPM a diferença chega a ≈ 150× em `/plaintext`.
+> [!NOTE]
+> **Versões** — Bootgly v0.19.1-beta · Swoole 6.2.0 (ext-swoole) · Hyperf v3.2.0-beta.1
+> (engine Swoole) · ReactPHP react/http v1.11.0 · AMPHP amphp/http-server v3.4.6 ·
+> Laravel v13.16.1 + Octane v2.17.5 (engine Swoole).
+
+Nesta varredura o Bootgly liderou **todas as rotas contra todos os frameworks**. Contra o
+Swoole — o concorrente mais próximo — a vantagem foi de +6,0% (`/json`) e +6,8%
+(`/plaintext`) a +33,2% (`/fortunes`), +44,6% (`/query`), +55,4% (`/updates`) e **+74,2%**
+(`/db`). Laravel (Octane) mostrado; em nginx + PHP-FPM a diferença chega a ≈ 150× em
+`/plaintext`.
+
+> [!IMPORTANT]
+> **Atualização (2026-07-22, protocolo de claim da v1.0.0)** — remedido no hot path da
+> v1.0.0 sob um protocolo mais rígido (boot recém-iniciado, medianas de 4 execuções
+> completas alternadas, 18 workers de servidor, PHP 8.4.23, mesma máquina, 514 conexões),
+> o `/plaintext` raw é um **empate estatístico**: medianas de Bootgly **919.360** vs Swoole
+> **919.650** req/s (mediana pareada +0,9% para o Bootgly — dentro da banda de ruído). Os
+> dois servidores ficam limitados pela máquina nessa caixa compartilhada, então o headline
+> honesto do hot path raw é **PHP puro empatando com a extensão C** — enquanto as rotas de
+> banco acima, onde o core assíncrono domina, mantêm suas lideranças.
 
 Gráficos da varredura completa (server-workers 1→24, clique para o report completo):
 
