@@ -15,7 +15,7 @@
     "wasm:bundle": "node scripts/build-wasm-bundle.mjs"
   },
   "dependencies": {
-    "@docsector/docsector-reader": "^4.22.1",
+    "@docsector/docsector-reader": "^4.22.2",
     "@quasar/cli": "^3.0.0",
     "@quasar/extras": "^1.16.12",
     "fflate": "^0.8.2",
