@@ -84,6 +84,28 @@ public function run (array $arguments = [], array $options = []): bool
 }
 ```
 
+### Help
+
+`--help` (and its `-h` short form) is reserved as well: the router intercepts it for **every** command and renders that command's help instead of running it. So `bootgly <command> --help` works out of the box — no per-command wiring, and no risk of a command running its real action when the user only asked for help:
+
+```bash
+bootgly setup --help
+```
+
+The default help lists the command's name, description and options (the `Commands options` box). A command ships a richer, argument-aware help by overriding `help()`:
+
+```php
+public function help (array $arguments = []): bool
+{
+   // Render a custom help. $arguments carries the subcommand path,
+   // e.g. `bootgly test benchmark --help` → help(['benchmark']).
+
+   return true;
+}
+```
+
+Because the option is global, it also shows in the `bootgly help` screen's `Commands options` box next to `-v, -vv, -vvv`.
+
 ## Middlewares
 
 Every command execution flows through a middleware pipeline — a good place for cross-cutting concerns like timing, logging or output footers. A middleware implements `Bootgly\CLI\Commands\Middleware`:
@@ -141,7 +163,7 @@ Registers a command instance under a script namespace (the framework uses this f
 public function route (null|array $route = null, null|object $From = null): bool
 ```
 
-Parses the command line (or the given `$route` array of `argv`-style strings, for programmatic routing), finds the matching command — falling back to `help` when the command is unknown — extracts the verbosity, and runs the command through the middleware pipeline. Returns the command's boolean status.
+Parses the command line (or the given `$route` array of `argv`-style strings, for programmatic routing), finds the matching command — falling back to `help` when the command is unknown — extracts the verbosity, intercepts the global `--help`/`-h` (rendering the command's `help()` instead of running it), and runs the command through the middleware pipeline. Returns the command's boolean status.
 
 ```php
 public function find (null|string $command, null|object $From = null, null|string $input = null): Command|null

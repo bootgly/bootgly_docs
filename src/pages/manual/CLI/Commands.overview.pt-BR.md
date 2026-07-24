@@ -84,6 +84,28 @@ public function run (array $arguments = [], array $options = []): bool
 }
 ```
 
+### Help
+
+`--help` (e sua forma curta `-h`) também é reservada: o roteador a intercepta para **todo** comando e renderiza o help daquele comando em vez de executá-lo. Assim `bootgly <comando> --help` funciona de imediato — sem fiação por comando, e sem risco de um comando executar sua ação real quando o usuário só pediu ajuda:
+
+```bash
+bootgly setup --help
+```
+
+O help padrão lista o nome, a descrição e as opções do comando (a caixa `Commands options`). Um comando fornece um help mais rico, ciente dos argumentos, sobrescrevendo `help()`:
+
+```php
+public function help (array $arguments = []): bool
+{
+   // Renderiza um help customizado. $arguments carrega o caminho do subcomando,
+   // ex.: `bootgly test benchmark --help` → help(['benchmark']).
+
+   return true;
+}
+```
+
+Como a opção é global, ela também aparece na tela do `bootgly help`, na caixa `Commands options`, ao lado de `-v, -vv, -vvv`.
+
 ## Middlewares
 
 Toda execução de comando passa por um pipeline de middlewares — um bom lugar para preocupações transversais como medição de tempo, logging ou rodapés de saída. Um middleware implementa `Bootgly\CLI\Commands\Middleware`:
@@ -141,7 +163,7 @@ Registra uma instância de comando sob um namespace de script (o framework usa i
 public function route (null|array $route = null, null|object $From = null): bool
 ```
 
-Faz o parse da linha de comando (ou do array `$route` no estilo `argv`, para roteamento programático), encontra o comando correspondente — caindo no `help` quando o comando é desconhecido —, extrai a verbosidade e executa o comando através do pipeline de middlewares. Retorna o status booleano do comando.
+Faz o parse da linha de comando (ou do array `$route` no estilo `argv`, para roteamento programático), encontra o comando correspondente — caindo no `help` quando o comando é desconhecido —, extrai a verbosidade, intercepta o `--help`/`-h` global (renderizando o `help()` do comando em vez de executá-lo) e executa o comando através do pipeline de middlewares. Retorna o status booleano do comando.
 
 ```php
 public function find (null|string $command, null|object $From = null, null|string $input = null): Command|null
