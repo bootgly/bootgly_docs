@@ -47,6 +47,16 @@ php bootgly test --help
 
 `-h` is the short form of the same flag. The help prints the argument and option tables and exits with success — no suite is executed. For benchmark-specific options, use `php bootgly test benchmark --help` (see the Benchmarks section below).
 
+## Verbosity
+
+Raise the detail of assertion **failure** messages with the global `-v` option:
+
+```bash :toolbar="true";
+php bootgly test -v
+```
+
+`-v`/`-vv`/`-vvv` is the same global verbosity option every Bootgly command accepts (see [Commands](/manual/CLI/Commands)). On `test` it is fed into the assertion failure Fallbacks: at the default level a failure prints redacted placeholders (`actual`, `expected`); with `-v` the real scalar values are shown and arrays are JSON-encoded; `-vv` also serializes objects into the message. Assertions that do not implement graded detail always print their values.
+
 ## View
 
 Choose how results are rendered with `--view=`:
