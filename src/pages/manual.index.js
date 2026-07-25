@@ -1511,6 +1511,28 @@ export default {
       }
     }
   },
+  '/CLI/UI/Base/Flyout': {
+    config: {
+      icon: 'expand_more',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The anchored option list — windowed rows a host paints against an input, above it or below it.',
+          'pt-BR': 'A lista de opções ancorada — linhas janeladas que um host pinta junto a um input, acima ou abaixo dele.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Flyout'
+      }
+    }
+  },
   '/CLI/UI/Base/Frame': {
     config: {
       icon: 'picture_in_picture',
@@ -1711,28 +1733,6 @@ export default {
       }
     }
   },
-  '/CLI/UI/Components/Question': {
-    config: {
-      icon: 'help',
-      status: 'new',
-      version: 'v0.20.0-beta',
-      meta: {
-        description: {
-          'en-US': 'Ask validated questions with defaults, required answers and attempt limits.',
-          'pt-BR': 'Faça perguntas validadas com valores padrão, respostas obrigatórias e limite de tentativas.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Question'
-      }
-    }
-  },
   '/CLI/UI/Components/Scrollarea': {
     config: {
       icon: 'swap_vert',
@@ -1816,6 +1816,28 @@ export default {
     data: {
       '*': {
         title: 'Textarea'
+      }
+    }
+  },
+  '/CLI/UI/Components/Textbox': {
+    config: {
+      icon: 'text_fields',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The single-line text input — validated answers, secret input, autocompletion and search in one component.',
+          'pt-BR': 'A entrada de texto de linha única — respostas validadas, entrada secreta, autocompletar e busca num só componente.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Textbox'
       }
     }
   },
@@ -1944,28 +1966,6 @@ export default {
     data: {
       '*': {
         title: 'Filepicker'
-      }
-    }
-  },
-  '/CLI/UX/Components/Finder': {
-    config: {
-      icon: 'search',
-      status: 'new',
-      version: 'v1.0.0-beta',
-      meta: {
-        description: {
-          'en-US': 'Live search selector — type to filter options (static or from a dynamic source), aim and confirm one value.',
-          'pt-BR': 'Seletor com busca ao vivo — digite para filtrar opções (estáticas ou de uma fonte dinâmica), mire e confirme um valor.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Finder'
       }
     }
   },

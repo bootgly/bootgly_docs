@@ -105,7 +105,7 @@ $Terminal->Screen->watch($Dialog->resize(...));
 
 ## Saída não interativa
 
-Em pipes e CI nenhuma caixa é pintada: `confirm()` e `prompt()` mantêm a semântica do [Question](/manual/CLI/UI/Components/Question/overview) (uma linha do stdin; EOF e respostas vazias assumem o padrão) e `alert()` escreve a mensagem diretamente. O mesmo código roda interativamente e em scripts.
+Em pipes e CI nenhuma caixa é pintada: `confirm()` e `prompt()` mantêm a semântica do [Textbox](/manual/CLI/UI/Components/Textbox/overview) (uma linha do stdin; EOF e respostas vazias assumem o padrão) e `alert()` escreve a mensagem diretamente. O mesmo código roda interativamente e em scripts.
 
 ## Referência
 
@@ -255,7 +255,7 @@ Redimensiona contra um novo tamanho de terminal: recentraliza e, enquanto a caix
 public function confirm (string $prompt, bool $default = false): bool
 ```
 
-Faz uma confirmação modal de sim/não: `y`/`n` respondem; Enter, Esc e EOF assumem o padrão. Entrada não interativa mantém a semântica do Question.
+Faz uma confirmação modal de sim/não: `y`/`n` respondem; Enter, Esc e EOF assumem o padrão. Entrada não interativa mantém a semântica do Textbox.
 
 ### alert()
 
@@ -271,4 +271,4 @@ Mostra uma mensagem modal reconhecida por qualquer tecla (ou EOF). Saída não i
 public function prompt (string $prompt, string $default = ''): string
 ```
 
-Pede uma linha de texto modal com o editor Line: Enter submete o valor com trim — um submit vazio mantém o padrão; Esc e EOF mantêm o padrão. Entrada não interativa mantém a semântica do Question.
+Pede uma linha de texto modal com o editor Line: Enter submete o valor com trim — um submit vazio mantém o padrão; Esc e EOF mantêm o padrão. Entrada não interativa mantém a semântica do Textbox.

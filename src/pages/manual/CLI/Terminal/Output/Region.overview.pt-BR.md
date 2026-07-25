@@ -13,7 +13,7 @@ use const Bootgly\CLI;
 use Bootgly\ABI\Templates\Template\Escaped;
 use Bootgly\CLI\Terminal;
 use Bootgly\CLI\Terminal\Output\Region;
-use Bootgly\CLI\UI\Components\Question;
+use Bootgly\CLI\UI\Components\Textbox;
 
 $Input = CLI->Terminal->Input;
 $Output = CLI->Terminal->Output;
@@ -33,25 +33,29 @@ $Region = new Region($Output->stream, $gutter, 3);
 Terminal::$width -= 3;
 
 try {
-   $Question = new Question($Input, $Region);
-   $Question->prompt = 'Nome do projeto';
-   $Question->default = 'App';
+   $Textbox = new Textbox($Input, $Region);
+   $Textbox->prompt = 'Nome do projeto';
+   $Textbox->default = 'App';
+   $Textbox->border = '';
 
-   $answer = $Question->ask();
+   $answer = $Textbox->ask();
 }
 finally {
    Terminal::$width += 3;
 }
 ```
 
-A Question renderiza aninhada, guia e tudo:
+O [Textbox](/manual/CLI/UI/Components/Textbox/overview) renderiza aninhado, guia e tudo:
 
 ```
 Host
 │
-│  Nome do projeto [App]: App
+│  ❯ Nome do projeto: MeuApp
 │
 ```
+
+O editor emoldurado mostra apenas o que foi digitado — o `default` nunca aparece
+na linha; ele é o que o `ask()` devolve quando a resposta volta vazia.
 
 A primeira linha é responsabilidade do hospedeiro: a região injeta o gutter **após** cada quebra de linha, nunca antes do primeiro byte. Então o hospedeiro pinta a linha onde o componente começa e deixa o cursor na coluna da região (`moveTo(column: 4)` acima) — da primeira `\n` em diante, as linhas são da região.
 
@@ -67,6 +71,21 @@ A primeira linha é responsabilidade do hospedeiro: a região injeta o gutter **
 | `CSI 2 K` (apagar linha) | o apagamento e depois o gutter repintado |
 
 Todo o resto — cores, `CSI n A`/`B`/`C`/`D`, telas alternativas — passa intacto.
+
+## Crescendo além das linhas reservadas
+
+Um hospedeiro que pinta algo **abaixo** da região — os próximos steps do Wizard, por exemplo — reserva um número de linhas para o conteúdo entre eles. Declare quantas com o quarto argumento do construtor, e o conteúdo mais alto que isso faz a região **crescer** em vez de sobrescrever o que vem depois:
+
+```php
+// @ O hospedeiro reservou 3 linhas abaixo da primeira linha da região
+$Region = new Region($Output->stream, $gutter, 3, 3);
+```
+
+A região acompanha sua linha atual conforme as quebras de linha passam por ela. Na quebra que passaria da última linha reservada, ela emite `CSI L` (inserir linha) logo após a quebra: o terminal abre uma linha nova ali e empurra tudo que o hospedeiro pintou abaixo uma linha para baixo, em vez de a região escrever por cima. A reserva cresce junto, então a próxima linha excedente repete o movimento.
+
+Com `rows` no padrão `0`, o crescimento fica desligado — a região nunca toca no que vem depois dela, e o conteúdo mais alto que a área do hospedeiro simplesmente o sobrescreve.
+
+**A contagem só enxerga quebras de linha.** Uma linha *mais larga* que a região quebra no terminal em uma segunda linha física que a região nunca viu: o crescimento fica uma linha atrás e tudo abaixo sobe fora de lugar. Componentes renderizados dentro de uma região precisam cortar a saída na largura do terminal — o [Alert](/manual/CLI/UI/Components/Alert/overview) corta a mensagem exatamente por isso — e essa largura precisa ser a reduzida.
 
 ## Largura dentro de uma região
 
@@ -85,10 +104,10 @@ A região compartilha o stream do hospedeiro em vez de bufferizar: as escritas c
 `Bootgly\CLI\Terminal\Output\Region` estende `Bootgly\CLI\Terminal\Output` — todos os membros de Output continuam disponíveis, incluindo `Cursor`, `Text` e `Viewport`.
 
 ```php
-public function __construct ($stream, string $gutter, int $offset)
+public function __construct ($stream, string $gutter, int $offset, int $rows = 0)
 ```
 
-Cria a região sobre um stream de saída hospedeiro (`$Output->stream` — compartilhado, não copiado). `$gutter` é o gutter esquerdo pintado injetado em cada linha da região (SGR permitido — pinte markup com `Escaped::render()`). `$offset` é a largura **visível** do gutter em colunas: conte apenas os caracteres imprimíveis, ignorando os códigos de escape.
+Cria a região sobre um stream de saída hospedeiro (`$Output->stream` — compartilhado, não copiado). `$gutter` é o gutter esquerdo pintado injetado em cada linha da região (SGR permitido — pinte markup com `Escaped::render()`). `$offset` é a largura **visível** do gutter em colunas: conte apenas os caracteres imprimíveis, ignorando os códigos de escape. `$rows` é quantas linhas o hospedeiro reservou abaixo da primeira linha da região — `0` desliga o crescimento.
 
 ```php
 public function write (string $data, int $times = 1): self
@@ -108,4 +127,10 @@ public function escape (string $data): self
 
 Escreve uma sequência de escape (sem o `CSI` inicial) através da tradução da região.
 
-A região expõe `gutter` (`string`, somente leitura — o gutter pintado) e `offset` (`int`, somente leitura — o offset de coluna da região).
+```php
+public int $rows
+```
+
+As linhas que o hospedeiro reservou abaixo da primeira linha da região. Conteúdo que ultrapassa essas linhas faz a região crescer — a linha extra é inserida, empurrando para baixo o que o hospedeiro pintou abaixo dela em vez de sobrescrever. Cada linha inserida aumenta a reserva em uma. `0` (o padrão) desliga o crescimento.
+
+A região também expõe `gutter` (`string`, somente leitura — o gutter pintado) e `offset` (`int`, somente leitura — o offset de coluna da região).

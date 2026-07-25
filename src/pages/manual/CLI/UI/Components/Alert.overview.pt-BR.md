@@ -61,8 +61,23 @@ A propriedade message é utilizada para definir a mensagem que deve ser exibida 
 Exemplo:
 
 ```php
-$Alert->message = 'Isso é um alerta de sucesso!
+$Alert->message = 'Isso é um alerta de sucesso!';
 ```
+
+### Mensagens longas são cortadas
+
+A mensagem do alerta sempre ocupa uma única linha. Uma mensagem mais larga que o terminal é cortada com reticências (`…`) antes de ser escrita, descontando o badge (` SUCCESS `, ` ATTENTION `, ` FAIL `, ` ALERT `) das colunas disponíveis:
+
+```php
+$Alert->message = str_repeat('Uma mensagem de validação bem longa. ', 10);
+
+// @ Renderizado como: FAIL  Uma mensagem de validação bem longa. Uma mensage…
+$Alert->render();
+```
+
+Um alerta quebrado transbordaria para uma segunda linha, e isso quebra tanto os repaints em bloco de que os componentes ao redor dependem quanto a contagem de linhas de qualquer [Region](/manual/CLI/Terminal/Output/Region/overview) que o hospede — uma região conta as linhas que emite pelas quebras de linha que passam por ela, e uma linha quebrada é uma que ela nunca vê.
+
+O corte depende de `Terminal::$width` ser conhecida; quando não é (saída em pipe, por exemplo), a mensagem é escrita inteira.
 
 ## Veja ao vivo
 

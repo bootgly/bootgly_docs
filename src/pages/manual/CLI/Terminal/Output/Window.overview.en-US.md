@@ -1,6 +1,6 @@
 # Window
 
-`Window` is the visible-window calculator behind Bootgly's scrollable lists — pure state, **no stream I/O**. Given a window `size` and a list `total`, it tracks which slice of rows is visible and slides that slice to follow an aimed row. Your code slices and renders; `Window` only does the math. The [Menu](/manual/CLI/UI/Components/Menu/overview) viewport, the [Question](/manual/CLI/UI/Components/Question/overview) suggestions dropdown and the [Textarea](/manual/CLI/UI/Components/Textarea/overview) row window are all built on it.
+`Window` is the visible-window calculator behind Bootgly's scrollable lists — pure state, **no stream I/O**. Given a window `size` and a list `total`, it tracks which slice of rows is visible and slides that slice to follow an aimed row. Your code slices and renders; `Window` only does the math. The [Menu](/manual/CLI/UI/Components/Menu/overview) viewport, the [Textbox](/manual/CLI/UI/Components/Textbox/overview) option list and the [Textarea](/manual/CLI/UI/Components/Textarea/overview) row window are all built on it.
 
 ## Windowing a list
 
@@ -31,7 +31,9 @@ for ($index = $Window->first; $index <= $Window->last; $index++) {
 
 `slide()` only moves the window when the aimed row would leave it — aiming inside the current slice is a no-op, so the list stays visually stable while the user navigates. The window is always clamped to the valid range: it never shows past the end nor before the start.
 
-Two edge cases are handled for free: with `size` set to `0` windowing is disabled, and when the whole list fits (`total <= size`) the window pins to the top — in both cases `first` is `0` and `last` covers everything available.
+When the whole list fits (`total <= size`) the window pins to the top for free: `first` stays `0` and `last` covers everything available.
+
+Watch the `size` of `0`: it does not mean "show everything", it means **no visible rows** — `last` derives from `first + size`, so it lands on `-1` and the visible range is empty. Callers that render an unbounded list either skip the window entirely or set `size` to the list total.
 
 When the list grows or shrinks (a filter, a live feed), update `total` and `slide()` again to re-clamp.
 

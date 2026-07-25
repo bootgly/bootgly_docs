@@ -105,7 +105,7 @@ $Terminal->Screen->watch($Dialog->resize(...));
 
 ## Non-interactive output
 
-On pipes and CI no box is painted: `confirm()` and `prompt()` keep the [Question](/manual/CLI/UI/Components/Question/overview) semantics (one stdin line; EOF and empty answers assume the default) and `alert()` writes the message plainly. The same code runs interactively and in scripts.
+On pipes and CI no box is painted: `confirm()` and `prompt()` keep the [Textbox](/manual/CLI/UI/Components/Textbox/overview) semantics (one stdin line; EOF and empty answers assume the default) and `alert()` writes the message plainly. The same code runs interactively and in scripts.
 
 ## Reference
 
@@ -255,7 +255,7 @@ Resizes against a new terminal size: recenters and, while the box is painted, wi
 public function confirm (string $prompt, bool $default = false): bool
 ```
 
-Asks a modal yes/no confirmation: `y`/`n` answer; Enter, Esc and EOF assume the default. Non-interactive input keeps the Question semantics.
+Asks a modal yes/no confirmation: `y`/`n` answer; Enter, Esc and EOF assume the default. Non-interactive input keeps the Textbox semantics.
 
 ### alert()
 
@@ -271,4 +271,4 @@ Shows a modal message acknowledged by any key (or EOF). Non-interactive output w
 public function prompt (string $prompt, string $default = ''): string
 ```
 
-Asks a modal line of text with the Line editor: Enter submits the trimmed value — an empty submit keeps the default; Esc and EOF keep the default. Non-interactive input keeps the Question semantics.
+Asks a modal line of text with the Line editor: Enter submits the trimmed value — an empty submit keeps the default; Esc and EOF keep the default. Non-interactive input keeps the Textbox semantics.

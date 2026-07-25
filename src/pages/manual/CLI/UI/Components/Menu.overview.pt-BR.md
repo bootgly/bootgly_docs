@@ -135,6 +135,14 @@ $Options->viewport = 5; // 5 opções visíveis por vez
 
 Digitar letras filtra as opções incrementalmente: a mira pula para o primeiro match e opções que não casam ficam ocultas enquanto o filtro está ativo. Um hint esmaecido `/filtro` renderiza sob o prompt. Backspace remove o último caractere; `Esc` puro limpa o filtro. Espaço sempre seleciona — nunca entra no filtro.
 
+Um filtro que não casa com nada deixaria um bloco vazio e silencioso, então o menu avisa — e diz como sair dali:
+
+```
+Escolha uma opção:
+/zzz
+(no matches — Backspace erases, Esc clears)
+```
+
 ### Colunas em grade
 
 Defina `columns` para dispor um menu vertical em grade — N opções por linha visual, cada célula com padding de `Menu::$width / columns`. `←`/`→` movem uma célula; `↑`/`↓` movem uma linha visual:

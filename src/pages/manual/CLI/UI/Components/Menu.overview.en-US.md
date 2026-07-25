@@ -135,6 +135,14 @@ $Options->viewport = 5; // 5 visible options at a time
 
 Typing letters filters the options incrementally: the aim jumps to the first match and non-matching options are hidden while the filter is active. A dim `/filter` hint renders under the prompt. Backspace pops the last character; bare `Esc` clears the filter. Space always selects — it never enters the filter.
 
+A filter matching nothing would leave a silent empty block, so the menu says so — and says how to get out of it:
+
+```
+Choose an option:
+/zzz
+(no matches — Backspace erases, Esc clears)
+```
+
 ### Grid columns
 
 Set `columns` to lay a vertical menu out as a grid — N options per visual line, each cell padded to `Menu::$width / columns`. `←`/`→` move one cell; `↑`/`↓` move one visual line:

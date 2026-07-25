@@ -125,13 +125,13 @@ return static function (App $App, Screen $Screen): string {
 };
 ```
 
-The one rule: widgets that run their **own read loop** (Menu, Form, Question, Finder) never render inside a view — the App loop already owns stdin. Screens render strings; actions live in keymaps.
+The one rule: widgets that run their **own read loop** (Menu, Form, Textbox) never render inside a view — the App loop already owns stdin. Screens render strings; actions live in keymaps.
 
 ## Behavior notes
 
 - **Non-interactive runs** (pipes, CI): `boot()` skips the terminal takeover and `run()` renders a single frame and returns — deterministic and safe.
 - **Input dispatch order**: active Palette → help overlay → current Screen keymaps → global keymaps.
-- **Interactive core components** (Menu, Form, Question) run their own read loops — do **not** call them inside a screen view: the App loop already owns stdin. Screens render strings; actions live in keymaps.
+- **Interactive core components** (Menu, Form, Textbox) run their own read loops — do **not** call them inside a screen view: the App loop already owns stdin. Screens render strings; actions live in keymaps.
 - Panes (horizontal/vertical splits) are not part of the MVP — one content pane + overlays.
 
 ---

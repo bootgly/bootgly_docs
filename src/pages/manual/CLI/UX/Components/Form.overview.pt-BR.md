@@ -121,7 +121,7 @@ enum Bootgly\CLI\UX\Form\Controls
 }
 ```
 
-O controle do campo — decide o editor dentro do quadro: `Text`/`Secret` → editor de linha raw (echo mascarado no `Secret`), `Select` → lista radio, `Confirm` → radio Yes/No com hotkeys `y`/`n`. Em entrada não interativa todos os controles leem uma linha do stdin (`Text`/`Secret` via Question, `Confirm` via `Question->confirm()`).
+O controle do campo — decide o editor dentro do quadro: `Text`/`Secret` → editor de linha raw (echo mascarado no `Secret`), `Select` → lista radio, `Confirm` → radio Yes/No com hotkeys `y`/`n`. Em entrada não interativa todos os controles leem uma linha do stdin (`Text`/`Secret` via [Textbox](/manual/CLI/UI/Components/Textbox/overview), `Confirm` via `Textbox->confirm()`).
 
 ### Propriedades do Form
 

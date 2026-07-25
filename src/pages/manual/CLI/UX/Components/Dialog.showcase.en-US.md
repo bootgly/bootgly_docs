@@ -10,6 +10,6 @@ A dashboard frame paints first — then a modal `confirm()`, a `prompt()` and an
 `cover()` registers what the modal overlaps; `confirm()`/`prompt()`/`alert()` trap the keyboard while open — answer with `y`/`n`, type a tag and press any key to acknowledge.
 </d-block-terminal>
 
-On non-interactive output (pipes, CI) no box is painted — the variants keep the Question one-line semantics.
+On non-interactive output (pipes, CI) no box is painted — the variants keep the Textbox one-line semantics.
 
 The component is documented in the [Dialog overview](/manual/CLI/UX/Components/Dialog/overview).

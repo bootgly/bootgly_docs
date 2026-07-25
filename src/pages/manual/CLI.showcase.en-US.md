@@ -5,7 +5,7 @@ The terminal below runs the **real Bootgly CLI** — the framework's actual demo
 <d-block-terminal
   engine="bootgly-cli"
   title="Bootgly CLI — live demos"
-  commands="Client/Server:demo 1|Question:demo 27|Form:demo 28|Menu:demo 13|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Chart:demo 36|Progress:demo 19|Scrollarea:demo 41|Spinner:demo 32|Timer:demo 33|Timeline:demo 34|Text (effects):demo 37|Textarea:demo 39|Prompt:demo 40|Logs:demo 25|Mouse:demo 23|Writing:demo 2|Text:demo 6|Cursor:demo 3|Viewport:demo 24"
+  commands="Client/Server:demo 1|Textbox:demo 27|Form:demo 28|Menu:demo 13|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Chart:demo 36|Progress:demo 19|Scrollarea:demo 41|Spinner:demo 32|Timer:demo 33|Timeline:demo 34|Text (effects):demo 37|Textarea:demo 39|Prompt:demo 40|Logs:demo 25|Mouse:demo 23|Writing:demo 2|Text:demo 6|Cursor:demo 3|Viewport:demo 24"
   height="420"
 >
 Pick a demo and press Run — the output you see is produced by the same components documented in this manual. Mouse and Menu demos are **interactive**: click the terminal first; in Menu use the arrow keys to aim, Space to select and Enter to confirm; in Mouse just move, click and scroll — right-click exits. Use the source button to read the demo's PHP file.
@@ -18,7 +18,7 @@ Each command maps to a real file under [`projects/Demo/CLI/`](https://github.com
 - **Client/Server** — the Terminal Client/Server API (`Input->reading()`): natively it forks two processes joined by a pipe; here each role runs in its own PHP WASM worker and a `MessageChannel` plays the pipe. Click the terminal, type and press Enter — the Client echoes your keys and the Server answers with what you sent. Arrow keys render as emoji, `*` toggles secret mode, `#` toggles hidden mode.
 - **Mouse** — real-time Mouse Reporting: the terminal enables SGR tracking and PHP decodes every move, click, drag and scroll with column/row coordinates. Right-click exits.
 - **Logs** — the Monitor-mode log viewer: ~20 simulated worker records stream in live, then your keyboard drives it — Space pauses, ↑/↓ select, Enter expands a record, `l` cycles the level, `/` searches, `1-3` toggle channels, `q` quits.
-- **Question** — validated line input: the Validator rejects invalid answers with a Failure Alert and re-asks (the masked/secret variation lives in the [Question showcase](/manual/CLI/UI/Components/Question/showcase)).
+- **Textbox** — validated line input: the Validator rejects invalid answers with a Failure Alert and re-asks (the masked/secret, autocompletion and search variations live in the [Textbox showcase](/manual/CLI/UI/Components/Textbox/showcase)).
 - **Form** — the sequential multi-field component: Text, Secret, Select and Confirm fields asked one at a time (`↑` + Enter goes back), ending in a summary Fieldset + confirm Menu.
 - **Menu** — the interactive selection component: arrows aim, Space toggles, Enter confirms the selection or the aimed option, letters filter — `Ctrl+C` interrupts (divisors, unique selection, horizontal, alignments, viewport + filter and grid variations live in the [Menu showcase](/manual/CLI/UI/Components/Menu/showcase)).
 - **Alert, Fieldset, Table** — output components rendering ANSI-styled boxes, labels and aligned columns.

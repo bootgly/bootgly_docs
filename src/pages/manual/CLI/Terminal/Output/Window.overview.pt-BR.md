@@ -1,6 +1,6 @@
 # Window
 
-`Window` é a calculadora de janela visível por trás das listas roláveis do Bootgly — estado puro, **sem I/O de stream**. Dado um `size` de janela e um `total` de lista, ele rastreia qual fatia de linhas está visível e desliza essa fatia para seguir uma linha mirada. Seu código fatia e renderiza; o `Window` só faz a matemática. O viewport do [Menu](/manual/CLI/UI/Components/Menu/overview), o dropdown de sugestões do [Question](/manual/CLI/UI/Components/Question/overview) e a janela de linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) são todos construídos sobre ele.
+`Window` é a calculadora de janela visível por trás das listas roláveis do Bootgly — estado puro, **sem I/O de stream**. Dado um `size` de janela e um `total` de lista, ele rastreia qual fatia de linhas está visível e desliza essa fatia para seguir uma linha mirada. Seu código fatia e renderiza; o `Window` só faz a matemática. O viewport do [Menu](/manual/CLI/UI/Components/Menu/overview), o lista de opções do [Textbox](/manual/CLI/UI/Components/Textbox/overview) e a janela de linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) são todos construídos sobre ele.
 
 ## Janelando uma lista
 
@@ -31,7 +31,9 @@ for ($index = $Window->first; $index <= $Window->last; $index++) {
 
 `slide()` só move a janela quando a linha mirada sairia dela — mirar dentro da fatia atual é um no-op, então a lista permanece visualmente estável enquanto o usuário navega. A janela é sempre restringida ao intervalo válido: nunca mostra além do fim nem antes do início.
 
-Dois casos de borda são tratados de graça: com `size` em `0` o janelamento é desabilitado, e quando a lista inteira cabe (`total <= size`) a janela fixa no topo — em ambos os casos `first` é `0` e `last` cobre tudo o que está disponível.
+Quando a lista inteira cabe (`total <= size`) a janela fixa no topo de graça: `first` continua `0` e `last` cobre tudo o que está disponível.
+
+Atenção ao `size` igual a `0`: ele não significa "mostrar tudo", significa **nenhuma linha visível** — `last` deriva de `first + size`, então cai em `-1` e o intervalo visível fica vazio. Quem renderiza uma lista sem limite ou dispensa a janela, ou define `size` como o total da lista.
 
 Quando a lista cresce ou encolhe (um filtro, um feed ao vivo), atualize `total` e chame `slide()` de novo para re-restringir.
 

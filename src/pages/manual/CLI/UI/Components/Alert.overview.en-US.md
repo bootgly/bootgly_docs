@@ -65,6 +65,21 @@ Example:
 $Alert->message = 'This is a success alert!';
 ```
 
+### Long messages are cropped
+
+The alert message always occupies a single row. A message wider than the terminal is cropped with an ellipsis (`…`) before it is written, with the badge (` SUCCESS `, ` ATTENTION `, ` FAIL `, ` ALERT `) discounted from the available columns:
+
+```php
+$Alert->message = str_repeat('A very long validation message. ', 10);
+
+// @ Rendered as: FAIL  A very long validation message. A very long validati…
+$Alert->render();
+```
+
+A wrapped alert would spill into a second row, and that breaks both the block repaints the surrounding components rely on and the row accounting of any [Region](/manual/CLI/Terminal/Output/Region/overview) hosting it — a region counts the rows it emits by the line breaks passing through it, and a wrapped row is one it never sees.
+
+The crop needs `Terminal::$width` to be known; when it is not (piped output, for instance), the message is written whole.
+
 ## See it live
 
 The official Alert demo runs in the [live showcase](/manual/CLI/UI/Components/Alert/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

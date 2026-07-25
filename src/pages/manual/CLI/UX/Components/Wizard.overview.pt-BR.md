@@ -54,7 +54,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 ○ Build
 ```
 
-A área de conteúdo tem `reserve` linhas de altura (3 por padrão, mais uma guia de respiro de cada lado) — linhas não usadas leem como o conector. Steps com editores mais altos declaram a própria altura com `rows` no `add()` (ex.: um Menu de 5 linhas quer `rows: 6`). Enquanto um handler roda, seus componentes escrevem através de um Output [`Region`](/manual/CLI/Terminal/Output/Region/overview) aninhado: as linhas ganham a guia automaticamente e `Terminal::$width` encolhe pela largura da guia, então componentes sensíveis à largura cabem sem saber que estão embutidos. O `Output` global do Terminal é trocado pela mesma `Region` enquanto o handler roda (e restaurado logo depois), então código de comando que lê `CLI->Terminal->Output` na hora da chamada também aninha — sem rewiring. A conclusão fecha em uma tela nova com o frame vertical final completo; uma falha anexa o frame final abaixo, preservando o conteúdo e os Alerts do step que falhou:
+A área de conteúdo tem `reserve` linhas de altura (3 por padrão, mais uma guia de respiro de cada lado) — linhas não usadas leem como o conector. Essa altura é um **tamanho inicial, não um teto**: conteúdo mais alto que ela faz a área crescer, empurrando os próximos steps para baixo em vez de pintar por cima deles. Steps com um editor sabidamente mais alto ainda declaram a própria altura com `rows` no `add()` (ex.: um Menu de 5 linhas quer `rows: 6`), para o frame assentar de uma vez em vez de crescer linha a linha. Enquanto um handler roda, seus componentes escrevem através de um Output [`Region`](/manual/CLI/Terminal/Output/Region/overview) aninhado: as linhas ganham a guia automaticamente, a área cresce pelas quebras de linha que passam por ela, e `Terminal::$width` encolhe pela largura da guia, então componentes sensíveis à largura cabem — e ficam em uma linha só, que é o que mantém a contagem do crescimento certa — sem saber que estão embutidos. O `Output` global do Terminal é trocado pela mesma `Region` enquanto o handler roda (e restaurado logo depois), então código de comando que lê `CLI->Terminal->Output` na hora da chamada também aninha — sem rewiring. A conclusão fecha em uma tela nova com o frame vertical final completo; uma falha anexa o frame final abaixo, preservando o conteúdo e os Alerts do step que falhou:
 
 ```php
 $done = $Wizard->run();
@@ -67,18 +67,18 @@ Retorna `true` quando o fluxo completa e `false` quando um step falha — ou qua
 Handlers instanciam componentes diretamente com o IO compartilhado — qualquer componente renderiza entre os pontos da timeline:
 
 ```php
-use Bootgly\CLI\UI\Components\Question;
+use Bootgly\CLI\UI\Components\Textbox;
 
 $Wizard->add('Name', function (Wizard $Wizard): string {
-   $Question = new Question($Wizard->Input, $Wizard->Output);
-   $Question->prompt = 'Project name';
-   $Question->required = true;
+   $Textbox = new Textbox($Wizard->Input, $Wizard->Output);
+   $Textbox->prompt = 'Project name';
+   $Textbox->required = true;
 
-   return $Question->ask();
+   return $Textbox->ask();
 });
 ```
 
-O mesmo vale para `Menu`, `Fieldset`, `Alert`, `Progress` — ou saída raw. Dados fluem entre steps por capturas de closure (`use (&$name)`).
+O mesmo vale para `Menu`, `Fieldset`, `Alert`, `Progress` — ou saída raw. Veja a página do [Textbox](/manual/CLI/UI/Components/Textbox/overview) para seus modos de opções, busca e confirmação. Dados fluem entre steps por capturas de closure (`use (&$name)`).
 
 ## Ramificações dinâmicas
 
@@ -106,9 +106,9 @@ Lance qualquer `Throwable` para falhar o step e parar o fluxo: o step é marcado
 
 ```php
 $Wizard->add('Confirm', function (Wizard $Wizard): null {
-   $Question = new Question($Wizard->Input, $Wizard->Output);
+   $Textbox = new Textbox($Wizard->Input, $Wizard->Output);
 
-   if ($Question->confirm('Create the project?', default: true) === false) {
+   if ($Textbox->confirm('Create the project?', default: true) === false) {
       throw new Exception('aborted');   // vira: ✖ Confirm (aborted)
    }
 
@@ -118,7 +118,7 @@ $Wizard->add('Confirm', function (Wizard $Wizard): null {
 
 ## Saída não-interativa
 
-Em pipes e CI, nenhuma tela é limpa e nenhum frame é impresso: o título renderiza uma vez e cada transição anexa uma linha simples — `◉ label` na ativação, `✔ label (nota)` na conclusão, `✖ label (nota)` na falha — exatamente o comportamento append do Timeline. Os componentes dos handlers degradam por conta própria (um `Question` lê uma linha do stdin), então o mesmo código roda interativamente e em scripts.
+Em pipes e CI, nenhuma tela é limpa e nenhum frame é impresso: o título renderiza uma vez e cada transição anexa uma linha simples — `◉ label` na ativação, `✔ label (nota)` na conclusão, `✖ label (nota)` na falha — exatamente o comportamento append do Timeline. Os componentes dos handlers degradam por conta própria (um `Textbox` lê uma linha do stdin), então o mesmo código roda interativamente e em scripts.
 
 ## Referência
 
@@ -164,7 +164,7 @@ Metadata (somente leitura). Se o fluxo terminou (completo ou falho).
 public int $reserve
 ```
 
-Config. A altura padrão da área de conteúdo, em linhas-guia, aninhada entre o step ativo e o próximo (mínimo 2: guia + conteúdo). Padrão: `3`.
+Config. A altura padrão da área de conteúdo, em linhas-guia, aninhada entre o step ativo e o próximo (mínimo 2: guia + conteúdo). Dimensiona a área com que o step começa — conteúdo mais alto a faz crescer, empurrando os próximos steps para baixo. Padrão: `3`.
 
 ### add()
 
@@ -172,7 +172,7 @@ Config. A altura padrão da área de conteúdo, em linhas-guia, aninhada entre o
 public function add (string $label, Closure $handler, int $rows = 0): Step
 ```
 
-Adiciona um step: o rótulo entra na timeline e o handler é invocado quando o step ativa. `rows` reserva a altura da área de conteúdo deste step (`0` segue o `reserve` do wizard) — dimensione pelo editor mais alto do step. Chamável antes e durante o `run()` — adições mid-run inserem logo após o step ativo, na ordem de adição. Retorna o `Step` do Timeline.
+Adiciona um step: o rótulo entra na timeline e o handler é invocado quando o step ativa. `rows` dimensiona a área de conteúdo **inicial** deste step (`0` segue o `reserve` do wizard) — não é um limite: conteúdo mais alto empurra os próximos steps para baixo em vez de sobrescrevê-los. Dimensione pelo editor mais alto do step para o frame não crescer linha a linha enquanto o editor pinta. Chamável antes e durante o `run()` — adições mid-run inserem logo após o step ativo, na ordem de adição. Retorna o `Step` do Timeline.
 
 ### run()
 

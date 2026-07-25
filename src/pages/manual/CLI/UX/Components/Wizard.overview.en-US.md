@@ -54,7 +54,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 ○ Build
 ```
 
-The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. Steps with taller editors declare their own height with `rows` on `add()` (e.g. a 5-line Menu wants `rows: 6`). While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically and `Terminal::$width` shrinks by the guide width, so width-aware components fit without knowing they are embedded. The Terminal's global `Output` is swapped to the same `Region` while the handler runs (and restored right after), so command-level code that reads `CLI->Terminal->Output` at call time nests too — no rewiring needed. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
+The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. That height is a **starting size, not a ceiling**: content taller than it makes the area grow, pushing the upcoming steps further down instead of painting over them. Steps with a known taller editor still declare their height with `rows` on `add()` (e.g. a 5-line Menu wants `rows: 6`), so the frame settles at once instead of growing row by row. While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically, the area grows by the line breaks passing through it, and `Terminal::$width` shrinks by the guide width, so width-aware components fit — and stay on one row, which is what keeps the growth counting straight — without knowing they are embedded. The Terminal's global `Output` is swapped to the same `Region` while the handler runs (and restored right after), so command-level code that reads `CLI->Terminal->Output` at call time nests too — no rewiring needed. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
 
 ```php
 $done = $Wizard->run();
@@ -67,18 +67,18 @@ It returns `true` when the flow completes and `false` when a step fails — or w
 Handlers instantiate components directly with the shared IO — any component renders between the timeline points:
 
 ```php
-use Bootgly\CLI\UI\Components\Question;
+use Bootgly\CLI\UI\Components\Textbox;
 
 $Wizard->add('Name', function (Wizard $Wizard): string {
-   $Question = new Question($Wizard->Input, $Wizard->Output);
-   $Question->prompt = 'Project name';
-   $Question->required = true;
+   $Textbox = new Textbox($Wizard->Input, $Wizard->Output);
+   $Textbox->prompt = 'Project name';
+   $Textbox->required = true;
 
-   return $Question->ask();
+   return $Textbox->ask();
 });
 ```
 
-The same works for `Menu`, `Fieldset`, `Alert`, `Progress` — or raw output. Data flows between steps through closure captures (`use (&$name)`).
+The same works for `Menu`, `Fieldset`, `Alert`, `Progress` — or raw output. See the [Textbox](/manual/CLI/UI/Components/Textbox/overview) page for its options, search and confirmation modes. Data flows between steps through closure captures (`use (&$name)`).
 
 ## Dynamic branches
 
@@ -106,9 +106,9 @@ Throw any `Throwable` to fail the step and stop the flow: the step is marked wit
 
 ```php
 $Wizard->add('Confirm', function (Wizard $Wizard): null {
-   $Question = new Question($Wizard->Input, $Wizard->Output);
+   $Textbox = new Textbox($Wizard->Input, $Wizard->Output);
 
-   if ($Question->confirm('Create the project?', default: true) === false) {
+   if ($Textbox->confirm('Create the project?', default: true) === false) {
       throw new Exception('aborted');   // becomes: ✖ Confirm (aborted)
    }
 
@@ -118,7 +118,7 @@ $Wizard->add('Confirm', function (Wizard $Wizard): null {
 
 ## Non-interactive output
 
-On pipes and CI, no screens are cleared and no frames are printed: the title renders once and each transition appends one plain line — `◉ label` on activation, `✔ label (note)` on completion, `✖ label (note)` on failure — exactly the Timeline append behavior. Handlers' components degrade on their own (a `Question` reads one stdin line), so the same code runs interactively and in scripts.
+On pipes and CI, no screens are cleared and no frames are printed: the title renders once and each transition appends one plain line — `◉ label` on activation, `✔ label (note)` on completion, `✖ label (note)` on failure — exactly the Timeline append behavior. Handlers' components degrade on their own (a `Textbox` reads one stdin line), so the same code runs interactively and in scripts.
 
 ## Reference
 
@@ -164,7 +164,7 @@ Metadata (read-only). Whether the flow ended (completed or failed).
 public int $reserve
 ```
 
-Config. The default content area height, in guide rows, nested between the active step and the next (minimum 2: guide + content). Default: `3`.
+Config. The default content area height, in guide rows, nested between the active step and the next (minimum 2: guide + content). It sizes the area the step starts with — taller content grows it, pushing the upcoming steps down. Default: `3`.
 
 ### add()
 
@@ -172,7 +172,7 @@ Config. The default content area height, in guide rows, nested between the activ
 public function add (string $label, Closure $handler, int $rows = 0): Step
 ```
 
-Adds a step: the label enters the timeline and the handler is invoked when the step activates. `rows` reserves this step's content area height (`0` follows the wizard `reserve`) — size it to the step's tallest editor. Callable before and during `run()` — mid-run additions insert right after the active step, in add order. Returns the Timeline `Step`.
+Adds a step: the label enters the timeline and the handler is invoked when the step activates. `rows` sizes this step's **initial** content area (`0` follows the wizard `reserve`) — it is not a limit: content taller than it pushes the upcoming steps down instead of overwriting them. Size it to the step's tallest editor so the frame does not grow row by row while the editor paints. Callable before and during `run()` — mid-run additions insert right after the active step, in add order. Returns the Timeline `Step`.
 
 ### run()
 

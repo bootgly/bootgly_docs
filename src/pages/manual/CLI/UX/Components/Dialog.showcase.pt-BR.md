@@ -10,6 +10,6 @@ Um frame de dashboard pinta primeiro — então um `confirm()` modal, um `prompt
 `cover()` registra o que o modal sobrepõe; `confirm()`/`prompt()`/`alert()` capturam o teclado enquanto abertos — responda com `y`/`n`, digite uma tag e pressione qualquer tecla para reconhecer.
 </d-block-terminal>
 
-Em saída não interativa (pipes, CI) nenhuma caixa é pintada — as variantes mantêm a semântica de uma linha do Question.
+Em saída não interativa (pipes, CI) nenhuma caixa é pintada — as variantes mantêm a semântica de uma linha do Textbox.
 
 O componente está documentado no [overview do Dialog](/manual/CLI/UX/Components/Dialog/overview).
