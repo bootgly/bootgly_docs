@@ -95,14 +95,30 @@ Swoole — o concorrente mais próximo — a vantagem foi de +6,0% (`/json`) e +
 `/plaintext`.
 
 > [!IMPORTANT]
-> **Atualização (2026-07-22, protocolo de claim da v1.0.0)** — remedido no hot path da
-> v1.0.0 sob um protocolo mais rígido (boot recém-iniciado, medianas de 4 execuções
-> completas alternadas, 18 workers de servidor, PHP 8.4.23, mesma máquina, 514 conexões),
-> o `/plaintext` raw é um **empate estatístico**: medianas de Bootgly **919.360** vs Swoole
-> **919.650** req/s (mediana pareada +0,9% para o Bootgly — dentro da banda de ruído). Os
-> dois servidores ficam limitados pela máquina nessa caixa compartilhada, então o headline
-> honesto do hot path raw é **PHP puro empatando com a extensão C** — enquanto as rotas de
-> banco acima, onde o core assíncrono domina, mantêm suas lideranças.
+> **`/plaintext` remedido em 2026-07-25 (protocolo de claim da v1.0.0).** Boot recém-iniciado,
+> mesma máquina e mesmo runner da varredura acima, de 16 a 20 workers, **seis execuções
+> pareadas por ponto** (24 pares; cada execução mede os dois servidores em sequência, então o
+> drift da máquina se cancela):
+>
+> | Workers de servidor | Bootgly (mediana) | Swoole (mediana) | Mediana pareada |
+> |---|--:|--:|--:|
+> | 16 | **1.084.550** | 991.147 | +9,9% |
+> | 17 | 1.078.706 | **1.003.388** | +6,8% |
+> | 18 | 1.039.580 | 986.236 | +6,2% |
+> | 19 | 1.008.614 | 980.385 | +4,6% |
+> | 20 | 949.322 | 909.267 | +4,4% |
+>
+> Pico vs pico — cada servidor na sua melhor contagem de workers — Bootgly **1.084.550 @ 16**
+> vs Swoole **1.003.388 @ 17** = **+8,1%**. Nos 24 pares a mediana é +6,2% e 23 de 24 favorecem
+> o Bootgly. Isto substitui a linha `/plaintext` da tabela acima (+6,8% em 2026-07-04); as
+> demais rotas seguem inalteradas.
+>
+> **A margem depende do formato do cliente, e nós dizemos isso.** Medido com o runner
+> orquestrador — um cliente de contabilidade mais pesado, na mesma máquina, que disputa as
+> mesmas CPUs com o servidor — os dois servidores empatam em 18 workers. Cerca de 62% da CPU
+> por worker do Bootgly é tempo de syscall do kernel nesta carga, então um cliente que rouba
+> CPU da máquina comprime qualquer diferença de framework. Os números publicados aqui usam o
+> runner `tcp_client` porque é o harness de todos os relatórios desta comparação.
 
 Gráficos da varredura completa (server-workers 1→24, clique para o report completo):
 

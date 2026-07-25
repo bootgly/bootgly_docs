@@ -93,13 +93,29 @@ closest competitor — the lead ranged from +6.0% (`/json`) and +6.8% (`/plainte
 (Octane) is shown; on nginx + PHP-FPM the gap widens to ≈ 150× on `/plaintext`.
 
 > [!IMPORTANT]
-> **Update (2026-07-22, v1.0.0 claim protocol)** — re-measured on the v1.0.0 hot path under
-> a stricter protocol (fresh boot, medians of 4 alternated full runs, 18 server workers,
-> PHP 8.4.23, same machine, 514 connections), raw `/plaintext` is a **statistical tie**:
-> Bootgly **919,360** vs Swoole **919,650** req/s medians (paired-run median +0.9% for
-> Bootgly — inside the noise band). Both servers are machine-bound on this shared box, so
-> the honest headline for the raw hot path is **pure PHP matching the C extension** — while
-> the database routes above, where the async core dominates, keep their leads.
+> **`/plaintext` re-measured 2026-07-25 (v1.0.0 claim protocol).** Fresh boot, same machine
+> and runner as the sweep above, worker counts 16-20, **six paired runs per point** (24 pairs;
+> each run measures both servers back to back, so machine drift cancels):
+>
+> | Server workers | Bootgly (median) | Swoole (median) | Paired median |
+> |---|--:|--:|--:|
+> | 16 | **1,084,550** | 991,147 | +9.9% |
+> | 17 | 1,078,706 | **1,003,388** | +6.8% |
+> | 18 | 1,039,580 | 986,236 | +6.2% |
+> | 19 | 1,008,614 | 980,385 | +4.6% |
+> | 20 | 949,322 | 909,267 | +4.4% |
+>
+> Peak vs peak — each server at its own best worker count — Bootgly **1,084,550 @ 16** vs
+> Swoole **1,003,388 @ 17** = **+8.1%**. Across all 24 pairs the median is +6.2% and 23 of 24
+> favour Bootgly. This supersedes the `/plaintext` row in the table above (+6.8% on
+> 2026-07-04); the other routes are unchanged.
+>
+> **The margin is client-shape dependent, and we say so.** Measured instead with the
+> orchestrator runner — a heavier, co-located accounting client that competes with the server
+> for the same CPUs — the two servers come out level at 18 workers. Roughly 62% of Bootgly's
+> per-worker CPU is kernel syscall time in this workload, so a client that takes CPU away from
+> the box compresses any framework-level difference. The figures published here use the
+> `tcp_client` runner because that is the harness every report in this comparison uses.
 
 Full sweep charts (server-workers 1→24, click for the complete report):
 
