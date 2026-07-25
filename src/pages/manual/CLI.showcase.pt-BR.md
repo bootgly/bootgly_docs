@@ -27,7 +27,7 @@ Cada comando mapeia para um arquivo real em [`projects/Demo/CLI/`](https://githu
 - **Text (efeitos)** — texto animado: typewriter, fade-in e a onda de cor shimmer passando letra por letra.
 - **Textarea** — o editor multilinha: Enter quebra linhas, setas navegam, Ctrl+D submete (linhas do stdin até EOF em pipes).
 - **Scrollarea** — a banda de conteúdo bufferizada: 60 linhas alimentadas em uma janela de 12; `PgUp`/`PgDn` ou a roda do mouse a rolam, e a scrollbar aceita hover, clique e arrasto.
-- **Prompt** — a entrada fixa no rodapé (mini REPL): a banda de conteúdo bufferiza a saída de `feed()` acima do frame de entrada — roda/`PgUp`/`PgDn` a rolam (scrollbar arrastável), `Ctrl+T` alterna a seleção de texto nativa, `↑`/`↓` percorrem o histórico, `Alt+Enter` vira multilinha.
+- **Prompt** — a entrada fixa no rodapé (mini REPL): a banda de conteúdo bufferiza a saída de `feed()` acima do frame de entrada — roda/`PgUp`/`PgDn` a rolam (scrollbar arrastável), `Ctrl+T` alterna a seleção de texto nativa, `↑`/`↓` percorrem as linhas da entrada e então o histórico, e `Shift+Enter` vira multilinha (o frame cresce uma linha por quebra; a tecla exige um terminal com o protocolo de teclado estendido).
 - **Spinner** — o indicador de atividade indeterminada: frames braille animam enquanto o loop de trabalho conduz `spin()`, terminando em uma linha de resolução.
 - **Timer** — o componente de contagem regressiva: tempo restante e porcentagem atualizam pelo relógio de parede; o Handler dispara uma vez no zero.
 - **Timeline** — o fluxo guiado multi-etapas: etapas transicionam pending → active → done (ou failed) com notas, em um frame vertical conectado.

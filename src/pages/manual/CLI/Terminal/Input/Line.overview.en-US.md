@@ -1,6 +1,6 @@
 # Line
 
-`Line` is the single-line editor engine behind Bootgly's interactive inputs — a pure key/buffer state machine with a virtual cursor. It performs **no stream I/O**: your code owns the read loop, feeds printable bytes in, forwards control keys, and writes the rendered frame out. That purity is what makes it unit-testable and reusable — the [Question](/manual/CLI/UI/Components/Question/overview) suggestions editor, the [Textarea](/manual/CLI/UI/Components/Textarea/overview) rows and the [Prompt](/manual/CLI/UX/Components/Prompt/overview) input line are all driven by it.
+`Line` is the single-line editor engine behind Bootgly's interactive inputs — a pure key/buffer state machine with a virtual cursor. It performs **no stream I/O**: your code owns the read loop, feeds printable bytes in, forwards control keys, and writes the rendered frame out. That purity is what makes it unit-testable and reusable — the [Question](/manual/CLI/UI/Components/Question/overview) suggestions editor, the [Textarea](/manual/CLI/UI/Components/Textarea/overview) rows and the [Prompt](/manual/CLI/UX/Components/Prompt/overview) input line are all driven by it. Multiline hosts compose one per row through [Lines](/manual/CLI/Terminal/Input/Lines/overview).
 
 ## Editing a line
 
@@ -46,7 +46,18 @@ The engine understands the usual line-editing vocabulary from [Keystrokes](/manu
 | `Backspace`, `Delete` | erase around the cursor |
 | `Ctrl+U` / `Ctrl+K` | kill to the start / end of the line |
 | `Ctrl+W`, `Alt+Backspace` | chop the word before the cursor |
-| `Enter` | submit — `control()` returns `false` |
+| `Enter`, `Ctrl+M` (CR, on raw terminals) | submit — `control()` returns `false` |
+
+The cursor can also be repositioned programmatically with `move()`, which clamps to the value bounds — that is how a host composing several lines carries the current column over when the active line changes:
+
+```php
+$Line = new Line;
+$Line->feed('bootgly');
+
+$Line->move(3);    // between "boo" and "tgly"
+$Line->move(-1);   // clamped to 0
+$Line->move(99);   // clamped to the end (7)
+```
 
 ## Masking secret input
 
@@ -78,7 +89,13 @@ Inserts printable input at the virtual cursor, UTF-8 aware. Control characters (
 public function control (string $key): bool
 ```
 
-Handles one edit key (raw bytes — arrows arrive as escape sequences) and reports whether editing continues: `false` on `Enter` (submit), `true` otherwise.
+Handles one edit key (raw bytes — arrows arrive as escape sequences) and reports whether editing continues: `false` on `Enter` (submit — raw terminals without `icrnl` send CR, matched as `Ctrl+M`), `true` otherwise.
+
+```php
+public function move (int $position): self
+```
+
+Moves the virtual cursor to a position, in codepoints, clamped to the value bounds: a negative position homes the cursor, a position past the end lands on the end. The value itself is never touched.
 
 ```php
 public function render (): string

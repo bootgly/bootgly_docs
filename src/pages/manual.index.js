@@ -1166,6 +1166,28 @@ export default {
       }
     }
   },
+  '/CLI/Terminal/Input/Lines': {
+    config: {
+      icon: 'notes',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Edit multiline text with one Line per row — row splitting, merging and a cursor that walks the whole buffer.',
+          'pt-BR': 'Edite texto multilinha com uma Line por linha — divisão, fusão de linhas e um cursor que percorre o buffer inteiro.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Lines'
+      }
+    }
+  },
   '/CLI/Terminal/Input/Mousestrokes': {
     config: {
       icon: 'mouse',

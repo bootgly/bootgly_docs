@@ -27,7 +27,7 @@ Each command maps to a real file under [`projects/Demo/CLI/`](https://github.com
 - **Text (effects)** — animated text: typewriter, fade-in and the shimmering color wave passing letter by letter.
 - **Textarea** — the multiline editor: Enter breaks lines, arrows navigate, Ctrl+D submits (stdin lines until EOF on pipes).
 - **Scrollarea** — the buffered content band: 60 fed rows in a 12-row window; `PgUp`/`PgDn` or the mouse wheel scroll it, and the scrollbar accepts hover, click and drag.
-- **Prompt** — the bottom-fixed input (mini REPL): the content band buffers `feed()` output above the input frame — wheel/`PgUp`/`PgDn` scroll it (draggable scrollbar), `Ctrl+T` toggles native text selection, `↑`/`↓` recall history, `Alt+Enter` goes multiline.
+- **Prompt** — the bottom-fixed input (mini REPL): the content band buffers `feed()` output above the input frame — wheel/`PgUp`/`PgDn` scroll it (draggable scrollbar), `Ctrl+T` toggles native text selection, `↑`/`↓` walk the input rows and then the history, and `Shift+Enter` goes multiline (the frame grows a row per break; the key needs a terminal with the extended keyboard protocol).
 - **Spinner** — the indeterminate activity indicator: braille frames animate while the work loop drives `spin()`, ending in a resolution line.
 - **Timer** — the countdown component: remaining time and percentage tick on the wall clock; the Handler fires once at zero.
 - **Timeline** — the multi-step guided flow: steps transition pending → active → done (or failed) with notes, in a connected vertical frame.

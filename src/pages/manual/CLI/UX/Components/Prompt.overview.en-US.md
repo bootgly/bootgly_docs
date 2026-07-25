@@ -1,6 +1,6 @@
 # Prompt Component
 
-The `Prompt` component fixes an input line at the bottom of the terminal while content scrolls above it — like Claude Code, Codex or OpenCode. By default the content area is a buffered [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) band: the mouse wheel and `PgUp`/`PgDn` scroll it, the right-edge scrollbar accepts hover, click and drag, and **`Ctrl+T` toggles the selection mode** — it releases the mouse so native text selection and copying work, and resumes it on the next toggle. Alternatively, `buffered = false` switches to the native flow: content joins the terminal scrollback and everything mouse-related stays native, with no internal scrollbar. `prompting()` yields each submitted line, with `↑`/`↓` history recall and `Alt+Enter` multiline input. On non-interactive input (pipes, CI) it degrades to a plain stdin line loop — the consumer code stays identical.
+The `Prompt` component fixes an input line at the bottom of the terminal while content scrolls above it — like Claude Code, Codex or OpenCode. By default the content area is a buffered [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) band: the mouse wheel and `PgUp`/`PgDn` scroll it, the right-edge scrollbar accepts hover, click and drag, and **`Ctrl+T` toggles the selection mode** — it releases the mouse so native text selection and copying work, and resumes it on the next toggle. Alternatively, `buffered = false` switches to the native flow: content joins the terminal scrollback and everything mouse-related stays native, with no internal scrollbar. `prompting()` yields each submitted line, with `↑`/`↓` history recall and `Shift+Enter` multiline input (the frame grows one row per break). On non-interactive input (pipes, CI) it degrades to a plain stdin line loop — the consumer code stays identical.
 
 A live demo is available in the [showcase](/manual/CLI/UX/Components/Prompt/showcase).
 
@@ -70,7 +70,22 @@ Empty `top`/`bottom` slots skip their text line — the frame shrinks and the co
 
 ## History and multiline
 
-`↑`/`↓` walk the submitted-lines history (the current draft is preserved and comes back with `↓`). `Alt+Enter` accumulates the current line and clears the input — Enter then submits all accumulated lines joined by `\n`; a dim `…+N` hint marks pending lines.
+**Breaking a line (`Shift+Enter`).** `Shift+Enter` breaks the line at the cursor and is the only line break — Enter always submits. Every break grows the input frame by one row (the content band above gives that row up): broken lines are real rows, stacked under the prompt marker, with the continuation rows indented to align under it. Only the active row carries the cursor cell. Enter then submits every row at once, joined by `\n`:
+
+```text
+[content scrolls here...]
+─────────────────────────────────────────────────
+>_ SELECT id, name
+   FROM users
+   WHERE active = 1█
+─────────────────────────────────────────────────
+```
+
+**Editing across rows.** The whole buffer stays editable: `Backspace` at the start of a row merges it into the previous one (the cursor lands at the seam), `Delete` at the end of a row pulls the next row up, `←`/`→` cross the row boundaries and `Home`/`End`/`Ctrl+U`/`Ctrl+K`/`Ctrl+W` act on the current row.
+
+**History (`↑`/`↓`).** `↑`/`↓` walk the input rows first and only reach the submitted-lines history at the edges — `↑` on the first row, `↓` on the last. The current draft is preserved and comes back with `↓`, and recalling a multiline entry restores its rows instead of pasting them into a single line.
+
+**Terminal support.** `Shift+Enter` has no legacy encoding: a plain terminal sends `CR` for Enter and `Shift+Enter` alike, so the modifier never reaches the program. Reporting it takes the extended keyboard protocol, which `start()` negotiates on its own (`$Prompt->Input->extended = true` — the kitty `CSI u` push plus the xterm `modifyOtherKeys` request), so nothing has to be set up. Terminals that implement it include kitty, ghostty, foot and WezTerm (kitty protocol) and xterm (`modifyOtherKeys`); the rest ignore the negotiation and never see the key — there `Shift+Enter` arrives as a plain Enter and submits, so the input stays single-line.
 
 ## Non-interactive input
 
@@ -84,7 +99,7 @@ On pipes and CI there is no region and no history: `prompting()` yields stdin li
 public string $prompt
 ```
 
-Config. The input line prefix. Default: `'>_ '`.
+Config. The input line prefix — its width is also the indent of the continuation rows. Default: `'> '`.
 
 ```php
 public int $history
@@ -135,10 +150,10 @@ public string $selection
 Config (band mode). The notice shown on the bottom border while the selection mode is on. Default: `'Selection mode · Ctrl+T resumes the mouse'`.
 
 ```php
-public private(set) Line $Line
+public private(set) Lines $Lines
 ```
 
-Data. The line editor engine backing the input row.
+Data. The multiline input buffer ([Lines](/manual/CLI/Terminal/Input/Lines/overview)) — one [Line](/manual/CLI/Terminal/Input/Line/overview) per row, plus the active row index and a virtual cursor that walks the whole buffer.
 
 ```php
 public private(set) Scrollarea $Scrollarea
@@ -164,7 +179,7 @@ Metadata (read-only). `true` after `finish()`.
 public function start (): void
 ```
 
-Enters raw input mode and draws the input frame (band mode also clips the content scroll region and arms the mouse reporting). Invoked automatically by `prompting()`.
+Enters raw input mode — negotiating the extended keyboard protocol, which is what makes `Shift+Enter` reportable — and draws the input frame (band mode also clips the content scroll region and arms the mouse reporting). Invoked automatically by `prompting()`.
 
 ### feed()
 
@@ -180,7 +195,7 @@ Feeds app content above the bottom-fixed input frame (plain write on non-interac
 public function prompting (): Generator
 ```
 
-Yields each submitted line until a double `Ctrl+C`, `Ctrl+D` or EOF. Non-interactive input yields stdin lines until EOF.
+Yields each submitted line until a double `Ctrl+C`, `Ctrl+D` or EOF — a multiline input yields as one string, its rows joined by `\n`. Non-interactive input yields stdin lines until EOF.
 
 ### finish()
 

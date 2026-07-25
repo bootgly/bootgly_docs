@@ -41,6 +41,47 @@ $Keystroke = Keystrokes::tryFrom($key);
 echo $Keystroke?->name ?? 'não mapeada'; // ex.: "CTRL_LEFT"
 ```
 
+## Lendo teclas que um terminal comum não reporta
+
+Um terminal comum envia CR para `Enter`, `Shift+Enter` e `Ctrl+Enter` igualmente — o modificador simplesmente não é codificado, então essas combinações são inalcançáveis. Ligar o protocolo estendido de teclado (kitty `CSI u` mais o modifyOtherKeys do xterm) faz com que elas sejam reportadas como teclas próprias. Defina `extended` **antes** de entrar em modo raw — a negociação é enviada quando o `configure()` desativa o modo canônico:
+
+```php
+use const Bootgly\CLI;
+use Bootgly\CLI\Terminal\Input\Keystrokes;
+
+$Input = CLI->Terminal->Input;
+$Output = CLI->Terminal->Output;
+
+// ! Negociado ao entrar em modo raw — terminais sem suporte o ignoram
+$Input->extended = true;
+$Input->configure(blocking: false, canonical: false, echo: false);
+
+while (true) {
+   $key = $Input->listen();
+
+   // ? Canal fechado
+   if ($key === false) {
+      break;
+   }
+   // ? Sem dados
+   if ($key === '') {
+      continue;
+   }
+
+   match ($key) {
+      Keystrokes::SHIFT_ENTER->value => $Output->write("quebrar a linha\n"),
+      // ? Um Enter comum chega como CR em terminais raw (sem icrnl)
+      Keystrokes::ENTER->value,
+      Keystrokes::CTRL_M->value      => $Output->write("submeter\n"),
+      default                        => null
+   };
+}
+```
+
+A negociação é opt-in porque muda como o terminal codifica as teclas durante toda a sessão e o suporte varia — terminais que não falam o protocolo ignoram as sequências, e o `Shift+Enter` simplesmente continua se comportando como `Enter`.
+
+Todo o resto não é afetado: o `listen()` passa cada sequência montada pelo `Keystrokes::normalize()`, que reescreve os reports do protocolo de volta para os bytes legados que os consumidores já comparam — `\e[99;5u` vira `Ctrl+C`, `\e[9;2u` vira `Shift+Tab`. Apenas as combinações sem codificação legada mantêm a forma do protocolo, e são exatamente as duas nomeadas pelo enum.
+
 ## Reference
 
 `Bootgly\CLI\Terminal\Input\Keystrokes` é um enum com backing de string — o valor de cada case é a sequência exata de bytes que o terminal emite.
@@ -83,3 +124,18 @@ echo $Keystroke?->name ?? 'não mapeada'; // ex.: "CTRL_LEFT"
 | `SHIFT_UP` / `SHIFT_DOWN` / `SHIFT_RIGHT` / `SHIFT_LEFT` | `\e[1;2A` – `\e[1;2D` |
 | `ALT_UP` / `ALT_DOWN` / `ALT_RIGHT` / `ALT_LEFT` | `\e[1;3A` – `\e[1;3D` |
 | `ALT_INSERT`, `ALT_DELETE`, `ALT_HOME`, `ALT_END`, `ALT_PAGEUP`, `ALT_PAGEDOWN` | `\e[2;3~`, `\e[3;3~`, `\e[1;3H`, `\e[1;3F`, `\e[5;3~`, `\e[6;3~` |
+
+### Teclas estendidas (exigem o protocolo estendido de teclado)
+
+| Case | Bytes |
+|---|---|
+| `SHIFT_ENTER` | `\e[13;2u` |
+| `CTRL_ENTER` | `\e[13;5u` |
+
+Essas duas não têm codificação legada — um terminal comum envia CR para `Enter`, `Shift+Enter` e `Ctrl+Enter` igualmente — então só chegam quando o protocolo estendido de teclado foi negociado (`Input->extended = true` antes do modo raw). A forma kitty `CSI code ; modifiers u` é o valor canônico.
+
+```php
+public static function normalize (string $sequence): string
+```
+
+Reescreve um report do protocolo estendido de teclado de volta para a tecla canônica. As duas formas são aceitas — kitty `CSI code ; modifiers u` e modifyOtherKeys do xterm `CSI 27 ; modifiers ; code ~` — com a habitual bitmask de modificadores baseada em 1 (`1` nenhum, `+1` shift, `+2` alt, `+4` ctrl). Combinações que já têm codificação legada são reescritas para ela — teclas sem modificador para o seu byte (`\e[13u` → `\n`), `Ctrl`+letra para o seu byte de controle C0 (`\e[97;5u` → `\x01`), pares com `Alt` para a forma prefixada com ESC (`\e[98;3u` → `\eb`) e `Shift+Tab` para `\e[Z` — de modo que ligar o protocolo nunca muda o que os consumidores comparam. As combinações sem codificação legada mantêm a forma kitty, e qualquer outra coisa (incluindo códigos de tecla não-ASCII, que nunca reconstroem um byte legado) passa adiante intacta. O `Input->listen()` já a aplica a cada sequência montada, então os consumidores normalmente nunca a chamam diretamente.

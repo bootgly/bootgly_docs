@@ -1,6 +1,6 @@
 # Line
 
-`Line` é o motor de edição de linha única por trás das entradas interativas do Bootgly — uma máquina de estados pura de teclas/buffer com um cursor virtual. Ele **não faz I/O de stream**: seu código é dono do loop de leitura, alimenta os bytes imprimíveis, encaminha as teclas de controle e escreve o frame renderizado. Essa pureza é o que o torna testável e reutilizável — o editor de sugestões do [Question](/manual/CLI/UI/Components/Question/overview), as linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) e a linha de entrada do [Prompt](/manual/CLI/UX/Components/Prompt/overview) são todos guiados por ele.
+`Line` é o motor de edição de linha única por trás das entradas interativas do Bootgly — uma máquina de estados pura de teclas/buffer com um cursor virtual. Ele **não faz I/O de stream**: seu código é dono do loop de leitura, alimenta os bytes imprimíveis, encaminha as teclas de controle e escreve o frame renderizado. Essa pureza é o que o torna testável e reutilizável — o editor de sugestões do [Question](/manual/CLI/UI/Components/Question/overview), as linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) e a linha de entrada do [Prompt](/manual/CLI/UX/Components/Prompt/overview) são todos guiados por ele. Hosts multilinha compõem uma por linha através do [Lines](/manual/CLI/Terminal/Input/Lines/overview).
 
 ## Editando uma linha
 
@@ -46,7 +46,18 @@ O motor entende o vocabulário usual de edição de linha do [Keystrokes](/manua
 | `Backspace`, `Delete` | apagam ao redor do cursor |
 | `Ctrl+U` / `Ctrl+K` | matam até o início / fim da linha |
 | `Ctrl+W`, `Alt+Backspace` | cortam a palavra antes do cursor |
-| `Enter` | submete — `control()` retorna `false` |
+| `Enter`, `Ctrl+M` (CR, em terminais raw) | submete — `control()` retorna `false` |
+
+O cursor também pode ser reposicionado programaticamente com `move()`, que limita a posição aos limites do valor — é assim que um host que compõe várias linhas carrega a coluna atual quando a linha ativa muda:
+
+```php
+$Line = new Line;
+$Line->feed('bootgly');
+
+$Line->move(3);    // entre "boo" e "tgly"
+$Line->move(-1);   // limitado a 0
+$Line->move(99);   // limitado ao fim (7)
+```
 
 ## Mascarando entrada secreta
 
@@ -78,7 +89,13 @@ Insere entrada imprimível na posição do cursor virtual, com suporte a UTF-8. 
 public function control (string $key): bool
 ```
 
-Trata uma tecla de edição (bytes crus — setas chegam como sequências de escape) e informa se a edição continua: `false` no `Enter` (submeter), `true` caso contrário.
+Trata uma tecla de edição (bytes crus — setas chegam como sequências de escape) e informa se a edição continua: `false` no `Enter` (submeter — terminais raw sem `icrnl` enviam CR, reconhecido como `Ctrl+M`), `true` caso contrário.
+
+```php
+public function move (int $position): self
+```
+
+Move o cursor virtual para uma posição, em codepoints, limitada aos limites do valor: uma posição negativa leva o cursor ao início, uma posição além do fim o coloca no fim. O valor em si nunca é alterado.
 
 ```php
 public function render (): string

@@ -4,11 +4,13 @@ A demo oficial do Prompt roda ao vivo abaixo — código real do framework em PH
 
 ## Entrada fixa no rodapé (mini REPL)
 
-Clique no terminal e digite — a linha de entrada fica fixa no rodapé enquanto as linhas ecoadas rolam acima em uma banda bufferizada. `PgUp`/`PgDn` ou a roda do mouse rolam o conteúdo — o cursor da scrollbar destaca no hover e pode ser arrastado; **`Ctrl+T` alterna o modo seleção** (libera o mouse para selecionar/copiar nativo; alterne de novo para retomar); `↑`/`↓` percorrem o histórico; `Alt+Enter` acumula entrada multilinha; `exit` ou `Ctrl+D` sai — `Ctrl+C` avisa na borda inferior e sai no segundo toque em até 2 segundos.
+Clique no terminal e digite, então pressione Enter para submeter — a linha de entrada fica fixa no rodapé enquanto as linhas ecoadas rolam acima em uma banda bufferizada. `PgUp`/`PgDn` ou a roda do mouse rolam o conteúdo — o cursor da scrollbar destaca no hover e pode ser arrastado; **`Ctrl+T` alterna o modo seleção** (libera o mouse para selecionar/copiar nativo; alterne de novo para retomar); `↑`/`↓` percorrem as linhas da entrada e então o histórico; `exit` ou `Ctrl+D` sai — `Ctrl+C` avisa na borda inferior e sai no segundo toque em até 2 segundos.
 
 <d-block-terminal engine="bootgly-cli" title="Prompt — demo ao vivo" command="demo 40" height="420">
 `feed()` bufferiza conteúdo na banda Scrollarea; `prompting()` entrega cada linha submetida; `finish()` restaura o terminal.
 </d-block-terminal>
+
+Em um terminal real, o `Shift+Enter` também quebra a linha: o frame de entrada cresce uma linha por quebra e as linhas seguem totalmente editáveis (`Backspace` no início de uma linha a funde na anterior, `←`/`→` atravessam os limites das linhas), com o Enter submetendo todas de uma vez. Essa tecla exige o protocolo de teclado estendido, então pode não chegar à demo acima — este terminal do navegador não o implementa, e nele o Enter continua sendo o único submit.
 
 Em entrada não interativa (pipes, CI) o mesmo código degrada para um loop simples de linhas do stdin.
 

@@ -1,6 +1,6 @@
 # Componente Prompt
 
-O componente `Prompt` fixa uma linha de entrada no rodapé do terminal enquanto o conteúdo rola acima — como Claude Code, Codex ou OpenCode. Por padrão a área de conteúdo é uma banda [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) bufferizada: a roda do mouse e `PgUp`/`PgDn` a rolam, a scrollbar da borda direita aceita hover, clique e arrasto, e **`Ctrl+T` alterna o modo seleção** — libera o mouse para a seleção/cópia de texto nativa funcionar, e retoma no próximo toggle. Alternativamente, `buffered = false` troca para o fluxo nativo: o conteúdo entra no scrollback do terminal e tudo que envolve mouse permanece nativo, sem scrollbar interna. `prompting()` entrega cada linha submetida, com histórico `↑`/`↓` e entrada multilinha com `Alt+Enter`. Em entrada não interativa (pipes, CI) degrada para um loop simples de linhas do stdin — o código consumidor permanece idêntico.
+O componente `Prompt` fixa uma linha de entrada no rodapé do terminal enquanto o conteúdo rola acima — como Claude Code, Codex ou OpenCode. Por padrão a área de conteúdo é uma banda [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) bufferizada: a roda do mouse e `PgUp`/`PgDn` a rolam, a scrollbar da borda direita aceita hover, clique e arrasto, e **`Ctrl+T` alterna o modo seleção** — libera o mouse para a seleção/cópia de texto nativa funcionar, e retoma no próximo toggle. Alternativamente, `buffered = false` troca para o fluxo nativo: o conteúdo entra no scrollback do terminal e tudo que envolve mouse permanece nativo, sem scrollbar interna. `prompting()` entrega cada linha submetida, com histórico `↑`/`↓` e entrada multilinha com `Shift+Enter` (o frame cresce uma linha por quebra). Em entrada não interativa (pipes, CI) degrada para um loop simples de linhas do stdin — o código consumidor permanece idêntico.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UX/Components/Prompt/showcase).
 
@@ -70,7 +70,22 @@ Slots `top`/`bottom` vazios pulam sua linha de texto — o frame encolhe e a reg
 
 ## Histórico e multilinha
 
-`↑`/`↓` percorrem o histórico de linhas submetidas (o rascunho atual é preservado e volta com `↓`). `Alt+Enter` acumula a linha atual e limpa a entrada — o Enter então submete todas as linhas acumuladas unidas por `\n`; um hint esmaecido `…+N` marca as linhas pendentes.
+**Quebrando a linha (`Shift+Enter`).** `Shift+Enter` quebra a linha no cursor e é a única quebra de linha — o Enter sempre submete. Cada quebra faz o frame de entrada crescer uma linha (a banda de conteúdo acima cede essa linha): as linhas quebradas são linhas reais, empilhadas sob o marcador do prompt, com as linhas de continuação indentadas para alinhar sob ele. Apenas a linha ativa carrega a célula do cursor. O Enter então submete todas as linhas de uma vez, unidas por `\n`:
+
+```text
+[conteúdo rola aqui...]
+─────────────────────────────────────────────────
+>_ SELECT id, name
+   FROM users
+   WHERE active = 1█
+─────────────────────────────────────────────────
+```
+
+**Editando entre linhas.** O buffer inteiro permanece editável: `Backspace` no início de uma linha a funde na anterior (o cursor para na emenda), `Delete` no fim de uma linha puxa a próxima para cima, `←`/`→` atravessam os limites das linhas e `Home`/`End`/`Ctrl+U`/`Ctrl+K`/`Ctrl+W` agem na linha atual.
+
+**Histórico (`↑`/`↓`).** `↑`/`↓` percorrem primeiro as linhas da entrada e só alcançam o histórico de linhas submetidas nas extremidades — `↑` na primeira linha, `↓` na última. O rascunho atual é preservado e volta com `↓`, e recuperar uma entrada multilinha restaura as linhas dela em vez de colá-las em uma única linha.
+
+**Suporte do terminal.** `Shift+Enter` não tem codificação legada: um terminal comum envia `CR` tanto para o Enter quanto para o `Shift+Enter`, então o modificador nunca chega ao programa. Reportá-lo exige o protocolo de teclado estendido, que o `start()` negocia sozinho (`$Prompt->Input->extended = true` — o push kitty `CSI u` mais a requisição xterm `modifyOtherKeys`), então nada precisa ser configurado. Terminais que o implementam incluem kitty, ghostty, foot e WezTerm (protocolo kitty) e xterm (`modifyOtherKeys`); os demais ignoram a negociação e nunca veem a tecla — neles o `Shift+Enter` chega como um Enter comum e submete, então a entrada permanece de linha única.
 
 ## Entrada não interativa
 
@@ -84,7 +99,7 @@ Em pipes e CI não há região nem histórico: `prompting()` entrega linhas do s
 public string $prompt
 ```
 
-Config. O prefixo da linha de entrada. Padrão: `'>_ '`.
+Config. O prefixo da linha de entrada — a largura dele também é a indentação das linhas de continuação. Padrão: `'> '`.
 
 ```php
 public int $history
@@ -135,10 +150,10 @@ public string $selection
 Config (modo banda). O aviso mostrado na borda inferior enquanto o modo seleção está ativo. Padrão: `'Selection mode · Ctrl+T resumes the mouse'`.
 
 ```php
-public private(set) Line $Line
+public private(set) Lines $Lines
 ```
 
-Data. O engine editor de linha por trás da linha de entrada.
+Data. O buffer de entrada multilinha ([Lines](/manual/CLI/Terminal/Input/Lines/overview)) — uma [Line](/manual/CLI/Terminal/Input/Line/overview) por linha, mais o índice da linha ativa e um cursor virtual que percorre o buffer inteiro.
 
 ```php
 public private(set) Scrollarea $Scrollarea
@@ -164,7 +179,7 @@ Metadata (somente leitura). `true` após `finish()`.
 public function start (): void
 ```
 
-Entra em modo raw e desenha o frame de entrada (o modo banda também clipa a região de scroll do conteúdo e arma o mouse reporting). Invocado automaticamente por `prompting()`.
+Entra em modo raw — negociando o protocolo de teclado estendido, que é o que torna o `Shift+Enter` reportável — e desenha o frame de entrada (o modo banda também clipa a região de scroll do conteúdo e arma o mouse reporting). Invocado automaticamente por `prompting()`.
 
 ### feed()
 
@@ -180,7 +195,7 @@ Alimenta conteúdo do app acima do frame fixo no rodapé (escrita plana em saíd
 public function prompting (): Generator
 ```
 
-Entrega cada linha submetida até um duplo `Ctrl+C`, `Ctrl+D` ou EOF. Entrada não interativa entrega linhas do stdin até EOF.
+Entrega cada linha submetida até um duplo `Ctrl+C`, `Ctrl+D` ou EOF — uma entrada multilinha é entregue como uma única string, com as linhas unidas por `\n`. Entrada não interativa entrega linhas do stdin até EOF.
 
 ### finish()
 
