@@ -892,5 +892,30 @@ export default {
         title: 'Reload'
       }
     }
+  },
+  '/security': {
+    config: {
+      icon: 'security',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'For security researchers auditing Bootgly — where to report, what is in scope, and how to turn a suspected issue into a reproducible PoC in the native test runner.',
+          'pt-BR': 'Para pesquisadores de segurança auditando o Bootgly — onde reportar, o que está no escopo e como transformar um problema suspeito em uma PoC reproduzível no runner de testes nativo.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Security'
+      },
+      'pt-BR': {
+        title: 'Segurança'
+      }
+    }
   }
 }
