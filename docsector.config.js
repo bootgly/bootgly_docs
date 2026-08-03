@@ -65,7 +65,7 @@ export default {
       { href: 'https://bootgly.com/legal/security/', label: { 'en-US': 'Security', 'pt-BR': 'Segurança' } },
       { href: 'https://bootgly.com/legal/license/', label: { 'en-US': 'License', 'pt-BR': 'Licença' } }
     ],
-    copyright: 'Copyright (c) 2023-present Rodrigo de Araujo Vieira Tecnologia da Informação LTDA and Bootgly contributors'
+    copyright: 'Copyright (c) 2023-present Bootgly and contributors'
   },
 
   // @ GitHub
