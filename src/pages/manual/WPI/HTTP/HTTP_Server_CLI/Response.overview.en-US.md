@@ -150,6 +150,29 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 
 A client `Range` header overrides `$offset` / `$length`. The accepted set is coalesced — overlapping and adjacent ranges are merged — and a set larger than [`Request::$maxRanges`](../Request/#byte-range-limit) (16 by default) is rejected with `416 Range Not Satisfiable`.
 
+**Representation identity:**
+
+`upload()` resolves the path, opens it once and records the identity of what it opened — device, inode, mode, size, modification time and change time — then closes the descriptor. Nothing is kept open while the response waits on a slow client, so the server reopens the file for each chunk it writes and checks that identity again every time, on both HTTP/1 and HTTP/2.
+
+If the file no longer matches, the response is refused rather than completed with the wrong bytes: on HTTP/1 the connection is closed (there is no way to retract a `Content-Length` already sent), and on HTTP/2 the stream is reset. A warning naming the path and the field that changed is logged.
+
+Two consequences are yours to plan for:
+
+- **Do not serve a file while it is being written.** Any change — an append, a rewrite, an atomic redeploy, even a `chmod` or `chown` that only moves the change time — aborts a transfer already in flight. `stat` cannot tell a harmless append from a substitution, so the check cannot make an exception for one. Snapshot the file first:
+
+  ```php
+  $Router->route('/logs/download', function ($Request, $Response) {
+     $snapshot = 'storage/snapshots/' . bin2hex(random_bytes(8)) . '.log';
+     copy(BOOTGLY_PROJECT->path . 'storage/logs/app.log', BOOTGLY_PROJECT->path . $snapshot);
+
+     return $Response->upload($snapshot);
+  });
+  ```
+
+- **Serve from a filesystem with stable inodes.** Mounts that regenerate `st_dev` / `st_ino` between two opens of the same path — some FUSE-backed remote filesystems, an overlay copy-up triggered mid-transfer — are indistinguishable from a substitution and will abort. Local filesystems (ext4, XFS, Btrfs, tmpfs) are fine.
+
+Symbolic links are supported: the link is resolved once, while the path is being checked against the project jail, and the file it pointed to at that moment is what gets served. Repointing the link afterwards does not redirect a response already under way.
+
 ### HTTP Authentication
 
 ```php

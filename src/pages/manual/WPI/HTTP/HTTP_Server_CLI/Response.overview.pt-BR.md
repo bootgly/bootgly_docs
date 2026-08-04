@@ -150,6 +150,29 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 
 Um cabeçalho `Range` do cliente sobrepõe `$offset` / `$length`. O conjunto aceito é coalescido — ranges sobrepostos e adjacentes são fundidos — e um conjunto maior que [`Request::$maxRanges`](../Request/#limite-de-byte-ranges) (16 por padrão) é rejeitado com `416 Range Not Satisfiable`.
 
+**Identidade da representação:**
+
+O `upload()` resolve o caminho, abre uma vez e registra a identidade do que abriu — device, inode, mode, tamanho, data de modificação e data de mudança — e então fecha o descritor. Nada fica aberto enquanto a resposta espera por um cliente lento, então o servidor reabre o arquivo a cada pedaço que escreve e confere essa identidade de novo toda vez, tanto em HTTP/1 quanto em HTTP/2.
+
+Se o arquivo não corresponder mais, a resposta é recusada em vez de completada com os bytes errados: em HTTP/1 a conexão é fechada (não há como retirar um `Content-Length` já enviado), e em HTTP/2 o stream é resetado. Um aviso nomeando o caminho e o campo que mudou vai para o log.
+
+Duas consequências ficam por sua conta:
+
+- **Não sirva um arquivo enquanto ele está sendo escrito.** Qualquer mudança — um append, uma reescrita, um redeploy atômico, até um `chmod` ou `chown` que só mexe na data de mudança — aborta uma transferência já em andamento. O `stat` não distingue um append inofensivo de uma substituição, então a checagem não tem como abrir exceção para um deles. Tire um snapshot antes:
+
+  ```php
+  $Router->route('/logs/download', function ($Request, $Response) {
+     $snapshot = 'storage/snapshots/' . bin2hex(random_bytes(8)) . '.log';
+     copy(BOOTGLY_PROJECT->path . 'storage/logs/app.log', BOOTGLY_PROJECT->path . $snapshot);
+
+     return $Response->upload($snapshot);
+  });
+  ```
+
+- **Sirva de um filesystem com inodes estáveis.** Montagens que regeneram `st_dev` / `st_ino` entre duas aberturas do mesmo caminho — alguns filesystems remotos via FUSE, um copy-up de overlay disparado no meio da transferência — são indistinguíveis de uma substituição e vão abortar. Filesystems locais (ext4, XFS, Btrfs, tmpfs) não têm esse problema.
+
+Links simbólicos são suportados: o link é resolvido uma vez, enquanto o caminho é conferido contra o jail do projeto, e o arquivo para o qual ele apontava naquele momento é o que será servido. Reapontar o link depois não redireciona uma resposta já em curso.
+
 ### HTTP Authentication
 
 ```php
