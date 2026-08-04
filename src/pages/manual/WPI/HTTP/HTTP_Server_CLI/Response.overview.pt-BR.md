@@ -173,6 +173,18 @@ Duas consequências ficam por sua conta:
 
 Links simbólicos são suportados: o link é resolvido uma vez, enquanto o caminho é conferido contra o jail do projeto, e o arquivo para o qual ele apontava naquele momento é o que será servido. Reapontar o link depois não redireciona uma resposta já em curso.
 
+**O jail confina caminhos, não inodes:**
+
+O `upload()` recusa qualquer caminho que resolva para fora de `BOOTGLY_PROJECT->path`. Essa checagem é sobre *nomes*. Um hard link não tem alvo a resolver — ele é simplesmente um segundo nome para um inode — então um hard link criado dentro da árvore servida resolve para um caminho dentro do jail e é servido, aponte o outro nome dele para onde apontar:
+
+```sh
+ln /srv/app/.env  /srv/app/public/uploads/notas.txt   # agora é servível
+```
+
+O Linux bloqueia a metade interessante disso por padrão: com `fs.protected_hardlinks=1` (padrão nos kernels atuais) só é possível criar hard link para arquivo que você possui ou já consegue ler, então isso não serve para alcançar um arquivo que lhe foi negado. O que sobra é mudança de *exposição* — código rodando como a aplicação transforma um arquivo que ele já lia localmente em um que o mundo pode baixar.
+
+Portanto: **não deixe código menos confiável escrever numa árvore servida.** Um diretório que recebe uploads não deve ser o mesmo que uma rota devolve, e nenhum dos dois deve ficar ao lado dos segredos da aplicação. Se não der para separar, sirva os uploads por um handler que leia e devolva os bytes ele mesmo, em vez de usar o `upload()`.
+
 ### HTTP Authentication
 
 ```php

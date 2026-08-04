@@ -173,6 +173,18 @@ Two consequences are yours to plan for:
 
 Symbolic links are supported: the link is resolved once, while the path is being checked against the project jail, and the file it pointed to at that moment is what gets served. Repointing the link afterwards does not redirect a response already under way.
 
+**The jail confines paths, not inodes:**
+
+`upload()` rejects any path that resolves outside `BOOTGLY_PROJECT->path`. That check is about *names*. A hard link has no target to resolve — it is simply a second name for one inode — so a hard link created inside the served tree resolves to a path inside the jail and is served, whatever the file's other name points at:
+
+```sh
+ln /srv/app/.env  /srv/app/public/uploads/notes.txt   # now servable
+```
+
+Linux blocks the interesting half of this by default: with `fs.protected_hardlinks=1` (the default on current kernels) you may only hard-link a file you own or can already read, so this cannot be used to reach a file you were denied. What remains is a change of *exposure* — code running as the application can turn a file it could already read locally into one the world can fetch.
+
+So: **do not let less-trusted code write into a served tree.** A directory that accepts uploads should not be the same directory a route serves back, and neither should sit next to application secrets. If you cannot separate them, serve uploads through a handler that reads and returns the bytes itself, rather than through `upload()`.
+
 ### HTTP Authentication
 
 ```php
