@@ -50,6 +50,6 @@ The purpose of dark mode is to reduce eye strain and improve visual ergonomics, 
 ---
 
 ## 📃 License
-Copyright (c) 2020-Present - Rodrigo de Araujo Vieira (rodrigo@slayer.tech)
+Copyright (c) 2023-present Bootgly and contributors
 
 [MIT License](http://en.wikipedia.org/wiki/MIT_License)
