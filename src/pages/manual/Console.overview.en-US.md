@@ -1,6 +1,6 @@
 # Console Platform
 
-The Console platform (`bootgly/bootgly-console`) is Bootgly's **opinionated TUI layer** over the CLI interface: an application shell for full-screen terminal apps ([App](/manual/Console/App)) and a module for terminal games ([Games](/manual/Console/Games)).
+The Console platform (`bootgly/bootgly-console`) is Bootgly's **opinionated TUI layer** over the CLI interface: an application shell for full-screen terminal apps ([App](/manual/Console/App)) and a module for terminal games ([Game](/manual/Console/Game)).
 
 It ships as an optional git submodule of the starter kit — the project wizard offers it in the **Platforms** multiselect (see [Getting started](/guide/getting-started)).
 
@@ -70,7 +70,7 @@ use Snake\Snake;
 
 return new Project(
    name: 'Snake',
-   description: 'Classic Snake game — Console platform Games module demo',
+   description: 'Classic Snake game — Console platform Game module demo',
    version: '1.0.0',
    author: 'Bootgly',
    exportable: true,

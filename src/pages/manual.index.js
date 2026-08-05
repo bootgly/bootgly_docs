@@ -2131,7 +2131,7 @@ export default {
       }
     }
   },
-  '/Console/Games': {
+  '/Console/Game': {
     config: {
       icon: 'sports_esports',
       status: 'draft',
@@ -2148,7 +2148,7 @@ export default {
     },
     data: {
       '*': {
-        title: 'Console Games'
+        title: 'Console Game'
       }
     }
   },

@@ -16,7 +16,7 @@ Pick a game and press Run, then **click the terminal to focus it**. Enter starts
 
 ## What you are seeing
 
-The three games are exportable Console platform projects (`Console/projects/`) built on the [Games](/manual/Console/Games) module:
+The three games are exportable Console platform projects (`Console/projects/`) built on the [Game](/manual/Console/Game) module:
 
 - The **fixed-timestep Loop** paces the simulation with the channel read timeout — the snake keeps moving and the ball keeps flying with no key pressed, at the same speed as in a native terminal.
 - The **Canvas** diff-renders every frame: only the cells that changed are written, so an idle frame costs zero writes.

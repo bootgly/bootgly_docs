@@ -1,16 +1,16 @@
-# Console Games
+# Console Game
 
-`Console\Games` is the game shell of the Console platform: a fixed-timestep loop over Bootgly's Terminal **Client/Server** interface, a diff-rendered **Canvas**, a **Keyboard** with pressed/held heuristics, a **Scenes** state machine, a **Sprites** sheet of animated Unicode sprites and small 2D math helpers — **Vector**, **Zone** and **Timer**.
+`Console\Game` is the game shell of the Console platform: a fixed-timestep loop over Bootgly's Terminal **Client/Server** interface, a diff-rendered **Canvas**, a **Keyboard** with pressed/held heuristics, a **Scenes** state machine, a **Sprites** sheet of animated Unicode sprites and small 2D math helpers — **Vector**, **Zone** and **Timer**.
 
 `run()` forks the two roles through `Input->reading()`: the *Client* process pumps keystrokes into a pipe as newline-framed tokens; the *Server* process owns the screen and runs the game loop. Embedded runtimes (e.g. WASM) run one role per process transparently.
 
 ## A minimal game
 
 ```php
-use Console\Games;
+use Console\Game;
 
 
-class Pong extends Games
+class Pong extends Game
 {
    protected function update (float $delta): void
    {
@@ -53,7 +53,7 @@ Terminals report no key-up: a held key arrives as auto-repeats — one byte, a ~
 
 ## Canvas: double buffering + diff rendering
 
-Games paint logical pixels into the back buffer; `flush()` composes terminal cells, diffs against the previous frame and writes **only the dirty cell runs** — an unchanged frame costs zero writes.
+The Game paints logical pixels into the back buffer; `flush()` composes terminal cells, diffs against the previous frame and writes **only the dirty cell runs** — an unchanged frame costs zero writes.
 
 ```php
 $this->Canvas->clear();                       // start the frame
@@ -62,15 +62,15 @@ $this->Canvas->draw(10, 1, 'SCORE 42');       // a horizontal text run
 $this->Canvas->flush();                       // diff + write
 ```
 
-Three packing modes (`Console\Games\Canvas\Modes`):
+Three packing modes (`Console\Game\Canvas\Modes`):
 
 - **Block** (default) — 1 pixel = 1 terminal cell; pixels carry their own character.
 - **Half** — 1 cell = 1×2 pixels (`▀` / `▄` / `█`): double vertical resolution.
 - **Braille** — 1 cell = 2×4 pixels (U+2800..U+28FF): 8× the density, mono per cell.
 
 ```php
-use Console\Games\Canvas;
-use Console\Games\Canvas\Modes;
+use Console\Game\Canvas;
+use Console\Game\Canvas\Modes;
 
 $Canvas = new Canvas($Output, 120, 80, Modes::Braille); // 120×80 pixels in 60×20 cells
 ```
@@ -88,7 +88,7 @@ $Canvas->center(10, 'PRESS ENTER'); // text centered, 1 character per cell
 A scene is a named set of `enter` / `update` / `render` hooks — switch between them to structure the game flow (menu, playing, game over):
 
 ```php
-use Console\Games\Scenes\Scene;
+use Console\Game\Scenes\Scene;
 
 $this->Scenes->add(new Scene(
    'Menu',
@@ -109,7 +109,7 @@ A game's art lives in a sprite sheet — a `.sprites.php` file returning `Sprite
 
 ```php
 // Invaders.sprites.php
-use Console\Games\Sprite;
+use Console\Game\Sprite;
 
 return [
    new Sprite('alien', frames: ["▄█▄\n▀ ▀", "▄█▄\n▝ ▘"], style: "\e[1;32m"),
@@ -135,9 +135,9 @@ $Boom->tick($delta);
 The 2D math trio covers the rest of a game's bookkeeping — `Timer` for cadences, `Vector` for allocation-free integration, `Zone` for AABB collision:
 
 ```php
-use Console\Games\Timer;
-use Console\Games\Vector;
-use Console\Games\Zone;
+use Console\Game\Timer;
+use Console\Game\Vector;
+use Console\Game\Zone;
 
 $March = new Timer(0.75);                    // repeating cadence
 if ($March->tick($delta) === true) { /* one march step */ }
@@ -153,7 +153,7 @@ $Field->clamp($Ship);                        // pin a point into a zone
 
 ## The Snake, Pong and Invaders demos
 
-The platform ships three complete games as exportable projects (`Console/projects/`): the classic **Snake** (arrow steering, hold-to-accelerate), **Pong** vs a simple AI (keystroke-impulse paddle — tap to nudge, hold to stream — and deflection by hit offset) and **Invaders** (a sprite-sheet formation that marches faster as it shrinks — a mutable Timer interval — with a one-shot fire cooldown, Vector-integrated projectiles and Zone collisions) — all with Menu → Play → Over scenes, square-pixel boards fitted and centered to the terminal, and the score on the Statusbar. Play them in the [live showcase](/manual/Console/Games/showcase), import them with the wizard or run them from the platform repo:
+The platform ships three complete games as exportable projects (`Console/projects/`): the classic **Snake** (arrow steering, hold-to-accelerate), **Pong** vs a simple AI (keystroke-impulse paddle — tap to nudge, hold to stream — and deflection by hit offset) and **Invaders** (a sprite-sheet formation that marches faster as it shrinks — a mutable Timer interval — with a one-shot fire cooldown, Vector-integrated projectiles and Zone collisions) — all with Menu → Play → Over scenes, square-pixel boards fitted and centered to the terminal, and the score on the Statusbar. Play them in the [live showcase](/manual/Console/Game/showcase), import them with the wizard or run them from the platform repo:
 
 ```bash
 php bootgly project Snake start
@@ -165,7 +165,7 @@ php bootgly project Invaders start
 
 ## Reference
 
-### Console\Games
+### Console\Game
 
 ```php
 public function __construct (null|Input $Input = null, null|Output $Output = null, int $columns = 80, int $rows = 22, int $aspect = 1)
@@ -191,7 +191,7 @@ abstract protected function draw (): void
 
 Paints the frame into the Canvas (the shell flushes it and renders the Statusbar after).
 
-### Console\Games\Loop
+### Console\Game\Loop
 
 ```php
 public function run (callable $reading, Closure $update, Closure $render): void
@@ -205,7 +205,7 @@ public function stop (): void
 
 Stops the loop.
 
-### Console\Games\Canvas
+### Console\Game\Canvas
 
 ```php
 public function clear (): self
@@ -249,7 +249,7 @@ public function resize (int $columns, int $rows): self
 
 Resizes the logical pixel grid and forces a full redraw (SIGWINCH hook target).
 
-### Console\Games\Keyboard
+### Console\Game\Keyboard
 
 ```php
 public function press (string $key, null|float $at = null): void
@@ -281,7 +281,7 @@ public function reset (): void
 
 Resets all keyboard state.
 
-### Console\Games\Scenes
+### Console\Game\Scenes
 
 ```php
 public function add (Scene $Scene): self
@@ -295,7 +295,7 @@ public function switch (string $scene): Scene
 
 Switches to a scene, running its `enter` hook — throws `InvalidArgumentException` on unknown names.
 
-### Console\Games\Scenes\Scene
+### Console\Game\Scenes\Scene
 
 ```php
 public function __construct (string $name, null|Closure $enter = null, null|Closure $update = null, null|Closure $render = null)
@@ -303,7 +303,7 @@ public function __construct (string $name, null|Closure $enter = null, null|Clos
 
 One game scene: named `enter` / `update` / `render` hooks plus a `$state` array.
 
-### Console\Games\Sprite
+### Console\Game\Sprite
 
 ```php
 public function __construct (string $name, array $frames, string $style = '', float $FPS = 0.0, string $alpha = ' ')
@@ -323,7 +323,7 @@ public function stamp (Canvas $Canvas, int $x, int $y): self
 
 Plots the current frame at logical (`$x`, `$y`): transparent pixels are skipped and off-canvas pixels clip silently.
 
-### Console\Games\Sprites
+### Console\Game\Sprites
 
 ```php
 public function add (Sprite $Sprite): self
@@ -343,7 +343,7 @@ public function load (string $file): self
 
 Loads a `.sprites.php` sheet — a file returning an array of `Sprite` instances — and registers every sprite. Throws `InvalidArgumentException` when the file is missing.
 
-### Console\Games\Timer
+### Console\Game\Timer
 
 ```php
 public function __construct (float $interval, bool $repeat = true)
@@ -363,7 +363,7 @@ public function reset (): self
 
 Rearms the timer (`elapsed` back to 0, `expired` back to false).
 
-### Console\Games\Vector
+### Console\Game\Vector
 
 ```php
 public function __construct (float $x = 0.0, float $y = 0.0)
@@ -383,7 +383,7 @@ public function scale (float $factor): self
 
 Multiplies both components — speed ramps, direction flips (`scale(-1.0)`) and normalization (`scale(1.0 / $Vector->length)`).
 
-### Console\Games\Zone
+### Console\Game\Zone
 
 ```php
 public function __construct (float $x, float $y, float $width, float $height)

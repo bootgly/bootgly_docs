@@ -16,7 +16,7 @@ Escolha um jogo e pressione Run, depois **clique no terminal para focá-lo**. En
 
 ## O que você está vendo
 
-Os três jogos são projetos exportáveis da plataforma Console (`Console/projects/`) construídos sobre o módulo [Games](/manual/Console/Games):
+Os três jogos são projetos exportáveis da plataforma Console (`Console/projects/`) construídos sobre o módulo [Game](/manual/Console/Game):
 
 - O **Loop de timestep fixo** dá o ritmo da simulação com o timeout de leitura do canal — a cobra continua andando e a bola continua voando sem nenhuma tecla pressionada, na mesma velocidade de um terminal nativo.
 - O **Canvas** renderiza cada frame por diff: apenas as células que mudaram são escritas, então um frame parado custa zero escritas.

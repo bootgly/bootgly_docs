@@ -88,10 +88,10 @@ php bootgly project Pong start
 php bootgly project Invaders start
 ```
 
-They are compact references for the **Games** module: fixed-timestep loop, diff-rendered Canvas, held-key detection, scenes, sprite sheets and 2D math.
+They are compact references for the **Game** module: fixed-timestep loop, diff-rendered Canvas, held-key detection, scenes, sprite sheets and 2D math.
 
 ## Going deeper
 
 - [Console](/manual/Console) — how the platform boots and how projects bind to it.
 - [App](/manual/Console/App) — the app shell: Screens + Router, Keymaps, Statusbar, Toasts, Palette, Tail.
-- [Games](/manual/Console/Games) — the game shell: Loop, Canvas (Block/Half/Braille), Keyboard, Scenes, Sprites and 2D math.
+- [Game](/manual/Console/Game) — the game shell: Loop, Canvas (Block/Half/Braille), Keyboard, Scenes, Sprites and 2D math.
