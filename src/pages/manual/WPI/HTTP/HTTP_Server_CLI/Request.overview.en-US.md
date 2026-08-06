@@ -616,6 +616,8 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 
 Header field names are normalized to lowercase by the parser, but `Sources::Headers` rules match them case-insensitively (RFC 9110) — key your rules `'X-API-Key'` or `'x-api-key'`, both bind. Every other source matches rule keys case-sensitively.
 
+With `Sources::Cookies`, rules bind by cookie name; when the same name appears on multiple `Cookie` lines, the first line wins — matching `Cookies::get()`.
+
 ### Built-in Validators
 
 All built-in rules live in `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` and `Extension`. Each accepts an optional `string $message` constructor argument to override the default error message. The one-block-per-rule catalog (arguments, semantics and default messages) lives in the [ADI Validation reference](/manual/ADI/Validation/overview/).
