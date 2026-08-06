@@ -473,7 +473,7 @@ HTTP/2 negotiation mode. `null` (default): offer `h2,http/1.1` via TLS-ALPN when
 public int $maxResponseBytes = 0;
 ```
 
-Maximum raw response bytes (headers + body). `0` = unbounded. Exceeding it fails the request with code `0` and status `'Response Too Large'`. Enforced on both HTTP/1.1 and HTTP/2.
+Maximum raw response bytes (headers + body). `0` = unbounded. Exceeding it fails the request with code `0` and status `'Response Too Large'`. Enforced on both HTTP/1.1 and HTTP/2. Chunked responses also fail fast: a chunk whose declared size would push the decoded body past the limit fails the request immediately, before the chunk data is downloaded.
 
 ```php
 public int $maxRetries = 0;

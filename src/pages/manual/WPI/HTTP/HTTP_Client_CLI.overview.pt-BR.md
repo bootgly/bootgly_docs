@@ -473,7 +473,7 @@ Modo de negociação HTTP/2. `null` (padrão): oferece `h2,http/1.1` via TLS-ALP
 public int $maxResponseBytes = 0;
 ```
 
-Máximo de bytes raw da resposta (headers + body). `0` = ilimitado. Exceder o limite falha a requisição com code `0` e status `'Response Too Large'`. Aplicado tanto em HTTP/1.1 quanto em HTTP/2.
+Máximo de bytes raw da resposta (headers + body). `0` = ilimitado. Exceder o limite falha a requisição com code `0` e status `'Response Too Large'`. Aplicado tanto em HTTP/1.1 quanto em HTTP/2. Respostas chunked também falham rápido: um chunk cujo tamanho declarado empurraria o body decodificado além do limite falha a requisição imediatamente, antes de baixar os dados do chunk.
 
 ```php
 public int $maxRetries = 0;
