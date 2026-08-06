@@ -295,6 +295,8 @@ if ($Response->code === 0) {
 }
 ```
 
+`code === 0` sempre significa que nenhuma resposta HTTP foi produzida, e `status` diz o motivo: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, ou `'Invalid Chunked Encoding'` quando o framing de uma resposta chunked não é HTTP válido (uma linha de chunk-size que não é hexadecimal, ou grande demais para ser real).
+
 ## Retries & Backoff
 
 Retry automático em falha de conexão ou timeout, com backoff exponencial limitado e jitter:
