@@ -90,6 +90,7 @@ O método `configure()` aceita os seguintes parâmetros:
 | Propriedade | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `maxRedirects` | `int` | `10` | Máximo de redirects a seguir (0 = desabilitado). |
+| `allowInsecureRedirect` | `bool` | `false` | Seguir um redirect que rebaixa de `https` para `http`. |
 | `connectTimeout` | `int\|float` | `30` | Timeout de conexão em segundos. |
 | `timeout` | `int\|float` | `30` | Timeout de resposta em segundos. |
 | `maxResponseBytes` | `int` | `0` | Máximo de bytes raw da resposta — headers + body (0 = ilimitado). |
@@ -278,6 +279,18 @@ echo $Response->code;  // 200 (do destino final)
 |---|---|---|
 | 301, 302, 303 | Muda para GET (exceto HEAD) | Não (body limpo) |
 | 307, 308 | Preservado | Sim |
+
+### O que uma perna de redirect carrega
+
+Cada perna é discada com a configuração TLS que você passou para `configure()`. `verify_peer`, o bundle da CA, um certificado de cliente, um `peer_fingerprint` fixado e a lista de cifras sobrevivem ao salto — apenas `peer_name` é reapontado para o novo host.
+
+Credenciais pertencem à origem que as emitiu. Quando um salto muda host, porta ou esquema, `Authorization`, `Cookie` e `Proxy-Authorization` são removidos antes do envio da perna — a mesma regra que curl, `requests` do Python e `net/http` do Go aplicam. Um redirect que permanece na mesma origem os mantém.
+
+Um salto que rebaixa de `https` para `http` é recusado: a requisição falha com código `0` e status `'Insecure Redirect'`, e nada é discado. Como 307 e 308 reenviam os headers e o body originais, seguir esse salto os colocaria em texto claro na rede. Opte por permitir quando realmente precisar:
+
+```php
+$Client->allowInsecureRedirect = true;
+```
 
 ## Timeouts
 

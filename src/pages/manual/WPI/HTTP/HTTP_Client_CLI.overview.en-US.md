@@ -90,6 +90,7 @@ The `configure()` method accepts the following parameters:
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `maxRedirects` | `int` | `10` | Maximum redirects to follow (0 = disabled). |
+| `allowInsecureRedirect` | `bool` | `false` | Follow a redirect that steps down from `https` to `http`. |
 | `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds. |
 | `timeout` | `int\|float` | `30` | Response timeout in seconds. |
 | `maxResponseBytes` | `int` | `0` | Maximum raw response bytes — headers + body (0 = unbounded). |
@@ -278,6 +279,18 @@ echo $Response->code;  // 200 (from the final destination)
 |---|---|---|
 | 301, 302, 303 | Changes to GET (except HEAD) | No (body cleared) |
 | 307, 308 | Preserved | Yes |
+
+### What a redirect leg carries
+
+Every leg is dialed with the TLS configuration you passed to `configure()`. `verify_peer`, the CA bundle, a client certificate, a pinned `peer_fingerprint` and the cipher list all survive the hop — only `peer_name` is re-pointed at the new host.
+
+Credentials belong to the origin that issued them. When a hop changes host, port or scheme, `Authorization`, `Cookie` and `Proxy-Authorization` are dropped before the leg is sent — the same rule curl, Python `requests` and Go's `net/http` apply. A redirect that stays on the same origin keeps them.
+
+A hop that steps down from `https` to `http` is refused: the request fails with code `0` and status `'Insecure Redirect'`, and nothing is dialed. Since 307 and 308 replay the original headers and body, following such a hop would put them on the wire in the clear. Opt in when you really want it:
+
+```php
+$Client->allowInsecureRedirect = true;
+```
 
 ## Timeouts
 
