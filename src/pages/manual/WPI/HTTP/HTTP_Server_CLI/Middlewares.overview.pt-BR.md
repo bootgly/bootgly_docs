@@ -300,6 +300,8 @@ new Validator(
 
 A resposta padrão de falha é `422 Unprocessable Entity` com corpo `{"errors": {"email": ["email must be a valid email address."]}}`. Forneça uma closure em `fallback` para renderizar uma resposta de erro customizada mantendo a rota fail-closed.
 
+Com `Sources::Headers`, as chaves das regras casam com os nomes dos headers de forma case-insensitive (RFC 9110) — uma regra com a chave `'X-API-Key'` liga ao header enviado pelo cliente independentemente da capitalização, e os erros de validação mantêm a chave exatamente como você a escreveu. Todas as outras fontes casam as chaves de forma case-sensitive.
+
 Consulte a seção [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) para exemplos end-to-end, e a página [ADI Validation](/manual/ADI/Validation/overview/) para o catálogo completo de regras e regras customizadas.
 
 **Fase:** Pré-processamento — valida a entrada antes do handler executar.

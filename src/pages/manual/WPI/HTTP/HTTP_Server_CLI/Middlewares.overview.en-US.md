@@ -299,6 +299,8 @@ new Validator(
 
 The default failure response is `422 Unprocessable Entity` with body `{"errors": {"email": ["email must be a valid email address."]}}`. Provide a `fallback` closure to render a custom error response while keeping the route fail-closed.
 
+With `Sources::Headers`, rule keys match header names case-insensitively (RFC 9110) — a rule keyed `'X-API-Key'` binds to the header the client sent regardless of casing, and validation errors keep the key exactly as you wrote it. All other sources match keys case-sensitively.
+
 See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples, and the [ADI Validation](/manual/ADI/Validation/overview/) page for the full rule catalog and custom rules.
 
 **Phase:** Pre-processing — validates input before the handler runs.

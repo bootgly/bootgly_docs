@@ -614,6 +614,8 @@ A enum `Sources` identifica qual propriedade do Request o middleware `Validator`
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 ```
 
+Os nomes dos campos de header são normalizados para minúsculas pelo parser, mas as regras de `Sources::Headers` casam com eles de forma case-insensitive (RFC 9110) — declare suas regras como `'X-API-Key'` ou `'x-api-key'`, ambas ligam. Todas as outras fontes casam as chaves das regras de forma case-sensitive.
+
 ### Validadores Built-in
 
 Todas as regras built-in vivem em `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` e `Extension`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão. O catálogo bloco-a-bloco (argumentos, semântica e mensagens padrão) vive na [referência ADI Validation](/manual/ADI/Validation/overview/).
