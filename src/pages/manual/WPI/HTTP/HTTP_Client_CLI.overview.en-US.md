@@ -292,6 +292,12 @@ A hop that steps down from `https` to `http` is refused: the request fails with 
 $Client->allowInsecureRedirect = true;
 ```
 
+A redirect chain never re-points the client. Wherever the chain ends — another origin, or a leg that could not be dialed — the host, port, TLS options and worker count you configured are restored and the connection pool is rebuilt for your own origin, so the next request goes where you sent it. A leg that cannot be dialed fails with code `0` and status `'Redirect Failed'`, and it is never retried: retrying would send the redirect target's path to your original host.
+
+## One client, one origin
+
+A client is bound to the origin you give `configure()`, and instances do not interfere: two clients in the same process each keep their own host, port, TLS options and pool. What remains process-wide is the event loop, the event handlers registered through `on()`, and event-driven mode itself — so run at most one *event-driven* client per process.
+
 ## Timeouts
 
 ```php

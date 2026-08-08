@@ -292,6 +292,12 @@ Um salto que rebaixa de `https` para `http` é recusado: a requisição falha co
 $Client->allowInsecureRedirect = true;
 ```
 
+Uma cadeia de redirects nunca re-aponta o cliente. Onde quer que a cadeia termine — em outra origem, ou em uma perna que não pôde ser discada — o host, a porta, as opções TLS e a contagem de workers que você configurou são restaurados e o pool de conexões é reconstruído para a sua própria origem, de modo que a próxima requisição vai para onde você a mandou. Uma perna que não pode ser discada falha com código `0` e status `'Redirect Failed'`, e nunca é repetida: repetir enviaria o caminho do alvo do redirect para o seu host original.
+
+## Um cliente, uma origem
+
+Um cliente fica ligado à origem que você passa em `configure()`, e as instâncias não interferem entre si: dois clientes no mesmo processo mantêm cada um o seu host, porta, opções TLS e pool. O que permanece global ao processo é o event loop, os handlers registrados via `on()` e o próprio modo event-driven — então rode no máximo um cliente *event-driven* por processo.
+
 ## Timeouts
 
 ```php
