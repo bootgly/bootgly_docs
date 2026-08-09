@@ -154,18 +154,23 @@ $Request->Body;
 $Request->input; // Dados brutos do conteúdo de entrada como string
 ```
 
-`inputs`: Um array associativo de pares chave-valor de entrada.
+### Campos
+
+`fields`: O corpo decodificado da requisição, como um array associativo.
+
+O parsing é despachado pelo `Content-Type`, nunca pelo método da requisição — `POST`, `PUT`,
+`PATCH` e `DELETE` produzem os mesmos campos para os mesmos bytes:
+
+- `application/json` — o array decodificado do JSON;
+- `application/x-www-form-urlencoded` — os campos do formulário já parseados;
+- `multipart/form-data` — as partes de texto (as partes de arquivo vão para `files`).
+
+Qualquer outro media type resulta em `[]`: o Bootgly nunca adivinha como parsear um corpo
+cujo tipo não lhe foi informado. Uma requisição sem corpo também resulta em `[]`, sem
+sequer acionar o parser.
 
 ```php
-$Request->inputs; // Array ( [chave_entrada] => valor_entrada )
-```
-
-### POST
-
-`post`: Um array associativo de dados POST
-
-```php
-$Request->post; // Array ( [chave_post] => valor_post )
+$Request->fields; // Array ( [nome_do_campo] => valor_do_campo )
 ```
 
 ### Arquivos

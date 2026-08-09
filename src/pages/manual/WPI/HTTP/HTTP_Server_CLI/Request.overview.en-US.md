@@ -154,18 +154,22 @@ $Request->Body;
 $Request->input; // Raw input content data as string
 ```
 
-`inputs`: An associative array of input key-value pairs.
+### Fields
+
+`fields`: The decoded request body, as an associative array.
+
+Parsing is dispatched on the `Content-Type`, never on the request method — `POST`, `PUT`,
+`PATCH` and `DELETE` all produce the same fields for the same bytes:
+
+- `application/json` — the decoded JSON array;
+- `application/x-www-form-urlencoded` — the parsed form fields;
+- `multipart/form-data` — the text parts (file parts land in `files` instead).
+
+Any other media type yields `[]`: Bootgly never guesses how to parse a body whose type it
+was not told. A request with no body yields `[]` as well, without touching the parser.
 
 ```php
-$Request->inputs; // Array ( [input_key] => input_value )
-```
-
-### POST
-
-`post`: An associative array of POST data
-
-```php
-$Request->post; // Array ( [post_key] => post_value )
+$Request->fields; // Array ( [field_name] => field_value )
 ```
 
 ### Files
