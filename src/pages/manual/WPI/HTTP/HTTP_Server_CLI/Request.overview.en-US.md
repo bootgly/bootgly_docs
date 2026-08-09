@@ -154,6 +154,11 @@ $Request->Body;
 $Request->input; // Raw input content data as string
 ```
 
+A `multipart/form-data` body is the one exception: it never lands in `input`, which stays
+empty for it. That body streams straight into `fields` and `files` while it is being
+received, so reading `input` on an upload is expected to give you `''` — read `fields` and
+`files` instead.
+
 ### Fields
 
 `fields`: The decoded request body, as an associative array.

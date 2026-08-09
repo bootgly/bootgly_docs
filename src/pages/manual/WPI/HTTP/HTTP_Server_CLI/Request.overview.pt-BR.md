@@ -154,6 +154,10 @@ $Request->Body;
 $Request->input; // Dados brutos do conteúdo de entrada como string
 ```
 
+Um corpo `multipart/form-data` é a única exceção: ele nunca chega ao `input`, que fica vazio
+nesse caso. Esse corpo vai direto para `fields` e `files` enquanto é recebido, então ler
+`input` num upload devolve `''` mesmo — leia `fields` e `files`.
+
 ### Campos
 
 `fields`: O corpo decodificado da requisição, como um array associativo.
