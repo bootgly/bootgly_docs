@@ -216,7 +216,7 @@ The server master process listens for a rich control surface.
 | Signal / command | Effect |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Stop the server and terminate workers. |
-| `SIGTSTP`, `pause` | Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. In Monitor mode, SIGTSTP switches to Interactive instead. |
+| `SIGTSTP`, `pause` | Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. `bootgly project show` reports the instance as `paused`. In Monitor mode, SIGTSTP switches to Interactive instead. |
 | `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. |
 | `SIGUSR2`, `reload` | Reload application state in workers. |
 | `SIGIOT`, `connections` | Print connection information. |

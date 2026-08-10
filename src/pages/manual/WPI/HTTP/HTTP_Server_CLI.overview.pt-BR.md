@@ -384,14 +384,14 @@ $Server
 O servidor segue um ciclo de vida de status bem definido:
 
 ```
-Booting → Configuring → Starting → Running → Pausing / Paused → Stopping
+Booting → Configuring → Starting → Running → Paused → Stopping
 ```
 
 - **Booting**: Inicialização interna (logger, conexões, event loop, gerenciador de processos).
 - **Configuring**: Host, port, workers e SSL são armazenados.
 - **Starting**: O SAPI é iniciado, sinais POSIX são instalados, workers são criados via fork.
 - **Running**: Workers estão processando requisições no event loop.
-- **Pausing / Paused**: O socket do servidor é removido do event loop — novas conexões não são aceitas. Conexões existentes continuam.
+- **Paused**: O socket do servidor é removido do event loop — novas conexões não são aceitas. Conexões existentes continuam.
 - **Stopping**: Workers são encerrados, arquivos PID/lock são removidos.
 
 ## Arquitetura Master/Worker

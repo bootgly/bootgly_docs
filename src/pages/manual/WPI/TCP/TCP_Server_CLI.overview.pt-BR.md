@@ -216,7 +216,7 @@ O processo master do servidor expõe uma superfície rica de controle.
 | Sinal / comando | Efeito |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Para o servidor e encerra os workers. |
-| `SIGTSTP`, `pause` | Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. No modo Monitor, SIGTSTP troca para Interactive. |
+| `SIGTSTP`, `pause` | Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. `bootgly project show` reporta a instância como `paused`. No modo Monitor, SIGTSTP troca para Interactive. |
 | `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. |
 | `SIGUSR2`, `reload` | Recarrega o estado da aplicação nos workers. |
 | `SIGIOT`, `connections` | Imprime informações das conexões ativas. |
