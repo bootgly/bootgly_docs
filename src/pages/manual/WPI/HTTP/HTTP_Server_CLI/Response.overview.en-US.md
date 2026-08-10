@@ -148,7 +148,7 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 
 **Byte ranges:**
 
-A client `Range` header overrides `$offset` / `$length`. The accepted set is coalesced — overlapping and adjacent ranges are merged — and a set larger than [`Request::$maxRanges`](../Request/#byte-range-limit) (16 by default) is rejected with `416 Range Not Satisfiable`.
+A client `Range` header overrides `$offset` / `$length`. The accepted set is coalesced — overlapping and adjacent ranges are merged — and a set larger than [`Request::$maxRanges`](../Request/#byte-range-limit) (16 by default) is rejected with `416 Range Not Satisfiable`. A `Range` value that is not even a ranges-specifier — no `=` separator at all, e.g. `Range: bytes 0-1` — is rejected with `400 Bad Request` (RFC 9110 §14.2 allows a server to ignore or reject it; Bootgly rejects).
 
 **Representation identity:**
 
@@ -259,17 +259,19 @@ return $Response->redirect('https://docs.bootgly.com/', 302, allowExternal: true
 ### Terminate the HTTP Response
 
 ```php
-public function end (? int $code = null) : void;
-public function end (? int $code = null) : self;
+public function end (null|int $code = null, null|string $context = null) : self;
 ```
 
 **Description:**
 
-Terminates the HTTP response, optionally setting a response status code before ending the response.
+Definitively terminates the HTTP response. When `$code` is given, it is set as the response status exactly as passed — headers and body already set by the handler are kept as-is.
+
+`416 Range Not Satisfiable` is the one preset code: `end(416, (string) $size)` cleans the headers already set, ships a minimal one-space body and — when `$context` is given — emits `Content-Range: bytes */{$context}`.
 
 **Parameters:**
 
 - `$code` (int|null, optional): The status code to send before ending the response.
+- `$context` (string|null, optional): Context for preset codes — for `416`, the representation size used to build the `Content-Range` header. Ignored for every other code.
 
 ## Deferred Responses (Async)
 

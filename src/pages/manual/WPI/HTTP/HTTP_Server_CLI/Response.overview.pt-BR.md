@@ -148,7 +148,7 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 
 **Byte-ranges:**
 
-Um cabeçalho `Range` do cliente sobrepõe `$offset` / `$length`. O conjunto aceito é coalescido — ranges sobrepostos e adjacentes são fundidos — e um conjunto maior que [`Request::$maxRanges`](../Request/#limite-de-byte-ranges) (16 por padrão) é rejeitado com `416 Range Not Satisfiable`.
+Um cabeçalho `Range` do cliente sobrepõe `$offset` / `$length`. O conjunto aceito é coalescido — ranges sobrepostos e adjacentes são fundidos — e um conjunto maior que [`Request::$maxRanges`](../Request/#limite-de-byte-ranges) (16 por padrão) é rejeitado com `416 Range Not Satisfiable`. Um valor de `Range` que nem chega a ser um ranges-specifier — sem o separador `=`, ex. `Range: bytes 0-1` — é rejeitado com `400 Bad Request` (a RFC 9110 §14.2 permite ao servidor ignorar ou rejeitar; o Bootgly rejeita).
 
 **Identidade da representação:**
 
@@ -260,17 +260,19 @@ return $Response->redirect('https://docs.bootgly.com/', 302, allowExternal: true
 ### Encerrar
 
 ```php
-public function end (? int $code = null) : void;
-public function end (? int $code = null) : self;
+public function end (null|int $code = null, null|string $context = null) : self;
 ```
 
 **Descrição:**
 
-Encerra a resposta HTTP, opcionalmente configurando um código de status de resposta antes de encerrar a resposta.
+Encerra definitivamente a resposta HTTP. Quando `$code` é informado, ele é definido como o status da resposta exatamente como passado — headers e body já definidos pelo handler são mantidos como estão.
+
+`416 Range Not Satisfiable` é o único código com preset: `end(416, (string) $size)` limpa os headers já definidos, envia um body mínimo de um espaço e — quando `$context` é informado — emite `Content-Range: bytes */{$context}`.
 
 **Parâmetros:**
 
 - `$code` (int|null, opcional): O código de status para enviar antes de encerrar a resposta.
+- `$context` (string|null, opcional): Contexto para códigos com preset — para `416`, o tamanho da representação usado para construir o header `Content-Range`. Ignorado para qualquer outro código.
 
 ## Respostas Assíncronas (Defer)
 
