@@ -216,14 +216,14 @@ O processo master do servidor expõe uma superfície rica de controle.
 | Sinal / comando | Efeito |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Para o servidor e encerra os workers. |
-| `SIGTSTP`, `pause` | Pausa os workers ou troca de Monitor para Interactive. |
-| `SIGCONT`, `resume` | Retoma workers pausados. |
+| `SIGTSTP`, `pause` | Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. No modo Monitor, SIGTSTP troca para Interactive. |
+| `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. |
 | `SIGUSR2`, `reload` | Recarrega o estado da aplicação nos workers. |
 | `SIGIOT`, `connections` | Imprime informações das conexões ativas. |
 | `SIGIO`, `stats` | Imprime estatísticas de conexões e tráfego. |
 | `status` | Renderiza uma visão geral do estado do servidor no terminal. |
 | `monitor` | Entra no modo de monitoramento em tempo real. |
-| `check jit`, `error on/off`, `test` | Utilidades operacionais e de debugging. |
+| `check jit`, `error on/off` | Utilidades operacionais e de debugging. |
 
 > [!NOTE]
 > Os comandos interativos são, principalmente, recursos do processo master. Os workers continuam focados em I/O e tratamento de conexões.

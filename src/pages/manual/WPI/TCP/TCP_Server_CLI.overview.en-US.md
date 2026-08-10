@@ -216,14 +216,14 @@ The server master process listens for a rich control surface.
 | Signal / command | Effect |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Stop the server and terminate workers. |
-| `SIGTSTP`, `pause` | Pause workers or switch from Monitor to Interactive mode. |
-| `SIGCONT`, `resume` | Resume paused workers. |
+| `SIGTSTP`, `pause` | Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. In Monitor mode, SIGTSTP switches to Interactive instead. |
+| `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. |
 | `SIGUSR2`, `reload` | Reload application state in workers. |
 | `SIGIOT`, `connections` | Print connection information. |
 | `SIGIO`, `stats` | Print connection and traffic statistics. |
 | `status` | Render an overview of server state in the terminal. |
 | `monitor` | Enter live monitor mode. |
-| `check jit`, `error on/off`, `test` | Operational and debugging utilities. |
+| `check jit`, `error on/off` | Operational and debugging utilities. |
 
 > [!NOTE]
 > Interactive commands are primarily master-process features. Workers keep focusing on I/O and connection handling.
