@@ -85,7 +85,7 @@ Register runtime callbacks with `on()`:
 | `Events::ClientConnect` | `Closure($Socket, $Connection)` | Runs when the client socket is ready to use. |
 | `Events::ClientDisconnect` | `Closure($Connection)` | Runs when the client socket is closed. |
 | `Events::DatagramRead` | `Closure($Socket, $Connection)` | Runs after a datagram is read. |
-| `Events::DatagramWrite` | `Closure($Socket, $Connection)` | Runs after or around datagram write flow, depending on your callback logic. |
+| `Events::DatagramWrite` | `Closure($Socket, $Connection)` | Runs once per delivered datagram, after the one-shot `EVENT_WRITE` registration is dropped. Re-arm here only after queueing a new `output`. |
 
 This is the main public integration surface of `UDP_Client_CLI`.
 
@@ -100,11 +100,18 @@ A consumer-facing mental model for the client is:
 5. set `$Connection->output`
 6. call `start()` and let the callbacks drive the traffic
 
+The `EVENT_WRITE` registration is **one-shot**: arm it *after* setting
+`$Connection->output`, and one arm delivers exactly one datagram — the registration is
+dropped automatically once the datagram is sent (or when a write wakeup finds nothing
+queued). To send again, queue a new `output` and re-arm. After each delivered datagram,
+`$Connection->written` holds the sent length in bytes.
+
 The demo project uses exactly this pattern with monitor mode and a timer-based shutdown.
 
 ## Example with Monitor Mode
 
 ```php
+use const PHP_EOL;
 use function getenv;
 
 use Bootgly\ACI\Events\Timer;
@@ -150,13 +157,17 @@ return new Project(
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          })
          ->on(Events::ClientDisconnect, function ($Connection) use ($Client) {
-            $Client->log(
-               'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
-               . ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\;'
+            $Client->Logger->log(
+               info: "Connection #{$Connection->id} ({$Connection->address}:{$Connection->port})"
+               . " from Worker with PID {$Client->Process->id} was closed!" . PHP_EOL
             );
          })
-         ->on(Events::DatagramWrite, function ($Socket, $Connection) {
-            UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
+         ->on(Events::DatagramWrite, function ($Socket, $Connection) use ($Client) {
+            // The EVENT_WRITE registration is one-shot: it was already
+            // dropped — re-arm only after queueing a new `output`.
+            $Client->Logger->log(
+               info: "Sent {$Connection->written} bytes." . PHP_EOL
+            );
          });
 
       $Client->start();
@@ -183,6 +194,7 @@ For many use cases, the most important controls are your callbacks, your worker 
 ## Full Example
 
 ```php
+use const PHP_EOL;
 use function getenv;
 
 use Bootgly\ACI\Events\Timer;
@@ -228,13 +240,17 @@ return new Project(
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          })
          ->on(Events::ClientDisconnect, function ($Connection) use ($Client) {
-            $Client->log(
-               'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
-               . ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\;'
+            $Client->Logger->log(
+               info: "Connection #{$Connection->id} ({$Connection->address}:{$Connection->port})"
+               . " from Worker with PID {$Client->Process->id} was closed!" . PHP_EOL
             );
          })
-         ->on(Events::DatagramWrite, function ($Socket, $Connection) {
-            UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
+         ->on(Events::DatagramWrite, function ($Socket, $Connection) use ($Client) {
+            // The EVENT_WRITE registration is one-shot: it was already
+            // dropped — re-arm only after queueing a new `output`.
+            $Client->Logger->log(
+               info: "Sent {$Connection->written} bytes." . PHP_EOL
+            );
          });
 
       $Client->start();

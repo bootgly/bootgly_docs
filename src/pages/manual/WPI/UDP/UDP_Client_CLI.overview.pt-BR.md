@@ -85,7 +85,7 @@ Registre callbacks de runtime com `on()`:
 | `Events::ClientConnect` | `Closure($Socket, $Connection)` | Executa quando o socket do cliente está pronto para uso. |
 | `Events::ClientDisconnect` | `Closure($Connection)` | Executa quando o socket do cliente é fechado. |
 | `Events::DatagramRead` | `Closure($Socket, $Connection)` | Executa após a leitura de um datagrama. |
-| `Events::DatagramWrite` | `Closure($Socket, $Connection)` | Executa após ou ao redor do fluxo de escrita, dependendo da sua lógica de callback. |
+| `Events::DatagramWrite` | `Closure($Socket, $Connection)` | Executa uma vez por datagrama entregue, depois que o registro one-shot de `EVENT_WRITE` é removido. Re-arme aqui somente após enfileirar um novo `output`. |
 
 Essa é a principal superfície pública de integração de `UDP_Client_CLI`.
 
@@ -100,11 +100,18 @@ Um modelo mental voltado ao consumidor para o cliente é:
 5. definir `$Connection->output`
 6. chamar `start()` e deixar os callbacks conduzirem o tráfego
 
+O registro de `EVENT_WRITE` é **one-shot**: arme-o *depois* de definir
+`$Connection->output`, e um arm entrega exatamente um datagrama — o registro é removido
+automaticamente assim que o datagrama é enviado (ou quando um wakeup de escrita não
+encontra nada enfileirado). Para enviar de novo, enfileire um novo `output` e re-arme.
+Após cada datagrama entregue, `$Connection->written` guarda o tamanho enviado em bytes.
+
 O projeto demo usa exatamente esse padrão com modo monitor e encerramento por timer.
 
 ## Exemplo com Monitor Mode
 
 ```php
+use const PHP_EOL;
 use function getenv;
 
 use Bootgly\ACI\Events\Timer;
@@ -150,13 +157,17 @@ return new Project(
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          })
          ->on(Events::ClientDisconnect, function ($Connection) use ($Client) {
-            $Client->log(
-               'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
-               . ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\;'
+            $Client->Logger->log(
+               info: "Connection #{$Connection->id} ({$Connection->address}:{$Connection->port})"
+               . " from Worker with PID {$Client->Process->id} was closed!" . PHP_EOL
             );
          })
-         ->on(Events::DatagramWrite, function ($Socket, $Connection) {
-            UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
+         ->on(Events::DatagramWrite, function ($Socket, $Connection) use ($Client) {
+            // O registro de EVENT_WRITE é one-shot: ele já foi removido —
+            // re-arme somente após enfileirar um novo `output`.
+            $Client->Logger->log(
+               info: "Sent {$Connection->written} bytes." . PHP_EOL
+            );
          });
 
       $Client->start();
@@ -183,6 +194,7 @@ Para muitos casos de uso, os controles mais importantes são seus callbacks, a q
 ## Exemplo Completo
 
 ```php
+use const PHP_EOL;
 use function getenv;
 
 use Bootgly\ACI\Events\Timer;
@@ -228,13 +240,17 @@ return new Project(
             UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
          })
          ->on(Events::ClientDisconnect, function ($Connection) use ($Client) {
-            $Client->log(
-               'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
-               . ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\;'
+            $Client->Logger->log(
+               info: "Connection #{$Connection->id} ({$Connection->address}:{$Connection->port})"
+               . " from Worker with PID {$Client->Process->id} was closed!" . PHP_EOL
             );
          })
-         ->on(Events::DatagramWrite, function ($Socket, $Connection) {
-            UDP_Client_CLI::$Event->add($Socket, UDP_Client_CLI::$Event::EVENT_WRITE, $Connection);
+         ->on(Events::DatagramWrite, function ($Socket, $Connection) use ($Client) {
+            // O registro de EVENT_WRITE é one-shot: ele já foi removido —
+            // re-arme somente após enfileirar um novo `output`.
+            $Client->Logger->log(
+               info: "Sent {$Connection->written} bytes." . PHP_EOL
+            );
          });
 
       $Client->start();
