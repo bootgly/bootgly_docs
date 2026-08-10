@@ -69,7 +69,7 @@ O Bootgly tem framework de testes próprio, e todo achado de segurança confirma
 regressão permanente na suite de segurança do servidor HTTP:
 
 ```text
-Bootgly/WPI/Nodes/HTTP_Server_CLI/tests/Security/NN.MM-snake_case_description.test.php
+Bootgly/WPI/Nodes/HTTP_Server_CLI/tests/Security/NN.MM-snake_case_description.Test.php
 ```
 
 Uma PoC de segurança ali segue uma regra: **ela precisa falhar no código vulnerável com um
@@ -79,7 +79,7 @@ que separa um achado de uma hipótese.
 ### Use a API primitiva, não a avançada
 
 A suite de testes do Bootgly expõe vários níveis de API de propósito. Para uma PoC, use a
-**mais primitiva** — o formato `Specification` abaixo, em que você retorna uma request string
+**mais primitiva** — o formato `Test` abaixo, em que você retorna uma request string
 raw e sua asserção retorna `true` ou uma mensagem de falha.
 
 Isso não é atalho, é a ferramenta certa. Uma PoC existe para *provar algo, custe o que custar*:
@@ -109,12 +109,12 @@ O formato:
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Suite\Test\Specification;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Suite\Test;
 
 
 $probe = ['error' => '', 'observed' => null];
 
-return new Specification(
+return new Test(
    description: 'o que o servidor precisa garantir',
 
    // Roda no lado cliente: dirige sockets raw, cria processos, registra evidência.

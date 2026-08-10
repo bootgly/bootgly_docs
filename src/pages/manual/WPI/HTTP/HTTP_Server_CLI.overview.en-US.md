@@ -26,10 +26,10 @@ The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It i
 
 In Bootgly, servers are started by Projects — not by framework commands. Each project defines its own boot logic, including server instantiation, configuration, and handler registration.
 
-A project file (e.g. `HTTP_Server_CLI.project.php`) returns a `Project` instance:
+A project file (e.g. `HTTP_Server_CLI.Project.php`) returns a `Project` instance:
 
 ```php
-// HTTP_Server_CLI.project.php in ./project/HTTP_Server_CLI
+// HTTP_Server_CLI.Project.php in ./project/HTTP_Server_CLI
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
@@ -269,7 +269,7 @@ $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/
 
 `Router::load()` is the canonical way to wire routes. It points at the project's `router/` folder and returns the request handler passed to `Events::RequestReceived`:
 
-```php :filename="HTTP_Server_CLI.project.php";
+```php :filename="HTTP_Server_CLI.Project.php";
 $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
 ```
 
@@ -298,7 +298,7 @@ return static function (Request $Request, Response $Response, Router $Router): G
 };
 ```
 
-A single set is returned directly; multiple sets are composed (`yield from` each) into one handler. The folder is also the router home — reserved for a future `router.config.php` defaults file.
+A single set is returned directly; multiple sets are composed (`yield from` each) into one handler. The folder is also the router home — reserved for a future `router.Config.php` defaults file.
 
 ```php
 Router::load (string $path): Closure

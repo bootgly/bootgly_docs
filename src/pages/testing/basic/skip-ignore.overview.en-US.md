@@ -10,12 +10,12 @@
 | `ignore` | Skips the case silently, without output. |
 | `Assertion::skip()` | Skips a specific assertion in the Advanced API. |
 
-## Skip in Specification
+## Skip in Test
 
-The `skip` parameter in `Specification` skips a test case and keeps the indication in the output.
+The `skip` parameter in `Test` skips a test case and keeps the indication in the output.
 
 ```php
-return new Specification(
+return new Test(
    description: 'Test to skip',
    skip: true,
    test: function (): bool
@@ -27,12 +27,12 @@ return new Specification(
 
 Use `skip` when the test should remain visible to show pending work or a temporary dependency.
 
-## Ignore in Specification
+## Ignore in Test
 
 The `ignore` parameter skips a test case silently.
 
 ```php
-return new Specification(
+return new Test(
    description: 'Test to ignore',
    ignore: true,
    test: function (): bool
@@ -53,7 +53,7 @@ yield new Assertion(description: 'Skipped assertion')
    ->skip();
 ```
 
-This format keeps control at the assertion level without disabling the whole `Specification`.
+This format keeps control at the assertion level without disabling the whole `Test`.
 
 ## Best practices
 

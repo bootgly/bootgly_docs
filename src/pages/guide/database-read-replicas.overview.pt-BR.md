@@ -45,7 +45,7 @@ leituras dentro do mesmo escopo lógico ficam no primário até a janela expirar
 
 ## Config de projeto
 
-O projeto demo HTTP expõe as mesmas opções via `configs/database/database.config.php`. Adicione
+O projeto demo HTTP expõe as mesmas opções via `configs/database/database.Config.php`. Adicione
 `Routing->Sticky` e um ou mais nós `Replicas` abaixo da conexão selecionada:
 
 ```php

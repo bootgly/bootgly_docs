@@ -35,7 +35,7 @@ const Web = new Web;
 Web->autoboot();
 ```
 
-A plataforma é uma **biblioteca de classes** sobre `Bootgly\WPI`: não há workables por processo — cada app inicializa por projeto, através da sua assinatura `.project.php`.
+A plataforma é uma **biblioteca de classes** sobre `Bootgly\WPI`: não há workables por processo — cada app inicializa por projeto, através da sua assinatura `.Project.php`.
 
 ## Projetos Web
 
@@ -47,7 +47,7 @@ return [
 ];
 ```
 
-E dê a ele uma assinatura `.project.php` cuja closure `boot` executa o [shell App](/manual/Web/App):
+E dê a ele uma assinatura `.Project.php` cuja closure `boot` executa o [shell App](/manual/Web/App):
 
 ```php
 use function getenv;

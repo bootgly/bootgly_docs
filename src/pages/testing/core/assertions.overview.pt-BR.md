@@ -9,10 +9,10 @@ Na API Básica, o caso de teste pode retornar um booleano diretamente. Se o test
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Suite\Test\Specification;
-use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
+use Bootgly\ACI\Tests\Suite\Test;
+use Bootgly\ACI\Tests\Suite\Test\Separator;
 
-return new Specification(
+return new Test(
    Separator: new Separator(line: 'Basic API'),
    description: 'It should assert returning true',
    test: function (): bool
@@ -26,14 +26,14 @@ Essa API foca em performance máxima e também serve como porta de entrada para 
 
 ### Retestes
 
-Use o parâmetro `retest` em `Specification` para repetir um teste quando necessário.
+Use o parâmetro `retest` em `Test` para repetir um teste quando necessário.
 
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'It should assert returning boolean (retestable)',
    test: function (bool $expected = false): bool
    {
@@ -58,10 +58,10 @@ Na API Básica, use a propriedade estática `Assertion::$description` para descr
 <?php
 
 use Bootgly\ACI\Tests\Assertion;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
-use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
+use Bootgly\ACI\Tests\Suite\Test;
+use Bootgly\ACI\Tests\Suite\Test\Separator;
 
-return new Specification(
+return new Test(
    Separator: new Separator(line: 'Basic API'),
    description: 'It should assert returning true',
    test: function (): bool
@@ -81,9 +81,9 @@ Na API Básica, uma string pode ser retornada como fallback quando a asserção 
 <?php
 
 use Bootgly\ACI\Tests\Assertion;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'It should assert returning string (fallback)',
    test: function (bool $expected = false): string|bool
    {
@@ -110,9 +110,9 @@ Use `yield` para retornar múltiplas asserções no mesmo caso de teste.
 use Generator;
 
 use Bootgly\ACI\Tests\Assertion;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'It should assert returning true (with yield)',
    test: function (): Generator
    {
@@ -140,9 +140,9 @@ use Generator;
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertion\Auxiliaries\Op;
 use Bootgly\ACI\Tests\Assertions;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'It should use assert API',
    test: new Assertions(Case: function (): Generator
    {

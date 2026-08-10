@@ -56,8 +56,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Control skipped and ignored cases in Specifications and Advanced API assertions.',
-          'pt-BR': 'Controle casos pulados e ignorados em Specifications e asserções da API Avançada.'
+          'en-US': 'Control skipped and ignored cases in Tests and Advanced API assertions.',
+          'pt-BR': 'Controle casos pulados e ignorados em Tests e asserções da API Avançada.'
         }
       },
       menu: {
@@ -475,8 +475,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Prepare, inject and dispose deterministic test state with Suite and Specification fixtures.',
-          'pt-BR': 'Prepare, injete e descarte estado determinístico de teste com fixtures de Suite e Specification.'
+          'en-US': 'Prepare, inject and dispose deterministic test state with Suite and Test fixtures.',
+          'pt-BR': 'Prepare, injete e descarte estado determinístico de teste com fixtures de Suite e Test.'
         }
       },
       menu: {},

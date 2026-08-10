@@ -6,21 +6,21 @@ Um projeto pode ficar em **qualquer profundidade** dentro de `projects/`. Um dir
 
 ## Estrutura do projeto
 
-Um projeto é um diretório dentro de `projects/` (em qualquer profundidade) contendo um arquivo de boot nomeado pela **folha** (leaf) da pasta — a convenção é `{folha}.project.php`. O nome do arquivo corresponde ao último segmento do caminho, não ao caminho completo.
+Um projeto é um diretório dentro de `projects/` (em qualquer profundidade) contendo um arquivo de boot nomeado pela **folha** (leaf) da pasta — a convenção é `{folha}.Project.php`. O nome do arquivo corresponde ao último segmento do caminho, não ao caminho completo.
 
 ```
 projects/
 ├── Bootgly.projects.php          ← o registro (allow-list)
 ├── Site/                         ← um projeto plano (um segmento de caminho)
-│   └── Site.project.php
+│   └── Site.Project.php
 └── Demo/                         ← uma pasta de agrupamento (não é um projeto)
     ├── HTTP_Server_CLI/
-    │   └── HTTP_Server_CLI.project.php
+    │   └── HTTP_Server_CLI.Project.php
     └── TCP_Server_CLI/
-        └── TCP_Server_CLI.project.php
+        └── TCP_Server_CLI.Project.php
 ```
 
-Aqui `Demo/HTTP_Server_CLI` e `Demo/TCP_Server_CLI` são dois subprojetos agrupados sob `Demo/`. O próprio `Demo/` não tem `.project.php` — é apenas um contêiner.
+Aqui `Demo/HTTP_Server_CLI` e `Demo/TCP_Server_CLI` são dois subprojetos agrupados sob `Demo/`. O próprio `Demo/` não tem `.Project.php` — é apenas um contêiner.
 
 ### Exemplo de arquivo de boot
 
@@ -65,7 +65,7 @@ Um projeto que serve ambas as interfaces lista as duas: `['interfaces' => ['CLI'
 
 ### Por que uma allow-list
 
-Como os projetos podem aninhar arbitrariamente, um atacante que comprometesse a sua árvore de projetos poderia esconder um `.project.php` aninhado malicioso e fazê-lo executar. O registro fecha essa porta: `bootgly project <caminho> start` executa **apenas** caminhos que sejam chaves exatas de `Bootgly.projects.php`. Qualquer outra coisa — um caminho não registrado, uma pasta de agrupamento (`Demo`), path traversal (`..`), um caminho absoluto, uma barra invertida ou um null byte — é rejeitada, e o diretório resolvido é ainda enjaulado sob a base `projects/`.
+Como os projetos podem aninhar arbitrariamente, um atacante que comprometesse a sua árvore de projetos poderia esconder um `.Project.php` aninhado malicioso e fazê-lo executar. O registro fecha essa porta: `bootgly project <caminho> start` executa **apenas** caminhos que sejam chaves exatas de `Bootgly.projects.php`. Qualquer outra coisa — um caminho não registrado, uma pasta de agrupamento (`Demo`), path traversal (`..`), um caminho absoluto, uma barra invertida ou um null byte — é rejeitada, e o diretório resolvido é ainda enjaulado sob a base `projects/`.
 
 Para tornar um novo projeto executável, use `bootgly project create` — ele gera o diretório, o arquivo de boot e a entrada do registro em um único passo. O arquivo de registro é gerenciado por máquina pelo `create`/`import` (as entradas são re-emitidas ordenadas; comentários adicionados à mão dentro do array não são preservados).
 
@@ -81,7 +81,7 @@ O wizard prepara o kit na primeira execução (uma multi-seleção dos submodule
 
 - **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
 - **Importando projetos de plataforma** — uma multi-seleção sobre os projetos **exportáveis** encontrados nas pastas de plataforma (como os Demos): cada projeto selecionado é copiado recursivamente sob o próprio caminho no `projects/` do seu workspace, sem perguntas. Cópias existentes a nível de usuário — que se sobrepõem às da plataforma no carregamento — são sinalizadas com `(overwrite)` no resumo e atualizadas;
-- **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly project import`: o repositório é clonado, validado contra a assinatura `*.project.php` e registrado.
+- **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly project import`: o repositório é clonado, validado contra a assinatura `*.Project.php` e registrado.
 
 Apenas projetos declarados com `exportable: true` na assinatura `new Project(...)` aparecem no picker de importação.
 
@@ -94,7 +94,7 @@ php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 
 ## Importando um projeto
 
-Qualquer diretório que carregue a **assinatura de projeto Bootgly** — um arquivo `*.project.php` na raiz — é um projeto importável. O `bootgly project import` busca um a partir de uma URL de repositório git:
+Qualquer diretório que carregue a **assinatura de projeto Bootgly** — um arquivo `*.Project.php` na raiz — é um projeto importável. O `bootgly project import` busca um a partir de uma URL de repositório git:
 
 ```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1
@@ -140,7 +140,7 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 
 ### `project import`
 
-Importa um projeto de uma URL de repositório git que carregue a assinatura `*.project.php`. Sem argumentos, terminais interativos escolhem antes a fonte da importação — as Plataformas (uma multi-seleção mostrando quantos projetos exportáveis estão disponíveis) ou um remoto Git (pergunta a URL):
+Importa um projeto de uma URL de repositório git que carregue a assinatura `*.Project.php`. Sem argumentos, terminais interativos escolhem antes a fonte da importação — as Plataformas (uma multi-seleção mostrando quantos projetos exportáveis estão disponíveis) ou um remoto Git (pergunta a URL):
 
 ```bash
 php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
@@ -309,7 +309,7 @@ graph TB
   Show --> Stop["Pare o projeto"]
 ```
 
-1. **Crie** um diretório em `projects/` (em qualquer profundidade) com um arquivo de boot `{folha}.project.php`;
+1. **Crie** um diretório em `projects/` (em qualquer profundidade) com um arquivo de boot `{folha}.Project.php`;
 2. **Registre** o caminho dele em `Bootgly.projects.php` sob a(s) interface(s) certa(s);
 3. **Execute** com `project start`;
 4. **Monitore** o status com `project show`;

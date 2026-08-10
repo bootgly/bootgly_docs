@@ -56,7 +56,7 @@ const INCLUDE_DIRS = [
 ]
 
 // Path segments excluded everywhere: test resources, vendored comparisons, staging dirs.
-const EXCLUDED_SEGMENTS = new Set(['tests', 'vs', '&', 'node_modules', '.git'])
+const EXCLUDED_SEGMENTS = new Set(['test', 'tests', 'vs', '&', 'node_modules', '.git'])
 
 const collect = (root) => {
   const files = []

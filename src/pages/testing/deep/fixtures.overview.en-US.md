@@ -10,7 +10,7 @@ Fixtures organize the state required to run tests deterministically. In Bootgly,
 | `Fixture\State` | Mutable bag with a resettable seed. |
 | `Fixture\Lifecycles` | Enum with lifecycle states. |
 | `Suite(Fixture:)` | Default fixture propagated to cases without their own fixture. |
-| `Specification(Fixture:)` | Test-case-specific fixture. |
+| `Test(Fixture:)` | Test-case-specific fixture. |
 | `Assertions::$Fixture` | Fixture injected by the runner into Advanced API closures. |
 
 ## Lifecycle
@@ -69,7 +69,7 @@ $missing = $Fixture->fetch('missing', default: 'fallback');
 
 `reset()` restores the bag to the seed passed to the constructor.
 
-## Specification fixture
+## Test fixture
 
 Pass the fixture directly to the test case:
 
@@ -77,11 +77,11 @@ Pass the fixture directly to the test case:
 <?php
 
 use Bootgly\ACI\Tests\Fixture;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
 $Probe = new class (['status' => 200]) extends Fixture {};
 
-return new Specification(
+return new Test(
    description: 'Fixture should be available',
    Fixture: $Probe,
    test: function (Fixture $Fixture): bool {
@@ -94,7 +94,7 @@ The runner calls `prepare()` before the test closure and `dispose()` after it.
 
 ## Suite fixture
 
-A suite can declare a default fixture. It is propagated to Specifications that do not declare `Fixture:`.
+A suite can declare a default fixture. It is propagated to Tests that do not declare `Fixture:`.
 
 ```php
 <?php
@@ -118,7 +118,7 @@ return new Suite(
 );
 ```
 
-If a `Specification` also declares `Fixture:`, the Specification fixture takes priority over the Suite fixture.
+If a `Test` also declares `Fixture:`, the Test fixture takes priority over the Suite fixture.
 
 ## Signature-aware injection
 
@@ -150,11 +150,11 @@ The HTTP E2E runner prepares the fixture before the `request:` closure because t
 <?php
 
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Fixtures\Probe;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Suite\Test\Specification;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Suite\Test;
 
 $Probe = new Probe(['requestFixture' => false]);
 
-return new Specification(
+return new Test(
    Fixture: $Probe,
    request: function (string $host, int $index, Probe $Probe): string {
       $Probe->State->update('requestFixture', true);
@@ -174,4 +174,4 @@ The `request:` closure receives `host`, `index` and the fixture only when its si
 - Use fixtures for state shared between `request:`, `response:` and `test:`.
 - Prefer `Fixture::fetch()` and `State::update()` instead of arrays captured by reference.
 - Keep `setup()` and `teardown()` small and explicit.
-- Declare `Suite(Fixture:)` for default suite state and `Specification(Fixture:)` for local exceptions.
+- Declare `Suite(Fixture:)` for default suite state and `Test(Fixture:)` for local exceptions.

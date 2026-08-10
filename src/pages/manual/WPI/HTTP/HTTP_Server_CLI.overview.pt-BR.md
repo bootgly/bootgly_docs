@@ -26,7 +26,7 @@ O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um 
 
 No Bootgly, servidores são iniciados por Projetos — não por comandos do framework. Cada projeto define sua própria lógica de boot, incluindo instanciação do servidor, configuração e registro do handler.
 
-Um arquivo de projeto (ex: `HTTP_Server_CLI.project.php`) retorna uma instância de `Project`:
+Um arquivo de projeto (ex: `HTTP_Server_CLI.Project.php`) retorna uma instância de `Project`:
 
 ```php
 use Bootgly\API\Projects\Project;
@@ -270,7 +270,7 @@ $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/
 
 `Router::load()` é a forma canônica de registrar rotas. Aponta para a pasta `router/` do projeto e retorna o handler de requisição passado para `Events::RequestReceived`:
 
-```php :filename="HTTP_Server_CLI.project.php";
+```php :filename="HTTP_Server_CLI.Project.php";
 $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
 ```
 
@@ -299,7 +299,7 @@ return static function (Request $Request, Response $Response, Router $Router): G
 };
 ```
 
-Um único set é retornado diretamente; múltiplos sets são compostos (`yield from` em cada) num só handler. A pasta também é a casa do router — reservada para um futuro arquivo `router.config.php` de defaults.
+Um único set é retornado diretamente; múltiplos sets são compostos (`yield from` em cada) num só handler. A pasta também é a casa do router — reservada para um futuro arquivo `router.Config.php` de defaults.
 
 ```php
 Router::load (string $path): Closure

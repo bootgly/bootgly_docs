@@ -35,7 +35,7 @@ const Web = new Web;
 Web->autoboot();
 ```
 
-The platform is a **class library** over `Bootgly\WPI`: there are no process-wide workables — each app boots per project, through its `.project.php` signature.
+The platform is a **class library** over `Bootgly\WPI`: there are no process-wide workables — each app boots per project, through its `.Project.php` signature.
 
 ## Web projects
 
@@ -47,7 +47,7 @@ return [
 ];
 ```
 
-And give it a `.project.php` signature whose `boot` closure runs the [App shell](/manual/Web/App):
+And give it a `.Project.php` signature whose `boot` closure runs the [App shell](/manual/Web/App):
 
 ```php
 use function getenv;

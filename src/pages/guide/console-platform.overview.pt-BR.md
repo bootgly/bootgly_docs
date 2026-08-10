@@ -12,7 +12,7 @@ curl -fsSL https://bootgly.com/install | bash
 
 ## Seu primeiro app TUI
 
-Crie um projeto (interface **CLI**) com o wizard e faça o `.project.php` dele bootar um `Console\App`:
+Crie um projeto (interface **CLI**) com o wizard e faça o `.Project.php` dele bootar um `Console\App`:
 
 ```php
 use Bootgly\API\Projects\Project;

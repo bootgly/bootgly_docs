@@ -127,7 +127,7 @@ $name = $Host->fake('Name', seed: 9);
 
 O dispatch aceita aliases canônicos para os fakers nativos, incluindo `uuid`, `Uuid` e `UUID`.
 
-## Exemplo em uma Specification
+## Exemplo em um Test
 
 ```php
 <?php
@@ -137,9 +137,9 @@ use Generator;
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertions;
 use Bootgly\ACI\Fakers\Email;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'Email faker should be deterministic',
    test: new Assertions(Case: function (): Generator {
       $Email = new Email(seed: 33);

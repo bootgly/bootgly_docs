@@ -10,12 +10,12 @@
 | `ignore` | Pula o caso silenciosamente, sem output. |
 | `Assertion::skip()` | Pula uma asserção específica na API Avançada. |
 
-## Skip em Specification
+## Skip em Test
 
-O parâmetro `skip` em `Specification` pula um caso de teste e mantém a indicação no output.
+O parâmetro `skip` em `Test` pula um caso de teste e mantém a indicação no output.
 
 ```php
-return new Specification(
+return new Test(
    description: 'Test to skip',
    skip: true,
    test: function (): bool
@@ -27,12 +27,12 @@ return new Specification(
 
 Use `skip` quando o teste deve continuar visível para lembrar que existe trabalho pendente ou dependência temporária.
 
-## Ignore em Specification
+## Ignore em Test
 
 O parâmetro `ignore` pula um caso de teste silenciosamente.
 
 ```php
-return new Specification(
+return new Test(
    description: 'Test to ignore',
    ignore: true,
    test: function (): bool
@@ -53,7 +53,7 @@ yield new Assertion(description: 'Skipped assertion')
    ->skip();
 ```
 
-Esse formato mantém o controle no nível da asserção, sem desativar toda a `Specification`.
+Esse formato mantém o controle no nível da asserção, sem desativar todo o `Test`.
 
 ## Boas práticas
 

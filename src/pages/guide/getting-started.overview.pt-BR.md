@@ -83,7 +83,7 @@ O wizard te guia de um kit vazio até um projeto rodando:
 1. **Plataformas** — a **plataforma base Bootgly** sempre vem incluída: não opinativa, ela traz as interfaces `CLI` e `WPI`. Aqui você multi-seleciona as **plataformas extras** com as dependências opinativas — `Console` (extras de CLI — apps TUI) e/ou `Web` (extras de WPI) — ou nenhuma, ficando só com a base. O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
 2. **Recursos** — ele executa o `bootgly boot` para instalar as pastas de recursos (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) no seu kit;
 3. **Modo** — crie **do zero (from scratch)**, **importe a partir de projetos de Plataforma** (como os Demos que acompanham o framework) ou **importe de um remoto Git** (qualquer repositório com a assinatura de projeto Bootgly);
-4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. De projetos de Plataforma: apenas multi-selecione os projetos (Espaço marca, Enter confirma) — cada um é copiado sob o próprio caminho de plataforma, sem perguntas; cópias existentes são sinalizadas com `(overwrite)` e atualizadas. De um remoto Git: informe a URL do repositório, o caminho de destino e a interface — o repositório é clonado e validado (assinatura `*.project.php`);
+4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. De projetos de Plataforma: apenas multi-selecione os projetos (Espaço marca, Enter confirma) — cada um é copiado sob o próprio caminho de plataforma, sem perguntas; cópias existentes são sinalizadas com `(overwrite)` e atualizadas. De um remoto Git: informe a URL do repositório, o caminho de destino e a interface — o repositório é clonado e validado (assinatura `*.Project.php`);
 5. **Confirmação** — revise o resumo (modo, importações com a plataforma de origem, overwrites) e confirme. Os projetos ficam em `projects/<Caminho>/` e são registrados em `projects/Bootgly.projects.php`.
 
 Depois, inicie:
@@ -137,7 +137,7 @@ sudo bootgly setup --uninstall
 
 ## Anatomia de um projeto
 
-No Bootgly, **Projetos** inicializam seus apps e servidores. Cada projeto é uma pasta dentro de `projects/` com um arquivo `<Leaf>.project.php` na raiz — esse arquivo é a **assinatura de projeto Bootgly** — retornando uma instância configurada de `Project`:
+No Bootgly, **Projetos** inicializam seus apps e servidores. Cada projeto é uma pasta dentro de `projects/` com um arquivo `<Leaf>.Project.php` na raiz — esse arquivo é a **assinatura de projeto Bootgly** — retornando uma instância configurada de `Project`:
 
 ```php
 use Bootgly\API\Projects\Project;
@@ -189,7 +189,7 @@ O primeiro segmento é a raiz do projeto (`Blog`), correspondendo à pasta dentr
 O Bootgly resolve essas classes por meio de um autoloader dedicado ancorado no **caminho absoluto do projeto iniciado** (`BOOTGLY_PROJECT->path`), de modo que um projeto continua funcionando quando vive como seu próprio repositório isolado — clonado ou importado em qualquer lugar, não apenas dentro do `projects/` do monorepo.
 
 > [!NOTE]
-> Arquivos de assinatura (`<Leaf>.project.php`) e arquivos de rota puros não declaram classe, então não têm namespace. Só carregam namespace os arquivos que declaram uma classe, função ou constante.
+> Arquivos de assinatura (`<Leaf>.Project.php`) e arquivos de rota puros não declaram classe, então não têm namespace. Só carregam namespace os arquivos que declaram uma classe, função ou constante.
 
 ### Nomes reservados
 
@@ -202,7 +202,7 @@ O caminho de um projeto **não** pode começar com uma raiz de namespace de plat
 
 ## Importando projetos
 
-Qualquer repositório git que carregue a assinatura de projeto (`*.project.php` na raiz) pode ser importado diretamente:
+Qualquer repositório git que carregue a assinatura de projeto (`*.Project.php` na raiz) pode ser importado diretamente:
 
 ```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1

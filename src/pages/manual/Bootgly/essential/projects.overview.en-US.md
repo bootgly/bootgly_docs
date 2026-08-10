@@ -6,21 +6,21 @@ A project can live at **any depth** inside `projects/`. A directory like `Demo/`
 
 ## Project structure
 
-A project is a directory inside `projects/` (at any depth) containing a boot file named after its **leaf** folder — the convention is `{leaf}.project.php`. The file name matches the last path segment, not the full path.
+A project is a directory inside `projects/` (at any depth) containing a boot file named after its **leaf** folder — the convention is `{leaf}.Project.php`. The file name matches the last path segment, not the full path.
 
 ```
 projects/
 ├── Bootgly.projects.php          ← the registry (allow-list)
 ├── Site/                         ← a flat project (one path segment)
-│   └── Site.project.php
+│   └── Site.Project.php
 └── Demo/                         ← a grouping folder (not a project itself)
     ├── HTTP_Server_CLI/
-    │   └── HTTP_Server_CLI.project.php
+    │   └── HTTP_Server_CLI.Project.php
     └── TCP_Server_CLI/
-        └── TCP_Server_CLI.project.php
+        └── TCP_Server_CLI.Project.php
 ```
 
-Here `Demo/HTTP_Server_CLI` and `Demo/TCP_Server_CLI` are two subprojects grouped under `Demo/`. `Demo/` itself has no `.project.php` — it is only a container.
+Here `Demo/HTTP_Server_CLI` and `Demo/TCP_Server_CLI` are two subprojects grouped under `Demo/`. `Demo/` itself has no `.Project.php` — it is only a container.
 
 ### Boot file example
 
@@ -65,7 +65,7 @@ A project that serves both interfaces lists both: `['interfaces' => ['CLI', 'WPI
 
 ### Why an allow-list
 
-Because projects can nest arbitrarily, an attacker who compromised your project tree could otherwise hide a rogue nested `.project.php` and have it executed. The registry closes that door: `bootgly project <path> start` runs **only** paths that are exact keys of `Bootgly.projects.php`. Anything else — an unregistered path, a grouping container (`Demo`), path traversal (`..`), an absolute path, a backslash or a null byte — is rejected, and the resolved directory is additionally jailed under the `projects/` base.
+Because projects can nest arbitrarily, an attacker who compromised your project tree could otherwise hide a rogue nested `.Project.php` and have it executed. The registry closes that door: `bootgly project <path> start` runs **only** paths that are exact keys of `Bootgly.projects.php`. Anything else — an unregistered path, a grouping container (`Demo`), path traversal (`..`), an absolute path, a backslash or a null byte — is rejected, and the resolved directory is additionally jailed under the `projects/` base.
 
 To make a new project runnable, use `bootgly project create` — it generates the directory, the boot file and the registry entry in one step. The registry file is machine-managed by `create`/`import` (entries are re-emitted sorted; hand-added comments inside the array are not preserved).
 
@@ -81,7 +81,7 @@ The wizard prepares the kit on first run (a multi-selection of the extra platfor
 
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
 - **Importing platform projects** — a multi-selection over the **exportable** projects found in the platform folders (like the Demos): each selected project is recursively copied under its own path in your workspace's `projects/`, no questions asked. Existing user-level copies — which overwrite the platform ones on load — are flagged `(overwrite)` in the summary and refreshed;
-- **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly project import`: the repository is cloned, validated against the `*.project.php` signature and registered.
+- **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly project import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
 
 Only projects declared with `exportable: true` in their `new Project(...)` signature appear in the import picker.
 
@@ -94,7 +94,7 @@ php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 
 ## Importing a project
 
-Any directory carrying the **Bootgly project signature** — a `*.project.php` file at its root — is an importable project. `bootgly project import` fetches one from a git repository URL:
+Any directory carrying the **Bootgly project signature** — a `*.Project.php` file at its root — is an importable project. `bootgly project import` fetches one from a git repository URL:
 
 ```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1
@@ -140,7 +140,7 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 
 ### `project import`
 
-Imports a project from a git repository URL carrying the `*.project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
+Imports a project from a git repository URL carrying the `*.Project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
 
 ```bash
 php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
@@ -309,7 +309,7 @@ graph TB
   Show --> Stop["Stop project"]
 ```
 
-1. **Create** a directory in `projects/` (at any depth) with a `{leaf}.project.php` boot file;
+1. **Create** a directory in `projects/` (at any depth) with a `{leaf}.Project.php` boot file;
 2. **Register** its path in `Bootgly.projects.php` under the right interface(s);
 3. **Run** it with `project start`;
 4. **Monitor** its status with `project show`;

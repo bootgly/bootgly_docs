@@ -83,7 +83,7 @@ The wizard guides you from an empty kit to a running project:
 1. **Platforms** — the **Bootgly base platform** is always included: unopinionated, it ships the `CLI` and `WPI` interfaces. Here you multi-select the **extra platforms** with the opinionated dependencies — `Console` (CLI extras — TUI apps) and/or `Web` (WPI extras) — or none, staying base-only. The wizard initializes the matching platform submodules (`Console/`, `Web/`);
 2. **Resources** — it runs `bootgly boot` to install the resource folders (`projects/`, `public/`, `scripts/`, `storage/`, `tests/`) into your kit;
 3. **Mode** — create **from scratch**, **import from Platform projects** (like the Demos shipped with the framework) or **import from a Git remote** (any repository carrying the Bootgly project signature);
-4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. From Platform projects: just multi-select the projects (Space marks, Enter confirms) — each one is copied under its own platform path, no questions asked; existing copies are flagged `(overwrite)` and refreshed. From a Git remote: type the repository URL, the target path and the interface — the repository is cloned and validated (`*.project.php` signature);
+4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. From Platform projects: just multi-select the projects (Space marks, Enter confirms) — each one is copied under its own platform path, no questions asked; existing copies are flagged `(overwrite)` and refreshed. From a Git remote: type the repository URL, the target path and the interface — the repository is cloned and validated (`*.Project.php` signature);
 5. **Confirm** — review the summary (mode, imports with their platform of origin, overwrites) and confirm. Projects land in `projects/<Path>/` and are registered in `projects/Bootgly.projects.php`.
 
 Then boot it:
@@ -137,7 +137,7 @@ sudo bootgly setup --uninstall
 
 ## Anatomy of a project
 
-In Bootgly, **Projects** bootstrap your apps and servers. Each project is a folder inside `projects/` with a `<Leaf>.project.php` file at its root — that file is the **Bootgly project signature** — returning a configured `Project` instance:
+In Bootgly, **Projects** bootstrap your apps and servers. Each project is a folder inside `projects/` with a `<Leaf>.Project.php` file at its root — that file is the **Bootgly project signature** — returning a configured `Project` instance:
 
 ```php
 use Bootgly\API\Projects\Project;
@@ -189,7 +189,7 @@ The first segment is the project root (`Blog`), matching the folder under `proje
 Bootgly resolves these classes through a dedicated autoloader anchored on the **booted project's absolute path** (`BOOTGLY_PROJECT->path`), so a project keeps working when it lives as its own isolated repository — cloned or imported anywhere, not only inside the monorepo `projects/`.
 
 > [!NOTE]
-> Signature files (`<Leaf>.project.php`) and pure route files declare no class, so they carry no namespace. Only files that declare a class, function or constant do.
+> Signature files (`<Leaf>.Project.php`) and pure route files declare no class, so they carry no namespace. Only files that declare a class, function or constant do.
 
 ### Reserved names
 
@@ -202,7 +202,7 @@ A project path may **not** start with a reserved platform namespace root — tho
 
 ## Importing projects
 
-Any git repository carrying the project signature (`*.project.php` at its root) can be imported directly:
+Any git repository carrying the project signature (`*.Project.php` at its root) can be imported directly:
 
 ```bash :toolbar="true";
 php bootgly project import https://github.com/foo/project1 Project1

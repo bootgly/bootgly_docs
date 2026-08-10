@@ -64,7 +64,7 @@ $HTTP_Server_CLI->configure(
 );
 ```
 
-`Database::provide()` reads the `database` scope (`configs/database/database.config.php` plus the
+`Database::provide()` reads the `database` scope (`configs/database/database.Config.php` plus the
 local `.env` files), builds one pooled `SQL` connection per worker and wraps it. It throws when the
 scope is disabled (`DB_ENABLED=false`) or the context is not a `Response`. The resource is created
 lazily the first time the route reads `$Response->Database`.
@@ -188,7 +188,7 @@ $HTTP_Server_CLI->configure(
 );
 ```
 
-Declare the `kv` scope in `configs/kv/kv.config.php`. Each node binds an env key with a default, so
+Declare the `kv` scope in `configs/kv/kv.Config.php`. Each node binds an env key with a default, so
 the connection is configurable through the environment without touching code:
 
 ```php

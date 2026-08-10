@@ -4,18 +4,18 @@ O Bootgly possui duas APIs para testes, uma API Básica e uma API Avançada. Ant
 
 ## Estrutura dos testes no Bootgly
 
-Os testes implementados em cada módulo devem ser colocados em uma pasta de mesmo nível chamada `tests`. Em cada pasta `tests`, deve existir o arquivo de bootstrap da suíte, nomeado como `autoboot.php`. Os arquivos que implementam os casos de teste ficam dentro da pasta `tests` e seguem o padrão `*.test.php`.
+Os testes implementados em cada módulo devem ser colocados em uma pasta de mesmo nível chamada `tests`. Em cada pasta `tests`, deve existir o arquivo de bootstrap da suíte, nomeado como `autoboot.php`. Os arquivos que implementam os casos de teste ficam dentro da pasta `tests` e seguem o padrão `*.Test.php`.
 
-Você pode definir o nome dos arquivos de caso de teste, mas é recomendado seguir o padrão existente. Um exemplo real é `1.01-request_as_response-address.test.php`.
+Você pode definir o nome dos arquivos de caso de teste, mas é recomendado seguir o padrão existente. Um exemplo real é `1.01-request_as_response-address.Test.php`.
 
 ### Diretório + arquivos
 
 ```txt
 tests
 └── autoboot.php  # Bootstrap file for the suite
-└── 1.1-some_case-part1.test.php  # Test Case file
-└── 1.2-other_case-part2.test.php  # Test Case file
-└── 2.1-another_case.test.php  # Test Case file
+└── 1.1-some_case-part1.Test.php  # Test Case file
+└── 1.2-other_case-part2.Test.php  # Test Case file
+└── 2.1-another_case.Test.php  # Test Case file
 ...
 ```
 
@@ -39,7 +39,7 @@ Test Suite
 ```txt
 tests
 └── autoboot.php  # Bootstrap file for the suite
-└── 1.1-some_case.test.php  # Test Case files
+└── 1.1-some_case.Test.php  # Test Case files
    └-- Assertions
       ├-- Assertion
       └-- Assertion
@@ -66,7 +66,7 @@ return new Suite(
    // * Data
    suiteName: __NAMESPACE__,
    tests: [
-      '1.0-name' // o sufixo ".test.php" deve ser omitido
+      '1.0-name' // o sufixo ".Test.php" deve ser omitido
    ]
 );
 ```
@@ -108,9 +108,9 @@ Os arquivos de caso de teste possuem duas estruturas principais: uma para a API 
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'Descrição do caso de teste aqui',
    test: function (): string|bool|null
    {
@@ -128,9 +128,9 @@ use Generator;
 
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertions;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'Descrição do caso de teste aqui',
    test: new Assertions(Case: function (): Generator
    {
@@ -141,12 +141,12 @@ return new Specification(
 
 ## Separadores Visuais
 
-Use a classe `Separator` para organizar a saída dos testes com separadores visuais desde a estrutura básica da `Specification`.
+Use a classe `Separator` para organizar a saída dos testes com separadores visuais desde a estrutura básica da `Test`.
 
 ```php
-use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
+use Bootgly\ACI\Tests\Suite\Test\Separator;
 
-return new Specification(
+return new Test(
    Separator: new Separator(
       line: 'Section Name',    // Linha separadora com rótulo
       left: 'Category',        // Rótulo à esquerda

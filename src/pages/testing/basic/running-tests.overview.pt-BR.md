@@ -15,7 +15,7 @@ Execute todas as suítes registradas a partir da raiz do repositório:
 php bootgly test
 ```
 
-O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos uma `Specification` falha.
+O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos um `Test` falha.
 
 ## Executar uma suíte específica
 
@@ -29,7 +29,7 @@ O exemplo acima executa somente a suíte `16`. Os índices seguem a ordem declar
 
 ## Executar um caso de teste específico
 
-Passe o índice da suíte seguido do índice do caso de teste para executar uma única `Specification`:
+Passe o índice da suíte seguido do índice do caso de teste para executar um único `Test`:
 
 ```bash :toolbar="true";
 php bootgly test 16 1

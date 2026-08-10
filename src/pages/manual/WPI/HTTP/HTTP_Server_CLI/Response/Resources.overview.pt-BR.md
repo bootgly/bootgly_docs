@@ -65,7 +65,7 @@ $HTTP_Server_CLI->configure(
 );
 ```
 
-`Database::provide()` lê o escopo `database` (`configs/database/database.config.php` e os arquivos
+`Database::provide()` lê o escopo `database` (`configs/database/database.Config.php` e os arquivos
 `.env` locais), constrói uma conexão `SQL` pooled por worker e a encapsula. Lança exceção quando o
 escopo está desabilitado (`DB_ENABLED=false`) ou o contexto não é um `Response`. O resource é criado
 de forma lazy na primeira leitura de `$Response->Database` pela rota.
@@ -189,7 +189,7 @@ $HTTP_Server_CLI->configure(
 );
 ```
 
-Declare o escopo `kv` em `configs/kv/kv.config.php`. Cada nó faz bind de uma chave de env com um
+Declare o escopo `kv` em `configs/kv/kv.Config.php`. Cada nó faz bind de uma chave de env com um
 default, então a conexão fica configurável pelo ambiente sem tocar no código:
 
 ```php

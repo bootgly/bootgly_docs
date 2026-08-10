@@ -44,7 +44,7 @@ inside the same logical scope stay on primary until the window expires.
 
 ## Project config
 
-The demo HTTP project exposes the same options through `configs/database/database.config.php`.
+The demo HTTP project exposes the same options through `configs/database/database.Config.php`.
 Add `Routing->Sticky` and one or more `Replicas` nodes under the selected connection:
 
 ```php

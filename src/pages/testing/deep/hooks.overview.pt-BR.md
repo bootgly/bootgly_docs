@@ -20,7 +20,7 @@ use Bootgly\ACI\Tests\Assertions\Hook;
 ## Exemplo básico
 
 ```php
-return new Specification(
+return new Test(
    description: 'It should compare equal values',
    test: new Assertions(Case: function (): Generator
    {

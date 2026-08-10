@@ -13,10 +13,10 @@ configs/
 └── database/
     ├── .env
     ├── .env.production
-    └── database.config.php
+    └── database.Config.php
 ```
 
-O nome do diretório e o nome do arquivo PHP devem corresponder ao nome do escopo. No exemplo acima, o escopo é `database` e o arquivo executável de configuração é `database.config.php`.
+O nome do diretório e o nome do arquivo PHP devem corresponder ao nome do escopo. No exemplo acima, o escopo é `database` e o arquivo executável de configuração é `database.Config.php`.
 
 Configs de projeto usam a mesma estrutura dentro do diretório de configs do projeto, por exemplo:
 
@@ -24,12 +24,12 @@ Configs de projeto usam a mesma estrutura dentro do diretório de configs do pro
 projects/MyApp/configs/
 └── database/
     ├── .env
-    └── database.config.php
+    └── database.Config.php
 ```
 
 ## Criando um arquivo de configuração
 
-Um arquivo `<scope>.config.php` retorna um objeto `Bootgly\API\Environment\Configs\Config`.
+Um arquivo `<scope>.Config.php` retorna um objeto `Bootgly\API\Environment\Configs\Config`.
 
 ```php
 use Bootgly\API\Environment\Configs\Config;
@@ -74,7 +74,7 @@ Quando um escopo é carregado, o Bootgly lê:
 
 1. `.env`
 2. `.env.<BOOTGLY_ENV>` quando `BOOTGLY_ENV` está definido com um nome válido
-3. `<scope>.config.php`
+3. `<scope>.Config.php`
 
 Para cada `bind()`, a ordem de resolução é:
 
@@ -196,14 +196,14 @@ O processo de overlay mantém valores `.env` locais a cada loader, então `.env`
 O Bootgly endurece o carregamento de configs com várias regras:
 
 - Nomes de escopo e ambiente devem seguir `[A-Za-z0-9_-]+`.
-- Paths são contidos com `File::guard()` antes de ler `.env` ou executar `.config.php`.
+- Paths são contidos com `File::guard()` antes de ler `.env` ou executar `.Config.php`.
 - Valores `.env` são locais à instância do loader e não são exportados com `putenv()`.
 - Chaves `.env` devem seguir `[A-Z_][A-Z0-9_]*`.
 - `allow()` pode restringir chaves `.env` locais por escopo.
 - `lock()` pode reservar chaves sensíveis para o ambiente real de runtime.
 - Dot-notation não é suportada por `Configs::get()`.
 - Segredos obrigatórios podem falhar em modo fail-closed com `bind(required: true)`.
-- Arquivos `.config.php` são código PHP confiável e devem ser revisados como código-fonte.
+- Arquivos `.Config.php` são código PHP confiável e devem ser revisados como código-fonte.
 
 > [!WARNING]
-> Nunca permita que usuário, tenant, upload ou formulário administrativo grave um arquivo `.config.php`. Para configuração não confiável, use um formato declarativo como JSON, INI ou YAML e converta para `Config` a partir de código confiável da aplicação.
+> Nunca permita que usuário, tenant, upload ou formulário administrativo grave um arquivo `.Config.php`. Para configuração não confiável, use um formato declarativo como JSON, INI ou YAML e converta para `Config` a partir de código confiável da aplicação.

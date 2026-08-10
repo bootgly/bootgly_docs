@@ -48,7 +48,7 @@ const Console = new Console;
 Console->autoboot();
 ```
 
-The platform is a **class library** over `Bootgly\CLI`: there are no process-wide workables — each app boots per project, through its `.project.php` signature.
+The platform is a **class library** over `Bootgly\CLI`: there are no process-wide workables — each app boots per project, through its `.Project.php` signature.
 
 ## Console projects
 
@@ -60,7 +60,7 @@ return [
 ];
 ```
 
-And give it a `.project.php` signature whose `boot` closure runs the app:
+And give it a `.Project.php` signature whose `boot` closure runs the app:
 
 ```php
 use Bootgly\API\Projects\Project;

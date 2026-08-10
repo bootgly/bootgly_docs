@@ -13,10 +13,10 @@ configs/
 └── database/
     ├── .env
     ├── .env.production
-    └── database.config.php
+    └── database.Config.php
 ```
 
-The directory name and the PHP file name must match the scope name. For the example above, the scope is `database` and the executable config file is `database.config.php`.
+The directory name and the PHP file name must match the scope name. For the example above, the scope is `database` and the executable config file is `database.Config.php`.
 
 Project configs use the same layout under a project config directory, for example:
 
@@ -24,12 +24,12 @@ Project configs use the same layout under a project config directory, for exampl
 projects/MyApp/configs/
 └── database/
     ├── .env
-    └── database.config.php
+    └── database.Config.php
 ```
 
 ## Creating a config file
 
-A `<scope>.config.php` file returns a `Bootgly\API\Environment\Configs\Config` object.
+A `<scope>.Config.php` file returns a `Bootgly\API\Environment\Configs\Config` object.
 
 ```php
 use Bootgly\API\Environment\Configs\Config;
@@ -74,7 +74,7 @@ When a scope is loaded, Bootgly reads:
 
 1. `.env`
 2. `.env.<BOOTGLY_ENV>` when `BOOTGLY_ENV` is set to a valid name
-3. `<scope>.config.php`
+3. `<scope>.Config.php`
 
 For every `bind()`, resolution order is:
 
@@ -196,14 +196,14 @@ The overlay process keeps `.env` values local to each loader, so framework/proje
 Bootgly hardens config loading with several rules:
 
 - Scope and environment names must match `[A-Za-z0-9_-]+`.
-- Paths are contained with `File::guard()` before `.env` reads or `.config.php` execution.
+- Paths are contained with `File::guard()` before `.env` reads or `.Config.php` execution.
 - `.env` values are local to the loader instance and are not exported with `putenv()`.
 - `.env` keys must match `[A-Z_][A-Z0-9_]*`.
 - `allow()` can restrict local `.env` keys per scope.
 - `lock()` can reserve sensitive keys for the real runtime environment.
 - Dot-notation is not supported by `Configs::get()`.
 - Required secrets can fail closed with `bind(required: true)`.
-- `.config.php` files are trusted PHP code and must be reviewed like source code.
+- `.Config.php` files are trusted PHP code and must be reviewed like source code.
 
 > [!WARNING]
-> Never let a user, tenant, upload or admin form write a `.config.php` file. For untrusted configuration, use a declarative format such as JSON, INI or YAML and convert it to `Config` from trusted application code.
+> Never let a user, tenant, upload or admin form write a `.Config.php` file. For untrusted configuration, use a declarative format such as JSON, INI or YAML and convert it to `Config` from trusted application code.

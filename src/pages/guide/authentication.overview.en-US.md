@@ -150,7 +150,7 @@ session — other devices are signed out.
 
 ## Configuration
 
-The `auth` config scope lives in `configs/auth/auth.config.php`:
+The `auth` config scope lives in `configs/auth/auth.Config.php`:
 
 | Env | Default | Meaning |
 |-----|---------|---------|

@@ -218,8 +218,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Learn which boot files start CLI and Web projects and how Bootgly initializes each runtime.',
-          'pt-BR': 'Aprenda quais boot files iniciam projetos CLI e Web e como o Bootgly prepara cada runtime.'
+          'en-US': 'Global, directory-entry and specific bootstrap files — and how the suffix case reveals what each file returns.',
+          'pt-BR': 'Bootstrap global, de entrada de diretório e específico — e como a caixa do sufixo revela o que cada arquivo retorna.'
         }
       },
       menu: {},

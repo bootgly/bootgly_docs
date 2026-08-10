@@ -150,7 +150,7 @@ outros dispositivos são deslogados.
 
 ## Configuração
 
-O escopo de config `auth` vive em `configs/auth/auth.config.php`:
+O escopo de config `auth` vive em `configs/auth/auth.Config.php`:
 
 | Env | Default | Significado |
 |-----|---------|-------------|

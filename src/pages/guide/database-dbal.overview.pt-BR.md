@@ -22,10 +22,10 @@ Projetos carregam dados de banco em `configs/database`. O projeto demo mapeia va
 Quando um projeto inicia, `Project::boot()` define `BOOTGLY_PROJECT` e cria
 `BOOTGLY_PROJECT->Configs` a partir do diretório `configs/` do projeto. Esse loader é
 `Bootgly\API\Projects\Configs`, que estende `Environment\Configs`. Chamar `get('database')`
-carrega sob demanda `configs/database/database.config.php` e os arquivos `.env` locais, então
+carrega sob demanda `configs/database/database.Config.php` e os arquivos `.env` locais, então
 retorna o escopo de config `database`.
 
-Defina esse escopo em `configs/database/database.config.php`:
+Defina esse escopo em `configs/database/database.Config.php`:
 
 ```php
 use Bootgly\API\Environment\Configs\Config;
@@ -79,7 +79,7 @@ escopo acima (o projeto demo traz os três). Veja
 **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para a matriz de
 capacidades.
 
-Dentro de um arquivo `*.project.php`, registre o Database Response Resource built-in ao instanciar
+Dentro de um arquivo `*.Project.php`, registre o Database Response Resource built-in ao instanciar
 o `HTTP_Server_CLI`. `DatabaseResource::provide()` é só a ligação: ela lê o escopo `database` do
 diretório `configs/` do projeto e injeta uma instância `SQL` pooled por worker no `DatabaseResource`
 built-in; ela não define uma classe de resource custom.
@@ -122,7 +122,7 @@ entrada das rotas, a pasta `router/` carregada via `Router::load()`), `ServerSta
 `ServerStopped` (feedback de boot/shutdown). Sem `RequestReceived` o servidor sobe mas não responde
 nada.
 
-Defina o escopo `database` em `configs/database/database.config.php`; os valores de ambiente são
+Defina o escopo `database` em `configs/database/database.Config.php`; os valores de ambiente são
 vinculados dentro desse arquivo. `provide()` lê esse escopo, constrói uma instância `SQL` pooled por
 worker (o pool vive nessa instância) e cria o resource de forma lazy na primeira leitura de
 `$Response->Database`. Lança exceção quando o escopo está desabilitado (`DB_ENABLED=false`) ou o

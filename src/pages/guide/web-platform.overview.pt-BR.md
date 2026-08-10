@@ -12,7 +12,7 @@ curl -fsSL https://bootgly.com/install | bash
 
 ## Seu primeiro app web
 
-Crie um projeto (interface **WPI**) com o wizard, e faça o `.project.php` dele inicializar um `Web\App`:
+Crie um projeto (interface **WPI**) com o wizard, e faça o `.Project.php` dele inicializar um `Web\App`:
 
 ```php
 use Bootgly\API\Endpoints\Server\Modes;

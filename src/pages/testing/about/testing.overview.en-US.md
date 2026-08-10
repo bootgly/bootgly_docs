@@ -4,18 +4,18 @@ Bootgly has two testing APIs, a Basic API and an Advanced API. Before implementi
 
 ## Structure of test files and directories
 
-Tests implemented in each module should be placed inside a same-level directory named `tests`. In each `tests` directory, there should be a suite bootstrap file named `autoboot.php`. Files that implement test cases live inside the `tests` directory and follow the `*.test.php` pattern.
+Tests implemented in each module should be placed inside a same-level directory named `tests`. In each `tests` directory, there should be a suite bootstrap file named `autoboot.php`. Files that implement test cases live inside the `tests` directory and follow the `*.Test.php` pattern.
 
-You can define any test case file name, but following the existing pattern is recommended. A real example is `1.01-request_as_response-address.test.php`.
+You can define any test case file name, but following the existing pattern is recommended. A real example is `1.01-request_as_response-address.Test.php`.
 
 ### Directory + files
 
 ```txt
 tests
 └── autoboot.php  # Bootstrap file for the suite
-└── 1.1-some_case-part1.test.php  # Test Case file
-└── 1.2-other_case-part2.test.php  # Test Case file
-└── 2.1-another_case.test.php  # Test Case file
+└── 1.1-some_case-part1.Test.php  # Test Case file
+└── 1.2-other_case-part2.Test.php  # Test Case file
+└── 2.1-another_case.Test.php  # Test Case file
 ...
 ```
 
@@ -39,7 +39,7 @@ Test Suite
 ```txt
 tests
 └── autoboot.php  # Bootstrap file for the suite
-└── 1.1-some_case.test.php  # Test Case files
+└── 1.1-some_case.Test.php  # Test Case files
     └-- Assertions
        ├-- Assertion
        └-- Assertion
@@ -66,7 +66,7 @@ return new Suite(
    // * Data
    suiteName: __NAMESPACE__,
    tests: [
-      '1.0-name' // the suffix ".test.php" should be omitted
+      '1.0-name' // the suffix ".Test.php" should be omitted
    ]
 );
 ```
@@ -108,9 +108,9 @@ Test case files have two main structures: one for the Basic API and another for 
 ```php
 <?php
 
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'Description of the test case here',
    test: function (): string|bool|null
    {
@@ -128,9 +128,9 @@ use Generator;
 
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertions;
-use Bootgly\ACI\Tests\Suite\Test\Specification;
+use Bootgly\ACI\Tests\Suite\Test;
 
-return new Specification(
+return new Test(
    description: 'Description of the test case here',
    test: new Assertions(Case: function (): Generator
    {
@@ -141,12 +141,12 @@ return new Specification(
 
 ## Visual Separators
 
-Use the `Separator` class to organize test output with visual separators from the basic `Specification` structure.
+Use the `Separator` class to organize test output with visual separators from the basic `Test` structure.
 
 ```php
-use Bootgly\ACI\Tests\Suite\Test\Specification\Separator;
+use Bootgly\ACI\Tests\Suite\Test\Separator;
 
-return new Specification(
+return new Test(
    Separator: new Separator(
       line: 'Section Name',    // Separator line with label
       left: 'Category',        // Left-side label

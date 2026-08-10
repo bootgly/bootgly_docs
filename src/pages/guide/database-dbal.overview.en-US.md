@@ -22,10 +22,10 @@ variables such as `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_TIM
 When a project boots, `Project::boot()` defines `BOOTGLY_PROJECT` and creates
 `BOOTGLY_PROJECT->Configs` from the project `configs/` directory. That loader is
 `Bootgly\API\Projects\Configs`, which extends `Environment\Configs`. Calling
-`get('database')` lazy-loads `configs/database/database.config.php` plus the local `.env` files,
+`get('database')` lazy-loads `configs/database/database.Config.php` plus the local `.env` files,
 then returns the `database` config scope.
 
-Define that scope in `configs/database/database.config.php`:
+Define that scope in `configs/database/database.Config.php`:
 
 ```php
 use Bootgly\API\Environment\Configs\Config;
@@ -78,7 +78,7 @@ Add the matching `->Connections->MySQL` / `->Connections->SQLite` blocks to the 
 (the demo project ships all three). See
 **[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for the capability matrix.
 
-Inside a `*.project.php` file, register Bootgly's built-in Database Response Resource while
+Inside a `*.Project.php` file, register Bootgly's built-in Database Response Resource while
 instantiating `HTTP_Server_CLI`. `DatabaseResource::provide()` is only wiring: it reads the
 `database` scope from the project `configs/` directory and injects one pooled `SQL` instance per
 worker into the built-in `DatabaseResource`; it does not define a custom resource class.
@@ -120,7 +120,7 @@ return new Project(
 the `router/` folder loaded via `Router::load()`), `ServerStarted` and `ServerStopped` (boot/shutdown
 feedback). Without `RequestReceived` the server starts but answers nothing.
 
-Define the `database` scope in `configs/database/database.config.php`; environment values are bound
+Define the `database` scope in `configs/database/database.Config.php`; environment values are bound
 inside that file. `provide()` reads that scope, builds one pooled `SQL` instance per worker (the pool
 lives on that instance) and creates the resource lazily on the first `$Response->Database`. It throws
 when the scope is disabled (`DB_ENABLED=false`) or the context is not a `Response`. Need full control

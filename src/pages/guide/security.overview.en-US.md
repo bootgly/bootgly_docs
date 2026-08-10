@@ -67,7 +67,7 @@ Bootgly has its own test framework, and every confirmed security finding lives a
 permanent regression in the HTTP server's security suite:
 
 ```text
-Bootgly/WPI/Nodes/HTTP_Server_CLI/tests/Security/NN.MM-snake_case_description.test.php
+Bootgly/WPI/Nodes/HTTP_Server_CLI/tests/Security/NN.MM-snake_case_description.Test.php
 ```
 
 A security PoC there follows one rule: **it must fail on the vulnerable code with an explicit
@@ -77,7 +77,7 @@ finding from a hypothesis.
 ### Use the primitive API, not the advanced one
 
 Bootgly's test suite exposes several API levels on purpose. For a PoC, use the **most
-primitive one** — the `Specification` form below, where you return a raw request string and
+primitive one** — the `Test` form below, where you return a raw request string and
 your assertion returns `true` or a failure message.
 
 That is not a shortcut, it is the right tool. A PoC exists to *prove something, whatever it
@@ -107,12 +107,12 @@ The shape:
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Suite\Test\Specification;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Tests\Suite\Test;
 
 
 $probe = ['error' => '', 'observed' => null];
 
-return new Specification(
+return new Test(
    description: 'what the server must guarantee',
 
    // Runs client-side: drive raw sockets, spawn processes, record evidence.
