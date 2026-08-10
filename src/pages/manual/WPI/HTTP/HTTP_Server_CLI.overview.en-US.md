@@ -156,6 +156,19 @@ $Server->configure(
 );
 ```
 
+#### Protocol rejections
+
+A request the decoder cannot accept (malformed head, oversized headers, unsupported
+version, denied `Host`, chunked-framing violations, …) is answered with a bare status
+line — `400`, `408`, `413`, `414`, `417`, `431`, `501`, `503` or `505` — and the
+connection is closed. The error bytes travel through the same ordered writer as every
+other response: if a response body is still being flushed to a slow client, the error
+drains **behind** the owed bytes instead of splicing into them, the connection stops
+reading further input, and the close happens only after the drain — bounded by the
+worker's pending-output budget and the write stall deadline. On HTTP/2 the same
+ordering applies to the closing `GOAWAY` frame, so it always lands on a clean frame
+boundary.
+
 ### SSL/TLS
 
 Pass a `secure` array with PHP stream context options to enable HTTPS. The server automatically switches the scheme to `https://`:

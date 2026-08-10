@@ -156,6 +156,19 @@ $Server->configure(
 );
 ```
 
+#### Rejeições de protocolo
+
+Uma requisição que o decoder não pode aceitar (head malformado, headers grandes
+demais, versão não suportada, `Host` negado, violações de framing chunked, …) é
+respondida com uma status line pura — `400`, `408`, `413`, `414`, `417`, `431`,
+`501`, `503` ou `505` — e a conexão é fechada. Os bytes do erro viajam pelo mesmo
+writer ordenado de qualquer outra resposta: se um corpo de resposta ainda está sendo
+descarregado para um cliente lento, o erro drena **atrás** dos bytes devidos em vez
+de se intercalar neles, a conexão para de ler input adicional, e o fechamento só
+acontece depois da drenagem — limitado pelo orçamento de saída pendente do worker e
+pelo deadline de stall de escrita. No HTTP/2 a mesma ordenação vale para o frame
+`GOAWAY` de encerramento, que sempre chega em uma fronteira limpa de frame.
+
 ### SSL/TLS
 
 Passe um array `secure` com opções de contexto de stream do PHP para habilitar HTTPS. O servidor muda automaticamente o esquema para `https://`:
