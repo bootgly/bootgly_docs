@@ -27,7 +27,7 @@ return new Project(
 );
 ```
 
-`load()` lê a pasta de router padrão (`router/router.index.php` + `router/routes/<Name>.php`) — a mesma convenção de qualquer projeto WPI. `start()` conecta os eventos, aplica as convenções de views e inicializa o servidor.
+`load()` lê a pasta de router padrão (`router/router.index.php` + `router/routes/<Name>.routes.php`) — a mesma convenção de qualquer projeto WPI. `start()` conecta os eventos, aplica as convenções de views e inicializa o servidor.
 
 Toda rota recebe a **stack de middlewares padrão**: `SecureHeaders`, `RequestId`, `BodyParser` e `CSRF`. Substitua-a por inteiro quando o projeto precisar de outra (uma API REST dispensa o CSRF, por exemplo):
 
@@ -163,7 +163,7 @@ Configura o HTTP Server subjacente. `middlewares:` substitui a stack padrão por
 public function load (string $path): self
 ```
 
-Carrega a pasta de router do projeto (`router.index.php` + `routes/*.php`) e guarda o handler para o `start()`.
+Carrega a pasta de router do projeto (`router.index.php` + `routes/*.routes.php`) e guarda o handler para o `start()`.
 
 ```php
 public function start (): void

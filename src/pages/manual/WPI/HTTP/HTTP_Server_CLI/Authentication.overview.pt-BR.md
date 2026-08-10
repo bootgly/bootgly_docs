@@ -393,7 +393,7 @@ Neste exemplo, o Bootgly tenta JWT primeiro e depois o Bearer opaco. Se ambos fa
 
 O repositório inclui exemplos funcionais em `projects/Demo/HTTP_Server_CLI`:
 
-- `router/routes/Authentication.php`
+- `router/routes/Authentication.routes.php`
 
 Adicione `'Authentication'` em `router/router.index.php`, inicie o servidor demo e abra `GET /auth` para ver comandos executáveis das rotas Bearer, JWT e Basic.
 

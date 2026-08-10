@@ -194,7 +194,7 @@ Veja **[Paginação ORM](/manual/ADI/Databases/SQL/Repository/Pagination/overvie
 
 ## Projeto demo
 
-`projects/Demo/HTTP_Server_CLI/router/routes/Database.php` expõe exemplos ORM:
+`projects/Demo/HTTP_Server_CLI/router/routes/Database.routes.php` expõe exemplos ORM:
 
 As classes de entidade usadas por essas rotas ficam em `projects/Demo/HTTP_Server_CLI/Models/`.
 

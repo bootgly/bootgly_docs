@@ -194,7 +194,7 @@ See **[ORM Pagination](/manual/ADI/Databases/SQL/Repository/Pagination/overview/
 
 ## Demo project
 
-`projects/Demo/HTTP_Server_CLI/router/routes/Database.php` exposes ORM examples:
+`projects/Demo/HTTP_Server_CLI/router/routes/Database.routes.php` exposes ORM examples:
 
 The entity classes used by those routes live in `projects/Demo/HTTP_Server_CLI/Models/`.
 

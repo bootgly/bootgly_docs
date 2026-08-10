@@ -41,7 +41,7 @@ return new Project(
 Rotas vivem na pasta de router padrão. Declare um recurso CRUD completo com uma linha:
 
 ```php
-// router/routes/Hello.php
+// router/routes/Hello.routes.php
 use Web\App\Controllers;
 use Web\App\Statics;
 
@@ -100,7 +100,7 @@ $App->configure(
 ```
 
 ```php
-// router/routes/Tasks.php (trecho)
+// router/routes/Tasks.routes.php (trecho)
 yield from Routes::map($Router, '/tasks', Tasks::class, only: ['list', 'show']);
 yield from Routes::map(
    $Router, '/tasks', Tasks::class,

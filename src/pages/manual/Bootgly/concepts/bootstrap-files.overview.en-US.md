@@ -49,7 +49,7 @@ return new Test(
 
 ### Resources (lowercase suffix)
 
-A lowercase suffix says upfront there is no object to instantiate — the file returns plain data: `Bootgly.projects.php` returns the projects allow-list registry (an array); a `*.directive.php` returns a map of directive compiler closures; a `router.index.php` returns the route-set names (an array of strings).
+A lowercase suffix says upfront there is no object to instantiate — the file returns plain data or a callable: `Bootgly.projects.php` returns the projects allow-list registry (an array); a `*.directive.php` returns a map of directive compiler closures; a `router.index.php` returns the route-set names (an array of strings); a `*.routes.php` returns a route-set generator-closure.
 
 Acronym suffixes are the one exception to the case signal: acronyms are always UPPERCASE in Bootgly, so a `*.SAPI.php` keeps its uppercase name even though it returns a `Closure`, not a `SAPI` object.
 
@@ -65,5 +65,6 @@ Files whose return value is ignored — templates (`*.template.php`), demos (`*.
 | `.projects.php` | `array` — projects allow-list registry | `Projects` |
 | `.directive.php` | `array<string,Closure>` — directive compilers | template `Directives` |
 | `.index.php` | `array<string>` — route-set names | HTTP `Router` |
+| `.routes.php` | `Closure` — route set `(Request, Response, Router): Generator` | HTTP `Router` |
 | `.SAPI.php` | `Closure` — generator handler (acronym: stays uppercase) | project SAPI scripts |
 | `autoboot.php` | container/registry (`Suites`, `Suite`, commands, directives) | directory loading |

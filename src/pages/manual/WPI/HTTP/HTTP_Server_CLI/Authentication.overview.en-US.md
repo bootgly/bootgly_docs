@@ -393,7 +393,7 @@ In this example Bootgly tries JWT first, then the opaque Bearer token. If both f
 
 The repository includes working examples in `projects/Demo/HTTP_Server_CLI`:
 
-- `router/routes/Authentication.php`
+- `router/routes/Authentication.routes.php`
 
 Add `'Authentication'` to `router/router.index.php`, start the demo server, then open `GET /auth` to see runnable commands for Bearer, JWT, and Basic routes.
 

@@ -89,7 +89,7 @@ workers — served as **Prometheus text by default**, or **JSON** when the reque
 `Accept: application/json`.
 
 > [!NOTE]
-> The route set lives at `router/routes/Observability.php`. It builds one `Observability` per worker
+> The route set lives at `router/routes/Observability.routes.php`. It builds one `Observability` per worker
 > (the default `Process` + `Runtime` collectors plus bridged HTTP socket counters), writes that
 > worker's snapshot on each scrape, and merges every worker file. Copy it into your own project to
 > own the convention.

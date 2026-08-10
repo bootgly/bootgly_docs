@@ -44,7 +44,7 @@ the same failure answers as JSON instead:
 {
    "error": "RuntimeException",
    "message": "Demo exception: this route always throws.",
-   "file": "projects/Demo/HTTP_Server_CLI/router/routes/Errors.php",
+   "file": "projects/Demo/HTTP_Server_CLI/router/routes/Errors.routes.php",
    "line": 29,
    "trace": [ { "index": "1", "file": "…", "line": "…", "call": "…" } ]
 }

@@ -276,8 +276,8 @@ $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/
 
 Dentro da pasta:
 
-- **`router/router.index.php`** — um manifesto listando os nomes dos route sets ativos. Cada nome resolve para `router/routes/<Name>.php`. Liste mais de um para compor vários sets em um único handler.
-- **`router/routes/<Name>.php`** — um route set: uma generator-closure `(Request, Response, Router): Generator` que faz `yield` das suas rotas.
+- **`router/router.index.php`** — um manifesto listando os nomes dos route sets ativos. Cada nome resolve para `router/routes/<Name>.routes.php`. Liste mais de um para compor vários sets em um único handler.
+- **`router/routes/<Name>.routes.php`** — um route set: uma generator-closure `(Request, Response, Router): Generator` que faz `yield` das suas rotas.
 
 ```php :group="router-load"; :tab="router.index.php"; :breadcrumb="router > router.index.php";
 // Manifesto dos nomes dos route sets ativos
@@ -305,7 +305,7 @@ Um único set é retornado diretamente; múltiplos sets são compostos (`yield f
 Router::load (string $path): Closure
 ```
 
-Lê `$path/router.index.php` (um manifesto de nomes de route sets), resolve cada nome para `$path/routes/<Name>.php`, e retorna um único handler closure (compondo múltiplos sets com `yield from`). Lança `InvalidArgumentException` quando o index ou um set nomeado não existe, ou quando um set não retorna um `Closure`.
+Lê `$path/router.index.php` (um manifesto de nomes de route sets), resolve cada nome para `$path/routes/<Name>.routes.php`, e retorna um único handler closure (compondo múltiplos sets com `yield from`). Lança `InvalidArgumentException` quando o index ou um set nomeado não existe, ou quando um set não retorna um `Closure`.
 
 ### serverAdvertised
 

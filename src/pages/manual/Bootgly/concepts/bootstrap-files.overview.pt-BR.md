@@ -49,7 +49,7 @@ return new Test(
 
 ### Recursos (sufixo minúsculo)
 
-Um sufixo minúsculo já avisa que não há objeto a instanciar — o arquivo retorna dados puros: `Bootgly.projects.php` retorna o registry de allow-list de projetos (um array); um `*.directive.php` retorna um mapa de closures compiladoras de diretivas; um `router.index.php` retorna os nomes dos route-sets (um array de strings).
+Um sufixo minúsculo já avisa que não há objeto a instanciar — o arquivo retorna dados puros ou um callable: `Bootgly.projects.php` retorna o registry de allow-list de projetos (um array); um `*.directive.php` retorna um mapa de closures compiladoras de diretivas; um `router.index.php` retorna os nomes dos route-sets (um array de strings); um `*.routes.php` retorna a generator-closure de um route set.
 
 Sufixos de acrônimos são a única exceção ao sinal de caixa: acrônimos são sempre MAIÚSCULOS no Bootgly, então um `*.SAPI.php` mantém o nome em maiúsculas mesmo retornando uma `Closure`, e não um objeto `SAPI`.
 
@@ -65,5 +65,6 @@ Arquivos cujo valor de retorno é ignorado — templates (`*.template.php`), dem
 | `.projects.php` | `array` — registry de allow-list de projetos | `Projects` |
 | `.directive.php` | `array<string,Closure>` — compiladores de diretivas | `Directives` de template |
 | `.index.php` | `array<string>` — nomes de route-sets | `Router` HTTP |
+| `.routes.php` | `Closure` — route set `(Request, Response, Router): Generator` | `Router` HTTP |
 | `.SAPI.php` | `Closure` — handler generator (acrônimo: permanece maiúsculo) | scripts SAPI de projeto |
 | `autoboot.php` | container/registry (`Suites`, `Suite`, comandos, diretivas) | carregamento de diretórios |

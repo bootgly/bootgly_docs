@@ -41,7 +41,7 @@ return new Project(
 Routes live in the standard router folder. Declare a full CRUD resource with one line:
 
 ```php
-// router/routes/Hello.php
+// router/routes/Hello.routes.php
 use Web\App\Controllers;
 use Web\App\Statics;
 
@@ -100,7 +100,7 @@ $App->configure(
 ```
 
 ```php
-// router/routes/Tasks.php (excerpt)
+// router/routes/Tasks.routes.php (excerpt)
 yield from Routes::map($Router, '/tasks', Tasks::class, only: ['list', 'show']);
 yield from Routes::map(
    $Router, '/tasks', Tasks::class,

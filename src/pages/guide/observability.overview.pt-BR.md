@@ -90,7 +90,7 @@ registrar, mesclado entre os workers — servido como **texto Prometheus por pad
 quando a requisição envia `Accept: application/json`.
 
 > [!NOTE]
-> O conjunto de rotas fica em `router/routes/Observability.php`. Ele cria um `Observability` por
+> O conjunto de rotas fica em `router/routes/Observability.routes.php`. Ele cria um `Observability` por
 > worker (os collectors padrão `Process` + `Runtime` mais contadores HTTP de socket bridgeados),
 > grava o snapshot daquele worker a cada scrape e mescla todos os arquivos de worker. Copie-o para
 > o seu projeto para assumir a convenção.
