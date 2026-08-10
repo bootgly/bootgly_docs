@@ -196,6 +196,12 @@ new Required('Name cannot be empty.');
 
 Rejeita `null`, strings vazias (após `trim`) e arrays vazios. Implícita — roda mesmo quando o campo está ausente. Mensagem padrão: `"{field} is required."`
 
+> [!NOTE]
+> Ao validar `$Request->files` (`Sources::Files`), um **input de arquivo vazio** ainda
+> produz um registro — um array não-vazio com `error` = `UPLOAD_ERR_NO_FILE` — então
+> `Required` sozinha passa nele. Combine com `Size` (ou `MIME`/`Extension`), que só
+> passam quando `error === 0`, para exigir um upload de verdade.
+
 ---
 
 #### Boolean

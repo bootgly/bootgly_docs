@@ -124,9 +124,10 @@ $Storage->open('cdn')->read('exports/2026.csv', fopen('/data/restore.csv', 'w'))
 ## Persistir um upload HTTP
 
 No servidor HTTP um upload `multipart/form-data` é transmitido para um arquivo temporário conforme
-chega; o `$Request->store()` então move esse arquivo temporário para um disco do Storage — Local,
-S3 ou qualquer driver registrado — transmitindo os bytes (memória constante) e removendo o
-temporário em caso de sucesso:
+chega (um input de arquivo vazio — `filename=""`, nenhum arquivo escolhido — não cria arquivo
+temporário e é reportado como `UPLOAD_ERR_NO_FILE`); o `$Request->store()` então move esse arquivo
+temporário para um disco do Storage — Local, S3 ou qualquer driver registrado — transmitindo os
+bytes (memória constante) e removendo o temporário em caso de sucesso:
 
 ```php
 use Bootgly\ABI\Resources\Storage;

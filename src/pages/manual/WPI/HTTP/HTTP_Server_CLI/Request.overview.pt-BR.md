@@ -179,11 +179,21 @@ $Request->fields; // Array ( [nome_do_campo] => valor_do_campo )
 
 ### Arquivos
 
-`files`: Um array associativo de arquivos enviados através da requisição.
+`files`: Um array associativo de arquivos enviados através da requisição. Substitui a
+superglobal legada `$_FILES`, e cada registro carrega as mesmas chaves: `name` (o nome
+de arquivo sanitizado), `type`, `size`, `error` (uma constante `UPLOAD_ERR_*`) e
+`tmp_name` (o arquivo temporário que o decoder de streaming escreveu em disco).
 
 ```php
 $Request->files; // Array ( [nome_do_arquivo] => atributos_do_arquivo )
 ```
+
+Um **input de arquivo vazio** — um formulário enviado sem nenhum arquivo escolhido —
+ainda chega como uma part multipart (`filename=""`) e decodifica exatamente como o
+parser nativo do PHP faria: o registro carrega `error` = `UPLOAD_ERR_NO_FILE` (4) com
+`name`, `type` e `tmp_name` vazios, e **nenhum arquivo temporário é criado** para ele.
+Verifique `$file['error'] === UPLOAD_ERR_OK` antes de tratar um registro como um
+upload de verdade.
 
 ### Persistir um upload (`store`)
 

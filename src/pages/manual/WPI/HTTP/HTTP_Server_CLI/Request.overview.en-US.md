@@ -179,11 +179,20 @@ $Request->fields; // Array ( [field_name] => field_value )
 
 ### Files
 
-`files`: An associative array of files uploaded through the request.
+`files`: An associative array of files uploaded through the request. It replaces the
+legacy `$_FILES` superglobal, and each record carries the same keys: `name` (the
+sanitized file name), `type`, `size`, `error` (an `UPLOAD_ERR_*` constant) and
+`tmp_name` (the temp file the streaming decoder wrote to disk).
 
 ```php
 $Request->files; // Array ( [file_name] => file_attributes )
 ```
+
+An **empty file input** — a form submitted with no file chosen — still arrives as a
+multipart part (`filename=""`), and decodes exactly as PHP's native parser would: the
+record carries `error` = `UPLOAD_ERR_NO_FILE` (4) with empty `name`, `type` and
+`tmp_name`, and **no temp file is created** for it. Gate on
+`$file['error'] === UPLOAD_ERR_OK` before treating a record as an actual upload.
 
 ### Persist an upload (`store`)
 

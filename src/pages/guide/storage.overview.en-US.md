@@ -119,9 +119,11 @@ $Storage->open('cdn')->read('exports/2026.csv', fopen('/data/restore.csv', 'w'))
 
 ## Persist an HTTP upload
 
-In the HTTP server a `multipart/form-data` upload is streamed to a temp file as it arrives;
-`$Request->store()` then moves that temp file into a Storage disk — Local, S3, or any registered
-driver — streaming the bytes (constant memory) and removing the temp on success:
+In the HTTP server a `multipart/form-data` upload is streamed to a temp file as it arrives
+(an empty file input — `filename=""`, no file chosen — creates no temp file and is reported
+as `UPLOAD_ERR_NO_FILE`); `$Request->store()` then moves that temp file into a Storage disk —
+Local, S3, or any registered driver — streaming the bytes (constant memory) and removing the
+temp on success:
 
 ```php
 use Bootgly\ABI\Resources\Storage;
