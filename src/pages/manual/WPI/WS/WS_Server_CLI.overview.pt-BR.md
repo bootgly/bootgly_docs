@@ -15,6 +15,8 @@ no handshake. Os recursos mais profundos têm suas próprias páginas: **Channel
 > conjunto de conexões, e um relay de datagramas por worker (criado antes do fork) republica o frame
 > para os workers vizinhos, então todo membro recebe a mensagem independente de qual worker tem a
 > conexão — sem precisar de load balancer sticky.
+> Envelopes entre workers têm cap de 64 KiB por frame: um broadcast maior ainda chega a todos os
+> membros do worker local, mas os workers vizinhos são pulados.
 
 ## Inicie um servidor de echo
 

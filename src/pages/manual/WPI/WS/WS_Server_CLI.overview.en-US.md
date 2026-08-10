@@ -14,6 +14,8 @@ authentication step. The deeper features have their own pages: **Channels**, **C
 > `broadcast()` fans out **across workers**: each `SO_REUSEPORT` worker keeps its own connection set,
 > and a per-worker datagram relay (built before fork) republishes the frame to peer workers, so every
 > member receives it no matter which worker holds the connection — no sticky load balancer needed.
+> Cross-worker envelopes are capped at 64 KiB per frame: a larger broadcast still reaches every
+> member on the local worker, but peer workers are skipped.
 
 ## Start an echo server
 
