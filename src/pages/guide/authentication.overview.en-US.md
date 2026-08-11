@@ -213,11 +213,14 @@ yield $Router->route('/account', new Action(Accounts::class, 'show'), GET, middl
 A Fallback result that is already a redirect (3xx + `Location`) is returned
 untouched; any other fallback is still normalized to `401 Unauthorized`.
 
-Pair the sensitive endpoints with per-route rate limits — and give every
-`RateLimit` a route-scoped key, because instances share one cache namespace:
+Pair sensitive endpoints with per-route rate limits. Give each logical policy an
+explicit, stable `scope` so its quota identity survives source moves and rolling
+deployments. The optional `key` resolver selects the principal (for example, an
+API key, user, or tenant); it is not the policy namespace. Without a custom
+resolver, the middleware uses the immutable transport peer:
 
 ```php
-new RateLimit(limit: 5, window: 60, key: static fn (object $Request): string => "login:{$Request->peer}")
+new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 ```
 
 ## Security notes

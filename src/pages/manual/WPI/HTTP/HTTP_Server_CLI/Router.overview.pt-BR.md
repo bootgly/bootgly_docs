@@ -343,7 +343,7 @@ Aplica middlewares a todas as rotas definidas após a chamada `intercept()` dent
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
-$Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
+$Router->intercept(new CORS, new RateLimit(limit: 100, window: 60, scope: 'public-api'));
 
 yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
    // Todas as rotas aninhadas herdam CORS + RateLimit

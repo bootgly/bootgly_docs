@@ -27,7 +27,10 @@ SAPI::$Middlewares->pipe(new CORS, new Compression); // Add multiple at once
 Applied to all routes defined after `intercept()`, scoped to the current Router context:
 
 ```php
-$Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
+$Router->intercept(
+   new CORS,
+   new RateLimit(limit: 100, window: 60, scope: 'public-api')
+);
 
 yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
    // All routes inside this group inherit CORS + RateLimit
@@ -46,7 +49,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
 yield $Router->route('/login', function ($Request, $Response) {
    // ...
-}, POST, middlewares: [new RateLimit(limit: 5, window: 60)]);
+}, POST, middlewares: [new RateLimit(limit: 5, window: 60, scope: 'auth-login')]);
 ```
 
 When both group and route-level middlewares are present, they are **merged** — group middlewares execute first, then route-level ones, forming a single onion pipeline around the handler.
@@ -175,7 +178,7 @@ new ETag(
 
 ### RateLimit
 
-Enforces rate limiting by tracking request counts per IP address within time windows. Returns `429 Too Many Requests` when exceeded.
+Enforces rate limiting by tracking request counts per principal within time windows. The immutable TCP peer is the principal by default. Returns `429 Too Many Requests` when exceeded.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
@@ -188,7 +191,9 @@ new RateLimit(
    ipv6Prefix: 64,                   // Aggregate IPv6 keys to this prefix (default: /64)
    globalLimit: 0,                   // Optional cross-worker aggregate ceiling (default: 0 = off)
    algorithm: Algorithms::Sliding,   // Counting algorithm (default: Sliding; or Fixed)
-   key: null                         // Custom key resolver fn (Request): ?string (default: IP)
+   key: null,                        // Custom principal resolver fn (Request): ?string (default: IP)
+   scope: 'public-api',              // Stable per-principal policy identity (default: derived source line)
+   globalScope: null                 // Aggregate policy identity (default: scope)
 );
 ```
 
@@ -200,19 +205,50 @@ Set `trustForwarded: true` **only** when the server sits behind a genuinely trus
 
 **Algorithm.** `Algorithms::Sliding` (default) is a weighted sliding window: it blends the current and previous windows by how much of the previous window is still in view, so a client cannot send `2 × limit` by bursting across a window boundary. `Algorithms::Fixed` is the cheaper classic counter (one key, resets on TTL) if you do not need boundary smoothing.
 
-**Global ceiling.** `globalLimit` (default `0` = off) adds a single cross-worker aggregate counter on top of the per-key limit — a safety net against a distributed/botnet client that stays under the per-key limit on each of many keys. Requests are counted globally only after they pass the per-key check.
+**Policy scope.** `scope` identifies the logical policy; `key` identifies the principal inside that policy. When `scope` is omitted, Bootgly derives an automatic identity from the normalized source file and line containing the `new RateLimit` expression. The same construction site therefore shares counters when lazy route declarations are built independently by different workers, while different source lines are isolated. Use an explicit stable scope for factories, subclasses, generated definitions, multiple logical policies created on one physical line, and security-critical rolling deployments: reusing a construction site unintentionally shares a policy, while moving it changes the automatic identity and starts a fresh quota. Explicit `scope` and `globalScope` values must contain between 1 and 256 bytes and cannot be empty or whitespace-only. A shared principal scope still cannot mix incompatible algorithms or windows; those semantics remain partitioned.
 
-**Custom key.** `key` is a resolver `fn (object $Request): ?string`. Return a string to rate-limit on something other than the IP — an API key, an authenticated user id, a tenant — or `null` to fall back to the default IP key.
+**Global ceiling.** `globalLimit` (default `0` = off) adds one cross-worker aggregate counter per `globalScope` and window on top of the per-principal limit. When `globalScope` is omitted, it inherits `scope`, so independent policies have independent aggregate ceilings by default. Requests are counted globally only after they pass the per-principal check.
+
+Route-disjoint policies can deliberately share one aggregate ceiling by using distinct principal scopes and the same explicit `globalScope`, cache namespace, window, and `globalLimit`:
 
 ```php
-// Rate-limit by API key instead of IP:
+$LoginLimit = new RateLimit(
+   limit: 5,
+   window: 60,
+   globalLimit: 1_000,
+   scope: 'auth-login',
+   globalScope: 'public-auth'
+);
+
+$ResetLimit = new RateLimit(
+   limit: 3,
+   window: 60,
+   globalLimit: 1_000,
+   scope: 'auth-reset',
+   globalScope: 'public-auth'
+);
+```
+
+Do not stack middleware instances with the same `globalScope` in one request pipeline: every middleware invocation increments the shared aggregate counter, so one request would be counted more than once.
+
+**Custom key.** `key` is a resolver `fn (object $Request): ?string`. Return a string to rate-limit on something other than the IP — an API key owner, an authenticated user id, a tenant — or `null` to fall back to the default IP key. Authenticate and map untrusted credentials to a bounded, stable principal ID; never return a raw header value. Here `$APIKeys` represents an application authentication service whose `resolve()` returns that ID or `null`.
+
+```php
+// Rate-limit by the validated API-key owner instead of IP:
 new RateLimit(
    limit: 1000,
    window: 3600,
-   key: fn (object $Request): ?string =>
-      ($k = $Request->Header->get('X-Api-Key')) !== null ? "api:{$k}" : null
+   scope: 'api-key-hourly',
+   key: static fn (object $Request): ?string =>
+      $APIKeys->resolve($Request->Header->get('X-Api-Key'))
 );
 ```
+
+> [!NOTE]
+> **Namespace migration.** Upgrading from legacy counters without policy scopes starts fresh counters once. During a mixed-version rolling deployment, old and new workers do not share one quota; drain the old workers or otherwise account for that temporary split. After the migration, use explicit scopes wherever quota continuity must survive source movement or rolling releases.
+
+> [!WARNING]
+> **Shared-memory capacity.** The default Shared backend has fixed capacity. Expired records stop counting, but their segment space is not automatically reclaimed until an explicit `$Cache->purge()`; `clear()` or segment removal also reclaims space but resets every live entry sharing that segment. Sliding windows and changing principals create new records over time, and a custom `key` resolver can accelerate growth. Policy-scope hashing does not bound the custom principal key stored beside it. Never return unbounded, unauthenticated attacker-controlled values directly: bound both input length and cardinality and prefer stable authenticated identifiers. Hashing the principal yourself limits each entry's key size, but not the number of entries. For long-lived Shared deployments, manage an injected cache and arrange periodic purge outside the request hot path, or choose a backend whose reclamation and operational trade-offs fit the workload. Capacity exhaustion can surface as HTTP `500` responses. See [Cache](/guide/cache/overview/) for backend behavior.
 
 **Phase:** Pre-processing — rejects requests that exceed the rate limit before reaching the handler.
 

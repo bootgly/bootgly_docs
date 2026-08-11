@@ -27,7 +27,10 @@ SAPI::$Middlewares->pipe(new CORS, new Compression); // Adicionar múltiplos de 
 Aplicado a todas as rotas definidas após `intercept()`, no escopo do contexto atual do Router:
 
 ```php
-$Router->intercept(new CORS, new RateLimit(limit: 100, window: 60));
+$Router->intercept(
+   new CORS,
+   new RateLimit(limit: 100, window: 60, scope: 'public-api')
+);
 
 yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
    // Todas as rotas dentro deste grupo herdam CORS + RateLimit
@@ -46,7 +49,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
 yield $Router->route('/login', function ($Request, $Response) {
    // ...
-}, POST, middlewares: [new RateLimit(limit: 5, window: 60)]);
+}, POST, middlewares: [new RateLimit(limit: 5, window: 60, scope: 'auth-login')]);
 ```
 
 Quando middlewares de grupo e de rota estão presentes, eles são **mesclados** — middlewares de grupo executam primeiro, depois os de rota, formando um único pipeline onion ao redor do handler.
@@ -176,7 +179,7 @@ new ETag(
 
 ### RateLimit
 
-Aplica limitação de taxa rastreando contagem de requisições por IP dentro de janelas de tempo. Retorna `429 Too Many Requests` quando excedido.
+Aplica limitação de taxa rastreando contagem de requisições por principal dentro de janelas de tempo. O peer TCP imutável é o principal por padrão. Retorna `429 Too Many Requests` quando excedido.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
@@ -189,7 +192,9 @@ new RateLimit(
    ipv6Prefix: 64,                   // Agregar chaves IPv6 neste prefixo (padrão: /64)
    globalLimit: 0,                   // Teto agregado entre workers opcional (padrão: 0 = desligado)
    algorithm: Algorithms::Sliding,   // Algoritmo de contagem (padrão: Sliding; ou Fixed)
-   key: null                         // Resolvedor de chave fn (Request): ?string (padrão: IP)
+   key: null,                        // Resolvedor de principal fn (Request): ?string (padrão: IP)
+   scope: 'public-api',              // Identidade estável da política por principal (padrão: linha derivada)
+   globalScope: null                 // Identidade da política agregada (padrão: scope)
 );
 ```
 
@@ -201,19 +206,50 @@ Defina `trustForwarded: true` **apenas** quando o servidor está atrás de um pr
 
 **Algoritmo.** `Algorithms::Sliding` (padrão) é uma janela deslizante ponderada: combina a janela atual e a anterior pela fração da janela anterior ainda em vista, de modo que um cliente não consegue enviar `2 × limit` estourando na virada de janela. `Algorithms::Fixed` é o contador clássico mais barato (uma chave, reinicia no TTL) caso você não precise do suavizamento de borda.
 
-**Teto global.** `globalLimit` (padrão `0` = desligado) adiciona um único contador agregado entre workers sobre o limite por chave — uma rede de segurança contra um cliente distribuído/botnet que fica abaixo do limite por chave em muitas chaves. As requisições só são contadas globalmente depois de passarem na checagem por chave.
+**Escopo da política.** `scope` identifica a política lógica; `key` identifica o principal dentro dessa política. Quando `scope` é omitido, o Bootgly deriva uma identidade automática do arquivo e da linha normalizados que contêm a expressão `new RateLimit`. Assim, o mesmo local de construção compartilha contadores quando declarações lazy de rotas são construídas independentemente por workers diferentes, enquanto linhas distintas ficam isoladas. Use um escopo estável explícito em factories, subclasses, definições geradas, múltiplas políticas lógicas criadas na mesma linha física e rolling deployments críticos para segurança: reutilizar um local de construção compartilha uma política sem intenção, enquanto movê-lo altera a identidade automática e inicia uma cota nova. Valores explícitos de `scope` e `globalScope` devem conter entre 1 e 256 bytes e não podem ser vazios nem compostos apenas por espaços em branco. Um escopo de principal compartilhado ainda não mistura algoritmos ou janelas incompatíveis; essas semânticas permanecem particionadas.
 
-**Chave customizada.** `key` é um resolvedor `fn (object $Request): ?string`. Retorne uma string para limitar por algo diferente do IP — uma API key, um id de usuário autenticado, um tenant — ou `null` para recair na chave de IP padrão.
+**Teto global.** `globalLimit` (padrão `0` = desligado) adiciona um contador agregado entre workers por `globalScope` e janela sobre o limite por principal. Quando `globalScope` é omitido, ele herda `scope`, portanto políticas independentes têm tetos agregados independentes por padrão. As requisições só são contadas globalmente depois de passarem na checagem por principal.
+
+Políticas de rotas disjuntas podem compartilhar deliberadamente um teto agregado usando escopos de principal distintos e o mesmo `globalScope`, namespace de cache, janela e `globalLimit` explícitos:
 
 ```php
-// Limitar por API key em vez de IP:
+$LoginLimit = new RateLimit(
+   limit: 5,
+   window: 60,
+   globalLimit: 1_000,
+   scope: 'auth-login',
+   globalScope: 'public-auth'
+);
+
+$ResetLimit = new RateLimit(
+   limit: 3,
+   window: 60,
+   globalLimit: 1_000,
+   scope: 'auth-reset',
+   globalScope: 'public-auth'
+);
+```
+
+Não empilhe instâncias de middleware com o mesmo `globalScope` no pipeline de uma requisição: cada invocação de middleware incrementa o contador agregado compartilhado, portanto uma requisição seria contada mais de uma vez.
+
+**Chave customizada.** `key` é um resolvedor `fn (object $Request): ?string`. Retorne uma string para limitar por algo diferente do IP — o proprietário de uma API key, um id de usuário autenticado, um tenant — ou `null` para recair na chave de IP padrão. Autentique e mapeie credenciais não confiáveis para um ID de principal estável e limitado; nunca retorne o valor bruto de um header. Aqui, `$APIKeys` representa um serviço de autenticação da aplicação cujo `resolve()` retorna esse ID ou `null`.
+
+```php
+// Limitar pelo proprietário validado da API key em vez de IP:
 new RateLimit(
    limit: 1000,
    window: 3600,
-   key: fn (object $Request): ?string =>
-      ($k = $Request->Header->get('X-Api-Key')) !== null ? "api:{$k}" : null
+   scope: 'api-key-hourly',
+   key: static fn (object $Request): ?string =>
+      $APIKeys->resolve($Request->Header->get('X-Api-Key'))
 );
 ```
+
+> [!NOTE]
+> **Migração de namespace.** Atualizar contadores legados sem escopos de política inicia contadores novos uma vez. Durante um rolling deployment com versões mistas, workers antigos e novos não compartilham uma única cota; drene os workers antigos ou considere essa divisão temporária. Após a migração, use escopos explícitos sempre que a continuidade da cota precisar sobreviver a movimentos no código ou rolling releases.
+
+> [!WARNING]
+> **Capacidade da memória compartilhada.** O backend Shared padrão tem capacidade fixa. Registros expirados deixam de contar, mas seu espaço no segmento não é recuperado automaticamente até um `$Cache->purge()` explícito; `clear()` ou a remoção do segmento também recuperam espaço, mas reiniciam todas as entradas ativas que compartilham esse segmento. Janelas deslizantes e mudanças de principal criam novos registros ao longo do tempo, e um resolvedor `key` customizado pode acelerar o crescimento. O hash do escopo da política não limita a chave customizada do principal armazenada junto dele. Nunca retorne diretamente valores ilimitados, não autenticados e controlados pelo atacante: limite tanto o comprimento quanto a cardinalidade da entrada e prefira identificadores autenticados estáveis. Aplicar hash ao principal por conta própria limita o tamanho da chave em cada entrada, mas não a quantidade de entradas. Em deployments Shared de longa duração, gerencie um cache injetado e programe `purge()` periódico fora do caminho crítico das requisições, ou escolha um backend cujas características de recuperação e operação atendam à carga. O esgotamento de capacidade pode aparecer como respostas HTTP `500`. Veja [Cache](/guide/cache/overview/) para o comportamento dos backends.
 
 **Fase:** Pré-processamento — rejeita requisições que excedem o limite antes de alcançar o handler.
 

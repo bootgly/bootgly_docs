@@ -121,21 +121,61 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 ## Rate limiting (backend compartilhado)
 
 O middleware HTTP `RateLimit` usa este cache como backend. Com o driver **Shared-memory** (o
-padrão), o limite é aplicado **globalmente em todos os workers** em vez de ser multiplicado por
-worker:
+padrão), o limite é aplicado **entre todos os workers conectados ao mesmo segmento naquele host**
+em vez de ser multiplicado por worker:
 
 ```php
+use Bootgly\ABI\Resources\Cache;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
-$RateLimit = new RateLimit(limit: 60, window: 60);
-// Ou injete um cache específico (ex.: Redis para uma frota multi-host):
-$RateLimit = new RateLimit(limit: 60, window: 60, Cache: new Cache(['driver' => 'redis']));
+$Cache = new Cache([
+   'driver' => 'shared',
+   'prefix' => 'ratelimit:',
+]);
+$RateLimit = new RateLimit(
+   limit: 60,
+   window: 60,
+   scope: 'public-api',
+   Cache: $Cache
+);
+// Ou use um backend Redis comum para uma frota multi-host:
+$Redis = new Cache(['driver' => 'redis', 'prefix' => 'ratelimit:']);
+$RateLimit = new RateLimit(
+   limit: 60,
+   window: 60,
+   scope: 'public-api',
+   Cache: $Redis
+);
 ```
 
-A janela de cada cliente abre na primeira requisição (a criação do contador define o TTL) e
-reinicia quando essa entrada expira. O middleware emite os headers usuais `X-RateLimit-Limit`,
-`X-RateLimit-Remaining`, `X-RateLimit-Reset` e `Retry-After`, e retorna `429` quando o limite é
-excedido.
+`scope` nomeia a política lógica, não o cliente. Reutilize o mesmo valor explícito para essa
+política em todos os workers que compartilham o backend de Cache e dê valores distintos a políticas
+independentes. Um scope não distribui estado por conta própria: entre hosts, use o mesmo scope,
+prefixo de Cache e um backend realmente compartilhado, como Redis. Quando omitido, o `RateLimit`
+deriva um scope determinístico do arquivo e da linha normalizados da chamada `new RateLimit`. Esse
+padrão funciona entre workers que executam o mesmo código, mas mover a expressão muda sua
+identidade. Use um scope explícito em factories e deploys graduais multi-host, nos quais revisões
+antigas e novas podem coexistir. `globalScope` usa `scope` por padrão; compartilhe-o explicitamente
+apenas quando políticas distintas e sem sobreposição de rotas devam contribuir para um único teto
+agregado.
+
+O algoritmo `Sliding` padrão usa baldes atual e anterior ponderados e alinhados às épocas do
+relógio; ele **não** abre uma janela TTL privada na primeira requisição do cliente. `Fixed` tem o
+comportamento iniciado pela primeira requisição: a criação do contador define seu TTL e os
+incrementos posteriores não estendem a janela. Ambos emitem `X-RateLimit-Limit`,
+`X-RateLimit-Remaining` e `X-RateLimit-Reset`; uma requisição rejeitada retorna `429` com
+`Retry-After`.
+
+> [!WARNING]
+> A migração para namespaces de política v2 inicia contadores novos no primeiro deploy, portanto
+> quotas v1 ativas reiniciam uma vez. Registros v1 antigos podem coexistir com registros v2; depois
+> que seus TTLs expiram, eles deixam de contar, mas o driver Shared-memory de capacidade fixa retém
+> seu espaço no segmento até um purge explícito. O mesmo requisito de recuperação se aplica à
+> expiração normal de contadores v2. Reserve folga no segmento, retenha a instância de Cache injetada
+> e execute `purge()` periodicamente (e depois da migração, de preferência fora do
+> tráfego quente) para recuperar registros expirados; caso contrário, armazenamento obsoleto pode
+> esgotar o
+> segmento mesmo que esses contadores já não afetem requisições.
 
 ## Redis assíncrono no event loop
 

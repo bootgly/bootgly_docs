@@ -215,12 +215,15 @@ Um resultado de Fallback que já é redirect (3xx + `Location`) é devolvido
 intocado; qualquer outro fallback continua normalizado para `401
 Unauthorized`.
 
-Combine os endpoints sensíveis com rate limits por rota — e dê a cada
-`RateLimit` uma key com escopo da rota, porque as instâncias compartilham um
-namespace de cache:
+Combine endpoints sensíveis com rate limits por rota. Dê a cada política lógica
+um `scope` explícito e estável para que a identidade da cota sobreviva a mudanças
+no código-fonte e a rolling deployments. O resolvedor opcional `key` seleciona o
+principal (por exemplo, uma API key, um usuário ou tenant); ele não é o namespace
+da política. Sem um resolvedor customizado, o middleware usa o peer de transporte
+imutável:
 
 ```php
-new RateLimit(limit: 5, window: 60, key: static fn (object $Request): string => "login:{$Request->peer}")
+new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 ```
 
 ## Notas de segurança

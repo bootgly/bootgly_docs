@@ -119,21 +119,58 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 ## Rate limiting (shared backend)
 
 The `RateLimit` HTTP middleware uses this cache as its backend. With the **Shared-memory**
-driver (the default), the limit is enforced **globally across all workers** instead of being
-multiplied per worker:
+driver (the default), the limit is enforced **across all workers attached to the same segment
+on that host** instead of being multiplied per worker:
 
 ```php
+use Bootgly\ABI\Resources\Cache;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 
-$RateLimit = new RateLimit(limit: 60, window: 60);
-// Or inject a specific cache (e.g. Redis for a multi-host fleet):
-$RateLimit = new RateLimit(limit: 60, window: 60, Cache: new Cache(['driver' => 'redis']));
+$Cache = new Cache([
+   'driver' => 'shared',
+   'prefix' => 'ratelimit:',
+]);
+$RateLimit = new RateLimit(
+   limit: 60,
+   window: 60,
+   scope: 'public-api',
+   Cache: $Cache
+);
+// Or use one common Redis backend for a multi-host fleet:
+$Redis = new Cache(['driver' => 'redis', 'prefix' => 'ratelimit:']);
+$RateLimit = new RateLimit(
+   limit: 60,
+   window: 60,
+   scope: 'public-api',
+   Cache: $Redis
+);
 ```
 
-Each client's window opens on its first request (the counter creation sets the TTL) and rolls
-over when that entry expires. The middleware emits the usual `X-RateLimit-Limit`,
-`X-RateLimit-Remaining`, `X-RateLimit-Reset` and `Retry-After` headers and returns `429` once
-the limit is exceeded.
+`scope` names the logical policy, not the client. Reuse the same explicit value for that policy
+on every worker that shares the Cache backend, and give unrelated policies distinct values. A
+scope does not distribute state by itself: across hosts, use the same scope, Cache prefix, and
+genuinely shared backend such as Redis. When it is omitted, `RateLimit` derives a deterministic
+scope from the normalized file and line of the `new RateLimit` callsite. That default works across
+workers running the same code, but moving the expression changes its identity. Use
+an explicit scope in factories and multi-host rolling deployments, where old and new revisions
+can overlap. `globalScope` defaults to `scope`; share it explicitly only when distinct,
+route-disjoint policies should contribute to one aggregate ceiling.
+
+The default `Sliding` algorithm uses weighted current and previous buckets aligned to clock
+epochs; it does **not** open a private TTL window on a client's first request. `Fixed` is the
+first-request behavior: creating the counter sets its TTL, and later increments do not extend
+that window. Both algorithms emit `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and
+`X-RateLimit-Reset`; a rejected request returns `429` with `Retry-After`.
+
+> [!WARNING]
+> The v2 policy-namespace migration starts fresh counters on its first deployment, so active v1
+> quotas reset once. Old v1 records can coexist with v2 records; after their TTLs expire they stop
+> counting, but the fixed-capacity Shared-memory driver retains their segment space until an
+> explicit purge. The same reclamation requirement applies as v2 counters expire during normal
+> operation. Provision segment headroom, retain the injected Cache instance, and run its
+> `purge()` periodically (and after the migration, preferably outside hot traffic) to reclaim
+> expired records; otherwise stale storage can exhaust the segment even though those counters no
+> longer affect requests.
 
 ## Async Redis on the event loop
 
