@@ -109,3 +109,15 @@ cancel (Operation $Operation): Operation
 
 Envia o pacote advisory `CancelRequest` pelo side channel. Requer o `BackendKeyData` do
 startup da conexão; marca a operação como `cancelled`.
+
+```php
+abandon (Operation $Operation): void
+```
+
+Reconcilia o wire quando o Pool finaliza uma operação de fora — um deadline vencido —
+enquanto o backend ainda está respondendo ao batch dela. O slot do pipeline é entregue a
+um stand-in destacado que absorve as mensagens restantes até o `ReadyForQuery` dele, então
+o driver mantém todo efeito de sessão que deve a si mesmo (cache de statements, evictions)
+enquanto a operação retomada pelo Pool nunca mais é lida, escrita ou resolvida. Quando não
+sobra irmã para bombear a resposta, a sessão é derrubada, e é isso que devolve o slot de
+conexão.

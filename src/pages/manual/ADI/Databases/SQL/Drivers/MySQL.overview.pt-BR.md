@@ -159,6 +159,17 @@ cancel (Operation $Operation): Operation
 Mata o comando em andamento por uma sessão separada autenticada (`KILL QUERY`). Requer o
 thread id do greeting; marca a operação como `cancelled`.
 
+```php
+abandon (Operation $Operation): void
+```
+
+Reconcilia o wire quando o Pool finaliza uma operação de fora — um deadline vencido —
+enquanto o servidor ainda está respondendo a ela. Uma irmã enfileirada simplesmente sai da
+FIFO; a cabeça é entregue a um stand-in destacado que drena a resposta, de modo que a
+operação retomada pelo Pool nunca mais é lida, escrita ou resolvida. Quando nada pode ser
+reconciliado — o comando não está inteiro no wire, ou não sobrou irmã para bombear a
+resposta — a sessão é derrubada, e é isso que devolve o slot de conexão.
+
 O protocolo MySQL é estritamente request-response: não há pipelining no wire. Operações
 co-localizadas entram em uma FIFO onde só a cabeça possui o socket — `check()` reporta o
 estado ocupado ao Pool e `drain()` expõe operações completadas por leituras das irmãs.

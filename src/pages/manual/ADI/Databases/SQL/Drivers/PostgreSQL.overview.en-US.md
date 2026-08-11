@@ -108,3 +108,15 @@ cancel (Operation $Operation): Operation
 
 Sends the advisory `CancelRequest` side-channel packet. Requires `BackendKeyData` from the
 connection startup; marks the operation `cancelled`.
+
+```php
+abandon (Operation $Operation): void
+```
+
+Reconciles the wire when the Pool finishes an operation from the outside — an elapsed
+deadline — while the backend is still answering its batch. The pipeline slot is handed to
+a detached stand-in that absorbs the remaining messages up to its `ReadyForQuery`, so the
+driver keeps every session effect it owes itself (statement caching, evictions) while the
+operation the Pool took back is never read, written or resolved again. When no sibling is
+left to pump the answer, the session is dropped instead, which is what gives the
+connection slot back.

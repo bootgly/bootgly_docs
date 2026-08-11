@@ -45,6 +45,13 @@ the pool promotes pending operations.
 Transactions pin one connection with `lock` and release it with `unlock` after commit or
 rollback.
 
+When an operation's `timeout` elapses, the pool finishes it and asks its driver to
+reconcile the wire (`Driver::abandon()`) before releasing the connection. The server is
+usually still answering the command it was given: a driver that has a co-located sibling
+left to read the socket drains the abandoned answer and keeps the connection; with nobody
+left to read it, the connection is dropped instead. Either way the slot comes back to the
+pool, and the timed-out operation is never revived by its own late answer.
+
 ## Native drivers
 
 Three native wire drivers execute SQL operations — see

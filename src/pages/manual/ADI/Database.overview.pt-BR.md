@@ -43,6 +43,13 @@ estão ocupadas e `created >= max`, novas operações aguardam em `pending`. Qua
 
 Transações fixam uma conexão com `lock` e liberam com `unlock` depois de commit ou rollback.
 
+Quando o `timeout` de uma operação vence, o pool a finaliza e pede ao driver dela para
+reconciliar o wire (`Driver::abandon()`) antes de liberar a conexão. O servidor em geral
+ainda está respondendo ao comando que recebeu: um driver que tem uma irmã co-localizada
+para ler o socket drena a resposta abandonada e mantém a conexão; sem ninguém para lê-la, a
+conexão é derrubada. Nos dois casos o slot volta para o pool, e a operação que expirou
+nunca é revivida pela própria resposta atrasada.
+
 ## Drivers nativos
 
 Três wire drivers nativos executam operações SQL — veja
