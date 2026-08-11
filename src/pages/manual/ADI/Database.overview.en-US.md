@@ -52,6 +52,11 @@ left to read the socket drains the abandoned answer and keeps the connection; wi
 left to read it, the connection is dropped instead. Either way the slot comes back to the
 pool, and the timed-out operation is never revived by its own late answer.
 
+A cancellation that never reaches the server takes the same route: `cancel()` is advisory,
+so when its side channel cannot be established the operation is finished locally while the
+server keeps answering the original command, and the pool reconciles that wire before
+taking the connection back.
+
 ## Native drivers
 
 Three native wire drivers execute SQL operations — see

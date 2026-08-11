@@ -50,6 +50,11 @@ para ler o socket drena a resposta abandonada e mantém a conexão; sem ninguém
 conexão é derrubada. Nos dois casos o slot volta para o pool, e a operação que expirou
 nunca é revivida pela própria resposta atrasada.
 
+Um cancelamento que nunca chega ao servidor segue o mesmo caminho: `cancel()` é advisory,
+então quando o side channel não pode ser estabelecido a operação é finalizada localmente
+enquanto o servidor continua respondendo ao comando original, e o pool reconcilia esse wire
+antes de retomar a conexão.
+
 ## Drivers nativos
 
 Três wire drivers nativos executam operações SQL — veja
