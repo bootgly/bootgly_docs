@@ -1518,8 +1518,8 @@ export default {
       version: 'v1.0.0-beta',
       meta: {
         description: {
-          'en-US': 'The anchored option list — windowed rows a host paints against an input, above it or below it.',
-          'pt-BR': 'A lista de opções ancorada — linhas janeladas que um host pinta junto a um input, acima ou abaixo dele.'
+          'en-US': 'The generic anchored overlay — a bordered block a host opens against its own position: context menus, panels, bottom sheets.',
+          'pt-BR': 'O overlay genérico ancorado — um bloco com borda que um host abre em relação à própria posição: menus de contexto, painéis, bottom sheets.'
         }
       },
       menu: {},
@@ -1552,6 +1552,28 @@ export default {
     data: {
       '*': {
         title: 'Frame'
+      }
+    }
+  },
+  '/CLI/UI/Base/Listbox': {
+    config: {
+      icon: 'list',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The windowed, aimed option list — completions and command menus with query accent, details, scrollbar and circular navigation.',
+          'pt-BR': 'A lista de opções janelada e mirada — completions e menus de comandos com accent de busca, detalhes, scrollbar e navegação circular.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Listbox'
       }
     }
   },

@@ -131,6 +131,14 @@ public function feed (string $content): void
 
 Buffers content (Template markup supported), wrapping logical lines into visual rows at the band width, and repaints the band. Plain write on non-interactive output.
 
+### clear()
+
+```php
+public function clear (): void
+```
+
+Empties the buffer, sticks the view back to the bottom and wipes the band rows — the hook behind a REPL `/clear`. Scrolling afterwards has nothing to resurrect: the buffer is gone, not just the screen.
+
 ### scroll()
 
 ```php

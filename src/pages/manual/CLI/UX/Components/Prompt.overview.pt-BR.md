@@ -1,6 +1,6 @@
 # Componente Prompt
 
-O componente `Prompt` fixa uma linha de entrada no rodapé do terminal enquanto o conteúdo rola acima — como Claude Code, Codex ou OpenCode. Por padrão a área de conteúdo é uma banda [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) bufferizada: a roda do mouse e `PgUp`/`PgDn` a rolam, a scrollbar da borda direita aceita hover, clique e arrasto, e **`Ctrl+T` alterna o modo seleção** — libera o mouse para a seleção/cópia de texto nativa funcionar, e retoma no próximo toggle. Alternativamente, `buffered = false` troca para o fluxo nativo: o conteúdo entra no scrollback do terminal e tudo que envolve mouse permanece nativo, sem scrollbar interna. `prompting()` entrega cada linha submetida, com histórico `↑`/`↓` e entrada multilinha com `Shift+Enter` (o frame cresce uma linha por quebra). Em entrada não interativa (pipes, CI) degrada para um loop simples de linhas do stdin — o código consumidor permanece idêntico.
+O componente `Prompt` fixa uma linha de entrada no rodapé do terminal enquanto o conteúdo rola acima — como Claude Code, Codex ou OpenCode. Por padrão a área de conteúdo é uma banda [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) bufferizada: a roda do mouse e `PgUp`/`PgDn` a rolam, a scrollbar da borda direita aceita hover, clique e arrasto, e **`Ctrl+T` alterna o modo seleção** — libera o mouse para a seleção/cópia de texto nativa funcionar, e retoma no próximo toggle. Alternativamente, `buffered = false` troca para o fluxo nativo: o conteúdo entra no scrollback do terminal e tudo que envolve mouse permanece nativo, sem scrollbar interna. `prompting()` entrega cada linha submetida, com histórico `↑`/`↓` e entrada multilinha com `Shift+Enter` (o frame cresce uma linha por quebra). Qualquer símbolo (`/`, `@`, `!`, …) pode abrir um menu de contexto sobre o input — completions com descrições, hints de argumentos, estilização do frame por trigger e modos absorvidos — e `pick()` abre um bottom sheet sobre o rodapé inteiro, no estilo Claude Code. O frame também se re-ancora em resizes do terminal. Em entrada não interativa (pipes, CI) degrada para um loop simples de linhas do stdin — o código consumidor permanece idêntico.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UX/Components/Prompt/showcase).
 
@@ -87,9 +87,128 @@ Slots `top`/`bottom` vazios pulam sua linha de texto — o frame encolhe e a reg
 
 **Suporte do terminal.** `Shift+Enter` não tem codificação legada: um terminal comum envia `CR` tanto para o Enter quanto para o `Shift+Enter`, então o modificador nunca chega ao programa. Reportá-lo exige o protocolo de teclado estendido, que o `start()` negocia sozinho (`$Prompt->Input->extended = true` — o push kitty `CSI u` mais a requisição xterm `modifyOtherKeys`), então nada precisa ser configurado. Terminais que o implementam incluem kitty, ghostty, foot e WezTerm (protocolo kitty) e xterm (`modifyOtherKeys`); os demais ignoram a negociação e nunca veem a tecla — neles o `Shift+Enter` chega como um Enter comum e submete, então a entrada permanece de linha única.
 
+## Menus de trigger
+
+Qualquer símbolo vira um trigger de menu de contexto. Registre-o em `triggers`: a chave é o símbolo, o valor é um conjunto estático de opções ou uma `Closure` que recebe a query digitada (o token sem o símbolo) e retorna opções. Opções estáticas vêm em três formas — um comando puro, `'value' => 'label'` (insere a chave, mostra o label) ou o estruturado `'command' => ['skeleton' => …, 'description' => …]`:
+
+```php
+$Prompt->triggers = [
+   '/' => [
+      '/help' => ['description' => 'List the available commands'],
+      '/time' => ['skeleton' => '[timezone]', 'description' => 'Tell the current time'],
+      '/echo' => ['skeleton' => '<text>', 'description' => 'Echo the text back'],
+      '/exit' => ['description' => 'Quit the REPL'],
+   ],
+   '@' => static function (string $query): array {
+      $files = ['@README.md', '@composer.json', '@bootgly.php'];
+
+      return array_values(array_filter(
+         $files,
+         static fn (string $file): bool => str_contains($file, $query)
+      ));
+   }
+];
+```
+
+Quando o token sob o cursor começa com um símbolo registrado, um painel de largura total abre rente ao frame do input — um [Listbox](/manual/CLI/UI/Base/Listbox/overview) dentro de uma caixa [Flyout](/manual/CLI/UI/Base/Flyout/overview) — filtrando as opções estáticas por prefixo (uma Closure filtra por conta própria) e acendendo o token digitado dentro de cada match. Uma regra cobre os dois mundos: `/comando` funciona no início do input e `@menção` funciona no meio da frase.
+
+```text
+┌──────────────────────────────────────────────────┐
+│ ❯ /help          List the available commands     │
+│   /history       Count the submitted lines       │
+└──────────────────────────────────────────────────┘
+──────────────────────────────────────────────────
+❯ /h█
+──────────────────────────────────────────────────
+```
+
+Com o menu aberto, `↑`/`↓` miram (circularmente — o topo dá a volta para o fundo), `Tab` completa o token para a opção mirada, `Esc` o fecha (fica fechado até o token mudar) e `Enter` completa a mira e a submete de uma vez — `Esc` antes para submeter o texto exatamente como digitado.
+
+**Partes.** `listing` escolhe o que acompanha cada comando enquanto o menu lista opções, e `resolution` o que aparece quando resta uma única opção — qualquer combinação de `'skeleton'` e `'description'`. Padrões: descrições ao listar; skeleton + descrição ao resolver.
+
+**Hints de argumentos.** Depois que o `Tab` resolve um comando, as partes de `resolution` continuam à vista enquanto os argumentos são digitados — `/time █` mantém `/time [timezone]` na tela. O hint cede a vez a qualquer menu que o token do cursor abra e fecha no submit.
+
+## Estilos, modos e quebras por trigger
+
+**Estilização (`styles`).** Um trigger ativo pode recolorir o frame do input e trocar o marcador — a pista visual de que outro tipo de linha está sendo composto:
+
+```php
+$Prompt->styles = [
+   '/' => ['border' => '@#Cyan:', 'prompt' => '❯ '],
+   '!' => ['border' => '@#Red:', 'prompt' => '! ']
+];
+```
+
+**Modos (`modes`).** Um símbolo listado em `modes` é *absorvido* quando digitado num input vazio: ele vive no marcador em vez do buffer — como um modo `!` de bash raw. `Backspace` no input vazio o libera (como se o símbolo inicial invisível fosse apagado) e o Enter o reincorpora à linha submetida, então o consumidor ainda recebe `!ls`. Símbolos fora de `modes` ficam literais no texto — uma menção `@` continua compondo um prompt maior:
+
+```php
+$Prompt->modes = ['!'];
+```
+
+**Quebra de linha (`breaks`).** Um trigger pode travar o input em linha única — `false` suprime o `Shift+Enter` enquanto o símbolo está ativo. Slash commands são de uma linha; um modo bash mantém as quebras (lá um `\` no fim continua a linha):
+
+```php
+$Prompt->breaks = ['/' => false];
+```
+
+## Slots de atalhos
+
+`shortcuts` pinta slots de dica tecla → ação abaixo do input, tomando o lugar do `bottom['left']` — a tecla destacada pelo `tint`, a ação esmaecida:
+
+```php
+$Prompt->shortcuts = [
+   'Enter' => 'send',
+   'Shift+Enter' => 'break',
+   'Tab' => 'complete',
+   'Esc' => 'close'
+];
+```
+
+```text
+──────────────────────────────────────────────────
+Enter:send  Shift+Enter:break  Tab:complete  Esc:close
+```
+
+## Bottom sheet
+
+`pick()` abre um bottom sheet: o [Flyout](/manual/CLI/UI/Base/Flyout/overview) ancorado ao rodapé do terminal, **substituindo o frame do input inteiro** (input, bordas e atalhos ficam cobertos) enquanto um Listbox navega as opções dentro dele — com o hint esmaecido na última linha da tela, no estilo Claude Code. As opções usam a forma dos triggers, então os comandos de um trigger navegam diretamente. Chame-o entre os yields do `prompting()` — num handler de `/help`, tipicamente:
+
+```php
+foreach ($Prompt->prompting() as $line) {
+   if (trim($line) === '/help') {
+      $picked = $Prompt->pick(
+         $Prompt->triggers['/'],
+         title: '@#Cyan:Commands@;',
+         hint: '↑/↓ aim · Enter picks into the input · Esc cancels'
+      );
+
+      if ($picked !== null) {
+         $Prompt->Lines->load($picked); // pré-preenche o input com a escolha
+      }
+
+      continue;
+   }
+}
+```
+
+```text
+┌ Commands ────────────────────────────────────────┐
+│ ❯ /help          List the available commands     │
+│   /time [timezone]  Tell the current time        │
+│   /exit          Quit the REPL                   │
+└──────────────────────────────────────────────────┘
+ ↑/↓ aim · Enter picks into the input · Esc cancels
+```
+
+`↑`/`↓` miram, `Enter` retorna o valor da opção mirada e `Esc` (ou `Ctrl+C`/`Ctrl+D`) cancela com `null`. O frame do input se repinta no lugar quando o sheet fecha. Pré-preencher via `Lines->load()` é o ponto doce: a maquinaria de triggers reabre sozinha o hint de argumentos no comando carregado. Em entrada não interativa o sheet nunca abre — `pick()` retorna `null`.
+
+## Resizes do terminal
+
+O prompt observa `SIGWINCH`: redimensionar o terminal re-mede a tela, a limpa e re-ancora tudo — a banda de conteúdo se reajusta, o frame repinta no novo fundo e qualquer menu ou sheet aberto se recompõe na nova largura e altura. Sem isso, emuladores de terminal refluem as linhas pintadas por conta própria e rasgam qualquer layout fixado no rodapé. O watcher arma no `start()` e restaura o handler padrão no `finish()`; a entrega de sinais usa `pcntl` (async signals), então ambientes sem ele simplesmente mantêm o tamanho medido no boot.
+
 ## Entrada não interativa
 
-Em pipes e CI não há região nem histórico: `prompting()` entrega linhas do stdin até EOF e `feed()` escreve plano — determinístico, sem ruído de escapes.
+Em pipes e CI não há região nem histórico: `prompting()` entrega linhas do stdin até EOF e `feed()` escreve plano — determinístico, sem ruído de escapes. Menus de trigger nunca interferem e `pick()` retorna `null`.
 
 ## Referência
 
@@ -150,6 +269,54 @@ public string $selection
 Config (modo banda). O aviso mostrado na borda inferior enquanto o modo seleção está ativo. Padrão: `'Selection mode · Ctrl+T resumes the mouse'`.
 
 ```php
+public array $triggers
+```
+
+Config. Triggers de menu de contexto — a chave é o símbolo (`'/'`, `'@'`, `'#'`, …), o valor é um conjunto estático de opções (comandos puros, pares `'value' => 'label'` ou `'command' => ['skeleton' => …, 'description' => …]`) ou uma `Closure (string $query): array` que recebe a query digitada sem o símbolo. Comandos são tokens completos incluindo o símbolo. Padrão: `[]` (menus desligados).
+
+```php
+public array $listing
+```
+
+Config. Partes mostradas ao lado de cada comando enquanto o menu lista opções — qualquer combinação de `'skeleton'` e `'description'`. Padrão: `['description']`.
+
+```php
+public array $resolution
+```
+
+Config. Partes mostradas quando resta uma única opção (comando resolvido) e enquanto os argumentos são digitados. Padrão: `['skeleton', 'description']`.
+
+```php
+public array $styles
+```
+
+Config. Estilização do frame por trigger — `símbolo => ['border' => markup, 'prompt' => marcador]`: enquanto o menu ou o hint de um símbolo está de pé, `border` recolore as linhas do frame e pinta o marcador, e `prompt` substitui o texto do marcador. Padrão: `[]`.
+
+```php
+public array $modes
+```
+
+Config. Símbolos de trigger absorvidos como prefixos de modo — digitado num input vazio, o símbolo vive no marcador em vez do buffer; `Backspace` no input vazio o libera e o Enter o reincorpora à linha submetida. Padrão: `[]` (símbolos ficam literais).
+
+```php
+public array $breaks
+```
+
+Config. Quebra de linha por trigger — `símbolo => bool`; `false` trava o input em linha única enquanto o símbolo está ativo (`Shift+Enter` é ignorado). Símbolos ausentes mantêm as quebras. Padrão: `[]`.
+
+```php
+public array $shortcuts
+```
+
+Config. Slots de dica de atalho abaixo do input — `tecla => ação`; tomam o lugar do `bottom['left']` quando definidos. Padrão: `[]`.
+
+```php
+public string $tint
+```
+
+Config. A pintura da tecla de atalho (token de markup) — a ação fica esmaecida. Padrão: `'@#White:'`.
+
+```php
 public private(set) Lines $Lines
 ```
 
@@ -159,7 +326,19 @@ Data. O buffer de entrada multilinha ([Lines](/manual/CLI/Terminal/Input/Lines/o
 public private(set) Scrollarea $Scrollarea
 ```
 
-Data. A banda de conteúdo bufferizada acima do frame — as configs `capacity` e `scrollbar` dela são alcançáveis aqui.
+Data. A banda de conteúdo bufferizada acima do frame — as configs `capacity` e `scrollbar` dela são alcançáveis aqui (`clear()` a esvazia — o gancho que um comando `/clear` quer).
+
+```php
+public private(set) Flyout $Flyout
+```
+
+Data. O [Flyout](/manual/CLI/UI/Base/Flyout/overview) que encaixota os menus de trigger e o bottom sheet — com borda, largura total e fundo esmaecido por padrão; re-estilize-o aqui.
+
+```php
+public private(set) Listbox $Listbox
+```
+
+Data. O [Listbox](/manual/CLI/UI/Base/Listbox/overview) dentro dos menus de trigger — viewport 5, tint ciano, scrollbar e navegação circular por padrão; o `blink`, o `viewport` e as pinturas dele são alcançáveis aqui. O bottom sheet navega um clone dele, então a config visual se propaga.
 
 ```php
 public private(set) array $entries
@@ -187,7 +366,7 @@ Entra em modo raw — negociando o protocolo de teclado estendido, que é o que 
 public function feed (string $content): void
 ```
 
-Alimenta conteúdo do app acima do frame fixo no rodapé (escrita plana em saída não interativa). Fluxo nativo: o conteúdo rola para o scrollback do terminal enquanto o frame permanece fixo. Modo banda: o conteúdo bufferiza na Scrollarea — enquanto rolado para cima, a posição se mantém. Markup de Template é suportado.
+Alimenta conteúdo do app acima do frame fixo no rodapé (escrita plana em saída não interativa). Fluxo nativo: o conteúdo rola para o scrollback do terminal enquanto o frame permanece fixo. Modo banda: o conteúdo bufferiza na Scrollarea — enquanto rolado para cima, a posição se mantém. Markup de Template é suportado. Sequências de escape alheias são sanitizadas: cores (SGR) passam, controles de cursor e apagamento caem — um output de `clear` alimentado não consegue varrer a banda por trás do buffer.
 
 ### prompting()
 
@@ -196,6 +375,14 @@ public function prompting (): Generator
 ```
 
 Entrega cada linha submetida até um duplo `Ctrl+C`, `Ctrl+D` ou EOF — uma entrada multilinha é entregue como uma única string, com as linhas unidas por `\n`. Entrada não interativa entrega linhas do stdin até EOF.
+
+### pick()
+
+```php
+public function pick (array $options, null|string $title = null, null|string $hint = 'Enter selects · Esc cancels'): null|string
+```
+
+Abre o bottom sheet — o Flyout de largura total ancorado ao rodapé do terminal, substituindo o frame do input inteiro enquanto um Listbox navega as opções (`↑`/`↓` miram, Enter seleciona, Esc cancela — o `hint` esmaecido vai na última linha da tela; `null` o esconde). As opções usam a forma dos triggers, então `pick($Prompt->triggers['/'])` navega os comandos do próprio trigger. Chame-o entre os yields do `prompting()`; o frame do input se repinta ao fechar. Retorna o valor selecionado — `null` em cancelamento ou entrada não interativa.
 
 ### finish()
 

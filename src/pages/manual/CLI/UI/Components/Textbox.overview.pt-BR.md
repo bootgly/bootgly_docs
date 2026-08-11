@@ -174,7 +174,7 @@ if ($confirmed === false) {
 
 ## A moldura interativa
 
-Em terminais interativos o input é sempre emoldurado: o `marker` é desenhado antes do prompt em todos os modos, e o `border` desenha uma régua acima e abaixo do input. O `hint` cavalga a régua de baixo, interrompendo-a como uma legenda, para ser lido logo abaixo daquilo que explica, e a lista de opções (um [Flyout](/manual/CLI/UI/Base/Flyout/overview)) cai abaixo dela:
+Em terminais interativos o input é sempre emoldurado: o `marker` é desenhado antes do prompt em todos os modos, e o `border` desenha uma régua acima e abaixo do input. O `hint` cavalga a régua de baixo, interrompendo-a como uma legenda, para ser lido logo abaixo daquilo que explica, e a lista de opções (um [Listbox](/manual/CLI/UI/Base/Listbox/overview)) cai abaixo dela:
 
 ```php
 $Textbox->marker = '@#Cyan:❯@; '; // padrão

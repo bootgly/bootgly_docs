@@ -55,6 +55,16 @@ $Fieldset->borders = [
 ] + Fieldset::DEFAULT_BORDERS;
 ```
 
+## Background fill
+
+`background` paints the box interior — every content row fills with the color, border to border. It takes a `@!color:` markup token, and any reset the content itself carries is re-asserted, so a `@;` inside a line never punches a hole in the fill:
+
+```php
+$Fieldset->background = '@!black:';
+```
+
+With `background` left `null` (default), the output stays byte-identical to an unfilled box.
+
 ## Embedding — frames as strings
 
 `RETURN_OUTPUT` returns the raw frame instead of writing it, so hosts can position, compose or repaint it. Any component rendered to a string works as content — the test runner repaints a Fieldset live around a Charts `Meter` and a `Heatmap` this way:
@@ -84,6 +94,12 @@ public array $borders;
 ```
 
 Border glyph map — `top`, `top-left`, `top-right`, `mid`, `left`, `right`, `bottom`, `bottom-left`, `bottom-right`. Defaults to `Fieldset::DEFAULT_BORDERS` (square corners).
+
+```php
+public null|string $background;
+```
+
+Interior background fill, as a `@!color:` markup token — content rows fill border to border, with in-content resets re-asserted. `null` (default) keeps the output byte-identical to an unfilled box.
 
 ```php
 public null|string $title;

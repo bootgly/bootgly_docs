@@ -1,6 +1,6 @@
 # Prompt Component
 
-The `Prompt` component fixes an input line at the bottom of the terminal while content scrolls above it — like Claude Code, Codex or OpenCode. By default the content area is a buffered [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) band: the mouse wheel and `PgUp`/`PgDn` scroll it, the right-edge scrollbar accepts hover, click and drag, and **`Ctrl+T` toggles the selection mode** — it releases the mouse so native text selection and copying work, and resumes it on the next toggle. Alternatively, `buffered = false` switches to the native flow: content joins the terminal scrollback and everything mouse-related stays native, with no internal scrollbar. `prompting()` yields each submitted line, with `↑`/`↓` history recall and `Shift+Enter` multiline input (the frame grows one row per break). On non-interactive input (pipes, CI) it degrades to a plain stdin line loop — the consumer code stays identical.
+The `Prompt` component fixes an input line at the bottom of the terminal while content scrolls above it — like Claude Code, Codex or OpenCode. By default the content area is a buffered [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) band: the mouse wheel and `PgUp`/`PgDn` scroll it, the right-edge scrollbar accepts hover, click and drag, and **`Ctrl+T` toggles the selection mode** — it releases the mouse so native text selection and copying work, and resumes it on the next toggle. Alternatively, `buffered = false` switches to the native flow: content joins the terminal scrollback and everything mouse-related stays native, with no internal scrollbar. `prompting()` yields each submitted line, with `↑`/`↓` history recall and `Shift+Enter` multiline input (the frame grows one row per break). Any symbol (`/`, `@`, `!`, …) can open a context menu over the input — completions with descriptions, argument hints, per-trigger frame styling and absorbed modes — and `pick()` opens a bottom sheet over the whole footer, Claude Code-style. The frame also re-anchors itself on terminal resizes. On non-interactive input (pipes, CI) it degrades to a plain stdin line loop — the consumer code stays identical.
 
 A live demo is available in the [showcase](/manual/CLI/UX/Components/Prompt/showcase).
 
@@ -87,9 +87,128 @@ Empty `top`/`bottom` slots skip their text line — the frame shrinks and the co
 
 **Terminal support.** `Shift+Enter` has no legacy encoding: a plain terminal sends `CR` for Enter and `Shift+Enter` alike, so the modifier never reaches the program. Reporting it takes the extended keyboard protocol, which `start()` negotiates on its own (`$Prompt->Input->extended = true` — the kitty `CSI u` push plus the xterm `modifyOtherKeys` request), so nothing has to be set up. Terminals that implement it include kitty, ghostty, foot and WezTerm (kitty protocol) and xterm (`modifyOtherKeys`); the rest ignore the negotiation and never see the key — there `Shift+Enter` arrives as a plain Enter and submits, so the input stays single-line.
 
+## Trigger menus
+
+Any symbol becomes a context-menu trigger. Register it in `triggers`: the key is the symbol, the value is either a static option set or a `Closure` receiving the typed query (the token without the symbol) and returning options. Static options come in three shapes — a bare command, `'value' => 'label'` (insert the key, show the label) or the structured `'command' => ['skeleton' => …, 'description' => …]`:
+
+```php
+$Prompt->triggers = [
+   '/' => [
+      '/help' => ['description' => 'List the available commands'],
+      '/time' => ['skeleton' => '[timezone]', 'description' => 'Tell the current time'],
+      '/echo' => ['skeleton' => '<text>', 'description' => 'Echo the text back'],
+      '/exit' => ['description' => 'Quit the REPL'],
+   ],
+   '@' => static function (string $query): array {
+      $files = ['@README.md', '@composer.json', '@bootgly.php'];
+
+      return array_values(array_filter(
+         $files,
+         static fn (string $file): bool => str_contains($file, $query)
+      ));
+   }
+];
+```
+
+When the token under the cursor starts with a registered symbol, a full-width panel opens flush over the input frame — a [Listbox](/manual/CLI/UI/Base/Listbox/overview) inside a [Flyout](/manual/CLI/UI/Base/Flyout/overview) box — filtering static options by prefix (a Closure filters by itself) and lighting the typed token up inside each match. One rule covers both worlds: `/command` works at the input start and `@mention` works mid-sentence.
+
+```text
+┌──────────────────────────────────────────────────┐
+│ ❯ /help          List the available commands     │
+│   /history       Count the submitted lines       │
+└──────────────────────────────────────────────────┘
+──────────────────────────────────────────────────
+❯ /h█
+──────────────────────────────────────────────────
+```
+
+While the menu is open, `↑`/`↓` aim (circularly — the top wraps to the bottom), `Tab` completes the token to the aimed option, `Esc` closes it (it stays closed until the token changes) and `Enter` completes the aim and submits it in one stroke — `Esc` first to submit the text exactly as typed.
+
+**Parts.** `listing` picks what rides beside each command while the menu lists options, and `resolution` what shows once a single option remains — any of `'skeleton'` and `'description'`. Defaults: descriptions while listing; skeleton + description when resolved.
+
+**Argument hints.** After `Tab` resolves a command, its `resolution` parts stay up while the arguments are typed — `/time █` keeps `/time [timezone]` in view. The hint yields to any menu the cursor token opens and closes on submit.
+
+## Trigger styling, modes and breaks
+
+**Styling (`styles`).** An active trigger can recolor the input frame and swap the marker — the visual cue that a different kind of line is being composed:
+
+```php
+$Prompt->styles = [
+   '/' => ['border' => '@#Cyan:', 'prompt' => '❯ '],
+   '!' => ['border' => '@#Red:', 'prompt' => '! ']
+];
+```
+
+**Modes (`modes`).** A symbol listed in `modes` is *absorbed* when typed into an empty input: it lives in the marker instead of the buffer — like a raw bash `!` mode. `Backspace` on the empty input releases it (as if the invisible leading symbol were erased) and `Enter` rejoins the symbol into the submitted line, so the consumer still receives `!ls`. Symbols outside `modes` stay literal in the text — an `@` mention keeps composing a longer prompt:
+
+```php
+$Prompt->modes = ['!'];
+```
+
+**Line breaking (`breaks`).** A trigger can lock the input to a single line — `false` suppresses `Shift+Enter` while the symbol is active. Slash commands are one-liners; a bash mode keeps the breaks (a trailing `\` continues the line there):
+
+```php
+$Prompt->breaks = ['/' => false];
+```
+
+## Shortcut slots
+
+`shortcuts` paints key → action hint slots below the input, taking the `bottom['left']` slot over — the key highlighted by `tint`, the action dim:
+
+```php
+$Prompt->shortcuts = [
+   'Enter' => 'send',
+   'Shift+Enter' => 'break',
+   'Tab' => 'complete',
+   'Esc' => 'close'
+];
+```
+
+```text
+──────────────────────────────────────────────────
+Enter:send  Shift+Enter:break  Tab:complete  Esc:close
+```
+
+## Bottom sheet
+
+`pick()` opens a bottom sheet: the [Flyout](/manual/CLI/UI/Base/Flyout/overview) anchored to the terminal footer, **replacing the whole input frame** (input, borders and shortcuts stay covered) while a Listbox browses options inside it — with the dim hint riding on the very last row, Claude Code-style. Options take the trigger shape, so a trigger's own commands browse directly. Call it between `prompting()` yields — a `/help` handler, typically:
+
+```php
+foreach ($Prompt->prompting() as $line) {
+   if (trim($line) === '/help') {
+      $picked = $Prompt->pick(
+         $Prompt->triggers['/'],
+         title: '@#Cyan:Commands@;',
+         hint: '↑/↓ aim · Enter picks into the input · Esc cancels'
+      );
+
+      if ($picked !== null) {
+         $Prompt->Lines->load($picked); // prefill the input with the pick
+      }
+
+      continue;
+   }
+}
+```
+
+```text
+┌ Commands ────────────────────────────────────────┐
+│ ❯ /help          List the available commands     │
+│   /time [timezone]  Tell the current time        │
+│   /exit          Quit the REPL                   │
+└──────────────────────────────────────────────────┘
+ ↑/↓ aim · Enter picks into the input · Esc cancels
+```
+
+`↑`/`↓` aim, `Enter` returns the aimed option's value and `Esc` (or `Ctrl+C`/`Ctrl+D`) cancels with `null`. The input frame repaints itself in place when the sheet closes. Prefilling via `Lines->load()` is the sweet spot: the trigger machinery reopens the argument hint on the loaded command by itself. On non-interactive input the sheet never opens — `pick()` returns `null`.
+
+## Terminal resizes
+
+The prompt watches `SIGWINCH`: resizing the terminal re-measures the screen, wipes it and re-anchors everything — the content band refits, the frame repaints at the new bottom and any open menu or sheet recomposes at the new width and height. Without that, terminal emulators reflow the painted rows on their own and tear any bottom-fixed layout. The watcher arms in `start()` and restores the default handler in `finish()`; signal delivery rides `pcntl` (async signals), so environments without it simply keep the boot-time size.
+
 ## Non-interactive input
 
-On pipes and CI there is no region and no history: `prompting()` yields stdin lines until EOF and `feed()` writes plainly — deterministic, no escape noise.
+On pipes and CI there is no region and no history: `prompting()` yields stdin lines until EOF and `feed()` writes plainly — deterministic, no escape noise. Trigger menus never interfere and `pick()` returns `null`.
 
 ## Reference
 
@@ -150,6 +269,54 @@ public string $selection
 Config (band mode). The notice shown on the bottom border while the selection mode is on. Default: `'Selection mode · Ctrl+T resumes the mouse'`.
 
 ```php
+public array $triggers
+```
+
+Config. Context-menu triggers — the key is the symbol (`'/'`, `'@'`, `'#'`, …), the value is a static option set (bare commands, `'value' => 'label'` pairs or `'command' => ['skeleton' => …, 'description' => …]`) or a `Closure (string $query): array` receiving the typed query without the symbol. Commands are full tokens including the symbol. Default: `[]` (menus disabled).
+
+```php
+public array $listing
+```
+
+Config. Parts shown beside each command while the menu lists options — any of `'skeleton'`, `'description'`. Default: `['description']`.
+
+```php
+public array $resolution
+```
+
+Config. Parts shown once a single option remains (command resolved) and while its arguments are typed. Default: `['skeleton', 'description']`.
+
+```php
+public array $styles
+```
+
+Config. Per-trigger frame styling — `symbol => ['border' => markup, 'prompt' => marker]`: while a symbol's menu or hint is up, `border` recolors the frame lines and paints the marker, and `prompt` replaces the marker text. Default: `[]`.
+
+```php
+public array $modes
+```
+
+Config. Trigger symbols absorbed as mode prefixes — typed into an empty input, the symbol lives in the marker instead of the buffer; `Backspace` on the empty input releases it and Enter rejoins it into the submitted line. Default: `[]` (symbols stay literal).
+
+```php
+public array $breaks
+```
+
+Config. Per-trigger line breaking — `symbol => bool`; `false` locks the input to a single line while the symbol is active (`Shift+Enter` is ignored). Absent symbols keep the breaks. Default: `[]`.
+
+```php
+public array $shortcuts
+```
+
+Config. Shortcut hint slots below the input — `key => action`; they take the `bottom['left']` slot over when set. Default: `[]`.
+
+```php
+public string $tint
+```
+
+Config. The shortcut-key paint (markup token) — the action stays dim. Default: `'@#White:'`.
+
+```php
 public private(set) Lines $Lines
 ```
 
@@ -159,7 +326,19 @@ Data. The multiline input buffer ([Lines](/manual/CLI/Terminal/Input/Lines/overv
 public private(set) Scrollarea $Scrollarea
 ```
 
-Data. The buffered content band above the frame — its `capacity` and `scrollbar` configs are reachable here.
+Data. The buffered content band above the frame — its `capacity` and `scrollbar` configs are reachable here (`clear()` empties it — the hook a `/clear` command wants).
+
+```php
+public private(set) Flyout $Flyout
+```
+
+Data. The [Flyout](/manual/CLI/UI/Base/Flyout/overview) boxing the trigger menus and the bottom sheet — bordered, full-width, dim background by default; restyle it here.
+
+```php
+public private(set) Listbox $Listbox
+```
+
+Data. The [Listbox](/manual/CLI/UI/Base/Listbox/overview) inside the trigger menus — viewport of 5, cyan tint, scrollbar and circular navigation by default; its `blink`, `viewport` and paints are reachable here. The bottom sheet browses a clone of it, so the visual config carries over.
 
 ```php
 public private(set) array $entries
@@ -187,7 +366,7 @@ Enters raw input mode — negotiating the extended keyboard protocol, which is w
 public function feed (string $content): void
 ```
 
-Feeds app content above the bottom-fixed input frame (plain write on non-interactive output). Native flow: the content scrolls into the terminal scrollback while the frame stays fixed. Band mode: the content buffers into the Scrollarea — while scrolled up, the position holds. Template markup is supported.
+Feeds app content above the bottom-fixed input frame (plain write on non-interactive output). Native flow: the content scrolls into the terminal scrollback while the frame stays fixed. Band mode: the content buffers into the Scrollarea — while scrolled up, the position holds. Template markup is supported. Foreign escape sequences are sanitized: colors (SGR) pass, cursor and erase controls drop — a fed `clear` output cannot wipe the band behind the buffer's back.
 
 ### prompting()
 
@@ -196,6 +375,14 @@ public function prompting (): Generator
 ```
 
 Yields each submitted line until a double `Ctrl+C`, `Ctrl+D` or EOF — a multiline input yields as one string, its rows joined by `\n`. Non-interactive input yields stdin lines until EOF.
+
+### pick()
+
+```php
+public function pick (array $options, null|string $title = null, null|string $hint = 'Enter selects · Esc cancels'): null|string
+```
+
+Opens the bottom sheet — the full-width Flyout anchored to the terminal footer, replacing the whole input frame while a Listbox browses the options (`↑`/`↓` aim, Enter selects, Esc cancels — the dim `hint` rides on the very last row; `null` hides it). Options take the trigger shape, so `pick($Prompt->triggers['/'])` browses a trigger's own commands. Call it between `prompting()` yields; the input frame repaints itself on close. Returns the selected value — `null` on cancel or non-interactive input.
 
 ### finish()
 

@@ -103,6 +103,20 @@ Example:
 $Output->render('@#green: This text will be presented by the Terminal in green color.');
 ```
 
+The escaped tokens cover foregrounds, backgrounds and effects — lowercase names pick the normal colors, Capitalized names the bright ones:
+
+| Token | Effect |
+| --- | --- |
+| `@#color:` | Foreground — `@#green:`, `@#Cyan:` (bright) |
+| `@!color:` | Background — `@!black:`, `@!Red:` (bright) |
+| `@*:` | Bold |
+| `@@:` | Blink |
+| `@;` | Reset |
+
+```php
+$Output->render('@!black:@#Cyan: An aimed row look — cyan over the dim black fill. @;');
+```
+
 ## See it live
 
 The official Output demo runs in the [live showcase](/manual/CLI/Terminal/Output/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

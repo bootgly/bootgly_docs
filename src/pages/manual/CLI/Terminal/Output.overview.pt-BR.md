@@ -104,6 +104,20 @@ Exemplo:
 $Output->render('@#green: Esse texto será apresentado pelo Terminal na cor verde.');
 ```
 
+Os tokens escapados cobrem foregrounds, backgrounds e efeitos — nomes minúsculos escolhem as cores normais, nomes Capitalizados as brilhantes:
+
+| Token | Efeito |
+| --- | --- |
+| `@#color:` | Foreground — `@#green:`, `@#Cyan:` (brilhante) |
+| `@!color:` | Background — `@!black:`, `@!Red:` (brilhante) |
+| `@*:` | Negrito |
+| `@@:` | Piscar |
+| `@;` | Reset |
+
+```php
+$Output->render('@!black:@#Cyan: O visual de linha mirada — ciano sobre o preenchimento preto esmaecido. @;');
+```
+
 ## Veja ao vivo
 
 O demo oficial de Output roda no [showcase ao vivo](/manual/CLI/Terminal/Output/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

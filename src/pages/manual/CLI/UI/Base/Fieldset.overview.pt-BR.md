@@ -55,6 +55,16 @@ $Fieldset->borders = [
 ] + Fieldset::DEFAULT_BORDERS;
 ```
 
+## Preenchimento de fundo
+
+`background` pinta o interior da caixa — cada linha de conteúdo se preenche com a cor, de borda a borda. Ele recebe um token de markup `@!color:`, e qualquer reset que o próprio conteúdo carregue é reafirmado, então um `@;` dentro de uma linha nunca abre um buraco no preenchimento:
+
+```php
+$Fieldset->background = '@!black:';
+```
+
+Com `background` em `null` (padrão), a saída permanece byte a byte idêntica a uma caixa sem preenchimento.
+
 ## Embutindo — molduras como strings
 
 `RETURN_OUTPUT` retorna a moldura crua em vez de escrevê-la, então o host pode posicionar, compor ou repintar. Qualquer componente renderizado para string funciona como conteúdo — o runner de testes repinta um Fieldset ao vivo em volta de um `Meter` de Charts e de um `Heatmap` exatamente assim:
@@ -84,6 +94,12 @@ public array $borders;
 ```
 
 Mapa de glifos da borda — `top`, `top-left`, `top-right`, `mid`, `left`, `right`, `bottom`, `bottom-left`, `bottom-right`. Padrão `Fieldset::DEFAULT_BORDERS` (cantos retos).
+
+```php
+public null|string $background;
+```
+
+Preenchimento de fundo interno, como token de markup `@!color:` — as linhas de conteúdo se preenchem de borda a borda, com resets internos reafirmados. `null` (padrão) mantém a saída byte a byte idêntica a uma caixa sem preenchimento.
 
 ```php
 public null|string $title;

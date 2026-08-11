@@ -174,7 +174,7 @@ This is how the `bootgly project create` wizard asks its final confirmation — 
 
 ## The interactive frame
 
-On interactive terminals the input is always framed: the `marker` is drawn before the prompt in every mode, and the `border` draws a rule above and below the input. The `hint` rides the bottom rule, interrupting it like a legend, so it reads right under what it explains, and the option list (a [Flyout](/manual/CLI/UI/Base/Flyout/overview)) drops below it:
+On interactive terminals the input is always framed: the `marker` is drawn before the prompt in every mode, and the `border` draws a rule above and below the input. The `hint` rides the bottom rule, interrupting it like a legend, so it reads right under what it explains, and the option list (a [Listbox](/manual/CLI/UI/Base/Listbox/overview)) drops below it:
 
 ```php
 $Textbox->marker = '@#Cyan:❯@; '; // default

@@ -131,6 +131,14 @@ public function feed (string $content): void
 
 Bufferiza conteúdo (markup de Template suportado), quebrando linhas lógicas em linhas visuais na largura da banda, e repinta a banda. Escrita plana em saída não interativa.
 
+### clear()
+
+```php
+public function clear (): void
+```
+
+Esvazia o buffer, gruda a vista de volta no fundo e varre as linhas da banda — o gancho por trás de um `/clear` de REPL. Rolar depois não ressuscita nada: o buffer se foi, não só a tela.
+
 ### scroll()
 
 ```php
