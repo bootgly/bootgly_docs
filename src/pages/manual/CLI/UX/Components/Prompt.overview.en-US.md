@@ -124,6 +124,8 @@ When the token under the cursor starts with a registered symbol, a full-width pa
 
 While the menu is open, `↑`/`↓` aim (circularly — the top wraps to the bottom), `Tab` completes the token to the aimed option, `Esc` closes it (it stays closed until the token changes) and `Enter` completes the aim and submits it in one stroke — `Esc` first to submit the text exactly as typed.
 
+**Pointer.** With the mouse on (band mode), the menu is fully pointer-navigable: moving over an option aims it, a left click selects it (as `Tab` does — the argument hint rises on the resolved command), the wheel browses the list while the pointer is over the panel (and keeps scrolling the content band elsewhere), and the menu's right-edge scrollbar accepts hover, click and drag — a track press jumps the window, dragging the thumb slides it.
+
 **Parts.** `listing` picks what rides beside each command while the menu lists options, and `resolution` what shows once a single option remains — any of `'skeleton'` and `'description'`. Defaults: descriptions while listing; skeleton + description when resolved.
 
 **Argument hints.** After `Tab` resolves a command, its `resolution` parts stay up while the arguments are typed — `/time █` keeps `/time [timezone]` in view. The hint yields to any menu the cursor token opens and closes on submit.

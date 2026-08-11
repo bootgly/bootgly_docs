@@ -124,6 +124,8 @@ Quando o token sob o cursor começa com um símbolo registrado, um painel de lar
 
 Com o menu aberto, `↑`/`↓` miram (circularmente — o topo dá a volta para o fundo), `Tab` completa o token para a opção mirada, `Esc` o fecha (fica fechado até o token mudar) e `Enter` completa a mira e a submete de uma vez — `Esc` antes para submeter o texto exatamente como digitado.
 
+**Ponteiro.** Com o mouse ligado (modo band), o menu é totalmente navegável pelo ponteiro: mover sobre uma opção a mira, um click esquerdo a seleciona (como o `Tab` — o hint de argumentos sobe no comando resolvido), a wheel navega a lista enquanto o ponteiro está sobre o painel (e continua rolando o band de conteúdo fora dele), e a scrollbar da borda direita do menu aceita hover, click e drag — um press no trilho salta a janela, arrastar o thumb a desliza.
+
 **Partes.** `listing` escolhe o que acompanha cada comando enquanto o menu lista opções, e `resolution` o que aparece quando resta uma única opção — qualquer combinação de `'skeleton'` e `'description'`. Padrões: descrições ao listar; skeleton + descrição ao resolver.
 
 **Hints de argumentos.** Depois que o `Tab` resolve um comando, as partes de `resolution` continuam à vista enquanto os argumentos são digitados — `/time █` mantém `/time [timezone]` na tela. O hint cede a vez a qualquer menu que o token do cursor abra e fecha no submit.
