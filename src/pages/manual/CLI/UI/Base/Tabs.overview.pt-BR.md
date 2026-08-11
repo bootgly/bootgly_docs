@@ -2,15 +2,15 @@
 
 O componente `Tabs` é um multiplexador de [Frames](/manual/CLI/UI/Base/Frame/overview): N frames de aba rotulados compartilham um retângulo de tela e apenas o ativo renderiza — a sensação do btop/lazygit. A barra de abas vive na borda superior do frame ativo (a faixa de labels vira o título dele, com o label ativo destacado), custando zero linhas extras. Abas inativas continuam bufferizando seus Outputs isolados — drenadas e limitadas a cada render — e revelam o acumulado ao serem visitadas.
 
-Uma demo ao vivo está disponível no [showcase](/manual/CLI/UX/Components/Tabs/showcase).
+Uma demo ao vivo está disponível no [showcase](/manual/CLI/UI/Base/Tabs/showcase).
 
 ## Instância
 
-Crie uma instância passando o `Input` e o `Output` do terminal (a assinatura dos compostos UX — o `Input` só é lido dentro do ciclo interativo):
+Crie uma instância passando o `Input` e o `Output` do terminal (a assinatura dos componentes interativos — o `Input` só é lido dentro do ciclo interativo):
 
 ```php
 use const Bootgly\CLI;
-use Bootgly\CLI\UX\Components\Tabs;
+use Bootgly\CLI\UI\Base\Tabs;
 
 $Terminal = CLI->Terminal;
 
@@ -63,11 +63,13 @@ foreach ($Tabs->switching() as $tab) {
 }
 ```
 
-Em saída não interativa (pipes, CI) ele renderiza uma vez e retorna. Para dashboards estilo btop que possuem o próprio loop (ou Tabs dentro de um [Grid](/manual/CLI/UI/Components/Grid/overview)), dispense o gerador: conecte as teclas você mesmo e chame `render()` por tick.
+O ponteiro vem junto: `switching()` habilita o rastreamento SGR do mouse pela sessão — movimento puro faz hover nos labels da barra (acentuados com `$hover`, sublinhado por padrão), um clique esquerdo num label troca para ele e a roda cicla as abas sobre a linha da barra. O rastreamento é desabilitado na restauração do terminal ao sair.
+
+Em saída não interativa (pipes, CI) ele renderiza uma vez e retorna. Para dashboards estilo btop que possuem o próprio loop (ou Tabs dentro de um [Grid](/manual/CLI/UI/Components/Grid/overview)), dispense o gerador: conecte as teclas você mesmo — ou alimente as sequências cruas ao `control()` — e chame `render()` por tick.
 
 ## A barra de abas
 
-A faixa de labels é composta no título do frame ativo: segmentos com um espaço de cada lado, o ativo pintado com `$highlight` (negrito + inverso por padrão), os demais com `$color`, unidos por um divisor derivado do conjunto de borda do frame ativo (`│`, `║`, `┃`, ...):
+A faixa de labels é composta no título do frame ativo: segmentos com um espaço de cada lado, o ativo pintado com `$highlight` (negrito + inverso por padrão), o em hover com `$hover` (sublinhado por padrão), os demais com `$color`, unidos por um divisor derivado do conjunto de borda do frame ativo (`│`, `║`, `┃`, ...):
 
 ```text
 ┌ ▌ Log ▐│ CPU │ Table ────────────────┐
@@ -131,6 +133,12 @@ public string $highlight
 Config. A pintura do label ativo (SGR cru ou markup de Template). Padrão: `"\e[7;1m"` (inverso + negrito).
 
 ```php
+public string $hover
+```
+
+Config. A pintura do label inativo em hover (SGR cru ou markup de Template). Padrão: `"\e[4m"` (sublinhado).
+
+```php
 public float $throttle
 ```
 
@@ -153,6 +161,12 @@ public null|Frame $Active
 ```
 
 Metadata (somente leitura). O Frame de conteúdo da aba ativa — `null` enquanto vazio.
+
+```php
+public private(set) int $hovered
+```
+
+Metadata (somente leitura). O ordinal da aba em hover (base 1; `0` = nenhuma).
 
 ### add()
 
@@ -186,6 +200,30 @@ public function cycle (int $delta = 1): void
 
 Cicla a aba ativa relativamente, com wrap-around nas duas pontas (semântica de `Tab`/`Shift+Tab`).
 
+### hover()
+
+```php
+public function hover (int $tab): void
+```
+
+Faz hover numa aba por ordinal (base 1; `0` sai) — a barra recompõe com o label em hover acentuado por `$hover`. A aba ativa mantém seu highlight; ordinais fora do alcance limpam. Estado puro: o próximo render pinta a nova barra.
+
+### hit()
+
+```php
+public function hit (int $column, int $line): int
+```
+
+Faz o hit-test da barra: resolve uma posição absoluta de tela (coordenadas base 1) para o ordinal (base 1) do label sob ela, ou `0` fora dos labels. Só a linha da barra (a borda superior do frame ativo) acerta; os divisores e o preenchimento da borda erram.
+
+### control()
+
+```php
+public function control (string $sequence): bool
+```
+
+Controla uma sequência de entrada — navegação por teclado (`←`/`→`, `Tab`/`Shift+Tab` ciclam, `1`-`9` pulam) e reports SGR de mouse (movimento faz hover, um clique esquerdo troca, a roda cicla sobre a linha da barra). Retorna `false` quando a sequência encerra a sessão (`q`/Ctrl+C). É a superfície de integração para loops do chamador (o modo dentro do Grid).
+
 ### invalidate()
 
 ```php
@@ -216,4 +254,4 @@ Renderiza o frame da aba ativa; todos os frames inativos drenam antes, mantendo 
 public function switching (): Generator
 ```
 
-O ciclo interativo: renderiza, entrega o ordinal ativo por tick e lê uma tentativa de tecla — `←`/`→`, `Tab`/`Shift+Tab`, `1`-`9`, `q`/Ctrl+C. Saída não interativa renderiza uma vez e retorna. Restaura o terminal ao sair.
+O ciclo interativo: renderiza, entrega o ordinal ativo por tick e lê uma tentativa de entrada — `←`/`→`, `Tab`/`Shift+Tab`, `1`-`9`, `q`/Ctrl+C, mais os reports SGR do ponteiro (hover, clique, roda; rastreamento habilitado pela sessão). Saída não interativa renderiza uma vez e retorna. Restaura o terminal — rastreamento incluso — ao sair.

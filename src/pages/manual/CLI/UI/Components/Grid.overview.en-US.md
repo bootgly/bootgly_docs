@@ -174,7 +174,7 @@ Data (read-only). The placed frames (`Cell` instances), in paint order.
 public function place (Boxing $Box, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
 ```
 
-Places a box over the grid tracks and assigns its geometry immediately. Any `Boxing` implementer fits — a [Frame](/manual/CLI/UI/Base/Frame/overview), a [Tabs](/manual/CLI/UX/Components/Tabs/overview), ... Chainable; overlaps paint in placement order.
+Places a box over the grid tracks and assigns its geometry immediately. Any `Boxing` implementer fits — a [Frame](/manual/CLI/UI/Base/Frame/overview), a [Tabs](/manual/CLI/UI/Base/Tabs/overview), ... Chainable; overlaps paint in placement order.
 
 ### arrange()
 

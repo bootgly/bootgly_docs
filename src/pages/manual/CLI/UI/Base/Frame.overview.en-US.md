@@ -183,7 +183,7 @@ Metadata (read-only). The inner height, in lines (`height` minus the borders).
 public function drain (): void
 ```
 
-Pulls the pending isolated-Output writes into the line buffer without painting — sanitized, split into logical lines and capped to the capacity. Coordinators (like [Tabs](/manual/CLI/UX/Components/Tabs/overview)) drain inactive frames to keep their streams bounded; `render()` always drains first, so direct calls are only needed for hidden frames.
+Pulls the pending isolated-Output writes into the line buffer without painting — sanitized, split into logical lines and capped to the capacity. Coordinators (like [Tabs](/manual/CLI/UI/Base/Tabs/overview)) drain inactive frames to keep their streams bounded; `render()` always drains first, so direct calls are only needed for hidden frames.
 
 ### clear()
 

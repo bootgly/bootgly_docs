@@ -183,7 +183,7 @@ Metadata (somente leitura). A altura interna, em linhas (`height` menos as borda
 public function drain (): void
 ```
 
-Puxa as escritas pendentes do Output isolado para o buffer de linhas sem pintar — sanitizadas, divididas em linhas lógicas e limitadas à capacidade. Coordenadores (como o [Tabs](/manual/CLI/UX/Components/Tabs/overview)) drenam frames inativos para manter seus streams limitados; `render()` sempre drena primeiro, então chamadas diretas só são necessárias para frames escondidos.
+Puxa as escritas pendentes do Output isolado para o buffer de linhas sem pintar — sanitizadas, divididas em linhas lógicas e limitadas à capacidade. Coordenadores (como o [Tabs](/manual/CLI/UI/Base/Tabs/overview)) drenam frames inativos para manter seus streams limitados; `render()` sempre drena primeiro, então chamadas diretas só são necessárias para frames escondidos.
 
 ### clear()
 

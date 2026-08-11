@@ -2,15 +2,15 @@
 
 The `Tabs` component is a [Frame](/manual/CLI/UI/Base/Frame/overview) multiplexer: N labeled tab Frames share one screen rectangle and only the active one renders — btop/lazygit feel. The tab bar rides the active frame's top border (the labels strip becomes its title, with the active label highlighted), so it costs zero extra rows. Inactive tabs keep buffering their isolated Outputs — drained and bounded on every render — and reveal their accumulated tail when visited.
 
-A live demo is available in the [showcase](/manual/CLI/UX/Components/Tabs/showcase).
+A live demo is available in the [showcase](/manual/CLI/UI/Base/Tabs/showcase).
 
 ## Instance
 
-Create an instance passing the terminal `Input` and `Output` (the UX composite signature — `Input` is only read inside the interactive lifecycle):
+Create an instance passing the terminal `Input` and `Output` (the interactive-component signature — `Input` is only read inside the interactive lifecycle):
 
 ```php
 use const Bootgly\CLI;
-use Bootgly\CLI\UX\Components\Tabs;
+use Bootgly\CLI\UI\Base\Tabs;
 
 $Terminal = CLI->Terminal;
 
@@ -63,11 +63,13 @@ foreach ($Tabs->switching() as $tab) {
 }
 ```
 
-On non-interactive output (pipes, CI) it renders once and returns. For btop-style dashboards that own their loop (or Tabs placed in a [Grid](/manual/CLI/UI/Components/Grid/overview)), skip the generator: wire the keys yourself and call `render()` per tick.
+The pointer rides along: `switching()` enables SGR mouse tracking for the session — plain movement hovers the bar labels (accented with `$hover`, underline by default), a left press on a label switches to it and the wheel cycles the tabs over the bar row. Tracking is disabled with the terminal restore on exit.
+
+On non-interactive output (pipes, CI) it renders once and returns. For btop-style dashboards that own their loop (or Tabs placed in a [Grid](/manual/CLI/UI/Components/Grid/overview)), skip the generator: wire the keys yourself — or feed the raw sequences to `control()` — and call `render()` per tick.
 
 ## The tab bar
 
-The labels strip is composed into the active frame's title: segments padded with one space, the active one painted with `$highlight` (bold + inverse by default), the others with `$color`, joined by a divisor derived from the active frame's border set (`│`, `║`, `┃`, ...):
+The labels strip is composed into the active frame's title: segments padded with one space, the active one painted with `$highlight` (bold + inverse by default), the hovered one with `$hover` (underline by default), the others with `$color`, joined by a divisor derived from the active frame's border set (`│`, `║`, `┃`, ...):
 
 ```text
 ┌ ▌ Log ▐│ CPU │ Table ────────────────┐
@@ -131,6 +133,12 @@ public string $highlight
 Config. The active label paint (raw SGR or Template markup). Default: `"\e[7;1m"` (inverse + bold).
 
 ```php
+public string $hover
+```
+
+Config. The hovered inactive label paint (raw SGR or Template markup). Default: `"\e[4m"` (underline).
+
+```php
 public float $throttle
 ```
 
@@ -153,6 +161,12 @@ public null|Frame $Active
 ```
 
 Metadata (read-only). The active tab's content Frame — `null` while empty.
+
+```php
+public private(set) int $hovered
+```
+
+Metadata (read-only). The hovered tab ordinal (1-based; `0` = none).
 
 ### add()
 
@@ -186,6 +200,30 @@ public function cycle (int $delta = 1): void
 
 Cycles the active tab relatively, wrapping around both ends (`Tab`/`Shift+Tab` semantics).
 
+### hover()
+
+```php
+public function hover (int $tab): void
+```
+
+Hovers a tab by 1-based ordinal (`0` leaves) — the bar recomposes with the hovered label accented by `$hover`. The active tab keeps its highlight; out-of-range ordinals clear. Pure state: the next render paints the new bar.
+
+### hit()
+
+```php
+public function hit (int $column, int $line): int
+```
+
+Hit-tests the bar: resolves an absolute screen position (1-based coordinates) to the 1-based ordinal of the label under it, or `0` off the labels. Only the bar row (the active frame's top border) hits; the divisors and the trailing border fill miss.
+
+### control()
+
+```php
+public function control (string $sequence): bool
+```
+
+Controls one input sequence — keyboard navigation (`←`/`→`, `Tab`/`Shift+Tab` cycle, `1`-`9` jump) and SGR mouse reports (movement hovers, a left press switches, the wheel cycles over the bar row). Returns `false` when the sequence ends the session (`q`/Ctrl+C). This is the integration surface for caller-driven loops (the in-Grid mode).
+
 ### invalidate()
 
 ```php
@@ -216,4 +254,4 @@ Renders the active tab frame; every inactive frame drains first, keeping their s
 public function switching (): Generator
 ```
 
-The interactive lifecycle: renders, yields the active ordinal per tick and reads one key attempt — `←`/`→`, `Tab`/`Shift+Tab`, `1`-`9`, `q`/Ctrl+C. Non-interactive output renders once and returns. Restores the terminal on exit.
+The interactive lifecycle: renders, yields the active ordinal per tick and reads one input attempt — `←`/`→`, `Tab`/`Shift+Tab`, `1`-`9`, `q`/Ctrl+C, plus the SGR pointer reports (hover, click, wheel; tracking enabled for the session). Non-interactive output renders once and returns. Restores the terminal — tracking included — on exit.

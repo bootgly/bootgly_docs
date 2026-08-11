@@ -174,7 +174,7 @@ Data (somente leitura). Os frames posicionados (instâncias de `Cell`), em ordem
 public function place (Boxing $Box, int $row, int $column, int $rowspan = 1, int $colspan = 1): self
 ```
 
-Posiciona uma caixa sobre as trilhas do grid e atribui sua geometria imediatamente. Qualquer implementador de `Boxing` serve — um [Frame](/manual/CLI/UI/Base/Frame/overview), um [Tabs](/manual/CLI/UX/Components/Tabs/overview), ... Encadeável; sobreposições pintam na ordem de posicionamento.
+Posiciona uma caixa sobre as trilhas do grid e atribui sua geometria imediatamente. Qualquer implementador de `Boxing` serve — um [Frame](/manual/CLI/UI/Base/Frame/overview), um [Tabs](/manual/CLI/UI/Base/Tabs/overview), ... Encadeável; sobreposições pintam na ordem de posicionamento.
 
 ### arrange()
 
