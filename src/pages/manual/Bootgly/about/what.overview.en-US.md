@@ -16,7 +16,7 @@ Every item below is first-party code — the core has **zero third-party runtime
 - **Data** — async PostgreSQL DBAL with connection pooling, Query Builder, Schema Builder, migrations, seeders, ORM (Data Mapper) and read replicas;
 - **Security** — CORS, CSRF with token masking, sliding-window rate limiting, secure headers, trusted proxies, JWT (HS256/RS256/JWKS), RBAC authorization and server-side sessions;
 - **Testing** — suites, expressive assertions, Mock/Spy/Fake doubles, code coverage, snapshots and deterministic fakers;
-- **CLI** — command system, ANSI terminal I/O and UI components: Progress, Table, Menu, Alert, Logs;
+- **CLI** — command system, ANSI terminal I/O and UI components: Progress, Table, Select, Alert, Logs;
 - **Operations** — cache (File, APCu, shared memory, Redis), storage (Local, Memory, S3-compatible), queues, scheduler, events, logging and observability with JSON, Prometheus and OTLP exporters;
 - **Templates** — native template engine with directives and iterators.
 

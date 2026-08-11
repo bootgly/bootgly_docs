@@ -1,6 +1,6 @@
 # Window
 
-`Window` é a calculadora de janela visível por trás das listas roláveis do Bootgly — estado puro, **sem I/O de stream**. Dado um `size` de janela e um `total` de lista, ele rastreia qual fatia de linhas está visível e desliza essa fatia para seguir uma linha mirada. Seu código fatia e renderiza; o `Window` só faz a matemática. O viewport do [Menu](/manual/CLI/UI/Components/Menu/overview), o lista de opções do [Textbox](/manual/CLI/UI/Components/Textbox/overview) e a janela de linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) são todos construídos sobre ele.
+`Window` é a calculadora de janela visível por trás das listas roláveis do Bootgly — estado puro, **sem I/O de stream**. Dado um `size` de janela e um `total` de lista, ele rastreia qual fatia de linhas está visível e desliza essa fatia para seguir uma linha mirada. Seu código fatia e renderiza; o `Window` só faz a matemática. O viewport do [Select](/manual/CLI/UI/Components/Select/overview), o lista de opções do [Textbox](/manual/CLI/UI/Components/Textbox/overview) e a janela de linhas do [Textarea](/manual/CLI/UI/Components/Textarea/overview) são todos construídos sobre ele.
 
 ## Janelando uma lista
 

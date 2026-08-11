@@ -85,7 +85,7 @@ Combinado com `action` e `glyph` por nó (qualquer string — emojis incluídos)
 ## Notas
 
 - **A saída estática não carrega marcador de mira** — `render()` é seguro para relatórios; a coluna `=>` aparece só dentro de `navigate()`.
-- **Largura**: linhas não são cortadas na v1 — árvores muito fundas podem exceder larguras estreitas (mesma limitação do Menu). Compressão de guias e crop são follow-ups planejados.
+- **Largura**: linhas não são cortadas na v1 — árvores muito fundas podem exceder larguras estreitas (limitação que o crop do Select agora evita). Compressão de guias e crop são follow-ups planejados.
 - Os glifos `▾ ▸ ·` vêm do array Config `glyphs` — troque-os globalmente, ou por nó via `$Node->glyph`.
 
 ## Referência

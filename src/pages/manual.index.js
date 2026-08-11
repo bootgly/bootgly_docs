@@ -1759,26 +1759,6 @@ export default {
       }
     }
   },
-  '/CLI/UI/Components/Menu': {
-    config: {
-      icon: 'menu',
-      meta: {
-        description: {
-          'en-US': 'Build keyboard-friendly terminal menus for selection and navigation flows.',
-          'pt-BR': 'Monte menus de terminal amigáveis ao teclado para fluxos de seleção e navegação.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Menu'
-      }
-    }
-  },
   '/CLI/UI/Components/Progress': {
     config: {
       icon: 'downloading',
@@ -1818,6 +1798,28 @@ export default {
     data: {
       '*': {
         title: 'Scrollarea'
+      }
+    }
+  },
+  '/CLI/UI/Components/Select': {
+    config: {
+      icon: 'checklist',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Pick one or many options from a windowed, filterable terminal list.',
+          'pt-BR': 'Escolha uma ou várias opções em uma lista de terminal janelada e filtrável.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Select'
       }
     }
   },

@@ -5,10 +5,10 @@ O terminal abaixo executa o **Bootgly CLI de verdade** — os arquivos de demo r
 <d-block-terminal
   engine="bootgly-cli"
   title="Bootgly CLI — demos ao vivo"
-  commands="Client/Server:demo 1|Textbox:demo 27|Form:demo 28|Menu:demo 13|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Chart:demo 36|Progress:demo 19|Scrollarea:demo 41|Spinner:demo 32|Timer:demo 33|Timeline:demo 34|Text (efeitos):demo 37|Textarea:demo 39|Prompt:demo 40|Logs:demo 25|Mouse:demo 23|Writing:demo 2|Texto:demo 6|Cursor:demo 3|Viewport:demo 24"
+  commands="Client/Server:demo 1|Textbox:demo 27|Form:demo 28|Select:demo 13|Alert:demo 12|Fieldset:demo 22|Table:demo 21|Chart:demo 36|Progress:demo 19|Scrollarea:demo 41|Spinner:demo 32|Timer:demo 33|Timeline:demo 34|Text (efeitos):demo 37|Textarea:demo 39|Prompt:demo 40|Logs:demo 25|Mouse:demo 23|Writing:demo 2|Texto:demo 6|Cursor:demo 3|Viewport:demo 24"
   height="420"
 >
-Escolha um demo e pressione executar — a saída que você vê é produzida pelos mesmos componentes documentados neste manual. Os demos de Mouse e Menu são **interativos**: clique no terminal primeiro; no Menu use as setas para mirar, Espaço para selecionar e Enter para confirmar; no Mouse apenas mova, clique e role — clique direito encerra. Use o botão de código-fonte para ler o arquivo PHP do demo.
+Escolha um demo e pressione executar — a saída que você vê é produzida pelos mesmos componentes documentados neste manual. Os demos de Mouse e Select são **interativos**: clique no terminal primeiro; no Select use as setas para mirar, Espaço para selecionar e Enter para confirmar; no Mouse apenas mova, clique e role — clique direito encerra. Use o botão de código-fonte para ler o arquivo PHP do demo.
 </d-block-terminal>
 
 ## O que você está vendo
@@ -19,8 +19,8 @@ Cada comando mapeia para um arquivo real em [`projects/Demo/CLI/`](https://githu
 - **Mouse** — Mouse Reporting em tempo real: o terminal habilita o rastreamento SGR e o PHP decodifica cada movimento, clique, arrasto e rolagem com coordenadas de coluna/linha. Clique direito encerra.
 - **Logs** — o viewer de logs do modo Monitor: ~20 records simulados de workers entram ao vivo, e então seu teclado o conduz — Espaço pausa, ↑/↓ selecionam, Enter expande um record, `l` alterna o nível, `/` busca, `1-3` ligam/desligam canais, `q` sai.
 - **Textbox** — entrada de linha validada: o Validator rejeita respostas inválidas com um Alert de Falha e re-pergunta (as variações mascarada/secreta, de autocompletar e de busca vivem no [showcase do Textbox](/manual/CLI/UI/Components/Textbox/showcase)).
-- **Form** — o componente sequencial multi-campo: campos Text, Secret, Select e Confirm perguntados um por vez (`↑` + Enter volta), terminando em um Fieldset de resumo + Menu de confirmação.
-- **Menu** — o componente interativo de seleção: setas miram, Espaço alterna, Enter confirma a seleção ou a opção mirada, letras filtram — `Ctrl+C` interrompe (variações de divisores, seleção única, horizontal, alinhamentos, viewport + filtro e grade vivem no [showcase do Menu](/manual/CLI/UI/Components/Menu/showcase)).
+- **Form** — o componente sequencial multi-campo: campos Text, Secret, Select e Confirm perguntados um por vez (`↑` + Enter volta), terminando em um Fieldset de resumo + Select de confirmação.
+- **Select** — o componente interativo de seleção: setas miram, Espaço alterna, Enter confirma a seleção ou a opção mirada, letras filtram — `Ctrl+C` interrompe (variações de seleção única, múltipla + travada e viewport + filtro vivem no [showcase do Select](/manual/CLI/UI/Components/Select/showcase)).
 - **Alert, Fieldset, Table** — componentes de saída renderizando caixas estilizadas em ANSI, rótulos e colunas alinhadas.
 - **Charts** — a família de charts ANSI: sparkline com gradiente, barras rotuladas e meters (o Graph braille ao vivo transmite no [showcase do Charts](/manual/CLI/UI/Components/Charts/showcase); o Bars também é impresso pelo `bootgly test benchmark`).
 - **Progress** — a barra de progresso animada: corações se preenchem enquanto tempo decorrido, ETA e taxa atualizam em tempo real (variações indeterminada e grade multi-bar vivem no [showcase do Progress](/manual/CLI/UI/Components/Progress/showcase)).

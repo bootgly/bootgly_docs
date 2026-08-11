@@ -89,7 +89,7 @@ Com `rows` no padrão `0`, o crescimento fica desligado — a região nunca toca
 
 ## Largura dentro de uma região
 
-Uma região é mais estreita que o terminal pelo seu `offset`. Componentes que ajustam a saída à `Terminal::$width` — [Menu](/manual/CLI/UI/Components/Menu/overview), [Textarea](/manual/CLI/UI/Components/Textarea/overview), [Tree](/manual/CLI/UI/Components/Tree/overview) — precisam enxergar a largura reduzida, senão suas linhas quebram. E uma linha quebrada é fatal para um repaint aninhado: `Cursor->up()` e `Text->clear(lines: N)` contam linhas **lógicas**, então uma linha transbordando em duas linhas físicas desalinha tudo abaixo dela.
+Uma região é mais estreita que o terminal pelo seu `offset`. Componentes que ajustam a saída à `Terminal::$width` — [Select](/manual/CLI/UI/Components/Select/overview), [Textarea](/manual/CLI/UI/Components/Textarea/overview), [Tree](/manual/CLI/UI/Components/Tree/overview) — precisam enxergar a largura reduzida, senão suas linhas quebram. E uma linha quebrada é fatal para um repaint aninhado: `Cursor->up()` e `Text->clear(lines: N)` contam linhas **lógicas**, então uma linha transbordando em duas linhas físicas desalinha tudo abaixo dela.
 
 Reduza a largura em volta da renderização aninhada e sempre restaure (um `finally`, como acima): os componentes leem `Terminal::$width` quando são construídos, então construa-os dentro da janela reduzida.
 

@@ -1,6 +1,6 @@
 # Componente Form
 
-O componente `Form` pergunta uma lista declarativa de campos, um por vez. Em terminais interativos, cada campo é editado dentro de um **quadro fieldset** — o label como legend na borda superior, o editor dentro: um editor de linha raw para campos `Text`/`Secret` (o quadro repinta por tecla, sempre completo) e uma lista radio para campos `Select`/`Confirm`. Campos respondidos assentam como quadros esmaecidos que ficam na tela. Permite voltar ao campo anterior (`↑` + Enter) e termina com um resumo em [Fieldset](/manual/CLI/UI/Base/Fieldset/overview) mais um Menu de confirmação — qualquer campo pode ser editado antes de submeter. Em entrada não interativa (pipes, CI), lê exatamente uma linha do stdin por campo, deterministicamente — editores planos, sem quadros.
+O componente `Form` pergunta uma lista declarativa de campos, um por vez. Em terminais interativos, cada campo é editado dentro de um **quadro fieldset** — o label como legend na borda superior, o editor dentro: um editor de linha raw para campos `Text`/`Secret` (o quadro repinta por tecla, sempre completo) e uma lista radio para campos `Select`/`Confirm`. Campos respondidos assentam como quadros esmaecidos que ficam na tela. Permite voltar ao campo anterior (`↑` + Enter) e termina com um resumo em [Fieldset](/manual/CLI/UI/Base/Fieldset/overview) mais um Select de confirmação — qualquer campo pode ser editado antes de submeter. Em entrada não interativa (pipes, CI), lê exatamente uma linha do stdin por campo, deterministicamente — editores planos, sem quadros.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UX/Components/Form/showcase).
 
@@ -84,7 +84,7 @@ Enquanto responde um campo `Text`/`Secret`, pressione `↑` e depois Enter para 
 
 ## Resumo e confirmação
 
-Depois do último campo, o Form renderiza as respostas em um quadro Fieldset e oferece um Menu com `Confirm` mais uma opção `Edit <campo>` por campo. Escolher um campo repergunta apenas aquele campo e re-renderiza o resumo — o Form só retorna após `Confirm`:
+Depois do último campo, o Form renderiza as respostas em um quadro Fieldset e oferece um Select com `Confirm` mais uma opção `Edit <campo>` por campo. Escolher um campo repergunta apenas aquele campo e re-renderiza o resumo — o Form só retorna após `Confirm`:
 
 ```text
 ┌ New project ──────────┐

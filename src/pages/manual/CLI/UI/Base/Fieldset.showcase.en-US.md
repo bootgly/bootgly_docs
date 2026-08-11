@@ -4,7 +4,7 @@ The official Fieldset demo runs live below — real framework code on PHP 8.4 We
 
 ## Framing content — and other components
 
-Three framing variations (content wider than the title, title wider than the content, and no title at all), followed by composition: a whole `Menu` rendered **inside** a Fieldset by switching the Menu to `RETURN_OUTPUT` mode and using its output as the Fieldset content.
+Three framing variations (content wider than the title, title wider than the content, and no title at all), followed by composition: a whole `Select` rendered **inside** a Fieldset by switching the Select to `RETURN_OUTPUT` mode and using its output as the Fieldset content.
 
 <d-block-terminal engine="bootgly-cli" title="Fieldset — live demo" command="demo 22" height="420">
 `Fieldset` draws a box around `$Fieldset->content`, embedding `$Fieldset->title` in the top border. Any string works as content — including the rendered output of another component.

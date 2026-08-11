@@ -54,7 +54,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 ○ Build
 ```
 
-The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. That height is a **starting size, not a ceiling**: content taller than it makes the area grow, pushing the upcoming steps further down instead of painting over them. Steps with a known taller editor still declare their height with `rows` on `add()` (e.g. a 5-line Menu wants `rows: 6`), so the frame settles at once instead of growing row by row. While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically, the area grows by the line breaks passing through it, and `Terminal::$width` shrinks by the guide width, so width-aware components fit — and stay on one row, which is what keeps the growth counting straight — without knowing they are embedded. The Terminal's global `Output` is swapped to the same `Region` while the handler runs (and restored right after), so command-level code that reads `CLI->Terminal->Output` at call time nests too — no rewiring needed. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
+The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. That height is a **starting size, not a ceiling**: content taller than it makes the area grow, pushing the upcoming steps further down instead of painting over them. Steps with a known taller editor still declare their height with `rows` on `add()` (e.g. a 5-line Select wants `rows: 6`), so the frame settles at once instead of growing row by row. While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically, the area grows by the line breaks passing through it, and `Terminal::$width` shrinks by the guide width, so width-aware components fit — and stay on one row, which is what keeps the growth counting straight — without knowing they are embedded. The Terminal's global `Output` is swapped to the same `Region` while the handler runs (and restored right after), so command-level code that reads `CLI->Terminal->Output` at call time nests too — no rewiring needed. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
 
 ```php
 $done = $Wizard->run();
@@ -78,7 +78,7 @@ $Wizard->add('Name', function (Wizard $Wizard): string {
 });
 ```
 
-The same works for `Menu`, `Fieldset`, `Alert`, `Progress` — or raw output. See the [Textbox](/manual/CLI/UI/Components/Textbox/overview) page for its options, search and confirmation modes. Data flows between steps through closure captures (`use (&$name)`).
+The same works for `Select`, `Fieldset`, `Alert`, `Progress` — or raw output. See the [Textbox](/manual/CLI/UI/Components/Textbox/overview) page for its options, search and confirmation modes. Data flows between steps through closure captures (`use (&$name)`).
 
 ## Dynamic branches
 

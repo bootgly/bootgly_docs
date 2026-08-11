@@ -1,6 +1,6 @@
 # Window
 
-`Window` is the visible-window calculator behind Bootgly's scrollable lists — pure state, **no stream I/O**. Given a window `size` and a list `total`, it tracks which slice of rows is visible and slides that slice to follow an aimed row. Your code slices and renders; `Window` only does the math. The [Menu](/manual/CLI/UI/Components/Menu/overview) viewport, the [Textbox](/manual/CLI/UI/Components/Textbox/overview) option list and the [Textarea](/manual/CLI/UI/Components/Textarea/overview) row window are all built on it.
+`Window` is the visible-window calculator behind Bootgly's scrollable lists — pure state, **no stream I/O**. Given a window `size` and a list `total`, it tracks which slice of rows is visible and slides that slice to follow an aimed row. Your code slices and renders; `Window` only does the math. The [Select](/manual/CLI/UI/Components/Select/overview) viewport, the [Textbox](/manual/CLI/UI/Components/Textbox/overview) option list and the [Textarea](/manual/CLI/UI/Components/Textarea/overview) row window are all built on it.
 
 ## Windowing a list
 

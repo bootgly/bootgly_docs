@@ -2,7 +2,7 @@
 
 Quando a entrada do terminal é colocada em modo raw (não canônico), cada tecla pressionada chega como bytes raw — caracteres imprimíveis como eles mesmos, e teclas especiais como sequências de escape (`↑` é `\e[A`, `F5` é `\e[15~`, `Ctrl+C` é `\x03`...).
 
-O enum `Keystrokes` dá nome a cada uma dessas sequências, para que seu loop de leitura faça match em `Keystrokes::UP` em vez de strings mágicas. É o vocabulário usado pelos componentes interativos — a navegação do [Menu](/manual/CLI/UI/Components/Menu/overview) e os atalhos do [viewer de Logs](/manual/CLI/UI/Components/Logs/overview) são guiados por ele.
+O enum `Keystrokes` dá nome a cada uma dessas sequências, para que seu loop de leitura faça match em `Keystrokes::UP` em vez de strings mágicas. É o vocabulário usado pelos componentes interativos — a navegação do [Select](/manual/CLI/UI/Components/Select/overview) e os atalhos do [viewer de Logs](/manual/CLI/UI/Components/Logs/overview) são guiados por ele.
 
 ## Lendo teclas
 

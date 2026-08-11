@@ -1,6 +1,6 @@
 # Form Component
 
-The `Form` component asks a declarative list of fields, one at a time. On interactive terminals every field is edited inside a **fieldset frame** — the label as the legend on the top border, the editor inside: a raw line editor for `Text`/`Secret` fields (the frame repaints per keystroke, always complete) and a radio list for `Select`/`Confirm` fields. Answered fields settle as dim frames that stay on screen. It supports going back to the previous field (`↑` + Enter) and ends with a [Fieldset](/manual/CLI/UI/Base/Fieldset/overview) summary plus a confirm Menu — any field can be edited before submitting. On non-interactive input (pipes, CI) it reads exactly one stdin line per field, deterministically — plain editors, no frames.
+The `Form` component asks a declarative list of fields, one at a time. On interactive terminals every field is edited inside a **fieldset frame** — the label as the legend on the top border, the editor inside: a raw line editor for `Text`/`Secret` fields (the frame repaints per keystroke, always complete) and a radio list for `Select`/`Confirm` fields. Answered fields settle as dim frames that stay on screen. It supports going back to the previous field (`↑` + Enter) and ends with a [Fieldset](/manual/CLI/UI/Base/Fieldset/overview) summary plus a confirm Select — any field can be edited before submitting. On non-interactive input (pipes, CI) it reads exactly one stdin line per field, deterministically — plain editors, no frames.
 
 A live demo is available in the [showcase](/manual/CLI/UX/Components/Form/showcase).
 
@@ -84,7 +84,7 @@ While answering a `Text`/`Secret` field, press `↑` then Enter to go back one f
 
 ## Summary and confirm
 
-After the last field, the Form renders the answers in a Fieldset frame and offers a Menu with `Confirm` plus one `Edit <field>` option per field. Choosing a field re-asks only that field and re-renders the summary — the Form only returns after `Confirm`:
+After the last field, the Form renders the answers in a Fieldset frame and offers a Select with `Confirm` plus one `Edit <field>` option per field. Choosing a field re-asks only that field and re-renders the summary — the Form only returns after `Confirm`:
 
 ```text
 ┌ New project ──────────┐

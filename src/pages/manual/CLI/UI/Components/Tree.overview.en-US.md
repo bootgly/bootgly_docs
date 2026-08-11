@@ -85,7 +85,7 @@ Combined with `action` and per-node `glyph` overrides (any string — emojis inc
 ## Notes
 
 - **Static output carries no aim marker** — `render()` is report-safe; the `=>` column appears only inside `navigate()`.
-- **Width**: rows are not cropped in v1 — very deep trees can exceed narrow widths (same limitation as Menu). Guide compression and crop are planned follow-ups.
+- **Width**: rows are not cropped in v1 — very deep trees can exceed narrow widths (same limitation the Select crop now avoids). Guide compression and crop are planned follow-ups.
 - Glyphs `▾ ▸ ·` come from the `glyphs` Config array — swap them globally, or per node via `$Node->glyph`.
 
 ## Reference

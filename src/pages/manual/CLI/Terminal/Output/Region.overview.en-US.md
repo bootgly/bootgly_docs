@@ -89,7 +89,7 @@ With `rows` left at its `0` default, growth is off — the region never touches 
 
 ## Width inside a region
 
-A region is narrower than the terminal by its `offset`. Components that fit their output to `Terminal::$width` — [Menu](/manual/CLI/UI/Components/Menu/overview), [Textarea](/manual/CLI/UI/Components/Textarea/overview), [Tree](/manual/CLI/UI/Components/Tree/overview) — must see the narrowed width, otherwise their rows wrap. And a wrapped row is fatal to a nested repaint: `Cursor->up()` and `Text->clear(lines: N)` count **logical** lines, so one row spilling into two physical rows drifts everything below it.
+A region is narrower than the terminal by its `offset`. Components that fit their output to `Terminal::$width` — [Select](/manual/CLI/UI/Components/Select/overview), [Textarea](/manual/CLI/UI/Components/Textarea/overview), [Tree](/manual/CLI/UI/Components/Tree/overview) — must see the narrowed width, otherwise their rows wrap. And a wrapped row is fatal to a nested repaint: `Cursor->up()` and `Text->clear(lines: N)` count **logical** lines, so one row spilling into two physical rows drifts everything below it.
 
 Shrink the width around the nested render and always restore it (a `finally`, as above): components read `Terminal::$width` when they are constructed, so build them inside the shrunk window.
 

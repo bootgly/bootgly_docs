@@ -54,7 +54,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 ○ Build
 ```
 
-A área de conteúdo tem `reserve` linhas de altura (3 por padrão, mais uma guia de respiro de cada lado) — linhas não usadas leem como o conector. Essa altura é um **tamanho inicial, não um teto**: conteúdo mais alto que ela faz a área crescer, empurrando os próximos steps para baixo em vez de pintar por cima deles. Steps com um editor sabidamente mais alto ainda declaram a própria altura com `rows` no `add()` (ex.: um Menu de 5 linhas quer `rows: 6`), para o frame assentar de uma vez em vez de crescer linha a linha. Enquanto um handler roda, seus componentes escrevem através de um Output [`Region`](/manual/CLI/Terminal/Output/Region/overview) aninhado: as linhas ganham a guia automaticamente, a área cresce pelas quebras de linha que passam por ela, e `Terminal::$width` encolhe pela largura da guia, então componentes sensíveis à largura cabem — e ficam em uma linha só, que é o que mantém a contagem do crescimento certa — sem saber que estão embutidos. O `Output` global do Terminal é trocado pela mesma `Region` enquanto o handler roda (e restaurado logo depois), então código de comando que lê `CLI->Terminal->Output` na hora da chamada também aninha — sem rewiring. A conclusão fecha em uma tela nova com o frame vertical final completo; uma falha anexa o frame final abaixo, preservando o conteúdo e os Alerts do step que falhou:
+A área de conteúdo tem `reserve` linhas de altura (3 por padrão, mais uma guia de respiro de cada lado) — linhas não usadas leem como o conector. Essa altura é um **tamanho inicial, não um teto**: conteúdo mais alto que ela faz a área crescer, empurrando os próximos steps para baixo em vez de pintar por cima deles. Steps com um editor sabidamente mais alto ainda declaram a própria altura com `rows` no `add()` (ex.: um Select de 5 linhas quer `rows: 6`), para o frame assentar de uma vez em vez de crescer linha a linha. Enquanto um handler roda, seus componentes escrevem através de um Output [`Region`](/manual/CLI/Terminal/Output/Region/overview) aninhado: as linhas ganham a guia automaticamente, a área cresce pelas quebras de linha que passam por ela, e `Terminal::$width` encolhe pela largura da guia, então componentes sensíveis à largura cabem — e ficam em uma linha só, que é o que mantém a contagem do crescimento certa — sem saber que estão embutidos. O `Output` global do Terminal é trocado pela mesma `Region` enquanto o handler roda (e restaurado logo depois), então código de comando que lê `CLI->Terminal->Output` na hora da chamada também aninha — sem rewiring. A conclusão fecha em uma tela nova com o frame vertical final completo; uma falha anexa o frame final abaixo, preservando o conteúdo e os Alerts do step que falhou:
 
 ```php
 $done = $Wizard->run();
@@ -78,7 +78,7 @@ $Wizard->add('Name', function (Wizard $Wizard): string {
 });
 ```
 
-O mesmo vale para `Menu`, `Fieldset`, `Alert`, `Progress` — ou saída raw. Veja a página do [Textbox](/manual/CLI/UI/Components/Textbox/overview) para seus modos de opções, busca e confirmação. Dados fluem entre steps por capturas de closure (`use (&$name)`).
+O mesmo vale para `Select`, `Fieldset`, `Alert`, `Progress` — ou saída raw. Veja a página do [Textbox](/manual/CLI/UI/Components/Textbox/overview) para seus modos de opções, busca e confirmação. Dados fluem entre steps por capturas de closure (`use (&$name)`).
 
 ## Ramificações dinâmicas
 

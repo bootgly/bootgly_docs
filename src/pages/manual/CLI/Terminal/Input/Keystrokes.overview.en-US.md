@@ -2,7 +2,7 @@
 
 When the terminal input is switched to raw (non-canonical) mode, every key press arrives as raw bytes — printable characters as themselves, and special keys as escape sequences (`↑` is `\e[A`, `F5` is `\e[15~`, `Ctrl+C` is `\x03`...).
 
-The `Keystrokes` enum names every one of those sequences, so your reading loop matches on `Keystrokes::UP` instead of magic strings. It is the vocabulary used by the interactive components — the [Menu](/manual/CLI/UI/Components/Menu/overview) navigation and the [Logs viewer](/manual/CLI/UI/Components/Logs/overview) keybindings are both driven by it.
+The `Keystrokes` enum names every one of those sequences, so your reading loop matches on `Keystrokes::UP` instead of magic strings. It is the vocabulary used by the interactive components — the [Select](/manual/CLI/UI/Components/Select/overview) navigation and the [Logs viewer](/manual/CLI/UI/Components/Logs/overview) keybindings are both driven by it.
 
 ## Reading keys
 

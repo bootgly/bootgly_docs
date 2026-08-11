@@ -125,13 +125,13 @@ return static function (App $App, Screen $Screen): string {
 };
 ```
 
-A única regra: widgets que rodam **read-loop próprio** (Menu, Form, Textbox) nunca renderizam dentro de uma view — o loop do App já é dono do stdin. Screens renderizam strings; ações vivem nos keymaps.
+A única regra: widgets que rodam **read-loop próprio** (Select, Form, Textbox) nunca renderizam dentro de uma view — o loop do App já é dono do stdin. Screens renderizam strings; ações vivem nos keymaps.
 
 ## Notas de comportamento
 
 - **Execuções não interativas** (pipes, CI): `boot()` pula a tomada do terminal e `run()` renderiza um único frame e retorna — determinístico e seguro.
 - **Ordem de despacho do input**: Palette ativa → overlay de ajuda → keymaps da Screen atual → keymaps globais.
-- **Componentes interativos do core** (Menu, Form, Textbox) têm read-loops próprios — **não** os chame dentro de uma view de screen: o loop do App já é dono do stdin. Screens renderizam strings; ações vivem nos keymaps.
+- **Componentes interativos do core** (Select, Form, Textbox) têm read-loops próprios — **não** os chame dentro de uma view de screen: o loop do App já é dono do stdin. Screens renderizam strings; ações vivem nos keymaps.
 - Panes (splits horizontais/verticais) não fazem parte do MVP — um painel de conteúdo + overlays.
 
 ---

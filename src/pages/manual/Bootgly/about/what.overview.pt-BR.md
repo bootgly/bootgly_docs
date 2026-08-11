@@ -16,7 +16,7 @@ Cada item abaixo é código próprio — o núcleo tem **zero dependências de t
 - **Dados** — DBAL PostgreSQL assíncrono com pool de conexões, Query Builder, Schema Builder, migrations, seeders, ORM (Data Mapper) e réplicas de leitura;
 - **Segurança** — CORS, CSRF com masking de token, rate limiting de janela deslizante, secure headers, trusted proxies, JWT (HS256/RS256/JWKS), autorização RBAC e sessões server-side;
 - **Testes** — suites, assertions expressivas, doubles Mock/Spy/Fake, cobertura de código, snapshots e fakers determinísticos;
-- **CLI** — sistema de comandos, I/O de terminal ANSI e componentes de UI: Progress, Table, Menu, Alert, Logs;
+- **CLI** — sistema de comandos, I/O de terminal ANSI e componentes de UI: Progress, Table, Select, Alert, Logs;
 - **Operações** — cache (File, APCu, memória compartilhada, Redis), storage (Local, Memory, compatível com S3), filas, scheduler, eventos, logging e observabilidade com exportadores JSON, Prometheus e OTLP;
 - **Templates** — template engine nativo com diretivas e iteradores.
 
