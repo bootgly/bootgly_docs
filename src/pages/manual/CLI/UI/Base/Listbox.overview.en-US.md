@@ -80,7 +80,7 @@ The `↑ N more` / `↓ N more` markers are rows of their own: the render above 
 
 ## Scrollbar
 
-With `scrollbar` on, a right-edge bar replaces the `N more` markers on clipped lists — the window height stays exactly `viewport` rows. The thumb (`█`) and track (`│`) mirror the [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) proportions, and `width` gives the bar a column to align on:
+With `scrollbar` on, a right-edge bar replaces the `N more` markers on clipped lists — the window height stays exactly `viewport` rows. The bar is the [Scrollbar Atom](/manual/CLI/UI/Atoms/Scrollbar/overview) (the same one behind the [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview) band), exposed as `$Listbox->Scrollbar` for restyling, and `width` gives it a column to align on:
 
 ```php
 $Listbox->options = ['/one', '/two', '/three', '/four', '/five', '/six'];
@@ -249,6 +249,12 @@ public private(set) Window $Window;
 ```
 
 Metadata (read-only). The visible-slice calculator — `render()` sizes it from `viewport` (or from the list total when `viewport` is `0`) and slides it to the aim.
+
+```php
+public private(set) Scrollbar $Scrollbar;
+```
+
+Metadata (read-only reference). The right-edge [Scrollbar Atom](/manual/CLI/UI/Atoms/Scrollbar/overview) — restyle its glyphs and paints through it.
 
 ```php
 public private(set) int $height;

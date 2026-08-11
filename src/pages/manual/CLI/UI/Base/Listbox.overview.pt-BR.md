@@ -80,7 +80,7 @@ Os marcadores `↑ N more` / `↓ N more` são linhas próprias: o render acima 
 
 ## Scrollbar
 
-Com `scrollbar` ligado, uma barra na borda direita substitui os marcadores `N more` em listas cortadas — a altura da janela fica exatamente em `viewport` linhas. O polegar (`█`) e o trilho (`│`) espelham as proporções do [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview), e `width` dá à barra uma coluna para alinhar:
+Com `scrollbar` ligado, uma barra na borda direita substitui os marcadores `N more` em listas cortadas — a altura da janela fica exatamente em `viewport` linhas. A barra é o [Atom Scrollbar](/manual/CLI/UI/Atoms/Scrollbar/overview) (o mesmo por trás do band do [Scrollarea](/manual/CLI/UI/Components/Scrollarea/overview)), exposto como `$Listbox->Scrollbar` para restilizar, e `width` dá a ela uma coluna para alinhar:
 
 ```php
 $Listbox->options = ['/one', '/two', '/three', '/four', '/five', '/six'];
@@ -249,6 +249,12 @@ public private(set) Window $Window;
 ```
 
 Metadata (somente leitura). O calculador da fatia visível — `render()` o dimensiona pelo `viewport` (ou pelo total da lista quando `viewport` é `0`) e o desliza até a mira.
+
+```php
+public private(set) Scrollbar $Scrollbar;
+```
+
+Metadata (referência somente leitura). O [Atom Scrollbar](/manual/CLI/UI/Atoms/Scrollbar/overview) da borda direita — restilize seus glyphs e pinturas através dele.
 
 ```php
 public private(set) int $height;

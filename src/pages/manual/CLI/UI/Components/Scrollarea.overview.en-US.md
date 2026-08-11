@@ -45,6 +45,13 @@ The component is render-only: wire the keys in your own read loop (the [Prompt](
 
 When the buffer overflows the band, the right edge column renders a track (`│`) with a thumb (`█`) proportional to the visible slice — the content wraps one column earlier to reserve it. Disable it with `$Scrollarea->scrollbar = false;`.
 
+The bar is the [Scrollbar Atom](/manual/CLI/UI/Atoms/Scrollbar/overview), exposed as `$Scrollarea->Scrollbar` — restyle its glyphs and paints through it:
+
+```php
+$Scrollarea->Scrollbar->thumb = '┃';
+$Scrollarea->Scrollbar->style = ['38;5;240'];
+```
+
 ## Pointer (mouse)
 
 Three primitives make the scrollbar mouse-interactive from any SGR mouse read loop: `hit()` tests which band part sits under a coordinate (`'thumb'`, `'track'`, `'content'` or `null`), `aim()` centers the thumb on a screen line (drag and track-click jumps) and `hover()` highlights the thumb while the pointer is over it:
@@ -118,10 +125,16 @@ public private(set) bool $stuck
 Metadata (read-only). Whether the view is following the newest rows.
 
 ```php
-public private(set) bool $hovered
+public bool $hovered
 ```
 
 Metadata (read-only). Whether the pointer is over the thumb (highlighted render).
+
+```php
+public private(set) Scrollbar $Scrollbar
+```
+
+Metadata (read-only reference). The right-edge [Scrollbar Atom](/manual/CLI/UI/Atoms/Scrollbar/overview) — restyle its glyphs and paints through it.
 
 ### feed()
 

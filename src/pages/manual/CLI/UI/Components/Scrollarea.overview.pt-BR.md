@@ -45,6 +45,13 @@ O componente é somente de renderização: ligue as teclas no seu próprio loop 
 
 Quando o buffer excede a banda, a coluna da borda direita renderiza um trilho (`│`) com um cursor (`█`) proporcional à fatia visível — o conteúdo quebra uma coluna antes para reservá-la. Desative com `$Scrollarea->scrollbar = false;`.
 
+A barra é o [Atom Scrollbar](/manual/CLI/UI/Atoms/Scrollbar/overview), exposto como `$Scrollarea->Scrollbar` — restilize seus glyphs e pinturas através dele:
+
+```php
+$Scrollarea->Scrollbar->thumb = '┃';
+$Scrollarea->Scrollbar->style = ['38;5;240'];
+```
+
 ## Pointer (mouse)
 
 Três primitivas tornam a scrollbar interativa com mouse a partir de qualquer loop de leitura SGR: `hit()` testa qual parte da banda está sob uma coordenada (`'thumb'`, `'track'`, `'content'` ou `null`), `aim()` centraliza o cursor da scrollbar em uma linha da tela (arrasto e salto por clique no trilho) e `hover()` destaca o cursor enquanto o ponteiro está sobre ele:
@@ -118,10 +125,16 @@ public private(set) bool $stuck
 Metadata (somente leitura). Se a visão está seguindo as linhas mais novas.
 
 ```php
-public private(set) bool $hovered
+public bool $hovered
 ```
 
 Metadata (somente leitura). Se o ponteiro está sobre o cursor da scrollbar (render destacado).
+
+```php
+public private(set) Scrollbar $Scrollbar
+```
+
+Metadata (referência somente leitura). O [Atom Scrollbar](/manual/CLI/UI/Atoms/Scrollbar/overview) da borda direita — restilize seus glyphs e pinturas através dele.
 
 ### feed()
 

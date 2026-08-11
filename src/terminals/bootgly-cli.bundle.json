@@ -1,9 +1,9 @@
 {
-  "asset": "/wasm/bootgly-cli.zip?v=6e79c06d",
+  "asset": "/wasm/bootgly-cli.zip?v=02a2ba4f",
   "version": "1.0.0-beta.1-dev",
   "wasm": "/wasm/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm",
-  "files": 729,
-  "bytes": 1011395,
+  "files": 731,
+  "bytes": 1016373,
   "demos": {
     "1": "projects/Demo/CLI/Terminal/Input/@reading-01.demo.php",
     "2": "projects/Demo/CLI/Terminal/Output/@writing-01.demo.php",
@@ -66,6 +66,7 @@
     "59": "projects/Demo/CLI/UI/Differ-01.demo.php",
     "60": "projects/Demo/CLI/UI/Heatmap-01.demo.php",
     "61": "projects/Demo/CLI/UI/Button-01.demo.php",
+    "62": "projects/Demo/CLI/UI/Scrollbar-01.demo.php",
     "32.1": "projects/Demo/CLI/UI/Spinner-02.demo.php",
     "32.2": "projects/Demo/CLI/UI/Spinner-03.demo.php",
     "32.3": "projects/Demo/CLI/UI/Spinner-04.demo.php",

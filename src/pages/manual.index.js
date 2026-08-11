@@ -1460,6 +1460,28 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Scrollbar': {
+    config: {
+      icon: 'unfold_more',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The vertical bar strip — a thumb over a track derived from total/height/first; the bar behind Scrollarea and Listbox.',
+          'pt-BR': 'A barra vertical — um thumb sobre um trilho derivado de total/height/first; a barra por trás do Scrollarea e do Listbox.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Scrollbar'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Statusbar': {
     config: {
       icon: 'call_to_action',
