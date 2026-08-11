@@ -1348,6 +1348,30 @@ export default {
       }
     }
   },
+  '/CLI/UI/Atoms/Button': {
+    config: {
+      icon: 'smart_button',
+      status: 'new',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'A pressable one-row pill — icon/emoji + label, hover background paint and a generic Closure press Action.',
+          'pt-BR': 'Uma pill pressionável de uma linha — ícone/emoji + label, background no hover e uma Action de press genérica via Closure.'
+        }
+      },
+      menu: {
+        subheader: '.CLI.UI.Atoms'
+      },
+      subpages: {
+        showcase: true
+      }
+    },
+    data: {
+      '*': {
+        title: 'Button'
+      }
+    }
+  },
   '/CLI/UI/Atoms/Differ': {
     config: {
       icon: 'difference',
@@ -1359,9 +1383,7 @@ export default {
           'pt-BR': 'Diff de dois textos no terminal — hunks unified ou colunas side-by-side com números de linha e destaque por palavra.'
         }
       },
-      menu: {
-        subheader: '.CLI.UI.Atoms'
-      },
+      menu: {},
       subpages: {
         showcase: true
       }
