@@ -33,6 +33,8 @@ the pool. Wait for `$Transaction->Operation` before sending the first transactio
 
 The transaction accepts a new operation only when the previous one is finished. If another
 operation is still active, methods return a failed `Operation` instead of touching the pool.
+That refusal is durable: the refused operation never becomes the tracked one, so every later
+call is refused too for as long as the same statement is still in flight.
 
 ## Querying
 
@@ -58,7 +60,9 @@ commit (): Operation
 ```
 
 Commits the outer transaction when `depth === 1`. When `depth > 1`, it releases the current
-savepoint instead.
+savepoint instead. `commit()` is refused while a statement is still in flight: committing
+behind an un-awaited write would report success for work the server may have rejected or
+discarded, so await the write first.
 
 ```php
 rollback (null|string $name = null): Operation
@@ -66,6 +70,14 @@ rollback (null|string $name = null): Operation
 
 With no name, rolls back the current savepoint when nested, or the outer transaction when
 not nested. With a name, rolls back to that savepoint.
+
+Rolling back the outer transaction is the one call that runs even with a statement still
+outstanding — a teardown that refused would strand the pinned connection and leave the server
+session open inside the transaction. The outstanding statement is discarded: it fails with
+`SQL transaction statement was discarded by the rollback.` and its buffered command is dropped
+with it, so it can never reach the wire afterwards and run outside the transaction that was
+meant to contain it. A savepoint rollback is an ordinary statement and is refused like any
+other.
 
 Both methods fail without touching the pool when the transaction is inactive.
 

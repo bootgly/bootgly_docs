@@ -43,7 +43,14 @@ busy and `created >= max`, new operations wait in `pending`. When a connection i
 the pool promotes pending operations.
 
 Transactions pin one connection with `lock` and release it with `unlock` after commit or
-rollback.
+rollback. The reservation is freed by the operation that carries `unlock`, even when the driver
+still has a co-located sibling to finish — the intent lives on that operation, so deferring it
+would lose it and park the connection as reserved forever.
+
+An operation pinned to a connection the pool can no longer provide — a server restart, a
+load-balancer recycle, a dropped socket — fails immediately instead of waiting in `pending`. No
+amount of capacity can satisfy a pin, so queueing it would keep it there for good while every
+promotion pass reconsidered it.
 
 When an operation's `timeout` elapses, the pool finishes it and asks its driver to
 reconcile the wire (`Driver::abandon()`) before releasing the connection. The server is

@@ -34,7 +34,9 @@ Espere `$Transaction->Operation` antes de enviar a primeira query transacional.
   fechada.
 
 A transação só aceita uma nova operação quando a anterior terminou. Se outra operação ainda
-está ativa, os métodos retornam um `Operation` com falha em vez de tocar o pool.
+está ativa, os métodos retornam um `Operation` com falha em vez de tocar o pool. Essa recusa
+é durável: a operação recusada nunca vira a operação rastreada, então toda chamada seguinte
+também é recusada enquanto a mesma instrução seguir em voo.
 
 ## Queries
 
@@ -60,7 +62,9 @@ commit (): Operation
 ```
 
 Commita a transação externa quando `depth === 1`. Quando `depth > 1`, libera o savepoint
-atual.
+atual. O `commit()` é recusado enquanto uma instrução ainda estiver em voo: commitar atrás de
+uma escrita não aguardada reportaria sucesso para um trabalho que o servidor pode ter
+rejeitado ou descartado — aguarde a escrita antes.
 
 ```php
 rollback (null|string $name = null): Operation
@@ -68,6 +72,13 @@ rollback (null|string $name = null): Operation
 
 Sem nome, desfaz o savepoint atual quando há aninhamento, ou a transação externa quando
 não há. Com nome, volta para aquele savepoint.
+
+Desfazer a transação externa é a única chamada que roda mesmo com uma instrução pendente — um
+teardown que recusasse deixaria a conexão fixada presa e a sessão do servidor aberta dentro da
+transação. A instrução pendente é descartada: ela falha com
+`SQL transaction statement was discarded by the rollback.` e o comando que estava no buffer
+vai junto, então ele nunca alcança o fio depois e nunca roda fora da transação que deveria
+contê-lo. Um rollback de savepoint é uma instrução comum e é recusado como qualquer outra.
 
 Os dois métodos falham sem tocar o pool quando a transação está inativa.
 

@@ -42,6 +42,14 @@ estão ocupadas e `created >= max`, novas operações aguardam em `pending`. Qua
 é liberada, o pool promove operações pendentes.
 
 Transações fixam uma conexão com `lock` e liberam com `unlock` depois de commit ou rollback.
+A reserva é liberada pela operação que carrega o `unlock`, mesmo quando o driver ainda tem um
+irmão co-localizado para terminar — a intenção vive naquela operação, então adiar a liberação
+a perderia junto com ela e deixaria a conexão reservada para sempre.
+
+Uma operação presa a uma conexão que o pool não consegue mais fornecer — restart do servidor,
+reciclagem de load balancer, socket derrubado — falha na hora em vez de esperar em `pending`.
+Nenhuma capacidade satisfaz um pin, então enfileirá-la a manteria ali para sempre enquanto
+cada passe de promoção a reconsiderasse.
 
 Quando o `timeout` de uma operação vence, o pool a finaliza e pede ao driver dela para
 reconciliar o wire (`Driver::abandon()`) antes de liberar a conexão. O servidor em geral
