@@ -40,6 +40,20 @@ $Database->query('SELECT name FROM fruits WHERE id = ?1', [1]);
 $Database->query('SELECT id FROM fruits WHERE name = :name', ['name' => 'apple']);
 ```
 
+A named parameter must match a placeholder in the statement. One that matches none — a
+typo, or a placeholder renamed without updating the caller — fails the operation instead
+of being dropped:
+
+```php
+$Insert = $Database->query('INSERT INTO fruits (name) VALUES (:name)', ['nmae' => 'apple']);
+
+$Insert->error;
+// SQLite cannot bind the parameter "nmae": the statement has no matching placeholder.
+```
+
+Nothing is written. Without that check the placeholder would keep its default — `NULL` —
+so the row would be stored with the column blanked while the operation reported success.
+
 Types map natively: `int` → INTEGER, `float` → REAL, `null` → NULL, `bool` → INTEGER
 `0/1`, `DateTimeInterface` → TEXT (`Y-m-d H:i:s.u`), everything else → TEXT. SQLite has
 no boolean column type — booleans come back as `0`/`1` integers.

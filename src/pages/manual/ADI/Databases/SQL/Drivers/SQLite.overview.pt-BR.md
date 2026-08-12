@@ -40,6 +40,20 @@ $Database->query('SELECT name FROM fruits WHERE id = ?1', [1]);
 $Database->query('SELECT id FROM fruits WHERE name = :name', ['name' => 'apple']);
 ```
 
+Um parâmetro nomeado precisa casar com um placeholder do statement. Um que não casa com
+nenhum — um typo, ou um placeholder renomeado sem atualizar quem chama — falha a operação
+em vez de ser descartado:
+
+```php
+$Insert = $Database->query('INSERT INTO fruits (name) VALUES (:name)', ['nmae' => 'apple']);
+
+$Insert->error;
+// SQLite cannot bind the parameter "nmae": the statement has no matching placeholder.
+```
+
+Nada é gravado. Sem essa checagem o placeholder manteria o valor padrão — `NULL` — então a
+linha seria gravada com a coluna em branco enquanto a operação reportava sucesso.
+
 Os tipos mapeiam nativamente: `int` → INTEGER, `float` → REAL, `null` → NULL, `bool` →
 INTEGER `0/1`, `DateTimeInterface` → TEXT (`Y-m-d H:i:s.u`), o restante → TEXT. SQLite não
 tem tipo booleano — booleans voltam como inteiros `0`/`1`.
