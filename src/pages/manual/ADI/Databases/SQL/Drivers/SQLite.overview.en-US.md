@@ -109,6 +109,11 @@ through a per-connection `SQLite3Stmt` cache (capped by the `statements` config 
 eviction). `statements => 0` disables caching: each statement closes right after its
 command completes.
 
+A statement the engine rejected — a UNIQUE or FOREIGN KEY violation, a busy database — stays
+in the cache and is reused. Only the operation that earned the error fails with it; the next
+operation on the same SQL runs normally, whatever its parameters. A rejected row therefore
+never costs the row after it.
+
 ```php
 advance (Operation $Operation): Operation
 ```

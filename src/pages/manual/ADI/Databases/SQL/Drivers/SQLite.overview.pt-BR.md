@@ -109,6 +109,11 @@ um cache de `SQLite3Stmt` por conexão (limitado pela chave de config `statement
 LRU). `statements => 0` desliga o cache: cada statement fecha logo após o comando
 concluir.
 
+Um statement que o engine rejeitou — violação de UNIQUE ou FOREIGN KEY, banco ocupado —
+permanece no cache e é reusado. Só a operação que gerou o erro falha com ele; a operação
+seguinte sobre o mesmo SQL roda normalmente, com quaisquer parâmetros. Uma linha rejeitada,
+portanto, nunca custa a linha seguinte.
+
 ```php
 advance (Operation $Operation): Operation
 ```
