@@ -66,6 +66,30 @@ $Saved = $Repository->hydrate($Operation)->entity;
 $Saved->id; // backfilled from Result->inserted
 ```
 
+### Keys wider than a PHP int
+
+A MySQL `BIGINT UNSIGNED` key can go past 2^63, which no PHP `int` can hold. The driver
+reports those ids as **exact decimal strings** rather than losing them, so declare the key
+to accept one:
+
+```php
+#[Table('orders')]
+class Order
+{
+   #[Key]
+   public null|int|string $id = null;
+}
+```
+
+`Result->inserted` is therefore `int|string`: an `int` for every id inside `PHP_INT_MAX`, a
+string only past it. A key declared `null|int` that receives such an id raises a
+`RuntimeException` naming the property instead of storing a narrowed value — a saturated key
+would match no row, and the next `save()` would silently update nothing.
+
+This only comes up when the table actually holds ids that large. A plain
+`BIGINT UNSIGNED AUTO_INCREMENT` never reaches it on its own, but an import that preserves
+one legacy id above 2^63 makes the server continue the sequence from there.
+
 ## Pool notes
 
 - Every pooled connection binds one driver instance — prepared-statement caches are

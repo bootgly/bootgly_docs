@@ -106,6 +106,11 @@ $Insert = $Database->await($Database->query("INSERT INTO users (name) VALUES ('A
 $Insert->Result->inserted; // LAST_INSERT_ID do comando
 ```
 
+`inserted` segue a mesma regra dos valores de linha acima: `int` para todo id dentro de
+`PHP_INT_MAX` e string decimal exata acima disso, já que uma chave `BIGINT UNSIGNED` além de
+2^63 não cabe em um int do PHP. Uma chave de entidade que precise aceitar esses ids é
+declarada `null|int|string`.
+
 ## Transações
 
 Transações e savepoints fixam uma conexão do pool — sem código específico de driver:

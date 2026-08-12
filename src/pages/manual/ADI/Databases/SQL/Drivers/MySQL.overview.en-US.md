@@ -104,6 +104,11 @@ $Insert = $Database->await($Database->query("INSERT INTO users (name) VALUES ('A
 $Insert->Result->inserted; // LAST_INSERT_ID of the command
 ```
 
+`inserted` follows the same rule as the row values above: an `int` for every id inside
+`PHP_INT_MAX`, and an exact decimal string past it, since a `BIGINT UNSIGNED` key beyond 2^63
+does not fit a PHP int. An entity key that must accept those ids is declared
+`null|int|string`.
+
 ## Transactions
 
 Transactions and savepoints pin one pooled connection — no driver-specific code:
