@@ -71,7 +71,13 @@ $Saved->id; // backfilled from Result->inserted
 - Every pooled connection binds one driver instance — prepared-statement caches are
   per-connection.
 - The prepared-statement cache size is the `statements` config key (default `256`);
-  the least recently used statement is evicted when the cap is reached.
+  the least recently used statement is evicted when the cap is reached. The cap bounds the
+  server side too: a statement the driver stops tracking is closed on the wire, and one
+  statement is prepared per connection no matter how many operations ask for it at once.
+- Operations created before the first one reaches the socket share that single prepare.
+  A sibling binds the statement its owner is preparing instead of preparing it again —
+  which on PostgreSQL would fail outright (`42P05`), and on MySQL would leave a server
+  statement nothing could ever close.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
 - SQLite is synchronous: operations resolve immediately and never suspend. Keep

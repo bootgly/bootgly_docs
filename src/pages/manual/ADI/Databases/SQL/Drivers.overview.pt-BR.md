@@ -70,7 +70,14 @@ $Saved->id; // preenchido a partir de Result->inserted
 - Cada conexão do pool vincula uma instância de driver — caches de prepared statements
   são por conexão.
 - O tamanho do cache de prepared statements é a chave de config `statements` (padrão
-  `256`); o statement menos usado recentemente é removido ao atingir o limite.
+  `256`); o statement menos usado recentemente é removido ao atingir o limite. O limite
+  também vale do lado do servidor: um statement que o driver deixa de rastrear é fechado no
+  wire, e um único statement é preparado por conexão, por mais operações que o peçam ao
+  mesmo tempo.
+- Operações criadas antes de a primeira chegar ao socket compartilham esse único prepare.
+  A irmã vincula o statement que a dona está preparando em vez de prepará-lo de novo — o
+  que no PostgreSQL falharia de imediato (`42P05`) e no MySQL deixaria no servidor um
+  statement que nada conseguiria fechar.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.
