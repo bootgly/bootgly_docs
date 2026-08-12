@@ -74,6 +74,10 @@ $Saved->id; // backfilled from Result->inserted
   the least recently used statement is evicted when the cap is reached. The cap bounds the
   server side too: a statement the driver stops tracking is closed on the wire, and one
   statement is prepared per connection no matter how many operations ask for it at once.
+- A statement is closed only once no pending command still carries its id. A co-located
+  operation bakes the server id into its bytes when it is created, and those bytes can wait
+  in the FIFO for several round-trips — evicting that statement in the meantime would send
+  the close ahead of a command that still needs it.
 - Operations created before the first one reaches the socket share that single prepare.
   A sibling binds the statement its owner is preparing instead of preparing it again —
   which on PostgreSQL would fail outright (`42P05`), and on MySQL would leave a server

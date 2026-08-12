@@ -74,6 +74,10 @@ $Saved->id; // preenchido a partir de Result->inserted
   também vale do lado do servidor: um statement que o driver deixa de rastrear é fechado no
   wire, e um único statement é preparado por conexão, por mais operações que o peçam ao
   mesmo tempo.
+- Um statement só é fechado quando nenhum comando pendente ainda carrega o id dele. Uma
+  operação co-localizada grava o id do servidor nos próprios bytes no momento em que é
+  criada, e esses bytes podem esperar vários round-trips na FIFO — remover esse statement
+  nesse intervalo mandaria o close na frente de um comando que ainda precisa dele.
 - Operações criadas antes de a primeira chegar ao socket compartilham esse único prepare.
   A irmã vincula o statement que a dona está preparando em vez de prepará-lo de novo — o
   que no PostgreSQL falharia de imediato (`42P05`) e no MySQL deixaria no servidor um
