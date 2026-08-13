@@ -39,6 +39,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 `run()` walks the steps in order: each activation clears the screen, paints the title and the full frame — past + active steps, the guide-row content area, the upcoming steps — and anchors the cursor inside the content area (relative movements only, safe on scrolled and embedded terminals). The handler's editor renders right there, between the active step and the next one:
 
 ```text
+│
 ✔ Name (App)
 │
 ◉ Interface
@@ -46,13 +47,16 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 │  Which interface?
 │  (↑/↓ to move, Enter to confirm)
 │
-│  => [ ] CLI — Console app
-│     [ ] WPI — Web (HTTP) server
+│  ❯ ○ CLI — Console app
+│    ○ WPI — Web (HTTP) server
 │
 ○ Confirm
 │
 ○ Build
+│
 ```
+
+A guide caps the timeline on both ends — above the first step and below the last one — so the flow reads as coming from somewhere and going somewhere instead of starting and ending abruptly.
 
 The content area is `reserve` rows tall (3 by default, plus one breathing guide on each side) — unused rows read as the connector. That height is a **starting size, not a ceiling**: content taller than it makes the area grow, pushing the upcoming steps further down instead of painting over them. Steps with a known taller editor still declare their height with `rows` on `add()` (e.g. a 5-line Select wants `rows: 6`), so the frame settles at once instead of growing row by row. While a handler runs, its components write through a nested [`Region`](/manual/CLI/Terminal/Output/Region/overview) output: rows gain the guide automatically, the area grows by the line breaks passing through it, and `Terminal::$width` shrinks by the guide width, so width-aware components fit — and stay on one row, which is what keeps the growth counting straight — without knowing they are embedded. The Terminal's global `Output` is swapped to the same `Region` while the handler runs (and restored right after), so command-level code that reads `CLI->Terminal->Output` at call time nests too — no rewiring needed. Completion closes on a fresh screen with the final all-done vertical frame; a failure appends the final frame below, preserving the failed step's content and Alerts:
 

@@ -93,10 +93,10 @@ Depois do último campo, o Form renderiza as respostas em um quadro Fieldset e o
 │ Git: yes              │
 └───────────────────────┘
 (↑/↓ to move, Enter to confirm)
-=> [ ] Confirm
-   [ ] Edit Name
-   [ ] Edit Platform
-   [ ] Edit Git
+❯ ○ Confirm
+  ○ Edit Name
+  ○ Edit Platform
+  ○ Edit Git
 ```
 
 ## Entrada não interativa

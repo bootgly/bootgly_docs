@@ -39,6 +39,7 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 `run()` percorre os steps em ordem: cada ativação limpa a tela, pinta o título e o frame completo — steps passados + ativo, a área de conteúdo com linhas-guia, os próximos steps — e ancora o cursor dentro da área de conteúdo (só movimentos relativos, seguro em terminais com scroll ou embutidos). O editor do handler renderiza ali, entre o step ativo e o próximo:
 
 ```text
+│
 ✔ Name (App)
 │
 ◉ Interface
@@ -46,13 +47,16 @@ $Wizard->add('Build', function (Wizard $Wizard): null {
 │  Which interface?
 │  (↑/↓ to move, Enter to confirm)
 │
-│  => [ ] CLI — Console app
-│     [ ] WPI — Web (HTTP) server
+│  ❯ ○ CLI — Console app
+│    ○ WPI — Web (HTTP) server
 │
 ○ Confirm
 │
 ○ Build
+│
 ```
+
+Uma guia fecha a timeline nas duas pontas — acima do primeiro step e abaixo do último — para o fluxo ler como vindo de algum lugar e indo para algum lugar, em vez de começar e terminar secamente.
 
 A área de conteúdo tem `reserve` linhas de altura (3 por padrão, mais uma guia de respiro de cada lado) — linhas não usadas leem como o conector. Essa altura é um **tamanho inicial, não um teto**: conteúdo mais alto que ela faz a área crescer, empurrando os próximos steps para baixo em vez de pintar por cima deles. Steps com um editor sabidamente mais alto ainda declaram a própria altura com `rows` no `add()` (ex.: um Select de 5 linhas quer `rows: 6`), para o frame assentar de uma vez em vez de crescer linha a linha. Enquanto um handler roda, seus componentes escrevem através de um Output [`Region`](/manual/CLI/Terminal/Output/Region/overview) aninhado: as linhas ganham a guia automaticamente, a área cresce pelas quebras de linha que passam por ela, e `Terminal::$width` encolhe pela largura da guia, então componentes sensíveis à largura cabem — e ficam em uma linha só, que é o que mantém a contagem do crescimento certa — sem saber que estão embutidos. O `Output` global do Terminal é trocado pela mesma `Region` enquanto o handler roda (e restaurado logo depois), então código de comando que lê `CLI->Terminal->Output` na hora da chamada também aninha — sem rewiring. A conclusão fecha em uma tela nova com o frame vertical final completo; uma falha anexa o frame final abaixo, preservando o conteúdo e os Alerts do step que falhou:
 
