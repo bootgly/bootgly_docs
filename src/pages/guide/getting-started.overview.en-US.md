@@ -78,6 +78,14 @@ Everything you own lives at the workspace level — `projects/`, `public/`, `sto
 
 ## The project wizard
 
+Its header names the build you are installing — the framework version plus the commit it came from:
+
+```text
+Bootgly — New project wizard v1.0.0-beta.1-dev (39f53a89)
+```
+
+Every `dev-main` install reports the same version, so the **commit** is what tells two installs apart. Quote that line in bug reports; when a screen looks older than the docs describe, it is the first thing to check (a kit whose submodule pin lags behind installs an older framework — `git submodule update --init --remote` moves it forward). The commit is read from the installation itself: the git metadata of the checkout, or the reference Composer resolved. Sources that carry neither (a release archive) show the version alone.
+
 The wizard guides you from an empty kit to a running project:
 
 1. **Platforms** — the **Bootgly base platform** is always included: unopinionated, it ships the `CLI` and `WPI` interfaces. Here you multi-select the **extra platforms** with the opinionated dependencies — `Console` (CLI extras — TUI apps) and/or `Web` (WPI extras) — or none, staying base-only. The wizard initializes the matching platform submodules (`Console/`, `Web/`);

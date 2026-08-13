@@ -78,6 +78,14 @@ Tudo o que é seu vive no nível do workspace — `projects/`, `public/`, `stora
 
 ## O wizard de projetos
 
+O cabeçalho dele nomeia o build que você está instalando — a versão do framework mais o commit de onde ela veio:
+
+```text
+Bootgly — New project wizard v1.0.0-beta.1-dev (39f53a89)
+```
+
+Toda instalação `dev-main` reporta a mesma versão, então é o **commit** que distingue duas instalações. Cite essa linha em relatórios de bug; quando uma tela parecer mais antiga do que a documentação descreve, é a primeira coisa a conferir (um kit com o pin do submodule atrasado instala um framework mais antigo — `git submodule update --init --remote` o avança). O commit é lido da própria instalação: os metadados git do checkout, ou a referência que o Composer resolveu. Fontes que não têm nenhum dos dois (um arquivo de release) mostram só a versão.
+
 O wizard te guia de um kit vazio até um projeto rodando:
 
 1. **Plataformas** — a **plataforma base Bootgly** sempre vem incluída: não opinativa, ela traz as interfaces `CLI` e `WPI`. Aqui você multi-seleciona as **plataformas extras** com as dependências opinativas — `Console` (extras de CLI — apps TUI) e/ou `Web` (extras de WPI) — ou nenhuma, ficando só com a base. O wizard inicializa os submodules de plataforma correspondentes (`Console/`, `Web/`);
