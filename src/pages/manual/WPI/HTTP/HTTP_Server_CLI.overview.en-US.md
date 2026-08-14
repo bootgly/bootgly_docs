@@ -433,3 +433,105 @@ Each worker runs a `stream_select()`-based event loop that handles:
 - **PHP Fibers**: The event loop integrates with PHP Fibers to support deferred (asynchronous) responses. See `$Response->defer()` for details.
 
 The event loop supports up to approximately 1000 simultaneous file descriptors (the `stream_select()` limit). When Fibers are active, the loop operates in non-blocking mode (polling); otherwise, it blocks until I/O is available, ensuring zero idle CPU usage.
+
+## Deferred Response Lifecycle
+
+A deferred response (`$Response->defer()`) outlives the handler that created it: the client can vanish, the worker can shut down, and the connection can be reused for the next request while the deferred work is still parked. Three collaborating pieces make that safe.
+
+All three are **pay-for-use**. A synchronous request that nothing observes allocates none of them — no exchange, no token, no weak map.
+
+### The exchange: one request's terminal owner
+
+An `Exchange` is opened only when something observes request admission — booting `Telemetry`, for instance. It reaches its terminal state exactly once, whether the request ended with a response or was cancelled:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Exchange;
+
+$Exchange->observe(static function (Exchange $Exchange, null|int $code): void {
+   // $code is the final status code — or null when the exchange was cancelled.
+});
+```
+
+- **Terminal exactly once.** A re-entrant or repeated finish is a no-op.
+- **A late observer still fires**, immediately, with the retained result — registering after the transition is not a silent no-op.
+- **Observers are contained.** One that throws cannot suppress another, nor break teardown.
+- **The exchange retains only the status code**, never the terminal `Response`. Holding the response would pin its request, body and resources for as long as any listener kept the token.
+
+### Cancellation is not a status
+
+When the transport or the scheduler tears down work before a response became observable, the exchange finishes with `$code === null`.
+
+Bootgly does **not** invent a status class for that case — there is no synthetic `499`. A cancelled exchange closes its core accounting (it counts as a request, its duration is observed, it leaves the in-flight gauge) and contributes nothing to the per-class response counters. See the [Observability](/observability) guide for how that shows up in metrics.
+
+### Scheduler capability
+
+Deferring an **observed** exchange requires the reactor to implement `Bootgly\ACI\Events\Cancelling`, a marker over `Contextualizing` that adds no methods:
+
+```php
+use Bootgly\ACI\Events\Cancelling;
+use Bootgly\ACI\Events\Contextualizing;
+
+interface Cancelling extends Contextualizing {}
+```
+
+The marker exists because an observed exchange must be closed *deterministically* when its work is cancelled — a scheduler that cannot guarantee that would strand in-flight accounting forever. Bootgly's own `Select` reactor implements it, so this only concerns you if you replace the reactor: a custom scheduler implementing `Contextualizing` alone makes an observed `defer()` fail early, before the request is cloned or uploaded files are moved.
+
+### Teardown ownership
+
+`Ownership` binds teardown owners to a transport or protocol scope — a connection, an HTTP/2 stream — without adding public methods to those non-final classes:
+
+```php
+use Bootgly\WPI\Endpoints\Servers\Ownership;
+
+Ownership::attach($Connection, $Owner);   // $Owner implements Disconnecting
+Ownership::detach($Connection, $Owner);   // its work completed normally
+Ownership::close($Connection);            // notify every attached owner exactly once
+```
+
+- **Exactly once, always.** Attaching to an *already closed* scope notifies the owner immediately, and a second attach of the same owner does nothing — including a re-entrant attach from inside its own `disconnect()`.
+- **Closing costs nothing when nobody attached**, which is the common case for every connection and every HTTP/2 stream: the scope keeps a terminal marker and no collections.
+- **A closed scope never reopens.** `detach()` on it is ignored, so a late attach can never be notified twice.
+
+### Reference
+
+```php
+public function observe (Closure $Observer): bool
+```
+
+Registers a terminal observer on an `Exchange`. The closure receives `(Exchange $Exchange, null|int $code)`. Returns `true` when the observer was queued, `false` when the exchange had already finished and the observer ran immediately.
+
+```php
+public function check (): bool
+```
+
+Whether this exchange has already reached its terminal transition.
+
+```php
+public function finish (null|Response $Response): bool
+```
+
+Finishes the exchange exactly once, retaining only `$Response->code`. Pass `null` for transport or scheduler cancellation. Returns `false` if it was already terminal.
+
+```php
+public static function fetch (object $Owner): null|self
+```
+
+The exchange carried by an active `Request` alias or by a retained weak snapshot.
+
+```php
+public static function attach (object $Scope, Disconnecting $Owner): void
+```
+
+Attaches a teardown owner to a scope. If the scope is already closed, the owner's `disconnect()` is invoked immediately instead — once per owner, ever.
+
+```php
+public static function detach (object $Scope, Disconnecting $Owner): void
+```
+
+Removes an owner whose work completed normally. Ignored on a closed scope, whose notified identities are retained as terminal markers.
+
+```php
+public static function close (object $Scope): void
+```
+
+Closes a scope and invokes `disconnect()` on every attached owner exactly once. Re-closing is a no-op.

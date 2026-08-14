@@ -206,6 +206,25 @@ new Telemetry($O)->boot();
 It records `http_requests_total`, `http_responses_total{class}` (`2xx`, `4xx`, …),
 `http_request_duration_seconds` (histogram) and `http_requests_in_flight`.
 
+> [!IMPORTANT]
+> **`http_requests_total` and `sum(http_responses_total)` are not meant to match.**
+>
+> A request whose client disconnected, or whose deferred work was torn down before a response
+> became observable, still counts as a request: it increments `http_requests_total`, observes a
+> duration, and leaves `http_requests_in_flight`. But it has no status, and Bootgly does not
+> invent one — there is no synthetic `499` — so it adds nothing to `http_responses_total`.
+>
+> The difference is therefore a real signal rather than a bookkeeping error:
+>
+> ```promql
+> http_requests_total - sum(http_responses_total)
+> ```
+>
+> is the number of exchanges that ended without an observable response. A steady trickle is
+> normal (clients do go away mid-request). A jump means clients are abandoning requests or a
+> worker is tearing down deferred work — worth correlating with the duration histogram, since
+> both point at the same requests.
+
 > [!NOTE]
 > The server's request events are `isSet`-guarded at the emit site, so they cost **nothing** until a
 > listener is registered — the hot path is unaffected when telemetry is off. With telemetry on, the

@@ -209,6 +209,26 @@ new Telemetry($O)->boot();
 Ele registra `http_requests_total`, `http_responses_total{class}` (`2xx`, `4xx`, …),
 `http_request_duration_seconds` (histograma) e `http_requests_in_flight`.
 
+> [!IMPORTANT]
+> **`http_requests_total` e `sum(http_responses_total)` não deveriam bater.**
+>
+> Uma requisição cujo cliente desconectou, ou cujo trabalho deferido foi derrubado antes de uma
+> resposta se tornar observável, continua contando como requisição: incrementa
+> `http_requests_total`, tem a duração observada e sai de `http_requests_in_flight`. Mas ela não
+> tem status, e o Bootgly não inventa um — não existe `499` sintético —, então ela não soma nada
+> em `http_responses_total`.
+>
+> A diferença é, portanto, um sinal real e não um erro de contabilidade:
+>
+> ```promql
+> http_requests_total - sum(http_responses_total)
+> ```
+>
+> é o número de exchanges que terminaram sem resposta observável. Um fluxo baixo e constante é
+> normal (clientes somem no meio da requisição mesmo). Um salto significa que clientes estão
+> abandonando requisições ou que um worker está derrubando trabalho deferido — vale correlacionar
+> com o histograma de duração, já que ambos apontam para as mesmas requisições.
+
 > [!NOTE]
 > Os eventos de requisição do servidor são protegidos por `isSet` no ponto de emissão, então custam
 > **nada** até um listener ser registrado — o hot path não é afetado quando a telemetria está

@@ -434,3 +434,105 @@ Cada worker executa um event loop baseado em `stream_select()` que lida com:
 - **PHP Fibers**: O event loop se integra com PHP Fibers para suportar respostas deferred (assíncronas). Veja `$Response->defer()` para detalhes.
 
 O event loop suporta aproximadamente 1000 file descriptors simultâneos (limite do `stream_select()`). Quando Fibers estão ativas, o loop opera em modo non-blocking (polling); caso contrário, ele bloqueia até que I/O esteja disponível, garantindo zero uso de CPU em idle.
+
+## Ciclo de vida da resposta deferred
+
+Uma resposta deferred (`$Response->defer()`) sobrevive ao handler que a criou: o cliente pode sumir, o worker pode desligar e a conexão pode ser reaproveitada para a próxima requisição enquanto o trabalho deferido ainda está estacionado. Três peças colaboram para que isso seja seguro.
+
+As três são **pay-for-use**. Uma requisição síncrona que ninguém observa não aloca nenhuma delas — sem exchange, sem token, sem weak map.
+
+### O exchange: o dono terminal de uma requisição
+
+Um `Exchange` só é aberto quando algo observa a admissão da requisição — por exemplo, ao subir a `Telemetry`. Ele chega ao estado terminal exatamente uma vez, tendo a requisição terminado com resposta ou sido cancelada:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Exchange;
+
+$Exchange->observe(static function (Exchange $Exchange, null|int $code): void {
+   // $code é o status code final — ou null quando o exchange foi cancelado.
+});
+```
+
+- **Terminal exatamente uma vez.** Um finish reentrante ou repetido é no-op.
+- **Um observador tardio ainda dispara**, imediatamente, com o resultado retido — registrar depois da transição não é um no-op silencioso.
+- **Os observadores são contidos.** Um que lance exceção não suprime outro nem quebra o teardown.
+- **O exchange retém só o status code**, nunca a `Response` terminal. Segurar a resposta prenderia a requisição, o corpo e os recursos dela enquanto qualquer listener mantivesse o token.
+
+### Cancelamento não é um status
+
+Quando o transporte ou o scheduler derruba o trabalho antes que uma resposta se tornasse observável, o exchange finaliza com `$code === null`.
+
+O Bootgly **não** inventa uma classe de status para esse caso — não existe um `499` sintético. Um exchange cancelado fecha sua contabilidade central (conta como requisição, tem a duração observada, sai do gauge de in-flight) e não contribui em nada para os contadores de resposta por classe. Veja o guia de [Observabilidade](/observability) para como isso aparece nas métricas.
+
+### Capacidade do scheduler
+
+Deferir um exchange **observado** exige que o reactor implemente `Bootgly\ACI\Events\Cancelling`, um marcador sobre `Contextualizing` que não adiciona métodos:
+
+```php
+use Bootgly\ACI\Events\Cancelling;
+use Bootgly\ACI\Events\Contextualizing;
+
+interface Cancelling extends Contextualizing {}
+```
+
+O marcador existe porque um exchange observado precisa ser fechado *deterministicamente* quando seu trabalho é cancelado — um scheduler incapaz de garantir isso deixaria a contabilidade de in-flight presa para sempre. O reactor `Select` do próprio Bootgly o implementa, então isso só te afeta se você substituir o reactor: um scheduler customizado que implemente apenas `Contextualizing` faz um `defer()` observado falhar cedo, antes de a requisição ser clonada ou de arquivos enviados serem movidos.
+
+### Posse de teardown
+
+`Ownership` vincula donos de teardown a um escopo de transporte ou protocolo — uma conexão, uma stream HTTP/2 — sem adicionar métodos públicos a essas classes não-finais:
+
+```php
+use Bootgly\WPI\Endpoints\Servers\Ownership;
+
+Ownership::attach($Connection, $Owner);   // $Owner implementa Disconnecting
+Ownership::detach($Connection, $Owner);   // o trabalho dele terminou normalmente
+Ownership::close($Connection);            // notifica cada dono anexado exatamente uma vez
+```
+
+- **Exatamente uma vez, sempre.** Anexar a um escopo *já fechado* notifica o dono imediatamente, e um segundo attach do mesmo dono não faz nada — inclusive um attach reentrante de dentro do próprio `disconnect()` dele.
+- **Fechar não custa nada quando ninguém anexou**, que é o caso comum de toda conexão e toda stream HTTP/2: o escopo guarda apenas um marcador terminal e nenhuma coleção.
+- **Um escopo fechado nunca reabre.** `detach()` nele é ignorado, então um attach tardio nunca pode ser notificado duas vezes.
+
+### Referência
+
+```php
+public function observe (Closure $Observer): bool
+```
+
+Registra um observador terminal em um `Exchange`. A closure recebe `(Exchange $Exchange, null|int $code)`. Retorna `true` quando o observador foi enfileirado e `false` quando o exchange já havia finalizado e o observador rodou imediatamente.
+
+```php
+public function check (): bool
+```
+
+Se este exchange já alcançou sua transição terminal.
+
+```php
+public function finish (null|Response $Response): bool
+```
+
+Finaliza o exchange exatamente uma vez, retendo somente `$Response->code`. Passe `null` para cancelamento de transporte ou scheduler. Retorna `false` se ele já era terminal.
+
+```php
+public static function fetch (object $Owner): null|self
+```
+
+O exchange carregado por um alias `Request` ativo ou por um snapshot fraco retido.
+
+```php
+public static function attach (object $Scope, Disconnecting $Owner): void
+```
+
+Anexa um dono de teardown a um escopo. Se o escopo já estiver fechado, o `disconnect()` do dono é invocado imediatamente — uma vez por dono, para sempre.
+
+```php
+public static function detach (object $Scope, Disconnecting $Owner): void
+```
+
+Remove um dono cujo trabalho terminou normalmente. Ignorado em escopo fechado, cujas identidades notificadas ficam retidas como marcadores terminais.
+
+```php
+public static function close (object $Scope): void
+```
+
+Fecha um escopo e invoca `disconnect()` em cada dono anexado exatamente uma vez. Refechar é no-op.
