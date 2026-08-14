@@ -161,6 +161,40 @@ $O->Metrics
 Como os contadores são por processo após o fork, cada worker reporta seus próprios totais — mesclar os
 arquivos por-worker os soma em um total da frota. `Gauge` aceita o mesmo callback `observe:`.
 
+## Acompanhe quanto do reactor o trabalho deferido está usando
+
+Todo `$Response->wait($socket)` estaciona uma Fiber no próprio descritor dela dentro do event loop, e
+esses descritores dividem um único orçamento com as suas conexões de cliente. `Select::$parked` é a
+**marca máxima** dessa população — o maior número de waiters agendados que o reactor já segurou ao
+mesmo tempo, desde que o worker subiu:
+
+```php
+use Bootgly\ACI\Observability\Metrics\Gauge;
+use Bootgly\WPI\Events\Select;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+$O->Metrics->push(new Gauge(
+   name: 'reactor_parked_peak',
+   help: 'Máximo de waiters agendados que este reactor segurou de uma vez.',
+   // ? `$Event` é um static tipado: proteja com isSet() para que um snapshot
+   //   tirado antes do reactor existir leia 0 em vez de levantar um Error.
+   observe: static fn () => isSet(HTTP_Server_CLI::$Event)
+      && HTTP_Server_CLI::$Event instanceof Select
+         ? HTTP_Server_CLI::$Event->parked
+         : 0
+));
+```
+
+Uma aplicação síncrona reporta `0` para sempre — nada é agendado. Um valor subindo em direção ao teto
+de 1000 descritores do selector é o aviso antecipado de que o trabalho deferido está espremendo as
+conexões novas: passado esse teto o reactor recusa a espera e o handler deferido falha em vez de
+estacionar.
+
+Leia como pico, não como nível. Amostrar a contagem ao vivo de dentro de uma requisição quase sempre
+devolve `1` — a geração do próprio chamador —, e é por isso que uma medição pontual não distingue um
+reactor ocupado de um ocioso, e que um teste de carga que "não mostrou nada" pode simplesmente nunca
+ter enchido as filas.
+
 ## Registre métricas de requisição HTTP
 
 `Telemetry` registra métricas por requisição ouvindo os eventos de ciclo de vida da requisição do

@@ -159,6 +159,39 @@ $O->Metrics
 Because the counters are per-process after the fork, each worker reports its own totals — merging the
 per-worker files sums them into a fleet total. `Gauge` accepts the same `observe:` callback.
 
+## Watch how much of the reactor deferred work is using
+
+Every `$Response->wait($socket)` parks a Fiber on its own descriptor inside the event loop, and those
+descriptors share one budget with your client connections. `Select::$parked` is the **high-water
+mark** of that population — the most scheduled waiters the reactor has held at once, since the worker
+started:
+
+```php
+use Bootgly\ACI\Observability\Metrics\Gauge;
+use Bootgly\WPI\Events\Select;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+$O->Metrics->push(new Gauge(
+   name: 'reactor_parked_peak',
+   help: 'Most scheduled waiters this reactor held at once.',
+   // ? `$Event` is a typed static: guard with isSet() so a snapshot taken
+   //   before the reactor exists reads 0 instead of raising an Error.
+   observe: static fn () => isSet(HTTP_Server_CLI::$Event)
+      && HTTP_Server_CLI::$Event instanceof Select
+         ? HTTP_Server_CLI::$Event->parked
+         : 0
+));
+```
+
+A synchronous application reports `0` forever — nothing is ever scheduled. A value that climbs toward
+the selector's 1000-descriptor ceiling is the early warning that deferred work is crowding out new
+connections: past that ceiling the reactor refuses the wait and the deferred handler fails instead of
+parking.
+
+Read it as a peak, not a level. Sampling the live count from inside a request almost always returns
+`1` — the caller's own generation — which is why a spot check cannot tell a busy reactor from an idle
+one, and why a load test that "showed nothing" may simply never have filled the queues.
+
 ## Record HTTP request metrics
 
 `Telemetry` records per-request metrics by listening to the HTTP server's request-lifecycle events —
