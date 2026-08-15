@@ -354,14 +354,33 @@ export default {
 
   // ABI
   '/ABI': {
-    config: null,
+    config: {
+      icon: 'bolt',
+      status: 'done',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The base layer every other one stands on: code primitives, templates, IO, resources, events and debugging.',
+          'pt-BR': 'A camada base sobre a qual todas as outras se apoiam: primitivas de código, templates, IO, recursos, eventos e depuração.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'bolt',
+          label: 'Bootgly ABI'
+        },
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
     data: {
       '*': {
         title: 'Abstract Bootable Interface'
       }
-    },
-    meta: {
-      expanding: true
     }
   },
   '/ABI/Code': {
@@ -384,10 +403,6 @@ export default {
         }
       },
       menu: {
-        header: {
-          icon: 'bolt',
-          label: 'Bootgly ABI'
-        },
         subheader: '.ABI.Code'
       },
       subpages: {

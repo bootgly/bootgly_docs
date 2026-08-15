@@ -37,7 +37,7 @@ o resultado — e aí todos os estágios rodam juntos, uma vez por elemento:
 $Active = static fn (array $User): bool => $User['status'] === 'active';
 $Name   = static fn (array $User): string => $User['name'];
 
-$names = (new __Array($users))
+$names = new __Array($users)
    ->filter($Active)
    ->map($Name)
    ->collect();
@@ -67,10 +67,10 @@ sobrevivente e nunca aloca nada:
 
 ```php
 // O primeiro admin, ou null
-$Admin = (new __Array($users))->filter($IsAdmin)->find();
+$Admin = new __Array($users)->filter($IsAdmin)->find();
 
 // Existe algum?
-if ( (new __Array($users))->filter($IsAdmin)->check() ) {
+if ( new __Array($users)->filter($IsAdmin)->check() ) {
    // ...
 }
 ```
@@ -123,9 +123,9 @@ $Headers->apply($raw);
 Os dois percorrem a cadeia uma vez e nunca materializam:
 
 ```php
-$active = (new __Array($users))->filter($Active)->count();
+$active = new __Array($users)->filter($Active)->count();
 
-$total = (new __Array($orders))
+$total = new __Array($orders)
    ->map($Amount)
    ->reduce(static fn (int $carry, int $amount): int => $carry + $amount, 0);
 ```

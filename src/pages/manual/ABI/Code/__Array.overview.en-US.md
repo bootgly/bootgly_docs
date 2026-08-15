@@ -36,7 +36,7 @@ asks for a result, and then every stage runs together, once per element:
 $Active = static fn (array $User): bool => $User['status'] === 'active';
 $Name   = static fn (array $User): string => $User['name'];
 
-$names = (new __Array($users))
+$names = new __Array($users)
    ->filter($Active)
    ->map($Name)
    ->collect();
@@ -66,10 +66,10 @@ survivor and never allocates anything:
 
 ```php
 // The first admin, or null
-$Admin = (new __Array($users))->filter($IsAdmin)->find();
+$Admin = new __Array($users)->filter($IsAdmin)->find();
 
 // Is there one at all?
-if ( (new __Array($users))->filter($IsAdmin)->check() ) {
+if ( new __Array($users)->filter($IsAdmin)->check() ) {
    // ...
 }
 ```
@@ -120,9 +120,9 @@ That is what makes the API pay on the small arrays a server actually handles:
 Both walk the chain once and never materialize it:
 
 ```php
-$active = (new __Array($users))->filter($Active)->count();
+$active = new __Array($users)->filter($Active)->count();
 
-$total = (new __Array($orders))
+$total = new __Array($orders)
    ->map($Amount)
    ->reduce(static fn (int $carry, int $amount): int => $carry + $amount, 0);
 ```
