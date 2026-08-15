@@ -352,6 +352,55 @@ export default {
     }
   },
 
+  // ABI
+  '/ABI': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Abstract Bootable Interface'
+      }
+    },
+    meta: {
+      expanding: true
+    }
+  },
+  '/ABI/Code': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Code'
+      }
+    }
+  },
+  '/ABI/Code/__Array': {
+    config: {
+      icon: 'data_array',
+      status: 'done',
+      version: 'v1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'Chain array operations in a single pass: map, filter, early-exit find/check and reusable pipelines.',
+          'pt-BR': 'Encadeie operações de array em uma passagem: map, filter, find/check com saída antecipada e pipelines reutilizáveis.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'bolt',
+          label: 'Bootgly ABI'
+        },
+        subheader: '.ABI.Code'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: '__Array'
+      }
+    }
+  },
+
   // ADI
   '/ADI': {
     config: {

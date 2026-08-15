@@ -52,3 +52,6 @@ yarn.lock
 
 # Non-public markdown files
 _*.md
+# ! Bootgly entities whose own name starts with an underscore (__Array, __String)
+#   produce page files that match the rule above by accident. They ARE public.
+!src/pages/**/__*.md
