@@ -23,7 +23,7 @@ use Bootgly\ABI\Code\__Array;
 
 $Array = new __Array($rows);
 
-// 2.9x faster than the native chain at 100 elements
+// 2.8x faster than the native chain at 100 elements
 $Array->map($Normalize)->filter($Active)->collect();
 ```
 
@@ -50,10 +50,10 @@ Measured against `array_values(array_filter(array_map(...)))`:
 
 | Elements | Native chain | `__Array` chain | |
 |---|---:|---:|---|
-| 5 | 443.6 ns | 396.6 ns | 1.1x faster |
-| 20 | 1435.6 ns | 680.7 ns | **2.1x faster** |
-| 100 | 6507.6 ns | 2195.4 ns | **3.0x faster** |
-| 1000 | 62 266 ns | 19 116 ns | **3.3x faster** |
+| 5 | 439.0 ns | 401.8 ns | 1.1x faster |
+| 20 | 1398.1 ns | 686.4 ns | **2.0x faster** |
+| 100 | 6247.6 ns | 2247.9 ns | **2.8x faster** |
+| 1000 | 61 904 ns | 18 929 ns | **3.3x faster** |
 
 That is the same speed as writing the fused `foreach` out by hand — within 4%. The
 abstraction is free; the chain is what costs.
@@ -78,9 +78,9 @@ With 1000 elements and a match 5% in:
 
 | | Time | |
 |---|---:|---|
-| `array_values(array_filter(array_map(...)))[0]` | 56 936 ns | |
-| `array_find(array_map(...))` (PHP 8.4, C) | 28 849 ns | 2.0x faster |
-| `->map()->filter()->find()` | **1126 ns** | **50x faster** |
+| `array_values(array_filter(array_map(...)))[0]` | 57 270 ns | |
+| `array_find(array_map(...))` (PHP 8.4, C) | 29 390 ns | 1.9x faster |
+| `->map()->filter()->find()` | **1117 ns** | **51x faster** |
 
 It wins at every hit position, including a complete miss — 3x there, because no
 intermediate array is ever built. The further into the array the match sits, the smaller
@@ -111,9 +111,9 @@ That is what makes the API pay on the small arrays a server actually handles:
 
 | Elements | Native chain | Chain built per call | Chain built once + `apply()` |
 |---|---:|---:|---:|
-| 5 | 435.6 ns | 389.7 ns (1.1x) | **169.4 ns (2.6x)** |
-| 8 | 624.9 ns | 449.2 ns (1.4x) | **224.4 ns (2.8x)** |
-| 20 | 1411.4 ns | 669.0 ns (2.1x) | **443.6 ns (3.2x)** |
+| 5 | 438.6 ns | 382.6 ns (1.1x) | **152.2 ns (2.9x)** |
+| 8 | 628.8 ns | 441.2 ns (1.4x) | **205.8 ns (3.1x)** |
+| 20 | 1377.2 ns | 667.8 ns (2.1x) | **434.2 ns (3.2x)** |
 
 ## Count and fold
 
@@ -128,7 +128,7 @@ $total = (new __Array($orders))
 ```
 
 At 100 elements `count()` is 3.1x faster than `count(array_filter(array_map(...)))` and
-`reduce()` 3.2x faster than `array_reduce()` over the same filtered array — 3.6x and 3.5x
+`reduce()` 3.4x faster than `array_reduce()` over the same filtered array — 3.6x and 3.9x
 at 1000. The native forms materialize two arrays to produce a single value; these produce
 it as the pass goes.
 
@@ -213,7 +213,7 @@ writes made after that point. Build the chain where you run it.
 - **A single native call.** `array_keys()`, `array_is_list()`, `count()` — call PHP.
   Wrapping one operation only ever adds dispatch.
 - **A single `filter` with a hit near the front.** PHP 8.4's `array_find()` wins there
-  (267.5 ns against 291.3 ns at 100 elements). Past a few dozen elements the chain takes
+  (266.6 ns against 282.8 ns at 100 elements). Past a few dozen elements the chain takes
   it back — 2x at a full miss.
 - **Iterating.** `__Array` deliberately does not implement `ArrayAccess`, `Countable` or
   `Iterator`. Every one of them puts a userland dispatch in front of an opcode: reading

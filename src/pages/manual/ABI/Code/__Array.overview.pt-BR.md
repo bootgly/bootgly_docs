@@ -24,7 +24,7 @@ use Bootgly\ABI\Code\__Array;
 
 $Array = new __Array($rows);
 
-// 2,9x mais rápido que a cadeia nativa com 100 elementos
+// 2,8x mais rápido que a cadeia nativa com 100 elementos
 $Array->map($Normalize)->filter($Active)->collect();
 ```
 
@@ -51,10 +51,10 @@ Medido contra `array_values(array_filter(array_map(...)))`:
 
 | Elementos | Cadeia nativa | Cadeia `__Array` | |
 |---|---:|---:|---|
-| 5 | 443,6 ns | 396,6 ns | 1,1x mais rápido |
-| 20 | 1435,6 ns | 680,7 ns | **2,1x mais rápido** |
-| 100 | 6507,6 ns | 2195,4 ns | **3,0x mais rápido** |
-| 1000 | 62.266 ns | 19.116 ns | **3,3x mais rápido** |
+| 5 | 439,0 ns | 401,8 ns | 1,1x mais rápido |
+| 20 | 1398,1 ns | 686,4 ns | **2,0x mais rápido** |
+| 100 | 6247,6 ns | 2247,9 ns | **2,8x mais rápido** |
+| 1000 | 61.904 ns | 18.929 ns | **3,3x mais rápido** |
 
 Isso é a mesma velocidade de escrever o `foreach` fundido à mão — dentro de 4%. A abstração
 é de graça; o encadeamento é o que custa.
@@ -79,9 +79,9 @@ Com 1000 elementos e um match a 5% do início:
 
 | | Tempo | |
 |---|---:|---|
-| `array_values(array_filter(array_map(...)))[0]` | 56.936 ns | |
-| `array_find(array_map(...))` (PHP 8.4, em C) | 28.849 ns | 2,0x mais rápido |
-| `->map()->filter()->find()` | **1126 ns** | **50x mais rápido** |
+| `array_values(array_filter(array_map(...)))[0]` | 57.270 ns | |
+| `array_find(array_map(...))` (PHP 8.4, em C) | 29.390 ns | 1,9x mais rápido |
+| `->map()->filter()->find()` | **1117 ns** | **51x mais rápido** |
 
 Ele ganha em qualquer posição do acerto, inclusive quando não há acerto nenhum — 3x nesse
 caso, porque nenhum array intermediário chega a ser construído. Quanto mais fundo o match
@@ -114,9 +114,9 @@ $Headers->apply($raw);
 
 | Elementos | Cadeia nativa | Cadeia por chamada | Cadeia construída uma vez + `apply()` |
 |---|---:|---:|---:|
-| 5 | 435,6 ns | 389,7 ns (1,1x) | **169,4 ns (2,6x)** |
-| 8 | 624,9 ns | 449,2 ns (1,4x) | **224,4 ns (2,8x)** |
-| 20 | 1411,4 ns | 669,0 ns (2,1x) | **443,6 ns (3,2x)** |
+| 5 | 438,6 ns | 382,6 ns (1,1x) | **152,2 ns (2,9x)** |
+| 8 | 628,8 ns | 441,2 ns (1,4x) | **205,8 ns (3,1x)** |
+| 20 | 1377,2 ns | 667,8 ns (2,1x) | **434,2 ns (3,2x)** |
 
 ## Contar e reduzir
 
@@ -131,7 +131,7 @@ $total = (new __Array($orders))
 ```
 
 Com 100 elementos, `count()` é 3,1x mais rápido que `count(array_filter(array_map(...)))` e
-`reduce()` 3,2x mais rápido que `array_reduce()` sobre o mesmo array filtrado — 3,6x e 3,5x
+`reduce()` 3,4x mais rápido que `array_reduce()` sobre o mesmo array filtrado — 3,6x e 3,9x
 com 1000. As formas nativas materializam dois arrays para produzir um único valor; estas
 produzem esse valor conforme a passagem acontece.
 
@@ -216,7 +216,7 @@ enxerga escritas feitas depois desse ponto. Construa a cadeia onde você a execu
 - **Uma chamada nativa isolada.** `array_keys()`, `array_is_list()`, `count()` — chame o
   PHP. Envolver uma operação só acrescenta despacho.
 - **Um `filter` único com acerto perto do início.** O `array_find()` do PHP 8.4 ganha aí
-  (267,5 ns contra 291,3 ns com 100 elementos). Passando de algumas dezenas de elementos a
+  (266,6 ns contra 282,8 ns com 100 elementos). Passando de algumas dezenas de elementos a
   cadeia retoma a vantagem — 2x quando não há acerto.
 - **Iterar.** O `__Array` deliberadamente não implementa `ArrayAccess`, `Countable` nem
   `Iterator`. Cada um deles coloca um despacho userland na frente de um opcode: ler via
