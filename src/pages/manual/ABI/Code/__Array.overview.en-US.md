@@ -36,10 +36,13 @@ asks for a result, and then every stage runs together, once per element:
 $Active = static fn (array $User): bool => $User['status'] === 'active';
 $Name   = static fn (array $User): string => $User['name'];
 
-$names = new __Array($users)
-   ->filter($Active)
-   ->map($Name)
-   ->collect();
+// Native — one intermediate array per stage, then a third to re-index
+$names = array_values(
+   array_map($Name, array_filter($users, $Active))
+);
+
+// __Array — one pass, one array
+$names = new __Array($users)->filter($Active)->map($Name)->collect();
 ```
 
 `collect()` always returns a **list**. Survivors are appended as they are found, so the
@@ -58,6 +61,10 @@ Measured against `array_values(array_filter(array_map(...)))`:
 That is the same speed as writing the fused `foreach` out by hand — within 4%. The
 abstraction is free; the chain is what costs.
 
+Measured by `04-chain-fusion.Microbenchmark.php`, stored in
+`results/04-chain-fusion.php-8.4.23.json`. The shape dispatch that makes it possible is
+priced separately in `07-pipeline-shapes.Microbenchmark.php`.
+
 ## Find the first match, or ask whether one exists
 
 This is the largest win in the class. The native idiom has to build the whole filtered
@@ -65,26 +72,42 @@ array before it can tell you what the first element is; a chain stops at the fir
 survivor and never allocates anything:
 
 ```php
-// The first admin, or null
+// Native — the whole filtered array is built before either question is answered
+$Admins = array_values(array_filter($users, $IsAdmin));
+
+$Admin = $Admins[0] ?? null;   // the first admin, or null
+
+if ($Admins !== []) {          // is there one at all?
+   // ...
+}
+
+// __Array — stops at the first survivor, builds nothing
 $Admin = new __Array($users)->filter($IsAdmin)->find();
 
-// Is there one at all?
 if ( new __Array($users)->filter($IsAdmin)->check() ) {
    // ...
 }
 ```
 
+PHP 8.4's `array_find()` also stops early, so it is the fairer of the two native forms —
+but it can only search an array that already exists, so a chain still has to materialize
+the `map` before handing it over. That is the middle row below.
+
 With 1000 elements and a match 5% in:
 
 | | Time | |
 |---|---:|---|
-| `array_values(array_filter(array_map(...)))[0]` | 57 270 ns | |
-| `array_find(array_map(...))` (PHP 8.4, C) | 29 390 ns | 1.9x faster |
-| `->map()->filter()->find()` | **1117 ns** | **51x faster** |
+| `array_values(array_filter(array_map(...)))[0]` | 56 897 ns | |
+| `array_find(array_map(...))` (PHP 8.4, C) | 28 115 ns | 2.0x faster |
+| `->map()->filter()->find()` | **1126 ns** | **51x faster** |
 
 It wins at every hit position, including a complete miss — 3x there, because no
 intermediate array is ever built. The further into the array the match sits, the smaller
 the margin; the bigger the array, the larger it.
+
+Measured by `08-early-exit.Microbenchmark.php`, stored in
+`results/08-early-exit.php-8.4.23.json`. That case sweeps both sizes against three hit
+positions and includes the hand-written `foreach` + `return` as a control.
 
 `find()` returns `null` when nothing survives. Since `null` can also *be* a survivor, use
 `check()` when that distinction matters — exactly as with PHP's own `array_find()`.
@@ -115,6 +138,9 @@ That is what makes the API pay on the small arrays a server actually handles:
 | 8 | 628.8 ns | 441.2 ns (1.4x) | **205.8 ns (3.1x)** |
 | 20 | 1377.2 ns | 667.8 ns (2.1x) | **434.2 ns (3.2x)** |
 
+Measured by `09-pipeline-reuse.Microbenchmark.php`, stored in
+`results/09-pipeline-reuse.php-8.4.23.json`.
+
 ## Count and fold
 
 Both walk the chain once and never materialize it:
@@ -132,6 +158,9 @@ At 100 elements `count()` is 3.1x faster than `count(array_filter(array_map(...)
 at 1000. The native forms materialize two arrays to produce a single value; these produce
 it as the pass goes.
 
+Measured by `10-terminals.Microbenchmark.php`, stored in
+`results/10-terminals.php-8.4.23.json`.
+
 ## Read the boundary entries
 
 `->First` and `->Last` give the entry **and** the key it sits at, in one read — natively
@@ -148,6 +177,8 @@ $Array->Last->value;
 
 Both are `{key: null, value: null}` for an empty array. They cost roughly 2.8x the native
 pair, so reach for them where the pair genuinely simplifies the caller — not in a hot path.
+Measured by `00-boundary.Microbenchmark.php`; the cost of every possible wrapper form is
+broken down in `03-wrapper-forms.Microbenchmark.php`.
 
 `->multidimensional` answers whether any direct value is itself an array. It is shallow by
 design (depth 1), and PHP has no native equivalent, so its honest baseline is the `foreach`
@@ -213,12 +244,21 @@ writes made after that point. Build the chain where you run it.
 - **A single native call.** `array_keys()`, `array_is_list()`, `count()` — call PHP.
   Wrapping one operation only ever adds dispatch.
 - **A single `filter` with a hit near the front.** PHP 8.4's `array_find()` wins there
-  (266.6 ns against 282.8 ns at 100 elements). Past a few dozen elements the chain takes
+  (267.1 ns against 282.5 ns at 100 elements). Past a few dozen elements the chain takes
   it back — 2x at a full miss.
 - **Iterating.** `__Array` deliberately does not implement `ArrayAccess`, `Countable` or
   `Iterator`. Every one of them puts a userland dispatch in front of an opcode: reading
   through `ArrayAccess` costs 7.2x a native index, `count()` through `Countable` 9.8x, and
   a hand-rolled `Iterator` costs 37x a native `foreach`. Iterate `->array`.
+  Measured by `06-array-interfaces.Microbenchmark.php`.
+
+Every case named above lives in the framework repository under
+`Bootgly/ABI/Code/__Array/tests/benchmarks/`, with its stored numbers in the sibling
+`results/` folder. Re-run one on your own machine with:
+
+```bash
+bootgly test benchmark micro Bootgly/ABI/Code/__Array/tests/benchmarks/08-early-exit.Microbenchmark.php --processes=5
+```
 
 ## Reference
 

@@ -11,13 +11,13 @@ A segunda é a razão de ele existir. Toda medição desta página é reproduzí
 
 **Uma operação isolada vai para o PHP. Um encadeamento vai para o `__Array`.**
 
-Um wrapper em cima de uma chamada nativa nunca ganha: o piso dele é essa chamada mais o
-despacho para alcançá-la. Por isso não existe um equivalente `__Array` de `array_keys()`,
+Um wrapper em cima de uma chamada nativa nunca ganha: o mínimo que ele custa é essa chamada mais o
+despacho para chegar até ela. Por isso não existe um equivalente `__Array` de `array_keys()`,
 e nunca vai existir.
 
 Um encadeamento é o oposto. `array_values(array_filter(array_map($f, $a), $g))` paga duas
-vezes — uma por cada array intermediário e outra pelo despacho de callback por elemento que
-uma função de array em C realiza. Uma cadeia gravada não paga nenhum dos dois.
+vezes: uma por array intermediário e outra pelo despacho de callback, por elemento, que uma
+função de array em C faz. Uma cadeia gravada não paga nenhum dos dois.
 
 ```php
 use Bootgly\ABI\Code\__Array;
@@ -37,14 +37,17 @@ o resultado — e aí todos os estágios rodam juntos, uma vez por elemento:
 $Active = static fn (array $User): bool => $User['status'] === 'active';
 $Name   = static fn (array $User): string => $User['name'];
 
-$names = new __Array($users)
-   ->filter($Active)
-   ->map($Name)
-   ->collect();
+// Nativo — um array intermediário por estágio, mais um terceiro para reindexar
+$names = array_values(
+   array_map($Name, array_filter($users, $Active))
+);
+
+// __Array — uma passagem, um array
+$names = new __Array($users)->filter($Active)->map($Name)->collect();
 ```
 
 `collect()` sempre devolve uma **lista**. Os sobreviventes são anexados conforme são
-encontrados, então o `array_values()` que o idioma nativo com `array_filter()` exige já
+encontrados, então o `array_values()` que a forma nativa com `array_filter()` exige já
 vem feito — as chaves da origem não são preservadas.
 
 Medido contra `array_values(array_filter(array_map(...)))`:
@@ -59,33 +62,54 @@ Medido contra `array_values(array_filter(array_map(...)))`:
 Isso é a mesma velocidade de escrever o `foreach` fundido à mão — dentro de 4%. A abstração
 é de graça; o encadeamento é o que custa.
 
+Medido por `04-chain-fusion.Microbenchmark.php`, armazenado em
+`results/04-chain-fusion.php-8.4.23.json`. O despacho por forma que torna isso possível é
+medido à parte em `07-pipeline-shapes.Microbenchmark.php`.
+
 ## Achar o primeiro match, ou perguntar se existe algum
 
-Este é o maior ganho da classe. O idioma nativo precisa construir o array filtrado inteiro
+Esse é o maior ganho da classe. A forma nativa precisa construir o array filtrado inteiro
 antes de conseguir dizer qual é o primeiro elemento; uma cadeia para no primeiro
 sobrevivente e nunca aloca nada:
 
 ```php
-// O primeiro admin, ou null
+// Nativo — o array filtrado inteiro é construído antes de qualquer uma das perguntas
+$Admins = array_values(array_filter($users, $IsAdmin));
+
+$Admin = $Admins[0] ?? null;   // o primeiro admin, ou null
+
+if ($Admins !== []) {          // existe algum?
+   // ...
+}
+
+// __Array — para no primeiro sobrevivente e não constrói nada
 $Admin = new __Array($users)->filter($IsAdmin)->find();
 
-// Existe algum?
 if ( new __Array($users)->filter($IsAdmin)->check() ) {
    // ...
 }
 ```
 
+O `array_find()` do PHP 8.4 também para antes do fim, então ele é a mais justa das duas
+formas nativas — só que ele só consegue procurar em um array que já existe, então uma
+cadeia ainda precisa materializar o `map` antes de entregar. É a linha do meio na tabela
+abaixo.
+
 Com 1000 elementos e um match a 5% do início:
 
 | | Tempo | |
 |---|---:|---|
-| `array_values(array_filter(array_map(...)))[0]` | 57.270 ns | |
-| `array_find(array_map(...))` (PHP 8.4, em C) | 29.390 ns | 1,9x mais rápido |
-| `->map()->filter()->find()` | **1117 ns** | **51x mais rápido** |
+| `array_values(array_filter(array_map(...)))[0]` | 56.897 ns | |
+| `array_find(array_map(...))` (PHP 8.4, em C) | 28.115 ns | 2,0x mais rápido |
+| `->map()->filter()->find()` | **1126 ns** | **51x mais rápido** |
 
-Ele ganha em qualquer posição do acerto, inclusive quando não há acerto nenhum — 3x nesse
+Ele ganha em qualquer posição em que o acerto esteja, inclusive quando não há acerto nenhum — 3x nesse
 caso, porque nenhum array intermediário chega a ser construído. Quanto mais fundo o match
 estiver, menor a margem; quanto maior o array, maior ela fica.
+
+Medido por `08-early-exit.Microbenchmark.php`, armazenado em
+`results/08-early-exit.php-8.4.23.json`. Esse caso varre os dois tamanhos contra três
+posições de acerto e inclui o `foreach` + `return` escrito à mão como controle.
 
 `find()` devolve `null` quando nada sobrevive. Como `null` também pode *ser* um
 sobrevivente, use `check()` quando essa distinção importar — exatamente como acontece com o
@@ -110,7 +134,7 @@ $Headers = __Array::pipe()->map($Normalize)->filter($Allowed);
 $Headers->apply($raw);
 ```
 
-É isso que faz o API valer a pena nos arrays pequenos que um servidor realmente manipula:
+É isso que faz a API valer a pena nos arrays pequenos que um servidor realmente manipula:
 
 | Elementos | Cadeia nativa | Cadeia por chamada | Cadeia construída uma vez + `apply()` |
 |---|---:|---:|---:|
@@ -118,9 +142,12 @@ $Headers->apply($raw);
 | 8 | 628,8 ns | 441,2 ns (1,4x) | **205,8 ns (3,1x)** |
 | 20 | 1377,2 ns | 667,8 ns (2,1x) | **434,2 ns (3,2x)** |
 
+Medido por `09-pipeline-reuse.Microbenchmark.php`, armazenado em
+`results/09-pipeline-reuse.php-8.4.23.json`.
+
 ## Contar e reduzir
 
-Os dois percorrem a cadeia uma vez e nunca materializam:
+Os dois percorrem a cadeia uma vez e nunca materializam nada:
 
 ```php
 $active = new __Array($users)->filter($Active)->count();
@@ -134,6 +161,9 @@ Com 100 elementos, `count()` é 3,1x mais rápido que `count(array_filter(array_
 `reduce()` 3,4x mais rápido que `array_reduce()` sobre o mesmo array filtrado — 3,6x e 3,9x
 com 1000. As formas nativas materializam dois arrays para produzir um único valor; estas
 produzem esse valor conforme a passagem acontece.
+
+Medido por `10-terminals.Microbenchmark.php`, armazenado em
+`results/10-terminals.php-8.4.23.json`.
 
 ## Ler as entradas de fronteira
 
@@ -151,6 +181,8 @@ $Array->Last->value;
 
 Os dois são `{key: null, value: null}` para um array vazio. Custam por volta de 2,8x o par
 nativo, então use onde o par realmente simplifica quem chama — não em hot path.
+Medido por `00-boundary.Microbenchmark.php`; o custo de cada forma possível de wrapper está
+detalhado em `03-wrapper-forms.Microbenchmark.php`.
 
 `->multidimensional` responde se algum valor direto é ele mesmo um array. É raso por
 design (profundidade 1) e o PHP não tem equivalente nativo, então a linha de base honesta
@@ -164,7 +196,7 @@ if ( $Array->multidimensional ) {
 
 ## Procurar um valor
 
-`__Array::search()` devolve `{key, value, found}` e aceita uma lista de agulhas testadas em
+`__Array::search()` devolve `{key, value, found}` e aceita uma lista de valores testados em
 ordem — algo que `array_search()` não consegue expressar de jeito nenhum:
 
 ```php
@@ -176,7 +208,7 @@ if ( $Found->found ) {
 }
 ```
 
-Leia `found`, não `value`: `false` e `null` são, eles mesmos, valores procuráveis.
+Leia `found`, não `value`: `false` e `null` também são valores que dá para procurar.
 
 ## Possuir o array, ou apenas apontar para ele
 
@@ -214,14 +246,23 @@ enxerga escritas feitas depois desse ponto. Construa a cadeia onde você a execu
 ## Quando não usar
 
 - **Uma chamada nativa isolada.** `array_keys()`, `array_is_list()`, `count()` — chame o
-  PHP. Envolver uma operação só acrescenta despacho.
+  PHP. Embrulhar uma operação isolada só acrescenta despacho.
 - **Um `filter` único com acerto perto do início.** O `array_find()` do PHP 8.4 ganha aí
-  (266,6 ns contra 282,8 ns com 100 elementos). Passando de algumas dezenas de elementos a
+  (267,1 ns contra 282,5 ns com 100 elementos). Passando de algumas dezenas de elementos a
   cadeia retoma a vantagem — 2x quando não há acerto.
 - **Iterar.** O `__Array` deliberadamente não implementa `ArrayAccess`, `Countable` nem
   `Iterator`. Cada um deles coloca um despacho userland na frente de um opcode: ler via
   `ArrayAccess` custa 7,2x um índice nativo, `count()` via `Countable` custa 9,8x e um
   `Iterator` escrito à mão custa 37x um `foreach` nativo. Itere o `->array`.
+  Medido por `06-array-interfaces.Microbenchmark.php`.
+
+Todos os casos citados acima ficam no repositório do framework, em
+`Bootgly/ABI/Code/__Array/tests/benchmarks/`, com os números armazenados na pasta irmã
+`results/`. Para rodar um deles na sua máquina:
+
+```bash
+bootgly test benchmark micro Bootgly/ABI/Code/__Array/tests/benchmarks/08-early-exit.Microbenchmark.php --processes=5
+```
 
 ## Referência
 
@@ -266,7 +307,7 @@ vazio.
 public bool $multidimensional
 ```
 
-Se algum valor direto é ele mesmo um array. Raso — profundidade 1 apenas.
+Diz se algum valor direto é, ele mesmo, um array. Raso — só profundidade 1.
 
 ```php
 public function map (callable $Op): Pipeline
@@ -279,7 +320,7 @@ Abre uma cadeia gravando uma transformação aplicada a todo elemento. Devolve u
 public function filter (callable $Op): Pipeline
 ```
 
-Abre uma cadeia gravando um teste que todo elemento precisa passar para sobreviver.
+Abre uma cadeia gravando um teste pelo qual todo elemento precisa passar para sobreviver.
 
 ```php
 public static function pipe (): Pipeline
@@ -303,13 +344,13 @@ public function map (callable $Op): static
 ```
 
 Grava uma transformação aplicada a todo elemento. Devolve o mesmo pipeline, então os
-estágios encadeiam.
+estágios se encadeiam.
 
 ```php
 public function filter (callable $Op): static
 ```
 
-Grava um teste que todo elemento precisa passar para sobreviver.
+Grava um teste pelo qual todo elemento precisa passar para sobreviver.
 
 ```php
 public function collect (): array
@@ -329,13 +370,13 @@ pipeline pode ser construído uma vez e aplicado por chamada.
 public function find (): mixed
 ```
 
-O primeiro sobrevivente, ou `null` quando não há nenhum. Para no primeiro.
+O primeiro sobrevivente, ou `null` quando não há nenhum. Para assim que o encontra.
 
 ```php
 public function check (): bool
 ```
 
-Se algum elemento sobrevive a todos os estágios. Para no primeiro sobrevivente.
+Diz se algum elemento sobrevive a todos os estágios. Para no primeiro sobrevivente.
 
 ```php
 public function count (): int
