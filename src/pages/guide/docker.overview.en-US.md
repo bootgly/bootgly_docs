@@ -18,7 +18,7 @@ Bootgly has **one** canonical install and first-time setup path: the **installer
 In Docker, a bare interactive run opens it on the first run:
 
 ```bash :toolbar="true";
-docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly
+docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly:slim
 ```
 
 It is the same wizard behind [`bootgly project create`](/guide/getting-started) — a fixed
@@ -38,13 +38,19 @@ The images are published as `bootgly/bootgly` — pull and run, nothing to insta
 ```bash
 # run your wizard-created project
 docker run --rm -p 8082:8082 -v "$PWD/projects:/bootgly/projects" \
-  bootgly/bootgly project <Name> start -f
+  bootgly/bootgly:slim project <Name> start -f
 
 # run the demo HTTP server
 docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
-Tags: `bootgly/bootgly:slim` (runtime), `:full` (test + benchmark) and `:latest` (= `slim`).
+Tags: `bootgly/bootgly:slim` (runtime) and `:full` (test + benchmark), each also published
+under its exact version (`:1.0.0`, `:1.0.0-full`) and its major/minor aliases. Pre-releases
+publish their exact version plus a channel alias you opt into (`:beta`, `:beta-full`).
+
+**Always name a tag.** There is no `latest`: it only ever duplicated `slim`, and a tag that
+means "newest" without saying newest *what* is a trap — so an untagged `bootgly/bootgly`
+does not resolve.
 
 The rest of this guide uses the local `bootgly:slim`/`bootgly:full` tags that `docker build`
 produces. If you pulled instead, prefix them with `bootgly/` (e.g. `bootgly/bootgly:slim`).

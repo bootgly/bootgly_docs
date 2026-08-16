@@ -18,7 +18,7 @@ O Bootgly tem **um** caminho canônico de instalação e configuração inicial:
 instalador**. No Docker, uma execução interativa sem argumentos o abre na primeira vez:
 
 ```bash :toolbar="true";
-docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly
+docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly:slim
 ```
 
 É o mesmo wizard por trás do [`bootgly project create`](/guide/getting-started) — uma
@@ -38,13 +38,20 @@ As imagens são publicadas como `bootgly/bootgly` — baixe e rode, sem instalar
 ```bash
 # rode o projeto criado pelo wizard
 docker run --rm -p 8082:8082 -v "$PWD/projects:/bootgly/projects" \
-  bootgly/bootgly project <Name> start -f
+  bootgly/bootgly:slim project <Name> start -f
 
 # rode o servidor HTTP demo
 docker run --rm -p 8082:8082 bootgly/bootgly:slim project Demo/HTTP_Server_CLI start -f
 ```
 
-Tags: `bootgly/bootgly:slim` (runtime), `:full` (teste + benchmark) e `:latest` (= `slim`).
+Tags: `bootgly/bootgly:slim` (runtime) e `:full` (teste + benchmark), cada uma publicada
+também sob a versão exata (`:1.0.0`, `:1.0.0-full`) e sob os apelidos de major/minor. As
+pre-releases publicam a versão exata mais um apelido de canal que você escolhe usar
+(`:beta`, `:beta-full`).
+
+**Sempre informe uma tag.** Não existe `latest`: ela apenas duplicava a `slim`, e uma tag
+que significa "mais nova" sem dizer mais nova *do quê* é uma armadilha — por isso um
+`bootgly/bootgly` sem tag não resolve.
 
 O resto deste guia usa as tags locais `bootgly:slim`/`bootgly:full` que o `docker build`
 produz. Se você baixou em vez de construir, prefixe com `bootgly/` (ex.: `bootgly/bootgly:slim`).
