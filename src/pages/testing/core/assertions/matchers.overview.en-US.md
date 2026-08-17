@@ -26,13 +26,26 @@ Use regex when a rule must validate format, variable prefixes, groups or optiona
 use Bootgly\ABI\Code\__String\Path;
 use Bootgly\ACI\Tests\Assertion\Expectations\Matchers\VariadicDirPath;
 
-$Path = new Path('/etc/php/');
+// A directory holding the versioned entries `8.3/` and `8.4/`.
+// Build the fixture in the test instead of pointing at a system path:
+// those differ per distribution and make the suite non-portable.
+$base = sys_get_temp_dir() . '/releases/';
+
+$Path = new Path($base);
 $Path->match(path: '%', pattern: '8.*');
 yield new Assertion(description: 'Valid relative path')
    ->assert(
       actual: (string) $Path,
-      expected: new VariadicDirPath('/etc/php/8.*'),
+      expected: new VariadicDirPath($base . '8.*'),
    );
+```
+
+`match()` also accepts the absolute form, with the `%` placeholder inside the
+path itself — useful when there is no constructed path to match against:
+
+```php
+$Path = new Path;
+$Path->match(path: $base . '%', pattern: '8.*');
 ```
 
 ## Best practices
