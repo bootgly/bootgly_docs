@@ -257,6 +257,12 @@ This runs `setcap cap_net_bind_service=+ep` on the PHP binary. After that, any `
 > [!WARNING]
 > This applies to ALL PHP scripts on the system, not just Bootgly.
 
+A file capability also makes every PHP process **non-dumpable**: the kernel hands
+`/proc/<pid>/fd` to `root`, so tools that resolve a socket back to its owning
+process — `lsof -i`, `ss -p`, `fuser` — stop listing PHP servers even for the user
+who started them. Bootgly is unaffected: `bootgly project <name> stop` identifies
+its master through the kernel lock table (`/proc/locks`), which stays readable.
+
 ## Enabling HTTPS (SSL/TLS)
 
 Bootgly supports TLSv1.2 and TLSv1.3 natively. Pass the `secure` parameter to `configure()`:

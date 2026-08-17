@@ -57,6 +57,11 @@ Prefer granting PHP the bind capability and running the whole server as a regula
 sudo setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which php)")"
 ```
 
+> [!NOTE]
+> The capability makes every PHP process non-dumpable, so `lsof -i`, `ss -p` and
+> `fuser` stop resolving PHP sockets to their owning process. `bootgly project
+> <name> stop` is unaffected — it reads the kernel lock table (`/proc/locks`).
+
 Starting as root also works: pass `user:`/`group:` (required with Auto-TLS) and the privileged boot hands the whole credential store — including its parent directories — to that runtime identity before demoting. A startup that cannot reach the store fails naming the exact path and owner, on the terminal that launched it.
 
 ## Renewal and the reload fallback

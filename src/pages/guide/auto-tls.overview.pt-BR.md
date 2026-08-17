@@ -57,6 +57,11 @@ Prefira conceder ao PHP a capability de bind e rodar o servidor inteiro como um 
 sudo setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which php)")"
 ```
 
+> [!NOTE]
+> A capability torna todo processo PHP não-dumpable, então `lsof -i`, `ss -p` e
+> `fuser` deixam de resolver sockets PHP até o processo dono. O `bootgly project
+> <nome> stop` não é afetado — ele lê a tabela de locks do kernel (`/proc/locks`).
+
 Iniciar como root também funciona: passe `user:`/`group:` (obrigatório com Auto-TLS) e o boot privilegiado entrega o credential store inteiro — incluindo os diretórios pais — para essa identidade de runtime antes da demotion. Um startup que não consegue alcançar o store falha nomeando o path e o dono exatos, no terminal que o lançou.
 
 ## Renovação e o fallback de reload
