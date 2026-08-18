@@ -565,6 +565,32 @@ export default {
     }
   },
 
+  '/linter': {
+    config: {
+      icon: 'rule',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Lint and auto-fix your use statements — missing imports, unused imports, backslash prefixes and ordering, with a deliberately conservative unused check.',
+          'pt-BR': 'Linte e corrija automaticamente seus use statements — imports faltando, imports não usados, prefixos de barra e ordenação, com uma checagem de não-usado deliberadamente conservadora.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Linter'
+      },
+      'pt-BR': {
+        title: 'Linter'
+      }
+    }
+  },
+
   '/observability': {
     config: {
       icon: 'insights',
