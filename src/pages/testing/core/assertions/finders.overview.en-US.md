@@ -63,10 +63,29 @@ yield new Assertion(description: 'Ends with string')
 
 ## Find through the In enum
 
-For more specific lookups, use the `In` enum with the `->find()` method.
+For more specific lookups, use the `In` enum with the `->find()` method. `find()` takes where to look and what to look for; the haystack comes from `expect()`.
 
 ```php
 use Bootgly\ACI\Tests\Assertion\Auxiliaries\In;
+
+yield new Assertion(description: 'The result carries a status')
+   ->expect(['status' => 200, 'body' => 'OK'])
+   ->to->find(In::ArrayKeys, 'status')
+   ->assert();
+
+yield new Assertion(description: 'The handler exposes render()')
+   ->expect($Handler)
+   ->to->find(In::ObjectMethods, 'render')
+   ->assert();
+```
+
+Negate it with `not` to assert absence.
+
+```php
+yield new Assertion(description: 'The result carries no error')
+   ->expect(['status' => 200, 'body' => 'OK'])
+   ->not->to->find(In::ArrayKeys, 'error')
+   ->assert();
 ```
 
 | Enum | Description |
@@ -78,6 +97,15 @@ use Bootgly\ACI\Tests\Assertion\Auxiliaries\In;
 | `In::ClassesDeclared` | Search in declared classes. |
 | `In::InterfacesDeclared` | Search in declared interfaces. |
 | `In::TraitsDeclared` | Search in declared traits. |
+
+The last three search what the runtime has declared, not the value you expected. There is no haystack to give them, but `expect()` still needs a value, so pass an empty string.
+
+```php
+yield new Assertion(description: 'The driver class is loadable')
+   ->expect('')
+   ->to->find(In::ClassesDeclared, Logger::class)
+   ->assert();
+```
 
 ## Best practices
 
