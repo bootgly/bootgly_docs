@@ -142,6 +142,12 @@ $Database
 `limit($count, $offset)` define os dois valores. `skip($offset)` define só o offset. Ambos
 rejeitam inteiros negativos. Locks adicionam `FOR UPDATE` ou `FOR SHARE`.
 
+Pular sem limite se escreve de um jeito em cada dialeto, e o builder resolve isso para você.
+Só a gramática do PostgreSQL aceita um `OFFSET n` sozinho; MySQL e SQLite exigem uma contagem
+de linhas antes dele, então o builder fornece a que cada um lê como "sem limite" —
+`18446744073709551615` no MySQL, `-1` no SQLite. As duas não são intercambiáveis: cada engine
+rejeita a do outro. Escreva `skip(50)` e a mesma query roda em qualquer lugar.
+
 ## Referência
 
 ```php

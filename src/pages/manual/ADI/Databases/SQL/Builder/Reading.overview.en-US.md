@@ -141,6 +141,12 @@ $Database
 `limit($count, $offset)` sets both values. `skip($offset)` sets only the offset. Both reject
 negative integers. Locks append `FOR UPDATE` or `FOR SHARE`.
 
+Skipping without a limit is spelled differently by each dialect, and the builder handles that
+for you. Only PostgreSQL's grammar accepts a standalone `OFFSET n`; MySQL and SQLite require a
+row count before it, so the builder supplies the one each of them reads as "no limit" —
+`18446744073709551615` for MySQL, `-1` for SQLite. The two are not interchangeable: each
+engine rejects the other's. Write `skip(50)` and the same query runs everywhere.
+
 ## Reference
 
 ```php
