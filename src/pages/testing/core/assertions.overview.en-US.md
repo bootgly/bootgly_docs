@@ -227,6 +227,19 @@ yield new Assertion(description: 'Equal strings')
    ->assert();
 ```
 
-Comparators support `bool`, `int`, `float`, `string`, `array` and `object`.
+Comparators support `bool`, `int`, `float`, `string`, `array`, `object` and `null`.
+
+`null` is a first-class expected value, not an absent one, so the guard everyone reaches for works as written.
+
+```php
+yield new Assertion(description: 'find() must not return null')
+   ->expect($Repository->find('missing'), Op::NotIdentical, null)
+   ->assert();
+
+yield new Assertion(description: 'find() returns null for a missing id')
+   ->expect($Repository->find('missing'))
+   ->to->be(null)
+   ->assert();
+```
 
 Specific expectation families are documented in the next pages: Modifiers, Behaviors, Delimiters, Finders, Matchers, Throwers and Waiters.

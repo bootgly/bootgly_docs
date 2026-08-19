@@ -227,6 +227,19 @@ yield new Assertion(description: 'Equal strings')
    ->assert();
 ```
 
-Os comparadores suportam `bool`, `int`, `float`, `string`, `array` e `object`.
+Os comparadores suportam `bool`, `int`, `float`, `string`, `array`, `object` e `null`.
+
+O `null` é um valor esperado de primeira classe, e não um valor ausente, então a guarda que todo mundo escreve funciona como está escrita.
+
+```php
+yield new Assertion(description: 'find() must not return null')
+   ->expect($Repository->find('missing'), Op::NotIdentical, null)
+   ->assert();
+
+yield new Assertion(description: 'find() returns null for a missing id')
+   ->expect($Repository->find('missing'))
+   ->to->be(null)
+   ->assert();
+```
 
 As famílias específicas de expectations ficam nas próximas páginas: Modificadores, Behaviors, Delimitadores, Finders, Matchers, Throwers e Waiters.
