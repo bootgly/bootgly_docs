@@ -100,10 +100,20 @@ Creates a savepoint and increments `depth`. Without a name, Bootgly generates
 release (null|string $name = null): Operation
 ```
 
-Releases the current savepoint or a named savepoint and decrements `depth`.
+Releases the current savepoint, or a named one.
+
+A **named** teardown reaches further than one level, because that is what the server does.
+`ROLLBACK TO SAVEPOINT x` destroys every savepoint established after `x` and keeps `x` itself;
+`RELEASE SAVEPOINT x` destroys `x` along with them. So after
+`save('outer'); save('inner'); rollback('outer')` only `outer` is still live, and `depth` is
+its level rather than one less than before. Naming a savepoint below the top is exactly the
+case to reach for it — the unnamed forms already handle the top of the stack.
+
+If a name appears twice, both engines resolve it to the most recent one, and so does Bootgly.
 
 Savepoint identifiers are quoted by the active SQL dialect. Missing savepoints and inactive
-transactions return failed operations.
+transactions return failed operations — including a name an earlier teardown already
+destroyed.
 
 ## Reference
 

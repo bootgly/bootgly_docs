@@ -102,10 +102,21 @@ e assim por diante.
 release (null|string $name = null): Operation
 ```
 
-Libera o savepoint atual ou um savepoint nomeado e decrementa `depth`.
+Libera o savepoint atual, ou um nomeado.
+
+Um teardown **nomeado** alcança mais de um nível, porque é isso que o servidor faz.
+`ROLLBACK TO SAVEPOINT x` destrói todo savepoint criado depois de `x` e mantém o próprio `x`;
+`RELEASE SAVEPOINT x` destrói `x` junto com eles. Então depois de
+`save('outer'); save('inner'); rollback('outer')` só `outer` continua vivo, e `depth` é o
+nível dele, não um a menos que antes. Nomear um savepoint abaixo do topo é justamente o caso
+de usar essa forma — as formas sem nome já cuidam do topo da pilha.
+
+Se um nome aparece duas vezes, os dois engines resolvem para o mais recente, e o Bootgly
+também.
 
 Identificadores de savepoint são quotados pelo dialeto SQL ativo. Savepoints ausentes e
-transações inativas retornam operações com falha.
+transações inativas retornam operações com falha — inclusive um nome que um teardown anterior
+já destruiu.
 
 ## Referência
 
