@@ -109,6 +109,12 @@ committing the outer transaction.
 
 ## Engine notes
 
+- **PostgreSQL** — a statement that fails inside a transaction aborts the whole block. Every
+  later statement is refused, and the eventual `COMMIT` is answered as a rollback: the
+  transaction is discarded. Catching an error and carrying on therefore does not save the
+  work done before it, so `commit()` fails with
+  `SQL transaction was rolled back by the server: a statement inside it had failed.` Use a
+  savepoint around the statement you expect to fail, and `rollback('name')` on it.
 - **MySQL/MariaDB** — DDL statements (`CREATE`/`ALTER`/`DROP` ...) inside a transaction
   cause an **implicit commit**: keep schema changes out of transactional business flows.
 - **SQLite** — transactions and savepoints work on the synchronous driver exactly like on

@@ -110,6 +110,12 @@ transação externa.
 
 ## Notas por engine
 
+- **PostgreSQL** — um statement que falha dentro de uma transação aborta o bloco inteiro.
+  Todo statement seguinte é recusado, e o `COMMIT` final é respondido como rollback: a
+  transação é descartada. Capturar o erro e seguir em frente, portanto, não salva o trabalho
+  feito antes dele, e o `commit()` falha com
+  `SQL transaction was rolled back by the server: a statement inside it had failed.` Use um
+  savepoint em volta do statement que você espera falhar, e faça `rollback('nome')` nele.
 - **MySQL/MariaDB** — statements DDL (`CREATE`/`ALTER`/`DROP` ...) dentro de uma transação
   causam **commit implícito**: mantenha mudanças de schema fora de fluxos de negócio
   transacionais.
