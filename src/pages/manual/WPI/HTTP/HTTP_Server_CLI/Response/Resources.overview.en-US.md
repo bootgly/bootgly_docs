@@ -178,6 +178,13 @@ back when the callback throws.
 scheduler the same way `Database` adapts SQL. `KV::provide()` reads the `kv` scope and builds one
 `KV` database per worker with a single pooled connection so pending commands pipeline on it:
 
+With one connection per worker there is no spare capacity to absorb a lost transport, so the
+driver drops the session rather than keeping it. A peer close — a `redis.conf timeout`, a
+restart, a failover, a proxy drop — fails the command in flight and every command pipelined
+behind it, marks them for pool health, and takes the connection out of the pool. The next
+command opens a fresh one. The failure is therefore transient: the commands in flight when the
+transport died are lost and must be retried by the caller, but the worker's KV keeps working.
+
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
 

@@ -179,6 +179,14 @@ rollback quando o callback lança exceção.
 mesmo jeito que `Database` adapta SQL. `KV::provide()` lê o escopo `kv` e constrói um banco `KV` por
 worker com uma única conexão no pool, para que comandos pendentes façam pipeline nela:
 
+Com uma conexão por worker não há capacidade sobrando para absorver um transporte perdido,
+então o driver derruba a sessão em vez de mantê-la. Um fechamento pelo peer — um
+`redis.conf timeout`, um restart, um failover, um proxy que corta — falha o comando em voo e
+todos os comandos que estavam em pipeline atrás dele, marca-os para a saúde do pool e tira a
+conexão do pool. O próximo comando abre uma nova. A falha é portanto transitória: os comandos
+em voo quando o transporte morreu são perdidos e precisam ser refeitos pelo chamador, mas o KV
+do worker continua funcionando.
+
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
 
