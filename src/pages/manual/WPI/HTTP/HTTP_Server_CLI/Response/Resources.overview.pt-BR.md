@@ -173,6 +173,12 @@ transact (callable $work): mixed
 Inicia uma transação SQL, aguarda `BEGIN`, executa o callback, faz commit no sucesso e
 rollback quando o callback lança exceção.
 
+Ele encerra a transação, não um nível dela. O callback pode aninhar com
+`$Transaction->begin()` e deixar o nível aninhado aberto; o `transact()` então segue fazendo
+commit — ou rollback — até não sobrar nada aberto, de modo que a transação externa sempre é
+finalizada e a conexão fixada sempre volta para o pool. Um único teardown teria liberado só o
+savepoint mais interno, deixando a transação aberta numa conexão que ninguém devolve.
+
 ## Registrar o resource KV
 
 `KV` adapta o banco key-value async (`ADI/Databases/KV`, Redis) ao scheduler da resposta do

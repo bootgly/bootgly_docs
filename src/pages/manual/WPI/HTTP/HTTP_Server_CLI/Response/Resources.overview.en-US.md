@@ -172,6 +172,12 @@ transact (callable $work): mixed
 Begins a SQL transaction, waits for `BEGIN`, runs the callback, commits on success and rolls
 back when the callback throws.
 
+It ends the transaction, not one level of it. A callback is free to nest with
+`$Transaction->begin()` and leave the nested level open; `transact()` then keeps committing —
+or rolling back — until nothing is left open, so the outer transaction is always finished and
+its pinned connection always returned. A single teardown would only have released the
+innermost savepoint, leaving the transaction open on a connection nothing hands back.
+
 ## Register the KV resource
 
 `KV` adapts the async key-value database (`ADI/Databases/KV`, Redis) to the response
