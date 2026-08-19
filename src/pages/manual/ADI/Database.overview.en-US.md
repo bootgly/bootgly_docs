@@ -51,6 +51,19 @@ waiting for capacity that cannot arrive. Leaving it queued was worse than refusi
 caller was told its write had failed and compensated with a rollback, and `promote()` then put
 the command on the wire anyway once capacity freed — outside the transaction, in autocommit.
 
+A connection goes back to the pool only once nothing is owed on its socket. While the driver
+still has an operation waiting for a reply, the connection stays `busy` — handing it out would
+give one caller's rows to another. "Owed" means an operation that has not finished: a failed
+or expired one owes its caller nothing, even though the driver keeps its slot in the FIFO a
+little longer to absorb the message that terminates it. Backends do not always answer in one
+TCP read, so a query refused with a syntax error can leave a finished entry parked there; the
+pool no longer reads that as work in flight, which used to cost the slot permanently — and
+transactions, which never share a connection, were then refused capacity that existed.
+
+A socket that can no longer deliver is dropped rather than held, whatever the driver still has
+queued on it: it owes an answer it can never bring, and everything that frees the slot happens
+after that check.
+
 Transactions pin one connection with `lock` and release it with `unlock` after commit or
 rollback. The reservation is freed by the operation that carries `unlock`, even when the driver
 still has a co-located sibling to finish — the intent lives on that operation, so deferring it

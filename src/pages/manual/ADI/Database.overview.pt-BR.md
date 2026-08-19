@@ -50,6 +50,20 @@ por uma capacidade que não pode chegar. Deixá-la enfileirada era pior que recu
 era informado de que sua escrita falhou e compensava com um rollback, e o `promote()` colocava
 o comando no wire mesmo assim quando a capacidade liberava — fora da transação, em autocommit.
 
+Uma conexão volta para o pool só quando nada mais é devido no socket dela. Enquanto o driver
+ainda tem uma operação esperando resposta, a conexão continua `busy` — entregá-la daria as
+linhas de um chamador para outro. "Devido" significa uma operação que não terminou: uma que
+falhou ou expirou não deve nada ao chamador, mesmo que o driver mantenha o slot dela na FIFO
+mais um pouco para absorver a mensagem que a encerra. Backends nem sempre respondem em uma
+única leitura TCP, então uma query recusada com erro de sintaxe pode deixar uma entrada
+terminada parada ali; o pool não lê mais isso como trabalho em andamento, o que antes custava
+o slot permanentemente — e transações, que nunca compartilham conexão, eram então recusadas
+por falta de uma capacidade que existia.
+
+Um socket que não consegue mais entregar é descartado em vez de retido, não importa o que o
+driver ainda tenha enfileirado nele: ele deve uma resposta que nunca poderá trazer, e tudo o
+que libera o slot acontece depois dessa checagem.
+
 Transações fixam uma conexão com `lock` e liberam com `unlock` depois de commit ou rollback.
 A reserva é liberada pela operação que carrega o `unlock`, mesmo quando o driver ainda tem um
 irmão co-localizado para terminar — a intenção vive naquela operação, então adiar a liberação
