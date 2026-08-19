@@ -42,6 +42,15 @@ The pool tracks `idle`, `busy`, `pending` and `created` connections. When all co
 busy and `created >= max`, new operations wait in `pending`. When a connection is released,
 the pool promotes pending operations.
 
+That queue belongs to the async path, where something else keeps advancing the operations that
+hold the connections. `Pool::wait()` — what `SQL::await()` calls — is the synchronous API:
+while it blocks, nothing advances those operations, and only they can free a slot. So a
+saturated `await()` refuses the operation with
+`Database pool has no capacity for the operation.` and takes it out of `pending`, instead of
+waiting for capacity that cannot arrive. Leaving it queued was worse than refusing it: the
+caller was told its write had failed and compensated with a rollback, and `promote()` then put
+the command on the wire anyway once capacity freed — outside the transaction, in autocommit.
+
 Transactions pin one connection with `lock` and release it with `unlock` after commit or
 rollback. The reservation is freed by the operation that carries `unlock`, even when the driver
 still has a co-located sibling to finish — the intent lives on that operation, so deferring it

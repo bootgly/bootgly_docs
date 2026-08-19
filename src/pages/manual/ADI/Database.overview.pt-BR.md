@@ -41,6 +41,15 @@ O pool acompanha conexões `idle`, `busy`, `pending` e `created`. Quando todas a
 estão ocupadas e `created >= max`, novas operações aguardam em `pending`. Quando uma conexão
 é liberada, o pool promove operações pendentes.
 
+Essa fila pertence ao caminho assíncrono, onde algo mais segue avançando as operações que
+seguram as conexões. `Pool::wait()` — o que `SQL::await()` chama — é a API síncrona: enquanto
+ela bloqueia, nada avança aquelas operações, e só elas podem liberar um slot. Então um
+`await()` sobre pool saturado recusa a operação com
+`Database pool has no capacity for the operation.` e a tira de `pending`, em vez de esperar
+por uma capacidade que não pode chegar. Deixá-la enfileirada era pior que recusar: o chamador
+era informado de que sua escrita falhou e compensava com um rollback, e o `promote()` colocava
+o comando no wire mesmo assim quando a capacidade liberava — fora da transação, em autocommit.
+
 Transações fixam uma conexão com `lock` e liberam com `unlock` depois de commit ou rollback.
 A reserva é liberada pela operação que carrega o `unlock`, mesmo quando o driver ainda tem um
 irmão co-localizado para terminar — a intenção vive naquela operação, então adiar a liberação
