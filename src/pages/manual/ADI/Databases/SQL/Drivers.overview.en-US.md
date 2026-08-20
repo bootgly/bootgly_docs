@@ -90,6 +90,11 @@ This only comes up when the table actually holds ids that large. A plain
 `BIGINT UNSIGNED AUTO_INCREMENT` never reaches it on its own, but an import that preserves
 one legacy id above 2^63 makes the server continue the sequence from there.
 
+Reading has the same rule, and it is not limited to keys. Hydration narrows a decoded value to
+the declared property type, so any column whose value is past `PHP_INT_MAX` — a key, a counter,
+a `DECIMAL` — raises the same `RuntimeException` naming the property rather than saturating it.
+Declare the property `null|int|string` and it hydrates exactly, as the driver decoded it.
+
 ## Pool notes
 
 - Every pooled connection binds one driver instance — prepared-statement caches are

@@ -89,6 +89,12 @@ Isso só aparece quando a tabela de fato guarda ids desse tamanho. Um
 `BIGINT UNSIGNED AUTO_INCREMENT` comum nunca chega lá sozinho, mas uma importação que
 preserva um id legado acima de 2^63 faz o servidor continuar a sequência a partir dele.
 
+A leitura segue a mesma regra, e ela não se limita a chaves. A hidratação estreita o valor
+decodificado para o tipo declarado da propriedade, então qualquer coluna cujo valor passe de
+`PHP_INT_MAX` — uma chave, um contador, um `DECIMAL` — levanta a mesma `RuntimeException`
+nomeando a propriedade, em vez de saturar. Declare a propriedade como `null|int|string` e ela
+hidrata exatamente como o driver decodificou.
+
 ## Notas sobre o Pool
 
 - Cada conexão do pool vincula uma instância de driver — caches de prepared statements
