@@ -96,11 +96,14 @@ A reserva é liberada pela operação que carrega o `unlock`, mesmo quando o dri
 irmão co-localizado para terminar — a intenção vive naquela operação, então adiar a liberação
 a perderia junto com ela e deixaria a conexão reservada para sempre.
 
-Um caso não a libera: um commit ou rollback que o pool retira *antes de ele chegar ao servidor*,
-seja porque você cancelou, seja porque o prazo dele venceu. Aquele statement não encerrou nada,
-então a transação segue aberta e segue segurando seus locks, e a reserva se mantém em vez de ir
-para o próximo caller. A intenção fica guardada na operação, então re-armar aquele teardown e
-deixá-lo passar libera a conexão.
+Um caso leva a conexão junto: um commit ou rollback que o pool retira *antes de ele chegar ao
+servidor*, seja porque você cancelou, seja porque o prazo dele venceu. Aquele statement não
+encerrou nada, e a essa altura ninguém mais consegue — a transação abriu mão da profundidade e
+da conexão no momento em que o statement foi composto. Passar essa conexão adiante rodaria o
+trabalho do próximo caller dentro de uma transação aberta que ele não pediu, e mantê-la
+reservada perderia a vaga para sempre com a sessão aberta do mesmo jeito. Então a conexão é
+derrubada: o servidor faz rollback da transação, que é o que um commit que nunca rodou
+significa, e a vaga volta para o pool.
 
 Uma operação presa a uma conexão que o pool não consegue mais fornecer — restart do servidor,
 reciclagem de load balancer, socket derrubado — falha na hora em vez de esperar em `pending`.

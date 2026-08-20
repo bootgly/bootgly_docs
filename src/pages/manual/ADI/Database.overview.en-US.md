@@ -96,11 +96,13 @@ rollback. The reservation is freed by the operation that carries `unlock`, even 
 still has a co-located sibling to finish — the intent lives on that operation, so deferring it
 would lose it and park the connection as reserved forever.
 
-One case does not free it: a commit or rollback the pool retires *before it reaches the server*,
-whether you cancelled it or its own deadline elapsed. That statement ended nothing, so the
-transaction is still open and still holds its locks, and the reservation stands rather than
-being handed to the next caller. The intent is kept on the operation, so re-arming that teardown
-and letting it through does free the connection.
+One case takes the connection with it: a commit or rollback the pool retires *before it reaches
+the server*, whether you cancelled it or its own deadline elapsed. That statement ended nothing,
+and by then nobody can — the transaction gave up its depth and its connection the moment the
+statement was composed. Handing that connection on would run the next caller's work inside an
+open transaction it never asked for, and keeping it reserved would lose the slot for good while
+the session stayed open anyway. So the connection is dropped: the server rolls the transaction
+back, which is what a commit that never ran means, and the slot returns to the pool.
 
 An operation pinned to a connection the pool can no longer provide — a server restart, a
 load-balancer recycle, a dropped socket — fails immediately instead of waiting in `pending`. No
