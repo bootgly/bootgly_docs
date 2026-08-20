@@ -56,6 +56,15 @@ cancellation, or fails outright while trying. Automatic failover to a replica po
 revive a withdrawn operation afterwards. That is separate from whether the cancel reached the
 server, which is what decides whether the connection still has an answer to reconcile.
 
+Whether anything is *sent* depends on where the operation actually is. A cancel request names a
+backend, not a statement, so one sent for work that is not running would reach whatever else
+that backend is doing. An operation that already finished, and one still composed but never
+written, are therefore withdrawn locally and nothing goes on the wire — cancelling a statement
+you have not awaited yet will not disturb the transaction it belongs to. Only an operation
+genuinely in flight produces a request. And if the connection is lost while that request goes
+out, the operation is failed straight away rather than waiting for an answer that can no longer
+arrive, so its slot returns to the pool.
+
 That queue belongs to the async path, where something else keeps advancing the operations that
 hold the connections. `Pool::wait()` — what `SQL::await()` calls — is the synchronous API:
 while it blocks, nothing advances those operations, and only they can free a slot. So a

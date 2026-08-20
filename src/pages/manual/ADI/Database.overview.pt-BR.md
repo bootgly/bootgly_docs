@@ -55,6 +55,15 @@ cancelamento, quanto se falha de vez na tentativa. Nenhum failover automático p
 réplica revive depois uma operação desistida. Isso é separado de o cancel ter chegado ou não ao
 servidor, que é o que decide se a conexão ainda tem resposta a reconciliar.
 
+Se alguma coisa é de fato *enviada* depende de onde a operação está. Um pedido de cancel nomeia
+um backend, não um statement, então um pedido enviado para trabalho que não está rodando
+chegaria no que aquele backend estiver fazendo. Por isso uma operação que já terminou, e uma
+ainda composta mas nunca escrita, são retiradas localmente e nada vai para o fio — cancelar um
+statement que você ainda não aguardou não perturba a transação a que ele pertence. Só uma
+operação de fato em voo gera um pedido. E se a conexão se perder enquanto esse pedido sai, a
+operação falha na hora em vez de esperar uma resposta que não pode mais chegar, e a vaga dela
+volta para o pool.
+
 Essa fila pertence ao caminho assíncrono, onde algo mais segue avançando as operações que
 seguram as conexões. `Pool::wait()` — o que `SQL::await()` chama — é a API síncrona: enquanto
 ela bloqueia, nada avança aquelas operações, e só elas podem liberar um slot. Então um
