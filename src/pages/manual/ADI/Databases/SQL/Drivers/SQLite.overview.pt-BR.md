@@ -91,22 +91,24 @@ $Transaction->commit();
 
 ## Dimensionamento do Pool
 
-Um pool SQLite mantém **uma conexão**, e a configuração garante isso: um `pool.max` acima
-de `1` é reduzido para `1`, tanto em `:memory:` quanto em bancos em arquivo. Um pool
-configurado para não abrir nada (`pool.max = 0`) fica como está.
+`:memory:` — e o nome de banco vazio — mantêm **uma conexão**, e a configuração garante
+isso: um `pool.max` acima de `1` é reduzido para `1`. Um pool configurado para não abrir
+nada (`pool.max = 0`) fica como está. **Um banco em arquivo mantém o pool que você deu.**
 
-Uma conexão do pool não é um segundo caminho para o mesmo banco:
+Os dois não são o mesmo tipo de banco:
 
-- cada conexão abre seu **próprio** handle `SQLite3` — com `:memory:` isso é um banco
-  independente e vazio, então uma linha escrita por um handle é invisível para o outro e
-  nada nunca dá erro;
-- bancos em arquivo compartilham o arquivo, mas os handles disputam seu lock: uma escrita
-  feita enquanto outro handle mantém uma transação espera o `busyTimeout` inteiro (o
-  `timeout` que você configurou) e então falha com `database is locked`.
+- `:memory:` é privado do handle que o abre, e cada conexão do pool abre seu **próprio**
+  handle `SQLite3` — então uma segunda conexão é um segundo banco, vazio, e uma linha
+  escrita por um handle é invisível para o outro sem que nada dê erro;
+- um arquivo é um banco só, qualquer que seja o handle que o abra. Os handles disputam seu
+  lock: uma escrita feita enquanto outro mantém uma transação espera o `busyTimeout` inteiro
+  (o `timeout` que você configurou) e então falha com `database is locked`, que é o SQLite
+  pedindo para você tentar de novo.
 
-Planeje uma consequência — enquanto uma transação mantém a conexão, toda outra query é
-recusada com `Database pool has no capacity for the operation.` Execute-a pela transação,
-ou emita-a antes do `begin()` ou depois do teardown.
+Planeje uma consequência de um pool de uma conexão — enquanto uma transação mantém a
+conexão, toda outra query naquele banco é recusada com
+`Database pool has no capacity for the operation.` Execute-a pela transação, ou emita-a
+antes do `begin()` ou depois do teardown.
 
 Para outros processos lerem um banco em arquivo enquanto um escreve, aplique o modo WAL uma vez:
 

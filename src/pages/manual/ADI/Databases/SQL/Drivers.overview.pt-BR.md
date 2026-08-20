@@ -115,9 +115,9 @@ hidrata exatamente como o driver decodificou.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.
-- SQLite é síncrono: operações resolvem imediatamente e nunca suspendem. Seu pool é
-  confinado a uma conexão — um `pool.max` acima de `1` é reduzido para `1`, porque cada
-  handle abre um banco próprio.
+- SQLite é síncrono: operações resolvem imediatamente e nunca suspendem. Um banco
+  `:memory:` é privado do handle que o abre, então seu pool é confinado a uma conexão — um
+  `pool.max` acima de `1` é reduzido para `1`. Bancos em arquivo mantêm seu pool.
 
 ## Referência
 
