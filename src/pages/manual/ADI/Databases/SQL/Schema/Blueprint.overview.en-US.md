@@ -107,10 +107,19 @@ $Schema->alter('users', function (Blueprint $Table): void {
 
    $Table->change('created_at', Types::Timestamp)->default = Defaults::None; // DROP DEFAULT
 
-   $Table->rename('bio', 'profile');                                  // rename a column
    $Table->remove('legacy');                                          // drop a column
 });
+
+// A rename goes in an alter() of its own — see below.
+$Schema->alter('users', function (Blueprint $Table): void {
+   $Table->rename('bio', 'profile');
+});
 ```
+
+**A rename does not share an `alter()`.** PostgreSQL's `ALTER TABLE` has two disjoint forms —
+a comma-separated list of actions, and one rename — so a rename beside anything else, another
+rename included, is a syntax error rather than a statement. Bootgly refuses that blueprint
+instead of compiling it, and one rename on its own compiles and runs everywhere.
 
 > Some of these depend on the database engine. PostgreSQL does all of them; MySQL and
 > SQLite have limits — see **[Dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)**.
