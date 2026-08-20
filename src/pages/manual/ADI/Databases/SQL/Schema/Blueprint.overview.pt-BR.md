@@ -122,10 +122,10 @@ definição da coluna, e o que a instrução deixar de fora volta ao padrão em 
 tipo é recusado em vez de compilado: declare no change tudo o que a coluna precisa manter.
 
 ```php
-$Change = $Table->change('age', Types::BigInteger);
+$Change = $Table->change('email', Types::String)->limit(320);
 $Change->nullable = false;
-$Change->default  = 0;
-// ALTER TABLE `users` MODIFY COLUMN `age` BIGINT NOT NULL DEFAULT 0
+$Change->default  = '';
+// ALTER TABLE `users` MODIFY COLUMN `email` VARCHAR(320) NOT NULL DEFAULT ''
 
 $Key = $Table->change('id', Types::BigInteger)->generate();  // mantém a identidade
 $Key->nullable = false;
@@ -139,8 +139,10 @@ de tipo sozinha, então declarar lá não custa nada e mantém a migration port�
 Um `COMMENT` ou `COLLATE` que a coluna carregue não faz parte do blueprint, então não pode ser
 reescrito por aqui — reaplique com uma instrução crua depois da mudança.
 
-> O `limit()` molda `String` e o `size()` molda `Decimal`; nos outros tipos o argumento é
-> descartado, então use-os para dimensionar uma coluna, não para satisfazer o compilador.
+> Uma mudança de tipo precisa declarar que é uma: `limit()`, `size()`, `cast()` e `generate()`
+> declaram, enquanto atribuir `nullable` ou `default` sozinhos transformam o change em algo
+> só de metadados. O `limit()` molda `String` e o `size()` molda `Decimal`; nos outros tipos o
+> argumento é descartado, então neles o `generate()` é a única forma honesta de declarar.
 
 ## Dica: nomes tipados com enums
 

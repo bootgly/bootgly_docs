@@ -122,10 +122,10 @@ the `DEFAULT`, the `AUTO_INCREMENT`, the `COMMENT`. So a change that names only 
 refused rather than compiled: state on the change everything the column must keep.
 
 ```php
-$Change = $Table->change('age', Types::BigInteger);
+$Change = $Table->change('email', Types::String)->limit(320);
 $Change->nullable = false;
-$Change->default  = 0;
-// ALTER TABLE `users` MODIFY COLUMN `age` BIGINT NOT NULL DEFAULT 0
+$Change->default  = '';
+// ALTER TABLE `users` MODIFY COLUMN `email` VARCHAR(320) NOT NULL DEFAULT ''
 
 $Key = $Table->change('id', Types::BigInteger)->generate();  // keep the identity
 $Key->nullable = false;
@@ -139,8 +139,10 @@ change on its own, so stating it there costs nothing and keeps the migration por
 A `COMMENT` or `COLLATE` the column carries is not part of the blueprint, so it cannot be
 restated this way — reapply it with a raw statement after the change.
 
-> `limit()` shapes `String` and `size()` shapes `Decimal`; on the other types the argument is
-> discarded, so use them to size a column, not to satisfy the compiler.
+> A type change has to say it is one: `limit()`, `size()`, `cast()` and `generate()` all do,
+> while assigning `nullable` or `default` on their own turns the change into a metadata-only
+> one. `limit()` shapes `String` and `size()` shapes `Decimal`; on the other types the
+> argument is discarded, so on those, `generate()` is the only honest way to say it.
 
 ## Tip: typed names with enums
 
