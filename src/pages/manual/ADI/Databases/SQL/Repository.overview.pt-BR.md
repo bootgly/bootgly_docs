@@ -34,6 +34,18 @@ $Mapped = $Users->hydrate($Operation);
 $User = $Mapped->entity;
 ```
 
+O `save()` numa entidade hidratada grava de volta as colunas que a hidratação realmente
+trouxe, e só elas. Uma projeção que omite uma coluna mapeada deixa a propriedade com o default
+da classe, que se lê exatamente como um valor que você escolheu — gravá-lo de volta trocaria
+dado armazenado por um default plausível e reportaria sucesso. Hidrate uma projeção mais larga
+depois e as colunas que ela trouxe entram no conjunto. Uma coluna marcada `generated` com
+`null` nunca é gravada, do mesmo jeito que o `insert()` sempre pulou.
+
+Uma entidade que você mesmo construiu não foi hidratada, então nada se sabe sobre ela: o
+`save()` grava toda coluna mapeada, que é o que você pediu. E uma entidade hidratada sem
+nenhuma coluna gravável é recusada com `ORM update has no column carrying a value to write.`
+em vez de compilar um `UPDATE` com `SET` vazio.
+
 ## Selection
 
 `select()` cria uma `Selection`, compilada pelo SQL Query Builder.

@@ -34,6 +34,18 @@ $Mapped = $Users->hydrate($Operation);
 $User = $Mapped->entity;
 ```
 
+`save()` on a hydrated entity writes back the columns that hydration actually carried, and
+only those. A projection that omits a mapped column leaves its property holding the class
+default, which reads exactly like a value you chose — writing it back would replace stored
+data with a plausible-looking default and report success. Hydrate a wider projection later
+and the columns it carried join the set. A column marked `generated` holding `null` is never
+written, the same way `insert()` has always skipped it.
+
+An entity you built yourself is not hydrated, so nothing is known about it: `save()` writes
+every mapped column, which is what you asked for. And a hydrated entity with no writable
+column left is refused with `ORM update has no column carrying a value to write.` rather than
+compiling an `UPDATE` with an empty `SET`.
+
 ## Selection
 
 `select()` creates a `Selection`, which compiles through the SQL Query Builder.
