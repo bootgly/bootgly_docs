@@ -96,6 +96,12 @@ A reserva é liberada pela operação que carrega o `unlock`, mesmo quando o dri
 irmão co-localizado para terminar — a intenção vive naquela operação, então adiar a liberação
 a perderia junto com ela e deixaria a conexão reservada para sempre.
 
+Um caso não a libera: um commit ou rollback que o pool retira *antes de ele chegar ao servidor*,
+seja porque você cancelou, seja porque o prazo dele venceu. Aquele statement não encerrou nada,
+então a transação segue aberta e segue segurando seus locks, e a reserva se mantém em vez de ir
+para o próximo caller. A intenção fica guardada na operação, então re-armar aquele teardown e
+deixá-lo passar libera a conexão.
+
 Uma operação presa a uma conexão que o pool não consegue mais fornecer — restart do servidor,
 reciclagem de load balancer, socket derrubado — falha na hora em vez de esperar em `pending`.
 Nenhuma capacidade satisfaz um pin, então enfileirá-la a manteria ali para sempre enquanto
