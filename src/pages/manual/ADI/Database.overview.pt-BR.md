@@ -48,6 +48,12 @@ de novo nem serve de alvo para pipelining, porque o trabalho nela nunca contaria
 `max`. E uma operação que o pool estacionou sai da fila no instante em que termina, então nada
 pode promover e re-despachar trabalho que o chamador já cancelou.
 
+Cancelar é uma decisão, não uma mensagem. Um driver que não consegue enviar o pedido de cancel
+— porque o protocolo não tem por onde, ou porque o driver não suporta cancelamento — ainda
+assim recusa de um jeito que registra a desistência, então nada retenta o statement depois.
+Isso é separado de o cancel ter chegado ou não ao servidor, que é o que decide se a conexão
+ainda tem resposta a reconciliar.
+
 Essa fila pertence ao caminho assíncrono, onde algo mais segue avançando as operações que
 seguram as conexões. `Pool::wait()` — o que `SQL::await()` chama — é a API síncrona: enquanto
 ela bloqueia, nada avança aquelas operações, e só elas podem liberar um slot. Então um

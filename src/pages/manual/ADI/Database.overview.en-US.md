@@ -49,6 +49,12 @@ pipelining target, because work on it would never count against `max`. And an op
 pool has parked leaves the queue the moment it is finished, so nothing can promote and
 re-dispatch work a caller already cancelled.
 
+Cancelling is a decision, not a message. A driver that cannot send a cancel request — because
+the protocol has nothing to send it on, or because the driver does not support cancellation at
+all — still refuses in a way that records the withdrawal, so nothing retries the statement
+later. That is separate from whether the cancel reached the server, which is what decides
+whether the connection still has an answer to reconcile.
+
 That queue belongs to the async path, where something else keeps advancing the operations that
 hold the connections. `Pool::wait()` — what `SQL::await()` calls — is the synchronous API:
 while it blocks, nothing advances those operations, and only they can free a slot. So a
