@@ -119,18 +119,28 @@ $Schema->alter('users', function (Blueprint $Table): void {
 **On MySQL, a type change carries the whole column.** `MODIFY COLUMN` restates a column's
 entire definition, and anything the statement leaves out reverts silently — the `NOT NULL`,
 the `DEFAULT`, the `AUTO_INCREMENT`, the `COMMENT`. So a change that names only a type is
-refused rather than compiled: shape the type with `limit()` or `size()`, then state on the
-change what the column must keep.
+refused rather than compiled: state on the change everything the column must keep.
 
 ```php
-$Change = $Table->change('age', Types::BigInteger)->size(20);
+$Change = $Table->change('age', Types::BigInteger);
 $Change->nullable = false;
 $Change->default  = 0;
 // ALTER TABLE `users` MODIFY COLUMN `age` BIGINT NOT NULL DEFAULT 0
+
+$Key = $Table->change('id', Types::BigInteger)->generate();  // keep the identity
+$Key->nullable = false;
+// ALTER TABLE `users` MODIFY COLUMN `id` BIGINT NOT NULL AUTO_INCREMENT
 ```
+
+Without `generate()`, retyping an identity column drops it, and the next insert dies with
+`1364: Field 'id' doesn't have a default value`. On PostgreSQL the identity survives a type
+change on its own, so stating it there costs nothing and keeps the migration portable.
 
 A `COMMENT` or `COLLATE` the column carries is not part of the blueprint, so it cannot be
 restated this way — reapply it with a raw statement after the change.
+
+> `limit()` shapes `String` and `size()` shapes `Decimal`; on the other types the argument is
+> discarded, so use them to size a column, not to satisfy the compiler.
 
 ## Tip: typed names with enums
 

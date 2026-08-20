@@ -119,18 +119,28 @@ $Schema->alter('users', function (Blueprint $Table): void {
 **No MySQL, mudar o tipo carrega a coluna inteira.** O `MODIFY COLUMN` reescreve toda a
 definição da coluna, e o que a instrução deixar de fora volta ao padrão em silêncio — o
 `NOT NULL`, o `DEFAULT`, o `AUTO_INCREMENT`, o `COMMENT`. Por isso um change que só nomeia um
-tipo é recusado em vez de compilado: molde o tipo com `limit()` ou `size()` e então declare no
-change o que a coluna precisa manter.
+tipo é recusado em vez de compilado: declare no change tudo o que a coluna precisa manter.
 
 ```php
-$Change = $Table->change('age', Types::BigInteger)->size(20);
+$Change = $Table->change('age', Types::BigInteger);
 $Change->nullable = false;
 $Change->default  = 0;
 // ALTER TABLE `users` MODIFY COLUMN `age` BIGINT NOT NULL DEFAULT 0
+
+$Key = $Table->change('id', Types::BigInteger)->generate();  // mantém a identidade
+$Key->nullable = false;
+// ALTER TABLE `users` MODIFY COLUMN `id` BIGINT NOT NULL AUTO_INCREMENT
 ```
+
+Sem o `generate()`, retipar uma coluna de identidade a derruba, e o insert seguinte morre com
+`1364: Field 'id' doesn't have a default value`. No PostgreSQL a identidade sobrevive à mudança
+de tipo sozinha, então declarar lá não custa nada e mantém a migration portável.
 
 Um `COMMENT` ou `COLLATE` que a coluna carregue não faz parte do blueprint, então não pode ser
 reescrito por aqui — reaplique com uma instrução crua depois da mudança.
+
+> O `limit()` molda `String` e o `size()` molda `Decimal`; nos outros tipos o argumento é
+> descartado, então use-os para dimensionar uma coluna, não para satisfazer o compilador.
 
 ## Dica: nomes tipados com enums
 
