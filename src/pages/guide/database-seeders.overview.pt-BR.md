@@ -62,7 +62,11 @@ bootgly project <nome> seed run --dry-run
 bootgly project <nome> seed list
 ```
 
-Quando o dialeto do banco suporta transações, cada seeder roda em sua própria transação. Um
+Quando o dialeto do banco suporta transações, as queries que um seeder **retorna** rodam em
+uma transação própria. A closure em si roda **antes** dessa transação abrir, então um seeder
+pode ler o banco para decidir o que escrever — e qualquer `$Database->query(...)` que ela
+emita diretamente é uma instrução à parte, fora daquela transação e não desfeita quando uma
+query retornada falha. Um
 lock local de seeders mais um lock advisory do dialeto quando suportado impedem execuções
 sobrepostas. Use `--dry-run` antes de reexecutar para compilar o SQL e os parâmetros
 retornados sem enviar as instruções ao banco. O dry-run só pula a execução do SQL retornado;
