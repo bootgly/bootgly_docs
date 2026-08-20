@@ -41,6 +41,13 @@ O pool acompanha conexões `idle`, `busy`, `pending` e `created`. Quando todas a
 estão ocupadas e `created >= max`, novas operações aguardam em `pending`. Quando uma conexão
 é liberada, o pool promove operações pendentes.
 
+`created` é a contagem do próprio pool, e toda conexão que ele segura — idle, busy ou
+reservada por uma transação — é uma que ele conta. Uma conexão que o pool descartou continua
+descartada mesmo que um driver reconecte o mesmo objeto por conta própria: ela não é entregue
+de novo nem serve de alvo para pipelining, porque o trabalho nela nunca contaria contra o
+`max`. E uma operação que o pool estacionou sai da fila no instante em que termina, então nada
+pode promover e re-despachar trabalho que o chamador já cancelou.
+
 Essa fila pertence ao caminho assíncrono, onde algo mais segue avançando as operações que
 seguram as conexões. `Pool::wait()` — o que `SQL::await()` chama — é a API síncrona: enquanto
 ela bloqueia, nada avança aquelas operações, e só elas podem liberar um slot. Então um

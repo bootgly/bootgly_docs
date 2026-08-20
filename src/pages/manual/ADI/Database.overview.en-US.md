@@ -42,6 +42,13 @@ The pool tracks `idle`, `busy`, `pending` and `created` connections. When all co
 busy and `created >= max`, new operations wait in `pending`. When a connection is released,
 the pool promotes pending operations.
 
+`created` is the pool's own count, and every connection it holds — idle, busy or reserved by a
+transaction — is one it counts. A connection the pool has dropped stays dropped even if a
+driver reconnects the same object on its own: it is not handed out again and it is not a
+pipelining target, because work on it would never count against `max`. And an operation the
+pool has parked leaves the queue the moment it is finished, so nothing can promote and
+re-dispatch work a caller already cancelled.
+
 That queue belongs to the async path, where something else keeps advancing the operations that
 hold the connections. `Pool::wait()` — what `SQL::await()` calls — is the synchronous API:
 while it blocks, nothing advances those operations, and only they can free a slot. So a
