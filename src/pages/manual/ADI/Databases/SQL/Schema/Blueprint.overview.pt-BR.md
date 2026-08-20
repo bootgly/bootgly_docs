@@ -116,6 +116,22 @@ $Schema->alter('users', function (Blueprint $Table): void {
 > limites — veja **[Dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)**. Quando
 > uma engine não consegue uma ação, ela dá erro em vez de produzir SQL quebrado.
 
+**No MySQL, mudar o tipo carrega a coluna inteira.** O `MODIFY COLUMN` reescreve toda a
+definição da coluna, e o que a instrução deixar de fora volta ao padrão em silêncio — o
+`NOT NULL`, o `DEFAULT`, o `AUTO_INCREMENT`, o `COMMENT`. Por isso um change que só nomeia um
+tipo é recusado em vez de compilado: molde o tipo com `limit()` ou `size()` e então declare no
+change o que a coluna precisa manter.
+
+```php
+$Change = $Table->change('age', Types::BigInteger)->size(20);
+$Change->nullable = false;
+$Change->default  = 0;
+// ALTER TABLE `users` MODIFY COLUMN `age` BIGINT NOT NULL DEFAULT 0
+```
+
+Um `COMMENT` ou `COLLATE` que a coluna carregue não faz parte do blueprint, então não pode ser
+reescrito por aqui — reaplique com uma instrução crua depois da mudança.
+
 ## Dica: nomes tipados com enums
 
 Nomes aceitam string, mas também um backed enum — útil para evitar typos entre migrations:
