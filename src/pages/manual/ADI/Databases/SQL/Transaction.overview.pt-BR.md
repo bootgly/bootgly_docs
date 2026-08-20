@@ -24,6 +24,13 @@ $Database->Pool->wait($Transaction->commit());
 `SQL::begin()` constrói a transação e atribui imediatamente uma operação `BEGIN` ao pool.
 Espere `$Transaction->Operation` antes de enviar a primeira query transacional.
 
+Essa espera não é formalidade. `depth` vira `1` no momento em que o `BEGIN` é composto, muito
+antes de qualquer servidor vê-lo, então o objeto de transação existe tendo a instrução dado
+certo ou não. Se o `BEGIN` falhar, a transação está morta e avisa: `query()`, `commit()` e
+`rollback()` devolvem um `Operation` com falha dizendo *"SQL transaction is not active."* Sem
+isso, o trabalho rodaria numa conexão onde nenhuma transação foi aberta — commitado por
+autocommit e sobrevivendo ao rollback que você pediu.
+
 ## Estado
 
 - `Database` — a fachada SQL que criou a transação.

@@ -74,11 +74,18 @@ desconecta, para que o Pool descarte a conexão morta em vez de mantê-la ocupad
 ## Cancelamento
 
 ```php
-$Database->cancel($Operation);
+$Running = $Database->query('SELECT pg_sleep(30)');
+$Database->advance($Running);
+
+$Database->cancel($Running);
 ```
 
 Envia um `CancelRequest` por uma conexão separada usando os backend key data — advisory: a
 operação ainda resolve, falha ou expira no socket principal.
+
+Só uma operação de fato em voo gera um. Um pedido de cancel nomeia um backend, não um
+statement, então cancelar uma operação que já terminou — ou uma composta pelo `query()` mas
+nunca avançada — não envia nada e a retira localmente.
 
 ## Referência
 

@@ -58,11 +58,15 @@ servidor, que é o que decide se a conexão ainda tem resposta a reconciliar.
 Se alguma coisa é de fato *enviada* depende de onde a operação está. Um pedido de cancel nomeia
 um backend, não um statement, então um pedido enviado para trabalho que não está rodando
 chegaria no que aquele backend estiver fazendo. Por isso uma operação que já terminou, e uma
-ainda composta mas nunca escrita, são retiradas localmente e nada vai para o fio — cancelar um
-statement que você ainda não aguardou não perturba a transação a que ele pertence. Só uma
-operação de fato em voo gera um pedido. E se a conexão se perder enquanto esse pedido sai, a
-operação falha na hora em vez de esperar uma resposta que não pode mais chegar, e a vaga dela
-volta para o pool.
+ainda composta mas nunca escrita, são retiradas localmente e nada vai para o fio. As duas
+diferem no que sobra para quem chamou: uma operação finda mantém seu estado e seu resultado,
+enquanto uma que nunca chegou ao servidor é falhada, já que o trabalho dela não aconteceu. Só
+uma operação de fato em voo gera um pedido.
+
+Se o socket local tiver sido fechado enquanto esse pedido sai, a operação falha na hora em vez
+de esperar uma resposta que não pode mais chegar, e a vaga dela volta para o pool. Um peer que
+some sem o socket local perceber não é detectável aqui — essa conexão é descoberta pela próxima
+operação que a usar.
 
 Essa fila pertence ao caminho assíncrono, onde algo mais segue avançando as operações que
 seguram as conexões. `Pool::wait()` — o que `SQL::await()` chama — é a API síncrona: enquanto

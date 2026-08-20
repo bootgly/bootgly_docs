@@ -73,11 +73,18 @@ Pool drops the dead connection instead of keeping it busy.
 ## Cancellation
 
 ```php
-$Database->cancel($Operation);
+$Running = $Database->query('SELECT pg_sleep(30)');
+$Database->advance($Running);
+
+$Database->cancel($Running);
 ```
 
 Sends a `CancelRequest` through a separate connection using the backend key data —
 advisory: the operation still resolves, fails or expires on the main socket.
+
+Only an operation that is actually in flight produces one. A cancel request names a backend,
+not a statement, so cancelling an operation that has already finished — or one composed by
+`query()` but never advanced — sends nothing at all and withdraws it locally instead.
 
 ## Reference
 

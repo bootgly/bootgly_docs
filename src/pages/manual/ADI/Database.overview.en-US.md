@@ -59,11 +59,15 @@ server, which is what decides whether the connection still has an answer to reco
 Whether anything is *sent* depends on where the operation actually is. A cancel request names a
 backend, not a statement, so one sent for work that is not running would reach whatever else
 that backend is doing. An operation that already finished, and one still composed but never
-written, are therefore withdrawn locally and nothing goes on the wire — cancelling a statement
-you have not awaited yet will not disturb the transaction it belongs to. Only an operation
-genuinely in flight produces a request. And if the connection is lost while that request goes
-out, the operation is failed straight away rather than waiting for an answer that can no longer
-arrive, so its slot returns to the pool.
+written, are therefore withdrawn locally and nothing goes on the wire. The two differ in what
+the caller is left holding: a finished operation keeps its state and its result, while one that
+never reached the server is failed, since its work did not happen. Only an operation genuinely
+in flight produces a request.
+
+If the local socket has been closed while that request goes out, the operation is failed
+straight away rather than waiting for an answer that can no longer arrive, so its slot returns
+to the pool. A peer that goes away without the local socket noticing is not detectable here —
+that connection is discovered by the next operation to use it.
 
 That queue belongs to the async path, where something else keeps advancing the operations that
 hold the connections. `Pool::wait()` — what `SQL::await()` calls — is the synchronous API:
