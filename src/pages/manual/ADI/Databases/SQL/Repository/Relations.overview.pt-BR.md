@@ -48,12 +48,17 @@ $Users = $Database->map(User::class);
 $MappedUsers = $Users->hydrate($Database->await($Users->fetch()));
 
 $Operations = $Users->load($MappedUsers->entities, ['Posts']);
-$Users->attach(
-   $MappedUsers->entities,
-   'Posts',
-   $Database->await($Operations['Posts'])
-);
+$Operation = $Operations['Posts'] ?? null;
+
+if ($Operation !== null) {
+   $Users->attach($MappedUsers->entities, 'Posts', $Database->await($Operation));
+}
 ```
+
+A chave não existe quando nenhum pai do lote carrega a chave local da relação — não há o que
+buscar, então o `load()` não emite query. Guarde o acesso em vez de indexar direto. O
+`hydrate()` não precisa desse cuidado: uma relação que ele não consegue buscar é escrita na
+forma vazia, então a propriedade nunca fica com um resultado de uma janela anterior.
 
 Isso mantém a contagem de queries visível e evita consultas de relação ad hoc por entidade pai.
 

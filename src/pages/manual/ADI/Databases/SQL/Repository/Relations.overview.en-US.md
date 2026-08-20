@@ -48,14 +48,19 @@ $Users = $Database->map(User::class);
 $MappedUsers = $Users->hydrate($Database->await($Users->fetch()));
 
 $Operations = $Users->load($MappedUsers->entities, ['Posts']);
-$Users->attach(
-   $MappedUsers->entities,
-   'Posts',
-   $Database->await($Operations['Posts'])
-);
+$Operation = $Operations['Posts'] ?? null;
+
+if ($Operation !== null) {
+   $Users->attach($MappedUsers->entities, 'Posts', $Database->await($Operation));
+}
 ```
 
 This keeps query count visible and avoids ad hoc per-parent relation queries.
+
+The key is absent when no parent in the batch carries the relation's local key — there is
+nothing to look up, so `load()` issues no query. Guard the lookup rather than indexing it
+directly. `hydrate()` needs no such care: a relation it cannot look up is written to its empty
+form, so the property is never left holding a result from an earlier window.
 
 For multiple deferred relations, await and attach one operation per relation:
 
