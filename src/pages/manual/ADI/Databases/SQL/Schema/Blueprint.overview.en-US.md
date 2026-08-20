@@ -118,8 +118,9 @@ $Schema->alter('users', function (Blueprint $Table): void {
 
 **A rename does not share an `alter()`.** PostgreSQL's `ALTER TABLE` has two disjoint forms —
 a comma-separated list of actions, and one rename — so a rename beside anything else, another
-rename included, is a syntax error rather than a statement. Bootgly refuses that blueprint
-instead of compiling it, and one rename on its own compiles and runs everywhere.
+rename included, is a syntax error rather than a statement, so Bootgly refuses that blueprint
+there instead of compiling it. MySQL does accept the combination and compiles it as written.
+Keeping a rename in its own `alter()` works on every engine.
 
 > Some of these depend on the database engine. PostgreSQL does all of them; MySQL and
 > SQLite have limits — see **[Dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)**.
