@@ -113,8 +113,9 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   statement nothing could ever close.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
-- SQLite is synchronous: operations resolve immediately and never suspend. Keep
-  `pool.max = 1` for `:memory:` databases (each handle would open an independent database).
+- SQLite is synchronous: operations resolve immediately and never suspend. Its pool is
+  confined to one connection — a `pool.max` above `1` is reduced to `1`, because each
+  handle opens a database of its own.
 
 ## Reference
 

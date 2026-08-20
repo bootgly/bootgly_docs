@@ -91,14 +91,24 @@ $Transaction->commit();
 
 ## Pool sizing
 
-Keep the default `pool.max = 1`:
+A SQLite pool holds **one connection**, and the configuration enforces it: a `pool.max`
+above `1` is reduced to `1`, on `:memory:` and on file databases alike. A pool configured
+to open nothing (`pool.max = 0`) is left as configured.
 
-- each pooled connection opens its **own** `SQLite3` handle — with `:memory:` that means
-  an independent, empty database per handle;
-- file databases avoid `SQLITE_BUSY` contention with a single writer handle. The
-  configured `timeout` becomes the handle `busyTimeout`.
+A pooled connection is not a second route to the same database:
 
-To enable concurrent readers on a file database, apply WAL mode once:
+- each connection opens its **own** `SQLite3` handle — with `:memory:` that is an
+  independent, empty database, so a row written through one handle is invisible to the
+  other and nothing ever errors;
+- file databases do share the file, but the handles contend for its lock: a write issued
+  while another handle holds a transaction waits out the whole `busyTimeout` (your
+  configured `timeout`) and then fails with `database is locked`.
+
+Plan for one consequence — while a transaction holds the connection, every other query is
+refused with `Database pool has no capacity for the operation.` Run it through the
+transaction, or issue it before `begin()` or after the teardown.
+
+To let other processes read a file database while one writes, apply WAL mode once:
 
 ```php
 $Database->query('PRAGMA journal_mode=WAL');
