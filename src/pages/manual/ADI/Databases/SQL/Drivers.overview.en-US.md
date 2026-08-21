@@ -111,6 +111,10 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   A sibling binds the statement its owner is preparing instead of preparing it again —
   which on PostgreSQL would fail outright (`42P05`), and on MySQL would leave a server
   statement nothing could ever close.
+- A batch too large for the socket buffer is written in parts, and the operation writing it
+  holds the stream until it finishes. If its caller gives up, the batch stops in the middle of
+  a wire message: the next operation on that connection finds the holder past its deadline,
+  the session is dropped rather than resynchronised, and the pool opens a fresh connection.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
 - SQLite is synchronous: operations resolve immediately and never suspend. A `:memory:`
