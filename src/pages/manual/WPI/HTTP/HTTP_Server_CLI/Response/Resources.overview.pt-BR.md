@@ -179,6 +179,32 @@ commit — ou rollback — até não sobrar nada aberto, de modo que a transaç�
 finalizada e a conexão fixada sempre volta para o pool. Um único teardown teria liberado só o
 savepoint mais interno, deixando a transação aberta numa conexão que ninguém devolve.
 
+O callback recebe `($Transaction, $Database)`, e **esse segundo argumento é este resource
+falando pela transação**: enquanto o callback executa, `query()`, `fetch()`, `map()` e
+`paginate()` rodam todos dentro da transação, na conexão que ela fixou.
+
+```php
+$Response->Database->transact(function ($Transaction, $Database) {
+   $Database->query('INSERT INTO orders (total) VALUES ($1)', [99]);
+
+   // Lê a linha acima: mesma transação, mesma conexão.
+   return $Database->fetch('SELECT sum(total) AS due FROM orders')->rows;
+});
+```
+
+Esse roteamento é o que mantém a unidade de trabalho inteira. Despachar para o pool pediria uma
+conexão *diferente*: com capacidade sobrando a query rodaria fora da transação — sem enxergar
+nenhuma escrita dela e sem ser coberta pelo rollback dela — e com um pool de uma conexão só ela
+ficaria esperando pela conexão que o próprio chamador está segurando.
+
+Um `transact()` dentro de outro `transact()` é um nível aninhado da mesma transação, aberto como
+savepoint. Ele é liberado quando o callback interno retorna, então as escritas dele continuam
+sendo da transação externa para commitar ou reverter — uma unidade interna que retornou com
+sucesso ainda é descartada se a externa falhar.
+
+Uma transação é uma superfície **serial**: ela carrega uma operação por vez. Emita a próxima
+query depois de aguardar a anterior, e reserve o `drain()` para grupos criados no pool.
+
 ## Registrar o resource KV
 
 `KV` adapta o banco key-value async (`ADI/Databases/KV`, Redis) ao scheduler da resposta do

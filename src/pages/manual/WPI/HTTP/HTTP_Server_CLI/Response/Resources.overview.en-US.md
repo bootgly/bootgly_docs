@@ -178,6 +178,32 @@ or rolling back — until nothing is left open, so the outer transaction is alwa
 its pinned connection always returned. A single teardown would only have released the
 innermost savepoint, leaving the transaction open on a connection nothing hands back.
 
+The callback receives `($Transaction, $Database)`, and **that second argument is this resource
+speaking for the transaction**: while the callback runs, `query()`, `fetch()`, `map()` and
+`paginate()` all run inside the transaction, on the connection it pinned.
+
+```php
+$Response->Database->transact(function ($Transaction, $Database) {
+   $Database->query('INSERT INTO orders (total) VALUES ($1)', [99]);
+
+   // Reads the row above: same transaction, same connection.
+   return $Database->fetch('SELECT sum(total) AS due FROM orders')->rows;
+});
+```
+
+That routing is what makes the unit of work whole. Dispatching to the pool instead would ask
+for a *different* connection: with capacity to spare the query would run outside the
+transaction — seeing none of its writes and covered by none of its rollback — and with a
+single-connection pool it would wait for the connection the caller is itself holding.
+
+A `transact()` inside another `transact()` is a nested level of the same transaction, opened as
+a savepoint. It is released when the inner callback returns, so its writes are still the outer
+transaction's to commit or roll back — an inner unit that returned successfully is still
+discarded if the outer one fails.
+
+A transaction is a **serial** surface: it carries one operation at a time. Issue the next query
+after awaiting the previous one, and keep `drain()` for groups created on the pool.
+
 ## Register the KV resource
 
 `KV` adapts the async key-value database (`ADI/Databases/KV`, Redis) to the response
