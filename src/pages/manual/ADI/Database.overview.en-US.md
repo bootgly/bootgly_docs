@@ -104,6 +104,13 @@ open transaction it never asked for, and keeping it reserved would lose the slot
 the session stayed open anyway. So the connection is dropped: the server rolls the transaction
 back, which is what a commit that never ran means, and the slot returns to the pool.
 
+Ending a session also retires the driver that owned it. A statement composed on that session but
+never written is in neither the driver's queue nor its write buffer, so the teardown cannot see it
+and it outlives the session holding a driver whose socket is gone. Advancing one afterwards fails
+it — `PostgreSQL connection was torn down before the query was sent.`, or the MySQL wording — and
+its buffered command is discarded, rather than being written to whatever connection the pool has
+rebuilt in the meantime. A reservation left over from that session is inert for the same reason.
+
 An operation pinned to a connection the pool can no longer provide — a server restart, a
 load-balancer recycle, a dropped socket — fails immediately instead of waiting in `pending`. No
 amount of capacity can satisfy a pin, so queueing it would keep it there for good while every

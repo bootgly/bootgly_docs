@@ -105,6 +105,14 @@ reservada perderia a vaga para sempre com a sessão aberta do mesmo jeito. Entã
 derrubada: o servidor faz rollback da transação, que é o que um commit que nunca rodou
 significa, e a vaga volta para o pool.
 
+Encerrar uma sessão também aposenta o driver que era dono dela. Um statement composto naquela
+sessão mas nunca escrito não está na fila do driver nem no buffer de escrita, então o teardown não
+consegue enxergá-lo e ele sobrevive à sessão segurando um driver cujo socket já morreu. Avançá-lo
+depois disso o faz falhar — `PostgreSQL connection was torn down before the query was sent.`, ou a
+mensagem equivalente do MySQL — e o comando que estava no buffer vai junto, em vez de ser escrito
+na conexão que o pool reconstruiu no meio tempo. Uma reserva remanescente daquela sessão fica
+inerte pelo mesmo motivo.
+
 Uma operação presa a uma conexão que o pool não consegue mais fornecer — restart do servidor,
 reciclagem de load balancer, socket derrubado — falha na hora em vez de esperar em `pending`.
 Nenhuma capacidade satisfaz um pin, então enfileirá-la a manteria ali para sempre enquanto

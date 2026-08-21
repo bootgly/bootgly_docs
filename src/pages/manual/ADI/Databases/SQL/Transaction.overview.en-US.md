@@ -96,6 +96,12 @@ begin (): Operation
 
 Starts the outer transaction again when `depth <= 0`; otherwise creates a nested savepoint.
 
+Reusing the object after a commit or rollback asks the pool for a **new** exclusive claim. The
+connection the last teardown carried is history, not a reservation, so the `BEGIN` never resumes on
+a connection another caller is serving: on a saturated pool it waits like any other exclusive
+request — parked as `Pending` on the async path, refused by `await()` with `Database pool has no
+capacity for the operation.` — and reserves a connection only once capacity frees.
+
 ```php
 save (null|string $name = null): Operation
 ```

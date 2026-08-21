@@ -98,6 +98,12 @@ begin (): Operation
 Inicia a transação externa de novo quando `depth <= 0`; caso contrário cria um savepoint
 aninhado.
 
+Reusar o objeto depois de um commit ou rollback pede ao pool uma **nova** reserva exclusiva. A
+conexão que o último teardown carregava é histórico, não reserva, então o `BEGIN` nunca retoma uma
+conexão que outro caller está usando: num pool saturado ele espera como qualquer outro pedido
+exclusivo — estacionado em `Pending` no caminho assíncrono, recusado pelo `await()` com `Database
+pool has no capacity for the operation.` — e só reserva uma conexão quando a capacidade libera.
+
 ```php
 save (null|string $name = null): Operation
 ```
