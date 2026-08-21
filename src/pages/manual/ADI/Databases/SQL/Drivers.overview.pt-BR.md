@@ -120,7 +120,9 @@ hidrata exatamente como o driver decodificou.
   batch abandonado antes de qualquer byte chegar ao wire é simplesmente retirado, e uma
   nova tentativa continua válida. Um batch que o chamador **cancelou** nunca é concluído:
   enviar o restante executaria justamente o que foi retirado, então a sessão é descartada e
-  o pool abre uma conexão nova.
+  o pool abre uma conexão nova. E quando a sessão morre com um batch escrito pela metade, esse
+  batch falha com a mesma causa de todas as outras operações dela, em vez de esperar o próprio
+  prazo vencer.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.
