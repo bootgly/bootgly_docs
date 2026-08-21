@@ -116,7 +116,9 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   connection finds the holder past its deadline and finishes the flush itself: the answer is
   drained silently, the stale operation fails with its own timeout and is never retried —
   its work ran with an outcome nobody saw — and the connection stays up. A batch abandoned
-  before any byte reached the wire is simply withdrawn, and a retry stays legal.
+  before any byte reached the wire is simply withdrawn, and a retry stays legal. A batch the
+  caller **cancelled** is never completed: sending its remainder would run exactly what was
+  withdrawn, so the session is dropped and the pool opens a fresh connection.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
 - SQLite is synchronous: operations resolve immediately and never suspend. A `:memory:`

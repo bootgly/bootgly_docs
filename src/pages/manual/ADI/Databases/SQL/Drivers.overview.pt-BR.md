@@ -118,7 +118,9 @@ hidrata exatamente como o driver decodificou.
   drenada em silêncio, a operação vencida falha com o próprio timeout e nunca é repetida —
   o trabalho dela rodou com um resultado que ninguém viu — e a conexão continua de pé. Um
   batch abandonado antes de qualquer byte chegar ao wire é simplesmente retirado, e uma
-  nova tentativa continua válida.
+  nova tentativa continua válida. Um batch que o chamador **cancelou** nunca é concluído:
+  enviar o restante executaria justamente o que foi retirado, então a sessão é descartada e
+  o pool abre uma conexão nova.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.
