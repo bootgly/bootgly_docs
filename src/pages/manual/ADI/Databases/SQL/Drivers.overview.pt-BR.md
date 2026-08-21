@@ -112,6 +112,13 @@ hidrata exatamente como o driver decodificou.
   A irmã vincula o statement que a dona está preparando em vez de prepará-lo de novo — o
   que no PostgreSQL falharia de imediato (`42P05`) e no MySQL deixaria no servidor um
   statement que nada conseguiria fechar.
+- Um batch maior que o buffer do socket é escrito em partes, e a operação que o escreve
+  segura o stream até terminar. Se quem a chamou desistir, a próxima operação naquela
+  conexão encontra o dono com o prazo vencido e termina o flush ela mesma: a resposta é
+  drenada em silêncio, a operação vencida falha com o próprio timeout e nunca é repetida —
+  o trabalho dela rodou com um resultado que ninguém viu — e a conexão continua de pé. Um
+  batch abandonado antes de qualquer byte chegar ao wire é simplesmente retirado, e uma
+  nova tentativa continua válida.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.
