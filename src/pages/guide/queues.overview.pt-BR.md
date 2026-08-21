@@ -106,6 +106,12 @@ return [
 ];
 ```
 
+`persistent => true` reaproveita um socket ao longo do processo, e só é honrado quando a sessão
+da conexão é a padrão do servidor — sem `database`, sem `password`, sem TLS. O PHP indexa o pool
+de streams persistentes só por `tcp://host:port`, então uma conexão que precisa de sessão própria
+a carregaria para todos os outros clientes daquele endpoint — um `SELECT` moveria o banco de
+todo mundo. Pedir os dois não é erro; a conexão apenas abre o próprio socket.
+
 Atraso do backoff para a tentativa número *n* (com `base` = 10s):
 
 | Política | Atraso | Exemplo (n = 1, 2, 3) |

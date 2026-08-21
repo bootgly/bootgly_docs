@@ -220,7 +220,11 @@ it from `$Response->defer()` like any other async resource so route code never c
   `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`, batching multi-command
   operations into single round-trips (tagged stores pipeline `SET`+`SADD`s; `invalidate`
   and `clear` use chunked variadic `UNLINK`) and accepting a `persistent` config key for
-  persistent connections.
+  persistent connections. `persistent` is honoured only for a connection whose session is
+  the server default — no `database`, no `password`, no TLS: PHP pools a persistent stream
+  by `tcp://host:port` alone, so a connection that needs a session of its own would carry
+  that session for every other client on the endpoint, and theirs for it. A config that asks
+  for both still works; it simply opens its own socket.
 - **resolve() semantics** — hit/miss is decided by a single `fetch()`, so a stored `null`
   is treated as a miss and recomputed. Do not cache `null` values.
 

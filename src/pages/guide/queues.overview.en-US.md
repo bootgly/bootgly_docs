@@ -105,6 +105,12 @@ return [
 ];
 ```
 
+`persistent => true` reuses one socket across the process, and is honoured only when the
+connection's session is the server default — no `database`, no `password`, no TLS. PHP pools a
+persistent stream by `tcp://host:port` alone, so a connection that needs a session of its own
+would carry it for every other client on that endpoint — one `SELECT` would move everybody's
+database. Asking for both is not an error; the connection simply opens its own socket.
+
 Backoff delay for retry number *n* (with `base` = 10s):
 
 | Policy | Delay | Example (n = 1, 2, 3) |

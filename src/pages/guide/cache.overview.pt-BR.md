@@ -226,7 +226,12 @@ nunca chame `advance()` manualmente.
   contrato para `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`, agrupando
   operações multi-comando em round-trips únicos (stores com tags fazem pipeline de
   `SET`+`SADD`s; `invalidate` e `clear` usam `UNLINK` variádico em chunks) e aceitando a
-  chave de config `persistent` para conexões persistentes.
+  chave de config `persistent` para conexões persistentes. O `persistent` só é honrado para
+  uma conexão cuja sessão é a padrão do servidor — sem `database`, sem `password`, sem TLS:
+  o PHP indexa o pool de streams persistentes só por `tcp://host:port`, então uma conexão que
+  precisa de sessão própria carregaria essa sessão para todos os outros clientes do endpoint,
+  e a deles para ela. Uma config que pede os dois continua funcionando; ela apenas abre o
+  próprio socket.
 - **Semântica do resolve()** — hit/miss é decidido por um único `fetch()`, então um `null`
   armazenado é tratado como miss e recomputado. Não armazene valores `null` no cache.
 
