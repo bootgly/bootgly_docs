@@ -230,6 +230,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\JWT as JWTGuard;
 
 $Remote = new Remote('https://issuer.example/.well-known/jwks.json');
+$Remote->TTL = 900; // public property is uppercase; constructor argument remains ttl:
 $Remote->cache(new Vault);
 $Verifier = new JWT($Remote, 'RS256');
 
@@ -242,7 +243,9 @@ $Policies = new Policies(
 $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 ```
 
-`Remote` keeps a process-local `KeySet` cache, can use `Vault` for a shared JWKS cache across workers, honors `Cache-Control: max-age` when present, shares refresh-on-miss cooldown through the cache, refreshes the JWKS when a token arrives with an unknown `kid`, and fails closed when the endpoint cannot be fetched, returns a non-2xx status, returns invalid JSON, or returns an invalid JWKS document. Remote JWKS requires HTTPS by default; use `insecure: true` only in tests or controlled local environments. OIDC Discovery, `ETag`/`Last-Modified`, and exponential backoff are separate future layers.
+`Remote` keeps a process-local `KeySet` and can use `Vault` to share versioned JWKS records across workers. The mutable public `$TTL` property (uppercase) is the operator ceiling, from `0` through `31,536,000` seconds; the constructor's named argument remains `ttl:`. Construction and later `$TTL` assignments reject negative or larger values without replacing the last valid setting. The former lowercase `$ttl` property is no longer public.
+
+Redirects are followed one hop at a time, and every target must remain HTTPS unless `insecure: true` was explicitly selected for tests or a controlled local environment. `Location` URI references are resolved according to RFC 3986: dot segments are removed without collapsing meaningful consecutive slashes, and fragments are never sent in the request target. Only the final response supplies the accepted status and cache headers. Its effective lifetime is the shortest `Cache-Control: max-age`, reduced by `Age` and capped by `$TTL`; `no-store`, `no-cache`, and `max-age=0` make the response immediately stale and prevent a shared-cache write. Shared readers inherit the writer's absolute expiry instead of starting a new TTL. `Remote` refreshes on an unknown `kid` and fails closed for fetch errors, invalid redirect targets, final non-2xx responses, invalid JSON, or invalid JWKS. OIDC Discovery, `ETag`/`Last-Modified`, and exponential backoff remain future layers.
 
 `Vault` stores its records on the Bootgly `Cache` facade. By default it uses the `file` driver (shared across workers on the same filesystem); passing a Redis-backed `Cache` shares JWKS, refresh-token state, and revocations across hosts — inject a shared HMAC secret (≥ 32 bytes) so every host can verify the records:
 

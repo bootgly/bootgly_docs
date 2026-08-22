@@ -230,6 +230,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\JWT as JWTGuard;
 
 $Remote = new Remote('https://issuer.example/.well-known/jwks.json');
+$Remote->TTL = 900; // a propriedade pública é maiúscula; o argumento continua ttl:
 $Remote->cache(new Vault);
 $Verifier = new JWT($Remote, 'RS256');
 
@@ -242,7 +243,9 @@ $Policies = new Policies(
 $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 ```
 
-`Remote` mantém um cache `KeySet` em memória por processo, pode usar `Vault` para cache JWKS compartilhado entre workers, respeita `Cache-Control: max-age` quando presente, compartilha o cooldown de refresh-on-miss via cache, atualiza o JWKS quando um token chega com `kid` desconhecido e falha fechado quando o endpoint não pode ser buscado, retorna status não-2xx, retorna JSON inválido ou retorna um documento JWKS inválido. JWKS remoto exige HTTPS por padrão; use `insecure: true` apenas em testes ou ambientes locais controlados. OIDC Discovery, `ETag`/`Last-Modified` e backoff exponencial continuam como camadas futuras.
+`Remote` mantém um `KeySet` por processo e pode usar `Vault` para compartilhar registros JWKS versionados entre workers. A propriedade pública mutável `$TTL` (maiúscula) é o limite definido pelo operador, de `0` a `31.536.000` segundos; o argumento nomeado do construtor continua `ttl:`. A construção e atribuições posteriores a `$TTL` rejeitam valores negativos ou maiores sem substituir a última configuração válida. A antiga propriedade minúscula `$ttl` não é mais pública.
+
+Redirects são seguidos um hop por vez, e todo destino precisa continuar em HTTPS, exceto quando `insecure: true` foi selecionado explicitamente para testes ou ambiente local controlado. Referências URI de `Location` são resolvidas conforme a RFC 3986: segmentos de ponto são removidos sem colapsar barras consecutivas significativas, e fragmentos nunca são enviados no alvo da requisição. Somente a resposta final fornece o status aceito e os headers de cache. Sua validade efetiva é o menor `Cache-Control: max-age`, reduzido por `Age` e limitado por `$TTL`; `no-store`, `no-cache` e `max-age=0` tornam a resposta imediatamente obsoleta e impedem a escrita no cache compartilhado. Leitores compartilhados herdam a expiração absoluta do escritor, em vez de iniciar um novo TTL. `Remote` atualiza diante de um `kid` desconhecido e falha fechado em erros de busca, destinos de redirect inválidos, resposta final não-2xx, JSON inválido ou JWKS inválido. OIDC Discovery, `ETag`/`Last-Modified` e backoff exponencial continuam como camadas futuras.
 
 `Vault` guarda seus registros no facade `Cache` do Bootgly. Por padrão usa o driver `file` (compartilhado entre workers no mesmo filesystem); passando um `Cache` com driver Redis, o JWKS, o estado de refresh tokens e as revogações são compartilhados entre hosts — injete um segredo HMAC compartilhado (≥ 32 bytes) para que todos os hosts consigam verificar os registros:
 
