@@ -49,8 +49,10 @@ $Schema->create('users', function (Blueprint $Table): void {
 ```
 
 `default` accepts a literal (`bool`/`int`/`float`/`string`), a `Stringable`, or an
-`Expression` for raw SQL. Anything else throws
-`InvalidArgumentException: Schema column default must be scalar, Stringable or Expression.`
+`Expression` for trusted raw SQL. During `create()`/`alter()` compilation, float literals
+must be finite: `NAN`, `INF` and `-INF` throw
+`InvalidArgumentException: Schema default float must be finite.` Other invalid value types
+throw `InvalidArgumentException: Schema column default must be scalar, Stringable or Expression.`
 
 ### Linking to another table (foreign key)
 
@@ -216,7 +218,10 @@ public null|bool|float|int|string|Stringable|Defaults $default;
 ```
 Hooked property. **Set:** `$Column->default = …`. **Clear pending default on a new
 column:** `$Column->default = Defaults::None`. **Drop an existing default in `change()`:**
-`$Change->default = Defaults::None`. Invalid types throw `InvalidArgumentException`.
+`$Change->default = Defaults::None`. Invalid value types throw `InvalidArgumentException`.
+During `create()`/`alter()` compilation, non-finite float literals (`NAN`, `INF`, `-INF`)
+throw `InvalidArgumentException: Schema default float must be finite.` `Expression` remains
+the trusted raw-SQL escape hatch.
 
 ### Column — methods
 
