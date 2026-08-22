@@ -122,10 +122,19 @@ already revoked on primary.
 These forced reads use a transient routing scope. They do not start or extend
 read-after-write stickiness for unrelated queries later in the same worker.
 When a security store is backed by a `Transaction`, the transaction remains
-pinned to its primary connection as usual. That bypasses framework-configured
-replicas but does not override database isolation: a long-lived transaction can
-still retain an older primary snapshot and is not a freshness guarantee for an
-external authentication decision.
+pinned to its primary connection and obtains the verdict on that connection.
+MySQL and PostgreSQL use `SELECT ... FOR UPDATE`: MySQL reads the latest row,
+while PostgreSQL Read Committed reads the current row and Repeatable Read or
+Serializable can reject a row changed after the snapshot with SQLSTATE `40001`.
+That rejection is fail-closed; roll back and retry the entire transaction.
+
+SQLite does not support `FOR UPDATE`. The stores first execute a zero-row DML
+barrier on the same transaction, which reserves the writer before the SELECT or
+fails closed with `database is locked` when a WAL snapshot is already stale.
+The barrier and row locks remain until commit/rollback and read-only
+transactions cannot acquire them. Keep these transactions short and handle
+database rollback/retry. The constructor signatures and public store APIs do
+not change.
 
 ## Read-after-write scope
 

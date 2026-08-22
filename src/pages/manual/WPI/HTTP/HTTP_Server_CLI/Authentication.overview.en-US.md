@@ -386,7 +386,13 @@ The underlying `trusts` table must provide nullable `previous VARCHAR(64)` and
 restart or drain all workers as one cohort.
 
 Credential, action-token and trusted-device verdicts are always read from the
-primary database, even when replicas are configured. See the
+primary database, even when replicas are configured. Transaction-backed stores
+use `SELECT ... FOR UPDATE` on MySQL/PostgreSQL; PostgreSQL Repeatable Read can
+fail closed with SQLSTATE `40001` and requires rollback plus a whole-transaction
+retry. SQLite uses a zero-row writer barrier and can fail closed with
+`database is locked` for a stale snapshot. Locks last until commit/rollback,
+read-only transactions fail closed, and these transactions should remain
+short. No public API or constructor signature changes. See the
 **[Authentication guide](/guide/authentication/overview/)** for the complete
 session/cookie scaffold and upgrade sequence.
 

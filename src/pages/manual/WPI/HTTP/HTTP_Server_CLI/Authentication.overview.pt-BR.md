@@ -387,7 +387,14 @@ as duas migrations aditivas antes do deploy e reinicie ou drene todos os
 workers como uma única coorte.
 
 Veredictos de credencial, token de ação e dispositivo confiável são sempre
-lidos do banco primário, mesmo com réplicas configuradas. Veja o
+lidos do banco primário, mesmo com réplicas configuradas. Stores apoiados em
+`Transaction` usam `SELECT ... FOR UPDATE` no MySQL/PostgreSQL; no PostgreSQL,
+Repeatable Read pode falhar fechado com SQLSTATE `40001` e exige rollback mais
+uma repetição da transação inteira. O SQLite usa uma barreira de writer de zero
+linhas e pode falhar fechado com `database is locked` para um snapshot
+obsoleto. Os locks duram até commit/rollback, transações read-only falham
+fechadas e essas transações devem permanecer curtas. Nenhuma API pública ou
+assinatura de construtor muda. Veja o
 **[guia de Authentication](/guide/authentication/overview/)** para o scaffold
 completo de sessão/cookie e a sequência de upgrade.
 

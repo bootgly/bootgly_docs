@@ -251,7 +251,14 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   dispositivos do usuário e reporta um incidente `Theft`.
 - **Veredictos autoritativos** — decisões de credencial, token de ação e token
   remember são lidas do banco primário mesmo quando há réplicas de leitura
-  configuradas.
+  configuradas. Um store apoiado em `Transaction` usa uma leitura corrente com
+  lock no MySQL/PostgreSQL. No PostgreSQL, uma transação repeatable-read cuja
+  linha mudou pode falhar com SQLSTATE `40001`; faça rollback e repita a
+  transação inteira. O SQLite usa uma barreira de escrita de zero linhas e pode
+  falhar fechado com `database is locked` quando seu snapshot está obsoleto.
+  Esses locks duram até commit/rollback, portanto mantenha transações de
+  segurança curtas. Uma transação read-only não consegue adquiri-los e falha
+  fechada.
 - **CSRF** — todo POST (incluindo logout) carrega o `_token` mascarado do
   stack default do `Web\App`.
 

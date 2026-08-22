@@ -248,7 +248,13 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   incident.
 - **Authoritative verdicts** — credential, action-token and remember-token
   decisions are read from the primary database even when read replicas are
-  configured.
+  configured. A store backed by a `Transaction` uses a locking current read on
+  MySQL/PostgreSQL. PostgreSQL repeatable-read transactions whose row changed
+  can fail with SQLSTATE `40001`; roll back and retry the whole transaction.
+  SQLite uses a zero-row writer barrier instead and can fail closed with
+  `database is locked` when its snapshot is stale. These locks last until
+  commit/rollback, so keep security transactions short. A read-only
+  transaction cannot acquire them and fails closed.
 - **CSRF** — every POST (including logout) carries the masked `_token` from
   the default `Web\App` stack.
 

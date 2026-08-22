@@ -123,9 +123,19 @@ Essas leituras forçadas usam um escopo de roteamento transitório. Elas não
 iniciam nem estendem a stickiness de read-after-write para consultas não
 relacionadas executadas depois no mesmo worker. Quando um store de segurança
 usa uma `Transaction`, a transação continua fixada à sua conexão primária como
-sempre. Isso evita as réplicas configuradas pelo framework, mas não substitui o
-isolamento do banco: uma transação longa ainda pode reter um snapshot antigo do
-primário e não garante freshness para uma decisão externa de autenticação.
+sempre e obtém o veredicto nessa conexão. MySQL e PostgreSQL usam
+`SELECT ... FOR UPDATE`: o MySQL lê a linha mais recente, enquanto o PostgreSQL
+Read Committed lê a linha corrente e Repeatable Read ou Serializable podem
+rejeitar uma linha alterada depois do snapshot com SQLSTATE `40001`. Essa
+rejeição falha fechada; faça rollback e repita a transação inteira.
+
+O SQLite não suporta `FOR UPDATE`. Os stores executam primeiro uma barreira DML
+de zero linhas na mesma transação, que reserva o writer antes do SELECT ou falha
+fechada com `database is locked` quando um snapshot WAL já está obsoleto. A
+barreira e os locks de linha duram até commit/rollback, e transações read-only
+não conseguem adquiri-los. Mantenha essas transações curtas e trate o
+rollback/retry do banco. As assinaturas dos construtores e as APIs públicas dos
+stores não mudam.
 
 ## Escopo de read-after-write
 
