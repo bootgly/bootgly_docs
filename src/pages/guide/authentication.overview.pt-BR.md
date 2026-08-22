@@ -247,8 +247,8 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 21   # API/Security — tokens, trust, users (1.18-1.21)
-AI_AGENT=1 ./bootgly test 28   # middlewares WPI — guard Remember, redirect do Fallback (11.2-11.3)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.29)
+AI_AGENT=1 ./bootgly test 29   # middlewares WPI — guard Remember, redirect do Fallback (11.2-11.3)
 
 # bootgly-web
 AI_AGENT=1 ./bootgly test 5    # E2E do demo Auth — 19 specs no wire real
@@ -268,6 +268,15 @@ public function __construct (SQLDatabase|Transaction $Database, Password $Passwo
 
 Cria o store de credenciais sobre uma conexão SQL do ADI. Nomes de tabela e
 colunas são configuráveis; os defaults casam com as migrations do demo Auth.
+
+Os três stores de segurança apoiados em SQL distinguem uma falha de banco já registrada
+na `Operation` de uma espera interrompida ou inacabada sem resultado registrado. Falhas de
+statement registradas preservam os resultados fail-closed documentados abaixo. Uma
+`RuntimeException` não registrada vinda de `await()` é propagada, e outros throwables de
+infraestrutura também continuam sendo exceções; nenhum deles pode se passar por credencial
+errada, zero linhas afetadas ou token emitido com sucesso. Um
+`stream_select()` interrompido é repetido com a mesma operação até ela resolver ou até seu
+deadline configurado ou outra falha decidir o resultado.
 
 ```php
 public function enroll (string $email, #[\SensitiveParameter] string $password): null|string

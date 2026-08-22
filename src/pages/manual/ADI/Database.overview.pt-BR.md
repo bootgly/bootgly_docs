@@ -77,6 +77,12 @@ por uma capacidade que não pode chegar. Deixá-la enfileirada era pior que recu
 era informado de que sua escrita falhou e compensava com um rollback, e o `promote()` colocava
 o comando no wire mesmo assim quando a capacidade liberava — fora da transação, em autocommit.
 
+Um sinal sem restart pode interromper o `stream_select()` usado pelo `wait()` síncrono. EINTR
+não altera a operação nem sua readiness, então o pool reconhece o errno da syscall mesmo quando
+a mensagem do sistema operacional está traduzida e repete a espera com a mesma operação. Outras
+falhas de select continuam propagando, e o timeout configurado da operação ainda pode expirá-la
+normalmente; uma espera interrompida não é convertida em resultado de banco.
+
 Uma conexão volta para o pool só quando nada mais é devido no socket dela. Enquanto o driver
 ainda tem uma operação esperando resposta, a conexão continua `busy` — entregá-la daria as
 linhas de um chamador para outro. "Devido" significa uma operação que não terminou: uma que

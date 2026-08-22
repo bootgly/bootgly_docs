@@ -78,6 +78,12 @@ waiting for capacity that cannot arrive. Leaving it queued was worse than refusi
 caller was told its write had failed and compensated with a rollback, and `promote()` then put
 the command on the wire anyway once capacity freed — outside the transaction, in autocommit.
 
+A no-restart signal can interrupt the `stream_select()` used by synchronous `wait()`. EINTR
+does not change the operation or its readiness, so the pool recognizes the syscall's errno
+even when the operating-system message is localized and retries with the same operation.
+Other select failures still propagate, and the operation's configured timeout can still
+expire it normally; an interrupted wait is not converted into a database result.
+
 A connection goes back to the pool only once nothing is owed on its socket. While the driver
 still has an operation waiting for a reply, the connection stays `busy` — handing it out would
 give one caller's rows to another. "Owed" means an operation that has not finished: a failed
