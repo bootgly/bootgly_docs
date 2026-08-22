@@ -380,7 +380,23 @@ private five-second grace window. When an in-flight duplicate presents that
 exact validator during the window, the guard declines without authenticating,
 clearing the cookie or revoking devices. A replay after the window, or any
 unrelated wrong validator for a known series, is the stolen-cookie signature:
-the store revokes every device of the user, and the guard clears the cookie.
+the store reports `Theft` and the guard clears the cookie only after every
+device has been successfully revoked. If that revocation fails, `rotate()`
+returns `null` instead of fabricating a theft incident.
+
+`Tokens->revoke()` and `Trust->revoke()` return `null|int`: `0` means the
+statement succeeded without matching a row, while `null` means a recorded
+database failure. Callers that promise logout-everywhere or credential
+invalidation must treat `null` as an infrastructure failure.
+
+The action-token `tokens` table must enforce `UNIQUE (user_id, purpose)`.
+`mint()` uses one atomic upsert, so two concurrent callers can both receive a
+token while only the winning value remains valid. Apply the Auth scaffold's
+`20260822000200_unique_tokens_user_purpose` migration before deploying this
+code. Pause action-token writers while MySQL performs the non-transactional
+deduplication/index transition. For rollback, restore and drain the old code
+first, then optionally remove the unique index after no new worker remains.
+
 The underlying `trusts` table must provide nullable `previous VARCHAR(64)` and
 `rotated BIGINT` columns; apply both additive migrations before deploying and
 restart or drain all workers as one cohort.
@@ -392,7 +408,8 @@ fail closed with SQLSTATE `40001` and requires rollback plus a whole-transaction
 retry. SQLite uses a zero-row writer barrier and can fail closed with
 `database is locked` for a stale snapshot. Locks last until commit/rollback,
 read-only transactions fail closed, and these transactions should remain
-short. No public API or constructor signature changes. See the
+short. Constructor signatures do not change; revocation return types are
+nullable as described above. See the
 **[Authentication guide](/guide/authentication/overview/)** for the complete
 session/cookie scaffold and upgrade sequence.
 

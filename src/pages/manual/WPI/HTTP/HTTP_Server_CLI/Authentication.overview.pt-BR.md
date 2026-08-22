@@ -381,8 +381,27 @@ ainda em andamento apresenta esse validator exato dentro da janela, o guard
 recusa sem autenticar, limpar o cookie nem revogar dispositivos. Um replay
 depois da janela, ou qualquer validator errado não relacionado para uma série
 conhecida, é a assinatura de cookie roubado: o store revoga todos os
-dispositivos do usuário e o guard limpa o cookie. A tabela `trusts` subjacente
-precisa das colunas nullable `previous VARCHAR(64)` e `rotated BIGINT`; aplique
+dispositivos do usuário e o guard limpa o cookie somente depois que a revogação
+tem sucesso. Se ela falhar, `rotate()` retorna `null`, em vez de fabricar um
+incidente de roubo.
+
+`Tokens->revoke()` e `Trust->revoke()` retornam `null|int`: `0` significa que o
+statement teve sucesso sem encontrar uma linha, enquanto `null` significa uma
+falha de banco registrada. Callers que prometem logout em todo lugar ou
+invalidação de credenciais precisam tratar `null` como falha de infraestrutura.
+
+A tabela `tokens` dos tokens de ação precisa impor
+`UNIQUE (user_id, purpose)`. `mint()` usa um único upsert atômico, portanto dois
+callers concorrentes podem ambos receber um token enquanto somente o valor
+vencedor permanece válido. Aplique a migration
+`20260822000200_unique_tokens_user_purpose` do scaffold Auth antes de fazer
+deploy desse código. Pause os writers de action tokens durante a transição não
+transacional de deduplicação/índice no MySQL. Para rollback, restaure e drene
+primeiro o código antigo; só então, quando nenhum worker novo restar, remova
+opcionalmente o índice unique.
+
+A tabela `trusts` subjacente precisa das colunas nullable `previous VARCHAR(64)`
+e `rotated BIGINT`; aplique
 as duas migrations aditivas antes do deploy e reinicie ou drene todos os
 workers como uma única coorte.
 
@@ -393,8 +412,9 @@ Repeatable Read pode falhar fechado com SQLSTATE `40001` e exige rollback mais
 uma repetição da transação inteira. O SQLite usa uma barreira de writer de zero
 linhas e pode falhar fechado com `database is locked` para um snapshot
 obsoleto. Os locks duram até commit/rollback, transações read-only falham
-fechadas e essas transações devem permanecer curtas. Nenhuma API pública ou
-assinatura de construtor muda. Veja o
+fechadas e essas transações devem permanecer curtas. As assinaturas dos
+construtores não mudam; os retornos de revogação são nullable como descrito
+acima. Veja o
 **[guia de Authentication](/guide/authentication/overview/)** para o scaffold
 completo de sessão/cookie e a sequência de upgrade.
 

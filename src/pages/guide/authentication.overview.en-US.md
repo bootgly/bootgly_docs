@@ -67,6 +67,11 @@ $Token = $this->Tokens->mint($user, Purposes::Verification, ttl: 86400);
 $link = "{$URL}/verify/" . str_replace('.', '/', $Token->value);
 ```
 
+The `tokens` table enforces `UNIQUE (user_id, purpose)`, and `mint()` replaces
+that row with one atomic upsert. Two concurrent callers can both receive a
+`Token`, but only the value written by the winning upsert remains valid; the
+other returned value is already superseded.
+
 `GET /verify/:selector/:verifier` redeems it exactly once and stamps the
 account:
 
@@ -142,8 +147,11 @@ redeems it and completes the orchestration contract:
 $user = $this->Tokens->redeem($token, Purposes::Recovery);
 
 $this->Users->rotate($user, $password);   // new argon2id hash
-$this->Tokens->revoke($user);             // pending links die
-$this->Trust->revoke($user);              // every trusted device dies
+$tokens = $this->Tokens->revoke($user);   // pending links die
+$trusts = $this->Trust->revoke($user);    // every trusted device dies
+if ($tokens === null || $trusts === null) {
+   throw new RuntimeException('Credential revocation failed.');
+}
 $this->Users->confirm($user);             // reset proves mailbox possession
 ```
 
@@ -240,12 +248,16 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 - **Single use** — redeeming deletes the row atomically
   (`DELETE … WHERE id AND verifier` + affected-rows gate); concurrent redeems
   lose.
+- **Atomic supersession** — `UNIQUE (user_id, purpose)` plus one upsert keeps
+  exactly one live action token per pair. Concurrent issuers may both receive
+  values, but only the winning value remains valid.
 - **Remember concurrency** — only the immediately previous validator is
   tolerated, for five seconds inclusive. That duplicate is declined without
   authentication or state changes.
 - **Theft detection** — an older replay or any unrelated wrong validator for a
-  known remember series revokes every device of the user and reports a `Theft`
-  incident.
+  known remember series reports `Theft` only after every device has been
+  successfully revoked. A recorded revocation failure returns `null` instead
+  of fabricating an incident.
 - **Authoritative verdicts** — credential, action-token and remember-token
   decisions are read from the primary database even when read replicas are
   configured. A store backed by a `Transaction` uses a locking current read on
@@ -257,6 +269,23 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   transaction cannot acquire them and fails closed.
 - **CSRF** — every POST (including logout) carries the masked `_token` from
   the default `Web\App` stack.
+
+## Action-token store upgrade
+
+The `tokens` table must enforce `UNIQUE (user_id, purpose)`. The Auth scaffold
+supplies the additive `20260822000200_unique_tokens_user_purpose` migration. It
+first keeps the greatest `id` for each existing pair, invalidating the other
+links, and then creates the unique index. The original ordinary index remains
+in place.
+
+Apply and verify this migration before deploying the matching framework code:
+the PostgreSQL and SQLite upserts require that conflict target, and MySQL needs
+the constraint to make the user-purpose row authoritative. Old workers can run
+temporarily after the migration; under a concurrent issuance one can fail, but
+the unique index prevents duplicate live links. Pause action-token writers
+while MySQL performs the non-transactional deduplication/index transition. For
+rollback, restore and drain the old code first, then optionally roll back the
+unique index after no new worker remains.
 
 ## Remember-store upgrade
 
@@ -277,7 +306,7 @@ drain all new workers before optionally removing the columns.
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.32)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.39)
 AI_AGENT=1 ./bootgly test 29   # WPI middlewares — Remember guard, Fallback redirect (11.2-11.3)
 
 # bootgly-web
@@ -355,15 +384,18 @@ Stamps the account e-mail as verified (epoch seconds). Idempotent.
 public function __construct (SQLDatabase|Transaction $Database, string $table = 'tokens')
 ```
 
-Creates the single-use action token store.
+Creates the single-use action token store. Its table must enforce
+`UNIQUE (user_id, purpose)`; see **Action-token store upgrade** above.
 
 ```php
 public function mint (string $user, Purposes $Purpose, int $ttl = 3600): Token
 ```
 
-Mints a token and supersedes any live token of the same user + purpose. The
-returned `Token->value` (`selector.verifier`) is the only exposure of the raw
-secret. Purposes: `Purposes::Recovery`, `Purposes::Verification`.
+Mints a token and atomically supersedes any live token of the same user +
+purpose. Two concurrent calls can both return a `Token`, but only the winning
+upsert's value remains valid. The returned `Token->value`
+(`selector.verifier`) is the only exposure of the raw secret. Purposes:
+`Purposes::Recovery`, `Purposes::Verification`.
 
 ```php
 public function redeem (string $token, Purposes $Purpose): null|string
@@ -379,10 +411,13 @@ public function check (string $token, Purposes $Purpose): bool
 Validates without consuming — for rendering a reset form from a GET link.
 
 ```php
-public function revoke (string $user, null|Purposes $Purpose = null): int
+public function revoke (string $user, null|Purposes $Purpose = null): null|int
 ```
 
-Drops live tokens for a user, optionally scoped to one purpose.
+Drops live tokens for a user, optionally scoped to one purpose. Returns the
+affected-row count (`0` means no match) or `null` on a recorded database
+failure. Treat `null` as an infrastructure failure; it never proves that
+revocation succeeded.
 
 ```php
 public function sweep (): int
@@ -415,9 +450,10 @@ update atomically records the former digest as `previous`, records `rotated`
 and installs the new digest. The exact immediately previous validator is
 accepted as a benign duplicate for five seconds inclusive: `rotate()` returns
 `null` without authenticating, writing or revoking. A replay after that window,
-or any unrelated wrong validator for a known series, revokes ALL of the user's
-devices and returns `Theft`. A concurrent rotation losing the atomic-update
-race also returns `null`.
+or any unrelated wrong validator for a known series, returns `Theft` only after
+ALL of the user's devices have been successfully revoked. If that revocation
+fails, `rotate()` returns `null` rather than fabricating a theft incident. A
+concurrent rotation losing the atomic-update race also returns `null`.
 
 ```php
 public function forget (string $token): bool
@@ -427,10 +463,12 @@ Drops the presented device series (single-device logout). Requires the
 matching validator, so it cannot be used as a revocation oracle.
 
 ```php
-public function revoke (string $user): int
+public function revoke (string $user): null|int
 ```
 
 Drops all device series of a user (logout everywhere / password change).
+Returns the affected-row count (`0` means no match) or `null` on a recorded
+database failure.
 
 ```php
 public function sweep (): int

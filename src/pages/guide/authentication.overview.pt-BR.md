@@ -67,6 +67,11 @@ $Token = $this->Tokens->mint($user, Purposes::Verification, ttl: 86400);
 $link = "{$URL}/verify/" . str_replace('.', '/', $Token->value);
 ```
 
+A tabela `tokens` impõe `UNIQUE (user_id, purpose)`, e `mint()` substitui essa
+linha com um único upsert atômico. Dois callers concorrentes podem ambos
+receber um `Token`, mas somente o valor gravado pelo upsert vencedor permanece
+válido; o outro valor retornado já foi substituído.
+
 `GET /verify/:selector/:verifier` resgata o token exatamente uma vez e marca a
 conta:
 
@@ -142,8 +147,11 @@ resgata o token e completa o contrato de orquestração:
 $user = $this->Tokens->redeem($token, Purposes::Recovery);
 
 $this->Users->rotate($user, $password);   // novo hash argon2id
-$this->Tokens->revoke($user);             // links pendentes morrem
-$this->Trust->revoke($user);              // todos os dispositivos confiáveis morrem
+$tokens = $this->Tokens->revoke($user);   // links pendentes morrem
+$trusts = $this->Trust->revoke($user);    // todos os dispositivos confiáveis morrem
+if ($tokens === null || $trusts === null) {
+   throw new RuntimeException('Credential revocation failed.');
+}
 $this->Users->confirm($user);             // reset prova posse da caixa de e-mail
 ```
 
@@ -243,12 +251,16 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 - **Uso único** — o resgate deleta a linha atomicamente
   (`DELETE … WHERE id AND verifier` + gate de affected-rows); resgates
   concorrentes perdem.
+- **Substituição atômica** — `UNIQUE (user_id, purpose)` mais um upsert mantém
+  exatamente um token de ação vivo por par. Emissores concorrentes podem ambos
+  receber valores, mas somente o valor vencedor permanece válido.
 - **Concorrência do remember** — somente o validator imediatamente anterior é
   tolerado, por cinco segundos inclusive. Essa duplicata é recusada sem
   autenticação nem alteração de estado.
 - **Detecção de roubo** — um replay mais antigo ou qualquer validator errado
-  não relacionado para uma série remember conhecida revoga todos os
-  dispositivos do usuário e reporta um incidente `Theft`.
+  não relacionado para uma série remember conhecida reporta `Theft` somente
+  depois de revogar com sucesso todos os dispositivos do usuário. Uma falha de
+  revogação registrada retorna `null`, em vez de fabricar um incidente.
 - **Veredictos autoritativos** — decisões de credencial, token de ação e token
   remember são lidas do banco primário mesmo quando há réplicas de leitura
   configuradas. Um store apoiado em `Transaction` usa uma leitura corrente com
@@ -261,6 +273,23 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   fechada.
 - **CSRF** — todo POST (incluindo logout) carrega o `_token` mascarado do
   stack default do `Web\App`.
+
+## Upgrade do store de tokens de ação
+
+A tabela `tokens` precisa impor `UNIQUE (user_id, purpose)`. O scaffold Auth
+fornece a migration aditiva `20260822000200_unique_tokens_user_purpose`. Ela
+primeiro mantém o maior `id` de cada par existente, invalidando os demais
+links, e então cria o índice unique. O índice comum original permanece.
+
+Aplique e verifique essa migration antes de fazer deploy do código
+correspondente do framework: os upserts do PostgreSQL e SQLite exigem esse
+conflict target, e o MySQL precisa da constraint para tornar autoritativa a
+linha do par usuário-propósito. Workers antigos podem executar temporariamente
+depois da migration; numa emissão concorrente, um deles pode falhar, mas o
+índice unique impede links vivos duplicados. Pause os writers de action tokens
+durante a transição não transacional de deduplicação/índice no MySQL. Para
+rollback, restaure e drene primeiro o código antigo; só então, quando nenhum
+worker novo restar, reverta opcionalmente o índice unique.
 
 ## Upgrade do store remember
 
@@ -282,7 +311,7 @@ opcionalmente remover as colunas.
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.32)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.39)
 AI_AGENT=1 ./bootgly test 29   # middlewares WPI — guard Remember, redirect do Fallback (11.2-11.3)
 
 # bootgly-web
@@ -360,15 +389,18 @@ Marca o e-mail da conta como verificado (epoch em segundos). Idempotente.
 public function __construct (SQLDatabase|Transaction $Database, string $table = 'tokens')
 ```
 
-Cria o store de tokens de ação de uso único.
+Cria o store de tokens de ação de uso único. A tabela precisa impor
+`UNIQUE (user_id, purpose)`; veja **Upgrade do store de tokens de ação** acima.
 
 ```php
 public function mint (string $user, Purposes $Purpose, int $ttl = 3600): Token
 ```
 
-Minta um token e substitui qualquer token vivo do mesmo usuário + propósito. O
-`Token->value` retornado (`selector.verifier`) é a única exposição do segredo
-raw. Propósitos: `Purposes::Recovery`, `Purposes::Verification`.
+Minta um token e substitui atomicamente qualquer token vivo do mesmo usuário +
+propósito. Duas chamadas concorrentes podem ambas retornar um `Token`, mas
+somente o valor do upsert vencedor permanece válido. O `Token->value` retornado
+(`selector.verifier`) é a única exposição do segredo raw. Propósitos:
+`Purposes::Recovery`, `Purposes::Verification`.
 
 ```php
 public function redeem (string $token, Purposes $Purpose): null|string
@@ -385,10 +417,13 @@ Valida sem consumir — para renderizar um formulário de reset a partir do link
 GET.
 
 ```php
-public function revoke (string $user, null|Purposes $Purpose = null): int
+public function revoke (string $user, null|Purposes $Purpose = null): null|int
 ```
 
 Derruba tokens vivos de um usuário, opcionalmente restrito a um propósito.
+Retorna a contagem de linhas afetadas (`0` significa nenhuma correspondência)
+ou `null` em uma falha de banco registrada. Trate `null` como falha de
+infraestrutura; ele nunca prova que a revogação teve sucesso.
 
 ```php
 public function sweep (): int
@@ -422,7 +457,9 @@ instala o novo digest. O validator imediatamente anterior exato é aceito como
 duplicata benigna por cinco segundos inclusive: `rotate()` retorna `null` sem
 autenticar, escrever nem revogar. Um replay depois dessa janela, ou qualquer
 validator errado não relacionado para uma série conhecida, revoga TODOS os
-dispositivos do usuário e retorna `Theft`. Uma rotação concorrente que perde a
+dispositivos do usuário e retorna `Theft` somente depois que todos forem
+revogados com sucesso. Se essa revogação falhar, `rotate()` retorna `null`, em
+vez de fabricar um incidente de roubo. Uma rotação concorrente que perde a
 corrida do update atômico também retorna `null`.
 
 ```php
@@ -433,11 +470,12 @@ Derruba a série do dispositivo apresentado (logout de um dispositivo). Exige o
 validator correspondente, então não serve como oráculo de revogação.
 
 ```php
-public function revoke (string $user): int
+public function revoke (string $user): null|int
 ```
 
 Derruba todas as séries de dispositivo de um usuário (logout em todo lugar /
-troca de senha).
+troca de senha). Retorna a contagem de linhas afetadas (`0` significa nenhuma
+correspondência) ou `null` em uma falha de banco registrada.
 
 ```php
 public function sweep (): int
