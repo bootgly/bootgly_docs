@@ -16,7 +16,7 @@ configs/
     └── database.Config.php
 ```
 
-The directory name and the PHP file name must match the scope name. For the example above, the scope is `database` and the executable config file is `database.Config.php`.
+The directory name, PHP file name and returned `Config::$scope` must all match. For the example above, the directory is `database/`, the executable file is `database.Config.php`, and that file must return `new Config(scope: 'database')`.
 
 Project configs use the same layout under a project config directory, for example:
 
@@ -67,6 +67,18 @@ $port = $Database->Connections->MySQL->Port->get();
 ```php
 $Database->Connections->MySQL->Host->get();
 ```
+
+Object navigation creates a missing child. Use `Config::check()` when you need to test direct-child membership without changing the tree:
+
+```php
+if ($Database->Connections->check('SQLite')) {
+   $path = $Database->Connections->SQLite->Database->get();
+}
+```
+
+Call `check()` before navigating to that child. It returns whether the direct child was declared and never creates it.
+
+`Configs::load('database')` returns `false` if `database.Config.php` declares another scope. The mismatched tree is not registered under either name and cannot replace an existing scope. Lazy `get('database')` calls latch that mismatch and do not execute the same invalid file repeatedly. After correcting the file in a running process, call `load('database')` explicitly to retry; a successful explicit load clears the latch.
 
 ## Environment resolution
 

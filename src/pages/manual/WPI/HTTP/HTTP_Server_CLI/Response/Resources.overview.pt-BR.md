@@ -70,6 +70,13 @@ $HTTP_Server_CLI->configure(
 escopo está desabilitado (`DB_ENABLED=false`) ou o contexto não é um `Response`. O resource é criado
 de forma lazy na primeira leitura de `$Response->Database` pela rota.
 
+A factory propaga a validação de `DatabaseConfig`. O driver selecionado por `DB_CONNECTION` precisa
+ter seu bloco canônico (`Connections->PostgreSQL`, `Connections->MySQL` ou
+`Connections->SQLite`) no escopo. Se ele estiver ausente, o primeiro acesso lança uma
+`InvalidArgumentException`, como
+`Database config is missing the selected connection scope: Connections->SQLite.` Nenhum endpoint
+com defaults da ADI ou instância `SQL` pooled é criado.
+
 Uma factory é só um closure, então quando você precisa de controle total sobre a construção pode
 montar e encapsular o resource você mesmo em vez de chamar `provide()`:
 

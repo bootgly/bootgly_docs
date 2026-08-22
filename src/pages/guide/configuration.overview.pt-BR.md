@@ -16,7 +16,7 @@ configs/
     └── database.Config.php
 ```
 
-O nome do diretório e o nome do arquivo PHP devem corresponder ao nome do escopo. No exemplo acima, o escopo é `database` e o arquivo executável de configuração é `database.Config.php`.
+O nome do diretório, o nome do arquivo PHP e o `Config::$scope` retornado devem corresponder. No exemplo acima, o diretório é `database/`, o arquivo executável é `database.Config.php` e esse arquivo deve retornar `new Config(scope: 'database')`.
 
 Configs de projeto usam a mesma estrutura dentro do diretório de configs do projeto, por exemplo:
 
@@ -67,6 +67,18 @@ $port = $Database->Connections->MySQL->Port->get();
 ```php
 $Database->Connections->MySQL->Host->get();
 ```
+
+Object-navigation cria um filho ausente. Use `Config::check()` quando precisar testar a existência de um filho direto sem alterar a árvore:
+
+```php
+if ($Database->Connections->check('SQLite')) {
+   $path = $Database->Connections->SQLite->Database->get();
+}
+```
+
+Chame `check()` antes de navegar até esse filho. O método informa se o filho direto foi declarado e nunca o cria.
+
+`Configs::load('database')` retorna `false` se `database.Config.php` declarar outro escopo. A árvore incompatível não é registrada sob nenhum dos nomes e não pode substituir um escopo existente. Chamadas lazy a `get('database')` mantêm esse mismatch em um latch e não executam repetidamente o mesmo arquivo inválido. Depois de corrigir o arquivo em um processo ativo, chame `load('database')` explicitamente para tentar novamente; uma carga explícita bem-sucedida limpa o latch.
 
 ## Resolução de ambiente
 

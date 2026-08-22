@@ -65,8 +65,18 @@ return new Config(scope: 'database')
 
 ## Choose a driver
 
-`DB_CONNECTION` selects the connection block — and with it the native driver, the Query
-Builder dialect and the Schema dialect. Bootgly ships three drivers:
+`DB_CONNECTION` selects a declared connection block — and with it the native driver, the Query
+Builder dialect and the Schema dialect. Driver aliases map to canonical block names:
+`pgsql`/`postgres`/`postgresql` select `Connections->PostgreSQL`, `mysql`/`mariadb` select
+`Connections->MySQL`, and `sqlite`/`sqlite3` select `Connections->SQLite`.
+
+The selected canonical block must exist. The scope above declares only PostgreSQL, so add the
+matching `->Connections->MySQL` or `->Connections->SQLite` block before selecting either driver
+(the demo project ships all three). If the block is absent, `DatabaseConfig` throws, for example,
+`Database config is missing the selected connection scope: Connections->SQLite.` It never fills
+an undeclared connection with ADI localhost or database defaults.
+
+Bootgly ships three drivers:
 
 ```bash
 DB_CONNECTION=pgsql   # PostgreSQL (default) — async, TLS, SCRAM, RETURNING
@@ -74,14 +84,14 @@ DB_CONNECTION=mysql   # MySQL/MariaDB — async, TLS, caching_sha2, Result->inse
 DB_CONNECTION=sqlite  # SQLite (ext-sqlite3) — synchronous, zero-setup, DB_NAME=:memory: or a file path
 ```
 
-Add the matching `->Connections->MySQL` / `->Connections->SQLite` blocks to the scope above
-(the demo project ships all three). See
-**[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for the capability matrix.
+See **[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for the capability matrix.
 
 Inside a `*.Project.php` file, register Bootgly's built-in Database Response Resource while
 instantiating `HTTP_Server_CLI`. `DatabaseResource::provide()` is only wiring: it reads the
 `database` scope from the project `configs/` directory and injects one pooled `SQL` instance per
 worker into the built-in `DatabaseResource`; it does not define a custom resource class.
+Configuration validation is propagated by `DatabaseResource::provide()`; an undeclared selected
+connection fails before a pooled `SQL` instance is created.
 
 ```php
 use const Bootgly\CLI;

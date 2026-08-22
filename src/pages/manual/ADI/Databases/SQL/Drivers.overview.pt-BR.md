@@ -19,14 +19,17 @@ $SQLite = new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 ```
 
 Em um projeto, vincule o driver pelo escopo de config `database` — `DB_CONNECTION`
-seleciona o bloco de conexão que será lido:
+seleciona um bloco de conexão que já deve estar declarado:
 
 ```bash :toolbar="true";
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly boot
 ```
 
-Aliases de driver aceitos pelo adaptador de config: `pgsql`/`postgres`/`postgresql`,
-`mysql`/`mariadb` e `sqlite`/`sqlite3`.
+O adaptador de config mapeia `pgsql`/`postgres`/`postgresql` para `Connections->PostgreSQL`,
+`mysql`/`mariadb` para `Connections->MySQL` e `sqlite`/`sqlite3` para
+`Connections->SQLite`. Ele não sintetiza um bloco ausente a partir dos defaults da ADI. Se o bloco
+canônico selecionado estiver ausente, ele lança, por exemplo,
+`Database config is missing the selected connection scope: Connections->MySQL.`
 
 ## Matriz de capacidades
 

@@ -69,6 +69,13 @@ local `.env` files), builds one pooled `SQL` connection per worker and wraps it.
 scope is disabled (`DB_ENABLED=false`) or the context is not a `Response`. The resource is created
 lazily the first time the route reads `$Response->Database`.
 
+The factory propagates `DatabaseConfig` validation. The driver selected by `DB_CONNECTION` must
+have its canonical block (`Connections->PostgreSQL`, `Connections->MySQL` or
+`Connections->SQLite`) in the scope. If it is absent, first access throws an
+`InvalidArgumentException`, such as
+`Database config is missing the selected connection scope: Connections->SQLite.` No ADI-default
+endpoint or pooled `SQL` instance is created.
+
 A factory is just a closure, so when you need full control over construction you can build and wrap
 the resource yourself instead of calling `provide()`:
 
