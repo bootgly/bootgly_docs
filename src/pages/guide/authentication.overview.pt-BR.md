@@ -101,9 +101,14 @@ if (isSet($Request->fields['remember'])) {
 ```
 
 O valor do cookie remember é `selector.validator`: o selector (série) fica
-estável por dispositivo, o validator rotaciona a cada uso bem-sucedido. Um
-validator antigo re-apresentado é a assinatura de cookie roubado — o store
-revoga **todos** os dispositivos do usuário e o guard limpa o cookie.
+estável por dispositivo, enquanto o validator rotaciona a cada uso
+bem-sucedido. Para absorver uma request duplicada ainda em andamento, `Trust`
+retém somente o digest do validator imediatamente anterior durante uma janela
+de tolerância privada e fixa de cinco segundos. Uma duplicata exata dentro
+dessa janela é recusada sem autenticar a request, limpar seu cookie ou revogar
+nenhum dispositivo. Um replay depois de cinco segundos, ou qualquer validator
+errado não relacionado, é a assinatura de cookie roubado — o store revoga
+**todos** os dispositivos do usuário e o guard limpa o cookie.
 
 O logout derruba a série do dispositivo apresentado, limpa o cookie e destrói
 a sessão:
@@ -238,25 +243,48 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 - **Uso único** — o resgate deleta a linha atomicamente
   (`DELETE … WHERE id AND verifier` + gate de affected-rows); resgates
   concorrentes perdem.
-- **Detecção de roubo** — uma série remember conhecida com validator errado
-  revoga todos os dispositivos do usuário e reporta um incidente `Theft`.
+- **Concorrência do remember** — somente o validator imediatamente anterior é
+  tolerado, por cinco segundos inclusive. Essa duplicata é recusada sem
+  autenticação nem alteração de estado.
+- **Detecção de roubo** — um replay mais antigo ou qualquer validator errado
+  não relacionado para uma série remember conhecida revoga todos os
+  dispositivos do usuário e reporta um incidente `Theft`.
+- **Veredictos autoritativos** — decisões de credencial, token de ação e token
+  remember são lidas do banco primário mesmo quando há réplicas de leitura
+  configuradas.
 - **CSRF** — todo POST (incluindo logout) carrega o `_token` mascarado do
   stack default do `Web\App`.
+
+## Upgrade do store remember
+
+A tabela `trusts` exige duas colunas nullable além do digest do validator
+atual: `previous VARCHAR(64)` armazena o digest sha256 imediatamente anterior,
+e `rotated BIGINT` armazena o instante da rotação em segundos desde epoch. O
+scaffold Auth fornece uma migration aditiva para cada coluna. Schemas
+customizados precisam adicionar ambas antes de atualizar o código do
+framework; linhas existentes não precisam de backfill.
+
+Aplique primeiro as migrations enquanto os workers antigos ainda executam,
+verifique as duas colunas e então faça deploy, restart ou drain de todos os
+workers como uma única coorte. Misturar workers antigos e novos é inseguro,
+pois os antigos rotacionam `verifier` sem atualizar `previous` e `rotated`. Em
+um rollback, restaure o código antigo e drene todos os workers novos antes de
+opcionalmente remover as colunas.
 
 ## Testes
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.29)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.32)
 AI_AGENT=1 ./bootgly test 29   # middlewares WPI — guard Remember, redirect do Fallback (11.2-11.3)
 
 # bootgly-web
-AI_AGENT=1 ./bootgly test 5    # E2E do demo Auth — 19 specs no wire real
+AI_AGENT=1 ./bootgly test 5    # E2E do demo Auth — 20 specs no wire real
 ```
 
 A suíte E2E dirige as rotas reais: registro → link de verificação do sink de
-e-mail → logout → login + remember → revival/rotação → replay de roubo →
-forgot/reset → negativo de CSRF → rate limit.
+e-mail → logout → login + remember → revival/rotação → duplicata tolerada →
+replay tardio de roubo → forgot/reset → negativo de CSRF → rate limit.
 
 ## Reference
 
@@ -367,7 +395,9 @@ Derruba tokens expirados.
 public function __construct (SQLDatabase|Transaction $Database, string $table = 'trusts')
 ```
 
-Cria o store de tokens de dispositivo confiável (remember-me).
+Cria o store de tokens de dispositivo confiável (remember-me). A tabela deve
+incluir as colunas nullable `previous` (digest sha256 de 64 caracteres) e
+`rotated` (segundos desde epoch); veja **Upgrade do store remember** acima.
 
 ```php
 public function issue (string $user, int $ttl = 2592000): Token
@@ -379,11 +409,14 @@ Inicia uma nova série de dispositivo.
 public function rotate (string $token, int $ttl = 2592000): null|Theft|Token
 ```
 
-Valida e rotaciona o validator (a série fica estável). Uma série conhecida com
-validator errado revoga TODOS os dispositivos do usuário e retorna `Theft`.
-Uma rotação concorrente que perde a corrida do update atômico retorna `null` —
-deliberadamente não `Theft`, para um duplo submit benigno não revogar todas as
-sessões.
+Valida e rotaciona o validator (a série fica estável). O update bem-sucedido
+registra atomicamente o digest anterior em `previous`, registra `rotated` e
+instala o novo digest. O validator imediatamente anterior exato é aceito como
+duplicata benigna por cinco segundos inclusive: `rotate()` retorna `null` sem
+autenticar, escrever nem revogar. Um replay depois dessa janela, ou qualquer
+validator errado não relacionado para uma série conhecida, revoga TODOS os
+dispositivos do usuário e retorna `Theft`. Uma rotação concorrente que perde a
+corrida do update atômico também retorna `null`.
 
 ```php
 public function forget (string $token): bool
@@ -420,8 +453,9 @@ public function authenticate (object $Request): bool
 ```
 
 Revive uma sessão a partir do cookie remember: rotaciona o token de confiança,
-regenera o id de sessão, instala a identity e reemite o cookie rotacionado. Em
-roubo, limpa o cookie e recusa.
+regenera o id de sessão, instala a identity e reemite o cookie rotacionado. Uma
+duplicata benigna dentro da janela de cinco segundos é recusada sem autenticar
+nem limpar o cookie. Em roubo, o guard limpa o cookie e recusa.
 
 ```php
 public function emit (Token $Token): void

@@ -101,9 +101,14 @@ if (isSet($Request->fields['remember'])) {
 ```
 
 The remember cookie value is `selector.validator`: the selector (series) stays
-stable per device, the validator rotates on every successful use. A replayed
-old validator is the stolen-cookie signature — the store revokes **every**
-device of that user and the guard clears the cookie.
+stable per device, while the validator rotates on every successful use. To
+absorb an in-flight duplicate request, `Trust` retains only the immediately
+previous validator digest for a fixed, private five-second grace window. An
+exact duplicate during that window is declined without authenticating the
+request, clearing its cookie or revoking any device. A replay after five
+seconds, or any unrelated wrong validator, is the stolen-cookie signature —
+the store revokes **every** device of that user and the guard clears the
+cookie.
 
 Logout drops the presented device series, clears the cookie and destroys the
 session:
@@ -235,25 +240,47 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 - **Single use** — redeeming deletes the row atomically
   (`DELETE … WHERE id AND verifier` + affected-rows gate); concurrent redeems
   lose.
-- **Theft detection** — a known remember series with a wrong validator revokes
-  every device of the user and reports a `Theft` incident.
+- **Remember concurrency** — only the immediately previous validator is
+  tolerated, for five seconds inclusive. That duplicate is declined without
+  authentication or state changes.
+- **Theft detection** — an older replay or any unrelated wrong validator for a
+  known remember series revokes every device of the user and reports a `Theft`
+  incident.
+- **Authoritative verdicts** — credential, action-token and remember-token
+  decisions are read from the primary database even when read replicas are
+  configured.
 - **CSRF** — every POST (including logout) carries the masked `_token` from
   the default `Web\App` stack.
+
+## Remember-store upgrade
+
+The `trusts` table requires two nullable columns in addition to the current
+validator digest: `previous VARCHAR(64)` stores the immediately previous
+sha256 digest, and `rotated BIGINT` stores its rotation time in epoch seconds.
+The Auth scaffold supplies one additive migration per column. Custom schemas
+must add both columns before upgrading the framework code; existing rows need
+no backfill.
+
+Deploy the migrations first while the old workers are still running, verify
+both columns, then deploy and restart or drain every worker as one cohort.
+Mixed old/new workers are unsafe because old workers rotate `verifier` without
+refreshing `previous` and `rotated`. For rollback, restore the old code and
+drain all new workers before optionally removing the columns.
 
 ## Testing
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.29)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.32)
 AI_AGENT=1 ./bootgly test 29   # WPI middlewares — Remember guard, Fallback redirect (11.2-11.3)
 
 # bootgly-web
-AI_AGENT=1 ./bootgly test 5    # Auth demo E2E — 19 specs over the real wire
+AI_AGENT=1 ./bootgly test 5    # Auth demo E2E — 20 specs over the real wire
 ```
 
 The E2E suite drives the real routes: registration → verification link from
-the mail sink → logout → login + remember → revival/rotation → theft replay →
-forgot/reset → CSRF negative → rate limit.
+the mail sink → logout → login + remember → revival/rotation → tolerated
+duplicate → late theft replay → forgot/reset → CSRF negative → rate limit.
 
 ## Reference
 
@@ -363,7 +390,9 @@ Drops expired tokens.
 public function __construct (SQLDatabase|Transaction $Database, string $table = 'trusts')
 ```
 
-Creates the trusted-device (remember-me) token store.
+Creates the trusted-device (remember-me) token store. The table must include
+nullable `previous` (64-character sha256 digest) and `rotated` (epoch seconds)
+columns; see **Remember-store upgrade** above.
 
 ```php
 public function issue (string $user, int $ttl = 2592000): Token
@@ -375,11 +404,14 @@ Starts a new device series.
 public function rotate (string $token, int $ttl = 2592000): null|Theft|Token
 ```
 
-Validates and rotates the validator (the series stays stable). A known series
-with a wrong validator revokes ALL of the user's devices and returns `Theft`.
-A concurrent rotation losing the atomic-update race returns `null` —
-deliberately not `Theft`, so a benign double submit cannot revoke every
-session.
+Validates and rotates the validator (the series stays stable). The successful
+update atomically records the former digest as `previous`, records `rotated`
+and installs the new digest. The exact immediately previous validator is
+accepted as a benign duplicate for five seconds inclusive: `rotate()` returns
+`null` without authenticating, writing or revoking. A replay after that window,
+or any unrelated wrong validator for a known series, revokes ALL of the user's
+devices and returns `Theft`. A concurrent rotation losing the atomic-update
+race also returns `null`.
 
 ```php
 public function forget (string $token): bool
@@ -416,7 +448,9 @@ public function authenticate (object $Request): bool
 
 Revives a session from the remember cookie: rotates the trust token,
 regenerates the session id, installs the identity and re-emits the rotated
-cookie. On theft it clears the cookie and declines.
+cookie. A benign duplicate inside the five-second grace window is declined
+without authenticating or clearing the cookie. On theft the guard clears the
+cookie and declines.
 
 ```php
 public function emit (Token $Token): void

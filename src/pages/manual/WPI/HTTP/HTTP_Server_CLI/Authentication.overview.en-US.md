@@ -375,7 +375,20 @@ $Auth = new Authentication(new Authenticating(
 
 The guard owns the remember cookie: login flows call `emit()` after `Trust->issue()` and logout flows call `forget()`. The cookie policy is framework-owned through statics (`Remember::$name`, `$lifetime`, `$secure`, `$httpOnly`, `$sameSite`) — hardened defaults that php.ini cannot downgrade.
 
-A known series presented with a wrong validator is the stolen-cookie signature: the store revokes every device of the user, the guard clears the cookie and declines. See the **[Authentication guide](/guide/authentication/overview/)** for the full session/cookie scaffold.
+`Trust` keeps only the immediately previous validator digest for a fixed,
+private five-second grace window. When an in-flight duplicate presents that
+exact validator during the window, the guard declines without authenticating,
+clearing the cookie or revoking devices. A replay after the window, or any
+unrelated wrong validator for a known series, is the stolen-cookie signature:
+the store revokes every device of the user, and the guard clears the cookie.
+The underlying `trusts` table must provide nullable `previous VARCHAR(64)` and
+`rotated BIGINT` columns; apply both additive migrations before deploying and
+restart or drain all workers as one cohort.
+
+Credential, action-token and trusted-device verdicts are always read from the
+primary database, even when replicas are configured. See the
+**[Authentication guide](/guide/authentication/overview/)** for the complete
+session/cookie scaffold and upgrade sequence.
 
 ## Multiple guards
 

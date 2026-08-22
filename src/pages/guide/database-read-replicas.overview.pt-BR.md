@@ -110,6 +110,23 @@ SQL cru usa um classificador conservador:
 
 Escritas, DDL, transações e builders com lock sempre usam o pool primário.
 
+### Veredictos de segurança
+
+Os stores de segurança apoiados em SQL não tomam decisões de autenticação ou
+revogação a partir de réplicas potencialmente atrasadas. Consultas de
+credenciais em `Users`, tokens de ação em `Tokens` e dispositivos confiáveis em
+`Trust` são forçadas para o primário. Isso inclui o veredicto de rotação do
+token remember: o atraso de uma réplica não pode transformar o validator atual
+em um falso incidente de roubo nem reviver um token já revogado no primário.
+
+Essas leituras forçadas usam um escopo de roteamento transitório. Elas não
+iniciam nem estendem a stickiness de read-after-write para consultas não
+relacionadas executadas depois no mesmo worker. Quando um store de segurança
+usa uma `Transaction`, a transação continua fixada à sua conexão primária como
+sempre. Isso evita as réplicas configuradas pelo framework, mas não substitui o
+isolamento do banco: uma transação longa ainda pode reter um snapshot antigo do
+primário e não garante freshness para uma decisão externa de autenticação.
+
 ## Escopo de read-after-write
 
 O Bootgly rastreia stickiness de read-after-write com um objeto de escopo lógico. Em WPI, o

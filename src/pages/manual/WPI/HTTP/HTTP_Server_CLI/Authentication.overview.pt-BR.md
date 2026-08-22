@@ -375,7 +375,21 @@ $Auth = new Authentication(new Authenticating(
 
 O guard é o dono do cookie remember: fluxos de login chamam `emit()` após `Trust->issue()` e fluxos de logout chamam `forget()`. A política do cookie é do framework, via estáticas (`Remember::$name`, `$lifetime`, `$secure`, `$httpOnly`, `$sameSite`) — defaults endurecidos que o php.ini não consegue rebaixar.
 
-Uma série conhecida apresentada com validator errado é a assinatura de cookie roubado: o store revoga todos os dispositivos do usuário, o guard limpa o cookie e recusa. Veja o **[guia de Authentication](/guide/authentication/overview/)** para o scaffold completo de sessão/cookie.
+`Trust` mantém somente o digest do validator imediatamente anterior durante uma
+janela de tolerância privada e fixa de cinco segundos. Quando uma duplicata
+ainda em andamento apresenta esse validator exato dentro da janela, o guard
+recusa sem autenticar, limpar o cookie nem revogar dispositivos. Um replay
+depois da janela, ou qualquer validator errado não relacionado para uma série
+conhecida, é a assinatura de cookie roubado: o store revoga todos os
+dispositivos do usuário e o guard limpa o cookie. A tabela `trusts` subjacente
+precisa das colunas nullable `previous VARCHAR(64)` e `rotated BIGINT`; aplique
+as duas migrations aditivas antes do deploy e reinicie ou drene todos os
+workers como uma única coorte.
+
+Veredictos de credencial, token de ação e dispositivo confiável são sempre
+lidos do banco primário, mesmo com réplicas configuradas. Veja o
+**[guia de Authentication](/guide/authentication/overview/)** para o scaffold
+completo de sessão/cookie e a sequência de upgrade.
 
 ## Múltiplos guards
 

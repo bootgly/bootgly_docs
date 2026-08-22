@@ -110,6 +110,23 @@ Raw SQL uses a conservative classifier:
 
 Writes, DDL, transactions and locked builders always use the primary pool.
 
+### Security verdicts
+
+The SQL-backed security stores do not make authentication or revocation
+decisions from potentially stale replicas. `Users` credential lookups,
+`Tokens` action-token lookups and `Trust` trusted-device lookups are forced to
+the primary. This includes a remember-token rotation verdict: replica lag must
+not turn the current validator into a false theft incident or revive a token
+already revoked on primary.
+
+These forced reads use a transient routing scope. They do not start or extend
+read-after-write stickiness for unrelated queries later in the same worker.
+When a security store is backed by a `Transaction`, the transaction remains
+pinned to its primary connection as usual. That bypasses framework-configured
+replicas but does not override database isolation: a long-lived transaction can
+still retain an older primary snapshot and is not a freshness guarantee for an
+external authentication decision.
+
 ## Read-after-write scope
 
 Bootgly tracks read-after-write stickiness with a logical scope object. In WPI, the built-in
