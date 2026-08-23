@@ -15,7 +15,7 @@ Execute todas as suítes registradas a partir da raiz do repositório:
 php bootgly test
 ```
 
-O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos um `Test` falha.
+O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos um `Test` falha — e também quando um run termina antes de a varredura completar, de modo que um run sequestrado ou interrompido nunca possa ser lido como sucesso. Todo run declara seu veredito no `stderr` como uma única linha `[test] PASSED|FAILED|INCOMPLETE — …`, que sobrevive a um `stdout` redirecionado.
 
 ## Executar uma suíte específica
 
@@ -67,10 +67,10 @@ php bootgly test --view=heatmap
 
 | Modo | Comportamento |
 | ---- | ------------- |
-| `list` | Imprime cada caso conforme executa e para no primeiro caso que falhar. Padrão para runs focados (`php bootgly test <suite>` / `<suite> <case>`). |
-| `heatmap` | Renderiza um card de dashboard por suíte — moldura arredondada, um medidor de progresso e um quadrado colorido por assertion (verde passed, vermelho suave failed, bege skipped). O medidor enche de forma determinística por **test cases** (a contagem deles é conhecida antes de rodar), enquanto os quadrados são as **assertions** individuais descobertas conforme cada caso roda — então uma suíte de 63 cases pode mostrar 254 assertions. Em terminais interativos o card pinta ao vivo conforme os casos executam. Todas as suítes executam até o fim, as falhas são listadas sob cada card — junto com qualquer saída de debug (`dump()`) capturada pelo caso falho — e o código de saída é diferente de zero quando algum caso falhou. Padrão para full runs (`php bootgly test`). |
+| `list` | Imprime cada caso conforme executa e para no primeiro caso que falhar. Padrão para runs focados (`php bootgly test <suite>` / `<suite> <case>`) e para **qualquer** run cujo `stdout` não seja um terminal — um run redirecionado ou em pipe é um log, então a CI recebe a saída completa por caso em vez de um dashboard. Esse fallback muda **apenas a renderização**: um full run continua visitando todas as suítes, exatamente como o heatmap faz. Passar `--view=list` explicitamente é o que pede o contrato de parar no primeiro caso que falhar. |
+| `heatmap` | Renderiza um card de dashboard por suíte — moldura arredondada, um medidor de progresso e um quadrado colorido por assertion (verde passed, vermelho suave failed, bege skipped). O medidor enche de forma determinística por **test cases** (a contagem deles é conhecida antes de rodar), enquanto os quadrados são as **assertions** individuais descobertas conforme cada caso roda — então uma suíte de 63 cases pode mostrar 254 assertions. Em terminais interativos o card pinta ao vivo conforme os casos executam. Todas as suítes executam até o fim, as falhas são listadas sob cada card — junto com qualquer saída de debug (`dump()`) capturada pelo caso falho — e o código de saída é diferente de zero quando algum caso falhou. Padrão para full runs (`php bootgly test`) em um terminal interativo. Passe `--view=heatmap` explicitamente para renderizar os cards também em um pipe ou arquivo. |
 
-O card é composto pelo runner com três componentes: um [Fieldset](/manual/CLI/UI/Base/Fieldset) encaixota um [Meter de Charts](/manual/CLI/UI/Components/Charts) (o progresso por cases) e um [Heatmap](/manual/CLI/UI/Components/Heatmap) (a grade de assertions). Agentes de IA (`AI_AGENT=1`) sempre recebem o documento JSON de resultados, independentemente da view.
+O card é composto pelo runner com três componentes: um [Fieldset](/manual/CLI/UI/Base/Fieldset) encaixota um [Meter de Charts](/manual/CLI/UI/Components/Charts) (o progresso por cases) e um [Heatmap](/manual/CLI/UI/Components/Heatmap) (a grade de assertions). Agentes de IA (`AI_AGENT=1`) sempre recebem o documento JSON de resultados, independentemente da view. Quando um run não produz documento, o `stdout` fica vazio — o motivo e a saída do processo filho vão para o `stderr`.
 
 ## Cobertura (Coverage)
 
@@ -92,7 +92,7 @@ php -d opcache.enable_cli=0 bootgly test 8 \
    --coverage-report=text
 ```
 
-O driver nativo exige `opcache.enable_cli=0` para que os arquivos de origem não sejam pré-compilados antes que o filtro de cobertura possa instrumentá-los.
+O driver nativo exige `opcache.enable_cli=0` para que os arquivos de origem não sejam pré-compilados antes que o filtro de cobertura possa instrumentá-los. As opções de interpretador passadas assim (`-d`, `-n`, `-c`) são levadas para o run mesmo quando um ambiente de agente de IA faz o `bootgly test` se reinvocar.
 
 ## Benchmarks
 

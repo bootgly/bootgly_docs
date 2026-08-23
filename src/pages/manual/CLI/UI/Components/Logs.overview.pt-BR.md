@@ -70,7 +70,7 @@ se move enquanto novos records chegam. `End` (ou `espaço`) retoma a cauda ao vi
 ## Referência
 
 ```php
-public function __construct (Input &$Input, Output &$Output, int $max = 5000)
+public function __construct (Input $Input, Output $Output, int $max = 5000)
 ```
 
 Cria um viewer ligado a um `Input`/`Output` de terminal. `$max` é a capacidade do ring buffer em

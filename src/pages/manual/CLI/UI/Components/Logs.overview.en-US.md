@@ -73,7 +73,7 @@ The official Logs demo runs in the [live showcase](/manual/CLI/UI/Components/Log
 ## Reference
 
 ```php
-public function __construct (Input &$Input, Output &$Output, int $max = 5000)
+public function __construct (Input $Input, Output $Output, int $max = 5000)
 ```
 
 Build a viewer bound to a terminal `Input`/`Output`. `$max` is the ring-buffer capacity in

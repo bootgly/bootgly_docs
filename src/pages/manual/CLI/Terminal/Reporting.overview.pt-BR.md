@@ -29,7 +29,7 @@ O [showcase de Mouse Reporting](/manual/CLI/Terminal/Reporting/Mouse/showcase) e
 Reporters implementam a interface `Bootgly\CLI\Terminal\Reporting`:
 
 ```php
-public function __construct (Input &$Input, Output &$Output)
+public function __construct (Input $Input, Output $Output)
 ```
 
 Um reporter é vinculado ao `Input` do Terminal (onde o terminal escreve os eventos codificados) e ao `Output` (onde o reporter escreve as sequências de escape de habilitação/desabilitação).
