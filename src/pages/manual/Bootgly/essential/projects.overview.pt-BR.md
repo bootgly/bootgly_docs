@@ -69,6 +69,8 @@ Como os projetos podem aninhar arbitrariamente, um atacante que comprometesse a 
 
 Para tornar um novo projeto executável, use `bootgly project create` — ele gera o diretório, o arquivo de boot e a entrada do registro em um único passo. O arquivo de registro é gerenciado por máquina pelo `create`/`import` (as entradas são re-emitidas ordenadas; comentários adicionados à mão dentro do array não são preservados).
 
+Todo valor é re-emitido como um literal PHP escapado, o arquivo é verificado pelo parser antes de ser instalado e a escrita é atômica — então nenhum nome de projeto ou metadado consegue deixar o registro sem parse. Os caminhos criados por `create`/`import` seguem um alfabeto de nomes: cada segmento começa com maiúscula e usa apenas letras, números, `_` ou `-` (ex.: `App` ou `App/API`). Um caminho registrado à mão antes dessa regra continua funcionando — a fronteira é a verificação no allow-list, não o alfabeto.
+
 ## Criando um projeto
 
 `bootgly project create` é a maneira canônica de iniciar um novo projeto. Em terminais interativos, ele abre um **wizard**:
@@ -135,6 +137,8 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--platform` — plataformas extras a configurar na primeira execução do kit, separadas por vírgula (inicializa os submodules `Console`/`Web` e roda o `bootgly boot`);
 - `--from` — `scratch` (padrão) ou o caminho de um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`). Importações de plataforma mantêm o próprio caminho (`<Name>` é opcional) e atualizam uma cópia existente;
 - `--interfaces` — interface vinculada a um projeto do zero (`CLI` por padrão);
+- `--port` — porta HTTP escrita no arquivo de um projeto WPI do zero (`8080` por padrão); precisa ser numérica e é recusada caso contrário;
+- `--description`, `--version`, `--author` — metadados escritos no arquivo do projeto; aspas e barras invertidas são armazenadas com segurança, caracteres de controle são recusados;
 - `--default` — marca a entrada como padrão de autoboot Web (WPI);
 - `--yes` — pula confirmações.
 

@@ -69,6 +69,8 @@ Because projects can nest arbitrarily, an attacker who compromised your project 
 
 To make a new project runnable, use `bootgly project create` — it generates the directory, the boot file and the registry entry in one step. The registry file is machine-managed by `create`/`import` (entries are re-emitted sorted; hand-added comments inside the array are not preserved).
 
+Every value is re-emitted as an escaped PHP literal, the file is parse-verified before it is installed and the write is atomic — so no project name or metadata can leave the registry unparseable. Paths minted by `create`/`import` follow a naming alphabet: each segment starts uppercase and uses only letters, numbers, `_` or `-` (e.g. `App` or `App/API`). A path that was hand-registered before that rule keeps working — the allow-list check is the boundary, not the alphabet.
+
 ## Creating a project
 
 `bootgly project create` is the canonical way to start a new project. On interactive terminals it opens a **wizard**:
@@ -135,6 +137,8 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--platform` — extra platforms to set up on the kit's first run, comma-separated (initializes the `Console`/`Web` submodules and runs `bootgly boot`);
 - `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy;
 - `--interfaces` — interface bound to a from-scratch project (`CLI` default);
+- `--port` — HTTP port written into a from-scratch WPI project file (`8080` default); it must be numeric and is refused otherwise;
+- `--description`, `--version`, `--author` — metadata written into the project file; quotes and backslashes are stored safely, control characters are refused;
 - `--default` — flags the entry as the Web (WPI) autoboot default;
 - `--yes` — skips confirmations.
 
