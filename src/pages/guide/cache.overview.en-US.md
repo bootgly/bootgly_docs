@@ -235,17 +235,25 @@ Enums are the one exception: PHP restores them outside `allowed_classes`, so a c
 comes back without being declared. An enum cannot carry a destructor, so none of them is a
 gadget.
 
-The allow-list covers **every** driver that persists a value — `file`, `redis`, `shared` and
-`apcu`. `memory` needs none: it holds live values in the process heap and never serializes.
+All four persisting drivers apply the list — but **when** they apply it differs, and that
+difference is the guarantee. On `file` and `redis` nothing is built until the list has
+decided. `memory` needs no list at all: it keeps live values in the process heap and never
+serializes.
 
-> [!IMPORTANT]
-> **Shared-memory and APCu changed format to make this possible.** `shm_get_var()` and
-> `apcu_fetch()` take no options, so they used to rebuild whatever the store held before any
-> Bootgly code could refuse it. Records are now kept as opaque strings and decoded in PHP
-> instead. The first process to attach a segment written by an older Bootgly **discards it**,
-> and APCu drops the keys under your prefix once — so a deploy resets rate-limit counters and
-> drops shared sessions exactly once. That costs about 9-13 % on `shared` reads and is what
-> buys the guarantee.
+> [!WARNING]
+> **On `shared` and `apcu` the list runs late, and that is not fixable.** `shm_get_var()` and
+> `apcu_fetch()` deserialize inside the extension, which accepts no options, so a record is
+> already reconstructed by the time Bootgly sees it. The list still keeps a hostile record
+> out of your application, but it cannot stop a planted `__wakeup`/`__destruct` from running
+> first. **Treat the SysV segment and the APCu store as trusted**: keep `permissions` at
+> `0600`, do not widen the segment to a group, and remember APCu memory is shared by every
+> application in the same PHP pool. If your session store must not depend on that, use the
+> `file` driver — it is the default for sessions.
+
+Both drivers keep records as opaque strings so Bootgly's *own* writes can never carry an
+object graph. The first process to attach a segment written by an older Bootgly discards it,
+so a deploy resets rate-limit counters and drops shared sessions exactly once, and `shared`
+reads cost about 9-13 % more.
 
 ## Reference
 

@@ -241,19 +241,26 @@ Enums são a única exceção: o PHP os restaura fora do `allowed_classes`, ent�
 volta sem precisar ser declarado. Um enum não pode ter destructor, então nenhum deles é um
 gadget.
 
-A allow-list cobre **todos** os drivers que persistem valor — `file`, `redis`, `shared` e
-`apcu`. O `memory` não precisa: ele guarda valores vivos no heap do processo e nunca
+Os quatro drivers que persistem aplicam a lista — mas **quando** eles aplicam é diferente, e
+essa diferença é a garantia. No `file` e no `redis`, nada é construído antes de a lista
+decidir. O `memory` não precisa de lista: guarda valores vivos no heap do processo e nunca
 serializa.
 
-> [!IMPORTANT]
-> **Shared-memory e APCu mudaram de formato para isso ser possível.** `shm_get_var()` e
-> `apcu_fetch()` não aceitam opção nenhuma, então eles reconstruíam o que estivesse no store
-> antes de qualquer código Bootgly poder recusar. Agora os registros são guardados como
-> strings opacas e decodificados no PHP. O primeiro processo que anexa um segmento escrito
-> por um Bootgly anterior **descarta o segmento**, e o APCu limpa as chaves do seu prefixo uma
-> vez — então um deploy zera contadores de rate limit e derruba sessões compartilhadas
-> exatamente uma vez. Isso custa cerca de 9-13% nas leituras do `shared`, e é o que compra a
-> garantia.
+> [!WARNING]
+> **No `shared` e no `apcu` a lista roda tarde, e isso não tem conserto.** `shm_get_var()` e
+> `apcu_fetch()` desserializam dentro da extensão, que não aceita opção nenhuma, então o
+> registro já está reconstruído quando o Bootgly o vê. A lista ainda mantém um registro
+> hostil fora da sua aplicação, mas não impede um `__wakeup`/`__destruct` plantado de rodar
+> antes. **Trate o segmento SysV e o store do APCu como confiáveis**: mantenha `permissions`
+> em `0600`, não abra o segmento para o grupo, e lembre que a memória do APCu é compartilhada
+> por toda aplicação no mesmo pool PHP. Se o seu store de sessão não pode depender disso, use
+> o driver `file` — ele é o padrão para sessões.
+
+Os dois drivers guardam registros como strings opacas para que as escritas do *próprio*
+Bootgly nunca carreguem um grafo de objetos. O primeiro processo que anexa um segmento
+escrito por um Bootgly anterior descarta o segmento, então um deploy zera contadores de rate
+limit e derruba sessões compartilhadas exatamente uma vez, e as leituras do `shared` custam
+cerca de 9-13% a mais.
 
 ## Referência
 
