@@ -135,7 +135,7 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 ```
 
 - `--platform` — extra platforms to set up on the kit's first run, comma-separated (initializes the `Console`/`Web` submodules and runs `bootgly boot`);
-- `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy — the new copy is built beside the old one and swapped in only once it is complete;
+- `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy — the new copy is built beside the old one and swapped in only once it is complete. Only a project copy (a directory with a `*.Project.php` at its root) is refreshed; a group of projects or a hand-made directory at that path is refused, never replaced;
 - `--interfaces` — interface bound to a from-scratch project (`CLI` default);
 - `--port` — HTTP port written into a from-scratch WPI project file (`8080` default); a number between 1 and 65535, refused otherwise;
 - `--description`, `--version`, `--author` — metadata written into the project file; quotes and backslashes are stored safely, control characters are refused;
