@@ -116,7 +116,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `password` / `database` | `''` / `0` | redis | AUTH / SELECT |
 | `timeout` | `5.0` | redis | Segundos de conexão/leitura |
 | `secure` | `false` | redis | Conexão TLS |
-| `classes` | `[]` | file, redis | Classes que o cache pode reconstruir (veja [Segurança](#segurança)) |
+| `classes` | `[]` | file, redis, shared, apcu | Classes que o cache pode reconstruir (veja [Segurança](#segurança)) |
 | `clock` | `null` | file, shared, memory | Override de relógio `Closure(): int` (testes) |
 
 ## Rate limiting (backend compartilhado)
@@ -209,11 +209,12 @@ nunca chame `advance()` manualmente.
 ## Segurança
 
 O store do cache é uma **fronteira de confiança**: só a sua aplicação deveria conseguir gravar
-em `storage/cache/` ou na instância Redis — proteja ambos com permissões de filesystem e de
-rede. Como defesa em profundidade, os drivers File e Redis decodificam os registros gravados
-através de uma **allow-list `allowed_classes` fail-closed**, então um registro adulterado nunca
-executa um gadget de object injection (`__wakeup`/`__destruct`) enquanto está sendo lido.
-Rejeitar o valor depois não é defesa — a essa altura o gadget já rodou.
+em `storage/cache/`, no segmento SysV, no pool do APCu ou na instância Redis — proteja todos
+com permissões de filesystem e de rede. Como defesa em profundidade, todo driver que persiste
+decodifica os registros gravados através de uma **allow-list `allowed_classes` fail-closed**,
+então um registro adulterado nunca executa um gadget de object injection
+(`__wakeup`/`__destruct`) enquanto está sendo lido. Rejeitar o valor depois não é defesa — a
+essa altura o gadget já rodou.
 
 Por padrão nada é reconstruído além do próprio wrapper de registro `Cache\Item` do driver File.
 Cachear um objeto significa declarar a classe dele:
@@ -241,26 +242,24 @@ Enums são a única exceção: o PHP os restaura fora do `allowed_classes`, ent�
 volta sem precisar ser declarado. Um enum não pode ter destructor, então nenhum deles é um
 gadget.
 
-Os quatro drivers que persistem aplicam a lista — mas **quando** eles aplicam é diferente, e
-essa diferença é a garantia. No `file` e no `redis`, nada é construído antes de a lista
-decidir. O `memory` não precisa de lista: guarda valores vivos no heap do processo e nunca
-serializa.
+Os quatro drivers que persistem aplicam a lista **antes** de qualquer reconstrução — `file` e
+`redis` protegem uma chamada a `unserialize()` diretamente; `shared` e `apcu` guardam os
+registros como strings opacas e as decodificam em PHP sob a mesma allow-list, já que
+`shm_get_var()` e `apcu_fetch()` não aceitam opção nenhuma e, sem isso, reconstruiriam o que
+quer que o store guardasse antes de qualquer código do driver poder recusar. O `memory` não
+precisa de lista: guarda valores vivos no heap do processo e nunca serializa.
 
-> [!WARNING]
-> **No `shared` e no `apcu` a lista roda tarde, e isso não tem conserto.** `shm_get_var()` e
-> `apcu_fetch()` desserializam dentro da extensão, que não aceita opção nenhuma, então o
-> registro já está reconstruído quando o Bootgly o vê. A lista ainda mantém um registro
-> hostil fora da sua aplicação, mas não impede um `__wakeup`/`__destruct` plantado de rodar
-> antes. **Trate o segmento SysV e o store do APCu como confiáveis**: mantenha `permissions`
-> em `0600`, não abra o segmento para o grupo, e lembre que a memória do APCu é compartilhada
-> por toda aplicação no mesmo pool PHP. Se o seu store de sessão não pode depender disso, use
-> o driver `file` — ele é o padrão para sessões.
+Como `shared` e `apcu` agora gravam strings opacas, as escritas do *próprio* Bootgly também
+nunca carregam um grafo de objetos. O primeiro processo que anexa um segmento escrito por um
+Bootgly anterior descarta o segmento, então um deploy zera contadores de rate limit e derruba
+sessões compartilhadas exatamente uma vez, e as leituras do `shared` custam cerca de 9-13% a
+mais.
 
-Os dois drivers guardam registros como strings opacas para que as escritas do *próprio*
-Bootgly nunca carreguem um grafo de objetos. O primeiro processo que anexa um segmento
-escrito por um Bootgly anterior descarta o segmento, então um deploy zera contadores de rate
-limit e derruba sessões compartilhadas exatamente uma vez, e as leituras do `shared` custam
-cerca de 9-13% a mais.
+> [!NOTE]
+> Trate o segmento SysV e o store do APCu como qualquer outro recurso compartilhado: mantenha
+> `permissions` em `0600`, não abra o segmento para o grupo, e lembre que a memória do APCu é
+> compartilhada por toda aplicação no mesmo pool PHP. Uma aplicação que não pode compartilhar
+> identidade de cache com vizinhas ainda deve preferir `file` ou `redis`.
 
 ## Referência
 

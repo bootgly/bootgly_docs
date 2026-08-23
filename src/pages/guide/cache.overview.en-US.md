@@ -114,7 +114,7 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 | `password` / `database` | `''` / `0` | redis | AUTH / SELECT |
 | `timeout` | `5.0` | redis | Connect/read seconds |
 | `secure` | `false` | redis | TLS connection |
-| `classes` | `[]` | file, redis | Classes the cache may reconstruct (see [Security](#security)) |
+| `classes` | `[]` | file, redis, shared, apcu | Classes the cache may reconstruct (see [Security](#security)) |
 | `clock` | `null` | file, shared, memory | `Closure(): int` clock override (testing) |
 
 ## Rate limiting (shared backend)
@@ -204,11 +204,11 @@ it from `$Response->defer()` like any other async resource so route code never c
 ## Security
 
 The cache store is a **trust boundary**: only your app should be able to write to
-`storage/cache/` or to the Redis instance — protect them with filesystem and network
-permissions. As defense in depth, the File and Redis drivers decode stored records through a
-**fail-closed `allowed_classes` allow-list**, so a tampered record can never run an
-object-injection gadget (`__wakeup`/`__destruct`) while it is being read. Rejecting the value
-afterwards is not a defense — by then the gadget has already run.
+`storage/cache/`, the SysV segment, the APCu pool, or the Redis instance — protect them with
+filesystem and network permissions. As defense in depth, every persisting driver decodes
+stored records through a **fail-closed `allowed_classes` allow-list**, so a tampered record can
+never run an object-injection gadget (`__wakeup`/`__destruct`) while it is being read.
+Rejecting the value afterwards is not a defense — by then the gadget has already run.
 
 By default nothing is reconstructed except the File driver's own `Cache\Item` record wrapper.
 Caching an object means declaring its class:
@@ -235,25 +235,23 @@ Enums are the one exception: PHP restores them outside `allowed_classes`, so a c
 comes back without being declared. An enum cannot carry a destructor, so none of them is a
 gadget.
 
-All four persisting drivers apply the list — but **when** they apply it differs, and that
-difference is the guarantee. On `file` and `redis` nothing is built until the list has
-decided. `memory` needs no list at all: it keeps live values in the process heap and never
-serializes.
+All four persisting drivers apply the list **before** anything is reconstructed — `file` and
+`redis` gate an `unserialize()` call directly; `shared` and `apcu` keep records as opaque
+strings and decode them in PHP under the same allow-list, since `shm_get_var()` and
+`apcu_fetch()` accept no options and would otherwise rebuild whatever the store held before any
+driver code could refuse it. `memory` needs no list at all: it keeps live values in the process
+heap and never serializes.
 
-> [!WARNING]
-> **On `shared` and `apcu` the list runs late, and that is not fixable.** `shm_get_var()` and
-> `apcu_fetch()` deserialize inside the extension, which accepts no options, so a record is
-> already reconstructed by the time Bootgly sees it. The list still keeps a hostile record
-> out of your application, but it cannot stop a planted `__wakeup`/`__destruct` from running
-> first. **Treat the SysV segment and the APCu store as trusted**: keep `permissions` at
-> `0600`, do not widen the segment to a group, and remember APCu memory is shared by every
-> application in the same PHP pool. If your session store must not depend on that, use the
-> `file` driver — it is the default for sessions.
-
-Both drivers keep records as opaque strings so Bootgly's *own* writes can never carry an
-object graph. The first process to attach a segment written by an older Bootgly discards it,
-so a deploy resets rate-limit counters and drops shared sessions exactly once, and `shared`
+Because `shared` and `apcu` write opaque strings, Bootgly's *own* writes can never carry an
+object graph either. The first process to attach a segment written by an older Bootgly discards
+it, so a deploy resets rate-limit counters and drops shared sessions exactly once, and `shared`
 reads cost about 9-13 % more.
+
+> [!NOTE]
+> Treat the SysV segment and the APCu store like any other shared resource: keep `permissions`
+> at `0600`, do not widen the segment to a group, and remember APCu memory is shared by every
+> application in the same PHP pool. An app that must not share cache identity with its
+> neighbors should still prefer `file` or `redis`.
 
 ## Reference
 
