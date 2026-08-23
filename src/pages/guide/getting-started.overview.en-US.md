@@ -9,11 +9,15 @@ curl -fsSL https://bootgly.com/install | bash
 The installer:
 
 1. Checks your environment (`git` + PHP **8.4+**);
-2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./bootgly.kit` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
+2. Gets the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./bootgly.kit` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`) — as **a repository of your own** when the GitHub CLI can make one, as a clone otherwise;
 3. Initializes the **Bootgly platform** (git submodule) and other selected Platforms like `Console` and `Web`;
 4. Boot initial [resource dirs](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
 5. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
 6. Opens the **project wizard** (`php bootgly project create`).
+
+> **A repository of your own.** When the [GitHub CLI](https://cli.github.com) is installed, signed in to an account it can name, and the source is a GitHub repository marked as a template, the installer offers to create the kit on your account from that template instead of cloning it — so the history and the `origin` are yours from the first commit, and `git push` works without a fork. The repository takes the name of the target directory, and a single question settles both whether to create it and how — `[private/public/N]`. `y` or `private` creates a private one, `public` creates a public one, and an empty line or anything unrecognised declines and gives you the plain clone, exactly as before. Only that one literal word publishes anything.
+
+> **Nothing is created unless a person is there to say yes.** The offer is made only in a fully interactive run: `--yes`, `--no-wizard`, CI and any run without a terminal skip it and never reach the GitHub API at all. Opt in without a terminal using `--template` (or `--template=public`); refuse it always with `--no-template`.
 
 > **Re-running is safe.** If the installation was interrupted at any step, run the same command again: when the target directory is already a Bootgly Kit checkout, the installer **resumes** — it prints a checklist of what is done, initializes whatever is missing (submodules, resources) and re-opens the wizard (skipping it when a project is already registered). The wizard only offers the platforms not set up yet.
 

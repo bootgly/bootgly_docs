@@ -9,11 +9,15 @@ curl -fsSL https://bootgly.com/install | bash
 O instalador:
 
 1. Verifica seu ambiente (`git` + PHP **8.4+**);
-2. Clona o template inicial [bootgly.kit](https://github.com/bootgly/bootgly.kit) em `./bootgly.kit` (passe outro nome com `curl -fsSL https://bootgly.com/install | bash -s -- meudir`);
-3. Inicializa a **plataforma Bootgly** (git submodule);
+2. Obtém o template inicial [bootgly.kit](https://github.com/bootgly/bootgly.kit) em `./bootgly.kit` (passe outro nome com `curl -fsSL https://bootgly.com/install | bash -s -- meudir`) — como **um repositório seu** quando a CLI do GitHub puder criá-lo, ou como um clone caso contrário;
+3. Inicializa a **plataforma Bootgly** (git submodule) e as outras Plataformas selecionadas, como `Console` e `Web`;
 4. Faz "boot" de [diretórios recurso](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
 5. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
 6. Abre o **wizard de projetos** (`php bootgly project create`).
+
+> **Um repositório seu.** Quando a [CLI do GitHub](https://cli.github.com) está instalada, autenticada numa conta que ela consegue nomear, e a origem é um repositório do GitHub marcado como template, o instalador oferece criar o kit na sua conta a partir desse template em vez de cloná-lo — assim o histórico e o `origin` são seus desde o primeiro commit, e o `git push` funciona sem fork. O repositório recebe o nome do diretório alvo, e uma única pergunta resolve se criar e como — `[private/public/N]`. `y` ou `private` cria um privado, `public` cria um público, e uma linha vazia ou qualquer coisa não reconhecida recusa e devolve o clone simples, exatamente como antes. Só aquela palavra literal torna algo público.
+
+> **Nada é criado sem alguém presente para dizer sim.** A oferta só acontece numa execução totalmente interativa: `--yes`, `--no-wizard`, CI e qualquer execução sem terminal a ignoram e nem chegam a chamar a API do GitHub. Use `--template` (ou `--template=public`) para optar sem terminal; use `--no-template` para recusar sempre.
 
 > **Rodar de novo é seguro.** Se a instalação foi interrompida em qualquer etapa, execute o mesmo comando novamente: quando o diretório alvo já é um checkout do Bootgly Kit, o instalador **retoma** — imprime um checklist do que já foi feito, inicializa o que falta (submodules, resources) e reabre o wizard (pulando-o quando um projeto já está registrado). O wizard só oferece as plataformas ainda não configuradas.
 
