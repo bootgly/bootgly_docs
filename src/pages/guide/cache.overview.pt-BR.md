@@ -241,13 +241,19 @@ Enums são a única exceção: o PHP os restaura fora do `allowed_classes`, ent�
 volta sem precisar ser declarado. Um enum não pode ter destructor, então nenhum deles é um
 gadget.
 
+A allow-list cobre **todos** os drivers que persistem valor — `file`, `redis`, `shared` e
+`apcu`. O `memory` não precisa: ele guarda valores vivos no heap do processo e nunca
+serializa.
+
 > [!IMPORTANT]
-> A allow-list pertence só aos drivers **File** e **Redis**. **APCu** e **Shared-memory**
-> desserializam dentro de `apcu_fetch()` e `shm_get_var()`, que não aceitam opção nenhuma —
-> esses dois confiam inteiramente no store por trás deles, e `classes` não se aplica a eles.
-> Os dois são locais a um host, então a fronteira deles é a do processo APCu e as
-> `permissions` do segmento SysV (padrão `0600`): mantenha nesse valor e não abra o segmento
-> para o grupo.
+> **Shared-memory e APCu mudaram de formato para isso ser possível.** `shm_get_var()` e
+> `apcu_fetch()` não aceitam opção nenhuma, então eles reconstruíam o que estivesse no store
+> antes de qualquer código Bootgly poder recusar. Agora os registros são guardados como
+> strings opacas e decodificados no PHP. O primeiro processo que anexa um segmento escrito
+> por um Bootgly anterior **descarta o segmento**, e o APCu limpa as chaves do seu prefixo uma
+> vez — então um deploy zera contadores de rate limit e derruba sessões compartilhadas
+> exatamente uma vez. Isso custa cerca de 9-13% nas leituras do `shared`, e é o que compra a
+> garantia.
 
 ## Referência
 
