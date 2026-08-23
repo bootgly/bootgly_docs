@@ -102,7 +102,7 @@ Any directory carrying the **Bootgly project signature** — a `*.Project.php` f
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
-The repository is cloned (system git), validated against the signature, copied into `projects/Project1/` (the signature file is renamed to the new leaf) and registered in the allow-list.
+The repository is cloned (system git), validated against the signature, copied into `projects/Project1/` (the signature file is renamed to the new leaf; the content itself is kept as-is) and registered in the allow-list. Every rule the registry enforces is checked before the copy, so a refused import leaves nothing behind.
 
 > [!WARNING]
 > Imported projects run third-party code when started — the command asks for confirmation (skip with `--yes`).
@@ -135,7 +135,7 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 ```
 
 - `--platform` — extra platforms to set up on the kit's first run, comma-separated (initializes the `Console`/`Web` submodules and runs `bootgly boot`);
-- `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy;
+- `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy — the new copy is built beside the old one and swapped in only once it is complete;
 - `--interfaces` — interface bound to a from-scratch project (`CLI` default);
 - `--port` — HTTP port written into a from-scratch WPI project file (`8080` default); a number between 1 and 65535, refused otherwise;
 - `--description`, `--version`, `--author` — metadata written into the project file; quotes and backslashes are stored safely, control characters are refused;
