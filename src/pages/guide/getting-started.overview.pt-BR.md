@@ -39,6 +39,8 @@ bootgly.kit/
 
 O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly boot` para instalar as suas próprias pastas de recursos:
 
+> **As plataformas caem em um release, não em um commit.** Depois de inicializar um submodule, o instalador o move para a tag mais nova alcançável a partir do pin do kit — um release estável quando existe, senão o pre-release mais novo. Ele nunca avança *além* do pin, então você nunca recebe uma plataforma com a qual o kit não foi construído. Quando um pin saiu de um release, a execução avisa (`Bootgly was pinned 1 commit past v1.0.0-beta.3 — checked out the release`), e o `git status` passa a mostrar aquele submodule como modificado: esse é o pin corrigido, não uma alteração sua. A correção não é permanente: um `git submodule update` posterior devolve o submodule ao que o kit registra, então, se o kit é seu, faça commit do pin corrigido.
+
 ```text
 bootgly.kit/
 ├── Bootgly/            ← plataforma base (submodule instalado)
@@ -88,7 +90,7 @@ O cabeçalho dele nomeia o build que você está instalando — a versão do fra
 Bootgly — New project wizard v1.0.0-beta.1-dev (39f53a89)
 ```
 
-Toda instalação `dev-main` reporta a mesma versão, então é o **commit** que distingue duas instalações. Cite essa linha em relatórios de bug; quando uma tela parecer mais antiga do que a documentação descreve, é a primeira coisa a conferir (um kit com o pin do submodule atrasado instala um framework mais antigo — `git submodule update --init --remote` o avança). O commit é lido da própria instalação: os metadados git do checkout, ou a referência que o Composer resolveu. Fontes que não têm nenhum dos dois (um arquivo de release) mostram só a versão.
+Toda instalação `dev-main` reporta a mesma versão, então é o **commit** que distingue duas instalações. Cite essa linha em relatórios de bug; quando uma tela parecer mais antiga do que a documentação descreve, é a primeira coisa a conferir (um kit com o pin do submodule atrasado instala um framework mais antigo — busque as tags dentro da plataforma, `git -C Bootgly fetch --tags`, e faça checkout do release mais novo para avançá-lo; evite o `--remote`, que salta para a ponta do branch e deixa você em trabalho de desenvolvimento não lançado). O commit é lido da própria instalação: os metadados git do checkout, ou a referência que o Composer resolveu. Fontes que não têm nenhum dos dois (um arquivo de release) mostram só a versão.
 
 O wizard te guia de um kit vazio até um projeto rodando:
 
