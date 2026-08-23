@@ -14,8 +14,8 @@ internally by the multi-worker rate limiter.
 
 ## Store and read
 
-Create a cache, then store and fetch values. Any serializable value round-trips with type
-fidelity:
+Create a cache, then store and fetch values. Scalars and arrays round-trip with type
+fidelity; objects round-trip once their class is declared (see [Security](#security)):
 
 ```php
 use Bootgly\ABI\Resources\Cache;
@@ -114,6 +114,7 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 | `password` / `database` | `''` / `0` | redis | AUTH / SELECT |
 | `timeout` | `5.0` | redis | Connect/read seconds |
 | `secure` | `false` | redis | TLS connection |
+| `classes` | `[]` | file, redis | Classes the cache may reconstruct (see [Security](#security)) |
 | `clock` | `null` | file, shared, memory | `Closure(): int` clock override (testing) |
 
 ## Rate limiting (shared backend)
@@ -199,6 +200,48 @@ it from `$Response->defer()` like any other async resource so route code never c
 > v1 scope of the async KV Redis driver: plain TCP, one command per connection (no
 > pipelining). `AUTH`/`SELECT` are sent once as a preamble when a connection is first opened;
 > `SELECT` only fires for a numeric `database` index.
+
+## Security
+
+The cache store is a **trust boundary**: only your app should be able to write to
+`storage/cache/` or to the Redis instance — protect them with filesystem and network
+permissions. As defense in depth, the File and Redis drivers decode stored records through a
+**fail-closed `allowed_classes` allow-list**, so a tampered record can never run an
+object-injection gadget (`__wakeup`/`__destruct`) while it is being read. Rejecting the value
+afterwards is not a defense — by then the gadget has already run.
+
+By default nothing is reconstructed except the File driver's own `Cache\Item` record wrapper.
+Caching an object means declaring its class:
+
+```php
+$Cache = new Cache([
+   'driver' => 'file',
+   'classes' => [Product::class, Money::class],
+]);
+```
+
+> [!WARNING]
+> This changed in this release. An object cached **without** being declared reads back as a
+> **miss** — `fetch()` returns `null` and `check()` returns `false` — it is never handed back
+> half-built. Declare every class you cache, including classes nested inside a cached array.
+> Values made only of scalars and arrays need no configuration at all.
+
+Records are decoded with a nesting bound of 256, which leaves room for roughly **250 levels**
+of nesting in your own value — far past any real cached structure, and there to cap the
+recursion a tampered record can force. A value deeper than that, like a record whose bytes no
+longer match its declared property types, reads as a **miss** rather than raising.
+
+Enums are the one exception: PHP restores them outside `allowed_classes`, so a cached enum
+comes back without being declared. An enum cannot carry a destructor, so none of them is a
+gadget.
+
+> [!IMPORTANT]
+> The allow-list belongs to the **File** and **Redis** drivers only. **APCu** and
+> **Shared-memory** deserialize inside `apcu_fetch()` and `shm_get_var()`, which accept no
+> options at all — those two trust their backing store completely, and `classes` does not
+> apply to them. Both are local to one host, so their boundary is the APCu process boundary
+> and the SysV segment `permissions` (default `0600`): keep it there, and do not widen the
+> segment to a group.
 
 ## Reference
 

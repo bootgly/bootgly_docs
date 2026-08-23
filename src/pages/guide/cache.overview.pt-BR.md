@@ -14,8 +14,8 @@ tag. É o mesmo cache usado internamente pelo rate limiter multi-worker.
 
 ## Gravar e ler
 
-Crie um cache, depois grave e leia valores. Qualquer valor serializável volta com fidelidade
-de tipo:
+Crie um cache, depois grave e leia valores. Escalares e arrays voltam com fidelidade de
+tipo; objetos voltam assim que a classe deles é declarada (veja [Segurança](#segurança)):
 
 ```php
 use Bootgly\ABI\Resources\Cache;
@@ -116,6 +116,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `password` / `database` | `''` / `0` | redis | AUTH / SELECT |
 | `timeout` | `5.0` | redis | Segundos de conexão/leitura |
 | `secure` | `false` | redis | Conexão TLS |
+| `classes` | `[]` | file, redis | Classes que o cache pode reconstruir (veja [Segurança](#segurança)) |
 | `clock` | `null` | file, shared, memory | Override de relógio `Closure(): int` (testes) |
 
 ## Rate limiting (backend compartilhado)
@@ -204,6 +205,49 @@ nunca chame `advance()` manualmente.
 > Escopo v1 do driver Redis KV assíncrono: TCP puro, um comando por conexão (sem pipelining).
 > `AUTH`/`SELECT` são enviados uma vez como preâmbulo na abertura da conexão; `SELECT` só
 > dispara para um índice `database` numérico.
+
+## Segurança
+
+O store do cache é uma **fronteira de confiança**: só a sua aplicação deveria conseguir gravar
+em `storage/cache/` ou na instância Redis — proteja ambos com permissões de filesystem e de
+rede. Como defesa em profundidade, os drivers File e Redis decodificam os registros gravados
+através de uma **allow-list `allowed_classes` fail-closed**, então um registro adulterado nunca
+executa um gadget de object injection (`__wakeup`/`__destruct`) enquanto está sendo lido.
+Rejeitar o valor depois não é defesa — a essa altura o gadget já rodou.
+
+Por padrão nada é reconstruído além do próprio wrapper de registro `Cache\Item` do driver File.
+Cachear um objeto significa declarar a classe dele:
+
+```php
+$Cache = new Cache([
+   'driver' => 'file',
+   'classes' => [Product::class, Money::class],
+]);
+```
+
+> [!WARNING]
+> Isso mudou nesta release. Um objeto cacheado **sem** ser declarado volta como um **miss** —
+> `fetch()` retorna `null` e `check()` retorna `false` — ele nunca é entregue pela metade.
+> Declare toda classe que você cacheia, inclusive classes aninhadas dentro de um array
+> cacheado. Valores feitos só de escalares e arrays não precisam de configuração nenhuma.
+
+Os registros são decodificados com um limite de aninhamento de 256, o que deixa espaço para
+cerca de **250 níveis** de aninhamento no seu próprio valor — muito além de qualquer estrutura
+cacheada real, e existe para limitar a recursão que um registro adulterado pode forçar. Um
+valor mais profundo que isso, assim como um registro cujos bytes não batem mais com os tipos
+declarados das propriedades, volta como um **miss** em vez de levantar erro.
+
+Enums são a única exceção: o PHP os restaura fora do `allowed_classes`, então um enum cacheado
+volta sem precisar ser declarado. Um enum não pode ter destructor, então nenhum deles é um
+gadget.
+
+> [!IMPORTANT]
+> A allow-list pertence só aos drivers **File** e **Redis**. **APCu** e **Shared-memory**
+> desserializam dentro de `apcu_fetch()` e `shm_get_var()`, que não aceitam opção nenhuma —
+> esses dois confiam inteiramente no store por trás deles, e `classes` não se aplica a eles.
+> Os dois são locais a um host, então a fronteira deles é a do processo APCu e as
+> `permissions` do segmento SysV (padrão `0600`): mantenha nesse valor e não abra o segmento
+> para o grupo.
 
 ## Referência
 
