@@ -34,10 +34,16 @@ As flags de plataforma sobrepõem o diretório de trabalho em qualquer lugar:
 plataformas. Em um checkout do framework ou de plataforma, `bootgly test`
 continua rodando o `tests/autoboot.php` do próprio checkout.
 
-O `tests/autoboot.php` de um projeto retorna um registro `Suites` listando os
-diretórios de suíte dele (`bootgly project create` gera um com uma suíte de
-exemplo); um arquivo que retorna uma única `Suite` é aceito como projeto de
-uma suíte só.
+O `tests/autoboot.php` de um projeto retorna **sempre** um registro `Suites`
+listando os diretórios de suíte dele, e cada um desses diretórios tem o
+`autoboot.php` que retorna a `Suite` em si (`bootgly project create` gera
+exatamente isso: um registro mais `tests/example/`). Um registro que retorna
+uma `Suite` é recusado, nomeando o arquivo — ele teria de ser lido duas vezes,
+uma como registro e outra como bootstrap da suíte que ele representava, o que
+torna fatal qualquer `class`, `function` ou `define()` dentro dele e roda todo
+`pretest()` em dobro. Um exemplo embarcado importado para um kit antes desse
+contrato ainda carrega o layout antigo — reimporte com
+`bootgly project create <Nome> --from=<Nome> --refresh`.
 
 ## Executar uma suíte específica
 
@@ -93,6 +99,8 @@ php bootgly test --view=heatmap
 | `heatmap` | Renderiza um card de dashboard por suíte — moldura arredondada, um medidor de progresso e um quadrado colorido por assertion (verde passed, vermelho suave failed, bege skipped). O medidor enche de forma determinística por **test cases** (a contagem deles é conhecida antes de rodar), enquanto os quadrados são as **assertions** individuais descobertas conforme cada caso roda — então uma suíte de 63 cases pode mostrar 254 assertions. Em terminais interativos o card pinta ao vivo conforme os casos executam. Todas as suítes executam até o fim, as falhas são listadas sob cada card — junto com qualquer saída de debug (`dump()`) capturada pelo caso falho — e o código de saída é diferente de zero quando algum caso falhou. Padrão para full runs (`php bootgly test`) em um terminal interativo. Passe `--view=heatmap` explicitamente para renderizar os cards também em um pipe ou arquivo. |
 
 O card é composto pelo runner com três componentes: um [Fieldset](/manual/CLI/UI/Base/Fieldset) encaixota um [Meter de Charts](/manual/CLI/UI/Components/Charts) (o progresso por cases) e um [Heatmap](/manual/CLI/UI/Components/Heatmap) (a grade de assertions). Agentes de IA (`AI_AGENT=1`) sempre recebem o documento JSON de resultados, independentemente da view. Quando um run não produz documento, o `stdout` fica vazio — o motivo e a saída do processo filho vão para o `stderr`.
+
+Um run de agente mantém o contrato **fail-fast**: ele para no primeiro caso que falha, exatamente como o `--view=list`. O documento diz isso em vez de esconder — `suites.total` é o que o registro resolvido **registrou**, e toda suíte que o run não alcançou entra em `suites.skipped`. Então um run que parou na primeira de 105 suítes reporta `total: 105, failed: 1, skipped: 104, passed: 0`, nunca um total encolhido com `skipped: 0`. Os contadores de casos continuam sendo o que de fato rodou: os casos de uma suíte que nunca carregou são desconhecidos. Use uma varredura completa (`--view=heatmap`, ou um run completo num terminal) quando quiser todas as falhas de uma vez.
 
 ## Cobertura (Coverage)
 

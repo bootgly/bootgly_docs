@@ -34,9 +34,16 @@ the framework suites, `--console` and `--web` the platform suites. In a
 framework or platform checkout, `bootgly test` keeps running that checkout's
 own `tests/autoboot.php`.
 
-A project's `tests/autoboot.php` returns a `Suites` registry listing its suite
-directories (`bootgly project create` scaffolds one with an example suite); a
-file returning a single bare `Suite` is accepted as a one-suite project.
+A project's `tests/autoboot.php` **always** returns a `Suites` registry listing
+its suite directories, and each of those directories holds the `autoboot.php`
+that returns the `Suite` itself (`bootgly project create` scaffolds exactly
+that: a registry plus `tests/example/`). A registry that returns a `Suite`
+instead is refused, naming the file — that file would have to be read twice,
+once as the registry and once as the suite bootstrap it stood for, which makes
+any `class`, `function` or `define()` inside it fatal and runs every
+`pretest()` twice. A shipped example imported into a kit before this contract
+still carries the old layout — re-import it with
+`bootgly project create <Name> --from=<Name> --refresh`.
 
 ## Run a specific suite
 
@@ -92,6 +99,8 @@ php bootgly test --view=heatmap
 | `heatmap` | Renders one dashboard card per suite — rounded frame, a progress gauge and one colored square per assertion (green passed, soft-red failed, beige skipped). The gauge fills deterministically by **test cases** (their count is known upfront), while the squares are the individual **assertions** discovered as each case runs — so a suite of 63 cases can show 254 assertions. On interactive terminals the card paints live as cases run. All suites run to the end, failures are listed under each card — along with any debug output (`dump()`) the failing case captured — and the exit code is non-zero when any case failed. Default for full runs (`php bootgly test`) on an interactive terminal. Pass `--view=heatmap` explicitly to render the cards into a pipe or a file as well. |
 
 The card is composed by the runner from three components: a [Fieldset](/manual/CLI/UI/Base/Fieldset) boxes a [Charts Meter](/manual/CLI/UI/Components/Charts) (the cases progress) and a [Heatmap](/manual/CLI/UI/Components/Heatmap) (the assertions grid). AI agents (`AI_AGENT=1`) always receive the JSON results document, regardless of the view. When a run produces no document, `stdout` stays empty — the reason and the child's output go to `stderr`.
+
+An agent run keeps the **fail-fast** contract: it stops at the first failing case, exactly like `--view=list`. The document says so instead of hiding it — `suites.total` is what the resolved registry **registered**, and every suite the run did not reach is counted in `suites.skipped`. So a run that stopped at the first of 105 suites reports `total: 105, failed: 1, skipped: 104, passed: 0`, never a shrunken total with `skipped: 0`. Case counts stay what actually ran: the cases of a suite that never loaded are unknowable. Use a full sweep (`--view=heatmap`, or a plain full run on a terminal) when you want every failure in one pass.
 
 ## Coverage
 
