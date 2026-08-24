@@ -94,6 +94,27 @@ php bootgly project create App/API --from=scratch --interfaces=WPI --port=8080 -
 php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 ```
 
+**Todo projeto que você cria é bootado — um repositório git próprio.** O
+`create` roda o hook `bootgly project <Name> boot`: o scaffold — a assinatura
+do projeto, um registro `tests/` com uma suíte de exemplo e um `.gitignore`
+(ignorando `/vendor/`) — chega como um commit inicial, então `git log`,
+branches e um remote da sua escolha funcionam desde o primeiro minuto.
+`--no-git` pula o hook; numa máquina sem identidade git configurada, o
+repositório fica inicializado com o scaffold em stage e nada é commitado em
+seu nome. Um projeto aninhado (ex.: `App/API` dentro de `App`) entra no
+repositório do pai em vez de aninhar outro.
+
+Os **exemplos de plataforma embarcados** — os Demos, os jogos do Console e os
+apps Web — são importados automaticamente quando o kit é preparado (primeiro
+boot, e sempre que uma plataforma é inicializada), então um kit recém-criado
+sempre carrega guias vivos para pessoas e agentes de IA. Eles chegam **sem
+boot** — são guias, não trabalho seu; adote um com
+`php bootgly project <Name> boot`. Um exemplo que você apagar continua
+apagado. O kit em si nunca rastreia `projects/` — cada projeto é a unidade de
+versionamento, e o **Composer também é por projeto**: rode `composer require`
+dentro de `projects/<Name>/`, e o framework carrega o `vendor/autoload.php`
+daquele projeto quando ele sobe.
+
 ## Importando um projeto
 
 Qualquer diretório que carregue a **assinatura de projeto Bootgly** — um arquivo `*.Project.php` na raiz — é um projeto importável. O `bootgly project import` busca um a partir de uma URL de repositório git:
@@ -102,7 +123,7 @@ Qualquer diretório que carregue a **assinatura de projeto Bootgly** — um arqu
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
-O repositório é clonado (git do sistema), validado contra a assinatura, copiado para `projects/Project1/` (o arquivo de assinatura é renomeado para o novo leaf; o conteúdo em si é mantido como está) e registrado na allow-list. Toda regra que o registro impõe é verificada antes da cópia, então uma importação recusada não deixa nada para trás.
+O repositório é clonado (git do sistema) com o **histórico completo**, validado contra a assinatura, colocado em `projects/Project1/` — `.git`, remote `origin` e tudo, então você continua commitando e dando push de lá — e registrado na allow-list. Quando o nome de destino difere do da origem, o arquivo de assinatura é renomeado para o novo leaf e deixado **sem commit** para você revisar. Toda regra que o registro impõe é verificada antes da cópia, então uma importação recusada não deixa nada para trás.
 
 > [!WARNING]
 > Projetos importados executam código de terceiros ao serem iniciados — o comando pede confirmação (pule com `--yes`).
@@ -140,7 +161,18 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--port` — porta HTTP escrita no arquivo de um projeto WPI do zero (`8080` por padrão); um número entre 1 e 65535, recusada caso contrário;
 - `--description`, `--version`, `--author` — metadados escritos no arquivo do projeto; aspas e barras invertidas são armazenadas com segurança, caracteres de controle são recusados;
 - `--default` — marca a entrada como padrão de autoboot Web (WPI);
-- `--yes` — pula confirmações.
+- `--yes` — pula confirmações;
+- `--no-git` — pula o hook de boot (o repositório git próprio do projeto, criado e commitado por padrão nos creates from-scratch).
+
+### `project boot`
+
+Boota um projeto — inicializa os recursos que um projeto seu carrega. Hoje isso é o controle de versão (um repositório git próprio, com a árvore atual como commit inicial); mais responsabilidades chegarão aqui conforme o ciclo de vida do projeto crescer:
+
+```bash
+php bootgly project <Name> boot
+```
+
+O `create` roda o mesmo hook para todo projeto from-scratch. Os exemplos de plataforma embarcados chegam sem boot; este subcomando é como você adota um. Uma importação por URL já traz repositório e histórico próprios. Best-effort por design: shell desabilitado, git ausente ou identidade não configurada degradam para uma nota, nunca para uma falha.
 
 ### `project import`
 

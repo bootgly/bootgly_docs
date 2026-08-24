@@ -15,17 +15,39 @@ Execute todas as suítes registradas a partir da raiz do repositório:
 php bootgly test
 ```
 
-O runner carrega `tests/autoboot.php`, itera sobre cada diretório de suíte e imprime o resumo ao final. O código de saída é diferente de zero quando ao menos um `Test` falha — e também quando um run termina antes de a varredura completar, de modo que um run sequestrado ou interrompido nunca possa ser lido como sucesso. Todo run declara seu veredito no `stderr` como uma única linha `[test] PASSED|FAILED|INCOMPLETE — …`, que sobrevive a um `stdout` redirecionado.
+O runner carrega o registro do **escopo resolvido** (veja abaixo), itera sobre cada diretório de suíte e imprime o resumo ao final. A primeira linha de todo run declara esse escopo — `[test] scope: … — …` — de modo que dois relatórios sejam sempre comparáveis. O código de saída é diferente de zero quando ao menos um `Test` falha — e também quando um run termina antes de a varredura completar, de modo que um run sequestrado ou interrompido nunca possa ser lido como sucesso. Todo run declara seu veredito no `stderr` como uma única linha `[test] PASSED|FAILED|INCOMPLETE — …`, que sobrevive a um `stdout` redirecionado.
+
+## Onde você está decide o escopo
+
+Em um **Bootgly Kit**, `bootgly test` não tem flags para decorar: o diretório
+de trabalho seleciona o que roda.
+
+| Diretório de trabalho | O que roda |
+| --------------------- | ---------- |
+| dentro de um projeto (ex.: `projects/App`) | as suítes daquele projeto — o registro `tests/autoboot.php` dele; o caminho registrado mais longo vence, então um `projects/App/API` aninhado é um escopo próprio |
+| `projects/` | **todos** os projetos registrados, fundidos em um único run — o conjunto é impresso antes, e os totais reportam *registrados vs executados* |
+| um diretório não registrado sob `projects/` | recusado, nomeando o diretório e o registro — registre o projeto primeiro |
+| a raiz do kit (ou qualquer outro lugar) | em um terminal, um seletor pergunta qual projeto (ou todos); sem terminal, os projetos registrados e as invocações com `cd` são impressos no `stderr` e o run sai com código diferente de zero |
+
+As flags de plataforma sobrepõem o diretório de trabalho em qualquer lugar:
+`--bootgly` roda as suítes do framework, `--console` e `--web` as das
+plataformas. Em um checkout do framework ou de plataforma, `bootgly test`
+continua rodando o `tests/autoboot.php` do próprio checkout.
+
+O `tests/autoboot.php` de um projeto retorna um registro `Suites` listando os
+diretórios de suíte dele (`bootgly project create` gera um com uma suíte de
+exemplo); um arquivo que retorna uma única `Suite` é aceito como projeto de
+uma suíte só.
 
 ## Executar uma suíte específica
 
-Cada diretório de suíte listado em `tests/autoboot.php` é endereçável pelo seu índice (começando em 1):
+Cada diretório de suíte listado no registro resolvido é endereçável pelo seu índice (começando em 1):
 
 ```bash :toolbar="true";
 php bootgly test 16
 ```
 
-O exemplo acima executa somente a suíte `16`. Os índices seguem a ordem declarada no construtor `Suites(...)` do `tests/autoboot.php` raiz.
+O exemplo acima executa somente a suíte `16`. Os índices seguem a ordem declarada no construtor `Suites(...)` do registro resolvido — em um run fundido de `projects/`, o conjunto impresso mostra a faixa de índices de cada projeto.
 
 ## Executar um caso de teste específico
 

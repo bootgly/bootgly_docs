@@ -94,6 +94,26 @@ php bootgly project create App/API --from=scratch --interfaces=WPI --port=8080 -
 php bootgly project create --from=Demo/HTTP_Server_CLI --yes
 ```
 
+**Every project you create is booted — a git repository of its own.** `create`
+runs the `bootgly project <Name> boot` hook: the scaffold — the project
+signature, a `tests/` registry with an example suite and a `.gitignore`
+(ignoring `/vendor/`) — lands as one initial commit, so `git log`, branches
+and a remote of your choosing work from minute one. `--no-git` skips the hook;
+on a machine with no git identity configured, the repository is left
+initialized with the scaffold staged and nothing is committed in your name. A
+nested project (e.g. `App/API` inside `App`) joins its parent's repository
+instead of nesting one.
+
+The **shipped platform examples** — the Demos, the Console games and the Web
+apps — are imported automatically when the kit is prepared (first boot, and
+whenever a platform is initialized), so a fresh kit always carries living
+guides for people and AI agents alike. They arrive **unbooted** — they are
+guides, not your work; adopt one with `php bootgly project <Name> boot`. An
+example you delete stays deleted. The kit itself never tracks `projects/` —
+each project is the unit of versioning, and **Composer is per project too**:
+run `composer require` inside `projects/<Name>/`, and the framework loads that
+project's `vendor/autoload.php` when the project boots.
+
 ## Importing a project
 
 Any directory carrying the **Bootgly project signature** — a `*.Project.php` file at its root — is an importable project. `bootgly project import` fetches one from a git repository URL:
@@ -102,7 +122,7 @@ Any directory carrying the **Bootgly project signature** — a `*.Project.php` f
 php bootgly project import https://github.com/foo/project1 Project1
 ```
 
-The repository is cloned (system git), validated against the signature, copied into `projects/Project1/` (the signature file is renamed to the new leaf; the content itself is kept as-is) and registered in the allow-list. Every rule the registry enforces is checked before the copy, so a refused import leaves nothing behind.
+The repository is cloned (system git) with its **full history**, validated against the signature, placed into `projects/Project1/` — `.git`, `origin` remote and all, so you keep committing and pushing from there — and registered in the allow-list. When the target name differs from the source's, the signature file is renamed to the new leaf and left **uncommitted** for you to review. Every rule the registry enforces is checked before the copy, so a refused import leaves nothing behind.
 
 > [!WARNING]
 > Imported projects run third-party code when started — the command asks for confirmation (skip with `--yes`).
@@ -140,7 +160,18 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--port` — HTTP port written into a from-scratch WPI project file (`8080` default); a number between 1 and 65535, refused otherwise;
 - `--description`, `--version`, `--author` — metadata written into the project file; quotes and backslashes are stored safely, control characters are refused;
 - `--default` — flags the entry as the Web (WPI) autoboot default;
-- `--yes` — skips confirmations.
+- `--yes` — skips confirmations;
+- `--no-git` — skips the boot hook (the project's own git repository, created and committed by default on from-scratch creates).
+
+### `project boot`
+
+Boots a project — initializes the resources a project of your own carries. Today that is version control (a git repository of its own, with the current tree as the initial commit); more responsibilities will land here as the project lifecycle grows:
+
+```bash
+php bootgly project <Name> boot
+```
+
+`create` runs the same hook for every from-scratch project. The shipped platform examples arrive unbooted; this subcommand is how you adopt one. A URL import brings its own repository and history along. Best-effort by design: a disabled shell, a missing git or an unset identity degrades to a note, never to a failure.
 
 ### `project import`
 

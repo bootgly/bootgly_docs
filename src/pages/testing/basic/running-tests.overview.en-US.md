@@ -15,17 +15,38 @@ Run every registered suite from the repository root:
 php bootgly test
 ```
 
-The runner loads `tests/autoboot.php`, iterates over each suite directory, and prints the summary at the end. The exit code is non-zero when at least one specification fails — and also when a run ends before the sweep completes, so a hijacked or interrupted run can never be read as success. Every run states its verdict on `stderr` as a single `[test] PASSED|FAILED|INCOMPLETE — …` line, which survives a redirected `stdout`.
+The runner loads the registry of the **resolved scope** (see below), iterates over each suite directory, and prints the summary at the end. The first line of every run states that scope — `[test] scope: … — …` — so two reports are always comparable. The exit code is non-zero when at least one specification fails — and also when a run ends before the sweep completes, so a hijacked or interrupted run can never be read as success. Every run states its verdict on `stderr` as a single `[test] PASSED|FAILED|INCOMPLETE — …` line, which survives a redirected `stdout`.
+
+## Where you stand decides the scope
+
+In a **Bootgly Kit**, `bootgly test` has no flags to memorize: the working
+directory selects what runs.
+
+| Working directory | What runs |
+| ----------------- | --------- |
+| inside a project (e.g. `projects/App`) | that project's suites — its `tests/autoboot.php` registry; the longest registered path wins, so a nested `projects/App/API` is its own scope |
+| `projects/` | **every** registered project, merged into one run — the set is printed first, and the totals report *registered vs executed* |
+| an unregistered directory under `projects/` | refused, naming the directory and the registry — register the project first |
+| the kit root (or anywhere else) | on a terminal, a picker asks which project (or all); headless, the registered projects and their `cd`-based invocations are printed on `stderr` and the run exits non-zero |
+
+The platform flags override the working directory everywhere: `--bootgly` runs
+the framework suites, `--console` and `--web` the platform suites. In a
+framework or platform checkout, `bootgly test` keeps running that checkout's
+own `tests/autoboot.php`.
+
+A project's `tests/autoboot.php` returns a `Suites` registry listing its suite
+directories (`bootgly project create` scaffolds one with an example suite); a
+file returning a single bare `Suite` is accepted as a one-suite project.
 
 ## Run a specific suite
 
-Each suite directory listed in `tests/autoboot.php` is addressable by its 1-based index:
+Each suite directory listed in the resolved registry is addressable by its 1-based index:
 
 ```bash :toolbar="true";
 php bootgly test 16
 ```
 
-The example above runs only suite `16`. Indexes follow the order declared inside the root `tests/autoboot.php` `Suites(...)` constructor.
+The example above runs only suite `16`. Indexes follow the order declared inside the resolved registry's `Suites(...)` constructor — in a merged `projects/` run, the printed set shows each project's index range.
 
 ## Run a single test case
 
