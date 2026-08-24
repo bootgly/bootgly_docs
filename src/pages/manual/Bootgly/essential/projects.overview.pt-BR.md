@@ -82,10 +82,9 @@ php bootgly project create
 O wizard prepara o kit na primeira execução (uma multi-seleção dos submodules de plataforma extras — `Console` e/ou `Web` — mais os recursos via `bootgly boot`), depois pergunta o modo de criação:
 
 - **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
-- **Importando projetos de plataforma** — uma multi-seleção sobre os projetos **exportáveis** encontrados nas pastas de plataforma (como os Demos): cada projeto selecionado é copiado recursivamente sob o próprio caminho no `projects/` do seu workspace, sem perguntas. Cópias existentes a nível de usuário — que se sobrepõem às da plataforma no carregamento — são sinalizadas com `(overwrite)` no resumo e atualizadas;
 - **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly project import`: o repositório é clonado, validado contra a assinatura `*.Project.php` e registrado.
 
-Apenas projetos declarados com `exportable: true` na assinatura `new Project(...)` aparecem no picker de importação.
+Apenas projetos declarados com `exportable: true` na assinatura `new Project(...)` são estocados como exemplos ou copiados por `--from=<origem>`.
 
 Não-interativamente (CI, scripts, agentes de IA), tudo vem das flags:
 
@@ -162,7 +161,10 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--description`, `--version`, `--author` — metadados escritos no arquivo do projeto; aspas e barras invertidas são armazenadas com segurança, caracteres de controle são recusados;
 - `--default` — marca a entrada como padrão de autoboot Web (WPI);
 - `--yes` — pula confirmações;
-- `--no-git` — pula o hook de boot (o repositório git próprio do projeto, criado e commitado por padrão nos creates from-scratch).
+- `--no-git` — pula o hook de boot (o repositório git próprio do projeto, criado e commitado por padrão nos creates from-scratch);
+- `--refresh` — com `--from=<origem>`, substitui um destino que já é um repositório git. Sem ela o comando recusa: um repositório em `projects/` é a sua única cópia daquele histórico.
+
+O nome que você passa para o `create` é seu: um exemplo embarcado que tomaria o mesmo caminho não é estocado, então o primeiro comando num kit novo nunca perde para um nome que você nunca viu.
 
 ### `project boot`
 

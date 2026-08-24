@@ -9,13 +9,13 @@ Bootgly ships its own built-in test framework — no PHPUnit, no Composer script
 
 ## Run all suites
 
-Run every registered suite from the repository root:
+Run every registered suite from a framework or platform checkout root (in a **Kit**, where you stand decides the scope — see below):
 
 ```bash :toolbar="true";
 php bootgly test
 ```
 
-The runner loads the registry of the **resolved scope** (see below), iterates over each suite directory, and prints the summary at the end. The first line of every run states that scope — `[test] scope: … — …` — so two reports are always comparable. The exit code is non-zero when at least one specification fails — and also when a run ends before the sweep completes, so a hijacked or interrupted run can never be read as success. Every run states its verdict on `stderr` as a single `[test] PASSED|FAILED|INCOMPLETE — …` line, which survives a redirected `stdout`.
+The runner loads the registry of the **resolved scope** (see below), iterates over each suite directory, and prints the summary at the end. A human run opens with that scope — `[test] scope: …` followed by the registry it resolved, or the project set when a merged `projects/` run has no single registry; agent runs read the JSON results document instead. The exit status is non-zero for any failing or incomplete run.
 
 ## Where you stand decides the scope
 

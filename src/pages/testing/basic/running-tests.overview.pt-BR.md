@@ -9,13 +9,13 @@ O Bootgly traz seu próprio framework de testes embutido — sem PHPUnit, sem sc
 
 ## Executar todas as suítes
 
-Execute todas as suítes registradas a partir da raiz do repositório:
+Execute todas as suítes registradas a partir da raiz de um checkout do framework ou de uma plataforma (em um **Kit**, onde você está decide o escopo — veja abaixo):
 
 ```bash :toolbar="true";
 php bootgly test
 ```
 
-O runner carrega o registro do **escopo resolvido** (veja abaixo), itera sobre cada diretório de suíte e imprime o resumo ao final. A primeira linha de todo run declara esse escopo — `[test] scope: … — …` — de modo que dois relatórios sejam sempre comparáveis. O código de saída é diferente de zero quando ao menos um `Test` falha — e também quando um run termina antes de a varredura completar, de modo que um run sequestrado ou interrompido nunca possa ser lido como sucesso. Todo run declara seu veredito no `stderr` como uma única linha `[test] PASSED|FAILED|INCOMPLETE — …`, que sobrevive a um `stdout` redirecionado.
+O runner carrega o registro do **escopo resolvido** (veja abaixo), itera sobre cada diretório de suíte e imprime o resumo ao final. Um run humano abre com esse escopo — `[test] scope: …` seguido do registro resolvido, ou do conjunto de projetos quando um run fundido a partir de `projects/` não tem registro único; runs de agente leem o documento JSON de resultados no lugar. O status de saída é diferente de zero para qualquer run que falhe ou fique incompleto.
 
 ## Onde você está decide o escopo
 

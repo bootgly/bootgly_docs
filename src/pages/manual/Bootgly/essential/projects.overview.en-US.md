@@ -82,10 +82,9 @@ php bootgly project create
 The wizard prepares the kit on first run (a multi-selection of the extra platform submodules — `Console` and/or `Web` — plus `bootgly boot` resources), then asks for the creation mode:
 
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
-- **Importing platform projects** — a multi-selection over the **exportable** projects found in the platform folders (like the Demos): each selected project is recursively copied under its own path in your workspace's `projects/`, no questions asked. Existing user-level copies — which overwrite the platform ones on load — are flagged `(overwrite)` in the summary and refreshed;
 - **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly project import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
 
-Only projects declared with `exportable: true` in their `new Project(...)` signature appear in the import picker.
+Only projects declared with `exportable: true` in their `new Project(...)` signature are stocked as examples or copied by `--from=<source>`.
 
 Non-interactively (CI, scripts, AI agents), everything comes from flags:
 
@@ -161,7 +160,10 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--description`, `--version`, `--author` — metadata written into the project file; quotes and backslashes are stored safely, control characters are refused;
 - `--default` — flags the entry as the Web (WPI) autoboot default;
 - `--yes` — skips confirmations;
-- `--no-git` — skips the boot hook (the project's own git repository, created and committed by default on from-scratch creates).
+- `--no-git` — skips the boot hook (the project's own git repository, created and committed by default on from-scratch creates);
+- `--refresh` — with `--from=<source>`, replaces a target that is already a git repository. Without it the command refuses: a repository in `projects/` is your only copy of that history.
+
+A name you pass to `create` is yours: a shipped example that would take the same path is left unstocked, so the first command on a new kit never loses to a name you have not seen.
 
 ### `project boot`
 

@@ -10,7 +10,7 @@ The installer:
 
 1. Checks your environment (`git` + PHP **8.4+**);
 2. Clones the [bootgly.kit](https://github.com/bootgly/bootgly.kit) starter template into `./bootgly.kit` (pass another name with `curl -fsSL https://bootgly.com/install | bash -s -- mydir`);
-3. Initializes the **Bootgly platform** (git submodule) and other selected Platforms like `Console` and `Web`;
+3. Initializes the **Bootgly platform** (git submodule);
 4. Boot initial [resource dirs](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
 5. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
 6. Opens the **project wizard** (`php bootgly project create`).
@@ -74,7 +74,7 @@ bootgly.kit/
 
 Everything you own lives at the workspace level — `projects/`, `storage/` — while the platforms stay untouched inside their submodules. When a project exists both in your `projects/` and in a platform's, **your copy wins on load**: that is why re-importing a platform project simply refreshes your copy.
 
-> **The kit is a delivery vehicle — your projects are the repositories.** You never commit to the kit: everything the tooling writes at its root (`projects/`, `scripts/`, `storage/`) is ignored by it, so `git status` there stays clean and updating is just `git -C bootgly.kit pull` followed by `git submodule update --init`. Every project you create is **booted** — born a git repository of its own, scaffold as the initial commit (`bootgly project <Name> boot` is the same hook, on demand) — and **Composer is per project**: run `composer require` inside `projects/<Name>/`; the framework loads that project's `vendor/autoload.php` when it boots. The shipped examples — the framework Demos and each platform's projects — are imported automatically when the kit is prepared, as living guides for people and AI agents; they arrive unbooted (adopt one with `project <Name> boot`), and one you delete stays deleted.
+> **The kit is a delivery vehicle — your projects are the repositories.** You never commit to the kit: everything the tooling writes at its root (`projects/`, `scripts/`, `storage/`) is ignored by it, so `git status` there stays clean and updating is just `git -C bootgly.kit pull` followed by `git submodule update --init`. Every project you create **from scratch** is **booted** — born a git repository of its own, scaffold as the initial commit; a copy of a shipped example arrives unbooted, and `bootgly project <Name> boot` is the same hook, on demand — and **Composer is per project**: run `composer require` inside `projects/<Name>/`; the framework loads that project's `vendor/autoload.php` when it boots. The shipped examples — the framework Demos and each platform's projects — are imported automatically when the kit is prepared, as living guides for people and AI agents; they arrive unbooted (adopt one with `project <Name> boot`), and one you delete stays deleted.
 
 ## The project wizard
 
