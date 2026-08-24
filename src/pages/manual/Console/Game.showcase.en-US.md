@@ -27,7 +27,7 @@ The three games are exportable Console platform projects (`Console/projects/`) b
 Import them into your own kit with the project wizard (*Import projects from Platforms*) and run them natively:
 
 ```bash
-php bootgly project Snake start
-php bootgly project Pong start
-php bootgly project Invaders start
+php bootgly project Demo/Snake start
+php bootgly project Demo/Pong start
+php bootgly project Demo/Invaders start
 ```

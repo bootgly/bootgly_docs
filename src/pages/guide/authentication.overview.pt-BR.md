@@ -29,13 +29,13 @@ php bootgly project create
 Ou de forma não interativa:
 
 ```bash :toolbar="true";
-php bootgly project create Auth --from=Auth --yes
+php bootgly project create Auth --from=Demo/Auth --yes
 ```
 
 Depois inicie:
 
 ```bash :toolbar="true";
-php bootgly project Auth start
+php bootgly project Demo/Auth start
 ```
 
 Abra `http://localhost:8087`. Uma conta demo verificada vem seedada:
@@ -186,7 +186,7 @@ localhost.
 
 ## Configuração de e-mail
 
-`projects/Auth/Mails.php` escolhe uma de três vias de entrega pelo escopo de
+`projects/Demo/Auth/Mails.php` escolhe uma de três vias de entrega pelo escopo de
 config `mail`:
 
 1. **File sink (default)** — `MAIL_HOST` vazio: as mensagens renderizadas caem

@@ -441,4 +441,4 @@ O repositório inclui exemplos funcionais em `projects/Demo/HTTP_Server_CLI`:
 
 Adicione `'Authentication'` em `router/router.index.php`, inicie o servidor demo e abra `GET /auth` para ver comandos executáveis das rotas Bearer, JWT e Basic.
 
-Para os fluxos de sessão/cookie (registro, verificação de e-mail, login + remember-me, redefinição de senha), veja o demo exportável **Auth** em `bootgly-web/projects/Auth` e o **[guia de Authentication](/guide/authentication/overview/)**.
+Para os fluxos de sessão/cookie (registro, verificação de e-mail, login + remember-me, redefinição de senha), veja o demo exportável **Auth** em `bootgly-web/projects/Demo/Auth` e o **[guia de Authentication](/guide/authentication/overview/)**.

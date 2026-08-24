@@ -83,7 +83,7 @@ return new Project(
 Start it as any project:
 
 ```bash :toolbar="true";
-php bootgly project Site start
+php bootgly project Demo/Site start
 ```
 
 The platform ships **exportable projects** under `Web/projects/` — the wizard's *Import projects from Platforms* picker surveys them:

@@ -83,9 +83,9 @@ Escolha um jogo e pressione Run, depois **clique no terminal para focá-lo**. En
 No seu próprio kit, importe-os com o wizard (**Import projects from Platforms**) e rode nativamente:
 
 ```bash
-php bootgly project Snake start
-php bootgly project Pong start
-php bootgly project Invaders start
+php bootgly project Demo/Snake start
+php bootgly project Demo/Pong start
+php bootgly project Demo/Invaders start
 ```
 
 Eles são referências compactas para o módulo **Game**: loop de timestep fixo, Canvas com renderização por diff, detecção de tecla segurada, scenes, sprite sheets e matemática 2D.

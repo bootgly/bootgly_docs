@@ -94,6 +94,8 @@ O wizard te guia de um kit vazio até um projeto rodando:
 4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. De um remoto Git: informe a URL do repositório, o caminho de destino e a interface — o repositório é clonado com o histórico completo e validado (assinatura `*.Project.php`);
 5. **Confirmação** — revise o resumo e confirme. Os projetos ficam em `projects/<Caminho>/`, são registrados em `projects/Bootgly.projects.php`, e um projeto do zero é **bootado** — um repositório git próprio, com o scaffold como commit inicial.
 
+Comece como começar, o wizard termina com um resumo e os comandos seguintes: o projeto que ele criou (caminho, interface, metadados e, quando você importou, de onde ele veio) nomeado em todas as dicas, ou — quando você escolheu ficar com o que já está lá — os projetos que o kit já tem, agrupados pela plataforma que os entrega.
+
 Depois, inicie:
 
 ```bash
@@ -180,10 +182,10 @@ Isso é exatamente o que o wizard gera para um projeto `WPI` (mais um `router/` 
 
 ## Namespaces de projeto
 
-As classes do próprio projeto — controllers, models, resources, games — usam um **namespace simples que espelha o caminho do projeto**, sem o prefixo `projects\`. Uma classe em `projects/Blog/Controllers/Posts.php` declara:
+As classes do próprio projeto — controllers, models, resources, games — usam um **namespace simples que espelha o caminho do projeto**, sem o prefixo `projects\`. Uma classe em `projects/Demo/Blog/Controllers/Posts.php` declara:
 
 ```php
-namespace Blog\Controllers;
+namespace Demo\Blog\Controllers;
 
 class Posts { /* ... */ }
 ```
@@ -191,7 +193,7 @@ class Posts { /* ... */ }
 e é importada de qualquer lugar do projeto como:
 
 ```php
-use Blog\Controllers\Posts;
+use Demo\Blog\Controllers\Posts;
 ```
 
 O primeiro segmento é a raiz do projeto (`Blog`), correspondendo à pasta dentro de `projects/`. Caminhos aninhados também espelham as pastas — `projects/Demo/HTTP_Server_CLI/Models/DemoPost.php` → `namespace Demo\HTTP_Server_CLI\Models;`.

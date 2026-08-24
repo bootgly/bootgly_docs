@@ -156,9 +156,9 @@ $Field->clamp($Ship);                        // pin a point into a zone
 The platform ships three complete games as exportable projects (`Console/projects/`): the classic **Snake** (arrow steering, hold-to-accelerate), **Pong** vs a simple AI (keystroke-impulse paddle — tap to nudge, hold to stream — and deflection by hit offset) and **Invaders** (a sprite-sheet formation that marches faster as it shrinks — a mutable Timer interval — with a one-shot fire cooldown, Vector-integrated projectiles and Zone collisions) — all with Menu → Play → Over scenes, square-pixel boards fitted and centered to the terminal, and the score on the Statusbar. Play them in the [live showcase](/manual/Console/Game/showcase), import them with the wizard or run them from the platform repo:
 
 ```bash
-php bootgly project Snake start
-php bootgly project Pong start
-php bootgly project Invaders start
+php bootgly project Demo/Snake start
+php bootgly project Demo/Pong start
+php bootgly project Demo/Invaders start
 ```
 
 ---

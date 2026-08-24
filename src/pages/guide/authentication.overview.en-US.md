@@ -29,13 +29,13 @@ php bootgly project create
 Or non-interactively:
 
 ```bash :toolbar="true";
-php bootgly project create Auth --from=Auth --yes
+php bootgly project create Auth --from=Demo/Auth --yes
 ```
 
 Then start it:
 
 ```bash :toolbar="true";
-php bootgly project Auth start
+php bootgly project Demo/Auth start
 ```
 
 Open `http://localhost:8087`. A verified demo account ships seeded:
@@ -185,7 +185,7 @@ Session and remember cookies ship with `Secure; HttpOnly; SameSite=Lax`
 
 ## Mail setup
 
-`projects/Auth/Mails.php` picks one of three delivery lanes from the `mail`
+`projects/Demo/Auth/Mails.php` picks one of three delivery lanes from the `mail`
 config scope:
 
 1. **File sink (default)** — `MAIL_HOST` empty: rendered messages land in

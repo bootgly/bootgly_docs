@@ -83,9 +83,9 @@ Pick a game and press Run, then **click the terminal to focus it**. Enter starts
 In your own kit, import them with the wizard (**Import projects from Platforms**) and run natively:
 
 ```bash
-php bootgly project Snake start
-php bootgly project Pong start
-php bootgly project Invaders start
+php bootgly project Demo/Snake start
+php bootgly project Demo/Pong start
+php bootgly project Demo/Invaders start
 ```
 
 They are compact references for the **Game** module: fixed-timestep loop, diff-rendered Canvas, held-key detection, scenes, sprite sheets and 2D math.

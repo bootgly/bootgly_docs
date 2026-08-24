@@ -65,7 +65,7 @@ And give it a `.Project.php` signature whose `boot` closure runs the app:
 ```php
 use Bootgly\API\Projects\Project;
 
-use Snake\Snake;
+use Demo\Snake\Snake;
 
 
 return new Project(
@@ -85,7 +85,7 @@ return new Project(
 Start it as any project:
 
 ```bash :toolbar="true";
-php bootgly project Snake start
+php bootgly project Demo/Snake start
 ```
 
 The platform ships **exportable projects** under `Console/projects/` — the wizard's *Import projects from Platforms* picker surveys them (the Snake and Pong games ship there).

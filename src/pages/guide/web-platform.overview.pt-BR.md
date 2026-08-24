@@ -126,10 +126,10 @@ A paginação vem do core: `$Response->Database->paginate(Task::class)` lê `?pa
 A plataforma inclui quatro projetos exportáveis completos — importe-os com o wizard (**Import projects from Platforms**) e execute:
 
 ```bash
-php bootgly project Blog start    # MVC: CRUD de posts + forms CSRF + SQLite → :8080
-php bootgly project Tasks start   # REST: JWT + problem+json + paginação    → :8090
-php bootgly project Chat start    # Salas WS em tempo real (client incluso) → :8085
-php bootgly project Site start    # Páginas de landing + layouts + estáticos → :8088
+php bootgly project Demo/Blog start    # MVC: CRUD de posts + forms CSRF + SQLite → :8080
+php bootgly project Demo/Tasks start   # REST: JWT + problem+json + paginação    → :8090
+php bootgly project Demo/Chat start    # Salas WS em tempo real (client incluso) → :8085
+php bootgly project Demo/Site start    # Páginas de landing + layouts + estáticos → :8088
 ```
 
 Cada um é uma referência compacta: **Blog** para o ciclo MVC completo (models do ORM, migrations + seeds no boot, flash de Session, tokens CSRF mascarados), **Tasks** para o shell REST, **Chat** para os Channels de WebSocket (abra <http://localhost:8085> em duas abas — o servidor WS serve a própria página do cliente) e **Site** para páginas despachadas por controller sem banco.

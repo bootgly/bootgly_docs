@@ -27,7 +27,7 @@ Os três jogos são projetos exportáveis da plataforma Console (`Console/projec
 Importe-os para o seu próprio kit com o wizard de projetos (*Import projects from Platforms*) e rode nativamente:
 
 ```bash
-php bootgly project Snake start
-php bootgly project Pong start
-php bootgly project Invaders start
+php bootgly project Demo/Snake start
+php bootgly project Demo/Pong start
+php bootgly project Demo/Invaders start
 ```

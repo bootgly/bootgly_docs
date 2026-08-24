@@ -94,6 +94,8 @@ The wizard guides you from an empty kit to a running project:
 4. **Project** — from scratch: pick the project path (e.g. `App` or `App/API`), interface (`CLI` or `WPI`), port, description, version and author. From a Git remote: type the repository URL, the target path and the interface — the repository is cloned with its full history and validated (`*.Project.php` signature);
 5. **Confirm** — review the summary and confirm. Projects land in `projects/<Path>/`, are registered in `projects/Bootgly.projects.php`, and a from-scratch project is **booted** — a git repository of its own, scaffold as the initial commit.
 
+However you start, the wizard closes with a summary and the commands to run next: the project it created (path, interface, metadata, and where it came from when you imported one) named in every tip, or — when you chose to stand pat — the projects the kit already holds, grouped by the platform that ships them.
+
 Then boot it:
 
 ```bash
@@ -180,10 +182,10 @@ This is exactly what the wizard generates for a `WPI` project (plus a `router/` 
 
 ## Project namespaces
 
-A project's own classes — controllers, models, resources, games — use a **bare namespace that mirrors the project path**, with no `projects\` prefix. A class at `projects/Blog/Controllers/Posts.php` declares:
+A project's own classes — controllers, models, resources, games — use a **bare namespace that mirrors the project path**, with no `projects\` prefix. A class at `projects/Demo/Blog/Controllers/Posts.php` declares:
 
 ```php
-namespace Blog\Controllers;
+namespace Demo\Blog\Controllers;
 
 class Posts { /* ... */ }
 ```
@@ -191,7 +193,7 @@ class Posts { /* ... */ }
 and is imported from anywhere in the project as:
 
 ```php
-use Blog\Controllers\Posts;
+use Demo\Blog\Controllers\Posts;
 ```
 
 The first segment is the project root (`Blog`), matching the folder under `projects/`. Nested paths mirror the folders too — `projects/Demo/HTTP_Server_CLI/Models/DemoPost.php` → `namespace Demo\HTTP_Server_CLI\Models;`.

@@ -156,9 +156,9 @@ $Field->clamp($Ship);                        // prende um ponto dentro de uma zo
 A plataforma traz três jogos completos como projetos exportáveis (`Console/projects/`): o clássico **Snake** (direção pelas setas, aceleração ao segurar), o **Pong** contra uma IA simples (raquete por impulso de tecla — toque ajusta, segurar acelera — e deflexão pelo ponto de impacto) e o **Invaders** (uma formação de sprite sheet que marcha mais rápido conforme encolhe — um interval mutável de Timer — com cooldown de tiro one-shot, projéteis integrados por Vector e colisões por Zone) — todos com scenes Menu → Play → Over, tabuleiros de pixels quadrados ajustados e centrados no terminal, e o placar na Statusbar. Jogue-os no [showcase ao vivo](/manual/Console/Game/showcase), importe-os pelo wizard ou rode-os do repo da plataforma:
 
 ```bash
-php bootgly project Snake start
-php bootgly project Pong start
-php bootgly project Invaders start
+php bootgly project Demo/Snake start
+php bootgly project Demo/Pong start
+php bootgly project Demo/Invaders start
 ```
 
 ---
