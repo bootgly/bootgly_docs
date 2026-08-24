@@ -79,8 +79,9 @@ Todo valor é re-emitido como um literal PHP escapado, o arquivo é verificado p
 php bootgly project create
 ```
 
-O wizard prepara o kit na primeira execução (uma multi-seleção dos submodules de plataforma extras — `Console` e/ou `Web` — mais os recursos via `bootgly boot`), depois pergunta o modo de criação:
+O wizard prepara o kit na primeira execução — todos os submodules de plataforma (`Console` e `Web`), os recursos via `bootgly boot` e os exemplos embarcados, nada disso perguntado —, depois pergunta o modo de criação:
 
+- **Usar o que já foi importado** — o primeiro modo não cria nada. Um kit preparado já carrega todos os projetos exportáveis das plataformas, então ficar como está e abrir um deles é uma forma legítima de começar; a opção informa quantos o kit tem;
 - **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
 - **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly project import`: o repositório é clonado, validado contra a assinatura `*.Project.php` e registrado.
 
@@ -154,7 +155,7 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
    [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--default] [--yes]
 ```
 
-- `--platform` — plataformas extras a configurar na primeira execução do kit, separadas por vírgula (inicializa os submodules `Console`/`Web` e roda o `bootgly boot`);
+- `--platform` — restringe o que a primeira execução do kit configura, separado por vírgula. Todas as plataformas são configuradas por padrão (submodules `Console` e `Web` inicializados, `bootgly boot` executado, exemplos embarcados importados), então essa flag só importa quando você quer menos: `--platform=console` para uma delas, `--platform=none` para ficar só com a plataforma base. Uma execução posterior configura apenas o que ela nomear — uma plataforma que você removeu continua removida;
 - `--from` — `scratch` (padrão) ou o caminho de um projeto de plataforma (ex.: `Demo/HTTP_Server_CLI`). Importações de plataforma mantêm o próprio caminho (`<Name>` é opcional) e atualizam uma cópia existente — a cópia nova é construída ao lado da antiga e trocada só depois de completa. Só uma cópia de projeto (um diretório com `*.Project.php` na raiz) é atualizada; um grupo de projetos ou um diretório feito à mão nesse caminho é recusado, nunca substituído;
 - `--interfaces` — interface vinculada a um projeto do zero (`CLI` por padrão);
 - `--port` — porta HTTP escrita no arquivo de um projeto WPI do zero (`8080` por padrão); um número entre 1 e 65535, recusada caso contrário;
