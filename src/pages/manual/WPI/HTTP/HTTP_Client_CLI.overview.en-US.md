@@ -91,7 +91,7 @@ The `configure()` method accepts the following parameters:
 |---|---|---|---|
 | `maxRedirects` | `int` | `10` | Maximum redirects to follow (0 = disabled). |
 | `allowInsecureRedirect` | `bool` | `false` | Follow a redirect that steps down from `https` to `http`. |
-| `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds. |
+| `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds, per dial attempt. On an adopted reactor the dial and the TLS handshake park instead of blocking the host loop (0 = no timeout). |
 | `timeout` | `int\|float` | `30` | Response timeout in seconds. |
 | `maxResponseBytes` | `int` | `0` | Maximum raw response bytes — headers + body (0 = unbounded). |
 | `maxRetries` | `int` | `0` | Maximum retries on failure (0 = disabled). |
@@ -296,7 +296,9 @@ A redirect chain never re-points the client. Wherever the chain ends — another
 
 ## One client, one origin
 
-A client is bound to the origin you give `configure()`, and instances do not interfere: two clients in the same process each keep their own host, port, TLS options and pool. What remains process-wide is the event loop, the event handlers registered through `on()`, and event-driven mode itself — so run at most one *event-driven* client per process.
+A client is bound to the origin you give `configure()`, and instances do not interfere: two clients in the same process each keep their own host, port, TLS options and pool. Nothing is process-wide — each instance owns its own reactor, its own `on()` hooks, its own counters and its own pool, so any number of clients can run side by side in one process.
+
+Event-driven mode is per instance too, and it is exclusive with reactor adoption: a client that adopted a host reactor through `react()` cannot enter event-driven mode — `on()` refuses it, and `start()` refuses to run. Event-driven mode owns a loop; an adopted-reactor client borrows one. Pick one ownership model per client.
 
 ## Timeouts
 
@@ -315,6 +317,10 @@ if ($Response->code === 0) {
 ```
 
 `code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, or one too large to be real).
+
+The two timeouts bound different phases. `connectTimeout` bounds each **dial attempt** — the TCP connect and the TLS handshake together; it is spent again on every attempt (a retry, a redirect leg, a replay). `timeout` arms only the **response window**, and only once the connection is up and the request has been dispatched.
+
+That split matters on an adopted reactor (see [Embedded Mode](#embedded-mode)): a peer that accepts the TCP connection but never negotiates keeps the deferred Fiber parked until `connectTimeout` elapses. With `connectTimeout = 0` there is no dial deadline at all, and the Fiber stays parked until the deferral's generation is cancelled.
 
 ## Retries & Backoff
 
@@ -415,6 +421,91 @@ $Client->start();
 | `Events::DataWrite` | `Closure($Socket, $Connection)` | Called after request data is written. |
 | `Events::ResponseReceive` | `Closure(Request, Response)` | Called when a complete HTTP response is received. |
 
+## Embedded Mode
+
+A client can run **inside** another runtime instead of driving a loop of its own. In embedded mode it adopts the host's reactor — typically an HTTP server worker's — and every wait parks the calling Fiber instead of pumping a private event loop. The worker keeps serving its other connections while the upstream answers.
+
+The hand-rolled recipe, inside a deferred response, is four calls in this order:
+
+```php
+use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+
+
+return $Response->defer(function (Response $Response) {
+   $Client = new HTTP_Client_CLI(HTTP_Client_CLI::MODE_EMBEDDED);
+   $Client->react(TCP_Server_CLI::$Event);
+   $Client->schedule(fn (mixed $value = null): Response => $Response->wait($value));
+   $Client->configure(host: '127.0.0.1', port: 8080);
+
+   $Upstream = $Client->request(method: 'GET', URI: '/users/1');
+
+   $Response->JSON->send(['code' => $Upstream->code]);
+});
+```
+
+- `MODE_EMBEDDED` — the client runs inside another process's runtime: no process state lock, no Commands/Terminal, no shutdown signal broadcast and no debugging-vars overwrite. The host owns all of those.
+- `react()` — adopt the host's reactor. The client stops owning its loop: `halt()` releases only its own accounting and never destroys the host reactor, and `start()` throws. It must be called before any connection is opened.
+- `schedule()` — inject the wait bridge. `$Response->wait()` parks the deferred Fiber on a readiness (or a resource, or `null`), and the client uses that bridge for every wait it would otherwise spend inside a loop.
+- `configure()` — the same origin configuration as any other client.
+
+### What parks
+
+`request()` parks the deferred Fiber until the `Response` is complete. `batch()` + `drain()` park it until every batched request settles — `drain()` does not run a loop here, it parks.
+
+The dial parks too: opening the connection parks on write readiness and the TLS handshake parks on read readiness, in 1-second slices bounded by the dial deadline. So an unreachable or silent upstream costs the worker nothing but a dialing socket — the reactor keeps ticking and the other connections keep being served.
+
+### One Fiber owns one client
+
+An embedded client is driven by exactly **one** Fiber. Code running on the reactor stack — a timer callback, another connection's handler — never dials: it enqueues the request and wakes the owner Fiber, which services the queue between parks. Retry campaigns follow the same rule: the backoff timer fires on the host reactor stack and only hands the re-dispatch over; the owner Fiber performs it.
+
+Do not share one embedded client across deferred contexts, and do not call `request()` from a reactor callback.
+
+### Read the request inside the Fiber
+
+Inside the deferred Fiber, read inbound-request state from `WPI->Request` — never from a `$Request` captured by `use ()`:
+
+```php
+return $Response->defer(function (Response $Response) {
+   $URI = WPI->Request->URI;  // ✅ this deferral's own admitted request
+   // ...
+});
+```
+
+`defer()` clones the admitted request into the deferral and installs it as `WPI->Request` for every execution segment of that Fiber. The live `$Request` object, on the other hand, belongs to whatever exchange the worker is currently decoding — by the time the Fiber resumes it may already carry another, interleaved request.
+
+### Failure, abort and the parked episode
+
+Every failure terminal resolves the parked episode: the Fiber resumes exactly once, with `code === 0` and a named `status` — the same contract the standalone client honors. That includes the two failures unique to this mode:
+
+- An fd-budget rejection by the host reactor (*selector admission*) fails the in-flight set deterministically instead of hanging the Fiber forever.
+- Capacity starvation — a whole silent deadline elapsed and the queue still could not be paired with a connection while nothing is in flight — fails the queue loud instead of parking indefinitely.
+
+`abort()` abandons everything at once: queued, in-flight and retrying requests terminalize with code `0` (`'Connection Failed'`, or `'Truncated Response'` once bytes had arrived), and **every** connection is closed — idle keep-alive ones included, because they hold reactor registrations too. The client stays usable and the next `request()` dials afresh, but the pool floor (`pool['min']`) is not re-warmed: warm-up is per configuration, and the pool re-fills on demand up to `pool['max']`. A parked drain episode, if one is open, is woken to observe the quiescence.
+
+`unpark()` is the companion for a context that will **never** resume — an evicted Fiber whose generation was already settled. It retires that episode's notifier. Never call it while the parked Fiber can still resume: the reactor still holds the read end. `$parked` tells you whether an episode is open at all.
+
+### Prefer the response resource
+
+Everything above is what the built-in HTTP response resource already does for you. Register it once and call it from `defer()`:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\HTTP;
+
+
+$HTTP_Server_CLI->configure(responseResources: [
+   'Upstream' => static fn (object $Context): HTTP => new HTTP(host: 'api.example.com', secure: [])
+]);
+
+$Response->defer(function (Response $Response) {
+   $Upstream = $Response->Upstream->request(method: 'GET', URI: '/users/1');
+   $Response->JSON->send(['code' => $Upstream->code]);
+});
+```
+
+It wires `MODE_EMBEDDED`, `react()` and `schedule()` for you, and it releases the client when the deferral settles. Reach for the hand-rolled recipe only when you need a client the resource does not give you. See the [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/) page.
+
 ## 100-Continue Support
 
 The client automatically handles `Expect: 100-continue` for large request bodies:
@@ -436,17 +527,18 @@ $Response = $Client->request(
 
 The HTTP Client CLI is built on top of the TCP Client CLI infrastructure:
 
-| Layer | Component | Lines |
-|---|---|---|
-| **TCP** | `TCP_Client_CLI` + Connections + Packages | ~1,200 |
-| **HTTP** | `HTTP_Client_CLI` + Request + Response + Encoders/Decoders | ~2,500 |
-| **Total** | Source code (excluding tests) | **~3,700** |
+| Layer | Component |
+|---|---|
+| **TCP** | `TCP_Client_CLI` + Connections + Packages |
+| **HTTP** | `HTTP_Client_CLI` + Request + Response + Encoders/Decoders |
 
-The same event loop (`Select`) that powers the HTTP Server also powers the HTTP Client. They share the same connection management and non-blocking I/O model.
+Each client instance owns a `Select` reactor of its own — the same reactor class that powers the HTTP Server — or adopts a host's through `react()` (see [Embedded Mode](#embedded-mode)). Connection management and the non-blocking I/O model are shared with the server either way.
 
 ## Reference
 
 ### `Bootgly\WPI\Nodes\HTTP_Client_CLI`
+
+`react()`, `schedule()`, `$Event`, `$owned`, `$Wait` and `MODE_EMBEDDED` are inherited unchanged from [`TCP_Client_CLI`](/manual/WPI/TCP/TCP_Client_CLI/) and are not repeated below.
 
 ```php
 public function configure (
@@ -470,7 +562,7 @@ public function request (
 ): self|Response
 ```
 
-Sends an HTTP request. In sync mode it blocks until the `Response` is complete (following redirects and running retries). In batch mode it returns a `Response` reference immediately — populated later by `drain()`. In event-driven mode it returns `self`.
+Sends an HTTP request. In sync mode it blocks until the `Response` is complete (following redirects and running retries). In batch mode it returns a `Response` reference immediately — populated later by `drain()`. In event-driven mode it returns `self`. On an adopted reactor the deferred Fiber parks until the `Response` is complete.
 
 ```php
 public function batch (): void
@@ -482,7 +574,25 @@ Enters batch mode: subsequent `request()` calls are deferred until `drain()` is 
 public function drain (): void
 ```
 
-Runs the event loop until every pending request completes, then leaves batch mode.
+Runs the event loop until every pending request completes, then leaves batch mode. On an adopted reactor it parks the calling Fiber until every pending request completes instead of running a loop.
+
+```php
+public function abort (): void
+```
+
+Abandons every queued, in-flight and retrying request and closes every connection — pooled keep-alive ones included. The client stays usable: the next `request()` dials afresh. The pool floor (`pool['min']`) is not re-warmed — warm-up is per configuration, and the pool re-fills on demand up to `pool['max']`. Abandoned requests terminalize with code `0` (`'Connection Failed'`, or `'Truncated Response'` once bytes arrived), and a parked drain episode, if one is open, is woken to observe the quiescence — its notifier is closed by the parked Fiber itself when it resumes; `unpark()` is for one that never will.
+
+```php
+public function unpark (): void
+```
+
+Retires the parked drain episode of a context that will never resume. The episode notifier is this client's own pair of descriptors, closed by the parked Fiber when it resumes; an evicted Fiber (its generation settled) never does, so the settled path retires the pair itself. Never call it while the parked Fiber can still resume — the reactor still holds the read end.
+
+```php
+public bool $parked { get; }
+```
+
+Whether a drain episode is currently parked on this client.
 
 ```php
 public null|bool $enableHTTP2 = null;

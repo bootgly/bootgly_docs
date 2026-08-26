@@ -438,6 +438,8 @@ The event loop supports up to approximately 1000 simultaneous file descriptors (
 
 A deferred response (`$Response->defer()`) outlives the handler that created it: the client can vanish, the worker can shut down, and the connection can be reused for the next request while the deferred work is still parked. Three collaborating pieces make that safe.
 
+Deferred work that calls an upstream through a response resource (`$Response->Upstream->request()`, see [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/)) parks the same way: the dial, the TLS handshake and the response wait all suspend the Fiber on the worker reactor, so the worker keeps serving its other connections — and when the deferral settles, normally or because the client left, the resource releases every upstream connection it opened.
+
 All three are **pay-for-use**. A synchronous request that nothing observes allocates none of them — no exchange, no token, no weak map.
 
 ### The exchange: one request's terminal owner

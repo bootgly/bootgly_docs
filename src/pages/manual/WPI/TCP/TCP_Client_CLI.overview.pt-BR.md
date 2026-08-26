@@ -34,9 +34,9 @@ $Client
 	->on(Events::ClientConnect, function ($Socket, $Connection) {
 		$Connection->output = "PING\r\n";
 
-		TCP_Client_CLI::$Event->add(
+		$Connection->Client->Event->add(
 			$Socket,
-			TCP_Client_CLI::$Event::EVENT_WRITE,
+			$Connection->Client->Event::EVENT_WRITE,
 			$Connection
 		);
 	})
@@ -45,9 +45,9 @@ $Client
 		$Connection->close();
 	})
 	->on(Events::DataWrite, function ($Socket, $Connection, $Package) {
-		TCP_Client_CLI::$Event->add(
+		$Connection->Client->Event->add(
 			$Socket,
-			TCP_Client_CLI::$Event::EVENT_READ,
+			$Connection->Client->Event::EVENT_READ,
 			$Connection
 		);
 	});
@@ -63,13 +63,13 @@ $Client
 		$Socket = $Client->connect();
 
 		if ($Socket) {
-			$Client::$Event->loop();
+			$Client->Event->loop();
 		}
 	})
 	->on(Events::ClientConnect, function ($Socket, $Connection) {
 		$Connection->output = "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n";
 
-		TCP_Client_CLI::$Event->add($Socket, TCP_Client_CLI::$Event::EVENT_WRITE, $Connection);
+		$Connection->Client->Event->add($Socket, $Connection->Client->Event::EVENT_WRITE, $Connection);
 	});
 ```
 
@@ -82,6 +82,7 @@ O construtor recebe uma das constantes de modo do cliente.
 | `TCP_Client_CLI::MODE_DEFAULT` | Modo single-process. Chama `connect()` e entra no event loop automaticamente quando não há hook `Events::WorkerStarted`. |
 | `TCP_Client_CLI::MODE_MONITOR` | Executa workers e mantém o processo master vivo em monitoramento até você parar o cliente. |
 | `TCP_Client_CLI::MODE_TEST` | Modo leve que pula a infraestrutura de processo/comandos para testes ou harnesses internos. |
+| `TCP_Client_CLI::MODE_EMBEDDED` | Modo biblioteca para um cliente que vive dentro de outro processo — tipicamente um worker de servidor HTTP. Pula a infraestrutura de processo/comandos como o `MODE_TEST` e, além disso, não mexe nas `Vars` globais de debugging: quem controla tudo isso é o processo hospedeiro. Combine com `react()` para rodar no reactor do hospedeiro. |
 
 ## Configuração
 
@@ -122,18 +123,103 @@ Registre callbacks de runtime com `on()`:
 > [!IMPORTANT]
 > `Connection` herda o estado de pacote, então o mesmo objeto carrega metadados do socket e também `output`, `input`, contadores e dados de expiração.
 
+## Adoção de reactor
+
+Cada instância do cliente tem o seu próprio reactor `Select`, construído no construtor sobre as suas próprias `Connections` e legível como `$Client->Event`. Esse é o padrão: o cliente dirige o próprio event loop e `start()` o executa.
+
+Um cliente embarcado em outro runtime não pode fazer isso — um segundo loop dentro de um processo que já tem um nunca chega a rodar. `react()` entrega ao cliente o reactor que aquele runtime já possui:
+
+```php
+$Client->react($Event);
+```
+
+A partir dessa chamada o cliente está *adotado*:
+
+- `$Client->owned` passa a ser `false`.
+- `start()` lança `LogicException`. O modo event-driven é dono do reactor por definição, então os dois modelos de posse são exclusivos.
+- `halt()` nunca destrói o loop; ele libera apenas a contabilidade do próprio cliente.
+
+A adoção precisa vir antes de qualquer conexão ser aberta — chamar `react()` depois disso lança `LogicException`.
+
+### O wait bridge
+
+Um cliente adotado também não pode bloquear: um `stream_select()` bloqueante dentro de um worker congela todas as outras conexões que aquele worker atende. `schedule()` instala o bridge que transforma essas esperas bloqueantes em parks:
+
+```php
+$Client->schedule(function (mixed $value = null): void {
+	Fiber::suspend($value);
+});
+```
+
+O bridge é uma closure que recebe um `Readiness` — ou um resource raw, ou `null` — e suspende a Fiber chamadora nele. Cabe ao hospedeiro retomar essa Fiber quando a readiness chegar, o que do lado do reactor é `schedule (Fiber $Fiber, mixed $value = null, int $flag = self::SCHEDULE_READ): bool`. É o mesmo contrato que os response resources do servidor HTTP usam.
+
+Com um bridge instalado, e apenas enquanto a chamada roda sobre uma Fiber, as duas esperas bloqueantes de um dial viram parks:
+
+- **`connect()` faz park em write readiness.** Primeiro vem uma sondagem não bloqueante, para que um dial que já resolveu não pague uma ida e volta ao reactor. Depois, fatias finitas de 1 s: cada fatia reprova o deadline do dial — `connectTimeout`, estreitado por `$deadline` e `$monotonicDeadline` quando definidos — nos dois relógios, o de parede e o monotônico, e cada acordar ressonda o socket sem bloquear.
+- **O handshake TLS faz park em read readiness**, nas mesmas fatias de 1 s contra os mesmos dois deadlines, entre as tentativas de `stream_socket_enable_crypto()`.
+
+A falha continua determinística — o cliente nunca entra em spin:
+
+| Situação | Resultado |
+|---|---|
+| O bridge para de suspender | Um tripwire conta 8 esperas consecutivas que retornaram em menos de 100 µs com o socket ainda não pronto e então falha o dial (ou o handshake), registrando em log. |
+| O reactor recusa o socket | Uma rejeição de `selector admission` — o orçamento de fds acabou — falha o dial (ou o handshake) de forma determinística e registra em log. |
+| O bridge lança qualquer outra coisa | A exceção propaga para o chamador. No handshake ela é relançada depois que a conexão é fechada, nunca disfarçada de falha de TLS. |
+| A Fiber é desenrolada no meio do dial | O socket é fechado em um `finally`. Ele ainda não está registrado em reactor nenhum, então nada mais o fecharia. |
+
+A adoção e o bridge são o mecanismo, não a API do dia a dia. As formas prontas são o [`HTTP_Client_CLI`](../HTTP/HTTP_Client_CLI) em modo embarcado e o response resource HTTP alcançado como `$Response->Upstream`, que já ligam `react()` e `schedule()` por você — veja as páginas deles. Use o `TCP_Client_CLI` diretamente apenas quando estiver embarcando um protocolo TCP raw dentro de um runtime hospedeiro.
+
+```php
+use Fiber;
+
+use Bootgly\WPI\Interfaces\TCP_Client_CLI;
+
+
+// $Event é o reactor do runtime hospedeiro; este código roda sobre uma Fiber dirigida por ele.
+$Client = new TCP_Client_CLI(TCP_Client_CLI::MODE_EMBEDDED);
+
+$Client
+	->react($Event)
+	->schedule(function (mixed $value = null): void {
+		// Um Readiness, um resource ou null: entregue ao hospedeiro e suspenda
+		// até o reactor retomar esta Fiber.
+		Fiber::suspend($value);
+	})
+	->configure(
+		host: '127.0.0.1',
+		port: 8080
+	);
+
+$Socket = $Client->connect();
+```
+
 ## Fluxo de Conexão
 
-O ciclo de vida do socket cliente se parece com isto:
+### Cliente autônomo
+
+O ciclo de vida padrão, em que o cliente é dono do loop e o executa:
 
 ```text
 configure() → start() → connect() → EVENT_CONNECT → Events::ClientConnect → EVENT_WRITE → Events::DataWrite → EVENT_READ → Events::DataRead → close()
 ```
 
 - `connect()` abre o socket com `STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT`.
-- Se a conexão não completar imediatamente, o cliente agenda um evento futuro de conexão no event loop.
+- Se a conexão não completar imediatamente, o cliente agenda um evento futuro de conexão no event loop, limitado pelo deadline do dial.
 - Quando a conexão é estabelecida, o hook `Events::ClientConnect` é chamado.
 - Os callbacks de escrita e leitura passam então a conduzir a conversa do protocolo.
+
+### Cliente adotado
+
+Com um reactor hospedeiro e um wait bridge, o dial é um park em vez de um evento de conexão agendado:
+
+```text
+configure() → react() → schedule() → connect() → park on write readiness → [TLS: park on read readiness] → Events::ClientConnect → EVENT_WRITE → Events::DataWrite → EVENT_READ → Events::DataRead → close()
+```
+
+- `start()` nunca é chamado — o processo hospedeiro já executa o loop.
+- Nenhum `EVENT_CONNECT` é armado: a Fiber chamadora faz park em write readiness e retoma quando o reactor a sinaliza.
+- Com `secure` configurado, o handshake então faz park em read readiness entre as tentativas de negociação.
+- Da conexão estabelecida em diante nada muda: os mesmos hooks disparam, no loop do hospedeiro.
 
 ## Leitura e Escrita de Dados Brutos
 
@@ -176,6 +262,9 @@ O modo monitor mantém o processo master anexado e registra o ciclo de vida dos 
 - `MODE_TEST` pula intencionalmente a infraestrutura de processo/comandos.
 - A superfície de comandos interativos é propositalmente mínima em comparação com `TCP_Server_CLI`.
 
+> [!WARNING]
+> **Breaking change na v1.0.0-beta.5.** O reactor, os hooks de transporte e os contadores agora são por instância. O antigo estático `TCP_Client_CLI::$Event` não existe mais — leia `$Client->Event`, ou `$Connection->Client->Event` de dentro de um hook. Código que referenciava o estático precisa ser atualizado. Em troca, dois clientes no mesmo processo não compartilham (nem sobrescrevem) loop, callbacks ou estatísticas.
+
 Veja [`Connection`](./TCP_Client_CLI/Connection) e [`Packages`](./TCP_Client_CLI/Packages) para os detalhes de baixo nível sobre sockets e pacotes.
 
 ## Exemplo Completo
@@ -210,7 +299,7 @@ return new Project(
 				$Socket = $Client->connect();
 
 				if ($Socket) {
-					$Client::$Event->loop();
+					$Client->Event->loop();
 				}
 			})
 			->on(Events::ClientConnect, function ($Socket, $Connection) {
@@ -225,19 +314,57 @@ return new Project(
 
 				$Connection->output = "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n";
 
-				TCP_Client_CLI::$Event->add($Socket, TCP_Client_CLI::$Event::EVENT_WRITE, $Connection);
+				$Connection->Client->Event->add($Socket, $Connection->Client->Event::EVENT_WRITE, $Connection);
 			})
 			->on(Events::ClientDisconnect, function ($Connection) use ($Client) {
-				$Client->log(
+				$Client->Logger->log(
 					'Connection #' . $Connection->id . ' (' . $Connection->address . ':' . $Connection->port . ')'
 					. ' from Worker with PID @_:' . $Client->Process->id . '_@ was closed! @\\;'
 				);
 			})
 			->on(Events::DataWrite, function ($Socket, $Connection, $Package) {
-				TCP_Client_CLI::$Event->add($Socket, TCP_Client_CLI::$Event::EVENT_READ, $Connection);
+				$Connection->Client->Event->add($Socket, $Connection->Client->Event::EVENT_READ, $Connection);
 			});
 
 		$Client->start();
 	}
 );
 ```
+
+## Referência
+
+```php
+public const int MODE_EMBEDDED = 4;
+```
+
+Modo embarcado/biblioteca, passado ao construtor: `new TCP_Client_CLI(TCP_Client_CLI::MODE_EMBEDDED)`. O cliente roda dentro do runtime de outro processo, então não pega lock de estado do `Process`, não monta superfície de `Commands`/Terminal, não dispara `SIGINT` de shutdown e não sobrescreve as `Vars` de debugging — tudo isso pertence ao hospedeiro.
+
+```php
+public protected(set) Events & Loops & Scheduler $Event;
+```
+
+O reactor em uso por esta instância. Todo cliente constrói o seu próprio `Select` sobre as suas `Connections` e o mantém, a menos que `react()` o substitua. Leitura pública, escrita apenas de dentro da classe.
+
+```php
+public protected(set) bool $owned = true;
+```
+
+Se este cliente ainda é dono — e pode destruir — o seu reactor. `react()` põe em `false`; a partir daí `halt()` deixa o loop em paz e `start()` se recusa a rodar.
+
+```php
+public private(set) null|Closure $Wait = null;
+```
+
+O bridge de parking instalado por `schedule()`, ou `null` quando nenhum foi instalado. Só é honrado em um reactor adotado e apenas de dentro de uma Fiber.
+
+```php
+public function react (Events & Loops & Scheduler $Event): self
+```
+
+Adota um reactor já pertencente a outro runtime. Põe `$owned` em `false` e devolve o cliente para encadeamento. Lança `LogicException` quando já existe conexão aberta — a adoção precisa preceder qualquer registro de socket.
+
+```php
+public function schedule (Closure $Wait): self
+```
+
+Instala o wait bridge usado pelas esperas com park de um cliente adotado. `$Wait` recebe um `Readiness` (ou um resource, ou `null`) e precisa suspender a Fiber chamadora nele. Devolve o cliente para encadeamento.

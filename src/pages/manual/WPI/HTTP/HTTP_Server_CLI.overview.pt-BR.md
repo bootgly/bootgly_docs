@@ -439,6 +439,8 @@ O event loop suporta aproximadamente 1000 file descriptors simultâneos (limite 
 
 Uma resposta deferred (`$Response->defer()`) sobrevive ao handler que a criou: o cliente pode sumir, o worker pode desligar e a conexão pode ser reaproveitada para a próxima requisição enquanto o trabalho deferido ainda está estacionado. Três peças colaboram para que isso seja seguro.
 
+Trabalho deferido que chama um upstream por um response resource (`$Response->Upstream->request()`, veja [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/)) estaciona do mesmo jeito: o dial, o handshake TLS e a espera pela resposta suspendem a Fiber no reactor do worker, então o worker continua atendendo as outras conexões — e quando o deferral termina, normalmente ou porque o cliente foi embora, o resource libera todas as conexões upstream que abriu.
+
 As três são **pay-for-use**. Uma requisição síncrona que ninguém observa não aloca nenhuma delas — sem exchange, sem token, sem weak map.
 
 ### O exchange: o dono terminal de uma requisição
