@@ -109,6 +109,8 @@ O método `configure()` aceita os seguintes parâmetros:
 | `requestMaxMultipartFiles` | `?int` | `null` | Número máximo de partes de arquivo aceitas em uma requisição multipart. Padrão: `1024`. |
 | `maxConnections` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. Padrão: `10000`; `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
 | `maxConnectionsPerIP` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: padrão `0` (ilimitado), porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
+| `connectionIdleTimeout` | `?int` | `null` | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. Padrão: `15`; `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
+| `deferredTimeout` | `?int\|float` | `null` | Segundos que uma resposta deferred (`$Response->defer()`) pode ficar estacionada no reactor antes de um `Response\Timeout` ser entregue no ponto de espera. Padrão: `0` (sem teto). Um `defer($work, timeout:)` por chamada tem precedência. Sem tratamento, o timeout responde `503 Service Unavailable` e registra um warning. |
 
 ```php
 $Server->configure(
@@ -126,6 +128,8 @@ $Server->configure(
    requestMaxMultipartFiles: 1024,                 // 1024 (padrão) — número máximo de partes de arquivo
    maxConnections: 10000,                          // 10000 (padrão) — teto global de conexões simultâneas por worker (0 = ilimitado)
    maxConnectionsPerIP: 0,                          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
+   connectionIdleTimeout: 15,                      // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
+   deferredTimeout: 0,                             // 0 (padrão, sem teto) — orçamento em segundos para um defer() estacionado; o timeout por chamada vence
 );
 ```
 
@@ -168,6 +172,44 @@ de se intercalar neles, a conexão para de ler input adicional, e o fechamento s
 acontece depois da drenagem — limitado pelo orçamento de saída pendente do worker e
 pelo deadline de stall de escrita. No HTTP/2 a mesma ordenação vale para o frame
 `GOAWAY` de encerramento, que sempre chega em uma fronteira limpa de frame.
+
+### Conexões ociosas
+
+Toda conexão estabelecida é supervisionada pelo reaper de ociosidade do transporte. Uma vez a cada
+`connectionIdleTimeout` segundos ele faz duas perguntas: o *servidor* concluiu alguma escrita desde o
+tick anterior, e a conexão ainda carrega trabalho pendente? Qualquer resposta positiva renova o lease
+por mais `connectionIdleTimeout`; o primeiro tick silencioso depois do último tick com atividade — ou
+depois do estabelecimento, para uma conexão que nunca escreveu — fecha a conexão.
+
+Bytes de entrada nunca renovam o lease: só uma escrita concluída pelo servidor, trabalho pendente retido
+ou um protocolo que o renove por conta própria (heartbeats do SSE, o supervisor do WebSocket). Um corpo de
+requisição que demore mais que `connectionIdleTimeout` para chegar é, portanto, fechado no meio do upload
+— aumente o knob (ou encerre uploads lentos num proxy) quando corpos grandes em links lentos forem
+esperados.
+
+**Trabalho pendente** é uma resposta deferred estacionada no reactor — um `defer()` esperando um banco,
+uma chamada upstream ou qualquer `$Response->wait()`. Ela não escreve nada enquanto espera, mas sua
+geração fica anexada à conexão (veja *Posse de teardown* abaixo), então o reaper a poupa enquanto
+estiver estacionada. O lease não é permanente: assim que o deferral responde, a conexão volta à regra
+comum de keep-alive e é ceifada depois da próxima janela de silêncio.
+
+Duas consequências que valem saber:
+
+- O reaper nunca limita uma resposta deferred. Use `deferredTimeout` — ou o `defer($work, timeout:)`
+  por chamada — para isso; veja *Deadlines* em *Ciclo de vida da resposta deferred*. Um deferral que
+  estaciona sem deadline próprio (`Readiness::read($socket)` não tem nenhum por padrão) e sem orçamento
+  segura a conexão e a Fiber até o cliente ir embora — limite-o, ou conte com `maxConnections`.
+- A janela é grosseira por desenho: o supervisor roda no alarme de um segundo do worker, então o corte
+  cai entre `N` e `N+1` segundos após o último tick com atividade (até `2N` a `2N+1` quando a escrita
+  cai logo depois de um tick).
+
+Protocolos de vida longa se comportam de outro jeito. Uma sessão WebSocket **substitui** o reaper pelo
+seu supervisor de ping/pong logo depois do upgrade, então `connectionIdleTimeout` deixa de se aplicar a
+ela. Um stream Server-Sent Events, em vez disso, **renova** o lease a partir do próprio supervisor, que
+roda a cada `min(10, interval, heartbeat)` segundos e nunca mais devagar que a expiração da própria
+conexão — então um `connectionIdleTimeout` curto só faz esse supervisor bater mais vezes.
+`connectionIdleTimeout: 0` desativa o reaper por completo — só faça isso atrás de um proxy que imponha
+o próprio timeout de ociosidade.
 
 ### SSL/TLS
 
@@ -479,6 +521,8 @@ interface Cancelling extends Contextualizing {}
 
 O marcador existe porque um exchange observado precisa ser fechado *deterministicamente* quando seu trabalho é cancelado — um scheduler incapaz de garantir isso deixaria a contabilidade de in-flight presa para sempre. O reactor `Select` do próprio Bootgly o implementa, então isso só te afeta se você substituir o reactor: um scheduler customizado que implemente apenas `Contextualizing` faz um `defer()` observado falhar cedo, antes de a requisição ser clonada ou de arquivos enviados serem movidos.
 
+O contrato base `Scheduler` também carrega `interrupt()` — o meio pelo qual um deadline alcança uma Fiber estacionada (veja *Deadlines* e a Referência). Um scheduler customizado precisa implementá-lo.
+
 ### Posse de teardown
 
 `Ownership` vincula donos de teardown a um escopo de transporte ou protocolo — uma conexão, uma stream HTTP/2 — sem adicionar métodos públicos a essas classes não-finais:
@@ -494,6 +538,62 @@ Ownership::close($Connection);            // notifica cada dono anexado exatamen
 - **Exatamente uma vez, sempre.** Anexar a um escopo *já fechado* notifica o dono imediatamente, e um segundo attach do mesmo dono não faz nada — inclusive um attach reentrante de dentro do próprio `disconnect()` dele.
 - **Fechar não custa nada quando ninguém anexou**, que é o caso comum de toda conexão e toda stream HTTP/2: o escopo guarda apenas um marcador terminal e nenhuma coleção.
 - **Um escopo fechado nunca reabre.** `detach()` nele é ignorado, então um attach tardio nunca pode ser notificado duas vezes.
+
+### Deadlines
+
+Um deferral estacionado é limitado por um **orçamento**, em segundos: o `deferredTimeout` global passado
+ao `configure()` (padrão `0` = sem teto) ou, com precedência, o `timeout` por chamada do `defer()`. O
+orçamento só é armado quando o trabalho de fato estaciona, e é desarmado no instante em que a geração
+termina — normalmente, por um handoff aninhado ou por teardown — então um deferral concluído nunca deixa
+um deadline velho para a Fiber que será reaproveitada em seguida.
+
+Quando ele estoura, o reactor entrega um `Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout` no
+ponto de suspensão da Fiber — **antes** de o exchange terminar. O trabalho deferido o vê exatamente como
+qualquer outra exceção lançada de `$Response->wait()` (ou de uma chamada de resource construída sobre
+ele): seus `catch` e `finally` rodam, e ele ainda pode escolher a própria resposta:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout;
+
+yield $Router->route('/report', function ($Request, Response $Response) {
+   return $Response->defer(function (Response $Response): void {
+      try {
+         // 'Upstream' é um HTTP response resource registrado em responseResources
+         $Upstream = $Response->Upstream->request('GET', '/report');
+         $Response->JSON->send(['code' => $Upstream->code]);
+      }
+      catch (Timeout $Timeout) {
+         $Response(code: 504, body: "O upstream demorou mais que {$Timeout->timeout}s.");
+      }
+   }, timeout: 2.5);
+}, GET);
+```
+
+Sem tratamento, o timeout é respondido com um `503 Service Unavailable` limpo — a página de erro do
+ambiente, sem trace de throwable — e um warning é registrado com a linha da requisição e o orçamento. O
+exchange termina com esse `503`, então a telemetria conta uma resposta `5xx`, não um cancelamento. Um
+orçamento por geração: um deferral que captura o `Timeout` e estaciona de novo não é rearmado.
+
+### Quando o cliente vai embora
+
+Se a conexão — ou a stream HTTP/2 — fecha enquanto o deferral ainda está estacionado, a geração dele é
+cancelada e a Fiber **nunca é retomada**: nenhum bloco `catch` roda, porque nada é lançado dentro dela.
+Em vez disso o reactor libera a Fiber no seu próximo safe point, fora de qualquer varredura de fila, e
+o PHP a desenrola — todo `finally` pendente roda na hora, antes de o worker voltar a esperar I/O.
+Coloque no `finally` a limpeza que não pode esperar — soltar um lock, fechar um arquivo, devolver um
+handle ao pool — e lembre de duas regras:
+
+- Não chame `wait()` nem um resource de dentro desse `finally`. O `wait()` não vai estacionar ali — a
+  capacidade de esperar da geração é revogada no instante do cancelamento, então ele devolve o
+  `Response` na hora e seu código segue como se tivesse esperado; nunca use isso para detectar o
+  desenrolar. Um resource recusa: o resource HTTP lança `LogicException` ("must be used inside a live
+  deferred context") e, sem captura, o resto do bloco é pulado.
+- Use o `$Response` entregue à sua closure, não o `WPI->Response` ambiente: o contexto do segmento de
+  execução não é religado durante o desenrolar.
+
+Um `Fiber::getCurrent()` guardado numa variável através de um `wait()` prende a Fiber à própria pilha e
+anula a liberação imediata — leia, use, `unset()`.
 
 ### Referência
 
@@ -538,3 +638,27 @@ public static function close (object $Scope): void
 ```
 
 Fecha um escopo e invoca `disconnect()` em cada dono anexado exatamente uma vez. Refechar é no-op.
+
+```php
+public static function check (object $Scope): bool
+```
+
+Se um escopo vivo ainda carrega pelo menos um dono anexado — a pergunta do reaper de ociosidade. `false` para um escopo fechado, um desconhecido ou um storage esvaziado por `detach()`.
+
+```php
+public function defer (Closure $work, int|float $timeout = 0): Response
+```
+
+Roda `$work` numa Fiber do pool que pode estacionar no reactor do worker. `$timeout` é o orçamento, em segundos, antes de um `Response\Timeout` ser entregue no ponto de espera; `0` usa `Response::$deferredTimeout`, onde `0` significa sem teto.
+
+```php
+public function interrupt (Fiber $Fiber, Throwable $Throwable): bool
+```
+
+(`Bootgly\ACI\Events\Scheduler`) Entrega `$Throwable` no ponto de suspensão de uma Fiber que este scheduler estacionou: a Fiber sai de todo assento de espera, é retomada com `Fiber::throw()` dentro do seu binding de segmento de execução, e o que ela suspender em seguida é enfileirado de novo — a geração dela fica intocada. Retorna `false` quando a Fiber não está estacionada neste scheduler (rodando, terminada, desanexada ou ligada a uma geração terminal, que é despejada em vez disso).
+
+```php
+final class Timeout extends RuntimeException
+```
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout` — entregue no ponto de suspensão de uma resposta deferred quando o orçamento dela estourou. `$timeout` (readonly, segundos) é o orçamento que estourou.

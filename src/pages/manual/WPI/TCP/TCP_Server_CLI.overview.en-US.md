@@ -262,7 +262,7 @@ At the connection layer, Bootgly tracks:
 - connection start time and last usage timestamp
 - TLS handshake state
 - write counters and global read/write stats
-- expiration timers (default: `15` seconds)
+- idle expiration timers, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `configure(connectionIdleTimeout:)`) — pending deferred work counts as activity
 - optional blacklist checks
 
 See [`Connection`](./TCP_Server_CLI/Connection) and [`Packages`](./TCP_Server_CLI/Packages) for the lower-level details.

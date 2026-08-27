@@ -276,7 +276,7 @@ Definitively terminates the HTTP response. When `$code` is given, it is set as t
 ## Deferred Responses (Async)
 
 ```php
-public function defer (Closure $work): Response;
+public function defer (Closure $work, int|float $timeout = 0): Response;
 ```
 
 Executes `$work` asynchronously via a PHP Fiber, allowing the event loop to handle other connections while this response is being prepared.
@@ -287,6 +287,8 @@ Inside `$work()`, call `$Response->wait()` to yield control back to the event lo
 - **Wait with a `resource`** → the Fiber resumes when `stream_select()` detects I/O readiness on that resource (I/O-bound scheduling).
 
 The response is sent automatically when `$work()` returns. If an exception is thrown, a `500 Internal Server Error` is returned.
+
+`$timeout` bounds, in seconds, how long the work may stay parked (`0` uses the server-wide `deferredTimeout`, where `0` means unbounded): when it elapses a `Response\Timeout` is thrown at the wait point — catch it to answer yourself, or let it answer `503 Service Unavailable`. A parked deferral is never cut by the connection idle reaper. See *Deferred Response Lifecycle* on the [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI) page.
 
 ### Tick-based example
 

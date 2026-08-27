@@ -262,7 +262,7 @@ Na camada de conexão, o Bootgly acompanha:
 - instante de criação e último uso
 - estado do handshake TLS
 - contadores de escrita e estatísticas globais de leitura/escrita
-- timers de expiração (padrão: `15` segundos)
+- timers de expiração por ociosidade, semeados por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `configure(connectionIdleTimeout:)`) — trabalho deferred pendente conta como atividade
 - verificações opcionais de blacklist
 
 Veja [`Connection`](./TCP_Server_CLI/Connection) e [`Packages`](./TCP_Server_CLI/Packages) para os detalhes de nível mais baixo.

@@ -277,7 +277,7 @@ Encerra definitivamente a resposta HTTP. Quando `$code` é informado, ele é def
 ## Respostas Assíncronas (Defer)
 
 ```php
-public function defer (Closure $work): Response;
+public function defer (Closure $work, int|float $timeout = 0): Response;
 ```
 
 Executa `$work` de forma assíncrona via PHP Fiber, permitindo que o event loop processe outras conexões enquanto esta resposta está sendo preparada.
@@ -288,6 +288,8 @@ Dentro de `$work()`, chame `$Response->wait()` para ceder o controle ao event lo
 - **Wait com um `resource`** → a Fiber retoma quando `stream_select()` detecta I/O pronto naquele recurso (agendamento por I/O).
 
 A resposta é enviada automaticamente quando `$work()` retorna. Se uma exceção for lançada, um `500 Internal Server Error` é retornado.
+
+`$timeout` limita, em segundos, quanto tempo o trabalho pode ficar estacionado (`0` usa o `deferredTimeout` global do servidor, onde `0` significa sem teto): quando estoura, um `Response\Timeout` é lançado no ponto de espera — capture-o para responder você mesmo, ou deixe-o responder `503 Service Unavailable`. Um deferral estacionado nunca é cortado pelo reaper de ociosidade da conexão. Veja *Ciclo de vida da resposta deferred* na página [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI).
 
 ### Exemplo tick-based
 
