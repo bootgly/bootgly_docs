@@ -98,6 +98,50 @@ The **Redis** driver is native by default — a blocking socket speaking RESP vi
 `Bootgly\ABI\Data\RESP` codec, with no Composer dependency. When `ext-redis` is loaded it is
 used as a faster C-path transport behind the same interface.
 
+## Atomic compare-and-mutate contract
+
+`Bootgly\ABI\Resources\Cache\Atomic` marks drivers whose `create()`, `swap()` and
+`evict()` operations are atomic across the complete visibility scope of their backend.
+**File**, **Memory**, **Shared-memory** and **Redis** implement that contract. **APCu** does
+not provide generic compare-and-evict, so it is not an `Atomic` driver; a custom driver opts
+in only after implementing all three primitives.
+
+| Operation | Guarantee |
+|---|---|
+| `create($key, $value, $TTL)` | Writes only when no live value owns the key |
+| `swap($key, $expected, $value, $TTL)` | Replaces only the exact expected value |
+| `evict($key, $expected)` | Deletes only the exact expected value |
+
+Security components that elect one winner across workers or hosts require this marker. In
+particular, a JWT `Vault` backed by a prepared Cache rejects APCu and non-atomic custom
+drivers at construction time:
+
+```php
+use Bootgly\ABI\Resources\Cache;
+use Bootgly\API\Security\JWT\Vault;
+
+$Cache = new Cache([
+   'driver' => 'redis',
+   'host' => 'redis.internal',
+   'prefix' => 'security:',
+]);
+
+$Vault = new Vault(
+   $Cache,
+   secret: getenv('JWT_VAULT_SECRET') ?: '' // same secret (>= 32 bytes) on every host
+);
+```
+
+`Vault::claim()` and `Vault::take()` use backend-atomic winner election. New Vault envelopes
+also carry an authenticated random nonce, so a stale compare-and-evict cannot remove a later
+same-value write (ABA). Legacy envelopes remain readable during a rolling update; the full
+nonce guarantee starts after legacy writers leave the fleet.
+
+> [!WARNING]
+> `Vault::lock()` is a host-local file lock, not a Redis/distributed multi-key transaction.
+> It serializes compound work inside one host only. Do not build a cross-host transaction by
+> composing several Vault keys under `lock()`.
+
 ## Configuration
 
 Pass an array (or a prepared `Cache\Config`) to the constructor:

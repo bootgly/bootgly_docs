@@ -100,6 +100,52 @@ O driver **Redis** é nativo por padrão — um socket bloqueante falando RESP v
 compartilhado `Bootgly\ABI\Data\RESP`, sem dependência Composer. Quando `ext-redis` está
 carregada, ela é usada como transporte mais rápido (caminho em C) atrás da mesma interface.
 
+## Contrato atômico de comparação e mutação
+
+`Bootgly\ABI\Resources\Cache\Atomic` marca drivers cujas operações `create()`, `swap()` e
+`evict()` são atômicas em todo o escopo de visibilidade do backend. **File**, **Memory**,
+**Shared-memory** e **Redis** implementam esse contrato. **APCu** não oferece um
+compare-and-evict genérico, então não é um driver `Atomic`; um driver customizado só deve
+aderir depois de implementar as três primitivas.
+
+| Operação | Garantia |
+|---|---|
+| `create($key, $value, $TTL)` | Grava somente quando nenhum valor vivo possui a chave |
+| `swap($key, $expected, $value, $TTL)` | Substitui somente o valor esperado exato |
+| `evict($key, $expected)` | Remove somente o valor esperado exato |
+
+Componentes de segurança que elegem um vencedor entre workers ou hosts exigem esse marcador.
+Em especial, um JWT `Vault` apoiado por um Cache preparado rejeita APCu e drivers customizados
+não atômicos durante a construção:
+
+```php
+use Bootgly\ABI\Resources\Cache;
+use Bootgly\API\Security\JWT\Vault;
+
+$Cache = new Cache([
+   'driver' => 'redis',
+   'host' => 'redis.internal',
+   'prefix' => 'security:',
+]);
+
+$Vault = new Vault(
+   $Cache,
+   secret: getenv('JWT_VAULT_SECRET') ?: '' // mesmo segredo (>= 32 bytes) em todo host
+);
+```
+
+`Vault::claim()` e `Vault::take()` elegem o vencedor atomicamente no backend. Novos envelopes
+do Vault também carregam um nonce aleatório autenticado, então um compare-and-evict obsoleto
+não remove uma gravação posterior de mesmo valor (ABA). Envelopes legados continuam legíveis
+durante uma atualização gradual; a garantia completa do nonce começa depois que as instâncias
+antigas que ainda gravam saem do conjunto.
+
+> [!WARNING]
+> `Vault::lock()` é um bloqueio de arquivo local ao host, não uma transação Redis distribuída
+> de múltiplas chaves.
+> Ele serializa trabalho composto somente dentro de um host. Não construa uma transação
+> entre hosts compondo várias chaves do Vault sob `lock()`.
+
 ## Configuração
 
 Passe um array (ou um `Cache\Config` pronto) ao construtor:
