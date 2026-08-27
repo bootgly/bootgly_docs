@@ -187,7 +187,12 @@ DBAL que o driver SQL usa, reaproveitando o codec `Bootgly\ABI\Data\RESP`:
 ```php
 use Bootgly\ADI\Databases\KV;
 
-$KV = new KV(['driver' => 'redis', 'host' => '127.0.0.1', 'port' => 6379]);
+$KV = new KV([
+   'driver' => 'redis',
+   'host' => '127.0.0.1',
+   'port' => 6379,
+   'secure' => ['mode' => 'disable'], // plaintext local explícito
+]);
 
 $KV->await($KV->command('SET', ['user:42', 'value']));
 $Get   = $KV->await($KV->command('GET', ['user:42']));
@@ -202,9 +207,34 @@ partir de `$Response->defer()` como qualquer outro recurso assíncrono, para que
 nunca chame `advance()` manualmente.
 
 > [!NOTE]
-> Escopo v1 do driver Redis KV assíncrono: TCP puro, um comando por conexão (sem pipelining).
-> `AUTH`/`SELECT` são enviados uma vez como preâmbulo na abertura da conexão; `SELECT` só
-> dispara para um índice `database` numérico.
+> O driver assíncrono faz pipeline de comandos em cada conexão do pool. `AUTH`/`SELECT` são
+> enviados uma vez como preâmbulo; `SELECT` só dispara para um índice `database` numérico.
+> Redis usa TLS implícito: `prefer` tenta TLS primeiro e só reconecta em plaintext se a
+> negociação falhar, enquanto `require`, `verify-ca` e `verify-full` nunca enviam RESP —
+> inclusive `AUTH` — antes de um handshake bem-sucedido. `disable` é plaintext explícito.
+
+Use um modo strict em deployment remoto. `verify-full` valida a cadeia do certificado e o
+nome do peer; `cafile` seleciona um bundle de CA privado e `peer` sobrescreve a identidade
+esperada:
+
+```php
+$KV = new KV([
+   'driver' => 'redis',
+   'host' => 'redis.internal',
+   'port' => 6380,
+   'password' => getenv('KV_PASS') ?: '',
+   'database' => '2',
+   'secure' => [
+      'mode' => 'verify-full',
+      'peer' => 'redis.internal',
+      'cafile' => '/run/secrets/redis-ca.pem',
+   ],
+]);
+```
+
+> [!WARNING]
+> `prefer` permite downgrade deliberadamente depois de uma geração TLS falhar. Use `require`,
+> `verify-ca` ou `verify-full` sempre que plaintext não for aceitável.
 
 ## Segurança
 

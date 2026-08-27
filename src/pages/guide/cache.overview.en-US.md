@@ -182,7 +182,12 @@ connection pool the SQL driver uses, reusing the `Bootgly\ABI\Data\RESP` codec:
 ```php
 use Bootgly\ADI\Databases\KV;
 
-$KV = new KV(['driver' => 'redis', 'host' => '127.0.0.1', 'port' => 6379]);
+$KV = new KV([
+   'driver' => 'redis',
+   'host' => '127.0.0.1',
+   'port' => 6379,
+   'secure' => ['mode' => 'disable'], // explicit local plaintext
+]);
 
 $KV->await($KV->command('SET', ['user:42', 'value']));
 $Get   = $KV->await($KV->command('GET', ['user:42']));
@@ -197,9 +202,33 @@ it from `$Response->defer()` like any other async resource so route code never c
 `advance()` manually.
 
 > [!NOTE]
-> v1 scope of the async KV Redis driver: plain TCP, one command per connection (no
-> pipelining). `AUTH`/`SELECT` are sent once as a preamble when a connection is first opened;
-> `SELECT` only fires for a numeric `database` index.
+> The async driver pipelines commands on each pooled connection. `AUTH`/`SELECT` are sent once
+> as its preamble; `SELECT` only fires for a numeric `database` index. Redis uses implicit TLS:
+> `prefer` tries TLS first and reconnects in plaintext only if negotiation fails, while
+> `require`, `verify-ca` and `verify-full` never send RESP — including `AUTH` — before a
+> successful handshake. `disable` is explicit plaintext.
+
+Use a strict mode for a remote deployment. `verify-full` validates both the certificate chain
+and peer name; `cafile` selects a private CA bundle and `peer` overrides the expected identity:
+
+```php
+$KV = new KV([
+   'driver' => 'redis',
+   'host' => 'redis.internal',
+   'port' => 6380,
+   'password' => getenv('KV_PASS') ?: '',
+   'database' => '2',
+   'secure' => [
+      'mode' => 'verify-full',
+      'peer' => 'redis.internal',
+      'cafile' => '/run/secrets/redis-ca.pem',
+   ],
+]);
+```
+
+> [!WARNING]
+> `prefer` deliberately permits downgrade after a failed TLS generation. Use `require`,
+> `verify-ca` or `verify-full` whenever plaintext is not acceptable.
 
 ## Security
 

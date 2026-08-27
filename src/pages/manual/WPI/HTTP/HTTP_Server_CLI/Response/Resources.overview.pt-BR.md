@@ -245,17 +245,34 @@ default, então a conexão fica configurável pelo ambiente sem tocar no código
 ```php
 use Bootgly\API\Environment\Configs\Config;
 use Bootgly\API\Environment\Configs\Config\Types;
+use Bootgly\ADI\Database\Config as ADIConfig;
 
 return new Config(scope: 'kv')
    ->Enabled->bind(key: 'KV_ENABLED', default: true, cast: Types::Boolean)
    ->Driver->bind(key: 'KV_DRIVER', default: 'redis')
    ->Host->bind(key: 'KV_HOST', default: '127.0.0.1')
    ->Port->bind(key: 'KV_PORT', default: 6379, cast: Types::Integer)
+   ->Database->bind(key: 'KV_DATABASE', default: '0')
+   ->Password->bind(key: 'KV_PASS', default: '')
    ->Timeout->bind(key: 'KV_TIMEOUT', default: 30.0, cast: Types::Float)
+   ->Secure
+      ->Mode->bind(key: 'KV_SSLMODE', default: ADIConfig::SECURE_DISABLE)
+      ->Verify->bind(key: 'KV_SSLVERIFY', default: null, cast: Types::Boolean)
+      ->Peer->bind(key: 'KV_SSLPEER', default: null)
+      ->CAFile->bind(key: 'KV_SSLCAFILE', default: null)
+      ->up()
    ->Pool
       ->Min->bind(key: 'KV_POOL_MIN', default: 0, cast: Types::Integer)
       ->Max->bind(key: 'KV_POOL_MAX', default: 1, cast: Types::Integer);
 ```
+
+`KV::provide()` aplica allow-list a todas as chaves mostradas acima. Para um deployment Redis
+remoto, defina `KV_SSLMODE=verify-full`, mantenha `KV_SSLVERIFY=true` e forneça
+`KV_SSLPEER`/`KV_SSLCAFILE` ao usar uma CA interna. Modos strict (`require`, `verify-ca`,
+`verify-full`) concluem TLS antes que `AUTH`, `SELECT` ou um comando da aplicação seja criado
+no wire. `prefer` tenta TLS primeiro, mas pode reconectar em plaintext; `disable` é plaintext
+explícito. Mantenha `KV_PASS` no ambiente do processo ou em secret de runtime, nunca em `.env`
+commitado.
 
 `KV::provide()` lança exceção quando o escopo está desabilitado (`KV_ENABLED=false`) ou o contexto
 não é um `Response`. O resource é criado de forma lazy na primeira leitura de `$Response->KV` pela
