@@ -587,7 +587,10 @@ cleanup that must not wait — releasing a lock, closing a file, returning a poo
   resource refuses instead: the HTTP resource throws `LogicException` ("must be used inside a live
   deferred context"), which, left uncaught, skips the rest of the block.
 - Use the `$Response` handed to your closure, not the ambient `WPI->Response`: the execution-segment
-  context is not re-bound during the unwind.
+  context is not re-bound during the unwind. The same goes for the request: read the snapshot the
+  closure received (its second argument, the same object as `$Response->Request`) — never the route's
+  `$Request`, which the server has already scrubbed and reused. After a cancellation the snapshot's
+  uploads and fields have already been released too: read what you need before the park.
 
 A `Fiber::getCurrent()` kept in a variable across a `wait()` pins the Fiber to its own stack and
 defeats the prompt release — read it, use it, `unset()` it.

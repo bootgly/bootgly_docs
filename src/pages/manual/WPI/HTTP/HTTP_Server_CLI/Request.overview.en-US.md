@@ -574,11 +574,15 @@ Request::$maxRanges = 0;
 
 ## Session
 
-`Session`: The session object, lazy-initialized and file-based.
+`Session`: the session object, lazy-initialized and persisted through the configured handler (cache-backed, `file` driver by default).
 
 ```php
 $Request->Session; // Session object
 ```
+
+The server persists the session for you: once at the end of the synchronous cycle, right before the response is encoded, and — when the route deferred its response — again when the deferred work completes — on success, on error, at a handoff to SSE (before its wire is built) and at a handoff to a nested `defer()` (at the handoff itself). A cancelled deferral (the client left while it was parked) gets no save point of its own — the server does not persist it; the Session's own destructor is a safety net, though, so a write made before the client left can still reach storage later, when the cycle collector reclaims the abandoned generation. Inside deferred work reach the session through the snapshot — the closure's second argument, the same object as `$Response->Request` — as `$Request->Session`; a session first touched after the first `wait()` still emits its `Set-Cookie` on the deferred response when the work returns normally, never on an error answer.
+
+When the route touched the Session before `defer()`, the deferral shares that Session object with the live request. If another request presenting the same cookie writes while the deferral is still parked, the deferred save meets a stale revision and is discarded rather than silently overwriting the newer write: the deferred response still answers, its Session write is simply lost, and the client keeps its cookie and the newer data — keep the writes of one session on one side of a parked deferral.
 
 <span id="request-validation"></span>
 

@@ -49,6 +49,8 @@ Register custom resources with the `responseResources` option. Each factory is a
 `Closure(object): Response\Resource` that receives the current response context and returns a
 `Response\Resource` instance — created lazily the first time the route reads the resource by name.
 
+A resource name may not collide with a publicly readable property of the response (`Request`, `Header`, `Body`, `Resources`, `code`, …): the property would win every read, so `define()`, `load()` and `mount()` refuse such a name with an `InvalidArgumentException` at registration time. Names of private or protected properties, and of the response's static settings, stay free.
+
 `Database` and `KV` ship a static `provide()` factory that encapsulates this wiring: it reads a
 config scope from the project `configs/` directory, builds one pooled connection per worker and
 wraps it. Pass the project `configs/` directory and register each resource in a single line:

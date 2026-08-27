@@ -165,7 +165,10 @@ return $Response->defer(function (Response $Response): void {
 ```
 
 `defer()` é a fronteira HTTP async. O resource de banco conecta `Readiness` SQL ao
-`$Response->wait()` para o código da rota não chamar `advance()` na mão.
+`$Response->wait()` para o código da rota não chamar `advance()` na mão. Leia os dados do request dentro
+da closure deferred pelo segundo argumento dela — um snapshot tirado pelo `defer()`, também alcançável
+como `$Response->Request` — e não por um `use ($Request)` do request vivo da rota: esse objeto é esvaziado
+quando o ciclo síncrono termina e reutilizado pelo próximo request da conexão.
 
 ## Próximas referências
 

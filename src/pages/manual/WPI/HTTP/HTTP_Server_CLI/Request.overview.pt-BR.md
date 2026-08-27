@@ -575,11 +575,15 @@ Request::$maxRanges = 0;
 
 ## Sessão
 
-`Session`: O objeto de sessão, inicializado sob demanda e baseado em arquivos.
+`Session`: o objeto de sessão, inicializado sob demanda e persistido pelo handler configurado (baseado em cache, driver `file` por padrão).
 
 ```php
 $Request->Session; // Objeto Session
 ```
+
+O servidor persiste a sessão por você: uma vez no fim do ciclo síncrono, logo antes de a resposta ser codificada, e — quando a rota deferiu a resposta — de novo quando o trabalho deferred termina — no sucesso, no erro, num handoff para SSE (antes de o wire ser montado) e num handoff para um `defer()` aninhado (no próprio handoff). Um deferral cancelado (o cliente saiu enquanto ele estava estacionado) não ganha ponto de gravação próprio — o servidor não o persiste; o destrutor da própria Session é uma rede de segurança, porém, então uma escrita feita antes de o cliente sair ainda pode chegar ao armazenamento depois, quando o coletor de ciclos recuperar a geração abandonada. Dentro do trabalho deferred, alcance a sessão pelo snapshot — o segundo argumento da closure, o mesmo objeto que `$Response->Request` — como `$Request->Session`; uma sessão tocada pela primeira vez depois do primeiro `wait()` ainda emite o `Set-Cookie` na resposta deferred quando o trabalho retorna normalmente, nunca numa resposta de erro.
+
+Quando a rota tocou a Session antes do `defer()`, o deferral compartilha esse objeto Session com o request vivo. Se outro request apresentando o mesmo cookie escrever enquanto o deferral ainda está estacionado, o save deferred encontra uma revisão obsoleta e é descartado em vez de sobrescrever silenciosamente a escrita mais nova: a resposta deferred ainda responde, a escrita de Session dela simplesmente se perde, e o cliente mantém o cookie e os dados mais novos — mantenha as escritas de uma sessão de um só lado de um deferral estacionado.
 
 <span id="request-validation"></span>
 

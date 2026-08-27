@@ -50,6 +50,8 @@ Registre resources customizados com a opção `responseResources`. Cada factory 
 `Closure(object): Response\Resource` que recebe o contexto da resposta atual e retorna uma
 instância de `Response\Resource` — criada de forma lazy na primeira leitura do resource pelo nome.
 
+O nome de um resource não pode colidir com uma propriedade publicamente legível do response (`Request`, `Header`, `Body`, `Resources`, `code`, …): a propriedade venceria toda leitura, então `define()`, `load()` e `mount()` recusam esse nome com uma `InvalidArgumentException` no momento do registro. Nomes de propriedades privadas ou protegidas, e das configurações estáticas do response, continuam livres.
+
 `Database` e `KV` trazem uma factory estática `provide()` que encapsula esse setup: ela lê um
 escopo de config do diretório `configs/` do projeto, constrói uma conexão pooled por worker e a
 encapsula. Passe o diretório `configs/` do projeto e registre cada resource em uma única linha:

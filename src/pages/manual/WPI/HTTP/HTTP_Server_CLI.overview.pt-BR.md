@@ -590,7 +590,10 @@ handle ao pool — e lembre de duas regras:
   desenrolar. Um resource recusa: o resource HTTP lança `LogicException` ("must be used inside a live
   deferred context") e, sem captura, o resto do bloco é pulado.
 - Use o `$Response` entregue à sua closure, não o `WPI->Response` ambiente: o contexto do segmento de
-  execução não é religado durante o desenrolar.
+  execução não é religado durante o desenrolar. O mesmo vale para o request: leia o snapshot que a
+  closure recebeu (o segundo argumento dela, o mesmo objeto que `$Response->Request`) — nunca o
+  `$Request` da rota, que o servidor já esvaziou e reutilizou. Depois de um cancelamento os uploads e os
+  fields do snapshot também já foram liberados: leia o que precisa antes de estacionar.
 
 Um `Fiber::getCurrent()` guardado numa variável através de um `wait()` prende a Fiber à própria pilha e
 anula a liberação imediata — leia, use, `unset()`.

@@ -162,7 +162,10 @@ return $Response->defer(function (Response $Response): void {
 ```
 
 `defer()` is the async HTTP boundary. The database resource bridges SQL `Readiness` into
-`$Response->wait()` so route code does not manually call `advance()`.
+`$Response->wait()` so route code does not manually call `advance()`. Read request data inside the
+deferred closure from its second argument — a snapshot taken by `defer()`, also reachable as
+`$Response->Request` — not from a `use ($Request)` of the route's live request: that object is emptied
+when the synchronous cycle ends and reused by the next request on the connection.
 
 ## Next references
 
