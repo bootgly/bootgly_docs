@@ -60,7 +60,20 @@ Put `Problems` in the app middleware stack (or on the REST route group). It narr
 
 - a thrown `Problem` renders in **every** environment — it is a designed API response, not a defect;
 - a generic `Throwable` is **rethrown** in Development/Test, so the core Catcher keeps its debug page;
-- in Production/Staging it is reported through `Throwables::notify()` and rendered as an internals-free 500 problem.
+- in Production/Staging it is reported through `Throwables::notify()` and rendered as an internals-free 500 problem;
+- the boundary also covers **deferred work**: `Problems` implements `Recovering`, so a `Problem` thrown inside `$Response->defer()` still renders as `application/problem+json`, a `Response\Timeout` becomes a `503` problem, and a generic `Throwable` follows the same environment rule — declined to the core Catcher in Development/Test, an internals-free 500 problem in Production/Staging.
+
+```php
+public function delete (Request $Request, Response $Response): Response
+{
+   $id = $this->Route->Params->id;
+
+   return $Response->defer(static function (Response $Response) use ($id): void {
+      $Response->wait();
+      throw new Problem(422, detail: "Task {$id} cannot be deleted.");
+   });
+}
+```
 
 ## Resources (transformers)
 
@@ -143,6 +156,12 @@ public function process (object $Request, object $Response, Closure $next): obje
 ```
 
 The middleware error boundary described above. `Problems::$Environment` is a one-shot environment override (mirrors the core `Catcher::$Environment`) consumed by the generic-Throwable branch — for E2E specs exercising the Production path.
+
+```php
+public function recover (Request $Request, Response $Response, Throwable $Throwable): null|Response
+```
+
+The deferred-work side of the same boundary (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering`): renders a `Problem` in every environment, answers a `Response\Timeout` with a `503` problem, and applies the environment rule to any other `Throwable` — `null` (declined to the core Catcher) in Development/Test, a reported, internals-free 500 problem in Production/Staging. `Problems::$Environment` is consumed by that generic-Throwable branch here too — a `Problem` or a `Timeout` leaves it untouched.
 
 ### Web\API\Resource
 

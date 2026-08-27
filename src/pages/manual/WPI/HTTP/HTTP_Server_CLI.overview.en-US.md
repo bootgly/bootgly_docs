@@ -111,7 +111,7 @@ The `configure()` method accepts the following parameters:
 | `maxConnections` | `?int` | `null` | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. Defaults to `10000`; `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |
 | `maxConnectionsPerIP` | `?int` | `null` | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: defaults to `0` (unlimited), because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
 | `connectionIdleTimeout` | `?int` | `null` | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. Defaults to `15`; `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
-| `deferredTimeout` | `?int\|float` | `null` | Seconds a deferred response (`$Response->defer()`) may stay parked on the reactor before a `Response\Timeout` is delivered at its wait point. Defaults to `0` (unbounded). A per-call `defer($work, timeout:)` takes precedence. Left unhandled, the timeout answers `503 Service Unavailable` and logs a warning. |
+| `deferredTimeout` | `?int\|float` | `null` | Seconds a deferred response (`$Response->defer()`) may stay parked on the reactor before a `Response\Timeout` is delivered at its wait point. Defaults to `0` (unbounded). A per-call `defer($work, timeout:)` takes precedence. A timeout that escapes the work always logs a warning; left unhandled by every `Recovering` middleware too, it answers `503 Service Unavailable`. |
 
 ```php
 $Server->configure(
@@ -567,8 +567,12 @@ yield $Router->route('/report', function ($Request, Response $Response) {
 }, GET);
 ```
 
-Left unhandled, the timeout is answered with a clean `503 Service Unavailable` — the environment's
-error page, without a throwable trace — and a warning is logged with the request line and the budget.
+Left unhandled by the work, the `Timeout` is offered to the route's `Recovering` middlewares, then to
+the global pipeline's (see *Error Boundaries and Deferred Work* on the
+[Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares) page); unhandled by them too, it is answered
+with a clean `503 Service Unavailable` — the environment's error page, without a throwable trace. A
+warning is logged with the request line and the budget either way. The same budget bounds a `Recovering`
+middleware that parks inside `recover()` — one budget re-armed for the boundary walk, then the clean `503`.
 The exchange finishes with that `503`, so telemetry counts a `5xx` response, not a cancellation. One
 budget per generation: a deferral that catches the `Timeout` and parks again is not re-armed.
 
@@ -576,7 +580,8 @@ budget per generation: a deferral that catches the `Timeout` and parks again is 
 
 If the connection — or the HTTP/2 stream — closes while the deferral is still parked, its generation
 is cancelled and the Fiber is **never resumed**: no `catch` block runs, because nothing is thrown into
-it. The reactor releases the Fiber at its next safe point instead, outside any queue walk, and PHP
+it — and no `Recovering` middleware is consulted: nothing was thrown, and nobody is left to answer. The
+reactor releases the Fiber at its next safe point instead, outside any queue walk, and PHP
 unwinds it — every pending `finally` runs right away, before the worker waits for I/O again. Put the
 cleanup that must not wait — releasing a lock, closing a file, returning a pooled handle — in a
 `finally`, and keep two rules in mind:

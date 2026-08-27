@@ -62,6 +62,60 @@ When both group and route-level middlewares are present, they are **merged** —
 | `append(Middleware $Middleware)` | Add a middleware to the **end** of the pipeline |
 | `pipe(Middleware ...$middlewares)` | Add one or more middlewares to the end at once |
 
+## Error Boundaries and Deferred Work
+
+A middleware that wraps `$next()` in a `try`/`catch` is an error boundary for **synchronous** handlers only. A deferred response (`$Response->defer()`) runs its work after the onion has already returned — the handler returns at once and the work runs later, on a pooled Fiber — so a `Throwable` thrown inside that work never reaches the `catch` around `$next()`: the server answers it itself (`500 Internal Server Error`; `503 Service Unavailable` for a `Response\Timeout`).
+
+To answer those failures too, implement `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering` — a `Middleware` with one more method, `recover()`, which the server calls when deferred work throws:
+
+```php
+use Closure;
+use Throwable;
+
+use Bootgly\ABI\Debugging\Data\Throwables;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering;
+
+class Errors implements Recovering
+{
+   public function process (object $Request, object $Response, Closure $next): object
+   {
+      try {
+         return $next($Request, $Response);
+      }
+      catch (Throwable $Throwable) {
+         Throwables::notify($Throwable, ['interface' => 'WPI']);
+         $Response->Header->set('Content-Type', 'application/json');
+         return $Response(code: 500, body: '{"error":"internal"}');
+      }
+   }
+
+   public function recover (Request $Request, Response $Response, Throwable $Throwable): null|Response
+   {
+      $Response->Header->set('Content-Type', 'application/json');
+
+      if ($Throwable instanceof Timeout) {
+         return $Response(code: 503, body: '{"error":"timeout"}');
+      }
+
+      Throwables::notify($Throwable, ['interface' => 'WPI']);
+      return $Response(code: 500, body: '{"error":"internal"}');
+   }
+}
+```
+
+Register it exactly like any other middleware — global, group or route level. When deferred work throws, the route's middlewares are asked in order, **innermost first** (the route-level ones before the group's `intercept()` entries), and then the global `SAPI::$Middlewares` pipeline, last entry first. The first `Response` returned is sent as-is; return `null` to decline. A `recover()` that throws hands its **new** `Throwable` to the boundaries further out, exactly as a rethrow inside `process()` reaches the enclosing middleware. When nobody answers, the server's own error response is sent. A `Response\Timeout` is offered as well: it is a server budget, not an application error — it is logged as a warning before any boundary is consulted, whichever answer wins — decline it to keep the `503`, or answer with an explicit unavailability of your own.
+
+Reporting follows the answer. The framework's single `Throwables::notify()` intake runs when the built-in error response answers an application error — so a boundary that answers a generic `Throwable` owns the report too, and must call `Throwables::notify()` itself if it wants the `exceptions` channel, the `exceptions_total` counter and your reporters to see the failure. This is the same rule a synchronous `catch` around `$next()` has always followed (a `Response\Timeout` is never reported either way: it is a server budget, logged as a warning). The built-in `Web\API\Problems` already does this in Production/Staging.
+
+`recover()` runs inside the deferred Fiber with the request snapshot bound: `$Request` is the request the work was answering (the same object as `$Response->Request`), the matched Route and its `Params` are still in place, and a Session written before the throw is persisted whichever answer wins. `$Response` is the deferred clone as the work left it — as a synchronous boundary's `$Response` carries what the handler wrote — so answering in place keeps what is already there: headers the work set, a session cookie set on first touch, a queued file. A boundary that wants a representation of its own — an error body that is not concatenated with a queued file — returns a fresh `Response` instead of answering in place. Answer synchronously: `wait()` is not refused, but the walk is not unbounded — when the generation has a budget (`defer(timeout:)` or `deferredTimeout`), a parked boundary is interrupted with a fresh `Response\Timeout` at its wait point after one budget re-armed for the walk; that Timeout replaces the Throwable that was offered, travels outward like any throwing `recover()`, and ends on the built-in `503` when nobody else answers. Without a budget, only transport teardown bounds it. The boundary is consulted only through `recover()`, never by running the onion again: `process()` is not re-executed, so admission middlewares in the same chain do not run twice.
+
+The boundaries are the chain the route was dispatched with, captured while the onion is running. A deferral started after the onion returned — from a `Request\Events::Handled` listener, or from a global middleware after its `$next()` — carries no route chain: only the global `SAPI::$Middlewares` pipeline is offered its failures. Work that already handed the generation off is not offered to a boundary at all: a successful `$Response->SSE->open()` and a nested `defer()` both settle the generation, so a `Throwable` raised after that handoff reaches no `recover()`, no built-in error response and no `Throwables::notify()` — the SSE client keeps the stream it was given, with no error event and no terminating chunk, and a nested child's own answer is what the client sees. Report inside the work, before the handoff, when such a failure must be visible. (A handoff made from inside `recover()` is a different case: the boundary chose it.) A nested `defer()` made from inside `recover()` inherits the chain, so a child that throws is offered to the same boundaries again — a boundary that reports through a child must not let that child throw.
+
+Headers set by a middleware **after** `$next()` do not apply to a deferred response: by then the onion has returned, and the response is built later, inside the work. Set them inside the work instead.
+
 ## Built-in Middlewares
 
 All built-in middlewares are in the namespace `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares`.
@@ -402,3 +456,13 @@ Untrusted proxy IPs are ignored — the address and scheme are left unchanged.
 > **Security — set `proxies` explicitly in production.** When you construct `TrustedProxy` without a `proxies` argument it falls back to the localhost default (`127.0.0.1`, `::1`) and logs a one-time `WARNING` the first time it trusts a forwarded header. With that default, anything that can reach the server from localhost — a sidecar, an SSRF pivot, a dev port-forward — is trusted and can spoof `$Request->address` via `X-Forwarded-For`. Always pass the actual IPs of your reverse proxy / load balancer.
 
 **Phase:** Pre-processing — resolves the real client IP before the handler runs. Only processes forwarded headers when the request originates from a trusted proxy IP.
+
+## Reference
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering
+
+```php
+public function recover (Request $Request, Response $Response, Throwable $Throwable): null|Response
+```
+
+Answers a `Throwable` raised by deferred work, or declines with `null`. `$Request` is the generation's captured snapshot, `$Response` the deferred clone as the work left it, `$Throwable` the failure — a `Response\Timeout` when the deferral budget elapsed. Boundaries are walked innermost first along the route's chain, then along the global pipeline last entry first; the first `Response` wins, a throwing `recover()` replaces the `Throwable` for the boundaries further out, and the server's own error response is sent when every boundary declines. Reporting follows the answer: the core's `Throwables::notify()` intake runs only when its own error response answers, so a boundary that answers owns the report. `Recovering` extends the `Middleware` contract, so `process()` keeps its synchronous role on the same class.

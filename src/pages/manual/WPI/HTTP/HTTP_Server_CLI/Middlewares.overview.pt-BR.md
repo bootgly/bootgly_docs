@@ -62,6 +62,60 @@ Quando middlewares de grupo e de rota estão presentes, eles são **mesclados** 
 | `append(Middleware $Middleware)` | Adiciona um middleware no **final** do pipeline |
 | `pipe(Middleware ...$middlewares)` | Adiciona um ou mais middlewares no final de uma vez |
 
+## Fronteiras de Erro e Trabalho Deferred
+
+Um middleware que envolve `$next()` em `try`/`catch` é uma fronteira de erro só para handlers **síncronos**. Uma resposta deferred (`$Response->defer()`) executa seu trabalho depois que o onion já retornou — o handler retorna na hora e o trabalho roda depois, numa Fiber do pool — então um `Throwable` lançado dentro desse trabalho nunca chega ao `catch` em volta de `$next()`: o próprio servidor responde (`500 Internal Server Error`; `503 Service Unavailable` para um `Response\Timeout`).
+
+Para responder também a essas falhas, implemente `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering` — um `Middleware` com um método a mais, `recover()`, que o servidor chama quando o trabalho deferred lança:
+
+```php
+use Closure;
+use Throwable;
+
+use Bootgly\ABI\Debugging\Data\Throwables;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering;
+
+class Errors implements Recovering
+{
+   public function process (object $Request, object $Response, Closure $next): object
+   {
+      try {
+         return $next($Request, $Response);
+      }
+      catch (Throwable $Throwable) {
+         Throwables::notify($Throwable, ['interface' => 'WPI']);
+         $Response->Header->set('Content-Type', 'application/json');
+         return $Response(code: 500, body: '{"error":"internal"}');
+      }
+   }
+
+   public function recover (Request $Request, Response $Response, Throwable $Throwable): null|Response
+   {
+      $Response->Header->set('Content-Type', 'application/json');
+
+      if ($Throwable instanceof Timeout) {
+         return $Response(code: 503, body: '{"error":"timeout"}');
+      }
+
+      Throwables::notify($Throwable, ['interface' => 'WPI']);
+      return $Response(code: 500, body: '{"error":"internal"}');
+   }
+}
+```
+
+Registre-o exatamente como qualquer outro middleware — global, de grupo ou de rota. Quando o trabalho deferred lança, os middlewares da rota são consultados em ordem, **do mais interno para o mais externo** (os de nível de rota antes das entradas do `intercept()` do grupo), e depois o pipeline global `SAPI::$Middlewares`, da última entrada para a primeira. A primeira `Response` devolvida é enviada como está; devolva `null` para declinar. Um `recover()` que lança entrega o **novo** `Throwable` às fronteiras mais externas, exatamente como um relançamento dentro de `process()` alcança o middleware que o envolve. Quando ninguém responde, a resposta de erro do próprio servidor é enviada. Um `Response\Timeout` também é oferecido: ele é um orçamento do servidor, não um erro da aplicação — é registrado como warning antes de qualquer fronteira ser consultada, seja qual for a resposta vencedora — decline para manter o `503`, ou responda com uma indisponibilidade explícita sua.
+
+O reporte segue a resposta. A entrada única `Throwables::notify()` do framework roda quando a resposta de erro built-in responde a um erro da aplicação — então uma fronteira que responde a um `Throwable` genérico também é dona do reporte, e precisa chamar `Throwables::notify()` ela mesma se quiser que o canal `exceptions`, o contador `exceptions_total` e os seus reporters vejam a falha. É a mesma regra que um `catch` síncrono em volta de `$next()` sempre seguiu (um `Response\Timeout` nunca é reportado, em nenhum dos casos: é um orçamento do servidor, registrado como warning). O `Web\API\Problems` built-in já faz isso em Production/Staging.
+
+`recover()` roda dentro da Fiber deferred com o snapshot do request ligado: `$Request` é o request que o trabalho estava respondendo (o mesmo objeto que `$Response->Request`), a Route casada e seus `Params` continuam no lugar, e uma Session escrita antes do throw é persistida seja qual for a resposta vencedora. `$Response` é o clone deferred como o trabalho o deixou — assim como o `$Response` de uma fronteira síncrona carrega o que o handler escreveu — então responder nele mantém o que já está lá: headers que o trabalho definiu, um cookie de sessão definido no primeiro toque, um arquivo enfileirado. Uma fronteira que quer uma representação própria — um corpo de erro que não venha concatenado a um arquivo enfileirado — retorna um `Response` novo em vez de responder no lugar. Responda de forma síncrona: `wait()` não é recusado, mas a caminhada não é ilimitada — quando a geração tem orçamento (`defer(timeout:)` ou `deferredTimeout`), uma fronteira estacionada é interrompida com um `Response\Timeout` novo no seu ponto de espera depois de um orçamento re-armado para a caminhada; esse Timeout substitui o Throwable que foi oferecido, segue para fora como qualquer `recover()` que lança, e termina no `503` built-in quando mais ninguém responde. Sem orçamento, só o teardown do transporte a limita. A fronteira é consultada só por `recover()`, nunca executando o onion de novo: `process()` não é reexecutado, então middlewares de admissão na mesma cadeia não rodam duas vezes.
+
+As fronteiras são a cadeia com que a rota foi despachada, capturada enquanto o onion roda. Um deferral iniciado depois de o onion retornar — de um listener `Request\Events::Handled`, ou de um middleware global depois do seu `$next()` — não carrega a cadeia da rota: só o pipeline global `SAPI::$Middlewares` recebe suas falhas. Trabalho que já fez o handoff da geração não é oferecido a nenhuma fronteira: um `$Response->SSE->open()` bem-sucedido e um `defer()` aninhado liquidam a geração, então um `Throwable` lançado depois desse handoff não chega a nenhum `recover()`, a nenhuma resposta de erro built-in nem ao `Throwables::notify()` — o cliente SSE fica com o stream que recebeu, sem evento de erro e sem chunk terminador, e a resposta do próprio filho aninhado é o que o cliente vê. Reporte dentro do trabalho, antes do handoff, quando essa falha precisar ser visível. (Um handoff feito de dentro de `recover()` é outro caso: a fronteira o escolheu.) Um `defer()` aninhado feito de dentro de `recover()` herda a cadeia, então um filho que lança é oferecido às mesmas fronteiras de novo — uma fronteira que reporta por um filho não pode deixar esse filho lançar.
+
+Headers definidos por um middleware **depois** de `$next()` não se aplicam a uma resposta deferred: nesse ponto o onion já retornou, e a resposta é montada depois, dentro do trabalho. Defina-os dentro do trabalho.
+
 ## Middlewares Built-in
 
 Todos os middlewares built-in estão no namespace `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares`.
@@ -404,3 +458,13 @@ IPs de proxy não confiáveis são ignorados — o endereço e esquema permanece
 > **Segurança — defina `proxies` explicitamente em produção.** Quando você constrói o `TrustedProxy` sem o argumento `proxies`, ele recai no padrão localhost (`127.0.0.1`, `::1`) e registra um `WARNING` único na primeira vez que confia em um header encaminhado. Com esse padrão, qualquer coisa que alcance o servidor a partir do localhost — um sidecar, um pivô de SSRF, um port-forward de desenvolvimento — é confiada e pode forjar `$Request->address` via `X-Forwarded-For`. Sempre passe os IPs reais do seu proxy reverso / balanceador de carga.
 
 **Fase:** Pré-processamento — resolve o IP real do cliente antes do handler executar. Só processa headers encaminhados quando a requisição se origina de um IP de proxy confiável.
+
+## Reference
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering
+
+```php
+public function recover (Request $Request, Response $Response, Throwable $Throwable): null|Response
+```
+
+Responde a um `Throwable` lançado pelo trabalho deferred, ou declina com `null`. `$Request` é o snapshot capturado da geração, `$Response` o clone deferred como o trabalho o deixou, `$Throwable` a falha — um `Response\Timeout` quando o orçamento do deferral estourou. As fronteiras são percorridas do mais interno para o mais externo ao longo da cadeia da rota, depois ao longo do pipeline global da última entrada para a primeira; a primeira `Response` vence, um `recover()` que lança substitui o `Throwable` para as fronteiras mais externas, e a resposta de erro do próprio servidor é enviada quando toda fronteira declina. O reporte segue a resposta: a entrada `Throwables::notify()` do core roda só quando a própria resposta de erro dele responde, então uma fronteira que responde é dona do reporte. `Recovering` estende o contrato `Middleware`, então `process()` mantém seu papel síncrono na mesma classe.

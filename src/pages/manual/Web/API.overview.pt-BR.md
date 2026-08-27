@@ -60,7 +60,20 @@ Coloque o `Problems` na stack de middlewares do app (ou no grupo de rotas REST).
 
 - um `Problem` lançado renderiza em **todos** os ambientes — é uma resposta de API projetada, não um defeito;
 - um `Throwable` genérico é **relançado** em Development/Test, então o Catcher do core mantém sua página de debug;
-- em Production/Staging ele é reportado via `Throwables::notify()` e renderizado como um problem 500 sem internals.
+- em Production/Staging ele é reportado via `Throwables::notify()` e renderizado como um problem 500 sem internals;
+- a fronteira também cobre **trabalho deferred**: `Problems` implementa `Recovering`, então um `Problem` lançado dentro de `$Response->defer()` ainda renderiza como `application/problem+json`, um `Response\Timeout` vira um problem `503`, e um `Throwable` genérico segue a mesma regra de ambiente — declinado ao Catcher do core em Development/Test, um problem 500 sem internals em Production/Staging.
+
+```php
+public function delete (Request $Request, Response $Response): Response
+{
+   $id = $this->Route->Params->id;
+
+   return $Response->defer(static function (Response $Response) use ($id): void {
+      $Response->wait();
+      throw new Problem(422, detail: "Task {$id} cannot be deleted.");
+   });
+}
+```
 
 ## Resources (transformadores)
 
@@ -143,6 +156,12 @@ public function process (object $Request, object $Response, Closure $next): obje
 ```
 
 A fronteira de erros em middleware descrita acima. `Problems::$Environment` é um override de ambiente one-shot (espelha o `Catcher::$Environment` do core) consumido pelo ramo de Throwable genérico — para specs E2E exercitarem o caminho de Production.
+
+```php
+public function recover (Request $Request, Response $Response, Throwable $Throwable): null|Response
+```
+
+O lado de trabalho deferred da mesma fronteira (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering`): renderiza um `Problem` em todo ambiente, responde a um `Response\Timeout` com um problem `503`, e aplica a regra de ambiente a qualquer outro `Throwable` — `null` (declinado ao Catcher do core) em Development/Test, um problem 500 sem internals, reportado, em Production/Staging. `Problems::$Environment` também é consumido aqui, por esse ramo de Throwable genérico — um `Problem` ou um `Timeout` não o toca.
 
 ### Web\API\Resource
 

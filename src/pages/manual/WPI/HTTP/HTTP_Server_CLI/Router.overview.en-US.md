@@ -374,6 +374,7 @@ The `Route` class (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) exposes the
 |----------|------|-------------|
 | `path` | `string` | The route path pattern |
 | `Params` | `Params` | Route parameters container |
+| `Middlewares` | `array<Middleware>` | The middleware chain folded around the matched route (group entries first, then the route's own), present only while a middleware-bearing dispatch runs — the chain a deferred generation keeps for its `Recovering` boundaries (see [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)) |
 | `base` | `string` | The request base path (property hook) |
 | `parameterized` | `bool` | Whether the route has `:param` segments (property hook) |
 | `nested` | `bool` | Whether this is inside a route group |

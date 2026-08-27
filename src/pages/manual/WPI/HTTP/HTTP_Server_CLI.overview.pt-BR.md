@@ -110,7 +110,7 @@ O método `configure()` aceita os seguintes parâmetros:
 | `maxConnections` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. Padrão: `10000`; `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
 | `maxConnectionsPerIP` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: padrão `0` (ilimitado), porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
 | `connectionIdleTimeout` | `?int` | `null` | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. Padrão: `15`; `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
-| `deferredTimeout` | `?int\|float` | `null` | Segundos que uma resposta deferred (`$Response->defer()`) pode ficar estacionada no reactor antes de um `Response\Timeout` ser entregue no ponto de espera. Padrão: `0` (sem teto). Um `defer($work, timeout:)` por chamada tem precedência. Sem tratamento, o timeout responde `503 Service Unavailable` e registra um warning. |
+| `deferredTimeout` | `?int\|float` | `null` | Segundos que uma resposta deferred (`$Response->defer()`) pode ficar estacionada no reactor antes de um `Response\Timeout` ser entregue no ponto de espera. Padrão: `0` (sem teto). Um `defer($work, timeout:)` por chamada tem precedência. Um timeout que escapa do trabalho sempre registra um warning; se nenhum middleware `Recovering` o tratar, ele responde `503 Service Unavailable`. |
 
 ```php
 $Server->configure(
@@ -570,15 +570,21 @@ yield $Router->route('/report', function ($Request, Response $Response) {
 }, GET);
 ```
 
-Sem tratamento, o timeout é respondido com um `503 Service Unavailable` limpo — a página de erro do
-ambiente, sem trace de throwable — e um warning é registrado com a linha da requisição e o orçamento. O
+Sem tratamento pelo trabalho, o `Timeout` é oferecido aos middlewares `Recovering` da rota, depois aos do
+pipeline global (veja *Fronteiras de Erro e Trabalho Deferred* na página
+[Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)); sem tratamento por eles também, é respondido
+com um `503 Service Unavailable` limpo — a página de erro do ambiente, sem trace de throwable. Um warning
+é registrado com a linha da requisição e o orçamento em qualquer dos casos. O mesmo orçamento limita um
+middleware `Recovering` que estaciona dentro de `recover()` — um orçamento re-armado para a caminhada das
+fronteiras, depois o `503` limpo. O
 exchange termina com esse `503`, então a telemetria conta uma resposta `5xx`, não um cancelamento. Um
 orçamento por geração: um deferral que captura o `Timeout` e estaciona de novo não é rearmado.
 
 ### Quando o cliente vai embora
 
 Se a conexão — ou a stream HTTP/2 — fecha enquanto o deferral ainda está estacionado, a geração dele é
-cancelada e a Fiber **nunca é retomada**: nenhum bloco `catch` roda, porque nada é lançado dentro dela.
+cancelada e a Fiber **nunca é retomada**: nenhum bloco `catch` roda, porque nada é lançado dentro dela —
+e nenhum middleware `Recovering` é consultado: nada foi lançado, e não há mais ninguém para responder.
 Em vez disso o reactor libera a Fiber no seu próximo safe point, fora de qualquer varredura de fila, e
 o PHP a desenrola — todo `finally` pendente roda na hora, antes de o worker voltar a esperar I/O.
 Coloque no `finally` a limpeza que não pode esperar — soltar um lock, fechar um arquivo, devolver um

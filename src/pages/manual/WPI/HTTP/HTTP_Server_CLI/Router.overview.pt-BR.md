@@ -376,6 +376,7 @@ A classe `Route` (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) expõe as se
 |-------------|------|-----------|
 | `path` | `string` | O padrão do caminho da rota |
 | `Params` | `Params` | Container dos parâmetros da rota |
+| `Middlewares` | `array<Middleware>` | A cadeia de middlewares dobrada em volta da rota casada (entradas do grupo primeiro, depois as da própria rota), presente só enquanto um dispatch com middleware roda — a cadeia que uma geração deferred mantém para suas fronteiras `Recovering` (veja [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)) |
 | `base` | `string` | O caminho base da requisição (property hook) |
 | `parameterized` | `bool` | Se a rota tem segmentos `:param` (property hook) |
 | `nested` | `bool` | Se está dentro de um grupo de rotas |
