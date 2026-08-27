@@ -81,7 +81,9 @@ $Session->subprotocol;   // e.g. 'json', or '' if none
 
 Compression is **on by default**: the client offers `permessage-deflate`, and when the server accepts
 it, outbound messages are deflated and inbound ones inflated automatically — your handlers always see
-plain bytes. Check what was negotiated with `$Session->Deflator !== null`. Disable the offer with
+plain bytes. Inbound inflation is budgeted incrementally against `maxMessageSize`; an expansion that
+crosses it is stopped with close code `1009` before the complete output is retained. Check what was
+negotiated with `$Session->Deflator !== null`. Disable the offer with
 `compression: false`:
 
 ```php

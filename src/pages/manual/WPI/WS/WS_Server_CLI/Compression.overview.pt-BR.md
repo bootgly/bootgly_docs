@@ -10,6 +10,8 @@ embutido do PHP — sem dependência extra, e respeitando o core sem dependênci
 - O servidor aceita e ecoa os parâmetros negociados de volta na resposta `101`.
 - Mensagens comprimidas de entrada (RSV1 setado) são **infladas** antes do seu handler rodar —
   `$Message->payload` é sempre os bytes descomprimidos.
+- A inflação consome incrementalmente o orçamento de `maxMessageSize`. Uma expansão que ultrapassa
+  o limite é interrompida com o código de close `1009` antes de reter toda a saída controlada pelo atacante.
 - Respostas em string (e `Session->send()`) são **comprimidas** na saída e marcadas com RSV1.
 
 Nada no seu handler muda; a compressão é transparente.

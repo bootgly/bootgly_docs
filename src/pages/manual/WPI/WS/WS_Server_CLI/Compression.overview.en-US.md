@@ -10,6 +10,8 @@ handshake whenever the client offers it and `compression` is on (the default), u
 - The server accepts it and echoes the negotiated parameters back in the `101` response.
 - Inbound compressed messages (RSV1 set) are **inflated** before your handler runs — `$Message->payload`
   is always the decompressed bytes.
+- Inflation is budgeted incrementally against `maxMessageSize`. An expansion that crosses the limit
+  is stopped with close code `1009` before the complete attacker-controlled output is retained.
 - String replies (and `Session->send()`) are **deflated** on the way out and marked with RSV1.
 
 Nothing in your handler changes; compression is transparent.
