@@ -3,14 +3,14 @@
 Rode, teste, faça benchmark e publique o Bootgly sem instalar PHP localmente. Uma única
 imagem multi-stage oferece dois alvos:
 
-- **`slim`** — PHP 8.4 com as extensões necessárias, opcache e JIT, mais o código do
-  framework. Use para rodar servidores, fazer deploy e executar seus próprios projetos.
+- **`slim`** — PHP 8.4 com as extensões necessárias, opcache, JIT e Git, além do código
+  do framework. Use para rodar servidores, fazer deploy e executar seus próprios projetos.
 - **`full`** — tudo do `slim` mais o framework de testes, os casos de benchmark interno e
   algumas ferramentas de linha de comando. Use para testar e fazer benchmark do Bootgly.
 
 Os arquivos do Docker ficam no próprio repositório `bootgly/` (`Dockerfile` e `docker-compose.yml` na raiz, tuning de opcache/JIT em `@/__php__/zz-bootgly.ini`). A imagem
-permanece livre de dependências: nenhum pacote de terceiros em runtime, nenhum banco de
-dados, nenhum framework de benchmark externo.
+mantém o núcleo do framework livre de dependências. As duas variantes incluem Git para os
+fluxos de projeto, mas nenhum banco de dados ou framework de benchmark externo.
 
 ## Instalar — o único caminho canônico
 
@@ -171,9 +171,9 @@ Outros casos incluem `TCP_Server_CLI`, `UDP_Server_CLI`, `Template_Engine` e `Ca
 
 ### Entre frameworks (vs Swoole, Workerman, …)
 
-Runtimes de concorrentes nunca entram em `bootgly:slim`/`:full` — elas permanecem livres de
-dependências. Elas vivem apenas na imagem separada `bootgly_benchmarks`. Cada servidor é iniciado
-localmente no mesmo container, então todos compartilham o loopback e a comparação permanece justa.
+Runtimes de concorrentes nunca entram em `bootgly:slim`/`:full`; eles ficam apenas na imagem
+separada `bootgly_benchmarks`. Cada servidor é iniciado localmente no mesmo container, então todos
+compartilham o loopback e a comparação permanece justa.
 
 Baixe e rode (Swoole já incluso):
 
