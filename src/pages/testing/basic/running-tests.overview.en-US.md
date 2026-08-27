@@ -5,7 +5,7 @@ Bootgly ships its own built-in test framework — no PHPUnit, no Composer script
 ## Requirements
 
 - PHP 8.4+
-- Bootgly installed locally (run via `php bootgly`) or globally (run via `bootgly` after `sudo php bootgly setup`)
+- Bootgly installed locally (run via `php bootgly`) or globally (run via `bootgly` after `php bootgly setup`)
 
 ## Run all suites
 

@@ -5,7 +5,7 @@ O Bootgly traz seu próprio framework de testes embutido — sem PHPUnit, sem sc
 ## Requisitos
 
 - PHP 8.4+
-- Bootgly instalado localmente (execute com `php bootgly`) ou globalmente (execute com `bootgly` após `sudo php bootgly setup`)
+- Bootgly instalado localmente (execute com `php bootgly`) ou globalmente (execute com `bootgly` após `php bootgly setup`)
 
 ## Executar todas as suítes
 

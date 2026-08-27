@@ -125,15 +125,18 @@ php bootgly
 
 ## Instale a CLI do Bootgly globalmente
 
-Para usar `bootgly` como um comando global (e com `sudo` para portas privilegiadas), execute o comando de setup:
+Para usar `bootgly` como um comando global, execute o setup como seu usuário comum a partir do diretório do Kit:
 
 ```bash :toolbar="true";
-sudo php bootgly setup
+php bootgly setup
 ```
 
-Isso cria um script wrapper em `/usr/local/bin/bootgly` com o caminho absoluto do seu binário PHP, para funcionar corretamente com `sudo` (que reseta o PATH).
+Isso cria um script wrapper em `/usr/local/bin/bootgly` com o caminho absoluto do seu binário PHP. O PHP e o código do Bootgly permanecem sem privilégios; o setup transmite o wrapper composto por um descritor privado já aberto e delega somente `install -m 0755 /dev/stdin /usr/local/bin/bootgly` via sudo quando necessário. Nenhum processo privilegiado reabre um caminho temporário controlado pelo chamador.
 
-O wrapper executa o **launcher do Bootgly mais próximo acima do diretório de trabalho** — de qualquer lugar dentro de um kit o comando global opera naquele kit, e só recai no checkout em que o `setup` rodou quando não encontra launcher nenhum. Só um launcher que pertence a você (ou ao root) e que ninguém mais pode escrever é confiável: um arquivo perdido chamado `bootgly` num diretório compartilhado nunca roda como você — nem como root sob `sudo bootgly`.
+Em uma execução sem privilégios, o wrapper resolve o **launcher Bootgly confiável mais próximo acima do diretório de trabalho** e aceita um launcher do usuário atual ou do root, desde que seu caminho não possa ser substituído por outro usuário. Se nenhum for encontrado, usa o launcher do workspace ativo registrado durante o setup. O wrapper global recusa deliberadamente o usuário efetivo root — inclusive em `sudo bootgly` — com status 126 antes de selecionar um binário PHP ou launcher.
+
+> [!WARNING]
+> Não use `sudo bootgly`: o wrapper global é um comando de conveniência sem privilégios. Para um kit pertencente ao desenvolvedor, prefira capabilities do Linux ou um proxy reverso. Um serviço que realmente precise de root deve invocar o launcher absoluto de um deployment separado cuja árvore executável completa pertença ao root e não seja gravável por usuários não-root.
 
 Após o setup, você pode usar `bootgly` diretamente de qualquer diretório:
 
@@ -141,10 +144,10 @@ Após o setup, você pode usar `bootgly` diretamente de qualquer diretório:
 bootgly help
 ```
 
-Para desinstalar:
+Para desinstalar, mantenha o PHP sem privilégios e deixe o setup delegar somente a operação fixa de remoção quando necessário:
 
 ```bash :toolbar="true";
-sudo bootgly setup --uninstall
+php bootgly setup --uninstall
 ```
 
 ## Anatomia de um projeto
@@ -231,10 +234,13 @@ Portas abaixo de 1024 exigem permissões especiais no Linux. Existem duas aborda
 
 ### Opção A: Usando sudo
 
-Depois de executar `sudo php bootgly setup`, você pode iniciar o servidor com sudo:
+Se um serviço realmente precisar iniciar como root antes de reduzir privilégios, invoque o launcher absoluto de um deployment pertencente ao root e não gravável por usuários não-root:
+
+> [!WARNING]
+> O wrapper global `bootgly` recusa EUID 0. O comando direto abaixo contorna esse wrapper de conveniência, então todo arquivo PHP que o deployment possa carregar — não apenas o launcher — deve ser controlado pelo root. Caso contrário, use a Opção B ou um proxy reverso.
 
 ```bash :toolbar="true";
-sudo bootgly project MyApp start
+sudo /caminho/para/php-do-root /caminho/para/bootgly-do-root project MyApp start
 ```
 
 Para produção, você pode combinar isso com **privilege dropping** — o servidor vincula à porta como root e depois troca para um usuário não privilegiado:
@@ -253,10 +259,10 @@ $Server->configure(
 Conceda ao PHP a capacidade de vincular portas privilegiadas sem root:
 
 ```bash :toolbar="true";
-sudo php bootgly setup --capabilities
+php bootgly setup --capabilities
 ```
 
-Isso executa `setcap cap_net_bind_service=+ep` no binário do PHP. Depois disso, qualquer servidor `bootgly` pode vincular a portas como 80 ou 443 sem sudo.
+O setup delega somente a operação fixa `setcap cap_net_bind_service=+ep`. Depois disso, qualquer servidor `bootgly` pode vincular a portas como 80 ou 443 sem sudo.
 
 > [!WARNING]
 > Isso se aplica a TODOS os scripts PHP do sistema, não apenas ao Bootgly.
@@ -291,5 +297,7 @@ $Server->configure(
 Um exemplo de projeto HTTPS pronto para uso está incluído em `projects/Demo/HTTPS_Server_CLI/`:
 
 ```bash :toolbar="true";
-sudo bootgly project Demo/HTTPS_Server_CLI start
+bootgly project Demo/HTTPS_Server_CLI start
 ```
+
+Esse comando exato sem privilégios precisa da capability do Linux da Opção B para vincular a porta 443. Um gerenciador de serviços usando um deployment separado e controlado pelo root é uma alternativa operacional, não uma permissão concedida a esse comando.

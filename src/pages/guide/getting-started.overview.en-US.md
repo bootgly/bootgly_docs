@@ -125,15 +125,18 @@ php bootgly
 
 ## Install Bootgly CLI globally
 
-To use `bootgly` as a global command (and with `sudo` for privileged ports), run the setup command:
+To use `bootgly` as a global command, run setup as your ordinary user from the Kit directory:
 
 ```bash :toolbar="true";
-sudo php bootgly setup
+php bootgly setup
 ```
 
-This creates a wrapper script at `/usr/local/bin/bootgly` with the absolute path to your PHP binary, so it works correctly with `sudo` (which resets PATH).
+This creates a wrapper script at `/usr/local/bin/bootgly` with the absolute path to your PHP binary. PHP and the Bootgly code remain unprivileged; setup streams the composed wrapper through an already-open private descriptor and delegates only `install -m 0755 /dev/stdin /usr/local/bin/bootgly` through sudo when required. No privileged process reopens a caller-controlled temporary path.
 
-The wrapper runs the **nearest Bootgly launcher above your working directory** — from anywhere inside a kit the global command operates on that kit, and it only falls back to the checkout `setup` ran from when no launcher is found. Only a launcher owned by you (or by root) that nobody else can write is trusted: a stray file named `bootgly` in a shared directory never runs as you — nor as root under `sudo bootgly`.
+In an unprivileged invocation, the wrapper resolves the **nearest trusted Bootgly launcher above your working directory** and accepts a launcher owned by the current user or root, provided that its path is not replaceable by another user. If none is found, it uses the active workspace launcher recorded during setup. The global wrapper deliberately refuses effective user root — including `sudo bootgly` — with status 126 before selecting a PHP binary or launcher.
+
+> [!WARNING]
+> Do not use `sudo bootgly`: the global wrapper is an unprivileged convenience command. For a developer-owned kit, prefer Linux capabilities or a reverse proxy. A service that genuinely needs root must invoke the absolute launcher of a separate deployment whose complete executable tree is owned by root and not writable by non-root users.
 
 After setup, you can use `bootgly` directly from any directory:
 
@@ -141,10 +144,10 @@ After setup, you can use `bootgly` directly from any directory:
 bootgly help
 ```
 
-To uninstall:
+To uninstall, keep PHP unprivileged and let setup delegate only the fixed removal operation when required:
 
 ```bash :toolbar="true";
-sudo bootgly setup --uninstall
+php bootgly setup --uninstall
 ```
 
 ## Anatomy of a project
@@ -231,10 +234,13 @@ Ports below 1024 require special permissions on Linux. There are two approaches:
 
 ### Option A: Using sudo
 
-After running `sudo php bootgly setup`, you can start the server with sudo:
+If a service genuinely needs to start as root before dropping privileges, invoke the absolute launcher of a deployment owned by root and not writable by non-root users:
+
+> [!WARNING]
+> The global `bootgly` wrapper refuses EUID 0. The direct command below bypasses that convenience wrapper, so every PHP file the deployment can load—not only the launcher—must be root-controlled. Otherwise use Option B or a reverse proxy.
 
 ```bash :toolbar="true";
-sudo bootgly project MyApp start
+sudo /path/to/root-owned/php /path/to/root-owned/bootgly project MyApp start
 ```
 
 For production, you can combine this with **privilege dropping** — the server binds to the port as root, then drops to a non-privileged user:
@@ -253,10 +259,10 @@ $Server->configure(
 Grant PHP the ability to bind privileged ports without root:
 
 ```bash :toolbar="true";
-sudo php bootgly setup --capabilities
+php bootgly setup --capabilities
 ```
 
-This runs `setcap cap_net_bind_service=+ep` on the PHP binary. After that, any `bootgly` server can bind to ports like 80 or 443 without sudo.
+Setup delegates only the fixed `setcap cap_net_bind_service=+ep` operation. After that, any `bootgly` server can bind to ports like 80 or 443 without sudo.
 
 > [!WARNING]
 > This applies to ALL PHP scripts on the system, not just Bootgly.
@@ -291,5 +297,7 @@ $Server->configure(
 A ready-to-use HTTPS project example is included at `projects/Demo/HTTPS_Server_CLI/`:
 
 ```bash :toolbar="true";
-sudo bootgly project Demo/HTTPS_Server_CLI start
+bootgly project Demo/HTTPS_Server_CLI start
 ```
+
+This exact unprivileged command needs the Linux capability from Option B to bind port 443. A service manager using a separate root-controlled deployment is an operational alternative, not a permission granted to this command.
