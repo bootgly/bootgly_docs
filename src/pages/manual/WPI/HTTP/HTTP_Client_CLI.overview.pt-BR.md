@@ -562,7 +562,7 @@ public function request (
 ): self|Response
 ```
 
-Envia uma requisição HTTP. No modo sync, bloqueia até a `Response` estar completa (seguindo redirects e executando retries). No modo batch, retorna imediatamente uma referência de `Response` — populada depois pelo `drain()`. No modo event-driven, retorna `self`. Em um reactor adotado, a Fiber deferida faz park até a `Response` estar completa.
+Envia uma requisição HTTP. `method` deve ser um token HTTP e `URI` deve usar origin-form (`/caminho?query`), ou `*` com `OPTIONS`; espaços raw, controles, barras invertidas e fragments são rejeitados com `InvalidArgumentException` antes de qualquer conexão ser aberta. No modo sync, bloqueia até a `Response` estar completa (seguindo redirects e executando retries). No modo batch, retorna imediatamente uma referência de `Response` — populada depois pelo `drain()`. No modo event-driven, retorna `self`. Em um reactor adotado, a Fiber deferida faz park até a `Response` estar completa.
 
 ```php
 public function batch (): void

@@ -26,6 +26,35 @@ $Request->URI; // '/api/users?page=1'
 $Request->protocol; // 'HTTP/1.1'
 ```
 
+### Request-line validation
+
+Outgoing request-line values are validated before the Request changes or a connection opens:
+
+- `method` must be a non-empty HTTP token. Standard and extension methods are accepted.
+- `URI` must be origin-form (`/path` with an optional query), or `*` only with `OPTIONS`.
+- Raw spaces, control bytes, DEL, backslashes and fragments (`#...`) are rejected. Encode data in the path/query instead of inserting raw separators.
+- A textual request protocol must be exactly `HTTP/1.0` or `HTTP/1.1`.
+
+Invalid input throws `InvalidArgumentException`. The same check is repeated at the HTTP/1 encoder and HTTP/2 stream boundary, so mutating the public Request properties cannot put an invalid request-line or pseudo-header on the wire. Redirect fragments are removed; a redirect whose resolved target is invalid is not followed.
+
+Use the public check when validating a target before building a Request:
+
+```php
+Request::check('GET', '/users?page=1'); // true
+Request::check('OPTIONS', '*');         // true
+Request::check('GET', "/safe\r\nX: 1"); // false
+```
+
+Signature:
+
+```php
+public static function check (
+   string $method,
+   string $URI,
+   null|string $protocol = null
+): bool
+```
+
 ## Headers
 
 Access request headers through the `Header` sub-object or via the `headers` property hook:
@@ -118,6 +147,8 @@ $Request(
    mixed $body = null
 ): self
 ```
+
+This call applies the request-line validation above atomically. On rejection, the existing method, URI and memoized encoding remain unchanged.
 
 ## Transport State
 
