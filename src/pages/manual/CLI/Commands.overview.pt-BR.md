@@ -143,7 +143,7 @@ use const Bootgly\CLI;
 CLI->Commands->Middlewares->pipe(new TimerMiddleware);
 ```
 
-Os middlewares envolvem o comando como uma cebola: o primeiro middleware do pipe é a camada mais externa, e chamar `$next(...)` passa o controle para a próxima camada (no fim, o `run()` do comando).
+Os middlewares envolvem o comando em camadas, no modelo onion: o primeiro middleware do pipe é a camada mais externa, e chamar `$next(...)` passa o controle para a próxima camada (no fim, o `run()` do comando).
 
 ## Veja ao vivo
 
