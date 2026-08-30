@@ -83,7 +83,9 @@ Compression is **on by default**: the client offers `permessage-deflate`, and wh
 it, outbound messages are deflated and inbound ones inflated automatically — your handlers always see
 plain bytes. Inbound inflation is budgeted incrementally against `maxMessageSize`; an expansion that
 crosses it is stopped with close code `1009` before the complete output is retained. Check what was
-negotiated with `$Session->Deflator !== null`. Disable the offer with
+negotiated with `$Session->Deflator !== null`. Malformed compressed input is contained as a protocol
+error and closes with `1007`; the zlib warning never escapes. A runtime that selectively disables
+`pcntl_signal_dispatch` while leaving async PCNTL enabled is rejected before inflation. Disable the offer with
 `compression: false`:
 
 ```php

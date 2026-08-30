@@ -84,7 +84,10 @@ A compressão é **ligada por padrão**: o cliente oferece `permessage-deflate` 
 aceita, as mensagens de saída são deflacionadas e as de entrada infladas automaticamente — seus
 handlers sempre veem bytes puros. A inflação de entrada consome incrementalmente o orçamento de
 `maxMessageSize`; uma expansão que o ultrapassa é interrompida com o código de close `1009` antes de
-reter toda a saída. Verifique o que foi negociado com `$Session->Deflator !== null`.
+reter toda a saída. Verifique o que foi negociado com `$Session->Deflator !== null`. Entrada comprimida
+malformada fica contida como erro de protocolo e encerra com `1007`; o warning do zlib nunca escapa.
+Um runtime que desabilita seletivamente `pcntl_signal_dispatch` enquanto mantém PCNTL assíncrono ativo
+é recusado antes da inflação.
 Desligue a oferta com `compression: false`:
 
 ```php
