@@ -95,12 +95,24 @@ php bootgly test --view=heatmap
 
 | Mode | Behavior |
 | ---- | -------- |
-| `list` | Prints each case as it runs and stops at the first failing case. Default for targeted runs (`php bootgly test <suite>` / `<suite> <case>`), and for **any** run whose `stdout` is not a terminal — a redirected or piped run is a log, so CI gets the full per-case output instead of a dashboard. That fallback changes **rendering only**: a full run still visits every suite, exactly as the heatmap does. Passing `--view=list` explicitly is what asks for the stop-at-the-first-failure contract. |
-| `heatmap` | Renders one dashboard card per suite — rounded frame, a progress gauge and one colored square per assertion (green passed, soft-red failed, beige skipped). The gauge fills deterministically by **test cases** (their count is known upfront), while the squares are the individual **assertions** discovered as each case runs — so a suite of 63 cases can show 254 assertions. On interactive terminals the card paints live as cases run. All suites run to the end, failures are listed under each card — along with any debug output (`dump()`) the failing case captured — and the exit code is non-zero when any case failed. Default for full runs (`php bootgly test`) on an interactive terminal. Pass `--view=heatmap` explicitly to render the cards into a pipe or a file as well. |
+| `list` | Prints each case as it runs. Default for targeted runs (`php bootgly test <suite>` / `<suite> <case>`), and for **any** run whose `stdout` is not a terminal — a redirected or piped run is a log, so CI gets the full per-case output instead of a dashboard. The view is **rendering only**: whichever mode renders, the run still executes everything it was asked to run (see [Fail-fast](#fail-fast)). |
+| `heatmap` | Renders one dashboard card per suite — rounded frame, a progress gauge and one colored square per assertion (green passed, soft-red failed, beige skipped). The gauge fills deterministically by **test cases** (their count is known upfront), while the squares are the individual **assertions** discovered as each case runs — so a suite of 63 cases can show 254 assertions. On interactive terminals the card paints live as cases run. All suites run to the end, failures are listed under each card — along with any debug output (`dump()`) the failing case captured — and the exit code is non-zero when any case failed. Default for full runs (`php bootgly test`) on an interactive terminal. Pass `--view=heatmap` explicitly to render the cards into a pipe or a file as well. The dashboard needs the whole run, so an explicit `--view=heatmap` cannot be combined with `--fail-fast` — the runner refuses the pair with an alert. |
 
 The card is composed by the runner from three components: a [Fieldset](/manual/CLI/UI/Base/Fieldset) boxes a [Charts Meter](/manual/CLI/UI/Components/Charts) (the cases progress) and a [Heatmap](/manual/CLI/UI/Components/Heatmap) (the assertions grid). AI agents (`AI_AGENT=1`) always receive the JSON results document, regardless of the view. When a run produces no document, `stdout` stays empty — the reason and the child's output go to `stderr`.
 
-An agent run keeps the **fail-fast** contract: it stops at the first failing case, exactly like `--view=list`. The document says so instead of hiding it — `suites.total` is what the resolved registry **registered**, and every suite the run did not reach is counted in `suites.skipped`. So a run that stopped at the first of 105 suites reports `total: 105, failed: 1, skipped: 104, passed: 0`, never a shrunken total with `skipped: 0`. Case counts stay what actually ran: the cases of a suite that never loaded are unknowable. Use a full sweep (`--view=heatmap`, or a plain full run on a terminal) when you want every failure in one pass.
+An agent run executes everything it was asked to run, like any other, and the document lists every failure under `failures`. Only `--fail-fast` stops it at the first failing case — and the document says so instead of hiding it: `suites.total` is what the resolved registry **registered**, and every suite the run did not reach is counted in `suites.skipped`. So a `--fail-fast` run that stopped at the first of 105 suites reports `total: 105, failed: 1, skipped: 104, passed: 0`, never a shrunken total with `skipped: 0`. Case counts stay what actually ran: the cases of a suite that never loaded are unknowable.
+
+## Fail-fast
+
+By default a run executes everything it was asked to run — every suite of a full run, every case of a targeted one — and reports every failure. Pass `--fail-fast` to stop at the first failing case instead:
+
+```bash :toolbar="true";
+php bootgly test --fail-fast
+php bootgly test 23 --fail-fast
+AI_AGENT=1 php bootgly test --fail-fast
+```
+
+`--fail-fast` is a bare switch (a value fails with an alert) and it decides the contract alone — `--view` never does, and neither does the agent mode. A suite that manages its own cases (the E2E harnesses declare `exitOnFailure: false` in their autoboot) still runs its remaining cases; the run then stops at the end of that suite. The suites never reached are reported as skipped, in the summary line and in the agent document alike.
 
 ## Coverage
 
@@ -149,5 +161,6 @@ vendor/bin/phpstan analyse -c @/phpstan.neon
 ## Common patterns
 
 - Re-run a failing test in isolation with `php bootgly test <suite> <case>` before pushing.
+- Hunting one failure in a suite? `php bootgly test <suite> --fail-fast` stops at the first red case; without it the suite always runs to its end.
 - Pair `--coverage-diff` with a specific suite index to verify that new or changed lines are covered.
 - For CI, prefer the global form `bootgly test` — `proc_open` subprocesses inherit CI environment variables (e.g. `GITHUB_ACTIONS`), which can change suite registration if your tests rely on `Environment::CI_CD`.

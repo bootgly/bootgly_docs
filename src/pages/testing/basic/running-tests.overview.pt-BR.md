@@ -95,12 +95,24 @@ php bootgly test --view=heatmap
 
 | Modo | Comportamento |
 | ---- | ------------- |
-| `list` | Imprime cada caso conforme executa e para no primeiro caso que falhar. Padrão para runs focados (`php bootgly test <suite>` / `<suite> <case>`) e para **qualquer** run cujo `stdout` não seja um terminal — um run redirecionado ou em pipe é um log, então a CI recebe a saída completa por caso em vez de um dashboard. Esse fallback muda **apenas a renderização**: um full run continua visitando todas as suítes, exatamente como o heatmap faz. Passar `--view=list` explicitamente é o que pede o contrato de parar no primeiro caso que falhar. |
-| `heatmap` | Renderiza um card de dashboard por suíte — moldura arredondada, um medidor de progresso e um quadrado colorido por assertion (verde passed, vermelho suave failed, bege skipped). O medidor enche de forma determinística por **test cases** (a contagem deles é conhecida antes de rodar), enquanto os quadrados são as **assertions** individuais descobertas conforme cada caso roda — então uma suíte de 63 cases pode mostrar 254 assertions. Em terminais interativos o card pinta ao vivo conforme os casos executam. Todas as suítes executam até o fim, as falhas são listadas sob cada card — junto com qualquer saída de debug (`dump()`) capturada pelo caso falho — e o código de saída é diferente de zero quando algum caso falhou. Padrão para full runs (`php bootgly test`) em um terminal interativo. Passe `--view=heatmap` explicitamente para renderizar os cards também em um pipe ou arquivo. |
+| `list` | Imprime cada caso conforme executa. Padrão para runs focados (`php bootgly test <suite>` / `<suite> <case>`) e para **qualquer** run cujo `stdout` não seja um terminal — um run redirecionado ou em pipe é um log, então a CI recebe a saída completa por caso em vez de um dashboard. A view é **apenas renderização**: seja qual for o modo, o run continua executando tudo o que lhe foi pedido (veja [Fail-fast](#fail-fast)). |
+| `heatmap` | Renderiza um card de dashboard por suíte — moldura arredondada, um medidor de progresso e um quadrado colorido por assertion (verde passed, vermelho suave failed, bege skipped). O medidor enche de forma determinística por **test cases** (a contagem deles é conhecida antes de rodar), enquanto os quadrados são as **assertions** individuais descobertas conforme cada caso roda — então uma suíte de 63 cases pode mostrar 254 assertions. Em terminais interativos o card pinta ao vivo conforme os casos executam. Todas as suítes executam até o fim, as falhas são listadas sob cada card — junto com qualquer saída de debug (`dump()`) capturada pelo caso falho — e o código de saída é diferente de zero quando algum caso falhou. Padrão para full runs (`php bootgly test`) em um terminal interativo. Passe `--view=heatmap` explicitamente para renderizar os cards também em um pipe ou arquivo. O dashboard precisa do run inteiro, então um `--view=heatmap` explícito não pode ser combinado com `--fail-fast` — o runner recusa o par com um alerta. |
 
 O card é composto pelo runner com três componentes: um [Fieldset](/manual/CLI/UI/Base/Fieldset) encaixota um [Meter de Charts](/manual/CLI/UI/Components/Charts) (o progresso por cases) e um [Heatmap](/manual/CLI/UI/Components/Heatmap) (a grade de assertions). Agentes de IA (`AI_AGENT=1`) sempre recebem o documento JSON de resultados, independentemente da view. Quando um run não produz documento, o `stdout` fica vazio — o motivo e a saída do processo filho vão para o `stderr`.
 
-Um run de agente mantém o contrato **fail-fast**: ele para no primeiro caso que falha, exatamente como o `--view=list`. O documento diz isso em vez de esconder — `suites.total` é o que o registro resolvido **registrou**, e toda suíte que o run não alcançou entra em `suites.skipped`. Então um run que parou na primeira de 105 suítes reporta `total: 105, failed: 1, skipped: 104, passed: 0`, nunca um total encolhido com `skipped: 0`. Os contadores de casos continuam sendo o que de fato rodou: os casos de uma suíte que nunca carregou são desconhecidos. Use uma varredura completa (`--view=heatmap`, ou um run completo num terminal) quando quiser todas as falhas de uma vez.
+Um run de agente executa tudo o que lhe foi pedido, como qualquer outro, e o documento lista todas as falhas em `failures`. Só o `--fail-fast` o faz parar no primeiro caso que falha — e o documento diz isso em vez de esconder: `suites.total` é o que o registro resolvido **registrou**, e toda suíte que o run não alcançou entra em `suites.skipped`. Então um run com `--fail-fast` que parou na primeira de 105 suítes reporta `total: 105, failed: 1, skipped: 104, passed: 0`, nunca um total encolhido com `skipped: 0`. Os contadores de casos continuam sendo o que de fato rodou: os casos de uma suíte que nunca carregou são desconhecidos.
+
+## Fail-fast
+
+Por padrão um run executa tudo o que lhe foi pedido — todas as suítes de um full run, todos os casos de um run focado — e reporta todas as falhas. Passe `--fail-fast` para parar no primeiro caso que falhar:
+
+```bash :toolbar="true";
+php bootgly test --fail-fast
+php bootgly test 23 --fail-fast
+AI_AGENT=1 php bootgly test --fail-fast
+```
+
+`--fail-fast` é um switch sem valor (um valor falha com um alerta) e decide o contrato sozinho — `--view` nunca decide, nem o modo agente. Uma suíte que gerencia os próprios casos (os harnesses E2E declaram `exitOnFailure: false` no autoboot) ainda executa os casos restantes; o run então para ao fim dessa suíte. As suítes nunca alcançadas são reportadas como skipped, tanto na linha de resumo quanto no documento do agente.
 
 ## Cobertura (Coverage)
 
@@ -149,5 +161,6 @@ vendor/bin/phpstan analyse -c @/phpstan.neon
 ## Padrões comuns
 
 - Reexecute um teste que falhou isoladamente com `php bootgly test <suite> <case>` antes de fazer push.
+- Caçando uma falha numa suíte? `php bootgly test <suite> --fail-fast` para no primeiro caso vermelho; sem ele a suíte sempre roda até o fim.
 - Combine `--coverage-diff` com um índice de suíte específico para verificar se linhas novas ou alteradas estão cobertas.
 - Em CI, prefira a forma global `bootgly test` — subprocessos abertos via `proc_open` herdam variáveis de ambiente da CI (ex.: `GITHUB_ACTIONS`), o que pode alterar o registro das suítes se seus testes dependem de `Environment::CI_CD`.

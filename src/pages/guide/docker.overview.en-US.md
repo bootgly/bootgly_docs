@@ -150,9 +150,10 @@ docker run --rm -e AI_AGENT=1 bootgly:full test 16   # machine-readable output
 
 A few suites assert against host-specific paths (such as `/etc/php/8.3/`) or assume a
 non-root user (such as `/sbin` not being writable). Those assumptions do not hold inside a
-clean container, and because the test runner is fail-fast the full `docker run --rm
-bootgly:full test` stops at the first such suite. Run suites individually by index to work
-around it — this is a property of those tests, not of the image.
+clean container, so the full `docker run --rm bootgly:full test` runs every suite and reports
+those as failed — the run sweeps by default and lists every failure. Pass `--fail-fast` to
+stop at the first failing case instead, or run suites individually by index — this is a
+property of those tests, not of the image.
 
 ## Benchmark
 

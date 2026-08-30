@@ -153,9 +153,10 @@ docker run --rm -e AI_AGENT=1 bootgly:full test 16   # saída legível por máqu
 
 Algumas suítes verificam caminhos específicos do host (como `/etc/php/8.3/`) ou assumem um
 usuário não-root (como `/sbin` não ser gravável). Essas premissas não valem dentro de um
-container limpo e, como o runner de testes é fail-fast, o `docker run --rm bootgly:full test`
-completo para na primeira suíte assim. Rode as suítes individualmente por índice para
-contornar isso — é uma característica desses testes, não da imagem.
+container limpo, então o `docker run --rm bootgly:full test` completo roda todas as suítes e
+reporta essas como falhas — o run varre por padrão e lista todas as falhas. Passe `--fail-fast`
+para parar no primeiro case que falha, ou rode as suítes individualmente por índice — é uma
+característica desses testes, não da imagem.
 
 ## Benchmark
 
