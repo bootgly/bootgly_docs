@@ -565,6 +565,33 @@ export default {
     }
   },
 
+  '/logs': {
+    config: {
+      icon: 'monitor_heart',
+      status: 'draft',
+      version: '1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The logs CLI — read the persisted backlog and follow any running instance live (`bootgly logs -f`), from any terminal, in any server mode, with per-project provenance filters.',
+          'pt-BR': 'O CLI de logs — leia o backlog persistido e siga qualquer instância em execução ao vivo (`bootgly logs -f`), de qualquer terminal, em qualquer modo de servidor, com filtros de procedência por projeto.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Logs CLI'
+      },
+      'pt-BR': {
+        title: 'CLI de Logs'
+      }
+    }
+  },
+
   '/linter': {
     config: {
       icon: 'rule',

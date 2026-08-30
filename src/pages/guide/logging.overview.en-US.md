@@ -78,6 +78,16 @@ $Logger->Handlers->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
 // a logger on channel 'Demo.App' → storage/logs/Demo.App.log
 ```
 
+A `{project}` placeholder resolves to the record's **provenance** — the booted project's canonical
+folder id, or `framework` when no project is booted — separating framework and application records
+with zero application code (both placeholders are sanitized; no path traversal):
+
+```php
+$Logger->Handlers->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{project}/{channel}.log'));
+// a 'Demo/HTTP_Server_CLI' boot → storage/logs/Demo_HTTP_Server_CLI/Demo.App.log
+// a bare framework process     → storage/logs/framework/<channel>.log
+```
+
 ## Persist logs across the app
 
 A per-logger `File` handler covers one logger. To persist **every opted-in logger** to one place —
@@ -102,18 +112,43 @@ Persistence is **opt-in on both ends**: nothing is written until you register a 
 destination), and only loggers built `global: true` reach it (the source). With `{channel}` you get
 one file per module — `storage/logs/Payments.log`.
 
+The framework's **server channels opt in by default**: `HTTP.Server.CLI`, `TCP.Server.CLI` and the
+other server-owned loggers are built `global: true`, so boot, Auto-TLS and lifecycle records reach
+your sinks without any workaround. Opting a server back out is one line:
+
+```php
+$Server->Logger->global = false;
+```
+
 Where an opted-in logger's records land, per server mode:
 
 | Mode | Sink file | Live viewer |
 |---|---|---|
-| Foreground / Interactive | ✅ (also stdout) | — |
-| Daemon | ✅ | — |
-| Monitor | ✅ | ✅ |
+| Foreground / Interactive | ✅ (also stdout) | `bootgly logs -f` |
+| Daemon | ✅ (auto-installed when unset) | `bootgly logs -f` |
+| Monitor | ✅ | ✅ (in-terminal) + `bootgly logs -f` |
 
 > [!NOTE]
-> In **Daemon** mode stdout is detached, so a logger that did **not** opt in (`global: false` — e.g.
-> a framework subsystem) has its terminal output discarded; only opted-in loggers persist. Opt in
-> the channels you need. Tail one live with `tail -f storage/logs/<channel>.log`.
+> **Daemon is never a silent black hole.** When a server daemonizes with `Logger::$Sinks` still
+> unset, it installs the default sink — `File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log')` — and a
+> NOTICE saying so is that file's first record. A project that registered its own sinks is never
+> touched (`??=` semantics). Follow any mode live with
+> **[`bootgly logs -f`](/guide/logs/overview/)** — no `tail` needed.
+
+## Know whose record it is (provenance)
+
+Every `Record` carries a `project` field: the **canonical folder id** of the booted project
+(`Demo/HTTP_Server_CLI`, `Growth`, …), or `framework` when no project is booted in the process.
+It is stamped **once per process** by `Project::boot()` — never derived per record from file-path
+heuristics — so framework and application records in a shared file are always distinguishable:
+
+```json
+{"timestamp":1788122369.47,"level":"INFO","project":"Demo/HTTP_Server_CLI","channel":"Demo.App","message":"Heartbeat — server healthy.","context":[],"extra":[]}
+```
+
+The field is a first-class filter in `bootgly logs` (`--project=<Name>`, `--framework`) and the
+`{project}` path placeholder above. Lines written before the field existed read back as
+`framework`.
 
 ## Choose a format
 
@@ -127,8 +162,8 @@ use Bootgly\ACI\Logs\Handlers\Stream;
 $Logger->Handlers->push(new Stream(STDERR, new JSON));
 ```
 
-A JSON line carries `timestamp`, `level`, `channel`, `message`, `context` and `extra` (ANSI is
-stripped from the message).
+A JSON line carries `timestamp`, `level`, `project`, `channel`, `message`, `context` and `extra`
+(ANSI is stripped from the message).
 
 ## Enrich records with processors
 
@@ -200,6 +235,11 @@ thing (message, `context` and `extra`) in a scrollable detail view.
 > opt-in persistent channel below.) Under a log flood, a worker's non-blocking pipe write is dropped
 > rather than blocking the request path.
 
+The same screen also works **from any other terminal, against any mode** — Daemon included:
+**[`bootgly project <Name> logs -f`](/guide/logs/overview/)** attaches to the running instance's
+live tap and renders it through this exact viewer (same filters, same keys). Attaching arms the
+tap; detaching disarms it — a server nobody is watching pays nothing.
+
 ## Choose what the terminal line shows
 
 The default `Line` output is assembled from independent **segments** — pick exactly the pieces you
@@ -230,20 +270,24 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   `log(string|array ...$args): bool` (named-level variadic, multi-level). Holds public `Handlers`
   and `Processors`. `$global` (default `false`) opts the logger into the static `$Sinks` — a global
   `Handlers` fan-out for framework-wide persistence (push a `File` sink once; only opted-in loggers
-  reach it). The static `$Tap` (a single `Handler`) is the Monitor live viewer — fed by every
-  record regardless of opt-in, set/cleared by Monitor.
+  reach it; the framework's server channels are built `global: true`). The static `$Tap` (a single
+  `Handler`) is the live tap — fed by every record regardless of opt-in; armed by the Monitor
+  viewer and, in any mode, while a `bootgly logs -f` session is attached.
 - **Display** — `Logs\Data\Display`: `show(int ...$segments): void` sets the active mask, held in
   static `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
   `CONTEXT` — the segments of the default `Line` output (a bitmask; combine freely).
 - **Levels** — `Logs\Data\Levels` backed enum (`Emergency` = 1 … `Debug` = 8; lower = more severe):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:
-  public `$Level`, `$channel`, `$message`, `$context`, `$extra`, `$timestamp`; static
-  `import(array $data): self` rebuilds a record from a decoded JSON line.
+  public `$Level`, `$channel`, `$message`, `$project`, `$context`, `$extra`, `$timestamp`; static
+  `$provenance` (the process-scoped provenance stamped into `$project` at construction —
+  `'framework'` until `Project::boot()` sets the booted project's folder id); static
+  `import(array $data): self` rebuilds a record from a decoded JSON line (a line without a
+  `project` key imports as `framework`).
 - **Handler** — abstract `Logs\Handler`: `handle(Record): bool`; public `$Level` (min severity),
   `$Formatter`, `$Filters`. Concretes: `Handlers\Stream($stream = STDOUT, …)`,
-  `Handlers\File($path, …, Rotation)`, `Handlers\Syslog($ident, $facility, …)`,
-  `Handlers\Pipe(IPC\Pipe, …)`.
+  `Handlers\File($path, …, Rotation)` — the path resolves `{channel}` and `{project}` per record,
+  sanitized —, `Handlers\Syslog($ident, $facility, …)`, `Handlers\Pipe(IPC\Pipe, …)`.
 - **Handlers** — `Logs\Handlers`: `push(Handler $Handler, null|Levels $Level = null): self`.
 - **Formatter** — interface `Logs\Formatter`: `format(Record): string`. Concretes: `Formatters\Line`
   (ANSI + template tokens), `Formatters\JSON` (one object per line).
@@ -262,6 +306,8 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
 
 ## Next references
 
+- **[Logs CLI](/guide/logs/overview/)** — `bootgly logs` / `bootgly project <Name> logs`: read the
+  backlog and follow any instance live, from any terminal.
 - **[Events](/guide/events/overview/)** — the ABI event bus used elsewhere in the stack.
 - **[Docker](/guide/docker/overview/)** — run the server (and its logs) in a container with `-f`.
 - **[Performance](/guide/performance/overview/)** — the zero-allocation patterns the logger follows.

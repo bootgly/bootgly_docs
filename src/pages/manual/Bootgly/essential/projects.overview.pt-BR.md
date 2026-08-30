@@ -143,6 +143,7 @@ graph LR
   project --> show["show"]
   project --> reload["reload"]
   project --> restart["restart"]
+  project --> logs["logs"]
   project --> info["info"]
 ```
 
@@ -284,9 +285,21 @@ Exemplo de saída:
 └─────────────────────────────────────┘
 ```
 
+### `project logs`
+
+Lê o backlog de logs persistido de um projeto e, com `-f`, o segue **ao vivo** — em qualquer modo
+de servidor, Daemon incluído. Endereçado pelo nome, nunca pela porta; com várias instâncias vivas,
+`--instance` escolhe uma (sem ele, o comando as lista e recusa). Veja o
+**[guia do CLI de Logs](/guide/logs/overview/)** para o fluxo completo e os filtros:
+
+```bash :toolbar="true";
+php bootgly project Demo/HTTP_Server_CLI logs -f
+php bootgly project Demo/HTTP_Server_CLI logs --since=15m --level=warning --json
+```
+
 ### Estado de processo (arquivos PID)
 
-Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam, mais um **qualificador de instância**: a porta bound para servidores, o PID do processo para projetos TUI e clients WPI. Executar `Demo/HTTP_Server_CLI` na porta 8082 cria `storage/pids/Demo~HTTP_Server_CLI.8082.json`.
+Quando um projeto inicia, ele salva o estado do processo (PID do master, PIDs dos workers, tipo, etc.) em um arquivo JSON sob `storage/pids/`. O arquivo é nomeado pelo caminho canônico do projeto, com `/` codificado como `~` para que folhas aninhadas nunca colidam, mais um **qualificador de instância**: a porta bound para servidores, o PID do processo para projetos TUI e clients WPI. Executar `Demo/HTTP_Server_CLI` na porta 8082 cria `storage/pids/Demo~HTTP_Server_CLI.8082.json`. Um **projeto só de Console** iniciado com `project start` também registra uma instância, qualificada pelo PID do master — assim `show`, `stop` e `logs` conseguem endereçá-lo. Instâncias de servidor publicam ainda um irmão `.logs.sock`: o socket do tap de logs ao vivo ao qual o `logs -f` se anexa.
 
 Como clients qualificam por PID, qualquer número de processos client do mesmo projeto pode rodar ao mesmo tempo — incluindo geradores de carga com fork, onde cada filho forkado constrói sua própria instância de client.
 

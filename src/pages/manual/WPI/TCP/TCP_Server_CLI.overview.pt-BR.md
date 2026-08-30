@@ -112,10 +112,15 @@ O construtor recebe um enum `Bootgly\API\Endpoints\Server\Modes`.
 
 | Modo | Descrição |
 |---|---|
-| `Modes::Daemon` | Faz fork para segundo plano e mantém o processo master vivo sem interface. |
+| `Modes::Daemon` | Faz fork para segundo plano e mantém o processo master vivo sem interface. Quando `Logger::$Sinks` não está definido, instala o sink de arquivo padrão (`storage/logs/{channel}.log`) para um daemon nunca ficar sem log. |
 | `Modes::Interactive` | Executa um loop CLI estilo REPL com comandos como `status`, `stop`, `pause` e `reload`. |
 | `Modes::Monitor` | Exibe uma tela de status em tempo real e faz hot-reload da camada de aplicação. |
 | `Modes::Test` | Usa uma instância separada de estado de processo voltada para testes automatizados do servidor. |
+
+Em todo modo exceto Test, o master também publica um **tap de logs ao vivo** por instância — um
+socket unix ao lado dos arquivos PID ao qual o [`bootgly logs -f`](/guide/logs/overview/) se
+anexa. Anexar arma o `Logger::$Tap` no master e em todos os workers; desanexar desarma, então um
+servidor que ninguém olha não paga nada.
 
 ## Configuração
 

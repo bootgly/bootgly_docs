@@ -21,6 +21,11 @@ bootgly project Demo/HTTP_Server_CLI start -m
 O servidor entra na tela alternativa, aponta todo `Logger` para o pipe do Monitor e alimenta o
 viewer num laço não-bloqueante. Você ganha um painel ao vivo e filtrável até teclar `q`/`Esc`.
 
+A mesma tela também é alcançável **de qualquer outro terminal, contra qualquer modo de servidor** —
+o comando [`bootgly logs -f`](/guide/logs/overview/) anexa ao tap ao vivo de uma instância em
+execução e dirige este exato componente via `CLI\UX\Components\Tail` (mesmos filtros, mesmas
+teclas). A visão de detalhe mostra ainda a **procedência** do record (o campo `project`).
+
 ## Dirija você mesmo
 
 Se você montar seu próprio laço de monitoramento, o ciclo é: alimentar bytes, ler uma tecla,

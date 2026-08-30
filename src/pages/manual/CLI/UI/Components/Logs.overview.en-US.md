@@ -21,6 +21,11 @@ bootgly project Demo/HTTP_Server_CLI start -m
 The server enters the alternate screen, points every `Logger` at the Monitor pipe, and feeds the
 viewer in a non-blocking loop. You get a live, filterable dashboard until you press `q`/`Esc`.
 
+The same screen is also reachable **from any other terminal, against any server mode** — the
+[`bootgly logs -f`](/guide/logs/overview/) command attaches to a running instance's live tap and
+drives this exact component through `CLI\UX\Components\Tail` (same filters, same keys). The detail
+view additionally shows the record's **provenance** (its `project` field).
+
 ## Drive it yourself
 
 If you build your own monitoring loop, the cycle is: feed bytes, read a key, render a frame.
