@@ -217,7 +217,7 @@ $Verifier = new JWT($publicPem, 'RS256');
 $Verifier->trust(KeysJWKS::parse($jwks, 'RS256'));
 ```
 
-Always set `kid` when rotating JWT keys. A no-`kid` key set is intentionally single-slot for backwards-compatible tokens; adding a second default key fails loudly instead of letting the verifier guess.
+`KeysJWKS::parse()` keeps every supported RS256 key and skips unsupported siblings — encryption keys, other algorithms — as RFC 7517 asks, so an IdP publishing a mixed document never poisons verification; a document with zero supported keys still fails loudly. Always set `kid` when rotating JWT keys. A no-`kid` key set is intentionally single-slot for backwards-compatible tokens; adding a second default key fails loudly instead of letting the verifier guess.
 
 For external OAuth/OIDC issuers, use `Bootgly\API\Security\JWT\Remote` with the provider's `jwks_uri`:
 

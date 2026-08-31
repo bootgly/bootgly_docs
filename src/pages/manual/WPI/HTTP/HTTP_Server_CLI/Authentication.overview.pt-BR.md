@@ -217,6 +217,8 @@ $Verifier = new JWT($publicPem, 'RS256');
 $Verifier->trust(KeysJWKS::parse($jwks, 'RS256'));
 ```
 
+`KeysJWKS::parse()` mantém toda chave RS256 suportada e pula irmãs não suportadas — chaves de criptografia, outros algoritmos — como pede a RFC 7517, então um IdP que publica um documento misto nunca envenena a verificação; um documento com zero chaves suportadas continua falhando alto.
+
 Sempre defina `kid` ao rotacionar chaves JWT. Um key set sem `kid` é intencionalmente single-slot para tokens compatíveis antigos; adicionar uma segunda chave default falha explicitamente em vez de fazer o verifier adivinhar.
 
 Para issuers OAuth/OIDC externos, use `Bootgly\API\Security\JWT\Remote` com o `jwks_uri` do provedor:
