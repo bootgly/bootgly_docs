@@ -265,9 +265,11 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   remember são lidas do banco primário mesmo quando há réplicas de leitura
   configuradas. Um store apoiado em `Transaction` usa uma leitura corrente com
   lock no MySQL/PostgreSQL. No PostgreSQL, uma transação repeatable-read cuja
-  linha mudou pode falhar com SQLSTATE `40001`; faça rollback e repita a
-  transação inteira. O SQLite usa uma barreira de escrita de zero linhas e pode
-  falhar fechado com `database is locked` quando seu snapshot está obsoleto.
+  linha mudou pode falhar com SQLSTATE `40001` — o store de credenciais lança
+  a falha, permitindo ao caller fazer rollback e repetir a transação inteira.
+  O SQLite usa uma barreira de escrita de zero linhas; um snapshot obsoleto
+  lança `database is locked` do store de credenciais e falha fechado nos
+  stores de token.
   Esses locks duram até commit/rollback, portanto mantenha transações de
   segurança curtas. Uma transação read-only não consegue adquiri-los e falha
   fechada.
@@ -333,22 +335,30 @@ public function __construct (SQLDatabase|Transaction $Database, Password $Passwo
 Cria o store de credenciais sobre uma conexão SQL do ADI. Nomes de tabela e
 colunas são configuráveis; os defaults casam com as migrations do demo Auth.
 
-Os três stores de segurança apoiados em SQL distinguem uma falha de banco já registrada
-na `Operation` de uma espera interrompida ou inacabada sem resultado registrado. Falhas de
-statement registradas preservam os resultados fail-closed documentados abaixo. Uma
-`RuntimeException` não registrada vinda de `await()` é propagada, e outros throwables de
-infraestrutura também continuam sendo exceções; nenhum deles pode se passar por credencial
-errada, zero linhas afetadas ou token emitido com sucesso. Um
-`stream_select()` interrompido é repetido com a mesma operação até ela resolver ou até seu
-deadline configurado ou outra falha decidir o resultado.
+Os três stores de segurança apoiados em SQL mantêm problemas de infraestrutura
+distinguíveis de fatos de credencial. O store de credenciais (`Users`) lança uma
+`RuntimeException` carregando a causa real do driver para qualquer falha de banco —
+registrada na `Operation` ou lançada pela espera — de modo que uma indisponibilidade nunca
+responde como "senha errada", "conta inexistente" ou "já registrado". Os stores de token
+(`Tokens`, `Trust`) preservam os resultados de falha por método documentados abaixo
+(`null` onde indicado) para uma falha já registrada na `Operation`; uma `RuntimeException`
+não registrada vinda de `await()` é propagada, e outros throwables de infraestrutura
+também continuam sendo exceções — nenhum deles pode se passar por credencial errada, zero
+linhas afetadas ou token emitido com sucesso. Um `stream_select()` interrompido é repetido
+com a mesma operação até ela resolver ou até seu deadline configurado ou outra falha
+decidir o resultado.
 
 ```php
 public function enroll (string $email, #[\SensitiveParameter] string $password): null|string
 ```
 
-Registra credenciais e retorna o id da nova conta. Retorna `null` em
-identificador duplicado (o índice único é o único gate — sem corrida
-read-then-write) ou erro de banco.
+Registra credenciais e retorna o id da nova conta. Retorna `null` apenas em
+identificador duplicado — o índice único é o único gate (sem corrida
+read-then-write), e a violação é reconhecida pelo código de máquina do driver,
+nunca inferida de uma falha arbitrária. Dentro de uma `Transaction` o insert é
+cercado por um savepoint, então uma duplicata não aborta a unidade de trabalho
+do caller no PostgreSQL. Qualquer outra falha de banco lança uma
+`RuntimeException`.
 
 ```php
 public function verify (string $email, #[\SensitiveParameter] string $password): null|Identity
@@ -356,7 +366,10 @@ public function verify (string $email, #[\SensitiveParameter] string $password):
 
 Verifica credenciais com timing uniforme e rehash-on-verify: hashes legados
 migram para a política argon2id atual de forma transparente. Retorna uma
-`Identity` com claims `email` e `verified`, ou `null`.
+`Identity` com claims `email` e `verified`, ou `null`. A persistência do rehash
+é best-effort: um write de upgrade que falha ou não atinge nenhuma linha nunca
+falha o login, e é anunciado pelo evento
+`Bootgly\ADI\Databases\SQL\Events::Failed` (custo zero sem listener anexado).
 
 ```php
 public function check (string $user, #[\SensitiveParameter] string $password): bool

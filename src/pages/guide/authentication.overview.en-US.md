@@ -262,9 +262,10 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   decisions are read from the primary database even when read replicas are
   configured. A store backed by a `Transaction` uses a locking current read on
   MySQL/PostgreSQL. PostgreSQL repeatable-read transactions whose row changed
-  can fail with SQLSTATE `40001`; roll back and retry the whole transaction.
-  SQLite uses a zero-row writer barrier instead and can fail closed with
-  `database is locked` when its snapshot is stale. These locks last until
+  can fail with SQLSTATE `40001` — the credential store raises it, so the
+  caller can roll back and retry the whole transaction. SQLite uses a zero-row
+  writer barrier instead; a stale snapshot raises `database is locked` from
+  the credential store and fails the token stores closed. These locks last until
   commit/rollback, so keep security transactions short. A read-only
   transaction cannot acquire them and fails closed.
 - **CSRF** — every POST (including logout) carries the masked `_token` from
@@ -328,12 +329,15 @@ public function __construct (SQLDatabase|Transaction $Database, Password $Passwo
 Creates the credential store over an ADI SQL connection. Table and column
 names are configurable; the defaults match the Auth demo migrations.
 
-All three SQL-backed security stores distinguish a database failure already recorded on
-its `Operation` from an interrupted or unfinished wait with no recorded outcome. Recorded
-statement failures retain the fail-closed results documented below. An unrecorded
-`RuntimeException` from `await()` is propagated, and other infrastructure throwables also
-remain exceptions; neither can masquerade as a wrong credential, zero affected rows, or a
-successfully issued token. An interrupted
+All three SQL-backed security stores keep infrastructure trouble distinguishable from
+credential facts. The credential store (`Users`) raises a `RuntimeException` carrying the
+driver's own cause for any database failure — recorded on its `Operation` or thrown by
+the wait — so an outage can never answer as "wrong password", "no such account" or
+"already registered". The token stores (`Tokens`, `Trust`) keep the per-method failure
+results documented below (`null` where noted) for a failure already recorded on the
+`Operation`; an unrecorded `RuntimeException` from `await()` is propagated, and other
+infrastructure throwables also remain exceptions — neither can masquerade as a wrong
+credential, zero affected rows, or a successfully issued token. An interrupted
 `stream_select()` is retried with the same operation until it resolves or its configured
 deadline or another failure decides the outcome.
 
@@ -341,9 +345,12 @@ deadline or another failure decides the outcome.
 public function enroll (string $email, #[\SensitiveParameter] string $password): null|string
 ```
 
-Registers credentials and returns the new account id. Returns `null` on a
-duplicate identifier (the unique index is the only gate — no read-then-write
-race) or on database error.
+Registers credentials and returns the new account id. Returns `null` only on a
+duplicate identifier — the unique index is the only gate (no read-then-write
+race), and the violation is recognized by the driver's machine code, never
+guessed from an arbitrary failure. Inside a `Transaction` the insert is fenced
+by a savepoint, so a duplicate cannot abort the caller's unit of work on
+PostgreSQL. Any other database failure raises a `RuntimeException`.
 
 ```php
 public function verify (string $email, #[\SensitiveParameter] string $password): null|Identity
@@ -351,7 +358,10 @@ public function verify (string $email, #[\SensitiveParameter] string $password):
 
 Verifies credentials with uniform timing and rehash-on-verify: legacy hashes
 upgrade to the current argon2id policy transparently. Returns an `Identity`
-with `email` and `verified` claims, or `null`.
+with `email` and `verified` claims, or `null`. The rehash persistence is
+best-effort: an upgrade write that fails or lands on no row never fails the
+login, and is announced through the `Bootgly\ADI\Databases\SQL\Events::Failed`
+event (zero cost unless a listener is attached).
 
 ```php
 public function check (string $user, #[\SensitiveParameter] string $password): bool
