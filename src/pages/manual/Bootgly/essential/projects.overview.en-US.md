@@ -144,6 +144,7 @@ graph LR
   project --> restart["restart"]
   project --> info["info"]
   project --> logs["logs"]
+  project --> schedule["schedule"]
 ```
 
 ### `project create`
@@ -293,6 +294,18 @@ picks one (the command lists them and refuses otherwise). See the
 ```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI logs -f
 php bootgly project Demo/HTTP_Server_CLI logs --since=15m --level=warning --json
+```
+
+### `project schedule`
+
+Runs a project's cron-style jobs (its `schedule.php`) — the command **mounts** the project
+environment (configs, catalogs, autoloader, log provenance) without running its boot entry,
+so a WPI project's server never starts. The worker registers a PID-qualified instance, so
+`show`/`stop`/`logs` address it. See the **[Scheduler guide](/guide/scheduler/overview/)**:
+
+```bash :toolbar="true";
+php bootgly project Growth schedule run    # minute-aligned worker loop (SIGTERM stops it)
+php bootgly project Growth schedule list   # registered jobs and their next run
 ```
 
 ### Process state (PID files)

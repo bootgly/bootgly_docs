@@ -36,6 +36,10 @@ The worker looks for `schedule.php` in the booted project directory
 (`BOOTGLY_PROJECT->path`), falling back to the working directory (`BOOTGLY_WORKING_DIR`)
 when no project is booted.
 
+Every from-scratch `project create` scaffolds a `schedule.php` with the examples above
+commented out — delete-safe, zero jobs until you activate one (`schedule list` says so
+instead of printing nothing).
+
 ## Set the cadence — `repeat()`
 
 `repeat()` is the single way to define when a job runs. It accepts a `Frequencies` case, a
@@ -90,6 +94,21 @@ persisted per job in `storage/schedule/state.json`, so the policy survives resta
 
 ## Run the worker
 
+For a project's `schedule.php`, address the project by name — the command **mounts** the
+project environment (configs, i18n, autoloader, log provenance) without running its boot
+entry, so a WPI project's server never starts:
+
+```bash
+bootgly project Growth schedule run    # the project's minute-aligned worker loop
+bootgly project Growth schedule list   # the project's jobs and their next run
+```
+
+The worker registers a PID-qualified instance in the registry, so `bootgly project Growth
+show`, `stop <PID>` and [`logs -f`](/guide/logs/overview/) address it like any other
+running instance — and its records carry the project's provenance.
+
+A `schedule.php` in the kit root (no project) keeps working with the bare form:
+
 ```bash
 bootgly schedule run    # start the minute-aligned worker loop
 bootgly schedule list   # print registered jobs and their next run
@@ -102,7 +121,7 @@ Each job runs inside a `try/catch (\Throwable)`, so one failing job can never ki
 worker.
 
 ```text
-$ bootgly schedule list
+$ bootgly project Growth schedule list
 backup    0 3 * * *      next: 2026-06-12 03:00
 cleanup   */5 * * * *    next: 2026-06-11 22:05
 ```
@@ -156,6 +175,10 @@ priorities, propagation).
   map), both under `storage/schedule/`. Orchestrated by the engine, never by `Job`.
 - **Layering** — `Schedule` is an ACI component that depends only on the ABI event bus; the
   `ScheduleCommand` worker lives in the CLI layer.
+- **Project mount** — `Bootgly\API\Projects\Project->mount(): void` prepares the project
+  environment (BOOTGLY_PROJECT constant, log provenance, configs, i18n catalogs, Composer
+  autoload) without running the boot entry closure — what `project <Name> schedule` uses so
+  a worker can execute project code with no server started. `boot()` = `mount()` + entry.
 
 ## Next references
 

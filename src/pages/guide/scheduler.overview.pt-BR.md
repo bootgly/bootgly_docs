@@ -36,6 +36,10 @@ O worker procura o `schedule.php` no diretório do projeto bootado
 (`BOOTGLY_PROJECT->path`), com fallback para o diretório de trabalho
 (`BOOTGLY_WORKING_DIR`) quando nenhum projeto está bootado.
 
+Todo `project create` do zero scaffolda um `schedule.php` com os exemplos acima
+comentados — seguro de apagar, zero jobs até você ativar um (`schedule list` avisa em vez
+de não imprimir nada).
+
 ## Defina a cadência — `repeat()`
 
 `repeat()` é a única forma de definir quando um job roda. Aceita um case de `Frequencies`,
@@ -91,6 +95,21 @@ sobrevive a reinícios.
 
 ## Rode o worker
 
+Para o `schedule.php` de um projeto, enderece o projeto pelo nome — o comando **monta** o
+ambiente do projeto (configs, i18n, autoloader, procedência de logs) sem rodar sua entrada
+de boot, então o servidor de um projeto WPI nunca sobe:
+
+```bash
+bootgly project Growth schedule run    # o loop do worker do projeto, alinhado ao minuto
+bootgly project Growth schedule list   # os jobs do projeto e a próxima execução
+```
+
+O worker registra uma instância qualificada por PID no registry, então `bootgly project
+Growth show`, `stop <PID>` e o [`logs -f`](/guide/logs/overview/) o endereçam como
+qualquer outra instância em execução — e seus records carregam a procedência do projeto.
+
+Um `schedule.php` na raiz do kit (sem projeto) segue funcionando com a forma pura:
+
 ```bash
 bootgly schedule run    # inicia o loop do worker alinhado ao minuto
 bootgly schedule list   # lista os jobs registrados e a próxima execução
@@ -103,7 +122,7 @@ de forma limpa. Cada job roda dentro de um `try/catch (\Throwable)`, então um j
 nunca derruba o worker.
 
 ```text
-$ bootgly schedule list
+$ bootgly project Growth schedule list
 backup    0 3 * * *      next: 2026-06-12 03:00
 cleanup   */5 * * * *    next: 2026-06-11 22:05
 ```
@@ -159,6 +178,11 @@ Veja o guia **[Events](/guide/events/overview/)** para a API completa do barrame
   `Job`.
 - **Camadas** — `Schedule` é um componente ACI que depende apenas do barramento de eventos
   da ABI; o worker `ScheduleCommand` fica na camada CLI.
+- **Mount de projeto** — `Bootgly\API\Projects\Project->mount(): void` prepara o ambiente
+  do projeto (constante BOOTGLY_PROJECT, procedência de logs, configs, catálogos i18n,
+  autoload do Composer) sem rodar o closure de entrada do boot — o que `project <Name>
+  schedule` usa para um worker executar código do projeto sem subir servidor.
+  `boot()` = `mount()` + entrada.
 
 ## Próximas referências
 

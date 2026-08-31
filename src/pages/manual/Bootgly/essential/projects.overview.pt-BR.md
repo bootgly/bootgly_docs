@@ -144,6 +144,7 @@ graph LR
   project --> reload["reload"]
   project --> restart["restart"]
   project --> logs["logs"]
+  project --> schedule["schedule"]
   project --> info["info"]
 ```
 
@@ -294,6 +295,19 @@ de servidor, Daemon incluído. Endereçado pelo nome, nunca pela porta; com vár
 ```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI logs -f
 php bootgly project Demo/HTTP_Server_CLI logs --since=15m --level=warning --json
+```
+
+### `project schedule`
+
+Roda os jobs cron-style de um projeto (o seu `schedule.php`) — o comando **monta** o
+ambiente do projeto (configs, catálogos, autoloader, procedência de logs) sem rodar sua
+entrada de boot, então o servidor de um projeto WPI nunca sobe. O worker registra uma
+instância qualificada por PID, então `show`/`stop`/`logs` o endereçam. Veja o
+**[guia do Scheduler](/guide/scheduler/overview/)**:
+
+```bash :toolbar="true";
+php bootgly project Growth schedule run    # loop do worker alinhado ao minuto (SIGTERM para)
+php bootgly project Growth schedule list   # jobs registrados e a próxima execução
 ```
 
 ### Estado de processo (arquivos PID)
