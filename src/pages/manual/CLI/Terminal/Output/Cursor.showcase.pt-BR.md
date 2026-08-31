@@ -75,6 +75,12 @@ $Cursor->report(); // Emite a posição atual do cursor
 $Cursor->position; // Returna a posição atual do cursor. [0 => row, 1 => column]
 ```
 
+A consulta é limitada: em um terminal que nunca a responde — um pty sem emulador por
+trás, como um passo de CI sob `script` ou `docker run -t` — `position` degrada para
+`0,0` em cerca de meio segundo e os modos do terminal são restaurados. Ela também
+degrada para `0,0` imediatamente quando qualquer um dos streams não é um TTY (um pipe
+ou um arquivo).
+
 ## Alterando aparência
 
 Exemplos:

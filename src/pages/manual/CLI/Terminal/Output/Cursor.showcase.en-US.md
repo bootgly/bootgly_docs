@@ -75,6 +75,11 @@ $Cursor->report(); // Outputs the current cursor position
 $Cursor->position; // Returns the current cursor position. [0 => row, 1 => column]
 ```
 
+The query is bounded: on a terminal that never answers it — a pty with no emulator
+behind it, such as a `script`-wrapped CI step or `docker run -t` — `position` degrades
+to `0,0` within about half a second and the terminal modes are restored. It also
+degrades to `0,0` immediately when either stream is not a TTY (a pipe or a file).
+
 ## Changing appearance
 
 Examples:
