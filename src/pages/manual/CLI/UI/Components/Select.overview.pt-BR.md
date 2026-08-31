@@ -92,6 +92,10 @@ Escolha um país
 (no matches — Backspace erases, Esc clears)
 ```
 
+Enquanto o filtro não casa com nada, Enter não confirma nada (a seleção volta
+vazia) e Space não seleciona nada: a mira aponta para uma opção que o quadro não
+desenha, e o Select nunca confirma o que o usuário não pode ver.
+
 ## Coluna de detalhes
 
 `details` leva uma coluna de descrição esmaecida por índice de opção, alinhada após o label mais largo — uma capacidade herdada do Listbox:

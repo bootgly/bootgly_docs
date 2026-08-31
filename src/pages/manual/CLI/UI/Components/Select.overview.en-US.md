@@ -92,6 +92,10 @@ Pick a country
 (no matches — Backspace erases, Esc clears)
 ```
 
+While the filter matches nothing, Enter confirms nothing (the selection comes back
+empty) and Space selects nothing: the aim points at an option the frame does not
+draw, and the Select never commits what the user cannot see.
+
 ## Detail column
 
 `details` rides a dim description column per option index, aligned after the widest label — a free Listbox capability:
