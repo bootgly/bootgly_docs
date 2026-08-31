@@ -31,6 +31,13 @@ $rows = $Operation->Result?->rows ?? [];
 o driver, deixa o driver preparar os bytes de protocolo e avança até a operação resolver com
 `Result` ou falhar com `error`.
 
+Uma `Operation->code` de uma operação falha carrega a identidade de falha legível por máquina
+do driver — SQLSTATE do PostgreSQL, errno do MySQL ou o código de resultado estendido do
+SQLite — pareada com `error` e limpa em `retry()`. É `null` quando a falha não carrega
+nenhuma, como uma recusa do framework ou uma perda de transporte. Cada falha é anunciada uma
+vez através de `SQL\Events::Failed` — veja
+**[Events](/guide/events/overview/)**.
+
 Em rotas HTTP, prefira
 **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** e
 `$Response->Database` em vez de chamar `Pool->wait()` ou `advance()` manualmente.

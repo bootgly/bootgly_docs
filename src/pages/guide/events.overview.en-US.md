@@ -96,6 +96,7 @@ Payloads are positional, in the order listed.
 | `Connected` | a connection finished authenticating | `Connection` |
 | `Executed` | an operation resolved successfully | `Operation` |
 | `Slow` | an operation exceeded `Operation::$slow` | `Operation`, `$elapsed` (float, seconds) |
+| `Failed` | an operation failed — a driver error, a framework refusal, or an issuer-reported write that did not land | `Operation` (carries `->SQL`, `->error` and `->code`) |
 
 `Bootgly\ADI\Databases\SQL\Transaction\Events`:
 

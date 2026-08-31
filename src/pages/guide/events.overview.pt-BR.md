@@ -97,6 +97,7 @@ Bootgly\ABI\Event`). Payloads são posicionais, na ordem listada.
 | `Connected` | uma conexão terminou de autenticar | `Connection` |
 | `Executed` | uma operação resolveu com sucesso | `Operation` |
 | `Slow` | uma operação excedeu `Operation::$slow` | `Operation`, `$elapsed` (float, segundos) |
+| `Failed` | uma operação falhou — erro do driver, recusa do framework, ou escrita reportada pelo emissor que não foi concluída | `Operation` (carrega `->SQL`, `->error` e `->code`) |
 
 `Bootgly\ADI\Databases\SQL\Transaction\Events`:
 

@@ -32,6 +32,12 @@ $rows = $Operation->Result?->rows ?? [];
 connection, binds the driver, lets the driver prepare protocol bytes, then advances until the
 operation resolves with `Result` or fails with `error`.
 
+A failed `Operation->code` carries the driver's machine-readable failure identity — PostgreSQL
+SQLSTATE, MySQL errno or SQLite extended result code — paired with `error` and cleared on
+`retry()`. It is `null` when the failure carries none, such as a framework refusal or a
+transport loss. Each failure is announced once through `SQL\Events::Failed` — see
+**[Events](/guide/events/overview/)**.
+
 In HTTP routes, prefer WPI
 **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** and
 `$Response->Database` instead of calling `Pool->wait()` or `advance()` manually.
