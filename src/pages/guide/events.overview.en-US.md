@@ -183,6 +183,20 @@ Emitter::$Instance->listen(Events::Imported, function (Emission $Emission) {
 }, priority: 10);
 ```
 
+What a listener **throw** does depends on the event's declared contract:
+
+- By default an event is **steering**: a listener Throwable propagates to the emitter,
+  which may treat it as control flow — the WPI request events work this way (a
+  pre-routing listener that throws refuses the request; a post-handling listener that
+  throws is replaced by one bounded error response).
+- An event marked `Bootgly\ABI\Events\Emitter\Observing` is **observed only**: each
+  listener is isolated, so a Throwable never escapes `emit()`, never blinds
+  lower-priority listeners and never aborts delivery — it is reported through
+  `Throwables::notify()` instead. The ADI SQL database events (`Connected`, `Executed`,
+  `Slow`, `Failed`) are Observing: they are emitted from driver read loops and teardown
+  paths, where an escaping listener exception would corrupt the connection pool. Do not
+  write gates or validators as listeners of an Observing event.
+
 ## Reference
 
 ### `Emitter`
