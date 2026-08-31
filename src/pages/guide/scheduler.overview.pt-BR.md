@@ -100,12 +100,12 @@ ambiente do projeto (configs, i18n, autoloader, procedência de logs) sem rodar 
 de boot, então o servidor de um projeto WPI nunca sobe:
 
 ```bash
-bootgly project Growth schedule run    # o loop do worker do projeto, alinhado ao minuto
-bootgly project Growth schedule list   # os jobs do projeto e a próxima execução
+bootgly project App schedule run    # o loop do worker do projeto, alinhado ao minuto
+bootgly project App schedule list   # os jobs do projeto e a próxima execução
 ```
 
 O worker registra uma instância qualificada por PID no registry, então `bootgly project
-Growth show`, `stop <PID>` e o [`logs -f`](/guide/logs/overview/) o endereçam como
+App show`, `stop <PID>` e o [`logs -f`](/guide/logs/overview/) o endereçam como
 qualquer outra instância em execução — e seus records carregam a procedência do projeto.
 
 Um `schedule.php` na raiz do kit (sem projeto) segue funcionando com a forma pura:
@@ -122,7 +122,7 @@ de forma limpa. Cada job roda dentro de um `try/catch (\Throwable)`, então um j
 nunca derruba o worker.
 
 ```text
-$ bootgly project Growth schedule list
+$ bootgly project App schedule list
 backup    0 3 * * *      next: 2026-06-12 03:00
 cleanup   */5 * * * *    next: 2026-06-11 22:05
 ```

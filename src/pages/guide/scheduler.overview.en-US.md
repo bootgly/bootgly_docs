@@ -99,11 +99,11 @@ project environment (configs, i18n, autoloader, log provenance) without running 
 entry, so a WPI project's server never starts:
 
 ```bash
-bootgly project Growth schedule run    # the project's minute-aligned worker loop
-bootgly project Growth schedule list   # the project's jobs and their next run
+bootgly project App schedule run    # the project's minute-aligned worker loop
+bootgly project App schedule list   # the project's jobs and their next run
 ```
 
-The worker registers a PID-qualified instance in the registry, so `bootgly project Growth
+The worker registers a PID-qualified instance in the registry, so `bootgly project App
 show`, `stop <PID>` and [`logs -f`](/guide/logs/overview/) address it like any other
 running instance — and its records carry the project's provenance.
 
@@ -121,7 +121,7 @@ Each job runs inside a `try/catch (\Throwable)`, so one failing job can never ki
 worker.
 
 ```text
-$ bootgly project Growth schedule list
+$ bootgly project App schedule list
 backup    0 3 * * *      next: 2026-06-12 03:00
 cleanup   */5 * * * *    next: 2026-06-11 22:05
 ```

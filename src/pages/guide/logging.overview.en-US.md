@@ -138,7 +138,7 @@ Where an opted-in logger's records land, per server mode:
 ## Know whose record it is (provenance)
 
 Every `Record` carries a `project` field: the **canonical folder id** of the booted project
-(`Demo/HTTP_Server_CLI`, `Growth`, …), or `framework` when no project is booted in the process.
+(`Demo/HTTP_Server_CLI`, `App`, …), or `framework` when no project is booted in the process.
 It is stamped **once per process** by `Project::boot()` — never derived per record from file-path
 heuristics — so framework and application records in a shared file are always distinguishable:
 

@@ -304,8 +304,8 @@ so a WPI project's server never starts. The worker registers a PID-qualified ins
 `show`/`stop`/`logs` address it. See the **[Scheduler guide](/guide/scheduler/overview/)**:
 
 ```bash :toolbar="true";
-php bootgly project Growth schedule run    # minute-aligned worker loop (SIGTERM stops it)
-php bootgly project Growth schedule list   # registered jobs and their next run
+php bootgly project App schedule run    # minute-aligned worker loop (SIGTERM stops it)
+php bootgly project App schedule list   # registered jobs and their next run
 ```
 
 ### Process state (PID files)

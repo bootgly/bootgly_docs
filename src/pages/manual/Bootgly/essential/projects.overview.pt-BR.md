@@ -306,8 +306,8 @@ instância qualificada por PID, então `show`/`stop`/`logs` o endereçam. Veja o
 **[guia do Scheduler](/guide/scheduler/overview/)**:
 
 ```bash :toolbar="true";
-php bootgly project Growth schedule run    # loop do worker alinhado ao minuto (SIGTERM para)
-php bootgly project Growth schedule list   # jobs registrados e a próxima execução
+php bootgly project App schedule run    # loop do worker alinhado ao minuto (SIGTERM para)
+php bootgly project App schedule list   # jobs registrados e a próxima execução
 ```
 
 ### Estado de processo (arquivos PID)

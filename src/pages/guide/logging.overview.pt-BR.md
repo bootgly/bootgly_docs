@@ -139,7 +139,7 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 ## Saiba de quem é o record (procedência)
 
 Todo `Record` carrega um campo `project`: o **id de pasta canônico** do projeto bootado
-(`Demo/HTTP_Server_CLI`, `Growth`, …), ou `framework` quando nenhum projeto foi bootado no
+(`Demo/HTTP_Server_CLI`, `App`, …), ou `framework` quando nenhum projeto foi bootado no
 processo. Ele é estampado **uma vez por processo** pelo `Project::boot()` — nunca derivado por
 record de heurística de caminho de arquivo — então records do framework e da aplicação num arquivo
 compartilhado são sempre distinguíveis:
