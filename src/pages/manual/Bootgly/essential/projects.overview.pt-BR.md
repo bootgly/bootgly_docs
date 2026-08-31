@@ -47,7 +47,7 @@ O construtor deriva `path` (o diretório absoluto do projeto) e `folder` (o cami
 
 ## O registro de projetos
 
-Um único arquivo na raiz de `projects/` — **`Bootgly.projects.php`** — declara todos os projetos registrados. Ele é ao mesmo tempo o mapa de interfaces (quais projetos pertencem a CLI e/ou WPI) **e a fronteira de segurança**: apenas os caminhos listados aqui podem ser iniciados ou autobootados.
+Um único arquivo na raiz de `projects/` — **`Bootgly.projects.php`** — declara todos os projetos registrados. Ele é ao mesmo tempo o mapa de interfaces (quais projetos pertencem a CLI e/ou WPI) **e a fronteira de segurança**: apenas os caminhos listados aqui podem ser iniciados.
 
 Ele retorna um mapa indexado por projeto, mantido em **ordem alfabética por caminho**. Cada chave é o caminho canônico de um projeto (relativo a `projects/`); cada valor lista as `interfaces` que ele serve:
 
@@ -55,13 +55,13 @@ Ele retorna um mapa indexado por projeto, mantido em **ordem alfabética por cam
 <?php
 return [
    'Demo/CLI'             => ['interfaces' => ['CLI']],
-   'Demo/HTTP_Server_CLI' => ['interfaces' => ['WPI'], 'default' => true],
+   'Demo/HTTP_Server_CLI' => ['interfaces' => ['WPI']],
    'Demo/TCP_Server_CLI'  => ['interfaces' => ['WPI']],
    'Site'                 => ['interfaces' => ['CLI']],
 ];
 ```
 
-Um projeto que serve ambas as interfaces lista as duas: `['interfaces' => ['CLI', 'WPI']]`. Na plataforma Web, a entrada WPI marcada com `'default' => true` é bootada por padrão — a ordem alfabética do arquivo não afeta essa escolha. Se nenhuma entrada estiver marcada, o primeiro projeto WPI registrado é usado.
+Um projeto que serve ambas as interfaces lista as duas: `['interfaces' => ['CLI', 'WPI']]`. Projetos Web são servidos pelo próprio servidor HTTP CLI do Bootgly e sempre iniciados pelo nome (`bootgly project <path> start`) — não existe modo SAPI web nem default de autoboot.
 
 ### Por que uma allow-list
 
@@ -153,7 +153,7 @@ Cria um novo projeto — wizard em terminais interativos, flags caso contrário:
 
 ```bash
 php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<source>] \
-   [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--default] [--yes]
+   [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--yes]
 ```
 
 - `--platform` — restringe o que a primeira execução do kit configura, separado por vírgula. Todas as plataformas são configuradas por padrão (submodules `Console` e `Web` inicializados, `bootgly boot` executado, exemplos embarcados importados), então essa flag só importa quando você quer menos: `--platform=console` para uma delas, `--platform=none` para ficar só com a plataforma base. Uma execução posterior configura apenas o que ela nomear — uma plataforma que você removeu continua removida;
@@ -161,7 +161,6 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--interfaces` — interface vinculada a um projeto do zero (`CLI` por padrão);
 - `--port` — porta HTTP escrita no arquivo de um projeto WPI do zero (`8080` por padrão); um número entre 1 e 65535, recusada caso contrário;
 - `--description`, `--version`, `--author` — metadados escritos no arquivo do projeto; aspas e barras invertidas são armazenadas com segurança, caracteres de controle são recusados;
-- `--default` — marca a entrada como padrão de autoboot Web (WPI);
 - `--yes` — pula confirmações;
 - `--no-git` — pula o hook de boot (o repositório git próprio do projeto, criado e commitado por padrão nos creates from-scratch);
 - `--refresh` — com `--from=<origem>`, substitui um destino que já é um repositório git. Sem ela o comando recusa: um repositório em `projects/` é a sua única cópia daquele histórico.
@@ -183,7 +182,7 @@ O `create` roda o mesmo hook para todo projeto from-scratch. Os exemplos de plat
 Importa um projeto de uma URL de repositório git que carregue a assinatura `*.Project.php`. Sem argumentos, terminais interativos escolhem antes a fonte da importação — as Plataformas (uma multi-seleção mostrando quantos projetos exportáveis estão disponíveis) ou um remoto Git (pergunta a URL):
 
 ```bash
-php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
+php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 ```
 
 ### `project list`

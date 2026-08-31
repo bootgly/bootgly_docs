@@ -47,7 +47,7 @@ The constructor derives `path` (the absolute project directory) and `folder` (th
 
 ## The project registry
 
-A single file at the root of `projects/` — **`Bootgly.projects.php`** — declares every registered project. It is both the interface map (which projects belong to CLI and/or WPI) **and the security boundary**: only paths listed here may be started or autobooted.
+A single file at the root of `projects/` — **`Bootgly.projects.php`** — declares every registered project. It is both the interface map (which projects belong to CLI and/or WPI) **and the security boundary**: only paths listed here may be started.
 
 It returns a project-keyed map, kept in **alphabetical order by path**. Each key is a project's canonical path (relative to `projects/`); each value lists the `interfaces` it serves:
 
@@ -55,13 +55,13 @@ It returns a project-keyed map, kept in **alphabetical order by path**. Each key
 <?php
 return [
    'Demo/CLI'             => ['interfaces' => ['CLI']],
-   'Demo/HTTP_Server_CLI' => ['interfaces' => ['WPI'], 'default' => true],
+   'Demo/HTTP_Server_CLI' => ['interfaces' => ['WPI']],
    'Demo/TCP_Server_CLI'  => ['interfaces' => ['WPI']],
    'Site'                 => ['interfaces' => ['CLI']],
 ];
 ```
 
-A project that serves both interfaces lists both: `['interfaces' => ['CLI', 'WPI']]`. On the Web platform, the WPI entry flagged `'default' => true` is booted by default — the alphabetical file order does not affect this choice. If no entry is flagged, the first registered WPI project is used.
+A project that serves both interfaces lists both: `['interfaces' => ['CLI', 'WPI']]`. Web projects are served by Bootgly's own CLI HTTP server and are always started by name (`bootgly project <path> start`) — there is no web SAPI mode and no autoboot default.
 
 ### Why an allow-list
 
@@ -152,7 +152,7 @@ Creates a new project — wizard on interactive terminals, flags otherwise:
 
 ```bash
 php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<source>] \
-   [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--default] [--yes]
+   [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--yes]
 ```
 
 - `--platform` — narrows what the kit's first run sets up, comma-separated. Every platform is set up by default (`Console` and `Web` submodules initialized, `bootgly boot` run, shipped examples imported), so this flag only matters when you want less: `--platform=console` for one of them, `--platform=none` for the base platform alone. A later run only ever sets up what it names — a platform you removed stays removed;
@@ -160,7 +160,6 @@ php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<so
 - `--interfaces` — interface bound to a from-scratch project (`CLI` default);
 - `--port` — HTTP port written into a from-scratch WPI project file (`8080` default); a number between 1 and 65535, refused otherwise;
 - `--description`, `--version`, `--author` — metadata written into the project file; quotes and backslashes are stored safely, control characters are refused;
-- `--default` — flags the entry as the Web (WPI) autoboot default;
 - `--yes` — skips confirmations;
 - `--no-git` — skips the boot hook (the project's own git repository, created and committed by default on from-scratch creates);
 - `--refresh` — with `--from=<source>`, replaces a target that is already a git repository. Without it the command refuses: a repository in `projects/` is your only copy of that history.
@@ -182,7 +181,7 @@ php bootgly project <Name> boot
 Imports a project from a git repository URL carrying the `*.Project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
 
 ```bash
-php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--default] [--yes]
+php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 ```
 
 ### `project list`

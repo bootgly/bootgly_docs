@@ -122,6 +122,16 @@ Bootgly\ABI\Event`). Payloads são posicionais, na ordem listada.
 | `Boot` | o projeto bootou | `Project` |
 | `Shutdown` | o projeto bootado está sendo destruído | `Project` |
 
+`Boot` é anunciado assim que o registro se completa — ANTES da closure de boot do
+projeto executar — então dispara mesmo para projetos-servidor cuja closure nunca
+retorna. `Shutdown` é anunciado no teardown de cada processo que serve o projeto:
+o master e cada worker em uma parada real. Um processo cuja saída apenas repassa o
+projeto — o launcher do daemonize, um `reload` (que re-executa o master e
+re-anuncia `Boot` na imagem nova), um filho auxiliar — é marcado `detached` e nunca
+anuncia `Shutdown`. Esses eventos mantêm o contrato de direção: um listener que
+lança em `Boot` aborta o boot, e um que lança em `Shutdown` escapa do destrutor —
+falha alta, por design.
+
 ### WPI — HTTP Server CLI
 
 `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Events`:

@@ -8,7 +8,7 @@ O Bootgly possui três tipos de arquivos de bootstrap — e uma única convenç�
 
 ## Bootstrap global
 
-Um processo Bootgly inicia por um de dois lançadores: `bootgly` (utilizado pela interface CLI e pela plataforma Console) ou `index.php` (utilizado por um servidor HTTP externo como Apache, Nginx ou Litespeed, fazendo a ponte do Bootgly para um Server API — SAPI — não-CLI). Ambos fazem a mesma primeira coisa: dão `require` no `autoboot.php` da raiz.
+Um processo Bootgly inicia por um único lançador: `bootgly`. A interface CLI, a plataforma Console e a plataforma Web (servida pelo próprio servidor HTTP CLI do Bootgly) começam todas ali, e sua primeira ação é dar `require` no `autoboot.php` da raiz. Não existe lançador SAPI web — inicializar sob um SAPI não-CLI (Apache, Nginx + FPM) é recusado com uma exceção explícita.
 
 O `autoboot.php` da raiz define as constantes `BOOTGLY_*`, registra o autoloader e inicializa as seis camadas na ordem de dependência (`ABI → ACI → ADI → API → CLI → WPI`). Ele executa uma vez por processo — uma guarda de idempotência torna qualquer `require` posterior um no-op.
 

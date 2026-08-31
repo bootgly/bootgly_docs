@@ -121,6 +121,16 @@ Payloads are positional, in the order listed.
 | `Boot` | the project booted | `Project` |
 | `Shutdown` | the booted project is being destroyed | `Project` |
 
+`Boot` is announced as soon as registration completes — BEFORE the project's boot
+closure runs — so it fires even for server projects whose closure never returns.
+`Shutdown` is announced at the teardown of every process that serves the project:
+the master and each worker on a real stop. A process whose exit merely hands the
+project over — the daemonize launcher, a `reload` (which re-executes the master and
+re-announces `Boot` in the fresh image), an auxiliary helper child — is marked
+`detached` and never announces `Shutdown`. These events keep the steering contract:
+a listener that throws on `Boot` aborts the boot, and one that throws on `Shutdown`
+escapes the destructor — fail loud, by design.
+
 ### WPI — HTTP Server CLI
 
 `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Events`:

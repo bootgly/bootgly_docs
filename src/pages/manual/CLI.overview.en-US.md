@@ -48,7 +48,7 @@ An intuitive user interface and clear messages ensure a pleasant and uncomplicat
 
 The CLI resolves its execution environment from a few well-known variables:
 
-- **`BOOTGLY_SAPI`** — Bootgly gates its platform interfaces on the `BOOTGLY_SAPI` constant, defined at boot as `getenv('BOOTGLY_SAPI') ?: PHP_SAPI`. Embedded runtimes that behave as a console — such as PHP compiled to WebAssembly, where `PHP_SAPI` reports `embed` — export `BOOTGLY_SAPI=cli` to boot the Console platform. Capability checks (sockets, process control) intentionally keep using `PHP_SAPI`.
+- **`BOOTGLY_SAPI`** — Bootgly gates its CLI-only boot on the `BOOTGLY_SAPI` constant (any non-CLI value is refused at boot), defined at boot as `getenv('BOOTGLY_SAPI') ?: PHP_SAPI`. Embedded runtimes that behave as a console — such as PHP compiled to WebAssembly, where `PHP_SAPI` reports `embed` — export `BOOTGLY_SAPI=cli` to boot the Console platform. Capability checks (sockets, process control) intentionally keep using `PHP_SAPI`.
 - **`COLUMNS` / `LINES`** — the Terminal resolves its size from these environment variables first (the ncurses convention), falling back to `tput cols` / `tput lines`, then to `80x30`. Pipes, CI runners and embedded runtimes can export them to control layout without a TTY.
 - **`BOOTGLY_TTY`** — interactive components gate on the `BOOTGLY_TTY` constant, defined at boot as `1`/`0` from the environment or, by default, from `stream_isatty(STDIN)`. Emulated terminals that feed stdin programmatically — such as xterm.js driving a WASM runtime — export `BOOTGLY_TTY=1` so components like `Select` stay interactive even though stdin is not a real TTY. Stream capabilities (like running `stty`) keep depending on the actual stream.
 
