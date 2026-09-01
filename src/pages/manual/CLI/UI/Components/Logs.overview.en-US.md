@@ -24,7 +24,8 @@ viewer in a non-blocking loop. You get a live, filterable dashboard until you pr
 The same screen is also reachable **from any other terminal, against any server mode** — the
 [`bootgly logs -f`](/guide/logs/overview/) command attaches to a running instance's live tap and
 drives this exact component through `CLI\UX\Components\Tail` (same filters, same keys). The detail
-view additionally shows the record's **provenance** (its `project` field).
+view additionally shows the record's **provenance** and **instance** (its `project` and `instance`
+fields).
 
 ## Drive it yourself
 
@@ -60,13 +61,20 @@ the alternate-screen enter/leave and terminal restore.
 | `/` | **search** — type to filter messages, `Enter`/`Esc` to keep it |
 | `space` | **pause** — freezes a snapshot; new logs keep buffering, the view stays put |
 | `↑`/`↓`, `PgUp`/`PgDn` | **select** a record (pauses to navigate the frozen snapshot) |
-| `Enter` | **expand** the selected record — full detail (every line, `context`, `extra`) |
-| `Home`/`End` | jump to the oldest / back to the live tail |
+| `Enter` | **expand** the selected record — full detail (every line, `context`, `extra`), folded to the terminal width |
+| `Home`/`End` | jump to the oldest / back to the live tail (in the detail view: top / bottom of the record) |
 | `q` / `Esc` | leave the viewer |
 
 Multiline messages — exceptions, stack traces — are **collapsed to a single line** with a `⏎N`
 marker so a trace never floods the pane. Select the record and press `Enter` to read the whole
 thing in a scrollable detail view.
+
+The detail view never cuts a row: long message lines fold at the terminal width (re-folded on
+every render — the Monitor loop and `logs -f` refresh the width on resize), `context` and `extra`
+print one key per line hanging under their label, and the bar counts the folded rows
+(`a–b of N lines` while there is more to scroll). `↑`/`↓` and `PgUp`/`PgDn` scroll it,
+`Home`/`End` jump to the top/bottom, `Esc`/`Enter`/`q` go back. Only the list truncates (one row
+per record).
 
 While **paused**, rendering uses a frozen snapshot of the buffer (`$paused` true), so the screen
 does not move as new records stream in. `End` (or `space`) resumes the live tail.
@@ -103,8 +111,8 @@ quit the viewer, `true` to keep running.
 public function render (): void
 ```
 
-Draw one full frame: the expanded detail view when a record is selected, otherwise the status bar
-+ windowed log pane + footer. Uses cursor-home + per-line clear-to-EOL to avoid flicker.
+Draw one full frame: the expanded detail view (rows folded to the terminal width) when a record is
+selected, otherwise the status bar + windowed log pane + footer. Uses cursor-home + per-line clear-to-EOL to avoid flicker.
 
 ### State (public)
 

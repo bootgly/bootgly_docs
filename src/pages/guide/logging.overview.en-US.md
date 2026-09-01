@@ -227,13 +227,15 @@ You get a status bar, a tailing log pane and a keybindings footer. Filter and na
 | `/` | **search** — type to filter messages, `Enter`/`Esc` to keep it |
 | `space` | **pause** — freezes the view (new logs keep buffering, the screen doesn't move) |
 | `↑`/`↓`, `PgUp`/`PgDn` | **select** a record (pauses to navigate a frozen snapshot) |
-| `Enter` | **expand** the selected record — a full detail view with every line, context and extra |
-| `Home`/`End` | jump to the oldest / back to the live tail |
+| `Enter` | **expand** the selected record — a full detail view with every line, context and extra, folded to the width (nothing is cut) |
+| `Home`/`End` | jump to the oldest / back to the live tail (in the detail view: top / bottom of the record) |
 | `q` / `Esc` | leave the viewer (drops to the interactive prompt) |
 
 Multiline messages — exceptions, stack traces — are **collapsed to a single line** with a `⏎N`
 marker so they never flood the dashboard. Select the record and press `Enter` to read the whole
-thing (message, `context` and `extra`) in a scrollable detail view.
+thing (message, `context` and `extra`) in a scrollable detail view — `context` and `extra` print
+one key per line, long lines fold at the terminal width instead of being cut, and `Home`/`End`
+jump to the top/bottom of the record.
 
 > [!NOTE]
 > The viewer works because Monitor sets a live tap (`Logger::$Tap`) that **every** `Logger` feeds —

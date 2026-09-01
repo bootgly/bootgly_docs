@@ -24,7 +24,8 @@ viewer num laço não-bloqueante. Você ganha um painel ao vivo e filtrável at�
 A mesma tela também é alcançável **de qualquer outro terminal, contra qualquer modo de servidor** —
 o comando [`bootgly logs -f`](/guide/logs/overview/) anexa ao tap ao vivo de uma instância em
 execução e dirige este exato componente via `CLI\UX\Components\Tail` (mesmos filtros, mesmas
-teclas). A visão de detalhe mostra ainda a **procedência** do record (o campo `project`).
+teclas). A visão de detalhe mostra ainda a **procedência** e a **instância** do record (os campos
+`project` e `instance`).
 
 ## Dirija você mesmo
 
@@ -61,13 +62,20 @@ seguras. `control()` retorna `false` apenas quando o usuário sai (`q`, ou `Esc`
 | `/` | **busca** — digite para filtrar mensagens, `Enter`/`Esc` para manter |
 | `espaço` | **pausa** — congela um snapshot; novos logs continuam no buffer, a visão não move |
 | `↑`/`↓`, `PgUp`/`PgDn` | **seleciona** um record (pausa para navegar o snapshot congelado) |
-| `Enter` | **expande** o record selecionado — detalhe completo (todas as linhas, `context`, `extra`) |
-| `Home`/`End` | pula para o mais antigo / volta à cauda ao vivo |
+| `Enter` | **expande** o record selecionado — detalhe completo (todas as linhas, `context`, `extra`), quebrado na largura do terminal |
+| `Home`/`End` | pula para o mais antigo / volta à cauda ao vivo (na visão de detalhe: topo / fim do record) |
 | `q` / `Esc` | sai do viewer |
 
 Mensagens multilinha — exceptions, stack traces — são **colapsadas em uma linha** com um marcador
 `⏎N` para um trace nunca inundar o painel. Selecione o record e tecle `Enter` para ler tudo numa
 visão de detalhe rolável.
+
+A visão de detalhe nunca corta uma linha: linhas longas da mensagem quebram na largura do terminal
+(requebradas a cada render — o loop do Monitor e o `logs -f` atualizam a largura ao redimensionar),
+`context` e `extra` saem uma chave por linha, pendurados sob o rótulo, e a barra conta as linhas
+quebradas (`a–b of N lines` enquanto houver mais para rolar). `↑`/`↓` e `PgUp`/`PgDn` rolam,
+`Home`/`End` pulam para o topo/fim, `Esc`/`Enter`/`q` voltam. Só a lista trunca (uma linha por
+record).
 
 Em **pausa**, a renderização usa um snapshot congelado do buffer (`$paused` true), então a tela não
 se move enquanto novos records chegam. `End` (ou `espaço`) retoma a cauda ao vivo.
@@ -101,8 +109,8 @@ viewer, `true` para continuar.
 public function render (): void
 ```
 
-Desenha um frame completo: a visão de detalhe expandida quando há record selecionado, senão a barra
-de status + painel de logs em janela + rodapé. Usa cursor-home + clear-to-EOL por linha para evitar
+Desenha um frame completo: a visão de detalhe expandida (linhas quebradas na largura do terminal)
+quando há record selecionado, senão a barra de status + painel de logs em janela + rodapé. Usa cursor-home + clear-to-EOL por linha para evitar
 flicker.
 
 ### Estado (público)

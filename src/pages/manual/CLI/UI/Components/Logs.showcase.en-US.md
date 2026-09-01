@@ -9,7 +9,7 @@ Press Run and watch ~20 simulated worker records stream into the viewer in real 
 When the stream settles, **click the terminal** and drive it with the footer keys:
 
 - **Space** — pause/resume the live tail;
-- **↑/↓, PgUp/PgDn** — select a record (pausing automatically); **Enter** — expand it (the exception shows every stack line, context and extra);
+- **↑/↓, PgUp/PgDn** — select a record (pausing automatically); **Enter** — expand it (the exception shows every stack line, and `context`/`extra` one key per line, folded to the terminal width);
 - **l** — cycle the severity threshold; **/** — incremental text search; **1–3** — toggle the `Server`/`Router`/`Queue` channels;
 - **q** or **Esc** — quit.
 

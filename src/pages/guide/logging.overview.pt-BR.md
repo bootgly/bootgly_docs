@@ -229,13 +229,15 @@ navegue ao vivo:
 | `/` | **busca** — digite para filtrar mensagens, `Enter`/`Esc` para manter |
 | `espaço` | **pausa** — congela a visão (novos logs continuam no buffer, a tela não move) |
 | `↑`/`↓`, `PgUp`/`PgDn` | **seleciona** um record (pausa para navegar um snapshot congelado) |
-| `Enter` | **expande** o record selecionado — visão de detalhe com todas as linhas, context e extra |
-| `Home`/`End` | pula para o mais antigo / volta à cauda ao vivo |
+| `Enter` | **expande** o record selecionado — visão de detalhe com todas as linhas, context e extra, quebradas na largura (nada é cortado) |
+| `Home`/`End` | pula para o mais antigo / volta à cauda ao vivo (na visão de detalhe: topo / fim do record) |
 | `q` / `Esc` | sai do viewer (cai no prompt interativo) |
 
 Mensagens multilinha — exceptions, stack traces — são **colapsadas em uma linha** com um marcador
 `⏎N` para nunca inundar o painel. Selecione o record e tecle `Enter` para ler tudo (mensagem,
-`context` e `extra`) numa visão de detalhe rolável.
+`context` e `extra`) numa visão de detalhe rolável — `context` e `extra` saem uma chave por linha,
+linhas longas quebram na largura do terminal em vez de serem cortadas, e `Home`/`End` pulam para o
+topo/fim do record.
 
 > [!NOTE]
 > O viewer funciona porque o Monitor liga um tap ao vivo (`Logger::$Tap`) que **todo** `Logger`

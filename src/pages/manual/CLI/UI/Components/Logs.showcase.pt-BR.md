@@ -9,7 +9,7 @@ Pressione Run e veja ~20 records simulados de workers entrarem no viewer em temp
 Quando o stream assentar, **clique no terminal** e conduza-o com as teclas do rodapé:
 
 - **Espaço** — pausa/retoma o tail ao vivo;
-- **↑/↓, PgUp/PgDn** — seleciona um record (pausando automaticamente); **Enter** — expande (a exceção mostra cada linha do stack, context e extra);
+- **↑/↓, PgUp/PgDn** — seleciona um record (pausando automaticamente); **Enter** — expande (a exceção mostra cada linha do stack, e `context`/`extra` uma chave por linha, quebrados na largura do terminal);
 - **l** — alterna o limiar de severidade; **/** — busca incremental de texto; **1–3** — liga/desliga os canais `Server`/`Router`/`Queue`;
 - **q** ou **Esc** — sai.
 
