@@ -584,6 +584,27 @@ The server persists the session for you: once at the end of the synchronous cycl
 
 When the route touched the Session before `defer()`, the deferral shares that Session object with the live request. If another request presenting the same cookie writes while the deferral is still parked, the deferred save meets a stale revision and is discarded rather than silently overwriting the newer write: the deferred response still answers, its Session write is simply lost, and the client keeps its cookie and the newer data — keep the writes of one session on one side of a parked deferral.
 
+### Configuration
+
+Session policy lives on the `Session` statics. Declare it at boot, before the server starts — the workers inherit the values:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Session;
+
+Session::$name = 'SID';                // cookie name (default `PHPSID`)
+Session::$lifetime = 604800;           // seconds a record may stay idle before GC purges it
+Session::$cookieLifetime = 604800;     // cookie Max-Age in seconds; 0 = browser-session cookie
+Session::$cookiePath = '/';
+Session::$domain = '';
+Session::$autoUpdateTimestamp = true;  // sliding expiration: a read refreshes the record
+Session::$gcProbability = [1, 20000];  // purge odds per finished request
+Session::$secure = true;               // false only for HTTP-only development
+Session::$httpOnly = true;
+Session::$sameSite = 'Lax';            // or 'Strict'
+```
+
+A value you assign wins. `php.ini` — `session.gc_maxlifetime`, `session.gc_probability`/`session.gc_divisor` and the cookie params — fills only the statics still holding their declared default, so a policy written at boot is never replaced when the first session initializes; with an untouched `php.ini` that makes the cookie a browser-session one and takes PHP's GC odds. `$secure`, `$httpOnly` and `$sameSite` are never read from `php.ini`. A static assigned after the first session takes effect on the next cookie or purge.
+
 <span id="request-validation"></span>
 
 ## Request Validation

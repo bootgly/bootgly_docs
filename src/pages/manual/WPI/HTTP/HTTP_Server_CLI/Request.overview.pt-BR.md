@@ -585,6 +585,27 @@ O servidor persiste a sessão por você: uma vez no fim do ciclo síncrono, logo
 
 Quando a rota tocou a Session antes do `defer()`, o deferral compartilha esse objeto Session com o request vivo. Se outro request apresentando o mesmo cookie escrever enquanto o deferral ainda está estacionado, o save deferred encontra uma revisão obsoleta e é descartado em vez de sobrescrever silenciosamente a escrita mais nova: a resposta deferred ainda responde, a escrita de Session dela simplesmente se perde, e o cliente mantém o cookie e os dados mais novos — mantenha as escritas de uma sessão de um só lado de um deferral estacionado.
 
+### Configuração
+
+A política de sessão vive nos statics de `Session`. Declare-a no boot, antes de o servidor subir — os workers herdam os valores:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Session;
+
+Session::$name = 'SID';                // nome do cookie (padrão `PHPSID`)
+Session::$lifetime = 604800;           // segundos que um registro pode ficar ocioso antes de o GC purgá-lo
+Session::$cookieLifetime = 604800;     // Max-Age do cookie em segundos; 0 = cookie de sessão do navegador
+Session::$cookiePath = '/';
+Session::$domain = '';
+Session::$autoUpdateTimestamp = true;  // expiração deslizante: uma leitura renova o registro
+Session::$gcProbability = [1, 20000];  // chance de purga por request concluído
+Session::$secure = true;               // false só em desenvolvimento HTTP-only
+Session::$httpOnly = true;
+Session::$sameSite = 'Lax';            // ou 'Strict'
+```
+
+Um valor que você atribui vence. O `php.ini` — `session.gc_maxlifetime`, `session.gc_probability`/`session.gc_divisor` e os parâmetros do cookie — preenche só os statics que ainda estão no padrão declarado, então uma política escrita no boot nunca é substituída quando a primeira sessão inicializa; com um `php.ini` intocado isso faz o cookie ser de sessão do navegador e adota a chance de GC do PHP. `$secure`, `$httpOnly` e `$sameSite` nunca são lidos do `php.ini`. Um static atribuído depois da primeira sessão vale no próximo cookie ou purga.
+
 <span id="request-validation"></span>
 
 ## Validação de Requisição
