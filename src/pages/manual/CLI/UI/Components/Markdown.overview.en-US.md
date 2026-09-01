@@ -66,7 +66,9 @@ Unplugged languages and bare fences render verbatim and dimmed; plain output nev
 
 ## Safety
 
-The source is treated as **untrusted text**: raw control bytes (including `ESC`) are stripped, so markdown can never inject cursor movements or stray styling into your terminal — and content never passes through the Template markup engine.
+The source is treated as **untrusted text**: raw control bytes (including `ESC` and `BEL`) are stripped, so markdown can never inject cursor movements or stray styling into your terminal — and content never passes through the Template markup engine.
+
+Every field carries that treatment, the fenced-code language included: the info string is echoed onto the opening fence line, so it is sanitized before it is painted and before it selects a highlighter. Only the control bytes go, so what a hostile document wrote as `ESC [ 2J` renders as the inert text `[2J` — visible, but no longer a command.
 
 ## Notes
 
