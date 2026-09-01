@@ -105,7 +105,8 @@ bootgly project App schedule list   # the project's jobs and their next run
 
 The worker registers a PID-qualified instance in the registry, so `bootgly project App
 show`, `stop <PID>` and [`logs -f`](/guide/logs/overview/) address it like any other
-running instance — and its records carry the project's provenance.
+running instance — and its records carry the project's provenance and the worker's PID as
+their `instance`, so `logs --instance=<PID>` isolates one worker.
 
 A `schedule.php` in the kit root (no project) keeps working with the bare form:
 

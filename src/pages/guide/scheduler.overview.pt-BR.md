@@ -106,7 +106,8 @@ bootgly project App schedule list   # os jobs do projeto e a próxima execução
 
 O worker registra uma instância qualificada por PID no registry, então `bootgly project
 App show`, `stop <PID>` e o [`logs -f`](/guide/logs/overview/) o endereçam como
-qualquer outra instância em execução — e seus records carregam a procedência do projeto.
+qualquer outra instância em execução — e seus records carregam a procedência do projeto e o PID
+do worker como sua `instance`, então `logs --instance=<PID>` isola um worker.
 
 Um `schedule.php` na raiz do kit (sem projeto) segue funcionando com a forma pura:
 

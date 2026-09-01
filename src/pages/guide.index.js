@@ -572,8 +572,8 @@ export default {
       version: '1.0.0-beta',
       meta: {
         description: {
-          'en-US': 'The logs CLI — read the persisted backlog and follow any running instance live (`bootgly logs -f`), from any terminal, in any server mode, with per-project provenance filters.',
-          'pt-BR': 'O CLI de logs — leia o backlog persistido e siga qualquer instância em execução ao vivo (`bootgly logs -f`), de qualquer terminal, em qualquer modo de servidor, com filtros de procedência por projeto.'
+          'en-US': 'The logs CLI — read the persisted backlog and follow any running instance live (`bootgly logs -f`), from any terminal, in any server mode, with per-project and per-instance filters.',
+          'pt-BR': 'O CLI de logs — leia o backlog persistido e siga qualquer instância em execução ao vivo (`bootgly logs -f`), de qualquer terminal, em qualquer modo de servidor, com filtros por projeto e por instância.'
         }
       },
       book: 'guide',

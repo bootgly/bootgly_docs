@@ -287,8 +287,9 @@ Example output:
 ### `project logs`
 
 Reads a project's persisted log backlog and, with `-f`, follows it **live** — in any server mode,
-Daemon included. Addressed by name, never by port; with several live instances, `--instance`
-picks one (the command lists them and refuses otherwise). See the
+Daemon included. Addressed by name, never by port; `--instance` narrows to one instance — on the
+backlog by the records' `instance` field, and live by picking which tap to follow (with several
+live and no `--instance`, `-f` lists them and refuses). See the
 **[Logs CLI guide](/guide/logs/overview/)** for the full flow and filters:
 
 ```bash :toolbar="true";
@@ -310,7 +311,7 @@ php bootgly project App schedule list   # registered jobs and their next run
 
 ### Process state (PID files)
 
-When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide, plus an **instance qualifier**: the bound port for servers, the process PID for TUI projects and WPI clients. Running `Demo/HTTP_Server_CLI` on port 8082 creates `storage/pids/Demo~HTTP_Server_CLI.8082.json`. A **console-only project** started with `project start` also registers an instance, qualified by its master PID — so `show`, `stop` and `logs` can address it. Server instances additionally publish a `.logs.sock` sibling: the live-log tap socket that `logs -f` attaches to.
+When a project starts, it saves its process state (master PID, worker PIDs, type, etc.) in a JSON file under `storage/pids/`. The file is named after the project's canonical path, with `/` encoded as `~` so nested leaves never collide, plus an **instance qualifier**: the bound port for servers, the process PID for TUI projects and WPI clients. Running `Demo/HTTP_Server_CLI` on port 8082 creates `storage/pids/Demo~HTTP_Server_CLI.8082.json`. A **console-only project** started with `project start` also registers an instance, qualified by its master PID — so `show`, `stop` and `logs` can address it. Server instances additionally publish a `.logs.sock` sibling: the live-log tap socket that `logs -f` attaches to. Server and console instances also stamp that qualifier on every record they write — the `instance` field that `logs --instance` filters by; client records carry none.
 
 Because clients qualify by PID, any number of client processes of the same project can run at once — including forked load generators, where every forked child constructs its own client instance.
 

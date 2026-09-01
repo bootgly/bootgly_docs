@@ -140,17 +140,23 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 
 Todo `Record` carrega um campo `project`: o **id de pasta canônico** do projeto bootado
 (`Demo/HTTP_Server_CLI`, `App`, …), ou `framework` quando nenhum projeto foi bootado no
-processo. Ele é estampado **uma vez por processo** pelo `Project::boot()` — nunca derivado por
-record de heurística de caminho de arquivo — então records do framework e da aplicação num arquivo
-compartilhado são sempre distinguíveis:
+processo. Ele é estampado **uma vez por processo** pelo `Project::mount()` (que o `boot()` chama)
+— nunca derivado por record de heurística de caminho de arquivo — então records do framework e da
+aplicação num arquivo compartilhado são sempre distinguíveis:
 
 ```json
-{"timestamp":1788122369.47,"level":"INFO","project":"Demo/HTTP_Server_CLI","channel":"Demo.App","message":"Heartbeat — server healthy.","context":[],"extra":[]}
+{"timestamp":1788122369.47,"level":"INFO","project":"Demo/HTTP_Server_CLI","instance":"8082","channel":"Demo.App","message":"Heartbeat — server healthy.","context":[],"extra":[]}
 ```
 
-O campo é filtro de primeira classe no `bootgly logs` (`--project=<Nome>`, `--framework`) e no
-placeholder de caminho `{project}` acima. Linhas escritas antes do campo existir voltam como
-`framework`.
+Todo `Record` carrega também um campo `instance`: o qualificador que o registry de processos usa
+para o processo que escreveu — a porta vinculada para servidores, o PID do master para processos
+Console e TUI — estampado uma vez por processo quando a instância é reivindicada (o `start()` de
+um servidor, `project start`, `project <Nome> schedule run`, o loop do terminal), e vazio (`""`)
+quando o processo não reivindicou nenhuma (comandos do kit, scripts avulsos, clients WPI).
+
+Os dois campos são filtros de primeira classe no `bootgly logs` (`--project=<Nome>`, `--framework`,
+`--instance=<id>`), e `project` é o placeholder de caminho `{project}` acima. Linhas escritas antes
+dos campos existirem voltam como `framework` com `instance` vazia.
 
 ## Escolha um formato
 
@@ -164,8 +170,8 @@ use Bootgly\ACI\Logs\Handlers\Stream;
 $Logger->Handlers->push(new Stream(STDERR, new JSON));
 ```
 
-Uma linha JSON carrega `timestamp`, `level`, `project`, `channel`, `message`, `context` e `extra`
-(o ANSI é removido da mensagem).
+Uma linha JSON carrega `timestamp`, `level`, `project`, `instance`, `channel`, `message`, `context`
+e `extra` (o ANSI é removido da mensagem).
 
 ## Enriqueça records com processors
 
@@ -283,11 +289,13 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
 - **Levels** — enum com backing `Logs\Data\Levels` (`Emergency` = 1 … `Debug` = 8; menor = mais severo):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:
-  públicos `$Level`, `$channel`, `$message`, `$project`, `$context`, `$extra`, `$timestamp`;
-  estático `$provenance` (a procedência do processo, estampada em `$project` na construção —
-  `'framework'` até o `Project::boot()` definir o id de pasta do projeto bootado); estático
-  `import(array $data): self` reconstrói um record de uma linha JSON decodificada (linha sem a
-  chave `project` importa como `framework`).
+  públicos `$Level`, `$channel`, `$message`, `$project`, `$instance`, `$context`, `$extra`,
+  `$timestamp`; estático `$provenance` (a procedência do processo, estampada em `$project` na
+  construção — `'framework'` até o `Project::mount()` definir o id de pasta do projeto bootado);
+  estático `$qualifier` (o qualificador de instância do processo, estampado em `$instance` na
+  construção — `''` até o dono reivindicar uma instância: a porta para servidores, o PID do master
+  para Console/TUI); estático `import(array $data): self` reconstrói um record de uma linha JSON
+  decodificada (linha sem a chave `project` importa como `framework`; sem a chave `instance`, como `''`).
 - **Handler** — abstrato `Logs\Handler`: `handle(Record): bool`; públicos `$Level` (severidade
   mínima), `$Formatter`, `$Filters`. Concretos: `Handlers\Stream($stream = STDOUT, …)`,
   `Handlers\File($path, …, Rotation)` — o caminho resolve `{channel}` e `{project}` por record,

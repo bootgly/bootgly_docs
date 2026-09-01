@@ -120,7 +120,9 @@ The constructor accepts a `Bootgly\API\Endpoints\Server\Modes` enum.
 In every mode but Test, the master also publishes a per-instance **live-log tap** — a unix socket
 beside the PID files that [`bootgly logs -f`](/guide/logs/overview/) attaches to. Attaching arms
 `Logger::$Tap` in the master and every worker; detaching disarms it, so an unwatched server pays
-nothing.
+nothing. Every record the master and its workers write carries the bound port as its `instance`
+field (stamped in every mode, Test included), so `bootgly logs --instance=<port>` isolates one
+server on the backlog as well as live.
 
 ## Configuration
 

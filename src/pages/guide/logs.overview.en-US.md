@@ -8,7 +8,7 @@ follows running instances **live**, from any terminal, in any server mode. Daemo
 ## Follow a project live
 
 Address the project by **name** — never by port. A console project has no port; a server's port is
-only a tiebreaker:
+a record filter and, with `-f`, the live-tap tiebreaker:
 
 ```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI logs -f
@@ -32,6 +32,13 @@ pick one with `--instance`:
 bootgly project Demo/HTTP_Server_CLI logs -f --instance=8443
 ```
 
+The same option narrows the **backlog** too — every record carries the instance that wrote it —
+so a per-instance feed is one command:
+
+```bash :toolbar="true";
+bootgly project Demo/HTTP_Server_CLI logs --instance=8443 --since=15m --json
+```
+
 ## Read the backlog (and ship it)
 
 Without `-f`, `logs` prints what the sinks persisted and exits. `--since` bounds the read
@@ -46,7 +53,8 @@ bootgly logs --framework
 
 The kit scope (`bootgly logs`) sees **every** project's records, each line labeled by its
 [provenance](/guide/logging/overview/) — the `project` field (`framework` for the framework's
-own processes). `bootgly logs -f` follows every live instance at once.
+own processes) — and by its `instance`, the bound port or master PID that wrote it.
+`bootgly logs -f` follows every live instance at once.
 
 ## Console projects too
 
@@ -84,6 +92,9 @@ bootgly logs [-f|--follow] [--project=<Name>] [--framework] [--instance=<id>]
 
 Kit scope: the shared `storage/logs/` backlog, plus every live instance's tap with `-f`.
 `--project` and `--framework` filter by record provenance and are mutually exclusive.
+`--instance` filters by the record's `instance` field — the bound port (servers) or master PID
+(console) — on the backlog and live alike; lines written before the field existed carry no
+instance and never match.
 
 ```php
 bootgly project <Name> logs [-f|--follow] [--instance=<id>]
@@ -91,15 +102,16 @@ bootgly project <Name> logs [-f|--follow] [--instance=<id>]
 ```
 
 Project scope — the same implementation, pre-filtered to `<Name>` (the canonical folder id).
-`--instance` picks one live instance (bound port for servers, master PID for console); with
-several live and no `--instance`, the command lists them and refuses.
+`--instance` selects one instance: it filters the backlog by the records' `instance` field and,
+with `-f`, picks which live tap to attach; with several live and no `--instance`, `-f` lists them
+and refuses.
 
 | Option | Meaning |
 |---|---|
 | `-f`, `--follow` | keep following new records (unrelated to `start -f`, which is Foreground) |
 | `--project=<Name>` | only that project's records (kit scope) |
 | `--framework` | only records with `framework` provenance |
-| `--instance=<id>` | the live-instance tiebreaker — port (servers) or master PID (console) |
+| `--instance=<id>` | only that instance's records — port (servers) or master PID (console); with `-f`, also the live-tap tiebreaker |
 | `--channel=<c>` | only these channels (comma-separated) |
 | `--level=<l>` | minimum severity (`debug` … `emergency`) |
 | `--since=<t>` | start point — `30s`/`15m`/`2h`/`7d` or any `strtotime` syntax |

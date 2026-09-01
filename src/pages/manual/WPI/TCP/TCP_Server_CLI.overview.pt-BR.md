@@ -120,7 +120,9 @@ O construtor recebe um enum `Bootgly\API\Endpoints\Server\Modes`.
 Em todo modo exceto Test, o master também publica um **tap de logs ao vivo** por instância — um
 socket unix ao lado dos arquivos PID ao qual o [`bootgly logs -f`](/guide/logs/overview/) se
 anexa. Anexar arma o `Logger::$Tap` no master e em todos os workers; desanexar desarma, então um
-servidor que ninguém olha não paga nada.
+servidor que ninguém olha não paga nada. Todo record que o master e seus workers escrevem carrega a
+porta vinculada como campo `instance` (estampado em todo modo, Test incluído), então
+`bootgly logs --instance=<porta>` isola um servidor tanto no backlog quanto ao vivo.
 
 ## Configuração
 

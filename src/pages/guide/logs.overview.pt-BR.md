@@ -8,7 +8,7 @@ incluído: sem `journalctl`, sem `tail`, sem ginástica de SSH.
 ## Siga um projeto ao vivo
 
 Enderece o projeto pelo **nome** — nunca pela porta. Um projeto de Console não tem porta; a porta
-de um servidor é só um desempate:
+de um servidor é um filtro de records e, com `-f`, o desempate do tap ao vivo:
 
 ```bash :toolbar="true";
 bootgly project Demo/HTTP_Server_CLI logs -f
@@ -32,6 +32,13 @@ escolha uma com `--instance`:
 bootgly project Demo/HTTP_Server_CLI logs -f --instance=8443
 ```
 
+A mesma opção restringe o **backlog** também — todo record carrega a instância que o escreveu —
+então um feed por instância é um comando só:
+
+```bash :toolbar="true";
+bootgly project Demo/HTTP_Server_CLI logs --instance=8443 --since=15m --json
+```
+
 ## Leia o backlog (e faça shipping)
 
 Sem `-f`, `logs` imprime o que os sinks persistiram e sai. `--since` limita a leitura (rotações
@@ -46,7 +53,8 @@ bootgly logs --framework
 
 O escopo do kit (`bootgly logs`) enxerga os records de **todos** os projetos, cada linha marcada
 pela sua [procedência](/guide/logging/overview/) — o campo `project` (`framework` para os
-processos do próprio framework). `bootgly logs -f` segue todas as instâncias vivas de uma vez.
+processos do próprio framework) — e pela sua `instance`, a porta vinculada ou o PID do master
+que a escreveu. `bootgly logs -f` segue todas as instâncias vivas de uma vez.
 
 ## Projetos de Console também
 
@@ -84,6 +92,9 @@ bootgly logs [-f|--follow] [--project=<Nome>] [--framework] [--instance=<id>]
 
 Escopo do kit: o backlog do `storage/logs/` compartilhado, mais o tap de cada instância viva com
 `-f`. `--project` e `--framework` filtram por procedência do record e são mutuamente exclusivos.
+`--instance` filtra pelo campo `instance` do record — a porta vinculada (servidores) ou o PID do
+master (Console) — no backlog e ao vivo igualmente; linhas escritas antes do campo existir não
+carregam instância e nunca casam.
 
 ```php
 bootgly project <Nome> logs [-f|--follow] [--instance=<id>]
@@ -91,15 +102,16 @@ bootgly project <Nome> logs [-f|--follow] [--instance=<id>]
 ```
 
 Escopo de projeto — a mesma implementação, pré-filtrada para `<Nome>` (o id de pasta canônico).
-`--instance` escolhe uma instância viva (porta vinculada para servidores, PID do master para
-Console); com várias vivas e sem `--instance`, o comando as lista e recusa.
+`--instance` seleciona uma instância: filtra o backlog pelo campo `instance` dos records e, com
+`-f`, escolhe a qual tap ao vivo anexar; com várias vivas e sem `--instance`, o `-f` as lista e
+recusa.
 
 | Opção | Significado |
 |---|---|
 | `-f`, `--follow` | seguir records novos (não confundir com `start -f`, que é Foreground) |
 | `--project=<Nome>` | só os records daquele projeto (escopo do kit) |
 | `--framework` | só records com procedência `framework` |
-| `--instance=<id>` | o desempate de instância viva — porta (servidores) ou PID do master (Console) |
+| `--instance=<id>` | só os records daquela instância — porta (servidores) ou PID do master (Console); com `-f`, também o desempate do tap ao vivo |
 | `--channel=<c>` | só esses canais (separados por vírgula) |
 | `--level=<l>` | severidade mínima (`debug` … `emergency`) |
 | `--since=<t>` | ponto de partida — `30s`/`15m`/`2h`/`7d` ou qualquer sintaxe de `strtotime` |

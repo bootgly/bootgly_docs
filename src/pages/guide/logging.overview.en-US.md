@@ -139,16 +139,23 @@ Where an opted-in logger's records land, per server mode:
 
 Every `Record` carries a `project` field: the **canonical folder id** of the booted project
 (`Demo/HTTP_Server_CLI`, `App`, …), or `framework` when no project is booted in the process.
-It is stamped **once per process** by `Project::boot()` — never derived per record from file-path
-heuristics — so framework and application records in a shared file are always distinguishable:
+It is stamped **once per process** by `Project::mount()` (which `boot()` calls) — never derived
+per record from file-path heuristics — so framework and application records in a shared file are
+always distinguishable:
 
 ```json
-{"timestamp":1788122369.47,"level":"INFO","project":"Demo/HTTP_Server_CLI","channel":"Demo.App","message":"Heartbeat — server healthy.","context":[],"extra":[]}
+{"timestamp":1788122369.47,"level":"INFO","project":"Demo/HTTP_Server_CLI","instance":"8082","channel":"Demo.App","message":"Heartbeat — server healthy.","context":[],"extra":[]}
 ```
 
-The field is a first-class filter in `bootgly logs` (`--project=<Name>`, `--framework`) and the
-`{project}` path placeholder above. Lines written before the field existed read back as
-`framework`.
+Every `Record` also carries an `instance` field: the qualifier the process registry uses for the
+writing process — the bound port for servers, the master PID for console and TUI processes —
+stamped once per process when the instance is claimed (a server's `start()`, `project start`,
+`project <Name> schedule run`, the terminal loop), and empty (`""`) when the process claimed none
+(kit commands, plain scripts, WPI clients).
+
+Both fields are first-class filters in `bootgly logs` (`--project=<Name>`, `--framework`,
+`--instance=<id>`), and `project` is the `{project}` path placeholder above. Lines written before
+the fields existed read back as `framework` with an empty `instance`.
 
 ## Choose a format
 
@@ -162,8 +169,8 @@ use Bootgly\ACI\Logs\Handlers\Stream;
 $Logger->Handlers->push(new Stream(STDERR, new JSON));
 ```
 
-A JSON line carries `timestamp`, `level`, `project`, `channel`, `message`, `context` and `extra`
-(ANSI is stripped from the message).
+A JSON line carries `timestamp`, `level`, `project`, `instance`, `channel`, `message`, `context`
+and `extra` (ANSI is stripped from the message).
 
 ## Enrich records with processors
 
@@ -279,11 +286,13 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
 - **Levels** — `Logs\Data\Levels` backed enum (`Emergency` = 1 … `Debug` = 8; lower = more severe):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:
-  public `$Level`, `$channel`, `$message`, `$project`, `$context`, `$extra`, `$timestamp`; static
-  `$provenance` (the process-scoped provenance stamped into `$project` at construction —
-  `'framework'` until `Project::boot()` sets the booted project's folder id); static
-  `import(array $data): self` rebuilds a record from a decoded JSON line (a line without a
-  `project` key imports as `framework`).
+  public `$Level`, `$channel`, `$message`, `$project`, `$instance`, `$context`, `$extra`,
+  `$timestamp`; static `$provenance` (the process-scoped provenance stamped into `$project` at
+  construction — `'framework'` until `Project::mount()` sets the booted project's folder id);
+  static `$qualifier` (the process-scoped instance qualifier stamped into `$instance` at
+  construction — `''` until the owner claims an instance: the port for servers, the master PID
+  for console/TUI); static `import(array $data): self` rebuilds a record from a decoded JSON
+  line (a line without a `project` key imports as `framework`; without an `instance` key, as `''`).
 - **Handler** — abstract `Logs\Handler`: `handle(Record): bool`; public `$Level` (min severity),
   `$Formatter`, `$Filters`. Concretes: `Handlers\Stream($stream = STDOUT, …)`,
   `Handlers\File($path, …, Rotation)` — the path resolves `{channel}` and `{project}` per record,
