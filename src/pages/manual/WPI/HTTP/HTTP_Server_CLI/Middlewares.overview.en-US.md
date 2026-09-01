@@ -435,21 +435,26 @@ new SecureHeaders(
 
 ### TrustedProxy
 
-Resolves the real client IP from trusted proxy headers (`X-Forwarded-For`, `X-Real-IP`) when the server runs behind a reverse proxy or load balancer.
+Resolves the real client IP from trusted proxy headers (`X-Forwarded-For`, `X-Real-IP`) when the server runs behind a reverse proxy, load balancer or CDN.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
 
 new TrustedProxy(
-   proxies: ['10.0.0.1']  // Trusted proxy IPs — set these explicitly in production
+   // Trusted proxy IPs and CIDR ranges — set these explicitly in production
+   proxies: ['10.0.0.1', '173.245.48.0/20', '2400:cb00::/32']
 );
 ```
 
-When the request comes from a trusted proxy IP, the middleware:
+When the request comes from a trusted proxy, the middleware:
 - Reads `X-Forwarded-For` (right-to-left, first untrusted hop) or `X-Real-IP` to update `$Request->address`
 - Reads `X-Forwarded-Proto` to update `$Request->scheme`
 
 Untrusted proxy IPs are ignored — the address and scheme are left unchanged.
+
+**CIDR ranges.** Behind a CDN every request arrives from a different edge address, so no literal list can express the trust set — list the provider's published ranges instead. An IP literal counts as `/32` | `/128`, so existing lists of valid IPs keep working; textual IPv6 variants (`0:0:0:0:0:0:0:1` vs `::1`) now match by value; an IPv4-mapped form (`::ffff:a.b.c.d`) matches its IPv4 equivalent on both sides; and surrounding whitespace is tolerated. A CIDR entry whose host bits are set (`10.0.0.8/8`) trusts its whole network, per the usual convention. The list is compiled once at construction, so per-request matching is a byte comparison — and an entry that is not a valid IP or CIDR now throws `InvalidArgumentException` at boot instead of silently never matching, which is the one breaking change here. The `X-Forwarded-For` walk skips trusted hops by the same range match, so an in-chain edge address is never mistaken for the client. Provider ranges change over time — load them from a file you can refresh (`proxies: require 'ranges.php'`) rather than hardcoding.
+
+> **CDNs that do not append to `X-Forwarded-For`.** Some edges publish the client only in a header of their own (`CF-Connecting-IP`, `True-Client-IP`). Reading those is not supported yet — trusting a fourth field safely also requires teaching the route cache about it, otherwise an address-varying response cached for one client could be replayed to another. Cloudflare and most CDNs also append to `X-Forwarded-For`, so listing their ranges above already resolves the real client.
 
 **`$Request->address` vs `$Request->peer`.** This middleware only ever changes `$Request->address` (the application-facing client IP). The real socket peer is always available, unaltered, as **`$Request->peer`** — use it for anti-abuse decisions that must not be spoofable (rate limiting keys on it by default; see [RateLimit](#ratelimit)).
 

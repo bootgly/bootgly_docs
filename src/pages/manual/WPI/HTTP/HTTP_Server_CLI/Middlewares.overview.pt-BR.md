@@ -436,22 +436,27 @@ new SecureHeaders(
 
 ### TrustedProxy
 
-Resolve o IP real do cliente a partir dos headers de proxy confiáveis (`X-Forwarded-For`, `X-Real-IP`) quando o servidor roda atrás de um reverse proxy ou load balancer.
+Resolve o IP real do cliente a partir dos headers de proxy confiáveis (`X-Forwarded-For`, `X-Real-IP`) quando o servidor roda atrás de um reverse proxy, load balancer ou CDN.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
 
 new TrustedProxy(
-   proxies: ['10.0.0.1']  // IPs de proxies confiáveis — defina-os explicitamente em produção
+   // IPs e faixas CIDR de proxies confiáveis — defina-os explicitamente em produção
+   proxies: ['10.0.0.1', '173.245.48.0/20', '2400:cb00::/32']
 );
 ```
 
-Quando a requisição vem de um IP de proxy confiável, o middleware:
+Quando a requisição vem de um proxy confiável, o middleware:
 
 - Lê `X-Forwarded-For` (da direita para a esquerda, primeiro hop não confiável) ou `X-Real-IP` para atualizar `$Request->address`
 - Lê `X-Forwarded-Proto` para atualizar `$Request->scheme`
 
 IPs de proxy não confiáveis são ignorados — o endereço e esquema permanecem inalterados.
+
+**Faixas CIDR.** Atrás de uma CDN cada requisição chega de um endereço de borda diferente, então nenhuma lista literal expressa o conjunto de confiança — liste as faixas publicadas do provedor. Um IP literal vale como `/32` | `/128`, então listas existentes de IPs válidos seguem funcionando; variantes textuais de IPv6 (`0:0:0:0:0:0:0:1` vs `::1`) agora casam por valor; a forma IPv4-mapeada (`::ffff:a.b.c.d`) casa seu equivalente IPv4 nos dois lados; e espaços em volta são tolerados. Uma entrada CIDR com bits de host preenchidos (`10.0.0.8/8`) confia em toda a sua rede, pela convenção usual. A lista é compilada uma vez na construção, então o match por requisição é comparação de bytes — e uma entrada que não seja um IP ou CIDR válido agora lança `InvalidArgumentException` no boot em vez de silenciosamente nunca casar, que é a única quebra de compatibilidade aqui. A caminhada do `X-Forwarded-For` pula hops confiáveis pelo mesmo match de faixa, então um endereço de borda dentro da cadeia nunca é confundido com o cliente. Faixas de provedor mudam com o tempo — carregue-as de um arquivo que você possa atualizar (`proxies: require 'faixas.php'`) em vez de embutir.
+
+> **CDNs que não acrescentam ao `X-Forwarded-For`.** Algumas bordas publicam o cliente apenas em um header próprio (`CF-Connecting-IP`, `True-Client-IP`). Ler esses headers ainda não é suportado — confiar num quarto campo com segurança exige também ensinar o cache de rota sobre ele, senão uma resposta que varia por endereço, cacheada para um cliente, poderia ser reservida a outro. A Cloudflare e a maioria das CDNs também acrescentam ao `X-Forwarded-For`, então listar as faixas delas acima já resolve o cliente real.
 
 **`$Request->address` vs `$Request->peer`.** Este middleware só altera `$Request->address` (o IP do cliente voltado à aplicação). O par de socket real está sempre disponível, inalterado, como **`$Request->peer`** — use-o para decisões anti-abuso que não podem ser forjáveis (o rate limiting usa-o como chave por padrão; veja [RateLimit](#ratelimit)).
 
