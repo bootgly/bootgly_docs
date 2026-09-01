@@ -85,10 +85,13 @@ para sobrescrever.
 | Dinheiro / decimal exato | `Types::Decimal` + `->size(p, s)` |
 | Número fracionário | `Types::Float` |
 | Data / hora | `Types::Date`, `Types::Time`, `Types::Timestamp` |
+| Instante com fuso horário | `Types::Timestamptz` |
 | Documento JSON | `Types::Json`, `Types::JsonB` |
 | UUID | `Types::Uuid` |
 
 Se você não passar um tipo, recebe `Types::Text`.
+
+`Types::Timestamp` é um valor de relógio de parede sem fuso (`TIMESTAMP` no PostgreSQL e no MySQL); `Types::Timestamptz` é um instante — `TIMESTAMPTZ` no PostgreSQL, o `TIMESTAMP` do MySQL (guardado em UTC, exibido no fuso da sessão) e `TEXT` no SQLite.
 
 ## Alterando uma tabela depois
 
@@ -285,7 +288,7 @@ Namespace `Bootgly\ADI\Databases\SQL\Schema\Auxiliaries`:
 
 | Enum | Casos |
 |------|-------|
-| `Types` | `BigInteger`, `Boolean`, `Date`, `Decimal`, `Float`, `Integer`, `Json`, `JsonB`, `String`, `Text`, `Time`, `Timestamp`, `Uuid` |
+| `Types` | `BigInteger`, `Boolean`, `Date`, `Decimal`, `Float`, `Integer`, `Json`, `JsonB`, `String`, `Text`, `Time`, `Timestamp`, `Timestamptz`, `Uuid` |
 | `Keys` | `Primary`, `Unique` |
 | `References` | `Cascade`, `NoAction`, `Restrict`, `SetDefault`, `SetNull` |
 | `Defaults` | `None` |

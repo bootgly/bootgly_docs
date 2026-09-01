@@ -84,10 +84,13 @@ override.
 | Money / exact decimal | `Types::Decimal` + `->size(p, s)` |
 | Fractional number | `Types::Float` |
 | Date / time | `Types::Date`, `Types::Time`, `Types::Timestamp` |
+| Instant with time zone | `Types::Timestamptz` |
 | JSON document | `Types::Json`, `Types::JsonB` |
 | UUID | `Types::Uuid` |
 
 If you don't pass a type, you get `Types::Text`.
+
+`Types::Timestamp` is a wall-clock value with no zone (`TIMESTAMP` on PostgreSQL and MySQL); `Types::Timestamptz` is an instant — `TIMESTAMPTZ` on PostgreSQL, MySQL's `TIMESTAMP` (stored as UTC, rendered in the session time zone) and `TEXT` on SQLite.
 
 ## Changing a table later
 
@@ -283,7 +286,7 @@ Namespace `Bootgly\ADI\Databases\SQL\Schema\Auxiliaries`:
 
 | Enum | Cases |
 |------|-------|
-| `Types` | `BigInteger`, `Boolean`, `Date`, `Decimal`, `Float`, `Integer`, `Json`, `JsonB`, `String`, `Text`, `Time`, `Timestamp`, `Uuid` |
+| `Types` | `BigInteger`, `Boolean`, `Date`, `Decimal`, `Float`, `Integer`, `Json`, `JsonB`, `String`, `Text`, `Time`, `Timestamp`, `Timestamptz`, `Uuid` |
 | `Keys` | `Primary`, `Unique` |
 | `References` | `Cascade`, `NoAction`, `Restrict`, `SetDefault`, `SetNull` |
 | `Defaults` | `None` |
