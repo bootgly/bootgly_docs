@@ -316,7 +316,7 @@ if ($Response->code === 0) {
 }
 ```
 
-`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, or one too large to be real).
+`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
 
 The two timeouts bound different phases. `connectTimeout` bounds each **dial attempt** — the TCP connect and the TLS handshake together; it is spent again on every attempt (a retry, a redirect leg, a replay). `timeout` arms only the **response window**, and only once the connection is up and the request has been dispatched.
 
