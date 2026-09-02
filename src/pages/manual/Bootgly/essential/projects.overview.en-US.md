@@ -148,6 +148,9 @@ graph LR
   project --> info["info"]
   project --> logs["logs"]
   project --> schedule["schedule"]
+  project --> startup["startup"]
+  project --> unstartup["unstartup"]
+  project --> status["status"]
 ```
 
 ### `projects create`
@@ -361,6 +364,66 @@ Stops and then starts a project again, preserving the instance's port. With a si
 ```bash
 php bootgly project Demo/HTTP_Server_CLI restart
 php bootgly project restart Blog 8081   # restarts only the instance on port 8081
+```
+
+### `project startup`
+
+Installs the OS service that boots the project at startup — the `pm2 startup` of one project. systemd only, for now: on a machine booted by anything else (OpenRC, runit, a container whose PID 1 is the application itself, macOS) the command names the platform, prints the command a hand-written service must run, and stops.
+
+```bash
+php bootgly project Demo/HTTP_Server_CLI startup
+```
+
+Run as the account that owns the kit, the command stages the unit under `storage/systemd/` (a directory only that account can write) and prints the exact `sudo` commands that install, enable and start it — root only ever installs a file it can read, never runs the kit. Run as root (`sudo php bootgly … startup --now`, fine on a kit root owns), it installs under `/etc/systemd/system`, reloads systemd and, with `--now`, enables and starts right away, refusing to call it started unless the unit is active a moment later. An instance you started by hand holds the port and the state record the unit would claim, so `--now` refuses until you stop it.
+
+The unit runs `php bootgly project <Name> start -f` — foreground, so systemd holds the process and the journal keeps its output — from the kit directory, as `--user` (the invoking account by default), restarting on failure. A WPI project gets the server unit, `bootgly-<Name>.service` (`/` in the path becomes `-`, case is kept, any other character a name cannot carry — a `-` included — is hex-encoded as `:XX`); a project carrying a `schedule.php` gets a second unit for its worker, `bootgly-<Name>.schedule.service`. A project with a database (`configs/database/`) is ordered after `postgresql`, `mysql`, `mysqld` and `mariadb` when those services exist. Every unit is stamped with the project and the kit it belongs to (`X-Bootgly-Project`, `X-Bootgly-Kit`), and `startup`, `unstartup` and `status` refuse to touch a unit stamped by another project or another kit on the same machine. The start-rate limits in the unit are read by systemd 230 and newer; an older manager keeps its own defaults. A project file of your own must map `-f` to `Modes::Foreground` as the shipped ones do — the command warns when it cannot see that mapping.
+
+- `--now` — enables the unit and starts it right away (`systemctl enable --now`). Without it the unit is installed and systemd reloaded, and the command prints how to enable it;
+- `--user=<name>` — the account the service runs as. Ports below 1024 and Auto-TLS need `--user=root`: the server then demotes itself to the `user`/`group` of its own `configure()`.
+
+The unit it writes:
+
+```ini
+[Unit]
+Description=Bootgly project Demo/HTTP_Server_CLI
+X-Bootgly-Project=Demo/HTTP_Server_CLI
+X-Bootgly-Kit=/srv/bootgly
+After=network-online.target postgresql.service mysql.service mysqld.service mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/srv/bootgly
+ExecStart=/usr/bin/php /srv/bootgly/bootgly project Demo/HTTP_Server_CLI start -f
+ExecReload=/bin/kill -USR2 $MAINPID
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The start-rate lines follow `Wants=` in the real unit (`StartLimitIntervalSec=300`, `StartLimitBurst=10`): a service that keeps dying stops being retried after ten starts in five minutes, and `systemctl reset-failed` arms it again.
+
+### `project unstartup`
+
+Removes what `startup` installed: the units are disabled and stopped, their files deleted, systemd reloaded. Root only — anyone else gets the commands:
+
+```bash
+sudo php bootgly project Demo/HTTP_Server_CLI unstartup
+```
+
+The unit outlives the project on purpose: a project that was removed from the registry, or whose directory is gone, is still managed by its path, so nothing is left booting a project that no longer exists. A unit at that path that `startup` did not write — one stamped for another project or kit, one without a stamp, or a masked one (a link to `/dev/null`) — is named and left alone.
+
+### `project status`
+
+Shows the OS service of the project as systemd sees it — the unit, its file, whether it is enabled at boot and whether it is active now. The running instances themselves are `show`'s:
+
+```bash
+php bootgly project Demo/HTTP_Server_CLI status
 ```
 
 ### `project info`
