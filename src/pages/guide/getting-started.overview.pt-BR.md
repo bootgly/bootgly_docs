@@ -50,10 +50,8 @@ bootgly.kit/
 │   │   └── commands/   ← comandos built-in da CLI (boot, demo, project, test, ...)
 │   ├── configs/        ← configs do framework
 │   ├── projects/       ← projects a nível de author — as fontes do import (Benchmark/, Demo/, Example/)
-│   ├── public/         ← fixtures de teste do framework (só contexto autor)
 │   ├── scripts/        ← template de recursos usado pelo `bootgly boot`
 │   ├── storage/        ← template de recursos usado pelo `bootgly boot`
-│   ├── tests/          ← as suítes do próprio framework (`bootgly test --bootgly`)
 │   ├── Bootgly.php     ← a entity raiz do framework
 │   ├── autoboot.php    ← autoboot do framework (requerido pelo launcher do kit)
 │   ├── bootgly         ← o launcher da CLI do próprio framework
@@ -61,7 +59,7 @@ bootgly.kit/
 │   └── index.php
 ├── Console/            ← plataforma Console (instalada pelo wizard)
 ├── Web/                ← plataforma Web (instalada quando escolhida)
-├── projects/           ← os SEUS projetos — cada um um repositório git próprio (registrados em `Bootgly.projects.php`)
+├── projects/           ← 🏁 os SEUS projetos — cada um um repositório git próprio (registrados em `Bootgly.projects.php`)
 ├── scripts/            ← instalado pelo `bootgly boot`
 ├── storage/            ← instalado pelo `bootgly boot` (cache/, logs/, pids/)
 ├── .gitignore
