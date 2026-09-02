@@ -36,14 +36,14 @@ own `tests/autoboot.php`.
 
 A project's `tests/autoboot.php` **always** returns a `Suites` registry listing
 its suite directories, and each of those directories holds the `autoboot.php`
-that returns the `Suite` itself (`bootgly project create` scaffolds exactly
+that returns the `Suite` itself (`bootgly projects create` scaffolds exactly
 that: a registry plus `tests/example/`). A registry that returns a `Suite`
 instead is refused, naming the file — that file would have to be read twice,
 once as the registry and once as the suite bootstrap it stood for, which makes
 any `class`, `function` or `define()` inside it fatal and runs every
 `pretest()` twice. A shipped example imported into a kit before this contract
 still carries the old layout — re-import it with
-`bootgly project create <Name> --from=<Name> --refresh`.
+`bootgly projects create <Name> --from=<Name> --refresh`.
 
 ## Run a specific suite
 

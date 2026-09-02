@@ -60,7 +60,7 @@ Files whose return value is ignored — templates (`*.template.php`), demos (`*.
 | Suffix | Returns | Consumed by |
 |--------|---------|-------------|
 | `.Test.php` | `Test` object (`Bootgly\ACI\Tests\Suite\Test`) | test suites and E2E runners |
-| `.Project.php` | `Project` object | project loading and `bootgly project import` |
+| `.Project.php` | `Project` object | project loading and `bootgly projects import` |
 | `.Config.php` | `Config` object | `Configs` — per-scope configuration |
 | `.projects.php` | `array` — projects allow-list registry | `Projects` |
 | `.directive.php` | `array<string,Closure>` — directive compilers | template `Directives` |

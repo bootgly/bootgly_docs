@@ -13,7 +13,7 @@ O instalador:
 3. Inicializa a **plataforma Bootgly** (git submodule);
 4. Faz "boot" de [diretórios recurso](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
 5. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
-6. Abre o **wizard de projetos** (`php bootgly project create`).
+6. Abre o **wizard de projetos** (`php bootgly projects create`).
 
 > **Rodar de novo é seguro.** Se a instalação foi interrompida em qualquer etapa, execute o mesmo comando novamente: quando o diretório alvo já é um checkout do Bootgly Kit, o instalador **retoma** — imprime um checklist do que já foi feito, inicializa o que falta (submodules, resources) e reabre o wizard (pulando-o quando um projeto já está registrado). O wizard só oferece as plataformas ainda não configuradas.
 
@@ -99,18 +99,18 @@ Comece como começar, o wizard termina com um resumo e os comandos seguintes: o 
 Depois, inicie:
 
 ```bash
-php bootgly project list
+php bootgly projects list
 php bootgly project MyApp start
 ```
 
-Você pode rodar o wizard novamente a qualquer momento com `php bootgly project create` — tudo que já estiver configurado é pulado.
+Você pode rodar o wizard novamente a qualquer momento com `php bootgly projects create` — tudo que já estiver configurado é pulado.
 
 ### Não-interativo (CI / scripts / agentes de IA)
 
 Todas as entradas do wizard existem como flags — com `--yes` (ou entrada via pipe) nada é perguntado:
 
 ```bash :toolbar="true";
-php bootgly project create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
+php bootgly projects create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
 
 Use `--from=Demo/HTTP_Server_CLI` para partir de um projeto de plataforma em vez de começar do zero. Veja a [Referência](#referencia) abaixo com todas as flags.
@@ -213,14 +213,14 @@ O caminho de um projeto **não** pode começar com uma raiz de namespace de plat
 - `Bootgly`, `Console`, `Web` — o framework e as plataformas atuais.
 - `Data`, `Graphics`, `Embedded`, `Mobile` — reservados para plataformas futuras.
 
-`php bootgly project create Web` (também `Web/App`, `console`, `MOBILE`, …) é rejeitado com uma mensagem clara — escolha um nome distinto como `Website` ou `MyWeb`.
+`php bootgly projects create Web` (também `Web/App`, `console`, `MOBILE`, …) é rejeitado com uma mensagem clara — escolha um nome distinto como `Website` ou `MyWeb`.
 
 ## Importando projetos
 
 Qualquer repositório git que carregue a assinatura de projeto (`*.Project.php` na raiz) pode ser importado diretamente:
 
 ```bash :toolbar="true";
-php bootgly project import https://github.com/foo/project1 Project1
+php bootgly projects import https://github.com/foo/project1 Project1
 ```
 
 O projeto é clonado com o **histórico completo**, validado e colocado em `projects/Project1/` — `.git` e `origin` incluídos, então você continua commitando e dando push de lá — e registrado.

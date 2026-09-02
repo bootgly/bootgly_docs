@@ -67,31 +67,31 @@ A project that serves both interfaces lists both: `['interfaces' => ['CLI', 'WPI
 
 Because projects can nest arbitrarily, an attacker who compromised your project tree could otherwise hide a rogue nested `.Project.php` and have it executed. The registry closes that door: `bootgly project <path> start` runs **only** paths that are exact keys of `Bootgly.projects.php`. Anything else — an unregistered path, a grouping container (`Demo`), path traversal (`..`), an absolute path, a backslash or a null byte — is rejected, and the resolved directory is additionally jailed under the `projects/` base.
 
-To make a new project runnable, use `bootgly project create` — it generates the directory, the boot file and the registry entry in one step. The registry file is machine-managed by `create`/`import` (entries are re-emitted sorted; hand-added comments inside the array are not preserved).
+To make a new project runnable, use `bootgly projects create` — it generates the directory, the boot file and the registry entry in one step. The registry file is machine-managed by `create`/`import` (entries are re-emitted sorted; hand-added comments inside the array are not preserved).
 
 Every value is re-emitted as an escaped PHP literal, the file is parse-verified before it is installed and the write is atomic — so no project name or metadata can leave the registry unparseable. Paths minted by `create`/`import` follow a naming alphabet: each segment starts uppercase and uses only letters, numbers, `_` or `-` (e.g. `App` or `App/API`). A path that was hand-registered before that rule keeps working — the allow-list check is the boundary, not the alphabet.
 
 ## Creating a project
 
-`bootgly project create` is the canonical way to start a new project. On interactive terminals it opens a **wizard**:
+`bootgly projects create` is the canonical way to start a new project. On interactive terminals it opens a **wizard**:
 
 ```bash :toolbar="true";
-php bootgly project create
+php bootgly projects create
 ```
 
 The wizard prepares the kit on first run — every platform submodule (`Console` and `Web`), the `bootgly boot` resources and the shipped examples, none of it asked — then asks for the creation mode:
 
 - **Using what is already imported** — the first mode creates nothing. A prepared kit already carries every exportable platform project, so standing pat and opening one of them is a first-class way to start; the option states how many the kit holds;
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
-- **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly project import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
+- **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly projects import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
 
 Only projects declared with `exportable: true` in their `new Project(...)` signature are stocked as examples or copied by `--from=<source>`.
 
 Non-interactively (CI, scripts, AI agents), everything comes from flags:
 
 ```bash
-php bootgly project create App/API --from=scratch --interfaces=WPI --port=8080 --yes
-php bootgly project create --from=Demo/HTTP_Server_CLI --yes
+php bootgly projects create App/API --from=scratch --interfaces=WPI --port=8080 --yes
+php bootgly projects create --from=Demo/HTTP_Server_CLI --yes
 ```
 
 **Every project you create is booted — a git repository of its own.** `create`
@@ -116,10 +116,10 @@ project's `vendor/autoload.php` when the project boots.
 
 ## Importing a project
 
-Any directory carrying the **Bootgly project signature** — a `*.Project.php` file at its root — is an importable project. `bootgly project import` fetches one from a git repository URL:
+Any directory carrying the **Bootgly project signature** — a `*.Project.php` file at its root — is an importable project. `bootgly projects import` fetches one from a git repository URL:
 
 ```bash :toolbar="true";
-php bootgly project import https://github.com/foo/project1 Project1
+php bootgly projects import https://github.com/foo/project1 Project1
 ```
 
 The repository is cloned (system git) with its **full history**, validated against the signature, placed into `projects/Project1/` — `.git`, `origin` remote and all, so you keep committing and pushing from there — and registered in the allow-list. When the target name differs from the source's, the signature file is renamed to the new leaf and left **uncommitted** for you to review. Every rule the registry enforces is checked before the copy, so a refused import leaves nothing behind.
@@ -127,16 +127,19 @@ The repository is cloned (system git) with its **full history**, validated again
 > [!WARNING]
 > Imported projects run third-party code when started — the command asks for confirmation (skip with `--yes`).
 
-## The `project` command
+## The `projects` and `project` commands
 
-The `project` command is the central tool for managing Bootgly projects. Run `php bootgly project` to see all subcommands:
+Two commands split the work by what they address. `projects` is the kit as a whole — the registry (`create`, `import`, `list`) and what is running across it (`show`); `project <Name>` is one project you name. Run `php bootgly projects` or `php bootgly project` to see the subcommands of each:
 
 ```mermaid
 graph LR
-  project["php bootgly project"]
-  project --> create["create"]
-  project --> import["import"]
-  project --> list["list"]
+  projects["php bootgly projects"]
+  projects --> create["create"]
+  projects --> import["import"]
+  projects --> list["list"]
+  projects --> ps["show"]
+  project["php bootgly project &lt;Name&gt;"]
+  project --> boot["boot"]
   project --> start["start"]
   project --> stop["stop"]
   project --> show["show"]
@@ -147,12 +150,12 @@ graph LR
   project --> schedule["schedule"]
 ```
 
-### `project create`
+### `projects create`
 
 Creates a new project — wizard on interactive terminals, flags otherwise:
 
 ```bash
-php bootgly project create [<Name>] [--platform=console,web] [--from=scratch|<source>] \
+php bootgly projects create [<Name>] [--platform=console,web] [--from=scratch|<source>] \
    [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--yes]
 ```
 
@@ -175,37 +178,62 @@ Boots a project — initializes the resources a project of your own carries. Tod
 php bootgly project <Name> boot
 ```
 
-`create` runs the same hook for every from-scratch project. The shipped platform examples arrive unbooted; this subcommand is how you adopt one. A URL import brings its own repository and history along. Best-effort by design: a disabled shell, a missing git or an unset identity degrades to a note, never to a failure.
+`projects create` runs the same hook for every from-scratch project. The shipped platform examples arrive unbooted; this subcommand is how you adopt one. A URL import brings its own repository and history along. Best-effort by design: a disabled shell, a missing git or an unset identity degrades to a note, never to a failure.
 
-### `project import`
+### `projects import`
 
 Imports a project from a git repository URL carrying the `*.Project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
 
 ```bash
-php bootgly project import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
+php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 ```
 
-### `project list`
+### `projects list`
 
-Lists every registered project, grouped by interface (CLI, WPI or both):
+Lists every registered project — one row each, with the interfaces the registry binds it to and the description its signature carries. The description is clipped to the terminal width, never wrapped:
 
 ```bash :toolbar="true";
-php bootgly project list
+php bootgly projects list
 ```
 
 Example output:
 
 ```
- Project list:
-
- #1  - Benchmark
-    Description: Benchmarking project for Bootgly's
-    Type: CLI
-
- #2  - Demo/HTTP_Server_CLI
-    Description: Demonstration project for Bootgly HTTP Server CLI
-    Type: WPI
+╔═════╤══════════════════════╤════════════╤═══════════════════════════════════════════════════════╗
+║ #   │ Project              │ Interface  │ Description                                           ║
+╟─────┼──────────────────────┼────────────┼───────────────────────────────────────────────────────╢
+║ 1   │ App/API              │ WPI        │ Orders API                                            ║
+║ 2   │ Demo/CLI             │ CLI        │ Demonstration project for Bootgly CLI features        ║
+║ 3   │ Demo/HTTP_Server_CLI │ WPI        │ Demonstration project for Bootgly HTTP Server CLI     ║
+╚═════╧══════════════════════╧════════════╧═══════════════════════════════════════════════════════╝
 ```
+
+### `projects show`
+
+Shows every **running instance** across the registered projects — the `ps` of the kit. One line per instance, never per project: a project can hold several (one per bound port for servers, one per master PID for console and schedule workers), and the instance is what you address by port in `stop`/`reload` or with `--instance` in `logs`:
+
+```bash :toolbar="true";
+php bootgly projects show
+```
+
+Example output:
+
+```
+╔══════════════════════╤══════════╤═══════════╤═════════╤════════╤═════════╤════════╤══════════════╤═════╗
+║ Project              │ Instance │ Interface │ Status  │ Master │ Workers │ Uptime │ Address      │ Tap ║
+╟──────────────────────┼──────────┼───────────┼─────────┼────────┼─────────┼────────┼──────────────┼─────╢
+║ Demo/HTTP_Server_CLI │ 8080     │ WPI       │ running │ 41230  │ 4       │ 2h 15m │ 0.0.0.0:8080 │ yes ║
+║ App/API              │ 8443     │ WPI       │ paused  │ 41301  │ 4       │ 2h 14m │ 0.0.0.0:8443 │ yes ║
+║ App/API              │ 41988    │ CLI       │ running │ 41988  │ -       │ 5m 12s │ -            │ -   ║
+╚══════════════════════╧══════════╧═══════════╧═════════╧════════╧═════════╧════════╧══════════════╧═════╝
+```
+
+Liveness is the instance lock — the same proof `project <Name> show` uses — so a state file left behind by a crash never shows as running. `Tap` says whether the instance publishes the live-log socket that `logs -f` attaches to. On a narrow terminal the table gives up its secondary columns first — `Tap`, `Workers`, `Master`, `Interface`, then `Address` and `Uptime` — the way `pm2 ps` does; `Project`, `Instance` and `Status` always stay, and `--json` always carries every field. Two flags:
+
+- `--all` — also lists what is still on record but no longer running (`stopped`): the tombstone a clean stop leaves, or a document whose master is gone;
+- `--json` — one JSON document with the same rows (`project`, `instance`, `interface`, `status`, `master`, `workers`, `uptime` in seconds, `address`, `tap`), for scripts and agents.
+
+Nothing running prints `No running instance found.` — plus, when state files exist that this user cannot verify, a tip naming the service account that started them.
 
 ### `project start`
 

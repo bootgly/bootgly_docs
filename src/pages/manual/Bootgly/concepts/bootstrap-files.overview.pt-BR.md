@@ -60,7 +60,7 @@ Arquivos cujo valor de retorno é ignorado — templates (`*.template.php`), dem
 | Sufixo | Retorna | Consumido por |
 |--------|---------|---------------|
 | `.Test.php` | objeto `Test` (`Bootgly\ACI\Tests\Suite\Test`) | suites de teste e runners E2E |
-| `.Project.php` | objeto `Project` | carregamento de projetos e `bootgly project import` |
+| `.Project.php` | objeto `Project` | carregamento de projetos e `bootgly projects import` |
 | `.Config.php` | objeto `Config` | `Configs` — configuração por escopo |
 | `.projects.php` | `array` — registry de allow-list de projetos | `Projects` |
 | `.directive.php` | `array<string,Closure>` — compiladores de diretivas | `Directives` de template |

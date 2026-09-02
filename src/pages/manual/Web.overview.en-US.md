@@ -23,7 +23,7 @@ git submodule update --init Web
 Or through the wizard, non-interactively:
 
 ```bash :toolbar="true";
-php bootgly project create --platform=web
+php bootgly projects create --platform=web
 ```
 
 ## How it boots

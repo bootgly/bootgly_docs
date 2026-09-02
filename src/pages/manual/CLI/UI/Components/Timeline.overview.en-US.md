@@ -1,6 +1,6 @@
 # Timeline Component
 
-The `Timeline` component renders a multi-step guided flow with per-step state — pending, active, done or failed — as a vertical list connected by `│`. Interactive terminals repaint the frame in place as the flow advances; non-interactive output (pipes, CI) appends one plain line per transition, keeping logs clean. The `bootgly project create` wizard uses it to track its phases.
+The `Timeline` component renders a multi-step guided flow with per-step state — pending, active, done or failed — as a vertical list connected by `│`. Interactive terminals repaint the frame in place as the flow advances; non-interactive output (pipes, CI) appends one plain line per transition, keeping logs clean. The `bootgly projects create` wizard uses it to track its phases.
 
 A live demo is available in the [showcase](/manual/CLI/UI/Components/Timeline/showcase).
 

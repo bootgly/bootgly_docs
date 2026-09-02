@@ -36,7 +36,7 @@ The worker looks for `schedule.php` in the booted project directory
 (`BOOTGLY_PROJECT->path`), falling back to the working directory (`BOOTGLY_WORKING_DIR`)
 when no project is booted.
 
-Every from-scratch `project create` scaffolds a `schedule.php` with the examples above
+Every from-scratch `projects create` scaffolds a `schedule.php` with the examples above
 commented out — delete-safe, zero jobs until you activate one (`schedule list` says so
 instead of printing nothing).
 

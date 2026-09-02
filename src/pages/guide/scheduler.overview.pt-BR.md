@@ -36,7 +36,7 @@ O worker procura o `schedule.php` no diretório do projeto bootado
 (`BOOTGLY_PROJECT->path`), com fallback para o diretório de trabalho
 (`BOOTGLY_WORKING_DIR`) quando nenhum projeto está bootado.
 
-Todo `project create` do zero scaffolda um `schedule.php` com os exemplos acima
+Todo `projects create` do zero scaffolda um `schedule.php` com os exemplos acima
 comentados — seguro de apagar, zero jobs até você ativar um (`schedule list` avisa em vez
 de não imprimir nada).
 

@@ -63,7 +63,7 @@ $Textbox->required = true;
 $path = $Textbox->ask();
 ```
 
-É exatamente assim que o wizard do `bootgly project create` pede o caminho do projeto.
+É exatamente assim que o wizard do `bootgly projects create` pede o caminho do projeto.
 
 ## Limitando tentativas
 
@@ -170,7 +170,7 @@ if ($confirmed === false) {
 }
 ```
 
-É assim que o wizard do `bootgly project create` faz sua confirmação final — e como o controle `Confirm` do [Form](/manual/CLI/UX/Components/Form/overview) funciona.
+É assim que o wizard do `bootgly projects create` faz sua confirmação final — e como o controle `Confirm` do [Form](/manual/CLI/UX/Components/Form/overview) funciona.
 
 ## A moldura interativa
 

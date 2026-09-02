@@ -21,7 +21,7 @@ git submodule update --init Console
 Or through the wizard, non-interactively:
 
 ```bash :toolbar="true";
-php bootgly project create --platform=console
+php bootgly projects create --platform=console
 ```
 
 ## How it boots

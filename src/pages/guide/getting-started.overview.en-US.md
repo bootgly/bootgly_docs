@@ -13,7 +13,7 @@ The installer:
 3. Initializes the **Bootgly platform** (git submodule);
 4. Boot initial [resource dirs](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
 5. Optionally installs the **Bootgly CLI globally** (`php bootgly setup`) — so every command works as `bootgly ...` instead of `php bootgly ...`;
-6. Opens the **project wizard** (`php bootgly project create`).
+6. Opens the **project wizard** (`php bootgly projects create`).
 
 > **Re-running is safe.** If the installation was interrupted at any step, run the same command again: when the target directory is already a Bootgly Kit checkout, the installer **resumes** — it prints a checklist of what is done, initializes whatever is missing (submodules, resources) and re-opens the wizard (skipping it when a project is already registered). The wizard only offers the platforms not set up yet.
 
@@ -99,18 +99,18 @@ However you start, the wizard closes with a summary and the commands to run next
 Then boot it:
 
 ```bash
-php bootgly project list
+php bootgly projects list
 php bootgly project MyApp start
 ```
 
-You can rerun the wizard anytime with `php bootgly project create` — everything already set up is skipped.
+You can rerun the wizard anytime with `php bootgly projects create` — everything already set up is skipped.
 
 ### Non-interactive (CI / scripts / AI agents)
 
 All wizard inputs are available as flags — with `--yes` (or piped input) nothing is asked:
 
 ```bash :toolbar="true";
-php bootgly project create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
+php bootgly projects create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
 
 Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of from scratch. See the [Reference](#reference) below for all flags.
@@ -213,14 +213,14 @@ A project path may **not** start with a reserved platform namespace root — tho
 - `Bootgly`, `Console`, `Web` — the framework and current platforms.
 - `Data`, `Graphics`, `Embedded`, `Mobile` — reserved for future platforms.
 
-`php bootgly project create Web` (also `Web/App`, `console`, `MOBILE`, …) is rejected with a clear message — pick a distinct name like `Website` or `MyWeb`.
+`php bootgly projects create Web` (also `Web/App`, `console`, `MOBILE`, …) is rejected with a clear message — pick a distinct name like `Website` or `MyWeb`.
 
 ## Importing projects
 
 Any git repository carrying the project signature (`*.Project.php` at its root) can be imported directly:
 
 ```bash :toolbar="true";
-php bootgly project import https://github.com/foo/project1 Project1
+php bootgly projects import https://github.com/foo/project1 Project1
 ```
 
 The project is cloned with its **full history**, validated and placed into `projects/Project1/` — `.git` and `origin` included, so you keep committing and pushing from there — then registered.

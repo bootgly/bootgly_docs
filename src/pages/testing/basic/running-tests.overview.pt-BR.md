@@ -36,14 +36,14 @@ continua rodando o `tests/autoboot.php` do próprio checkout.
 
 O `tests/autoboot.php` de um projeto retorna **sempre** um registro `Suites`
 listando os diretórios de suíte dele, e cada um desses diretórios tem o
-`autoboot.php` que retorna a `Suite` em si (`bootgly project create` gera
+`autoboot.php` que retorna a `Suite` em si (`bootgly projects create` gera
 exatamente isso: um registro mais `tests/example/`). Um registro que retorna
 uma `Suite` é recusado, nomeando o arquivo — ele teria de ser lido duas vezes,
 uma como registro e outra como bootstrap da suíte que ele representava, o que
 torna fatal qualquer `class`, `function` ou `define()` dentro dele e roda todo
 `pretest()` em dobro. Um exemplo embarcado importado para um kit antes desse
 contrato ainda carrega o layout antigo — reimporte com
-`bootgly project create <Nome> --from=<Nome> --refresh`.
+`bootgly projects create <Nome> --from=<Nome> --refresh`.
 
 ## Executar uma suíte específica
 

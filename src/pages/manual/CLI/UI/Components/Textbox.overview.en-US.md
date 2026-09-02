@@ -63,7 +63,7 @@ $Textbox->required = true;
 $path = $Textbox->ask();
 ```
 
-This is exactly how the `bootgly project create` wizard asks for the project path.
+This is exactly how the `bootgly projects create` wizard asks for the project path.
 
 ## Limiting attempts
 
@@ -170,7 +170,7 @@ if ($confirmed === false) {
 }
 ```
 
-This is how the `bootgly project create` wizard asks its final confirmation — and how the [Form](/manual/CLI/UX/Components/Form/overview) `Confirm` control works.
+This is how the `bootgly projects create` wizard asks its final confirmation — and how the [Form](/manual/CLI/UX/Components/Form/overview) `Confirm` control works.
 
 ## The interactive frame
 

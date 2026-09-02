@@ -21,7 +21,7 @@ In Docker, a bare interactive run opens it on the first run:
 docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly:slim
 ```
 
-It is the same wizard behind [`bootgly project create`](/guide/getting-started) — a fixed
+It is the same wizard behind [`bootgly projects create`](/guide/getting-started) — a fixed
 timeline guides you through the start mode (from scratch, import from the platforms or
 from a Git remote), project path, interface (CLI or WPI), metadata and scaffolding. The
 project — and the `projects/.initialized` first-run marker — land in your mounted

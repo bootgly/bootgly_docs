@@ -21,7 +21,7 @@ instalador**. No Docker, uma execução interativa sem argumentos o abre na prim
 docker run -it --rm -v "$PWD/projects:/bootgly/projects" bootgly/bootgly:slim
 ```
 
-É o mesmo wizard por trás do [`bootgly project create`](/guide/getting-started) — uma
+É o mesmo wizard por trás do [`bootgly projects create`](/guide/getting-started) — uma
 timeline fixa te guia pelo modo de início (do zero, importar das plataformas ou de um
 remoto Git), caminho do projeto, interface (CLI ou WPI), metadados e scaffolding. O
 projeto — e o marcador de primeira execução `projects/.initialized` — ficam no seu

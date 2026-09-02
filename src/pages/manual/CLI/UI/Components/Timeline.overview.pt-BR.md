@@ -1,6 +1,6 @@
 # Componente Timeline
 
-O componente `Timeline` renderiza um fluxo guiado multi-etapas com estado por etapa — pending, active, done ou failed — como uma lista vertical conectada por `│`. Terminais interativos repintam o frame no lugar conforme o fluxo avança; saída não interativa (pipes, CI) anexa uma linha simples por transição, mantendo os logs limpos. O wizard do `bootgly project create` o usa para acompanhar suas fases.
+O componente `Timeline` renderiza um fluxo guiado multi-etapas com estado por etapa — pending, active, done ou failed — como uma lista vertical conectada por `│`. Terminais interativos repintam o frame no lugar conforme o fluxo avança; saída não interativa (pipes, CI) anexa uma linha simples por transição, mantendo os logs limpos. O wizard do `bootgly projects create` o usa para acompanhar suas fases.
 
 Uma demo ao vivo está disponível no [showcase](/manual/CLI/UI/Components/Timeline/showcase).
 

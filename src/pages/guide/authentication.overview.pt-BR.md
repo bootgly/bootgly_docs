@@ -23,13 +23,13 @@ Em um kit Bootgly, importe o projeto Auth pelo wizard — ele aparece no picker
 "Import projects from Platforms":
 
 ```bash :toolbar="true";
-php bootgly project create
+php bootgly projects create
 ```
 
 Ou de forma não interativa:
 
 ```bash :toolbar="true";
-php bootgly project create Auth --from=Demo/Auth --yes
+php bootgly projects create Auth --from=Demo/Auth --yes
 ```
 
 Depois inicie:
