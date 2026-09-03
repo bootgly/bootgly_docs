@@ -18,8 +18,8 @@ Um kit roda sobre três diretórios seus: `scripts/` (copiado do template do fra
 (criado com o seu layout — `cache/`, `logs/`, `pids/`, `temp/`, … — o framework não traz
 template para ele; `sessions/` e `security/` são criados pelos seus donos, trancados) e `projects/` (com um registro vazio — os Demos do próprio framework nunca
 aparecem num kit). O `kit boot` instala o que estiver faltando e nunca toca no que existe; o
-registro vem por último, então um boot que falha deixa o kit por preparar — ele nomeia o diretório
-parcial a remover, e a próxima execução completa o resto. Você raramente o roda à mão: o
+uma cópia que falha não deixa nada pela metade, e o registro vem por último, então um boot que falha
+deixa o kit por preparar para a próxima execução completar. Você raramente o roda à mão: o
 primeiro `projects create` ou `projects import` num kit novo faz o boot por você.
 
 ## Veja para onde pode mover

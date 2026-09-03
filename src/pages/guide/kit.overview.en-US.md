@@ -18,8 +18,8 @@ A kit runs on three directories of yours: `scripts/` (copied from the framework'
 `storage/` (created with its layout — `cache/`, `logs/`, `pids/`, `temp/`, … — the framework
 ships no template for it; `sessions/` and `security/` are created by their owners, locked down) and `projects/` (seeded with an empty registry — the
 framework's own Demos are never listed in a kit). `kit boot` lays down whichever is missing and
-never touches one that exists; the registry comes last, so a boot that fails leaves the kit
-unprepared — it names the partial directory to remove, and the next run completes the rest. You rarely run it by hand: the first `projects create` or `projects import` on a fresh
+never touches one that exists; a copy that fails leaves nothing half-laid, and the registry comes
+last, so a boot that fails leaves the kit unprepared for the next run to complete. You rarely run it by hand: the first `projects create` or `projects import` on a fresh
 kit boots it for you.
 
 ## See what you can move to
