@@ -47,9 +47,14 @@ Without `-f`, `logs` prints what the sinks persisted and exits. `--since` bounds
 ```bash :toolbar="true";
 bootgly logs --since=15m --level=warning
 bootgly logs --channel=exceptions --json
+bootgly logs -f --channel=HTTP.Server.CLI.access
 bootgly logs --project=Demo/HTTP_Server_CLI --since=2h
 bootgly logs --framework
 ```
+
+With the [AccessLog middleware](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares#accesslog) registered, the
+`HTTP.Server.CLI.access` channel carries one line per request — status, duration, bytes, request id —
+cancelled requests included; `--level=warning` keeps only the 4xx/5xx lines.
 
 The kit scope (`bootgly logs`) sees **every** project's records, each line labeled by its
 [provenance](/guide/logging/overview/) — the `project` field (`framework` for the framework's

@@ -122,6 +122,71 @@ All built-in middlewares are in the namespace `Bootgly\WPI\Nodes\HTTP_Server_CLI
 
 ---
 
+### AccessLog
+
+One log line per request, on its own channel — the access log the server itself never writes.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\AccessLog;
+
+new AccessLog(
+   channel: 'HTTP.Server.CLI.access', // Log channel → storage/logs/HTTP.Server.CLI.access.log (default)
+   header: 'X-Request-Id',            // Response header the request id is read back from; null = no id (default: 'X-Request-Id')
+   query: false,                      // Keep the query string in the logged target (default: false)
+   Formatter: null                    // fn (array $entry): string — your own line (default: the line below)
+);
+```
+
+Register it **once, globally and outermost** — first in the list, so every request passes through it, cache replays included:
+
+```php
+$Router->intercept(new AccessLog, new TrustedProxy(proxies: [/* ... */]), new RequestId);
+```
+
+Every request then writes one line, whatever its outcome — and only one:
+
+```text
+GET /api/health → 200 in 0.2ms
+POST /api/account/sign-in → 401 in 353ms
+GET /api/report → cancelled after 15002.4ms
+```
+
+Severity follows the outcome — 5xx `error`, 4xx `warning`, a cancelled request `notice`, everything else `info` — so the severity filter already separates noise from trouble:
+
+```bash :toolbar="true";
+bootgly logs -f --channel=HTTP.Server.CLI.access
+bootgly logs --channel=HTTP.Server.CLI.access --level=warning --since=1h
+```
+
+The context of every record carries the raw fields (`--json` and the viewer's detail show them):
+
+| Field | Meaning |
+|---|---|
+| `method`, `URI`, `protocol` | the request line — `URI` without its query unless `query: true`; `protocol` is `HTTP/1.1` or `HTTP/2` |
+| `code` | the status the wire carried; `null` for a cancelled request |
+| `ms` | duration — the handler's for a synchronous response, the whole generation's (parked time included) for a deferred one |
+| `bytes` | body bytes as the middleware saw them (after inner middlewares such as `Compression`); `null` on a throw or a handoff |
+| `peer`, `address` | the socket peer (never forged) and the application-facing client address — behind a proxy, what [TrustedProxy](#trustedproxy) resolved |
+| `id` | the request id read back from `header` — the one [RequestId](#requestid) stamped |
+| `deferred`, `cancelled` | how the request settled |
+| `throwable` | the class of a Throwable that left the onion (synchronous throw → 500) |
+
+**Deferred responses and cancelled requests.** A deferred route answers after the onion unwound, so a plain post-`$next()` line would record the placeholder status and ~0 ms. `AccessLog` lets the request's lifecycle settle the line instead: it fires once the answer is chosen — the work's, a boundary's or the Catcher's (a budget that runs out is the Catcher's 503) — and also when there is **no** answer: the client left with the response parked, or the generation was abandoned. That request gets its line too, as `cancelled`, with the time it stayed parked. No application-level middleware can log that case; it is the reason the middleware ships with the framework.
+
+**Your own line.** The `Formatter` receives the context array plus two neutralized fields — `target` (the URI) and `method` — and returns the message:
+
+```php
+new AccessLog(Formatter: static fn (array $entry): string => "{$entry['method']} {$entry['target']} {$entry['code']} {$entry['ms']}ms")
+```
+
+Build the message from `target`, never from `URI`: the message is rendered by the Output template engine, where every `@` opens a directive, and the target is client-controlled. In the default line every `@` and every byte outside printable ASCII enters as `%XX` (`%40` is how `@` is written in a URI anyway), the target is capped at 120 characters, and the query stays out. The context is JSON-encoded and keeps the raw values. Leave the trailing newline out — the middleware adds it.
+
+**What it does not see.** A route-level `AccessLog` logs only its routes — never the 404 catch-all, an answer a global middleware short-circuited (401/403/429, a CORS preflight) or a deferral begun outside its chain. A global instance logs route-cache replays with the reset Response's status (200) and no bytes: the wire came from the cache. Neither logs the health probe, the ACME responder or a request the decoder rejected before routing. A response whose encoding failed after an error answer settles as `cancelled`. Two instances write two lines — one per channel.
+
+**Phase:** Both — pre-processing opens the entry; post-processing writes the synchronous line, the lifecycle writes the deferred one.
+
+---
+
 ### Authentication
 
 Protects routes with ordered Basic, Bearer, JWT, and Session guards. Authentication is configured with an `Authenticating` guard strategy and executed by the `Authentication` middleware.

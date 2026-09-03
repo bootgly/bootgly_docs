@@ -47,9 +47,14 @@ incluídas), e todos os filtros compõem:
 ```bash :toolbar="true";
 bootgly logs --since=15m --level=warning
 bootgly logs --channel=exceptions --json
+bootgly logs -f --channel=HTTP.Server.CLI.access
 bootgly logs --project=Demo/HTTP_Server_CLI --since=2h
 bootgly logs --framework
 ```
+
+Com o [middleware AccessLog](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares#accesslog) registrado, o canal
+`HTTP.Server.CLI.access` carrega uma linha por requisição — status, duração, bytes, id da requisição —
+requisições canceladas incluídas; `--level=warning` fica só com as linhas 4xx/5xx.
 
 O escopo do kit (`bootgly logs`) enxerga os records de **todos** os projetos, cada linha marcada
 pela sua [procedência](/guide/logging/overview/) — o campo `project` (`framework` para os

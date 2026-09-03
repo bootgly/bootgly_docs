@@ -122,6 +122,71 @@ Todos os middlewares built-in estão no namespace `Bootgly\WPI\Nodes\HTTP_Server
 
 ---
 
+### AccessLog
+
+Uma linha de log por requisição, num canal próprio — o access log que o próprio servidor nunca escreve.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\AccessLog;
+
+new AccessLog(
+   channel: 'HTTP.Server.CLI.access', // Canal de log → storage/logs/HTTP.Server.CLI.access.log (padrão)
+   header: 'X-Request-Id',            // Header da resposta de onde o id da requisição é lido; null = sem id (padrão: 'X-Request-Id')
+   query: false,                      // Manter a query string no alvo registrado (padrão: false)
+   Formatter: null                    // fn (array $entry): string — sua própria linha (padrão: a linha abaixo)
+);
+```
+
+Registre-o **uma vez, global e mais externo** — primeiro da lista, para toda requisição passar por ele, replays do cache incluídos:
+
+```php
+$Router->intercept(new AccessLog, new TrustedProxy(proxies: [/* ... */]), new RequestId);
+```
+
+Toda requisição então escreve uma linha, qualquer que seja o desfecho — e só uma:
+
+```text
+GET /api/health → 200 in 0.2ms
+POST /api/account/sign-in → 401 in 353ms
+GET /api/report → cancelled after 15002.4ms
+```
+
+A severidade segue o desfecho — 5xx `error`, 4xx `warning`, requisição cancelada `notice`, o resto `info` — então o filtro por severidade já separa ruído de problema:
+
+```bash :toolbar="true";
+bootgly logs -f --channel=HTTP.Server.CLI.access
+bootgly logs --channel=HTTP.Server.CLI.access --level=warning --since=1h
+```
+
+O contexto de cada registro carrega os campos brutos (`--json` e o detalhe do viewer os mostram):
+
+| Campo | Significado |
+|---|---|
+| `method`, `URI`, `protocol` | a linha da requisição — `URI` sem a query a menos que `query: true`; `protocol` é `HTTP/1.1` ou `HTTP/2` |
+| `code` | o status que a resposta levou; `null` numa requisição cancelada |
+| `ms` | duração — a do handler numa resposta síncrona, a da geração inteira (tempo estacionado incluído) numa deferred |
+| `bytes` | bytes do body como o middleware os viu (depois dos middlewares internos, como `Compression`); `null` num throw ou num handoff |
+| `peer`, `address` | o peer do socket (não se falsifica) e o endereço do cliente visto pela aplicação — atrás de proxy, o que o [TrustedProxy](#trustedproxy) resolveu |
+| `id` | o id da requisição lido de `header` — o que o [RequestId](#requestid) carimbou |
+| `deferred`, `cancelled` | como a requisição se desfechou |
+| `throwable` | a classe do Throwable que saiu da cebola (throw síncrono → 500) |
+
+**Respostas deferred e requisições canceladas.** Uma rota deferred responde depois de a cebola desenrolar, então uma linha pós-`$next()` comum registraria o status placeholder e ~0 ms. O `AccessLog` deixa o ciclo de vida da requisição fechar a linha: ele dispara quando a resposta é escolhida — a do trabalho, a de um boundary ou a do Catcher (orçamento estourado é o 503 do Catcher) — e também quando **não há** resposta: o cliente saiu com a resposta estacionada, ou a geração foi abandonada. Essa requisição também ganha sua linha, como `cancelled`, com o tempo que ficou estacionada. Nenhum middleware de aplicação consegue registrar esse caso; é a razão de o middleware vir com o framework.
+
+**Sua própria linha.** O `Formatter` recebe o array de contexto mais dois campos neutralizados — `target` (a URI) e `method` — e devolve a mensagem:
+
+```php
+new AccessLog(Formatter: static fn (array $entry): string => "{$entry['method']} {$entry['target']} {$entry['code']} {$entry['ms']}ms")
+```
+
+Monte a mensagem a partir de `target`, nunca de `URI`: a mensagem é renderizada pelo motor de template do Output, onde todo `@` abre uma diretiva, e o alvo é controlado pelo cliente. Na linha padrão todo `@` e todo byte fora do ASCII imprimível entram como `%XX` (`%40` é como um `@` se escreve numa URI, afinal), o alvo é limitado a 120 caracteres e a query fica de fora. O contexto é codificado em JSON e mantém os valores brutos. Deixe a quebra de linha final de fora — o middleware a acrescenta.
+
+**O que ele não vê.** Um `AccessLog` de rota registra só as suas rotas — nunca o catch-all 404, uma resposta que um middleware global cortou (401/403/429, um preflight CORS) ou uma deferred iniciada fora da sua cadeia. Uma instância global registra replays do cache de rotas com o status da Response resetada (200) e sem bytes: a resposta veio do cache. Nenhum dos dois registra o health probe, o responder ACME ou uma requisição que o decoder rejeitou antes do roteamento. Uma resposta cuja codificação falhou depois de uma resposta de erro se desfecha como `cancelled`. Duas instâncias escrevem duas linhas — uma por canal.
+
+**Fase:** Ambas — o pré-processamento abre a entrada; o pós-processamento escreve a linha síncrona, o ciclo de vida escreve a deferred.
+
+---
+
 ### Authentication
 
 Protege rotas com guards ordenados de Basic, Bearer, JWT e Session. A autenticação é configurada com uma estratégia `Authenticating` e executada pelo middleware `Authentication`.
