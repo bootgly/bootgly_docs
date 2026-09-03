@@ -11,16 +11,22 @@ contrário).
 ## Endpoint de health embutido (probes K8s)
 
 O servidor HTTP responde probes de health nativamente — sem rota, sem middleware, sem o
-registry de Observability. Opte com o parâmetro `health:` do `configure()`:
+registry de Observability. Opte com o parâmetro `health:` do `HTTP_Server_CLI\Configs`:
 
 ```php
 $HTTP_Server_CLI->configure(
-   host: '0.0.0.0',
-   port: 8080,
-   workers: 4,
-   health: '/health'   // ← endpoint de probe embutido (null = desativado, o default)
+   new HTTP_Server_CLI\Configs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 4,
+      health: '/health'   // ← endpoint de probe embutido (null = desativado, o default)
+   )
 );
 ```
+
+`configure()` é variádico sobre value objects **Configs** — um por concern, em qualquer ordem — e todo
+Configs aceita **apenas named arguments**: um `new HTTP_Server_CLI\Configs('0.0.0.0', 8080, 4)`
+posicional levanta um `TypeError`.
 
 Na plataforma Web (`Web\App`) ele vem **ligado por default** em `/health` — passe
 `health: null` ao `configure()` para desativar.

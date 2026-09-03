@@ -26,6 +26,7 @@ use function getenv;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
@@ -45,9 +46,11 @@ return new Project(
 		});
 
 		$Server->configure(
-			host: '0.0.0.0',
-			port: getenv('PORT') ? (int) getenv('PORT') : 8080,
-			workers: 12
+			new Configs(
+				host: '0.0.0.0',
+				port: getenv('PORT') ? (int) getenv('PORT') : 8080,
+				workers: 12
+			)
 		);
 
 		$Server->on(
@@ -67,15 +70,18 @@ The smallest public contract is simple: configure a listening socket, register a
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
 $Server = new TCP_Server_CLI(Modes::Monitor);
 
 $Server->configure(
-	host: '0.0.0.0',
-	port: 8080,
-	workers: 4
+	new Configs(
+		host: '0.0.0.0',
+		port: 8080,
+		workers: 4
+	)
 );
 
 $Server->on(
@@ -126,31 +132,44 @@ server on the backlog as well as live.
 
 ## Configuration
 
-The `configure()` method stores the runtime socket settings before startup:
+`configure()` is variadic over **Configs** value objects — one per concern, applied in any order before startup.
+The transport lives in `TCP_Server_CLI\Configs`:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `host` | `string` | — | Host or IP to bind the listening socket to. |
 | `port` | `int` | — | TCP port to listen on. |
 | `workers` | `int` | — | Number of child processes to fork. |
-| `secure` | `?array` | `null` | PHP stream context secure SSL/TLS options for TLS sockets. |
-| `user` | `?string` | `null` | POSIX user to switch to after binding the socket. |
-| `group` | `?string` | `null` | POSIX group to switch to after binding the socket. |
+| `secure` | `null\|array` | `null` | PHP stream context secure SSL/TLS options for TLS sockets. |
+| `user` | `null\|string` | `null` | POSIX user to switch to after binding the socket. |
+| `group` | `null\|string` | `null` | POSIX group to switch to after binding the socket. |
 
 ```php
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
+
+
 $Server->configure(
-	host: '0.0.0.0',
-	port: 443,
-	workers: 8,
-	secure: [
-		'local_cert'  => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
-		'local_pk'    => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
-		'verify_peer' => false,
-	],
-	user: 'www-data',
-	group: 'www-data'
+	new Configs(
+		host: '0.0.0.0',
+		port: 443,
+		workers: 8,
+		secure: [
+			'local_cert'  => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
+			'local_pk'    => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
+			'verify_peer' => false,
+		],
+		user: 'www-data',
+		group: 'www-data'
+	)
 );
 ```
+
+> [!IMPORTANT]
+> Every Configs is **named-arguments only**. Its first parameter is a guard slot you never fill, so a positional
+> `new Configs('0.0.0.0', 443, 8)` raises a `TypeError` instead of silently binding the wrong values.
+
+Handing two instances of the same Configs class to one `configure()` call throws an `InvalidArgumentException`, and a
+`configure()` that never carried `host`, `port` and `workers` throws an `ArgumentCountError`.
 
 ### SSL/TLS
 
@@ -165,12 +184,14 @@ If you bind to privileged ports, you can start as root and then demote the proce
 
 ```php
 $Server->configure(
-	host: '0.0.0.0',
-	port: 443,
-	workers: 4,
-	secure: [/* ... */],
-	user: 'www-data',
-	group: 'www-data'
+	new Configs(
+		host: '0.0.0.0',
+		port: 443,
+		workers: 4,
+		secure: [/* ... */],
+		user: 'www-data',
+		group: 'www-data'
+	)
 );
 ```
 
@@ -269,7 +290,7 @@ At the connection layer, Bootgly tracks:
 - connection start time and last usage timestamp
 - TLS handshake state
 - write counters and global read/write stats
-- idle expiration timers, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `configure(connectionIdleTimeout:)`) — pending deferred work counts as activity
+- idle expiration timers, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — pending deferred work counts as activity
 - optional blacklist checks
 
 See [`Connection`](./TCP_Server_CLI/Connection) and [`Packages`](./TCP_Server_CLI/Packages) for the lower-level details.
@@ -282,6 +303,7 @@ use function getenv;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
@@ -301,9 +323,11 @@ return new Project(
 		});
 
 		$Server->configure(
-			host: '0.0.0.0',
-			port: getenv('PORT') ? (int) getenv('PORT') : 8080,
-			workers: 12
+			new Configs(
+				host: '0.0.0.0',
+				port: getenv('PORT') ? (int) getenv('PORT') : 8080,
+				workers: 12
+			)
 		);
 
 		$Server->on(

@@ -25,6 +25,7 @@ use function shell_exec;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI\Events;
 
 
@@ -44,9 +45,11 @@ return new Project(
       });
 
       $Server->configure(
-         host: '0.0.0.0',
-         port: getenv('PORT') ? (int) getenv('PORT') : 9999,
-         workers: max(1, (int) shell_exec('nproc') ?: 1),
+         new Configs(
+            host: '0.0.0.0',
+            port: getenv('PORT') ? (int) getenv('PORT') : 9999,
+            workers: max(1, (int) shell_exec('nproc') ?: 1)
+         )
       );
 
       $Server->on(Events::DatagramReceive, fn ($input) => $input);
@@ -63,15 +66,18 @@ The minimal public flow is straightforward: configure the socket, register a han
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI\Events;
 
 
 $Server = new UDP_Server_CLI(Modes::Monitor);
 
 $Server->configure(
-   host: '0.0.0.0',
-   port: 9999,
-   workers: 1
+   new Configs(
+      host: '0.0.0.0',
+      port: 9999,
+      workers: 1
+   )
 );
 
 $Server->on(
@@ -100,25 +106,38 @@ The constructor accepts `Bootgly\API\Endpoints\Server\Modes`.
 
 ## Configuration
 
-Use `configure()` to define where the server listens and how many workers it starts.
+`configure()` is variadic over **Configs** value objects — one per concern, applied in any order before
+startup. The transport lives in `UDP_Server_CLI\Configs`:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `host` | `string` | — | Address to bind to, such as `0.0.0.0` for all interfaces. |
 | `port` | `int` | — | UDP port to listen on. |
 | `workers` | `int` | — | Number of worker processes. |
-| `user` | `?string` | `null` | Optional POSIX user to switch to after binding. |
-| `group` | `?string` | `null` | Optional POSIX group to switch to after binding. |
+| `user` | `null\|string` | `null` | Optional POSIX user to switch to after binding. |
+| `group` | `null\|string` | `null` | Optional POSIX group to switch to after binding. |
 
 ```php
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
+
+
 $Server->configure(
-   host: '0.0.0.0',
-   port: 9999,
-   workers: 4,
-   user: 'www-data',
-   group: 'www-data'
+   new Configs(
+      host: '0.0.0.0',
+      port: 9999,
+      workers: 4,
+      user: 'www-data',
+      group: 'www-data'
+   )
 );
 ```
+
+> [!IMPORTANT]
+> Every Configs is **named-arguments only**. Its first parameter is a guard slot you never fill, so a positional
+> `new Configs('0.0.0.0', 9999, 4)` raises a `TypeError` instead of silently binding the wrong values.
+
+Handing two instances of the same Configs class to one `configure()` call throws an `InvalidArgumentException`, and a
+`configure()` that never carried `host`, `port` and `workers` throws an `ArgumentCountError`.
 
 ### Privilege Dropping
 
@@ -170,7 +189,7 @@ These are useful for operating and observing the running server from the termina
 
 ## Notes for Consumers
 
-- The public `configure()` API does **not** expose SSL/TLS or DTLS options.
+- `UDP_Server_CLI\Configs` does **not** expose SSL/TLS or DTLS options.
 - UDP is message-oriented and does not provide the same delivery guarantees as TCP.
 - `pause()` and `resume()` are available when you need to temporarily stop and continue the listening flow.
 
@@ -183,6 +202,7 @@ use function shell_exec;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI\Events;
 
 
@@ -202,9 +222,11 @@ return new Project(
       });
 
       $Server->configure(
-         host: '0.0.0.0',
-         port: getenv('PORT') ? (int) getenv('PORT') : 9999,
-         workers: max(1, (int) shell_exec('nproc') ?: 1),
+         new Configs(
+            host: '0.0.0.0',
+            port: getenv('PORT') ? (int) getenv('PORT') : 9999,
+            workers: max(1, (int) shell_exec('nproc') ?: 1)
+         )
       );
 
       $Server->on(Events::DatagramReceive, fn ($input) => $input);

@@ -12,8 +12,8 @@ Resources built-in ficam disponíveis de forma lazy em toda resposta:
 - `$Response->Pre` - formata saída de debug em HTML preformatado.
 - `$Response->View` - renderiza views do projeto.
 
-Resources de projeto são registrados uma vez em `HTTP_Server_CLI::configure()` e depois
-acessados pelo nome dentro da rota, por exemplo `$Response->Database` (SQL async),
+Resources de projeto são registrados uma vez — por um `Response\Configs` entregue ao
+`HTTP_Server_CLI->configure()` — e depois acessados pelo nome dentro da rota, por exemplo `$Response->Database` (SQL async),
 `$Response->KV` (key-value Redis async) ou `$Response->Upstream` (uma chamada HTTP de saída
 pelo client nativo embarcado no reactor do worker).
 
@@ -46,7 +46,7 @@ return $Response->View->render('boas-vindas', [
 
 ## Registrar resources de projeto
 
-Registre resources customizados com a opção `responseResources`. Cada factory é um
+Registre resources customizados pelo campo `Resources` do `Response\Configs`. Cada factory é um
 `Closure(object): Response\Resource` que recebe o contexto da resposta atual e retorna uma
 instância de `Response\Resource` — criada de forma lazy na primeira leitura do resource pelo nome.
 
@@ -57,14 +57,19 @@ escopo de config do diretório `configs/` do projeto, constrói uma conexão poo
 encapsula. Passe o diretório `configs/` do projeto e registre cada resource em uma única linha:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
 
 $HTTP_Server_CLI->configure(
-   responseResources: [
-      'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
-      'KV' => KVResource::provide(__DIR__ . '/configs/'),
-   ],
+   new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4),
+   new ResponseConfigs(
+      Resources: [
+         'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
+         'KV' => KVResource::provide(__DIR__ . '/configs/'),
+      ]
+   )
 );
 ```
 
@@ -87,25 +92,30 @@ montar e encapsular o resource você mesmo em vez de chamar `provide()`:
 use RuntimeException;
 
 use Bootgly\ADI\Databases\SQL;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
 
 $HTTP_Server_CLI->configure(
-   responseResources: [
-      'Database' => static function (object $Context): DatabaseResource {
-         if ($Context instanceof Response === false) {
-            throw new RuntimeException('Database response resource expects a Response context.');
-         }
+   new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4),
+   new ResponseConfigs(
+      Resources: [
+         'Database' => static function (object $Context): DatabaseResource {
+            if ($Context instanceof Response === false) {
+               throw new RuntimeException('Database response resource expects a Response context.');
+            }
 
-         static $Database = null;
+            static $Database = null;
 
-         if ($Database instanceof SQL === false) {
-            $Database = new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1']);
-         }
+            if ($Database instanceof SQL === false) {
+               $Database = new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1']);
+            }
 
-         return new DatabaseResource($Database);
-      },
-   ],
+            return new DatabaseResource($Database);
+         },
+      ]
+   )
 );
 ```
 
@@ -145,7 +155,7 @@ provide (string $configs): Closure
 ```
 
 Factory estática. Lê o escopo `database` do diretório `configs/` do projeto informado e retorna um
-`Closure(object): Database` lazy para `responseResources`. Constrói uma `SQL` pooled por worker;
+`Closure(object): Database` lazy para `Response\Configs(Resources:)`. Constrói uma `SQL` pooled por worker;
 lança exceção quando o escopo está desabilitado ou o contexto não é um `Response`.
 
 ```php
@@ -230,12 +240,17 @@ em voo quando o transporte morreu são perdidos e precisam ser refeitos pelo cha
 do worker continua funcionando.
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\KV as KVResource;
 
 $HTTP_Server_CLI->configure(
-   responseResources: [
-      'KV' => KVResource::provide(__DIR__ . '/configs/'),
-   ],
+   new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4),
+   new ResponseConfigs(
+      Resources: [
+         'KV' => KVResource::provide(__DIR__ . '/configs/'),
+      ]
+   )
 );
 ```
 
@@ -334,7 +349,7 @@ provide (string $configs): Closure
 ```
 
 Factory estática. Lê o escopo `kv` do diretório `configs/` do projeto informado e retorna um
-`Closure(object): KV` lazy para `responseResources`. Constrói uma conexão pipelined por worker;
+`Closure(object): KV` lazy para `Response\Configs(Resources:)`. Constrói uma conexão pipelined por worker;
 lança exceção quando o escopo está desabilitado ou o contexto não é um `Response`.
 
 ```php
@@ -366,15 +381,20 @@ reactor do worker, então uma rota pode chamar outro serviço de dentro do `defe
 worker continua atendendo suas outras conexões. Registre-o uma vez, pelo nome:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\HTTP;
 
 $HTTP_Server_CLI->configure(
-   responseResources: [
-      'Upstream' => static fn (object $Context): HTTP => new HTTP(
-         host: 'api.example.com',
-         secure: [],
-      ),
-   ],
+   new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4),
+   new ResponseConfigs(
+      Resources: [
+         'Upstream' => static fn (object $Context): HTTP => new HTTP(
+            host: 'api.example.com',
+            secure: [],
+         ),
+      ]
+   )
 );
 ```
 
@@ -417,7 +437,7 @@ novo no próximo deferral. Cada um recebe portanto sua própria instância de `H
 client embarcado novinho, adotado pelo reactor do worker; nunca um protótipo compartilhado cujo
 pool, registro de conexões e hooks vazariam entre deferrals. Construir um `HTTP` fora do reactor
 do servidor lança `RuntimeException`:
-`HTTP response resource requires the HTTP server reactor — construct it from a responseResources factory.`
+`HTTP response resource requires the HTTP server reactor — construct it from a Response\Configs(Resources:) factory.`
 
 ## Chamar um upstream por HTTP
 
@@ -509,7 +529,7 @@ sem fila, sem timer.
   `HTTP response resource is owned by another deferred context.`
 - Quando o attach do resource foi recusado porque um contexto ainda era dono dele — uma instância
   carregada e puxada entre contextos:
-  `HTTP response resource was attached to another response while owned — a carried instance cannot serve interleaved deferred contexts; register it as a responseResources factory instead.`
+  `HTTP response resource was attached to another response while owned — a carried instance cannot serve interleaved deferred contexts; register it as a Response\Configs(Resources:) factory instead.`
 
 A liberação roda quando a geração do deferral encerra, e as duas formas de encerrar a executam: a
 conclusão normal e o peer indo embora no meio da espera (cancelamento, cujo Fiber nunca é

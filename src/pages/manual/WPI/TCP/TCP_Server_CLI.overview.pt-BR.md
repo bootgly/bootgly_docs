@@ -26,6 +26,7 @@ use function getenv;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
@@ -45,9 +46,11 @@ return new Project(
 		});
 
 		$Server->configure(
-			host: '0.0.0.0',
-			port: getenv('PORT') ? (int) getenv('PORT') : 8080,
-			workers: 12
+			new Configs(
+				host: '0.0.0.0',
+				port: getenv('PORT') ? (int) getenv('PORT') : 8080,
+				workers: 12
+			)
 		);
 
 		$Server->on(
@@ -67,15 +70,18 @@ O menor contrato público é simples: configure um socket de escuta, registre um
 ```php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
 $Server = new TCP_Server_CLI(Modes::Monitor);
 
 $Server->configure(
-	host: '0.0.0.0',
-	port: 8080,
-	workers: 4
+	new Configs(
+		host: '0.0.0.0',
+		port: 8080,
+		workers: 4
+	)
 );
 
 $Server->on(
@@ -126,31 +132,44 @@ porta vinculada como campo `instance` (estampado em todo modo, Test incluído), 
 
 ## Configuração
 
-O método `configure()` armazena as configurações do socket antes da inicialização:
+O `configure()` é variádico sobre value objects **Configs** — um por concern, aplicados em qualquer ordem antes da inicialização.
+O transporte vive em `TCP_Server_CLI\Configs`:
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |---|---|---|---|
 | `host` | `string` | — | Host ou IP em que o socket de escuta será vinculado. |
 | `port` | `int` | — | Porta TCP de escuta. |
 | `workers` | `int` | — | Número de processos filhos criados via fork. |
-| `secure` | `?array` | `null` | Opções seguras SSL/TLS de stream context do PHP para sockets TLS. |
-| `user` | `?string` | `null` | Usuário POSIX para o qual o processo será rebaixado após o bind. |
-| `group` | `?string` | `null` | Grupo POSIX para o qual o processo será rebaixado após o bind. |
+| `secure` | `null\|array` | `null` | Opções seguras SSL/TLS de stream context do PHP para sockets TLS. |
+| `user` | `null\|string` | `null` | Usuário POSIX para o qual o processo será rebaixado após o bind. |
+| `group` | `null\|string` | `null` | Grupo POSIX para o qual o processo será rebaixado após o bind. |
 
 ```php
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
+
+
 $Server->configure(
-	host: '0.0.0.0',
-	port: 443,
-	workers: 8,
-	secure: [
-		'local_cert'  => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
-		'local_pk'    => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
-		'verify_peer' => false,
-	],
-	user: 'www-data',
-	group: 'www-data'
+	new Configs(
+		host: '0.0.0.0',
+		port: 443,
+		workers: 8,
+		secure: [
+			'local_cert'  => BOOTGLY_ROOT_DIR . '@/certificates/localhost.cert.pem',
+			'local_pk'    => BOOTGLY_ROOT_DIR . '@/certificates/localhost.key.pem',
+			'verify_peer' => false,
+		],
+		user: 'www-data',
+		group: 'www-data'
+	)
 );
 ```
+
+> [!IMPORTANT]
+> Todo Configs aceita **apenas named arguments**. Seu primeiro parâmetro é um guard slot que você nunca preenche, então
+> um `new Configs('0.0.0.0', 443, 8)` posicional levanta um `TypeError` em vez de vincular silenciosamente os valores errados.
+
+Passar duas instâncias da mesma classe de Configs em uma mesma chamada de `configure()` lança `InvalidArgumentException`, e um
+`configure()` que nunca carregou `host`, `port` e `workers` lança `ArgumentCountError`.
 
 ### SSL/TLS
 
@@ -165,12 +184,14 @@ Se você fizer bind em portas privilegiadas, pode iniciar como root e depois reb
 
 ```php
 $Server->configure(
-	host: '0.0.0.0',
-	port: 443,
-	workers: 4,
-	secure: [/* ... */],
-	user: 'www-data',
-	group: 'www-data'
+	new Configs(
+		host: '0.0.0.0',
+		port: 443,
+		workers: 4,
+		secure: [/* ... */],
+		user: 'www-data',
+		group: 'www-data'
+	)
 );
 ```
 
@@ -269,7 +290,7 @@ Na camada de conexão, o Bootgly acompanha:
 - instante de criação e último uso
 - estado do handshake TLS
 - contadores de escrita e estatísticas globais de leitura/escrita
-- timers de expiração por ociosidade, semeados por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `configure(connectionIdleTimeout:)`) — trabalho deferred pendente conta como atividade
+- timers de expiração por ociosidade, semeados por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — trabalho deferred pendente conta como atividade
 - verificações opcionais de blacklist
 
 Veja [`Connection`](./TCP_Server_CLI/Connection) e [`Packages`](./TCP_Server_CLI/Packages) para os detalhes de nível mais baixo.
@@ -282,6 +303,7 @@ use function getenv;
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Events;
 
 
@@ -301,9 +323,11 @@ return new Project(
 		});
 
 		$Server->configure(
-			host: '0.0.0.0',
-			port: getenv('PORT') ? (int) getenv('PORT') : 8080,
-			workers: 12
+			new Configs(
+				host: '0.0.0.0',
+				port: getenv('PORT') ? (int) getenv('PORT') : 8080,
+				workers: 12
+			)
 		);
 
 		$Server->on(

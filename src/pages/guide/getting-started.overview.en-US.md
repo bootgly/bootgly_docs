@@ -156,6 +156,7 @@ In Bootgly, **Projects** bootstrap your apps and servers. Each project is a fold
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
@@ -165,9 +166,11 @@ return new Project(
    {
       $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $Server->configure(
-         host: '0.0.0.0',
-         port: 8080,
-         workers: 2
+         new Configs(
+            host: '0.0.0.0',
+            port: 8080,
+            workers: 2
+         )
       );
       $Server
          ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
@@ -244,11 +247,16 @@ sudo /path/to/root-owned/php /path/to/root-owned/bootgly project MyApp start
 For production, you can combine this with **privilege dropping** — the server binds to the port as root, then drops to a non-privileged user:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
+
+
 $Server->configure(
-   host: '0.0.0.0',
-   port: 80,
-   workers: 4,
-   user: 'www-data', // Drop privileges after binding
+   new Configs(
+      host: '0.0.0.0',
+      port: 80,
+      workers: 4,
+      user: 'www-data', // Drop privileges after binding
+   )
 );
 ```
 
@@ -273,19 +281,24 @@ its master through the kernel lock table (`/proc/locks`), which stays readable.
 
 ## Enabling HTTPS (SSL/TLS)
 
-Bootgly supports TLSv1.2 and TLSv1.3 natively. Pass the `secure` parameter to `configure()`:
+Bootgly supports TLSv1.2 and TLSv1.3 natively. Set `secure` in the server `Configs` you hand to `configure()`:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
+
+
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 4,
-   secure: [
-      'local_cert' => '/path/to/certificate.pem',
-      'local_pk'   => '/path/to/private-key.pem',
-      'verify_peer' => false,
-   ],
-   user: 'www-data', // Drop privileges after binding
+   new Configs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      secure: [
+         'local_cert' => '/path/to/certificate.pem',
+         'local_pk'   => '/path/to/private-key.pem',
+         'verify_peer' => false,
+      ],
+      user: 'www-data', // Drop privileges after binding
+   )
 );
 ```
 

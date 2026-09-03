@@ -28,7 +28,7 @@ use Bootgly\WPI\Nodes\WS_Server_CLI;
 use Bootgly\WPI\Nodes\WS_Server_CLI\Events;
 
 $WS = new WS_Server_CLI(Mode: Modes::Foreground);
-$WS->configure(host: '0.0.0.0', port: 8083, workers: 1);
+$WS->configure(new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1));
 
 $WS
    ->on(Events::Connected, function ($Session) {
@@ -43,6 +43,13 @@ $WS
 
 $WS->start();
 ```
+
+> [!IMPORTANT]
+> `configure()` is variadic over **Configs** value objects — one per concern, applied in any order.
+> Every Configs is **named-arguments only**: its first parameter is a guard slot you never fill, so a
+> positional `new WS_Server_CLI\Configs('0.0.0.0', 8083, 1)` raises a `TypeError`. Handing two instances
+> of the same Configs class to one `configure()` call throws an `InvalidArgumentException`, and a
+> `configure()` that never carried `host`, `port` and `workers` throws an `ArgumentCountError`.
 
 Connect from a browser to confirm:
 
@@ -91,7 +98,9 @@ reaped and fires `Disconnected`. Inbound client pings are answered with a pong a
 handler never sees control frames.
 
 ```php
-$WS->configure(host: '0.0.0.0', port: 8083, workers: 1, heartbeatInterval: 20);
+$WS->configure(
+   new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1, heartbeatInterval: 20)
+);
 ```
 
 Set `heartbeatInterval: 0` to disable server pings and rely on `idleTimeout` instead.
@@ -103,13 +112,15 @@ before the WebSocket handshake, so nothing else in your handlers changes:
 
 ```php
 $WS->configure(
-   host: '0.0.0.0',
-   port: 8443,
-   workers: 1,
-   secure: [
-      'local_cert' => '/path/to/cert.pem',
-      'local_pk'   => '/path/to/key.pem',
-   ],
+   new WS_Server_CLI\Configs(
+      host: '0.0.0.0',
+      port: 8443,
+      workers: 1,
+      secure: [
+         'local_cert' => '/path/to/cert.pem',
+         'local_pk'   => '/path/to/key.pem',
+      ]
+   )
 );
 ```
 
@@ -141,8 +152,18 @@ Create the server. `Mode` is one of `Foreground`, `Daemon`, `Interactive`, `Moni
 (`Bootgly\API\Endpoints\Server\Modes`).
 
 ```php
-configure (
-   string $host, int $port, int $workers,
+configure (Configuring ...$Configs): self
+```
+
+Apply one **Configs** value object per concern, in any order — for the WebSocket server that is
+`WS_Server_CLI\Configs` (`Configuring` is `Bootgly\ABI\Configs`). Chainable. The same Configs class
+twice in one call throws an `InvalidArgumentException`; a server that never received `host`, `port`
+and `workers` throws an `ArgumentCountError`.
+
+```php
+new WS_Server_CLI\Configs (
+   Argument $Named = Argument::Undefined, // guard slot — never pass it
+   null|string $host = null, null|int $port = null, null|int $workers = null,
    null|array $secure = null,
    null|string $user = null, null|string $group = null,
    int $heartbeatInterval = 30,
@@ -151,18 +172,24 @@ configure (
    int $maxMessageSize = 8388608,
    array $subprotocols = [],
    bool $compression = true,
-   array $guards = [],
+   array $Guards = [],
    null|int $maxConnections = null,
-   null|int $maxConnectionsPerIP = null
-): self
+   null|int $maxConnectionsPerIP = null,
+   null|Closure $Fallback = null
+)
 ```
 
-Binds host/port and sets the per-connection policy. `heartbeatInterval` is the server ping cadence
-in seconds (`0` disables). `idleTimeout` reaps silent peers when heartbeat is off. `maxFrameSize`
-(1 MiB) and `maxMessageSize` (8 MiB) cap a single frame and a reassembled message — exceeding
-either closes with `1009`. `subprotocols` is the server's ordered preference list. `compression`
-toggles `permessage-deflate`. `guards` is a list of handshake auth guards. `secure` is a TLS
-stream-context array for `wss://`.
+Binds host/port and sets the per-connection policy — **named arguments only** (a guard slot precedes
+every parameter, so a positional call raises a `TypeError`). `heartbeatInterval` is the server ping
+cadence in seconds (`0` disables). `idleTimeout` reaps silent peers when heartbeat is off.
+`maxFrameSize` (1 MiB) and `maxMessageSize` (8 MiB) cap a single frame and a reassembled message —
+exceeding either closes with `1009`. `subprotocols` is the server's ordered preference list.
+`compression` toggles `permessage-deflate`. `Guards` is a list of handshake auth guards.
+`maxConnections` / `maxConnectionsPerIP` cap established connections per worker and per client IP.
+`Fallback` answers plain (non-upgrade) HTTP requests — e.g. serving the client page on the same
+port. `secure` is a TLS stream-context array for `wss://`.
+
+`host`, `port` and `workers` carry a `null` default only because the guard slot precedes them — PHP forbids a required parameter after an optional one. They are mandatory all the same: omitting one throws an `ArgumentCountError`.
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self

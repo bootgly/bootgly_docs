@@ -19,14 +19,17 @@ A typical UDP client flow is: configure the target, connect, set the outgoing pa
 
 ```php
 use Bootgly\WPI\Interfaces\UDP_Client_CLI;
+use Bootgly\WPI\Interfaces\UDP_Client_CLI\Configs;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI\Events;
 
 
 $Client = new UDP_Client_CLI;
 
 $Client->configure(
-   host: '127.0.0.1',
-   port: 9999
+   new Configs(
+      host: '127.0.0.1',
+      port: 9999
+   )
 );
 
 $Client->on(
@@ -57,7 +60,8 @@ The constructor accepts one of the client mode constants.
 
 ## Configuration
 
-Use `configure()` to define the remote endpoint and optional worker count.
+`configure()` is variadic over **Configs** value objects — one per concern, applied in any order.
+The transport lives in `UDP_Client_CLI\Configs`:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -66,12 +70,24 @@ Use `configure()` to define the remote endpoint and optional worker count.
 | `workers` | `int` | `0` | Number of worker processes to start. |
 
 ```php
+use Bootgly\WPI\Interfaces\UDP_Client_CLI\Configs;
+
+
 $Client->configure(
-   host: '127.0.0.1',
-   port: 9999,
-   workers: 1
+   new Configs(
+      host: '127.0.0.1',
+      port: 9999,
+      workers: 1
+   )
 );
 ```
+
+> [!IMPORTANT]
+> Every Configs is **named-arguments only**. Its first parameter is a guard slot you never fill, so a positional
+> `new Configs('127.0.0.1', 9999)` raises a `TypeError` instead of silently binding the wrong values.
+
+Handing two instances of the same Configs class to one `configure()` call throws an `InvalidArgumentException`, and a
+`configure()` that never carried `host` and `port` throws an `ArgumentCountError`.
 
 ## Callbacks
 
@@ -117,6 +133,7 @@ use function getenv;
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI;
+use Bootgly\WPI\Interfaces\UDP_Client_CLI\Configs;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI\Events;
 
 
@@ -131,9 +148,11 @@ return new Project(
    {
       $Client = new UDP_Client_CLI(UDP_Client_CLI::MODE_MONITOR);
       $Client->configure(
-         host: '127.0.0.1',
-         port: getenv('PORT') ? (int) getenv('PORT') : 9999,
-         workers: 1
+         new Configs(
+            host: '127.0.0.1',
+            port: getenv('PORT') ? (int) getenv('PORT') : 9999,
+            workers: 1
+         )
       );
 
       $Client
@@ -187,7 +206,7 @@ For many use cases, the most important controls are your callbacks, your worker 
 
 ## Notes for Consumers
 
-- The public `configure()` API does not expose TLS or DTLS options.
+- `UDP_Client_CLI\Configs` exposes no TLS or DTLS options.
 - UDP is datagram-oriented and does not guarantee delivery, ordering or retransmission.
 - `MODE_TEST` is useful when you want a lighter runtime for test-oriented flows.
 
@@ -200,6 +219,7 @@ use function getenv;
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI;
+use Bootgly\WPI\Interfaces\UDP_Client_CLI\Configs;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI\Events;
 
 
@@ -214,9 +234,11 @@ return new Project(
    {
       $Client = new UDP_Client_CLI(UDP_Client_CLI::MODE_MONITOR);
       $Client->configure(
-         host: '127.0.0.1',
-         port: getenv('PORT') ? (int) getenv('PORT') : 9999,
-         workers: 1
+         new Configs(
+            host: '127.0.0.1',
+            port: getenv('PORT') ? (int) getenv('PORT') : 9999,
+            workers: 1
+         )
       );
 
       $Client

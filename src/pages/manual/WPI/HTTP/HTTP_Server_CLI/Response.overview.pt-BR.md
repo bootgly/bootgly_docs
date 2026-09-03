@@ -99,7 +99,7 @@ return $Response->JSON->send(['Olá' => 'Mundo!']);
 ### Resources para I/O deferido
 
 Use `defer()` para trabalho de resposta que precisa aguardar I/O externo. Response Resources
-carregados com `responseResources` podem conectar esse I/O ao scheduler da resposta, mas a
+carregados com `Response\Configs(Resources:)` podem conectar esse I/O ao scheduler da resposta, mas a
 resposta ainda é finalizada pelo fluxo normal de `send()`.
 
 ```php

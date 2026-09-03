@@ -156,6 +156,7 @@ No Bootgly, **Projetos** inicializam seus apps e servidores. Cada projeto é uma
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
@@ -165,9 +166,11 @@ return new Project(
    {
       $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $Server->configure(
-         host: '0.0.0.0',
-         port: 8080,
-         workers: 2
+         new Configs(
+            host: '0.0.0.0',
+            port: 8080,
+            workers: 2
+         )
       );
       $Server
          ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
@@ -244,11 +247,16 @@ sudo /caminho/para/php-do-root /caminho/para/bootgly-do-root project MyApp start
 Para produção, você pode combinar isso com **privilege dropping** — o servidor vincula à porta como root e depois troca para um usuário não privilegiado:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
+
+
 $Server->configure(
-   host: '0.0.0.0',
-   port: 80,
-   workers: 4,
-   user: 'www-data', // Troca de privilégios após o bind
+   new Configs(
+      host: '0.0.0.0',
+      port: 80,
+      workers: 4,
+      user: 'www-data', // Troca de privilégios após o bind
+   )
 );
 ```
 
@@ -273,19 +281,24 @@ identifica seu master pela tabela de locks do kernel (`/proc/locks`), que contin
 
 ## Habilitando HTTPS (SSL/TLS)
 
-O Bootgly suporta TLSv1.2 e TLSv1.3 nativamente. Passe o parâmetro `secure` para o `configure()`:
+O Bootgly suporta TLSv1.2 e TLSv1.3 nativamente. Defina `secure` no `Configs` do servidor que você passa ao `configure()`:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
+
+
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 4,
-   secure: [
-      'local_cert' => '/path/to/certificate.pem',
-      'local_pk'   => '/path/to/private-key.pem',
-      'verify_peer' => false,
-   ],
-   user: 'www-data', // Troca de privilégios após o bind
+   new Configs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      secure: [
+         'local_cert' => '/path/to/certificate.pem',
+         'local_pk'   => '/path/to/private-key.pem',
+         'verify_peer' => false,
+      ],
+      user: 'www-data', // Troca de privilégios após o bind
+   )
 );
 ```
 

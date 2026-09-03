@@ -29,9 +29,10 @@ No Bootgly, servidores são iniciados por Projetos — não por comandos do fram
 Um arquivo de projeto (ex: `HTTP_Server_CLI.Project.php`) retorna uma instância de `Project`:
 
 ```php
-use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
+use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 
@@ -50,9 +51,11 @@ return new Project(
          default              => Modes::Daemon
       });
       $Server->configure(
-         host: '0.0.0.0',
-         port: 8082,
-         workers: 4
+         new ServerConfigs(
+            host: '0.0.0.0',
+            port: 8082,
+            workers: 4
+         )
       );
       $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
       $Server->start();
@@ -91,45 +94,100 @@ O servidor suporta múltiplos modos de operação, selecionados ao construir a i
 
 ## Configuração
 
-O método `configure()` aceita os seguintes parâmetros:
+`configure()` recebe **Configs** — um objeto de configuração tipado por preocupação, em qualquer
+ordem:
 
-| Parâmetro | Tipo | Padrão | Descrição |
-|---|---|---|---|
-| `host` | `string` | — | Endereço de bind. Use `'0.0.0.0'` para escutar em todas as interfaces. Quando definido como `'0.0.0.0'`, o domínio padrão é `localhost`. |
-| `port` | `int` | — | Porta de escuta. |
-| `workers` | `int` | — | Número de processos filhos criados via fork. Cada worker cria seu próprio socket via `SO_REUSEPORT`. |
-| `secure` | `?array` | `null` | Opções de contexto seguro SSL/TLS. Quando fornecido, o esquema muda para `https://`. |
-| `user` | `?string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
-| `group` | `?string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
-| `requestMaxFileSize` | `?int` | `null` | Tamanho máximo em bytes por parte de arquivo em requisições multipart. Padrão: `500 MB`. |
-| `requestMaxBodySize` | `?int` | `null` | Tamanho máximo total do corpo em bytes para requisições não-multipart. Padrão: `10 MB`. |
-| `requestMaxMultipartFieldSize` | `?int` | `null` | Tamanho máximo em bytes do valor de um campo de texto multipart. Padrão: `1 MB`. |
-| `requestMaxMultipartHeaderSize` | `?int` | `null` | Tamanho máximo em bytes do bloco de headers de uma parte multipart. Padrão: `8 KB`. |
-| `requestMaxMultipartFields` | `?int` | `null` | Número máximo de campos de texto aceitos em uma requisição multipart. Padrão: `1024`. |
-| `requestMaxMultipartFiles` | `?int` | `null` | Número máximo de partes de arquivo aceitas em uma requisição multipart. Padrão: `1024`. |
-| `maxConnections` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. Padrão: `10000`; `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
-| `maxConnectionsPerIP` | `?int` | `null` | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: padrão `0` (ilimitado), porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
-| `connectionIdleTimeout` | `?int` | `null` | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. Padrão: `15`; `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
-| `deferredTimeout` | `?int\|float` | `null` | Segundos que uma resposta deferred (`$Response->defer()`) pode ficar estacionada no reactor antes de um `Response\Timeout` ser entregue no ponto de espera. Padrão: `0` (sem teto). Um `defer($work, timeout:)` por chamada tem precedência. Um timeout que escapa do trabalho sempre registra um warning; se nenhum middleware `Recovering` o tratar, ele responde `503 Service Unavailable`. |
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
+
+$Server->configure(
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8082,
+      workers: 4
+   ),
+   new RequestConfigs(
+      maxBodySize: 32 * 1024 * 1024  // 32 MB — aceita corpos não-multipart maiores
+   ),
+   new ResponseConfigs(
+      deferredTimeout: 2.5           // segundos — limita todo defer() estacionado
+   )
+);
+```
+
+Três preocupações, três classes:
+
+| Configs | Cuida de |
+|---|---|
+| `HTTP_Server_CLI\Configs` | O servidor em si: endereço de bind, workers, TLS (manual ou Auto-TLS), rebaixamento de privilégios, HTTP/2, endpoint de health, tetos de conexão. |
+| `Request\Configs` | Limites de entrada: corpo, multipart e tetos de upload. |
+| `Response\Configs` | Saída: response resources nomeados e o orçamento do deferred. |
+
+Só `host`, `port` e `workers` são obrigatórios — todos os outros campos de todos os Configs são
+opcionais e mantêm o padrão do framework quando omitidos. A lista completa de campos de cada classe
+está na [Referência](#referencia) ao final desta página.
+
+A própria chamada garante cinco regras:
+
+- **A ordem é irrelevante.** `configure(new ResponseConfigs(...), new ServerConfigs(...))` é a mesma chamada que a inversa — cada Configs é reconhecido pelo tipo, nunca pela posição.
+- **Uma instância por classe, por chamada.** Passar dois `Request\Configs` no mesmo `configure()` lança `InvalidArgumentException` (`... received two ... instances.`) em vez de deixar o segundo vencer silenciosamente.
+- **O primeiro `configure()` precisa carregar o Configs do servidor.** `host`, `port` e `workers` não têm padrão, então uma primeira chamada que nunca os define lança `ArgumentCountError`. Uma vez definidos, uma chamada posterior (ainda antes do start) pode refinar uma preocupação sozinha — `configure(new ResponseConfigs(deferredTimeout: 5))` é um complemento válido. Uma `configure()` vazia também é recusada.
+- **Cada node recebe o Configs dele, por classe exata.** Um `HTTP_Server_CLI` aceita `HTTP_Server_CLI\Configs`, `Request\Configs` e `Response\Configs` — nada mais, nem o `TCP_Server_CLI\Configs` do pai (que carrega o socket mas nenhuma política HTTP: esquema, ALPN, defaults seguros de TLS), nem uma subclasse de um Configs aceito (cujos campos extras o servidor não saberia ler). Qualquer outra coisa lança `InvalidArgumentException` em vez de ser aplicada pela metade.
+- **O conjunto é conferido antes de qualquer aplicação.** As regras de conjunto acima são decididas sobre a lista inteira primeiro, então uma chamada recusada por qualquer uma delas deixa todo limite, budget e cap global do processo exatamente como estava. O que um Configs *carrega* é validado pelo construtor dele sempre que dá — um factory de resource inválido, ou um `secure` junto com `AutoTLS`, lança no `new`. Algumas verificações só podem rodar contra estado vivo durante a aplicação (as precondições de runtime do Auto-TLS; um nome de resource que uma propriedade da response já ocupa): essas lançam com os Configs anteriores já aplicados.
+
+`configure()` é um contrato **pré-start**: depois que o servidor cruza a fronteira de início, a
+chamada é recusada com um erro logado, e a reconfiguração passa por um [reload](/reload)
+(`bootgly project <nome> reload`), que reexecuta o projeto e o seu `configure()`.
+
+### Somente argumentos nomeados
+
+Todo construtor de Configs começa com um slot de guarda — `Bootgly\ABI\Argument $Named` — que uma
+chamada nomeada nunca preenche:
+
+```php
+new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4); // ✅
+new ServerConfigs('0.0.0.0', 8080, 4);                      // ❌ TypeError
+```
+
+Uma chamada posicional liga `'0.0.0.0'` a `$Named`, que é tipado como o enum `Argument`, então o PHP
+lança um `TypeError` antes de o objeto existir — e a análise estática aponta isso no seu editor. Essa
+guarda é o motivo de a API ser assim: campos podem ser adicionados, reordenados ou aposentados sem que
+nenhuma chamada existente religue silenciosamente um valor passado por posição.
+
+### Padrões
+
+Nada precisa ser passado para obter os padrões do framework; estes são eles, escritos por extenso:
 
 ```php
 $Server->configure(
-   host: '0.0.0.0',
-   port: 8082,
-   workers: 4,
-   secure: null,
-   user: null,
-   group: null,
-   requestMaxFileSize: 500 * 1024 * 1024,         // 500 MB (padrão) — tamanho máximo por parte de arquivo
-   requestMaxBodySize: 10 * 1024 * 1024,          // 10 MB (padrão) — corpo total não-multipart
-   requestMaxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (padrão) — tamanho máximo por campo de texto
-   requestMaxMultipartHeaderSize: 8 * 1024,        // 8 KB (padrão) — tamanho máximo dos headers de uma parte
-   requestMaxMultipartFields: 1024,                // 1024 (padrão) — número máximo de campos de texto
-   requestMaxMultipartFiles: 1024,                 // 1024 (padrão) — número máximo de partes de arquivo
-   maxConnections: 10000,                          // 10000 (padrão) — teto global de conexões simultâneas por worker (0 = ilimitado)
-   maxConnectionsPerIP: 0,                          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
-   connectionIdleTimeout: 15,                      // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
-   deferredTimeout: 0,                             // 0 (padrão, sem teto) — orçamento em segundos para um defer() estacionado; o timeout por chamada vence
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8082,
+      workers: 4,
+      secure: null,                    // null — HTTP puro; um array (ou AutoTLS:) muda para https://
+      user: null,                      // null — sem rebaixamento de privilégios
+      group: null,
+      enableHTTP2: true,               // true (padrão) — h2 via ALPN e h2c por prior knowledge
+      health: null,                    // null — o endpoint de health embutido é opcional
+      maxConnections: 10000,           // 10000 (padrão) — teto de conexões simultâneas por worker (0 = ilimitado)
+      maxConnectionsPerIP: 0,          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
+      connectionIdleTimeout: 15        // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
+   ),
+   new RequestConfigs(
+      maxFileSize: 500 * 1024 * 1024,         // 500 MB (padrão) — tamanho máximo por parte de arquivo
+      maxBodySize: 10 * 1024 * 1024,          // 10 MB (padrão) — corpo total não-multipart
+      maxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (padrão) — tamanho máximo por campo de texto
+      maxMultipartHeaderSize: 8 * 1024,       // 8 KB (padrão) — tamanho máximo dos headers de uma parte
+      maxMultipartFields: 1024,               // 1024 (padrão) — número máximo de campos de texto
+      maxMultipartFiles: 1024,                // 1024 (padrão) — número máximo de partes de arquivo
+      downloadsMaxBytesOnDisk: 8 * 1024 * 1024 * 1024 // 8 GB (padrão) — teto agregado de uploads em disco
+   ),
+   new ResponseConfigs(
+      Resources: null,                 // null (padrão) — nenhum response resource de projeto registrado
+      deferredTimeout: 0               // 0 (padrão, sem teto) — orçamento em segundos para um defer() estacionado; o timeout por chamada vence
+   )
 );
 ```
 
@@ -152,11 +210,13 @@ por cliente) apenas quando os clientes se conectam diretamente ao servidor.
 ```php
 // Worker direto para a internet: limita a concorrência total e por cliente.
 $Server->configure(
-   host: '0.0.0.0',
-   port: 8080,
-   workers: 8,
-   maxConnections: 20000,    // por worker
-   maxConnectionsPerIP: 200, // por IP de origem (seguro apenas sem um proxy à frente)
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 8,
+      maxConnections: 20000,    // por worker
+      maxConnectionsPerIP: 200  // por IP de origem (seguro apenas sem um proxy à frente)
+   )
 );
 ```
 
@@ -195,7 +255,7 @@ comum de keep-alive e é ceifada depois da próxima janela de silêncio.
 
 Duas consequências que valem saber:
 
-- O reaper nunca limita uma resposta deferred. Use `deferredTimeout` — ou o `defer($work, timeout:)`
+- O reaper nunca limita uma resposta deferred. Use `Response\Configs(deferredTimeout:)` — ou o `defer($work, timeout:)`
   por chamada — para isso; veja *Deadlines* em *Ciclo de vida da resposta deferred*. Um deferral que
   estaciona sem deadline próprio (`Readiness::read($socket)` não tem nenhum por padrão) e sem orçamento
   segura a conexão e a Fiber até o cliente ir embora — limite-o, ou conte com `maxConnections`.
@@ -213,18 +273,20 @@ o próprio timeout de ociosidade.
 
 ### SSL/TLS
 
-Passe um array `secure` com opções de contexto de stream do PHP para habilitar HTTPS. O servidor muda automaticamente o esquema para `https://`:
+Passe um array `secure` com opções de contexto de stream do PHP no Configs do servidor para habilitar HTTPS. O servidor muda automaticamente o esquema para `https://`:
 
 ```php
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 4,
-   secure: [
-      'local_cert'  => '/caminho/para/certificado.pem',
-      'local_pk'    => '/caminho/para/chave-privada.pem',
-      'verify_peer' => false,
-   ],
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      secure: [
+         'local_cert'  => '/caminho/para/certificado.pem',
+         'local_pk'    => '/caminho/para/chave-privada.pem',
+         'verify_peer' => false,
+      ]
+   )
 );
 ```
 
@@ -241,12 +303,36 @@ secure: [
 > [!NOTE]
 > Para produção, use certificados de uma CA confiável como o Let's Encrypt.
 
+Para um certificado que o próprio servidor obtém e renova, passe uma instância de `AutoTLS` no
+parâmetro `AutoTLS:` em vez do array `secure:` — veja o guia [Auto-TLS](/auto-tls):
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\AutoTLS;
+
+$Server->configure(
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      AutoTLS: new AutoTLS(
+         domains: ['example.com'],
+         email: 'admin@example.com'
+      ),
+      user: 'www-data',
+      group: 'www-data'
+   )
+);
+```
+
+`secure:` e `AutoTLS:` são mutuamente exclusivos — uma fonte de certificado, nunca duas. Passar os
+dois lança `InvalidArgumentException` na construção.
+
 ### HTTP/2
 
 O servidor fala HTTP/2 nativamente na mesma porta e rotas. Com `secure` definido, o ALPN
 anuncia `h2,http/1.1` automaticamente; em texto claro, clientes conectam com prior
 knowledge — sem configuração alguma (desligue o HTTP/2 por completo com
-`enableHTTP2: false`):
+`enableHTTP2: false` no Configs do servidor):
 
 ```bash
 curl -s --http2-prior-knowledge http://127.0.0.1:8080/ -w '%{http_version}\n'
@@ -263,12 +349,14 @@ Ao fazer bind em portas privilegiadas (< 1024), o processo precisa iniciar como 
 
 ```php
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 4,
-   secure: [ /* ... */ ],
-   user: 'www-data',
-   group: 'www-data',
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      secure: [ /* ... */ ],
+      user: 'www-data',
+      group: 'www-data'
+   )
 );
 ```
 
@@ -443,7 +531,7 @@ Booting → Configuring → Starting → Running → Paused → Stopping
 ```
 
 - **Booting**: Inicialização interna (logger, conexões, event loop, gerenciador de processos).
-- **Configuring**: Host, port, workers e SSL são armazenados.
+- **Configuring**: Os Configs entregues ao `configure()` são adotados — host, port, workers, TLS, limites de request, response resources.
 - **Starting**: O SAPI é iniciado, sinais POSIX são instalados, workers são criados via fork.
 - **Running**: Workers estão processando requisições no event loop.
 - **Paused**: O socket do servidor é removido do event loop — novas conexões não são aceitas. Conexões existentes continuam.
@@ -541,8 +629,8 @@ Ownership::close($Connection);            // notifica cada dono anexado exatamen
 
 ### Deadlines
 
-Um deferral estacionado é limitado por um **orçamento**, em segundos: o `deferredTimeout` global passado
-ao `configure()` (padrão `0` = sem teto) ou, com precedência, o `timeout` por chamada do `defer()`. O
+Um deferral estacionado é limitado por um **orçamento**, em segundos: o `deferredTimeout` do
+`Response\Configs` (padrão `0` = sem teto) ou, com precedência, o `timeout` por chamada do `defer()`. O
 orçamento só é armado quando o trabalho de fato estaciona, e é desarmado no instante em que a geração
 termina — normalmente, por um handoff aninhado ou por teardown — então um deferral concluído nunca deixa
 um deadline velho para a Fiber que será reaproveitada em seguida.
@@ -559,7 +647,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout;
 yield $Router->route('/report', function ($Request, Response $Response) {
    return $Response->defer(function (Response $Response): void {
       try {
-         // 'Upstream' é um HTTP response resource registrado em responseResources
+         // 'Upstream' é um HTTP response resource registrado em Response\Configs(Resources:)
          $Upstream = $Response->Upstream->request('GET', '/report');
          $Response->JSON->send(['code' => $Upstream->code]);
       }
@@ -604,7 +692,86 @@ handle ao pool — e lembre de duas regras:
 Um `Fiber::getCurrent()` guardado numa variável através de um `wait()` prende a Fiber à própria pilha e
 anula a liberação imediata — leia, use, `unset()`.
 
-### Referência
+## Referência
+
+### `HTTP_Server_CLI->configure()`
+
+```php
+public function configure (Bootgly\ABI\Configs ...$Configs): self
+```
+
+Adota um Configs por preocupação — `HTTP_Server_CLI\Configs`, `Request\Configs`, `Response\Configs` — em qualquer ordem, e retorna o servidor para encadeamento. Lança `InvalidArgumentException` quando a mesma classe de Configs se repete na chamada ou quando o node não aceita aquele Configs, e `ArgumentCountError` enquanto `host`, `port` e `workers` nunca tiverem sido definidos. Depois que o servidor cruza a fronteira pré-start, a chamada é recusada com um erro logado e não muda nada.
+
+Quais Configs um node aceita não é adivinhação: cada node declara isso em duas constantes de classe,
+`TRANSPORT` (o Configs que carrega o socket) e `CONFIGS` (toda classe de Configs que ele aplica).
+
+```php
+protected const string TRANSPORT = HTTP_Server_CLI\Configs::class;
+protected const array CONFIGS = [
+   HTTP_Server_CLI\Configs::class,
+   Request\Configs::class,
+   Response\Configs::class
+];
+```
+
+Herdar de um node significa redeclarar as duas — uma subclasse que adiciona o Configs dela mas
+herda as constantes do pai aceitaria o Configs do pai e configuraria só o que o pai conhece.
+
+### `HTTP_Server_CLI\Configs`
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(/* somente argumentos nomeados */)
+```
+
+O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor é a guarda `Bootgly\ABI\Argument`, então uma chamada posicional lança um `TypeError`.
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `host` | `string` | — (obrigatório) | Endereço de bind. Use `'0.0.0.0'` para escutar em todas as interfaces. Quando definido como `'0.0.0.0'`, o domínio padrão é `localhost`. |
+| `port` | `int` | — (obrigatório) | Porta de escuta. |
+| `workers` | `int` | — (obrigatório) | Número de processos filhos criados via fork. Cada worker cria seu próprio socket via `SO_REUSEPORT`. |
+| `secure` | `null\|array` | `null` | Opções de contexto seguro SSL/TLS. Quando fornecido, o esquema muda para `https://`. Mutuamente exclusivo com `AutoTLS`. |
+| `user` | `null\|string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
+| `group` | `null\|string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
+| `AutoTLS` | `null\|AutoTLS` | `null` | Ciclo de vida gerenciado do certificado (ACME): bootstrap, emissão em segundo plano, hot swap e renovação. Mutuamente exclusivo com `secure` — passar os dois lança `InvalidArgumentException`. Veja o guia [Auto-TLS](/auto-tls). |
+| `enableHTTP2` | `null\|bool` | `null` (= habilitado) | `false` serve apenas HTTP/1.x — sem `h2` no anúncio ALPN e sem a sondagem do preface por prior knowledge em texto claro. Veja a página [HTTP/2](/manual/WPI/HTTP/HTTP_Server_CLI/HTTP2/). |
+| `health` | `null\|string` | `null` | Caminho do endpoint de health-check embutido (ex.: `'/health'`). Requisições GET/HEAD nesse caminho exato são respondidas antes do pipeline de middlewares, então nenhum middleware do usuário quebra um probe. `null` o mantém desligado. |
+| `maxConnections` | `null\|int` | `null` (= `10000`) | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
+| `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: `0` significa ilimitado, porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
+| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
+
+### `Request\Configs`
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs(/* somente argumentos nomeados */)
+```
+
+Limites de entrada. Todo parâmetro é opcional; `null` mantém o padrão do framework.
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `maxFileSize` | `null\|int` | `null` (= `500 MB`) | Tamanho máximo em bytes por parte de arquivo em requisições multipart. |
+| `maxBodySize` | `null\|int` | `null` (= `10 MB`) | Tamanho máximo total do corpo em bytes para requisições não-multipart. |
+| `maxMultipartFieldSize` | `null\|int` | `null` (= `1 MB`) | Tamanho máximo em bytes do valor de um campo de texto multipart. |
+| `maxMultipartHeaderSize` | `null\|int` | `null` (= `8 KB`) | Tamanho máximo em bytes do bloco de headers de uma parte multipart. |
+| `maxMultipartFields` | `null\|int` | `null` (= `1024`) | Número máximo de campos de texto aceitos em uma requisição multipart. |
+| `maxMultipartFiles` | `null\|int` | `null` (= `1024`) | Número máximo de partes de arquivo aceitas em uma requisição multipart. |
+| `downloadsMaxBytesOnDisk` | `null\|int` | `null` (= `8 GB`) | Teto agregado, entre todos os workers, dos bytes que os uploads em spool podem manter em disco ao mesmo tempo. |
+
+### `Response\Configs`
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs(/* somente argumentos nomeados */)
+```
+
+Configuração de saída. Todo parâmetro é opcional; `null` mantém o padrão do framework.
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `Resources` | `null\|array<string,Closure>` | `null` | Factories de response resources do projeto, por nome — cada uma um `Closure(object): Response\Resource` construído lazy na primeira leitura (`$Response->Database`, `$Response->Upstream`, …). Veja [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/). |
+| `deferredTimeout` | `null\|int\|float` | `null` (= `0`, sem teto) | Segundos que uma resposta deferred (`$Response->defer()`) pode ficar estacionada no reactor antes de um `Response\Timeout` ser entregue no ponto de espera. Um `defer($work, timeout:)` por chamada tem precedência. Um timeout que escapa do trabalho sempre registra um warning; se nenhum middleware `Recovering` o tratar, ele responde `503 Service Unavailable`. |
+
+### Resposta deferred
 
 ```php
 public function observe (Closure $Observer): bool

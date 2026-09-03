@@ -30,10 +30,13 @@ The HTTP Client CLI is the native HTTP client of the Bootgly PHP Framework. It i
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'example.com', port: 80);
+$Client->configure(
+   new Configs(host: 'example.com', port: 80)
+);
 
 $Response = $Client->request(method: 'GET', URI: '/');
 
@@ -45,10 +48,13 @@ echo $Response->body;   // '<!doctype html>...'
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'api.example.com', port: 443, secure: [])
+);
 
 $Response = $Client->request(
    method: 'POST',
@@ -74,16 +80,39 @@ $Response = $Client->request(
 
 ## Configuration
 
-The `configure()` method accepts the following parameters:
+`configure()` is variadic over **Configs** value objects — one per concern, applied in any order.
+The client configuration lives in `HTTP_Client_CLI\Configs`:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `host` | `string` | — | Target host to connect to. |
 | `port` | `int` | — | Target port. |
 | `workers` | `int` | `0` | Number of worker processes (for benchmarking). |
-| `secure` | `array\|null` | `null` | Secure SSL/TLS stream context options. Set to `[]` for default TLS. Auto-sets `peer_name` for hostname verification. |
-| `pool` | `array\|null` | `null` | Connection pool bounds: `['min' => N, 'max' => N]`. Defaults: min `0`, max `1`. |
-| `enableHTTP2` | `bool\|null` | `null` | HTTP/2 negotiation: `null` = ALPN when `secure` is set; `true` = also h2c on cleartext; `false` = never. |
+| `secure` | `null\|array` | `null` | Secure SSL/TLS stream context options. Set to `[]` for default TLS. Auto-sets `peer_name` for hostname verification. |
+| `pool` | `null\|array` | `null` | Connection pool bounds: `['min' => N, 'max' => N]`. Defaults: min `0`, max `1`. |
+| `enableHTTP2` | `null\|bool` | `null` | HTTP/2 negotiation: `null` = ALPN when `secure` is set; `true` = also h2c on cleartext; `false` = never. |
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
+
+
+$Client->configure(
+   new Configs(
+      host: 'api.example.com',
+      port: 443,
+      secure: [],
+      pool: ['min' => 2, 'max' => 8],
+      enableHTTP2: true
+   )
+);
+```
+
+> [!IMPORTANT]
+> Every Configs is **named-arguments only**. Its first parameter is a guard slot you never fill, so a positional
+> `new Configs('api.example.com', 443)` raises a `TypeError` instead of silently binding the wrong values.
+
+Handing two instances of the same Configs class to one `configure()` call throws an `InvalidArgumentException`, and a
+`configure()` that never carried `host` and `port` throws an `ArgumentCountError`.
 
 ### Client Properties
 
@@ -104,7 +133,9 @@ The `configure()` method accepts the following parameters:
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'api.example.com', port: 443, secure: [])
+);
 
 // ? Configure
 $Client->maxRedirects = 5;
@@ -115,18 +146,22 @@ $Client->retryDelay = 0.5;
 
 ## SSL/TLS (HTTPS)
 
-Enable HTTPS by passing the `secure` parameter to `configure()`:
+Enable HTTPS with the `secure` field of the Configs:
 
 ```php
 // @ Default TLS settings (auto peer_name verification)
-$Client->configure(host: 'secure.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'secure.example.com', port: 443, secure: [])
+);
 
 // @ Custom SSL options
-$Client->configure(host: 'secure.example.com', port: 443, secure: [
-   'peer_name' => 'secure.example.com',
-   'verify_peer' => true,
-   'verify_peer_name' => true,
-]);
+$Client->configure(
+   new Configs(host: 'secure.example.com', port: 443, secure: [
+      'peer_name' => 'secure.example.com',
+      'verify_peer' => true,
+      'verify_peer_name' => true,
+   ])
+);
 ```
 
 When `secure` is not `null` and `peer_name` is not set, the client automatically uses the `host` parameter for hostname verification.
@@ -137,14 +172,17 @@ The client keeps a per-origin connection pool in sync/batch modes. Keep-alive co
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
 
 
 $Client = new HTTP_Client_CLI;
 $Client->configure(
-   host: 'api.example.com',
-   port: 443,
-   secure: [],
-   pool: ['min' => 2, 'max' => 8]
+   new Configs(
+      host: 'api.example.com',
+      port: 443,
+      secure: [],
+      pool: ['min' => 2, 'max' => 8]
+   )
 );
 
 // @ The first request lazily pre-dials the pool up to `min` (2 connections)
@@ -158,7 +196,9 @@ Combined with batch mode, `max` bounds the concurrency — overflow requests que
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, secure: [], pool: ['max' => 4]);
+$Client->configure(
+   new Configs(host: 'api.example.com', port: 443, secure: [], pool: ['max' => 4])
+);
 
 $Client->batch();
 
@@ -177,7 +217,7 @@ Pool rules:
 - `min` pre-dials lazily on the first request — warm connections park idle in the pool.
 - A keep-alive response releases its connection back to the pool; a `Connection: close` response drops it.
 - Stale parked connections are handled transparently: a non-consuming liveness probe discards dead sockets on acquire, and a request dispatched on a reused connection that dies before **any** response byte arrives is replayed once on a fresh connection (any method — it was provably never processed — and it does not consume `maxRetries`).
-- The pool is per-origin by construction: reconfiguring to another host/port retires every pooled connection of the previous origin. When `configure()` is called again without a `pool` argument, the previous bounds are kept.
+- The pool is per-origin by construction: reconfiguring to another host/port retires every pooled connection of the previous origin. When a later `configure()` hands over a Configs without `pool`, the previous bounds are kept.
 
 Idle connections can be aged out with the pool `expiration` (seconds; `0` = never evict):
 
@@ -195,7 +235,7 @@ echo count($Client->Pool->busy);   // in-flight connections
 
 ## HTTP/2
 
-The client speaks HTTP/2 with three negotiation modes, controlled by `enableHTTP2` (`configure()` parameter or public property):
+The client speaks HTTP/2 with three negotiation modes, controlled by `enableHTTP2` (a `Configs` field or the public property):
 
 | `enableHTTP2` | Behavior |
 |---|---|
@@ -209,7 +249,9 @@ With TLS, no opt-in is needed — ALPN negotiates the protocol and the client tr
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'http2.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'http2.example.com', port: 443, secure: [])
+);
 // @ TLS-ALPN offers `h2,http/1.1` — the server picks the protocol
 
 $Response = $Client->request(method: 'GET', URI: '/');
@@ -221,7 +263,9 @@ echo $Response->protocol;  // 'HTTP/2' (or 'HTTP/1.1' when the server declined h
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: '127.0.0.1', port: 8080, enableHTTP2: true);
+$Client->configure(
+   new Configs(host: '127.0.0.1', port: 8080, enableHTTP2: true)
+);
 // @ Cleartext h2c with prior knowledge — no Upgrade handshake
 
 $Response = $Client->request(method: 'GET', URI: '/');
@@ -232,7 +276,9 @@ echo $Response->protocol;  // 'HTTP/2'
 ### Disabling HTTP/2
 
 ```php
-$Client->configure(host: 'example.com', port: 443, secure: [], enableHTTP2: false);
+$Client->configure(
+   new Configs(host: 'example.com', port: 443, secure: [], enableHTTP2: false)
+);
 // @ h2 is not offered via ALPN — the connection stays HTTP/1.1
 ```
 
@@ -242,7 +288,9 @@ Over HTTP/2, batched requests multiplex as concurrent streams over **one** conne
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'http2.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'http2.example.com', port: 443, secure: [])
+);
 
 $Client->batch();
 
@@ -328,7 +376,9 @@ Automatic retry on connection or timeout failure, with capped exponential backof
 
 ```php
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'api.example.com', port: 443, secure: [])
+);
 
 $Client->maxRetries = 3;        // 0 = disabled (default)
 $Client->retryDelay = 0.5;      // base delay: ~0.5s, ~1s, ~2s, ...
@@ -390,13 +440,16 @@ Register hooks for fully async operation:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
 use Bootgly\WPI\Nodes\HTTP_Client_CLI\Events;
 use Bootgly\WPI\Nodes\HTTP_Client_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Client_CLI\Request\Response;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: '127.0.0.1', port: 8080);
+$Client->configure(
+   new Configs(host: '127.0.0.1', port: 8080)
+);
 
 $Client->on(
    Events::ResponseReceive,
@@ -430,6 +483,7 @@ The hand-rolled recipe, inside a deferred response, is four calls in this order:
 ```php
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 
 
@@ -437,7 +491,9 @@ return $Response->defer(function (Response $Response) {
    $Client = new HTTP_Client_CLI(HTTP_Client_CLI::MODE_EMBEDDED);
    $Client->react(TCP_Server_CLI::$Event);
    $Client->schedule(fn (mixed $value = null): Response => $Response->wait($value));
-   $Client->configure(host: '127.0.0.1', port: 8080);
+   $Client->configure(
+      new Configs(host: '127.0.0.1', port: 8080)
+   );
 
    $Upstream = $Client->request(method: 'GET', URI: '/users/1');
 
@@ -491,12 +547,17 @@ Every failure terminal resolves the parked episode: the Fiber resumes exactly on
 Everything above is what the built-in HTTP response resource already does for you. Register it once and call it from `defer()`:
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\HTTP;
 
 
-$HTTP_Server_CLI->configure(responseResources: [
-   'Upstream' => static fn (object $Context): HTTP => new HTTP(host: 'api.example.com', secure: [])
-]);
+$HTTP_Server_CLI->configure(
+   new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4),
+   new ResponseConfigs(Resources: [
+      'Upstream' => static fn (object $Context): HTTP => new HTTP(host: 'api.example.com', secure: [])
+   ])
+);
 
 $Response->defer(function (Response $Response) {
    $Upstream = $Response->Upstream->request(method: 'GET', URI: '/users/1');
@@ -541,17 +602,25 @@ Each client instance owns a `Select` reactor of its own — the same reactor cla
 `react()`, `schedule()`, `$Event`, `$owned`, `$Wait` and `MODE_EMBEDDED` are inherited unchanged from [`TCP_Client_CLI`](/manual/WPI/TCP/TCP_Client_CLI/) and are not repeated below.
 
 ```php
-public function configure (
-   string $host,
-   int $port,
-   int $workers = 0,
-   null|array $secure = null,
-   null|array $pool = null,
-   null|bool $enableHTTP2 = null
-): self
+public function configure (Bootgly\ABI\Configs ...$Configs): self
 ```
 
-Configures the client target. `secure` takes SSL/TLS stream context options (`[]` for defaults; `peer_name` is auto-set from `host`). `pool` takes the connection pool bounds `['min' => N, 'max' => N]` (defaults: min `0`, max `1`); when omitted on a reconfigure, the previous bounds are kept. `enableHTTP2` selects the HTTP/2 negotiation mode (`null` = ALPN when `secure` is set; `true` = also h2c prior knowledge on cleartext; `false` = never); when omitted, the current property value is kept. Reconfiguring retires every pooled connection of the previous origin.
+Adopts one Configs per concern — for this client, `HTTP_Client_CLI\Configs` — in any order, and returns the client for chaining. Throws `InvalidArgumentException` on a repeated Configs class in the same call or on a Configs this node does not accept, and `ArgumentCountError` while `host` and `port` have never been set. Reconfiguring retires every pooled connection of the previous origin.
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs(/* named arguments only */)
+```
+
+The client target and its transport. Named arguments only — the constructor's first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`. `secure` takes SSL/TLS stream context options (`[]` for defaults; `peer_name` is auto-set from `host`). `pool` takes the connection pool bounds `['min' => N, 'max' => N]` (defaults: min `0`, max `1`); when omitted on a reconfigure, the previous bounds are kept. `enableHTTP2` selects the HTTP/2 negotiation mode (`null` = ALPN when `secure` is set; `true` = also h2c prior knowledge on cleartext; `false` = never); when omitted, the current property value is kept.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `host` | `string` | — (required) | Target host to connect to. |
+| `port` | `int` | — (required) | Target port. |
+| `workers` | `int` | `0` | Number of worker processes to fork (for benchmarking). |
+| `secure` | `null\|array` | `null` | Secure SSL/TLS stream context options. |
+| `pool` | `null\|array` | `null` | Connection pool bounds: `['min' => N, 'max' => N]`. |
+| `enableHTTP2` | `null\|bool` | `null` | HTTP/2 negotiation mode. |
 
 ```php
 public function request (

@@ -10,7 +10,7 @@ work.
 > DBAL can be used from CLI scripts and from WPI routes. In WPI, use
 > `HTTP_Server_CLI` with the built-in Database Response Resource. See
 > **[HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/overview/)** for the server boot and
-> `responseResources` lifecycle.
+> `Response\Configs` resource lifecycle.
 
 ## Configure the database
 
@@ -98,7 +98,9 @@ use const Bootgly\CLI;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
 
 return new Project(
@@ -106,12 +108,16 @@ return new Project(
    boot: function (): void {
       $HTTP_Server_CLI = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $HTTP_Server_CLI->configure(
-         host: '0.0.0.0',
-         port: 8082,
-         workers: 1,
-         responseResources: [
-            'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
-         ],
+         new ServerConfigs(
+            host: '0.0.0.0',
+            port: 8082,
+            workers: 1
+         ),
+         new ResponseConfigs(
+            Resources: [
+               'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
+            ]
+         )
       );
 
       $HTTP_Server_CLI

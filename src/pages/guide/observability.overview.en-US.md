@@ -11,16 +11,22 @@ never the other way around).
 ## Built-in health endpoint (K8s probes)
 
 The HTTP server answers health probes natively — no route, no middleware, no
-Observability registry required. Opt in with the `health:` parameter of `configure()`:
+Observability registry required. Opt in with the `health:` parameter of `HTTP_Server_CLI\Configs`:
 
 ```php
 $HTTP_Server_CLI->configure(
-   host: '0.0.0.0',
-   port: 8080,
-   workers: 4,
-   health: '/health'   // ← built-in probe endpoint (null = disabled, the default)
+   new HTTP_Server_CLI\Configs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 4,
+      health: '/health'   // ← built-in probe endpoint (null = disabled, the default)
+   )
 );
 ```
+
+`configure()` is variadic over **Configs** value objects — one per concern, in any order — and every
+Configs is **named-arguments only**: a positional `new HTTP_Server_CLI\Configs('0.0.0.0', 8080, 4)`
+raises a `TypeError`.
 
 On the Web platform (`Web\App`) it is **on by default** at `/health` — pass
 `health: null` to `configure()` to disable it.

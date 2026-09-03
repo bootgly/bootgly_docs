@@ -10,7 +10,7 @@ deferido.
 > O DBAL pode ser usado em scripts CLI e em rotas WPI. Em WPI, use o
 > `HTTP_Server_CLI` com o Database Response Resource built-in. Veja
 > **[HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/overview/)** para boot do servidor e
-> ciclo de vida de `responseResources`.
+> ciclo de vida dos resources em `Response\Configs`.
 
 ## Configurar o banco
 
@@ -99,7 +99,9 @@ use const Bootgly\CLI;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database as DatabaseResource;
 
 return new Project(
@@ -107,12 +109,16 @@ return new Project(
    boot: function (): void {
       $HTTP_Server_CLI = new HTTP_Server_CLI(Mode: Modes::Daemon);
       $HTTP_Server_CLI->configure(
-         host: '0.0.0.0',
-         port: 8082,
-         workers: 1,
-         responseResources: [
-            'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
-         ],
+         new ServerConfigs(
+            host: '0.0.0.0',
+            port: 8082,
+            workers: 1
+         ),
+         new ResponseConfigs(
+            Resources: [
+               'Database' => DatabaseResource::provide(__DIR__ . '/configs/'),
+            ]
+         )
       );
 
       $HTTP_Server_CLI

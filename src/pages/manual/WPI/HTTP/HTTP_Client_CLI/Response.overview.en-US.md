@@ -159,10 +159,13 @@ $Response->reset();
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Client_CLI;
+use Bootgly\WPI\Nodes\HTTP_Client_CLI\Configs;
 
 
 $Client = new HTTP_Client_CLI;
-$Client->configure(host: 'api.example.com', port: 443, secure: []);
+$Client->configure(
+   new Configs(host: 'api.example.com', port: 443, secure: [])
+);
 
 $Response = $Client->request(
    method: 'GET',

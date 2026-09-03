@@ -21,8 +21,15 @@ Nothing in your handler changes; compression is transparent.
 It is on by default. Turn it off per server:
 
 ```php
-$WS->configure(host: '0.0.0.0', port: 8083, workers: 1, compression: false);
+$WS->configure(
+   new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1, compression: false)
+);
 ```
+
+> [!NOTE]
+> `configure()` takes **Configs** value objects, **named arguments only** — a positional
+> `new WS_Server_CLI\Configs('0.0.0.0', 8083, 1)` raises a `TypeError`. See the **WS Server CLI** page
+> for the full contract.
 
 The server negotiates the `client_no_context_takeover` / `server_no_context_takeover` flags and the
 window-bits bounds that the client offers, falling back to a full 15-bit window otherwise.

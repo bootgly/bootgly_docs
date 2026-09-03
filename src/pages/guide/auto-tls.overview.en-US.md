@@ -1,26 +1,32 @@
 # Auto-TLS
 
-Bootgly's HTTP Server can manage its own HTTPS certificate. Pass a typed `AutoTLS` config as the `secure` option and the server obtains a certificate from **Let's Encrypt** (ACME v2, RFC 8555) by itself — no certbot, no cron, no third-party package:
+Bootgly's HTTP Server can manage its own HTTPS certificate. Pass a typed `AutoTLS` config in the `AutoTLS:` parameter of the server Configs and the server obtains a certificate from **Let's Encrypt** (ACME v2, RFC 8555) by itself — no certbot, no cron, no third-party package:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\AutoTLS;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 
 $Server = new HTTP_Server_CLI;
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 8,
-   secure: new AutoTLS(
-      domains: ['example.com', 'www.example.com'],
-      email: 'admin@example.com'
-   ),
-   user: 'www-data',
-   group: 'www-data'
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 8,
+      AutoTLS: new AutoTLS(
+         domains: ['example.com', 'www.example.com'],
+         email: 'admin@example.com'
+      ),
+      user: 'www-data',
+      group: 'www-data'
+   )
 );
 ```
 
-That is the whole setup. `secure` still accepts the raw SSL context array (`local_cert` / `local_pk`) exactly as before — `AutoTLS` is the managed alternative. Every WPI project scaffold (and the shipped Web projects) carries this `secure:` block commented in its `configure()` — set your domain and uncomment. The scaffolded block ships with `staging: true`: validate the flow against the staging CA first, then flip it to `false` for the real certificate.
+That is the whole setup. The same Configs still accepts the raw SSL context array (`local_cert` / `local_pk`) in its `secure:` parameter exactly as before — `AutoTLS:` is the managed alternative, and the two are mutually exclusive: passing both throws `InvalidArgumentException` at construction. Every WPI project scaffold (and the shipped Web projects) carries an Auto-TLS block commented in its `configure()` — set your domain and uncomment. The scaffolded block ships with `staging: true`: validate the flow against the staging CA first, then flip it to `false` for the real certificate.
+
+> [!NOTE]
+> On the Web platform, `App->configure()` keeps its own flat signature and takes the very same instance in its `secure:` parameter (`secure: new AutoTLS(...)`) — it builds the server Configs for you.
 
 ## What happens on first boot
 
@@ -79,7 +85,7 @@ bootgly project reload   # SIGUSR2 — graceful re-exec, re-reads the secure con
 Let's Encrypt rate-limits production issuance. Use the staging environment while wiring things up:
 
 ```php
-secure: new AutoTLS(
+AutoTLS: new AutoTLS(
    domains: ['example.com'],
    email: 'admin@example.com',
    staging: true
@@ -96,12 +102,13 @@ docker run --rm --net=host -e PEBBLE_VA_NOSLEEP=1 \
 ```
 
 ```php
-secure: new AutoTLS(
+AutoTLS: new AutoTLS(
    domains: ['localhost'],
    email: 'dev@example.com',
    directory: 'https://localhost:14000/dir',   // Pebble
    port: 5002,        // Pebble validates HTTP-01 on 5002 (unprivileged)
-   verify: false      // Pebble uses its own test root
+   verify: false,     // Pebble uses its own test root
+   allowPrivate: true // private/test-CA egress is opt-in
 )
 ```
 
@@ -145,11 +152,13 @@ public function __construct (
    bool $agreement = true,
    int $port = 80,
    bool $verify = true,
-   array $options = []
+   array $options = [],
+   array $authorities = [],
+   bool $allowPrivate = false
 )
 ```
 
-Validates the whole configuration at construction (`InvalidArgumentException` on any invalid value — misconfiguration never reaches the CA). `domains` is the SAN set; `domains[0]` is the Common Name and names the certificate directory. `directory` overrides `staging`. `threshold` is the renew-when-fewer-days-remain trigger (1–89). `bits` sizes the RSA account and certificate keys (≥ 2048). `agreement` is the RFC 8555 Terms-of-Service agreement — configuring Auto-TLS implies it (the Caddy model), so it defaults to `true` and passing `false` throws. `port` is the HTTP-01 validation port the CA connects to. `verify` controls TLS peer verification toward the ACME directory. `challenges` overrides the HTTP-01 token spool directory — instances sharing one validation port must point at the same spool. `options` are extra SSL context options merged into the server socket context (explicit options win over managed values) — except the credential-selecting keys `local_cert`, `local_pk`, `passphrase` and `SNI_server_certs`, which are managed by Auto-TLS and rejected at construction: no accepted option can serve a certificate outside the validated, acknowledged generation.
+Validates the whole configuration at construction (`InvalidArgumentException` on any invalid value — misconfiguration never reaches the CA). `domains` is the SAN set; `domains[0]` is the Common Name and names the certificate directory. `directory` overrides `staging`. `threshold` is the renew-when-fewer-days-remain trigger (1–89). `bits` sizes the RSA account and certificate keys (≥ 2048). `agreement` is the RFC 8555 Terms-of-Service agreement — configuring Auto-TLS implies it (the Caddy model), so it defaults to `true` and passing `false` throws. `port` is the HTTP-01 validation port the CA connects to. `verify` controls TLS peer verification toward the ACME directory. `challenges` overrides the HTTP-01 token spool directory — instances sharing one validation port must point at the same spool. `options` are extra SSL context options merged into the server socket context (explicit options win over managed values) — except the credential-selecting keys `local_cert`, `local_pk`, `passphrase` and `SNI_server_certs`, which are managed by Auto-TLS and rejected at construction: no accepted option can serve a certificate outside the validated, acknowledged generation. `authorities` lists extra `https://` origins (no path, query, credentials or fragment) trusted for CA-delegated ACME endpoints — the directory's own origin is always trusted. `allowPrivate` is the explicit opt-in for reaching a private or test CA (each origin still pins its first resolved IP).
 
 ```php
 public function check (): bool
@@ -178,10 +187,23 @@ The SSL stream-context options for the server socket — the installed certifica
 ### HTTP Server
 
 ```php
-public function configure (string $host, int $port, int $workers, null|array|AutoTLS $secure = null, ...): self
+public function configure (Bootgly\ABI\Configs ...$Configs): self
 ```
 
-`secure` accepts the raw SSL context array (as before) or an `AutoTLS` instance — the server then owns the certificate lifecycle (bootstrap, background issuance, hot swap, renewal). In both forms the server socket never requests a **client** certificate: `verify_peer` and `verify_peer_name` default to `false` server-side (PHP's inherited `true` would make browsers prompt for mTLS). Enable mTLS deliberately via `options: ['verify_peer' => true, 'cafile' => ...]` — explicit options always win.
+Takes one Configs per concern, in any order — Auto-TLS belongs to the server Configs. See [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/#reference) for the whole configuration model.
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(
+   host: '0.0.0.0',
+   port: 443,
+   workers: 8,
+   AutoTLS: new AutoTLS(domains: ['example.com'], email: 'admin@example.com'),
+   user: 'www-data',
+   group: 'www-data'
+)
+```
+
+`AutoTLS` hands the certificate lifecycle to the server (bootstrap, background issuance, hot swap, renewal); `secure` keeps the raw SSL context array. They are mutually exclusive — one certificate source, never two — and passing both throws `InvalidArgumentException`. In both forms the server socket never requests a **client** certificate: `verify_peer` and `verify_peer_name` default to `false` server-side (PHP's inherited `true` would make browsers prompt for mTLS). Enable mTLS deliberately via the AutoTLS `options: ['verify_peer' => true, 'cafile' => ...]` — explicit options always win. Named arguments only: the Configs constructor's first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`.
 
 ```php
 public function swap (array $secure): bool

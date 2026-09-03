@@ -20,10 +20,13 @@ o loop de eventos até a conexão fechar — ou seja, ele **bloqueia**, como exe
 
 ```php
 use Bootgly\WPI\Nodes\WS_Client_CLI;
+use Bootgly\WPI\Nodes\WS_Client_CLI\Configs;
 use Bootgly\WPI\Nodes\WS_Client_CLI\Events;
 
 $WS = new WS_Client_CLI();
-$WS->configure(host: '127.0.0.1', port: 8083);
+$WS->configure(
+   new Configs(host: '127.0.0.1', port: 8083)
+);
 
 $WS
    ->on(Events::Connected, function ($Session) {
@@ -39,6 +42,13 @@ $WS
 
 $WS->connect('/');
 ```
+
+O `configure()` é variádico sobre value objects **Configs** — um por concern, aplicados em qualquer
+ordem. Todo Configs aceita **apenas named arguments**: seu primeiro parâmetro é um guard slot que você
+nunca preenche, então um `new Configs('127.0.0.1', 8083)` posicional levanta um `TypeError` em vez de
+vincular silenciosamente os valores errados. Passar duas instâncias da mesma classe de Configs em uma
+mesma chamada lança `InvalidArgumentException`, e um `configure()` que nunca carregou `host` e `port`
+lança `ArgumentCountError`.
 
 Em um projeto real isso vive dentro do closure `boot` do projeto (veja `projects/Demo/WS_Client_CLI`).
 
@@ -91,7 +101,9 @@ Um runtime que desabilita seletivamente `pcntl_signal_dispatch` enquanto mantém
 Desligue a oferta com `compression: false`:
 
 ```php
-$WS->configure(host: '127.0.0.1', port: 8083, compression: false);
+$WS->configure(
+   new Configs(host: '127.0.0.1', port: 8083, compression: false)
+);
 ```
 
 ## Heartbeat
@@ -101,7 +113,9 @@ não responde ao pong. É `0` (desligado) por padrão — o cliente sempre respo
 com um pong de qualquer forma:
 
 ```php
-$WS->configure(host: '127.0.0.1', port: 8083, heartbeatInterval: 20);
+$WS->configure(
+   new Configs(host: '127.0.0.1', port: 8083, heartbeatInterval: 20)
+);
 ```
 
 ## Reconexão
@@ -119,12 +133,14 @@ rediscar sem fim; use `0` para não impor limite de tempo.
 
 ```php
 $WS->configure(
-   host: '127.0.0.1', port: 8083,
-   reconnect: true,
-   reconnectAttempts: 0,    // tentativas ilimitadas...
-   reconnectDelay: 1,       // 1s, 2s, 4s, ... limitado em reconnectMaxDelay
-   reconnectMaxDelay: 30,
-   reconnectTimeout: 60,    // ...mas limitado a 60s de tempo de parede total (0 = sem limite)
+   new Configs(
+      host: '127.0.0.1', port: 8083,
+      reconnect: true,
+      reconnectAttempts: 0,    // tentativas ilimitadas...
+      reconnectDelay: 1,       // 1s, 2s, 4s, ... limitado em reconnectMaxDelay
+      reconnectMaxDelay: 30,
+      reconnectTimeout: 60,    // ...mas limitado a 60s de tempo de parede total (0 = sem limite)
+   )
 );
 ```
 
@@ -140,12 +156,15 @@ O `connect()` conduz **uma** conexão e bloqueia. Para rodar **vários** cliente
 
 ```php
 use Bootgly\WPI\Nodes\WS_Client_CLI;
+use Bootgly\WPI\Nodes\WS_Client_CLI\Configs;
 use Bootgly\WPI\Nodes\WS_Client_CLI\Events;
 
 $Clients = [];
 foreach (['/rooms/a', '/rooms/b', '/rooms/c'] as $path) {
    $WS = new WS_Client_CLI();
-   $WS->configure(host: '127.0.0.1', port: 8083);
+   $WS->configure(
+      new Configs(host: '127.0.0.1', port: 8083)
+   );
    $WS
       ->on(Events::Connected, fn ($Session) => $Session->send('hi'))
       ->on(Events::MessageReceived, function ($Session, $Message) {
@@ -173,12 +192,14 @@ antes do handshake WebSocket, então nada mais nos seus handlers muda:
 
 ```php
 $WS->configure(
-   host: 'example.com',
-   port: 443,
-   secure: [
-      'verify_peer' => true,
-      // 'peer_name' é definido como host automaticamente
-   ],
+   new Configs(
+      host: 'example.com',
+      port: 443,
+      secure: [
+         'verify_peer' => true,
+         // 'peer_name' é definido como host automaticamente
+      ],
+   )
 );
 ```
 
@@ -196,6 +217,33 @@ use Bootgly\WPI\Nodes\WS_Client_CLI\Events;
 recebem `($Session)`; `MessageReceived` recebe `($Session, $Message)`. O `Connected` dispara somente
 após o `101` ser verificado (linha de status + `Sec-WebSocket-Accept`).
 
+### `WS_Client_CLI\Configs`
+
+```php
+new Bootgly\WPI\Nodes\WS_Client_CLI\Configs(/* apenas named arguments */)
+```
+
+O destino e a política por conexão. Apenas named arguments — o primeiro slot do construtor é o guard
+`Bootgly\ABI\Argument`, então uma chamada posicional levanta um `TypeError`.
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `host` | `string` | — (obrigatório) | Host ou IP do endpoint WebSocket. |
+| `port` | `int` | — (obrigatório) | Porta remota. |
+| `workers` | `int` | `0` | Herdado do transporte e mantido por compatibilidade: o `connect()` abre uma única conexão bloqueante e nunca faz fork, então não tem efeito. |
+| `secure` | `null\|array` | `null` | Array de stream-context TLS para `wss://`. O `peer_name` assume o `host` por padrão. |
+| `heartbeatInterval` | `int` | `0` | Cadência de ping do cliente em segundos; `0` desliga. O cliente responde aos pings do servidor com pong de qualquer forma. |
+| `maxFrameSize` | `int` | `1048576` (1 MiB) | Payload máximo aceito de um frame de entrada — exceder fecha com `1009`. |
+| `maxMessageSize` | `int` | `8388608` (8 MiB) | Payload máximo aceito de uma mensagem remontada — exceder (inflação incluída) fecha com `1009`. |
+| `compression` | `bool` | `true` | Alterna a oferta de `permessage-deflate`. |
+| `reconnect` | `bool` | `false` | Redisca automaticamente após uma queda abrupta. Closes graciosos nunca reconectam. |
+| `reconnectAttempts` | `int` | `0` | Máximo de tentativas de rediscagem; `0` = ilimitado. |
+| `reconnectDelay` | `int` | `1` | Backoff base em segundos, dobrando a cada tentativa. |
+| `reconnectMaxDelay` | `int` | `30` | Teto do backoff em segundos. |
+| `reconnectTimeout` | `int` | `60` | Orçamento total de tempo de parede em segundos para toda a campanha de reconexão; `0` = sem limite. |
+| `handshakeTimeout` | `int` | `10` | Segundos para receber e verificar o `101` após cada disca; `0` = sem limite. |
+| `closeTimeout` | `float` | `5.0` | Segundos que um close frame enfileirado pode esperar um socket congestionado drenar antes de o transporte ser fechado à força. `0` fecha à força imediatamente quando o frame não pode ser escrito de forma síncrona. |
+
 ### Métodos
 
 ```php
@@ -205,35 +253,13 @@ new WS_Client_CLI ()
 Cria o cliente.
 
 ```php
-configure (
-   string $host, int $port, int $workers = 0,
-   null|array $secure = null,
-   int $heartbeatInterval = 0,
-   int $maxFrameSize = 1048576,
-   int $maxMessageSize = 8388608,
-   bool $compression = true,
-   bool $reconnect = false,
-   int $reconnectAttempts = 0,
-   int $reconnectDelay = 1,
-   int $reconnectMaxDelay = 30,
-   int $reconnectTimeout = 60,
-   int $handshakeTimeout = 10,
-   float $closeTimeout = 5.0
-): self
+configure (Bootgly\ABI\Configs ...$Configs): self
 ```
 
-Define o destino e a política por conexão. `heartbeatInterval` é a cadência de ping do cliente em
-segundos (`0` desliga). `maxFrameSize` (1 MiB) e `maxMessageSize` (8 MiB) limitam um único frame de
-entrada e uma mensagem remontada — exceder qualquer um fecha com `1009`. `compression` alterna a oferta
-de `permessage-deflate`. `secure` é um array de stream-context TLS para `wss://` (o `peer_name` assume
-o `host` por padrão). `reconnect` rediscar após uma queda abrupta com backoff exponencial limitado
-(`reconnectDelay` → `reconnectMaxDelay`, até `reconnectAttempts`, `0` = ilimitado); closes graciosos não
-reconectam. `reconnectTimeout` (60s) é o orçamento total de tempo de parede para toda a campanha de
-reconexão — o loop sempre desiste após esses segundos, mesmo com tentativas ilimitadas (`0` = sem
-limite). `handshakeTimeout` (10s) limita a espera pelo `101` do servidor após cada disca (`0` = sem
-limite). `closeTimeout` (5s) limita quanto tempo um close frame enfileirado pode esperar um socket
-congestionado drenar antes do transporte ser fechado à força (`0` = fecha à força imediatamente
-quando o frame não pode ser escrito de forma síncrona).
+Adota um Configs por concern — para este cliente, `WS_Client_CLI\Configs` — em qualquer ordem, e
+devolve o cliente para encadeamento. Lança `InvalidArgumentException` em uma classe de Configs repetida
+na mesma chamada ou em um Configs que este node não aceita, e `ArgumentCountError` enquanto `host` e
+`port` nunca tiverem sido definidos.
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self

@@ -1,9 +1,9 @@
 # Authentication
 
 O upgrade WebSocket é um `GET` HTTP comum, então os **guards** de autenticação do HTTP Server CLI
-funcionam nele sem alteração. Passe os guards para `configure(guards: [...])`; o handshake os executa
-antes de enviar `101`, e se **todos** os guards negarem, a conexão é rejeitada com `401` e nunca faz
-upgrade. O primeiro guard que passar vence.
+funcionam nele sem alteração. Passe os guards para `configure(new WS_Server_CLI\Configs(Guards: [...]))`;
+o handshake os executa antes de enviar `101`, e se **todos** os guards negarem, a conexão é rejeitada
+com `401` e nunca faz upgrade. O primeiro guard que passar vence.
 
 ## Proteger um handshake com token Bearer
 
@@ -31,8 +31,15 @@ $TokenGuard = new class extends Guard {
    }
 };
 
-$WS->configure(host: '0.0.0.0', port: 8083, workers: 1, guards: [$TokenGuard]);
+$WS->configure(
+   new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1, Guards: [$TokenGuard])
+);
 ```
+
+> [!NOTE]
+> `configure()` recebe value objects **Configs**, **apenas named arguments** — um
+> `new WS_Server_CLI\Configs('0.0.0.0', 8083, 1)` posicional levanta um `TypeError`. Veja a página
+> **WS Server CLI** para o contrato completo.
 
 Um cliente sem token válido recebe `HTTP/1.1 401 Unauthorized` no handshake; um válido recebe
 `HTTP/1.1 101 Switching Protocols` e o socket faz upgrade.
@@ -53,7 +60,9 @@ $BasicGuard = new Basic(
    realm: 'WS'
 );
 
-$WS->configure(host: '0.0.0.0', port: 8083, workers: 1, guards: [$BasicGuard]);
+$WS->configure(
+   new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1, Guards: [$BasicGuard])
+);
 ```
 
 ## Ler a identidade e as claims

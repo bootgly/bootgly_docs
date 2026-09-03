@@ -20,14 +20,17 @@ For a single TCP connection, configure the client, enqueue bytes on connect, swi
 
 ```php
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;
+use Bootgly\WPI\Interfaces\TCP_Client_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI\Events;
 
 
 $Client = new TCP_Client_CLI;
 
 $Client->configure(
-	host: '127.0.0.1',
-	port: 8080
+	new Configs(
+		host: '127.0.0.1',
+		port: 8080
+	)
 );
 
 $Client
@@ -86,27 +89,40 @@ The constructor accepts one of the client mode constants.
 
 ## Configuration
 
-The `configure()` method accepts the target endpoint and optional concurrency / TLS settings:
+`configure()` is variadic over **Configs** value objects — one per concern, applied in any order.
+The transport lives in `TCP_Client_CLI\Configs`:
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `host` | `string` | — | Remote host or IP to connect to. |
 | `port` | `int` | — | Remote TCP port. |
 | `workers` | `int` | `0` | Number of worker processes to fork. |
-| `secure` | `?array` | `null` | PHP stream context secure SSL/TLS options for TLS negotiation. |
+| `secure` | `null\|array` | `null` | PHP stream context secure SSL/TLS options for TLS negotiation. |
 
 ```php
+use Bootgly\WPI\Interfaces\TCP_Client_CLI\Configs;
+
+
 $Client->configure(
-	host: 'secure.example.com',
-	port: 443,
-	workers: 4,
-	secure: [
-		'peer_name' => 'secure.example.com',
-		'verify_peer' => true,
-		'verify_peer_name' => true,
-	]
+	new Configs(
+		host: 'secure.example.com',
+		port: 443,
+		workers: 4,
+		secure: [
+			'peer_name' => 'secure.example.com',
+			'verify_peer' => true,
+			'verify_peer_name' => true,
+		]
+	)
 );
 ```
+
+> [!IMPORTANT]
+> Every Configs is **named-arguments only**. Its first parameter is a guard slot you never fill, so a positional
+> `new Configs('secure.example.com', 443)` raises a `TypeError` instead of silently binding the wrong values.
+
+Handing two instances of the same Configs class to one `configure()` call throws an `InvalidArgumentException`, and a
+`configure()` that never carried `host` and `port` throws an `ArgumentCountError`.
 
 ## Hooks
 
@@ -173,6 +189,7 @@ Adoption and the bridge are the mechanism, not the everyday API. The ready-made 
 use Fiber;
 
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;
+use Bootgly\WPI\Interfaces\TCP_Client_CLI\Configs;
 
 
 // $Event is the host runtime's reactor; this code runs on a Fiber it drives.
@@ -186,8 +203,10 @@ $Client
 		Fiber::suspend($value);
 	})
 	->configure(
-		host: '127.0.0.1',
-		port: 8080
+		new Configs(
+			host: '127.0.0.1',
+			port: 8080
+		)
 	);
 
 $Socket = $Client->connect();
@@ -241,9 +260,11 @@ When `secure` is passed to `configure()`, the client merges those options into t
 
 ```php
 $Client->configure(
-	host: 'secure.example.com',
-	port: 443,
-	secure: []
+	new Configs(
+		host: 'secure.example.com',
+		port: 443,
+		secure: []
+	)
 );
 ```
 
@@ -275,6 +296,7 @@ use function getenv;
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;
+use Bootgly\WPI\Interfaces\TCP_Client_CLI\Configs;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI\Events;
 
 
@@ -289,9 +311,11 @@ return new Project(
 	{
 		$Client = new TCP_Client_CLI(TCP_Client_CLI::MODE_MONITOR);
 		$Client->configure(
-			host: '127.0.0.1',
-			port: getenv('PORT') ? (int) getenv('PORT') : 8082,
-			workers: 1
+			new Configs(
+				host: '127.0.0.1',
+				port: getenv('PORT') ? (int) getenv('PORT') : 8082,
+				workers: 1
+			)
 		);
 
 		$Client
@@ -356,6 +380,12 @@ public private(set) null|Closure $Wait = null;
 ```
 
 The parking bridge installed by `schedule()`, or `null` when none was installed. It is honored only on an adopted reactor, and only from inside a Fiber.
+
+```php
+public function configure (Bootgly\ABI\Configs ...$Configs): self
+```
+
+Adopts one Configs per concern — for this client, `TCP_Client_CLI\Configs` — in any order, and returns the client for chaining. Throws `InvalidArgumentException` on a repeated Configs class in the same call or on a Configs this node does not accept, and `ArgumentCountError` while `host` and `port` have never been set.
 
 ```php
 public function react (Events & Loops & Scheduler $Event): self

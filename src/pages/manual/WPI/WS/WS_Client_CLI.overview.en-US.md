@@ -20,10 +20,13 @@ the event loop until the connection closes — so it **blocks**, like running a 
 
 ```php
 use Bootgly\WPI\Nodes\WS_Client_CLI;
+use Bootgly\WPI\Nodes\WS_Client_CLI\Configs;
 use Bootgly\WPI\Nodes\WS_Client_CLI\Events;
 
 $WS = new WS_Client_CLI();
-$WS->configure(host: '127.0.0.1', port: 8083);
+$WS->configure(
+   new Configs(host: '127.0.0.1', port: 8083)
+);
 
 $WS
    ->on(Events::Connected, function ($Session) {
@@ -39,6 +42,12 @@ $WS
 
 $WS->connect('/');
 ```
+
+`configure()` is variadic over **Configs** value objects — one per concern, applied in any order. Every
+Configs is **named-arguments only**: its first parameter is a guard slot you never fill, so a positional
+`new Configs('127.0.0.1', 8083)` raises a `TypeError` instead of silently binding the wrong values.
+Handing two instances of the same Configs class to one call throws an `InvalidArgumentException`, and a
+`configure()` that never carried `host` and `port` throws an `ArgumentCountError`.
 
 In a real project this lives inside the project `boot` closure (see `projects/Demo/WS_Client_CLI`).
 
@@ -89,7 +98,9 @@ error and closes with `1007`; the zlib warning never escapes. A runtime that sel
 `compression: false`:
 
 ```php
-$WS->configure(host: '127.0.0.1', port: 8083, compression: false);
+$WS->configure(
+   new Configs(host: '127.0.0.1', port: 8083, compression: false)
+);
 ```
 
 ## Heartbeat
@@ -98,7 +109,9 @@ Set `heartbeatInterval` (seconds) to have the client ping an idle server and rea
 the pong. It is `0` (off) by default — the client always answers server pings with a pong regardless:
 
 ```php
-$WS->configure(host: '127.0.0.1', port: 8083, heartbeatInterval: 20);
+$WS->configure(
+   new Configs(host: '127.0.0.1', port: 8083, heartbeatInterval: 20)
+);
 ```
 
 ## Reconnect
@@ -115,12 +128,14 @@ endlessly; set `0` to opt out and reconnect without a time bound.
 
 ```php
 $WS->configure(
-   host: '127.0.0.1', port: 8083,
-   reconnect: true,
-   reconnectAttempts: 0,    // unlimited attempts...
-   reconnectDelay: 1,       // 1s, 2s, 4s, ... capped at reconnectMaxDelay
-   reconnectMaxDelay: 30,
-   reconnectTimeout: 60,    // ...but bounded to 60s of wall-clock total (0 = unbounded)
+   new Configs(
+      host: '127.0.0.1', port: 8083,
+      reconnect: true,
+      reconnectAttempts: 0,    // unlimited attempts...
+      reconnectDelay: 1,       // 1s, 2s, 4s, ... capped at reconnectMaxDelay
+      reconnectMaxDelay: 30,
+      reconnectTimeout: 60,    // ...but bounded to 60s of wall-clock total (0 = unbounded)
+   )
 );
 ```
 
@@ -135,12 +150,15 @@ each (non-blocking), then run the shared loop once with the static `WS_Client_CL
 
 ```php
 use Bootgly\WPI\Nodes\WS_Client_CLI;
+use Bootgly\WPI\Nodes\WS_Client_CLI\Configs;
 use Bootgly\WPI\Nodes\WS_Client_CLI\Events;
 
 $Clients = [];
 foreach (['/rooms/a', '/rooms/b', '/rooms/c'] as $path) {
    $WS = new WS_Client_CLI();
-   $WS->configure(host: '127.0.0.1', port: 8083);
+   $WS->configure(
+      new Configs(host: '127.0.0.1', port: 8083)
+   );
    $WS
       ->on(Events::Connected, fn ($Session) => $Session->send('hi'))
       ->on(Events::MessageReceived, function ($Session, $Message) {
@@ -168,12 +186,14 @@ WebSocket handshake, so nothing else in your handlers changes:
 
 ```php
 $WS->configure(
-   host: 'example.com',
-   port: 443,
-   secure: [
-      'verify_peer' => true,
-      // 'peer_name' is set to host automatically
-   ],
+   new Configs(
+      host: 'example.com',
+      port: 443,
+      secure: [
+         'verify_peer' => true,
+         // 'peer_name' is set to host automatically
+      ],
+   )
 );
 ```
 
@@ -191,6 +211,33 @@ use Bootgly\WPI\Nodes\WS_Client_CLI\Events;
 receive `($Session)`; `MessageReceived` receives `($Session, $Message)`. `Connected` fires only after
 the `101` response is verified (status line + `Sec-WebSocket-Accept`).
 
+### `WS_Client_CLI\Configs`
+
+```php
+new Bootgly\WPI\Nodes\WS_Client_CLI\Configs(/* named arguments only */)
+```
+
+The target and the per-connection policy. Named arguments only — the constructor's first slot is the
+`Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `host` | `string` | — (required) | Host or IP of the WebSocket endpoint. |
+| `port` | `int` | — (required) | Remote port. |
+| `workers` | `int` | `0` | Inherited from the transport and kept for compatibility: `connect()` opens a single blocking connection and never forks, so it has no effect. |
+| `secure` | `null\|array` | `null` | TLS stream-context array for `wss://`. `peer_name` defaults to `host`. |
+| `heartbeatInterval` | `int` | `0` | Client ping cadence in seconds; `0` disables it. The client answers server pings with a pong regardless. |
+| `maxFrameSize` | `int` | `1048576` (1 MiB) | Maximum accepted inbound frame payload — exceeding it closes with `1009`. |
+| `maxMessageSize` | `int` | `8388608` (8 MiB) | Maximum accepted reassembled message payload — exceeding it (inflation included) closes with `1009`. |
+| `compression` | `bool` | `true` | `permessage-deflate` offer toggle. |
+| `reconnect` | `bool` | `false` | Auto re-dial after an abrupt drop. Graceful closes never reconnect. |
+| `reconnectAttempts` | `int` | `0` | Maximum re-dial attempts; `0` = unlimited. |
+| `reconnectDelay` | `int` | `1` | Base backoff in seconds, doubling each attempt. |
+| `reconnectMaxDelay` | `int` | `30` | Backoff cap in seconds. |
+| `reconnectTimeout` | `int` | `60` | Total wall-clock budget in seconds for the whole reconnect campaign; `0` = unbounded. |
+| `handshakeTimeout` | `int` | `10` | Seconds to receive and verify the `101` after each dial; `0` = unbounded. |
+| `closeTimeout` | `float` | `5.0` | Seconds a queued close frame may wait for a congested socket to drain before the transport is force-closed. `0` force-closes immediately when the frame cannot be written synchronously. |
+
 ### Methods
 
 ```php
@@ -200,35 +247,13 @@ new WS_Client_CLI ()
 Create the client.
 
 ```php
-configure (
-   string $host, int $port, int $workers = 0,
-   null|array $secure = null,
-   int $heartbeatInterval = 0,
-   int $maxFrameSize = 1048576,
-   int $maxMessageSize = 8388608,
-   bool $compression = true,
-   bool $reconnect = false,
-   int $reconnectAttempts = 0,
-   int $reconnectDelay = 1,
-   int $reconnectMaxDelay = 30,
-   int $reconnectTimeout = 60,
-   int $handshakeTimeout = 10,
-   float $closeTimeout = 5.0
-): self
+configure (Bootgly\ABI\Configs ...$Configs): self
 ```
 
-Sets the target and the per-connection policy. `heartbeatInterval` is the client ping cadence in
-seconds (`0` disables). `maxFrameSize` (1 MiB) and `maxMessageSize` (8 MiB) cap a single inbound frame
-and a reassembled message — exceeding either closes with `1009`. `compression` toggles the
-`permessage-deflate` offer. `secure` is a TLS stream-context array for `wss://` (`peer_name` defaults
-to `host`). `reconnect` auto re-dials after an abrupt drop with capped exponential backoff
-(`reconnectDelay` → `reconnectMaxDelay`, up to `reconnectAttempts`, `0` = unlimited); graceful closes
-do not reconnect. `reconnectTimeout` (60s) is the total wall-clock budget for the whole reconnect
-campaign — the loop always gives up after that many seconds, even with unlimited attempts (`0` =
-unbounded). `handshakeTimeout` (10s) bounds the wait for the server's `101` after each dial (`0` =
-unbounded). `closeTimeout` (5s) bounds how long a queued close frame may wait for a congested
-socket to drain before the transport is force-closed (`0` = force-close immediately when the frame
-cannot be written synchronously).
+Adopts one Configs per concern — for this client, `WS_Client_CLI\Configs` — in any order, and returns
+the client for chaining. Throws `InvalidArgumentException` on a repeated Configs class in the same call
+or on a Configs this node does not accept, and `ArgumentCountError` while `host` and `port` have never
+been set.
 
 ```php
 on (Event&BackedEnum $Event, Closure $Callback): self

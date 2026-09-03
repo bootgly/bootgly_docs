@@ -30,9 +30,10 @@ A project file (e.g. `HTTP_Server_CLI.Project.php`) returns a `Project` instance
 
 ```php
 // HTTP_Server_CLI.Project.php in ./project/HTTP_Server_CLI
-use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
+use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 
@@ -51,9 +52,11 @@ return new Project(
          default              => Modes::Daemon
       });
       $Server->configure(
-         host: '0.0.0.0',
-         port: 8082,
-         workers: 4
+         new ServerConfigs(
+            host: '0.0.0.0',
+            port: 8082,
+            workers: 4
+         )
       );
       $Server->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'));
       $Server->start();
@@ -92,45 +95,99 @@ The server supports multiple operation modes, selected when constructing the `HT
 
 ## Configuration
 
-The `configure()` method accepts the following parameters:
+`configure()` takes **Configs** — one typed value object per concern, in any order:
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `host` | `string` | — | Bind address. Use `'0.0.0.0'` to listen on all interfaces. When set to `'0.0.0.0'`, domain defaults to `localhost`. |
-| `port` | `int` | — | Listen port. |
-| `workers` | `int` | — | Number of forked child processes. Each worker binds its own socket via `SO_REUSEPORT`. |
-| `secure` | `?array` | `null` | Secure SSL/TLS stream context options. When provided, the scheme switches to `https://`. |
-| `user` | `?string` | `null` | POSIX user name to demote the process to after binding. |
-| `group` | `?string` | `null` | POSIX group name to demote the process to after binding. |
-| `requestMaxFileSize` | `?int` | `null` | Maximum size in bytes per uploaded file part in multipart requests. Defaults to `500 MB`. |
-| `requestMaxBodySize` | `?int` | `null` | Maximum total body size in bytes for non-multipart requests. Defaults to `10 MB`. |
-| `requestMaxMultipartFieldSize` | `?int` | `null` | Maximum size in bytes of a single multipart text field value. Defaults to `1 MB`. |
-| `requestMaxMultipartHeaderSize` | `?int` | `null` | Maximum size in bytes of the header block of a single multipart part. Defaults to `8 KB`. |
-| `requestMaxMultipartFields` | `?int` | `null` | Maximum number of text fields accepted in a multipart request. Defaults to `1024`. |
-| `requestMaxMultipartFiles` | `?int` | `null` | Maximum number of file parts accepted in a multipart request. Defaults to `1024`. |
-| `maxConnections` | `?int` | `null` | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. Defaults to `10000`; `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |
-| `maxConnectionsPerIP` | `?int` | `null` | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: defaults to `0` (unlimited), because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
-| `connectionIdleTimeout` | `?int` | `null` | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. Defaults to `15`; `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
-| `deferredTimeout` | `?int\|float` | `null` | Seconds a deferred response (`$Response->defer()`) may stay parked on the reactor before a `Response\Timeout` is delivered at its wait point. Defaults to `0` (unbounded). A per-call `defer($work, timeout:)` takes precedence. A timeout that escapes the work always logs a warning; left unhandled by every `Recovering` middleware too, it answers `503 Service Unavailable`. |
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
+
+$Server->configure(
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8082,
+      workers: 4
+   ),
+   new RequestConfigs(
+      maxBodySize: 32 * 1024 * 1024  // 32 MB — accept larger non-multipart bodies
+   ),
+   new ResponseConfigs(
+      deferredTimeout: 2.5           // seconds — bound every parked defer()
+   )
+);
+```
+
+Three concerns, three classes:
+
+| Configs | Owns |
+|---|---|
+| `HTTP_Server_CLI\Configs` | The server itself: bind address, workers, TLS (manual or Auto-TLS), privilege dropping, HTTP/2, health endpoint, connection caps. |
+| `Request\Configs` | Inbound limits: body, multipart and upload ceilings. |
+| `Response\Configs` | Outbound: named response resources and the deferred budget. |
+
+Only `host`, `port` and `workers` are required — every other field of every Configs is optional
+and keeps the framework default when omitted. The full field list of each class is in the
+[Reference](#reference) at the end of this page.
+
+The call itself enforces five rules:
+
+- **Order is irrelevant.** `configure(new ResponseConfigs(...), new ServerConfigs(...))` is the same call as the reverse — each Configs is matched by type, never by position.
+- **One instance per class, per call.** Passing two `Request\Configs` in the same `configure()` throws `InvalidArgumentException` (`... received two ... instances.`) instead of letting the second silently win.
+- **The first `configure()` must carry the server Configs.** `host`, `port` and `workers` have no defaults, so a first call that never sets them throws `ArgumentCountError`. Once they are set, a later pre-start call may refine a single concern on its own — `configure(new ResponseConfigs(deferredTimeout: 5))` is a valid follow-up. An empty `configure()` is rejected too.
+- **Each node takes its own Configs, by exact class.** An `HTTP_Server_CLI` accepts `HTTP_Server_CLI\Configs`, `Request\Configs` and `Response\Configs` — nothing else, not even the parent `TCP_Server_CLI\Configs` (which carries the socket but no HTTP policy: scheme, ALPN, safe TLS defaults) or a subclass of an accepted Configs (whose extra fields the server could not read). Anything else throws `InvalidArgumentException` instead of being half-applied.
+- **The set is checked before any of it is applied.** Those set-level rules are decided over the whole argument list first, so a call rejected on any of them leaves every process-global limit, budget and cap exactly as it was. What a single Configs *carries* is validated by its own constructor wherever it can be — an invalid response factory, or a `secure` context alongside `AutoTLS`, throws at `new`. A few checks can only run against live state while the call is applying (the Auto-TLS runtime preconditions; a resource name a response property already owns): those throw with the Configs before them already applied.
+
+`configure()` is a **pre-start** contract: after the server crosses its start boundary the call is
+refused with a logged error, and reconfiguration goes through a [reload](/reload)
+(`bootgly project <name> reload`), which re-executes the project and its `configure()`.
+
+### Named arguments only
+
+Every Configs constructor opens with a guard slot — `Bootgly\ABI\Argument $Named` — that a named
+call never fills:
+
+```php
+new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4); // ✅
+new ServerConfigs('0.0.0.0', 8080, 4);                      // ❌ TypeError
+```
+
+A positional call binds `'0.0.0.0'` to `$Named`, which is typed as the `Argument` enum, so PHP
+raises a `TypeError` before the object exists — and static analysis flags it in your editor. That
+guard is why the API reads the way it does: fields can be added, reordered or retired without any
+existing call silently rebinding a value that was passed by position.
+
+### Defaults
+
+Nothing has to be passed to get the framework defaults; this is what they are, written out:
 
 ```php
 $Server->configure(
-   host: '0.0.0.0',
-   port: 8082,
-   workers: 4,
-   secure: null,
-   user: null,
-   group: null,
-   requestMaxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
-   requestMaxBodySize: 10 * 1024 * 1024,          // 10 MB (default) — max total non-multipart body
-   requestMaxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (default) — max size per text field value
-   requestMaxMultipartHeaderSize: 8 * 1024,        // 8 KB (default) — max size of a single part's headers
-   requestMaxMultipartFields: 1024,                // 1024 (default) — max number of text fields
-   requestMaxMultipartFiles: 1024,                 // 1024 (default) — max number of file parts
-   maxConnections: 10000,                          // 10000 (default) — global concurrent-connection ceiling per worker (0 = unlimited)
-   maxConnectionsPerIP: 0,                          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
-   connectionIdleTimeout: 15,                      // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
-   deferredTimeout: 0,                             // 0 (default, unbounded) — budget in seconds for a parked defer(); the per-call timeout wins
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8082,
+      workers: 4,
+      secure: null,                    // null — plain HTTP; an array (or AutoTLS:) switches to https://
+      user: null,                      // null — no privilege dropping
+      group: null,
+      enableHTTP2: true,               // true (default) — h2 over ALPN and h2c prior knowledge
+      health: null,                    // null — the built-in health endpoint is opt-in
+      maxConnections: 10000,           // 10000 (default) — concurrent-connection ceiling per worker (0 = unlimited)
+      maxConnectionsPerIP: 0,          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
+      connectionIdleTimeout: 15        // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
+   ),
+   new RequestConfigs(
+      maxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
+      maxBodySize: 10 * 1024 * 1024,          // 10 MB (default) — max total non-multipart body
+      maxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (default) — max size per text field value
+      maxMultipartHeaderSize: 8 * 1024,       // 8 KB (default) — max size of a single part's headers
+      maxMultipartFields: 1024,               // 1024 (default) — max number of text fields
+      maxMultipartFiles: 1024,                // 1024 (default) — max number of file parts
+      downloadsMaxBytesOnDisk: 8 * 1024 * 1024 * 1024 // 8 GB (default) — aggregate spooled-upload ceiling
+   ),
+   new ResponseConfigs(
+      Resources: null,                 // null (default) — no project response resources registered
+      deferredTimeout: 0               // 0 (default, unbounded) — budget in seconds for a parked defer(); the per-call timeout wins
+   )
 );
 ```
 
@@ -152,11 +209,13 @@ when clients connect to the server directly.
 ```php
 // Direct-to-internet worker: cap total and per-client concurrency.
 $Server->configure(
-   host: '0.0.0.0',
-   port: 8080,
-   workers: 8,
-   maxConnections: 20000,    // per worker
-   maxConnectionsPerIP: 200, // per source IP (only safe without a fronting proxy)
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 8,
+      maxConnections: 20000,    // per worker
+      maxConnectionsPerIP: 200  // per source IP (only safe without a fronting proxy)
+   )
 );
 ```
 
@@ -194,7 +253,7 @@ ordinary keep-alive rule and is reaped after the next silent window.
 
 Two consequences worth knowing:
 
-- The reaper never bounds a deferred response. Use `deferredTimeout` — or the per-call
+- The reaper never bounds a deferred response. Use `Response\Configs(deferredTimeout:)` — or the per-call
   `defer($work, timeout:)` — for that; see *Deadlines* under *Deferred Response Lifecycle*. A deferral
   that parks with no deadline of its own (`Readiness::read($socket)` defaults to none) and no budget
   holds its connection and its Fiber until the client leaves — bound it, or rely on `maxConnections`.
@@ -211,18 +270,20 @@ disables the reaper entirely — only do that behind a proxy that enforces its o
 
 ### SSL/TLS
 
-Pass a `secure` array with PHP stream context options to enable HTTPS. The server automatically switches the scheme to `https://`:
+Pass a `secure` array of PHP stream context options on the server Configs to enable HTTPS. The server automatically switches the scheme to `https://`:
 
 ```php
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 4,
-   secure: [
-      'local_cert'  => '/path/to/certificate.pem',
-      'local_pk'    => '/path/to/private-key.pem',
-      'verify_peer' => false,
-   ],
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      secure: [
+         'local_cert'  => '/path/to/certificate.pem',
+         'local_pk'    => '/path/to/private-key.pem',
+         'verify_peer' => false,
+      ]
+   )
 );
 ```
 
@@ -239,11 +300,36 @@ secure: [
 > [!NOTE]
 > For production, use certificates from a trusted CA such as Let's Encrypt.
 
+For a certificate the server obtains and renews by itself, pass an `AutoTLS` instance in the
+`AutoTLS:` parameter instead of the `secure:` array — see the [Auto-TLS](/auto-tls) guide:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\AutoTLS;
+
+$Server->configure(
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      AutoTLS: new AutoTLS(
+         domains: ['example.com'],
+         email: 'admin@example.com'
+      ),
+      user: 'www-data',
+      group: 'www-data'
+   )
+);
+```
+
+`secure:` and `AutoTLS:` are mutually exclusive — one certificate source, never two. Passing both
+throws `InvalidArgumentException` at construction.
+
 ### HTTP/2
 
 The server speaks HTTP/2 natively on the same port and routes. With `secure` set, ALPN
 advertises `h2,http/1.1` automatically; in cleartext, clients connect with prior
-knowledge — no setup at all (turn HTTP/2 off entirely with `enableHTTP2: false`):
+knowledge — no setup at all (turn HTTP/2 off entirely with `enableHTTP2: false` on the server
+Configs):
 
 ```bash
 curl -s --http2-prior-knowledge http://127.0.0.1:8080/ -w '%{http_version}\n'
@@ -260,12 +346,14 @@ When binding to privileged ports (< 1024), the process must start as root. Use `
 
 ```php
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 4,
-   secure: [ /* ... */ ],
-   user: 'www-data',
-   group: 'www-data',
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      secure: [ /* ... */ ],
+      user: 'www-data',
+      group: 'www-data'
+   )
 );
 ```
 
@@ -440,7 +528,7 @@ Booting → Configuring → Starting → Running → Paused → Stopping
 ```
 
 - **Booting**: Internal initialization (logger, connections, event loop, process manager).
-- **Configuring**: Host, port, workers and SSL are stored.
+- **Configuring**: The Configs handed to `configure()` are adopted — host, port, workers, TLS, request limits, response resources.
 - **Starting**: SAPI is booted, POSIX signals are installed, workers are forked.
 - **Running**: Workers are processing requests in the event loop.
 - **Paused**: Server socket is removed from the event loop — no new connections are accepted. Existing connections continue.
@@ -538,8 +626,8 @@ Ownership::close($Connection);            // notify every attached owner exactly
 
 ### Deadlines
 
-A parked deferral is bounded by a **budget**, in seconds: the server-wide `deferredTimeout` passed to
-`configure()` (default `0` = unbounded) or, taking precedence, the per-call `timeout` of `defer()`.
+A parked deferral is bounded by a **budget**, in seconds: the server-wide `deferredTimeout` of
+`Response\Configs` (default `0` = unbounded) or, taking precedence, the per-call `timeout` of `defer()`.
 The budget is armed only when the work actually parks, and disarmed the moment its generation settles
 — normally, through a nested handoff, or by teardown — so a completed deferral never leaves a stale
 deadline behind for the Fiber that will be reused next.
@@ -556,7 +644,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout;
 yield $Router->route('/report', function ($Request, Response $Response) {
    return $Response->defer(function (Response $Response): void {
       try {
-         // 'Upstream' is an HTTP response resource registered in responseResources
+         // 'Upstream' is an HTTP response resource registered in Response\Configs(Resources:)
          $Upstream = $Response->Upstream->request('GET', '/report');
          $Response->JSON->send(['code' => $Upstream->code]);
       }
@@ -600,7 +688,86 @@ cleanup that must not wait — releasing a lock, closing a file, returning a poo
 A `Fiber::getCurrent()` kept in a variable across a `wait()` pins the Fiber to its own stack and
 defeats the prompt release — read it, use it, `unset()` it.
 
-### Reference
+## Reference
+
+### `HTTP_Server_CLI->configure()`
+
+```php
+public function configure (Bootgly\ABI\Configs ...$Configs): self
+```
+
+Adopts one Configs per concern — `HTTP_Server_CLI\Configs`, `Request\Configs`, `Response\Configs` — in any order, and returns the server for chaining. Throws `InvalidArgumentException` on a repeated Configs class in the same call or on a Configs this node does not accept, and `ArgumentCountError` while `host`, `port` and `workers` have never been set. After the server crossed its pre-start boundary the call is refused with a logged error and changes nothing.
+
+Which Configs a node accepts is not guesswork: every node declares it in two class constants,
+`TRANSPORT` (the Configs carrying the socket) and `CONFIGS` (every Configs class it applies).
+
+```php
+protected const string TRANSPORT = HTTP_Server_CLI\Configs::class;
+protected const array CONFIGS = [
+   HTTP_Server_CLI\Configs::class,
+   Request\Configs::class,
+   Response\Configs::class
+];
+```
+
+Subclassing a node means re-declaring both — a subclass that adds its own Configs but inherits
+the parent's constants would accept the parent's Configs and configure only what the parent knows.
+
+### `HTTP_Server_CLI\Configs`
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(/* named arguments only */)
+```
+
+The server itself. Named arguments only — the constructor's first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `host` | `string` | — (required) | Bind address. Use `'0.0.0.0'` to listen on all interfaces. When set to `'0.0.0.0'`, domain defaults to `localhost`. |
+| `port` | `int` | — (required) | Listen port. |
+| `workers` | `int` | — (required) | Number of forked child processes. Each worker binds its own socket via `SO_REUSEPORT`. |
+| `secure` | `null\|array` | `null` | Secure SSL/TLS stream context options. When provided, the scheme switches to `https://`. Mutually exclusive with `AutoTLS`. |
+| `user` | `null\|string` | `null` | POSIX user name to demote the process to after binding. |
+| `group` | `null\|string` | `null` | POSIX group name to demote the process to after binding. |
+| `AutoTLS` | `null\|AutoTLS` | `null` | Managed certificate lifecycle (ACME): bootstrap, background issuance, hot swap and renewal. Mutually exclusive with `secure` — passing both throws `InvalidArgumentException`. See the [Auto-TLS](/auto-tls) guide. |
+| `enableHTTP2` | `null\|bool` | `null` (= enabled) | `false` serves HTTP/1.x only — no `h2` in the ALPN advertisement and no cleartext prior-knowledge preface probe. See the [HTTP/2](/manual/WPI/HTTP/HTTP_Server_CLI/HTTP2/) page. |
+| `health` | `null\|string` | `null` | Built-in health-check endpoint path (e.g. `'/health'`). GET/HEAD requests to that exact path are answered before the middleware pipeline, so no user middleware can break a probe. `null` keeps it off. |
+| `maxConnections` | `null\|int` | `null` (= `10000`) | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |
+| `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: `0` means unlimited, because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
+| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
+
+### `Request\Configs`
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs(/* named arguments only */)
+```
+
+Inbound limits. Every parameter is optional; `null` keeps the framework default.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `maxFileSize` | `null\|int` | `null` (= `500 MB`) | Maximum size in bytes per uploaded file part in multipart requests. |
+| `maxBodySize` | `null\|int` | `null` (= `10 MB`) | Maximum total body size in bytes for non-multipart requests. |
+| `maxMultipartFieldSize` | `null\|int` | `null` (= `1 MB`) | Maximum size in bytes of a single multipart text field value. |
+| `maxMultipartHeaderSize` | `null\|int` | `null` (= `8 KB`) | Maximum size in bytes of the header block of a single multipart part. |
+| `maxMultipartFields` | `null\|int` | `null` (= `1024`) | Maximum number of text fields accepted in a multipart request. |
+| `maxMultipartFiles` | `null\|int` | `null` (= `1024`) | Maximum number of file parts accepted in a multipart request. |
+| `downloadsMaxBytesOnDisk` | `null\|int` | `null` (= `8 GB`) | Aggregate ceiling, across every worker, for the bytes spooled uploads may keep on disk at once. |
+
+### `Response\Configs`
+
+```php
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs(/* named arguments only */)
+```
+
+Outbound configuration. Every parameter is optional; `null` keeps the framework default.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Resources` | `null\|array<string,Closure>` | `null` | Project response resource factories, by name — each a `Closure(object): Response\Resource` built lazily on first read (`$Response->Database`, `$Response->Upstream`, …). See [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/). |
+| `deferredTimeout` | `null\|int\|float` | `null` (= `0`, unbounded) | Seconds a deferred response (`$Response->defer()`) may stay parked on the reactor before a `Response\Timeout` is delivered at its wait point. A per-call `defer($work, timeout:)` takes precedence. A timeout that escapes the work always logs a warning; left unhandled by every `Recovering` middleware too, it answers `503 Service Unavailable`. |
+
+### Deferred response
 
 ```php
 public function observe (Closure $Observer): bool

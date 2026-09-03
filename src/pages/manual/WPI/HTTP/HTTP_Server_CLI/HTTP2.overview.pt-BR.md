@@ -26,14 +26,17 @@ Nada para habilitar. Suba o servidor normalmente:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 
 $HTTP_Server_CLI = new HTTP_Server_CLI;
 $HTTP_Server_CLI->configure(
-   host: '0.0.0.0',
-   port: 8080,
-   workers: 8
+   new Configs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 8
+   )
 );
 $HTTP_Server_CLI->on(
    Events::RequestReceived,
@@ -63,17 +66,20 @@ A troca não custa nada ao hot path do HTTP/1.1: a sondagem do preface de 24 byt
 
 ## Servir HTTP/2 sobre TLS (ALPN)
 
-Passe um contexto TLS em `secure` — o ALPN com `h2,http/1.1` é anunciado automaticamente:
+Passe um contexto TLS em `secure` no Configs do servidor — o ALPN com `h2,http/1.1` é anunciado
+automaticamente:
 
 ```php
 $HTTP_Server_CLI->configure(
-   host: '0.0.0.0',
-   port: 8443,
-   workers: 8,
-   secure: [
-      'local_cert' => '/caminho/para/cert.pem',
-      'local_pk' => '/caminho/para/key.pem',
-   ]
+   new Configs(
+      host: '0.0.0.0',
+      port: 8443,
+      workers: 8,
+      secure: [
+         'local_cert' => '/caminho/para/cert.pem',
+         'local_pk' => '/caminho/para/key.pem',
+      ]
+   )
 );
 ```
 
@@ -95,8 +101,12 @@ claro — desligue explicitamente:
 
 ```php
 $HTTP_Server_CLI->configure(
-   // ...
-   enableHTTP2: false
+   new Configs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 8,
+      enableHTTP2: false
+   )
 );
 ```
 
@@ -135,7 +145,7 @@ O decoder HTTP/2 aplica os limites da RFC 9113 por conexão, com padrões seguro
   janela de 10 segundos fecha a conexão com `ENHANCE_YOUR_CALM`.
 - **Controle de fluxo** nas duas direções — respostas maiores que a janela do cliente
   ficam estacionadas e drenam conforme chega crédito de `WINDOW_UPDATE`; corpos de
-  request respeitam o mesmo `requestMaxBodySize` do HTTP/1.1 (413 acima dele).
+  request respeitam o mesmo `Request\Configs(maxBodySize:)` do HTTP/1.1 (413 acima dele).
 - Requests malformados (nomes de header em maiúsculas, campos connection-specific,
   `content-length` divergente) são rejeitados por stream com `400`/`RST_STREAM` — um
   stream ruim nunca derruba a conexão.
@@ -149,7 +159,7 @@ O decoder HTTP/2 aplica os limites da RFC 9113 por conexão, com padrões seguro
   ranges de arquivo de `$Response->upload()` são materializados em frames DATA (até
   16 MiB) e `Transfer-Encoding` é removido — chunked framing não existe no HTTP/2.
 - **Corpos multipart de request** sobre HTTP/2 são bufferizados em memória (limitados
-  por `requestMaxBodySize`) e não são transmitidos para disco — a paridade de streaming
+  por `Request\Configs(maxBodySize:)`) e não são transmitidos para disco — a paridade de streaming
   de `$Request->files` está planejada.
 - **WebSockets sobre HTTP/2** (extended CONNECT, RFC 8441) está fora de escopo — o
   upgrade de WebSocket permanece no HTTP/1.1.
@@ -158,17 +168,22 @@ O decoder HTTP/2 aplica os limites da RFC 9113 por conexão, com padrões seguro
 
 ## Referência
 
-### `HTTP_Server_CLI->configure()`
+### `HTTP_Server_CLI\Configs`
 
 ```php
-public function configure (
-   string $host, int $port, int $workers,
-   null|array $secure = null,
-   null|string $user = null, null|string $group = null,
-   null|bool $enableHTTP2 = null,
-   /* limites de request/conexão ... */
-): self
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(
+   host: '0.0.0.0',
+   port: 8080,
+   workers: 8,
+   secure: null,
+   enableHTTP2: null
+   // ...
+)
 ```
+
+O Configs do servidor entregue ao `configure()` — somente argumentos nomeados (seu primeiro slot é a
+guarda `Bootgly\ABI\Argument`, então uma chamada posicional lança um `TypeError`). A lista completa
+de campos está na página [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/#referencia).
 
 `enableHTTP2` é o interruptor único do HTTP/2. `null`/`true` (padrão) serve HTTP/2 nos
 dois caminhos: o ALPN anuncia `h2,http/1.1` sempre que `secure` estiver definido, e o

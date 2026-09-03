@@ -234,15 +234,23 @@ localmente enquanto trabalha e restaure o comentário antes de commitar.
 ### Ajustes de endurecimento que valem revisar num deployment
 
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
+
+
 $Server->configure(
-   host: '0.0.0.0',
-   port: 443,
-   workers: 8,
-   maxConnections: 10000,
-   maxConnectionsPerIP: 100,
-   requestMaxBodySize: 8 * 1024 * 1024,
-   requestMaxFileSize: 4 * 1024 * 1024,
-   downloadsMaxBytesOnDisk: 512 * 1024 * 1024
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 8,
+      maxConnections: 10000,
+      maxConnectionsPerIP: 100
+   ),
+   new RequestConfigs(
+      maxBodySize: 8 * 1024 * 1024,
+      maxFileSize: 4 * 1024 * 1024,
+      downloadsMaxBytesOnDisk: 512 * 1024 * 1024
+   )
 );
 ```
 

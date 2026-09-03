@@ -99,7 +99,7 @@ return $Response->JSON->send(['Hello' => 'World!']);
 ### Deferred I/O resources
 
 Use `defer()` for response work that must wait for external I/O. Response Resources loaded
-with `responseResources` can bridge that I/O to the response scheduler, but the response is
+with `Response\Configs(Resources:)` can bridge that I/O to the response scheduler, but the response is
 still finalized with the normal `send()` flow.
 
 ```php
