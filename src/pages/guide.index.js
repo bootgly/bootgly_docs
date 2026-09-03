@@ -592,6 +592,33 @@ export default {
     }
   },
 
+  '/kit': {
+    config: {
+      icon: 'system_update_alt',
+      status: 'draft',
+      version: '1.0.0-beta',
+      meta: {
+        description: {
+          'en-US': 'The kit CLI — `bootgly kit boot` lays down the resource directories; `upgrade`, `downgrade` and `list` move the Bootgly Kit between Bootgly Platform releases: tags fetched from the canonical kit, submodules following the pins, your projects untouched; cloned and template-generated kits alike.',
+          'pt-BR': 'O CLI do kit — `bootgly kit boot` instala os diretórios de recursos; `upgrade`, `downgrade` e `list` movem o Bootgly Kit entre releases da Bootgly Platform: tags buscadas do kit canônico, submódulos seguindo os pins, seus projetos intocados; kits clonados e gerados por template igualmente.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Kit CLI'
+      },
+      'pt-BR': {
+        title: 'CLI do Kit'
+      }
+    }
+  },
+
   '/linter': {
     config: {
       icon: 'rule',

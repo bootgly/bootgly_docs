@@ -22,7 +22,7 @@ In a project, bind the driver through the `database` config scope — `DB_CONNEC
 selects a connection block that must already be declared:
 
 ```bash :toolbar="true";
-DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly boot
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly kit boot
 ```
 
 The config adapter maps `pgsql`/`postgres`/`postgresql` to `Connections->PostgreSQL`,

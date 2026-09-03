@@ -11,7 +11,7 @@ O instalador:
 1. Verifica seu ambiente (`git` + PHP **8.4+**);
 2. Clona o template inicial [bootgly.kit](https://github.com/bootgly/bootgly.kit) em `./bootgly.kit` (passe outro nome com `curl -fsSL https://bootgly.com/install | bash -s -- meudir`);
 3. Inicializa a **plataforma Bootgly** (git submodule);
-4. Faz "boot" de [diretórios recurso](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly boot`);
+4. Faz "boot" de [diretórios recurso](https://docs.bootgly.com/manual/Bootgly/basic/directory_structure/overview/#resource-dirs) (`bootgly kit boot`);
 5. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
 6. Abre o **wizard de projetos** (`php bootgly projects create`).
 
@@ -32,7 +32,7 @@ bootgly.kit/
 └── index.php           ← o front controller Web
 ```
 
-O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly boot` para instalar as suas próprias pastas de recursos:
+O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly kit boot` para instalar as suas próprias pastas de recursos:
 
 > **As plataformas caem em um release, não em um commit.** Depois de inicializar um submodule, o instalador o move para a tag mais nova alcançável a partir do pin do kit — um release estável quando existe, senão o pre-release mais novo. Ele nunca avança *além* do pin, então você nunca recebe uma plataforma com a qual o kit não foi construído. Quando um pin saiu de um release, a execução avisa (`Bootgly was pinned 1 commit past v1.0.0-beta.3 — checked out the release`), e o `git status` passa a mostrar aquele submodule como modificado: esse é o pin corrigido, não uma alteração sua — deixe como está. O kit não é seu para commitar; um `git submodule update` posterior devolve o submodule ao que o kit registra, e a próxima execução do instalador reaplica a correção.
 
@@ -47,11 +47,11 @@ bootgly.kit/
 │   │   ├── API/        ← Endpoints/ Environment/ Projects/ Security/ Workables/
 │   │   ├── CLI/        ← Commands/ Terminal/ UI/
 │   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
-│   │   └── commands/   ← comandos built-in da CLI (boot, demo, project, test, ...)
+│   │   └── commands/   ← comandos built-in da CLI (demo, kit, projects, project, test, ...)
 │   ├── configs/        ← configs do framework
 │   ├── projects/       ← projects a nível de author — as fontes do import (Benchmark/, Demo/, Example/)
-│   ├── scripts/        ← template de recursos usado pelo `bootgly boot`
-│   ├── storage/        ← template de recursos usado pelo `bootgly boot`
+│   ├── scripts/        ← template de recursos usado pelo `bootgly kit boot`
+│   ├── storage/        ← template de recursos usado pelo `bootgly kit boot`
 │   ├── Bootgly.php     ← a entity raiz do framework
 │   ├── autoboot.php    ← autoboot do framework (requerido pelo launcher do kit)
 │   ├── bootgly         ← o launcher da CLI do próprio framework
@@ -60,8 +60,8 @@ bootgly.kit/
 ├── Console/            ← plataforma Console (instalada pelo wizard)
 ├── Web/                ← plataforma Web (instalada quando escolhida)
 ├── projects/           ← 🏁 os SEUS projetos — cada um um repositório git próprio (registrados em `Bootgly.projects.php`)
-├── scripts/            ← instalado pelo `bootgly boot`
-├── storage/            ← instalado pelo `bootgly boot` (cache/, logs/, pids/)
+├── scripts/            ← instalado pelo `bootgly kit boot`
+├── storage/            ← instalado pelo `bootgly kit boot` (cache/, logs/, pids/)
 ├── .gitignore
 ├── .gitmodules
 ├── LICENSE
@@ -72,7 +72,7 @@ bootgly.kit/
 
 Tudo o que é seu vive no nível do workspace — `projects/`, `storage/` — enquanto as plataformas permanecem intocadas dentro dos seus submodules. Quando um projeto existe tanto no seu `projects/` quanto no de uma plataforma, **a sua cópia vence no carregamento**: por isso re-importar um projeto de plataforma simplesmente atualiza a sua cópia.
 
-> **O kit é um veículo de entrega — os seus projetos são os repositórios.** Você nunca commita no kit: tudo o que os comandos do Bootgly escrevem na raiz dele (`projects/`, `scripts/`, `storage/`) é ignorado por ele, então o `git status` ali fica limpo e atualizar é só `git -C bootgly.kit pull` seguido de `git submodule update --init`. Todo projeto que você cria **do zero** é **bootado** — nasce um repositório git próprio, com o scaffold como commit inicial; uma cópia de um exemplo embarcado chega sem boot, e `bootgly project <Name> boot` é o mesmo hook, sob demanda — e o **Composer é por projeto**: rode `composer require` dentro de `projects/<Name>/`; o framework carrega o `vendor/autoload.php` daquele projeto quando ele sobe. Os exemplos embarcados — os Demos do framework e os projetos de cada plataforma — são importados automaticamente quando o kit é preparado, como guias vivos para pessoas e agentes de IA; eles chegam sem boot (adote um com `project <Name> boot`), e um que você apagar continua apagado.
+> **O kit é um veículo de entrega — os seus projetos são os repositórios.** Você nunca commita no kit: tudo o que os comandos do Bootgly escrevem na raiz dele (`projects/`, `scripts/`, `storage/`) é ignorado por ele, então o `git status` ali fica limpo e atualizar é `bootgly kit upgrade` (`bootgly kit downgrade` volta). Todo projeto que você cria **do zero** é **bootado** — nasce um repositório git próprio, com o scaffold como commit inicial; uma cópia de um exemplo embarcado chega sem boot, e `bootgly project <Name> boot` é o mesmo hook, sob demanda — e o **Composer é por projeto**: rode `composer require` dentro de `projects/<Name>/`; o framework carrega o `vendor/autoload.php` daquele projeto quando ele sobe. Os exemplos embarcados — os Demos do framework e os projetos de cada plataforma — são importados automaticamente quando o kit é preparado, como guias vivos para pessoas e agentes de IA; eles chegam sem boot (adote um com `project <Name> boot`), e um que você apagar continua apagado.
 
 ## O wizard de projetos
 
@@ -87,7 +87,7 @@ Toda instalação `dev-main` reporta a mesma versão, então é o **commit** que
 O wizard te guia de um kit vazio até um projeto rodando:
 
 1. **Plataformas** — nada é perguntado: **todas as plataformas são configuradas**. A **plataforma base Bootgly** (não opinativa, traz as interfaces `CLI` e `WPI`) chega junto com as opinativas — `Console` (extras de CLI — apps TUI) e `Web` (extras de WPI) — e o wizard inicializa os submodules delas (`Console/`, `Web/`). Decidir o que usar fica para depois: o que você não quiser, apague; o que talvez queira, deixe parado;
-2. **Recursos** — ele executa o `bootgly boot` para instalar as pastas de recursos (`projects/`, `scripts/`, `storage/`) no seu kit, e **todos os exemplos embarcados são importados automaticamente** — os Demos do framework mais os projetos de cada plataforma. Eles são os guias vivos do kit: `projects/Demo/` é onde você (e um agente de IA lendo o seu kit) consulta como se monta um projeto Bootgly;
+2. **Recursos** — ele executa o `bootgly kit boot` para instalar as pastas de recursos (`projects/`, `scripts/`, `storage/`) no seu kit, e **todos os exemplos embarcados são importados automaticamente** — os Demos do framework mais os projetos de cada plataforma. Eles são os guias vivos do kit: `projects/Demo/` é onde você (e um agente de IA lendo o seu kit) consulta como se monta um projeto Bootgly;
 3. **Modo** — três formas de começar, e a primeira não cria nada: **usar os projetos já importados das Plataformas** — o padrão, para ler, rodar ou copiar um deles —, **criar do zero (from scratch)** ou **importar de um remoto Git** (qualquer repositório com a assinatura de projeto Bootgly);
 4. **Projeto** — do zero: escolha o caminho do projeto (ex.: `App` ou `App/API`), a interface (`CLI` ou `WPI`), porta, descrição, versão e autor. De um remoto Git: informe a URL do repositório, o caminho de destino e a interface — o repositório é clonado com o histórico completo e validado (assinatura `*.Project.php`);
 5. **Confirmação** — revise o resumo e confirme. Os projetos ficam em `projects/<Caminho>/`, são registrados em `projects/Bootgly.projects.php`, e um projeto do zero é **bootado** — um repositório git próprio, com o scaffold como commit inicial.

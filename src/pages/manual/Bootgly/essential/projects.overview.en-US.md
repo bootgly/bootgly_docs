@@ -79,7 +79,7 @@ Every value is re-emitted as an escaped PHP literal, the file is parse-verified 
 php bootgly projects create
 ```
 
-The wizard prepares the kit on first run — every platform submodule (`Console` and `Web`), the `bootgly boot` resources and the shipped examples, none of it asked — then asks for the creation mode:
+The wizard prepares the kit on first run — every platform submodule (`Console` and `Web`), the `bootgly kit boot` resources and the shipped examples, none of it asked — then asks for the creation mode:
 
 - **Using what is already imported** — the first mode creates nothing. A prepared kit already carries every exportable platform project, so standing pat and opening one of them is a first-class way to start; the option states how many the kit holds;
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
@@ -162,7 +162,7 @@ php bootgly projects create [<Name>] [--platform=console,web] [--from=scratch|<s
    [--interfaces=CLI|WPI] [--port=] [--description=] [--version=] [--author=] [--yes]
 ```
 
-- `--platform` — narrows what the kit's first run sets up, comma-separated. Every platform is set up by default (`Console` and `Web` submodules initialized, `bootgly boot` run, shipped examples imported), so this flag only matters when you want less: `--platform=console` for one of them, `--platform=none` for the base platform alone. A later run only ever sets up what it names — a platform you removed stays removed;
+- `--platform` — narrows what the kit's first run sets up, comma-separated. Every platform is set up by default (`Console` and `Web` submodules initialized, `bootgly kit boot` run, shipped examples imported), so this flag only matters when you want less: `--platform=console` for one of them, `--platform=none` for the base platform alone. A later run only ever sets up what it names — a platform you removed stays removed;
 - `--from` — `scratch` (default) or a platform project path (e.g. `Demo/HTTP_Server_CLI`). Platform imports keep their own path (`<Name>` is optional) and refresh an existing copy — the new copy is built beside the old one and swapped in only once it is complete. Only a project copy (a directory with a `*.Project.php` at its root) is refreshed; a group of projects or a hand-made directory at that path is refused, never replaced;
 - `--interfaces` — interface bound to a from-scratch project (`CLI` default);
 - `--port` — HTTP port written into a from-scratch WPI project file (`8080` default); a number between 1 and 65535, refused otherwise;

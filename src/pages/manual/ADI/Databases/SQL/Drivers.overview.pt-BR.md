@@ -22,7 +22,7 @@ Em um projeto, vincule o driver pelo escopo de config `database` — `DB_CONNECT
 seleciona um bloco de conexão que já deve estar declarado:
 
 ```bash :toolbar="true";
-DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly boot
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly kit boot
 ```
 
 O adaptador de config mapeia `pgsql`/`postgres`/`postgresql` para `Connections->PostgreSQL`,
