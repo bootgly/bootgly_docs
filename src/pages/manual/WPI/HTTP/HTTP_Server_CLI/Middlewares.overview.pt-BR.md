@@ -137,11 +137,15 @@ new AccessLog(
 );
 ```
 
-Registre-o **uma vez, global e mais externo** — primeiro da lista, para toda requisição passar por ele, replays do cache incluídos:
+Registre-o **uma vez por canal, global e mais externo** — o primeiro middleware do pipeline global, para toda requisição passar por ele:
 
 ```php
-$Router->intercept(new AccessLog, new TrustedProxy(proxies: [/* ... */]), new RequestId);
+use Bootgly\API\Workables\Server as SAPI;
+
+SAPI::$Middlewares->pipe(new AccessLog, new TrustedProxy(proxies: [/* ... */]), new RequestId);
 ```
+
+Isso é cobertura total trocada pelo [cache de resposta de rotas](/manual/WPI/HTTP/HTTP_Server_CLI/Router): um pipeline global com qualquer middleware torna toda resposta não-cacheável e pula o replay, então rotas com `cache:` param de armazenar enquanto este middleware estiver instalado globalmente. `$Router->intercept(new AccessLog)` registra uma instância **de rota** — ela registra só as rotas declaradas depois dela e, como todo middleware de rota, torna essas rotas inelegíveis para o cache também.
 
 Toda requisição então escreve uma linha, qualquer que seja o desfecho — e só uma:
 
@@ -173,15 +177,17 @@ O contexto de cada registro carrega os campos brutos (`--json` e o detalhe do vi
 
 **Respostas deferred e requisições canceladas.** Uma rota deferred responde depois de a cebola desenrolar, então uma linha pós-`$next()` comum registraria o status placeholder e ~0 ms. O `AccessLog` deixa o ciclo de vida da requisição fechar a linha: ele dispara quando a resposta é escolhida — a do trabalho, a de um boundary ou a do Catcher (orçamento estourado é o 503 do Catcher) — e também quando **não há** resposta: o cliente saiu com a resposta estacionada, ou a geração foi abandonada. Essa requisição também ganha sua linha, como `cancelled`, com o tempo que ficou estacionada. Nenhum middleware de aplicação consegue registrar esse caso; é a razão de o middleware vir com o framework.
 
-**Sua própria linha.** O `Formatter` recebe o array de contexto mais dois campos neutralizados — `target` (a URI) e `method` — e devolve a mensagem:
+**Sua própria linha.** O `Formatter` recebe os campos do desfecho mais dois neutralizados — `target` (o alvo da requisição) e `method` — e devolve a mensagem:
 
 ```php
 new AccessLog(Formatter: static fn (array $entry): string => "{$entry['method']} {$entry['target']} {$entry['code']} {$entry['ms']}ms")
 ```
 
-Monte a mensagem a partir de `target`, nunca de `URI`: a mensagem é renderizada pelo motor de template do Output, onde todo `@` abre uma diretiva, e o alvo é controlado pelo cliente. Na linha padrão todo `@` e todo byte fora do ASCII imprimível entram como `%XX` (`%40` é como um `@` se escreve numa URI, afinal), o alvo é limitado a 120 caracteres e a query fica de fora. O contexto é codificado em JSON e mantém os valores brutos. Deixe a quebra de linha final de fora — o middleware a acrescenta.
+O alvo bruto está deliberadamente ausente do que o formatter recebe: a mensagem é renderizada pelo motor de template do Output, onde todo `@` abre uma diretiva, e o alvo é controlado pelo cliente. Todo `@` e todo byte fora do ASCII imprimível chegam em `target` como `%XX` (`%40` é como um `@` se escreve numa URI, afinal), limitado a 120 caracteres. O contexto, que é dado, mantém os valores brutos — exceto um valor que não seja UTF-8 válido, que faria o encoder JSON recusar o registro inteiro: ele também é guardado codificado, e `encoded: true` diz isso. Devolva a mensagem sem quebra de linha no fim: o formatter de log termina cada registro por conta própria. Um formatter que falha custa a forma da sua linha, nunca a requisição: a linha padrão é escrita no lugar.
 
-**O que ele não vê.** Um `AccessLog` de rota registra só as suas rotas — nunca o catch-all 404, uma resposta que um middleware global cortou (401/403/429, um preflight CORS) ou uma deferred iniciada fora da sua cadeia. Uma instância global registra replays do cache de rotas com o status da Response resetada (200) e sem bytes: a resposta veio do cache. Nenhum dos dois registra o health probe, o responder ACME ou uma requisição que o decoder rejeitou antes do roteamento. Uma resposta cuja codificação falhou depois de uma resposta de erro se desfecha como `cancelled`. Duas instâncias escrevem duas linhas — uma por canal.
+**O que ele não vê.** Um `AccessLog` de rota registra só as suas rotas — nunca o catch-all 404, uma resposta que um middleware global cortou (401/403/429, um preflight CORS) ou uma deferred iniciada fora da sua cadeia. Nenhum dos dois registra o health probe, o responder ACME ou uma requisição que o decoder rejeitou antes do roteamento. Uma resposta cuja codificação falhou depois de uma resposta de erro se desfecha como `cancelled`. Duas instâncias escrevem duas linhas — uma por canal.
+
+**Ele nunca torna uma chave de cache não-compartilhável.** Nada fica guardado na própria requisição: a entrada de uma geração deferred é mantida presa ao token de ciclo de vida daquela geração. O bag de atributos por requisição é o que o cache de rotas usa para particionar, e a chave é composta duas vezes — antes do pipeline para buscar uma entrada, depois dele para guardar uma — então qualquer coisa escrita lá durante a requisição faria as duas divergirem e toda entrada guardada ficaria inalcançável.
 
 **Fase:** Ambas — o pré-processamento abre a entrada; o pós-processamento escreve a linha síncrona, o ciclo de vida escreve a deferred.
 

@@ -137,11 +137,15 @@ new AccessLog(
 );
 ```
 
-Register it **once, globally and outermost** — first in the list, so every request passes through it, cache replays included:
+Register it **once per channel, globally and outermost** — the first middleware of the global pipeline, so every request passes through it:
 
 ```php
-$Router->intercept(new AccessLog, new TrustedProxy(proxies: [/* ... */]), new RequestId);
+use Bootgly\API\Workables\Server as SAPI;
+
+SAPI::$Middlewares->pipe(new AccessLog, new TrustedProxy(proxies: [/* ... */]), new RequestId);
 ```
+
+That is total coverage traded against the [route response cache](/manual/WPI/HTTP/HTTP_Server_CLI/Router): a global pipeline with any middleware in it makes every response non-cacheable and skips replay, so `cache:` routes stop storing while this middleware is installed globally. `$Router->intercept(new AccessLog)` registers a **route-scoped** instance instead — it logs only the routes declared after it, and, like any route middleware, it makes those routes ineligible for the cache too.
 
 Every request then writes one line, whatever its outcome — and only one:
 
@@ -173,15 +177,17 @@ The context of every record carries the raw fields (`--json` and the viewer's de
 
 **Deferred responses and cancelled requests.** A deferred route answers after the onion unwound, so a plain post-`$next()` line would record the placeholder status and ~0 ms. `AccessLog` lets the request's lifecycle settle the line instead: it fires once the answer is chosen — the work's, a boundary's or the Catcher's (a budget that runs out is the Catcher's 503) — and also when there is **no** answer: the client left with the response parked, or the generation was abandoned. That request gets its line too, as `cancelled`, with the time it stayed parked. No application-level middleware can log that case; it is the reason the middleware ships with the framework.
 
-**Your own line.** The `Formatter` receives the context array plus two neutralized fields — `target` (the URI) and `method` — and returns the message:
+**Your own line.** The `Formatter` receives the outcome fields plus two neutralized ones — `target` (the request target) and `method` — and returns the message:
 
 ```php
 new AccessLog(Formatter: static fn (array $entry): string => "{$entry['method']} {$entry['target']} {$entry['code']} {$entry['ms']}ms")
 ```
 
-Build the message from `target`, never from `URI`: the message is rendered by the Output template engine, where every `@` opens a directive, and the target is client-controlled. In the default line every `@` and every byte outside printable ASCII enters as `%XX` (`%40` is how `@` is written in a URI anyway), the target is capped at 120 characters, and the query stays out. The context is JSON-encoded and keeps the raw values. Leave the trailing newline out — the middleware adds it.
+The raw target is deliberately absent from what a formatter is handed: the message is rendered by the Output template engine, where every `@` opens a directive, and the target is client-controlled. Every `@` and every byte outside printable ASCII reaches `target` as `%XX` (`%40` is how `@` is written in a URI anyway), capped at 120 characters. The context, which is data, keeps the raw values — except a value that is not valid UTF-8, which would make the JSON encoder refuse the whole record: it is stored encoded too, and `encoded: true` says so. Return the message without a trailing newline: the log formatter terminates every record itself. A formatter that fails costs its line's shape, never the request: the default line is written instead.
 
-**What it does not see.** A route-level `AccessLog` logs only its routes — never the 404 catch-all, an answer a global middleware short-circuited (401/403/429, a CORS preflight) or a deferral begun outside its chain. A global instance logs route-cache replays with the reset Response's status (200) and no bytes: the wire came from the cache. Neither logs the health probe, the ACME responder or a request the decoder rejected before routing. A response whose encoding failed after an error answer settles as `cancelled`. Two instances write two lines — one per channel.
+**What it does not see.** A route-level `AccessLog` logs only its routes — never the 404 catch-all, an answer a global middleware short-circuited (401/403/429, a CORS preflight) or a deferral begun outside its chain. Neither logs the health probe, the ACME responder or a request the decoder rejected before routing. A response whose encoding failed after an error answer settles as `cancelled`. Two instances write two lines — one per channel.
+
+**It never makes a cache key unshareable.** Nothing is stored on the request itself: the entry of a deferred generation is held against that generation's own lifecycle token. The per-request attribute bag is what the route response cache partitions on, and the key is composed twice — before the pipeline to look an entry up, after it to store one — so anything written there during a request would make the two disagree and every stored entry unreachable.
 
 **Phase:** Both — pre-processing opens the entry; post-processing writes the synchronous line, the lifecycle writes the deferred one.
 
