@@ -124,8 +124,9 @@ return new Project(
       $HTTP_Server_CLI
          // # Rotas — o ponto de entrada do request (pasta router/ via Router::load())
          ->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'))
-         // # Feedback de ciclo de vida
-         ->on(Events::ServerStarted, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server iniciado@;@.;'))
+         // # Feedback de ciclo de vida — o banner de inicialização pertence ao
+         //   ServerAdvertised, o hook disparado no processo que possui o terminal
+         ->on(Events::ServerAdvertised, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server iniciado@;@.;'))
          ->on(Events::ServerStopped, fn () => CLI->Terminal->Output->render('@#yellow:■ HTTP server parado@;@.;'));
 
       $HTTP_Server_CLI->start();
@@ -134,7 +135,7 @@ return new Project(
 ```
 
 `on()` liga os três eventos de ciclo de vida do `HTTP_Server_CLI`: `RequestReceived` (o ponto de
-entrada das rotas, a pasta `router/` carregada via `Router::load()`), `ServerStarted` e
+entrada das rotas, a pasta `router/` carregada via `Router::load()`), `ServerAdvertised` e
 `ServerStopped` (feedback de boot/shutdown). Sem `RequestReceived` o servidor sobe mas não responde
 nada.
 

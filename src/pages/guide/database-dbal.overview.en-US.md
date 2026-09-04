@@ -123,8 +123,9 @@ return new Project(
       $HTTP_Server_CLI
          // # Routes — the request entry point (router/ folder via Router::load())
          ->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'))
-         // # Lifecycle feedback
-         ->on(Events::ServerStarted, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server started@;@.;'))
+         // # Lifecycle feedback — the launch banner belongs on ServerAdvertised,
+         //   the hook that fires on the process owning the terminal
+         ->on(Events::ServerAdvertised, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server started@;@.;'))
          ->on(Events::ServerStopped, fn () => CLI->Terminal->Output->render('@#yellow:■ HTTP server stopped@;@.;'));
 
       $HTTP_Server_CLI->start();
@@ -133,7 +134,7 @@ return new Project(
 ```
 
 `on()` wires the three `HTTP_Server_CLI` lifecycle events: `RequestReceived` (the route entry point,
-the `router/` folder loaded via `Router::load()`), `ServerStarted` and `ServerStopped` (boot/shutdown
+the `router/` folder loaded via `Router::load()`), `ServerAdvertised` and `ServerStopped` (boot/shutdown
 feedback). Without `RequestReceived` the server starts but answers nothing.
 
 Define the `database` scope in `configs/database/database.Config.php`; environment values are bound

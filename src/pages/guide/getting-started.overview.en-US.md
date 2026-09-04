@@ -174,15 +174,18 @@ return new Project(
       );
       $Server
          ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
-         ->on(Events::ServerStarted, function ($Server) {
-            // Called after the server starts listening
+         ->on(Events::ServerAdvertised, function ($Server) {
+            // Launch banner — fired on the process that owns the terminal
+            //   (on Daemon mode, the launcher). `advertise()` prints the
+            //   bound endpoint.
+            $Server->advertise();
          });
       $Server->start();
    }
 );
 ```
 
-This is exactly what the wizard generates for a `WPI` project (plus a `router/` with a welcome route). Only project paths registered in `projects/Bootgly.projects.php` can be started — the wizard registers them for you.
+This is the shape of what the wizard generates for a `WPI` project (plus a `router/` with a welcome route). Only project paths registered in `projects/Bootgly.projects.php` can be started — the wizard registers them for you.
 
 ## Project namespaces
 

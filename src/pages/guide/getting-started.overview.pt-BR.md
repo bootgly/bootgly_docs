@@ -174,15 +174,18 @@ return new Project(
       );
       $Server
          ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
-         ->on(Events::ServerStarted, function ($Server) {
-            // Chamado depois que o servidor começa a escutar
+         ->on(Events::ServerAdvertised, function ($Server) {
+            // Banner de inicialização — disparado no processo que possui o
+            //   terminal (no modo Daemon, o launcher). `advertise()` imprime
+            //   o endpoint vinculado.
+            $Server->advertise();
          });
       $Server->start();
    }
 );
 ```
 
-Isso é exatamente o que o wizard gera para um projeto `WPI` (mais um `router/` com uma rota de boas-vindas). Apenas caminhos de projeto registrados em `projects/Bootgly.projects.php` podem ser iniciados — o wizard registra por você.
+Esse é o formato do que o wizard gera para um projeto `WPI` (mais um `router/` com uma rota de boas-vindas). Apenas caminhos de projeto registrados em `projects/Bootgly.projects.php` podem ser iniciados — o wizard registra por você.
 
 ## Namespaces de projeto
 

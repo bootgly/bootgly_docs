@@ -502,15 +502,11 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 $Server
    ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
-   ->on(Events::ServerStarted, function ($Server) {
+   ->on(Events::ServerAdvertised, function ($Server) {
       $Output = CLI->Terminal->Output;
 
-      $protocol = $Server->socket ?? 'http://';
-      $host     = $Server->host   ?? '0.0.0.0';
-      $port     = $Server->port   ?? 0;
-
       $Output->render('@.;@#green:✓ HTTP Server started@;@.;');
-      $Output->render('  Listening on @#cyan:' . $protocol . $host . ':' . $port . '@;@.;');
+      $Server->advertise();
       $Output->render('  @#green:● Ready for connections@;@..;');
    })
    ->on(Events::ServerStopped, function ($Server) {
