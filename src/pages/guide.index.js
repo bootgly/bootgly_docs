@@ -928,8 +928,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Build a slim or full Bootgly image to run servers, test, benchmark and ship your own projects with Docker.',
-          'pt-BR': 'Construa uma imagem Bootgly slim ou full para rodar servidores, testar, fazer benchmark e publicar seus projetos com Docker.'
+          'en-US': 'Run the Bootgly kit image, build your own on the framework image, and benchmark against other frameworks — all with Docker.',
+          'pt-BR': 'Rode a imagem do kit Bootgly, construa a sua sobre a imagem do framework e compare com outros frameworks — tudo com Docker.'
         }
       },
       book: 'guide',
