@@ -29,8 +29,9 @@ Referência.
 > que foi publicada, e os dois workflows de release recusam sobrescrever uma tag de versão
 > exata. O que se move são os canais — `:rc` e `:beta` acompanham a pre-release mais nova do
 > que aquele repositório publica hoje, então fixe uma versão exata se você precisa que a
-> imagem antiga fique onde está. `:slim`, `:full` e `*-full` estão congeladas e não recebem
-> versões novas.
+> imagem antiga fique onde está. A `:slim`, a `:full` e todas as `*-full` foram **deletadas**
+> em 2026-09-04 e não resolvem mais — um pull nelas falha de vez, em vez de entregar em
+> silêncio uma variante cujo nome dizia o oposto do conteúdo.
 >
 > Por que os nomes de variante sumiram: em qualquer outra imagem do Docker Hub, `slim`
 > significa uma base de SO menor, não menos software — e a `slim` do Bootgly era o produto,

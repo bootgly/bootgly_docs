@@ -29,8 +29,9 @@ page until the Reference.
 > shipped with, and both release workflows refuse to overwrite an exact version tag. The
 > **moving** channels are the ones to watch — `:rc` and `:beta` follow the newest pre-release
 > of whatever their repository publishes today, so pin an exact version if you need the old
-> image to stay put. `:slim`, `:full` and `*-full` are frozen where they are and get no new
-> versions.
+> image to stay put. `:slim`, `:full` and every `*-full` were **deleted** on 2026-09-04 and no
+> longer resolve at all — a pull against one now fails outright rather than quietly handing
+> over a variant that means the opposite of its name.
 >
 > Why the variant names are gone: in every other image on Docker Hub `slim` means a smaller OS
 > base, not less software — and Bootgly's `slim` was the product while `full` was the
