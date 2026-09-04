@@ -457,6 +457,32 @@ export default {
     }
   },
 
+  '/timers': {
+    config: {
+      icon: 'timer',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'Run process-local cooperative interval callbacks and inspect timer ownership without exposing a second mutation API.',
+          'pt-BR': 'Execute callbacks cooperativos por intervalo, locais ao processo, e inspecione ownership sem expor uma segunda API de mutação.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Interval Timers'
+      },
+      'pt-BR': {
+        title: 'Timers de Intervalo'
+      }
+    }
+  },
+
   '/mail': {
     config: {
       icon: 'mail',

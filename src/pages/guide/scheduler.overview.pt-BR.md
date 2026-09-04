@@ -7,8 +7,9 @@ vida prontos para uso. O motor cron é escrito do zero — sem dependência do C
 
 > [!NOTE]
 > Este é o **agendador de jobs** (cron por relógio de parede), distinto do scheduler de I/O
-> assíncrono `Bootgly\ACI\Events\Scheduler` (loop de Fibers) e do `Events\Timer` (timers por
-> intervalo). Use este para rodar um backup às 03:00 ou limpar um cache a cada cinco minutos.
+> assíncrono `Bootgly\ACI\Events\Scheduler` (loop de Fibers) e do
+> [`Events\Timer`](/guide/timers/overview/) (timers por intervalo). Use este para rodar um
+> backup às 03:00 ou limpar um cache a cada cinco minutos.
 
 ## Declare jobs
 

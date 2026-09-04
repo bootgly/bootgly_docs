@@ -7,7 +7,8 @@ written from scratch — no Composer dependency.
 
 > [!NOTE]
 > This is the **job scheduler** (wall-clock cron jobs), distinct from the async I/O
-> `Bootgly\ACI\Events\Scheduler` (Fiber loop) and `Events\Timer` (interval timers). Use
+> `Bootgly\ACI\Events\Scheduler` (Fiber loop) and [`Events\Timer`](/guide/timers/overview/)
+> (interval timers). Use
 > this one to run a backup at 03:00 or prune a cache every five minutes.
 
 ## Declare jobs
