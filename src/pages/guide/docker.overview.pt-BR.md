@@ -38,9 +38,11 @@ Referência.
 > enquanto a `full` era o harness de benchmark, ou seja, os nomes diziam o oposto da verdade.
 
 > **A imagem do kit não tem `latest` enquanto o Bootgly está em pre-release** (e a imagem do
-> framework nunca terá — veja o esquema de tags). Acrescente a tag de canal
-> a todos os nomes de imagem abaixo — `bootgly/bootgly.kit:rc` — ou fixe uma versão exata
-> (`bootgly/bootgly.kit:1.0.0-rc.1`). Veja [Esquema de tags](#esquema-de-tags).
+> framework nunca terá — veja o esquema de tags). Por isso todo comando desta página nomeia o
+> canal explicitamente — `bootgly/bootgly.kit:rc` — e uma `bootgly/bootgly.kit` sem tag **não**
+> resolve hoje. Fixe uma versão exata (`bootgly/bootgly.kit:1.0.0-rc.1`) quando quiser um build
+> que nunca se move. A partir da primeira release estável, a `bootgly/bootgly.kit` pura funciona
+> e passa a ser a indicada. Veja [Esquema de tags](#esquema-de-tags).
 
 ## Rodar o Bootgly
 
@@ -52,7 +54,7 @@ Uma execução interativa sem argumentos abre o instalador canônico de projetos
 docker run -it --rm \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit
+  bootgly/bootgly.kit:rc
 ```
 
 É o mesmo wizard por trás do [`bootgly projects create`](/guide/getting-started) — modo de
@@ -68,10 +70,63 @@ lugar. Com Compose, defina `stdin_open: true` e `tty: true`.
 Qualquer comando explícito pula o wizard e vai direto para a CLI `bootgly`:
 
 ```bash
-docker run --rm bootgly/bootgly.kit help
-docker run --rm bootgly/bootgly.kit test --bootgly 102          # uma suíte do framework
-docker run --rm bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+docker run --rm bootgly/bootgly.kit:rc help
+docker run --rm bootgly/bootgly.kit:rc test --bootgly 102          # uma suíte do framework
+docker run --rm bootgly/bootgly.kit:rc project Demo/HTTP_Server_CLI start -f
 ```
+
+### Voltar ao kit
+
+O wizard fecha quando termina e, com `--rm`, o container é apagado junto. Nada se perde — seus
+projetos e seus dados vivem nos dois diretórios montados no host, não no container — mas não
+existe container para "voltar a entrar". **Toda volta é um container novo sobre as mesmas
+montagens**, e são elas que fazem dele o mesmo kit.
+
+Repetir o comando puro **não** reabre o wizard: a primeira execução deixa um marcador
+`projects/.initialized`, que está no volume, então dali em diante um `docker run` simples
+imprime a ajuda. Use uma destas formas.
+
+**Rodar um comando.** Qualquer comando explícito vai direto para a CLI do `bootgly`:
+
+```bash :toolbar="true";
+docker run -it --rm \
+  -v "$PWD/projects:/bootgly/projects" \
+  -v "$PWD/storage:/bootgly/storage" \
+  bootgly/bootgly.kit:rc projects list
+```
+
+**Abrir um shell dentro do kit** — o mais próximo de "entrar" nele:
+
+```bash :toolbar="true";
+docker run -it --rm \
+  -v "$PWD/projects:/bootgly/projects" \
+  -v "$PWD/storage:/bootgly/storage" \
+  --entrypoint bash bootgly/bootgly.kit:rc
+```
+
+Você cai em `/bootgly`, com o `bootgly` no `PATH`.
+
+**Criar outro projeto** — o wizard de novo, de propósito: acrescente `projects create`.
+
+**Manter um container de pé** em vez de um novo a cada vez. Tire o `--rm`, dê um nome, e ele
+sobrevive até você removê-lo:
+
+```bash :toolbar="true";
+docker run -dit --name bootgly \
+  -v "$PWD/projects:/bootgly/projects" \
+  -v "$PWD/storage:/bootgly/storage" \
+  -p 8080:8080 \
+  --entrypoint bash bootgly/bootgly.kit:rc
+
+docker exec -it bootgly bash     # entra, quantas vezes quiser
+docker stop bootgly              # para
+docker start -ai bootgly         # sobe e entra de novo
+docker rm -f bootgly             # descarta (projects/ e storage/ permanecem)
+```
+
+Prefira a forma descartável com `--rm` para comandos avulsos, e o container nomeado quando
+quiser uma bancada de trabalho duradoura. De um jeito ou de outro, o estado que importa está
+nos dois diretórios.
 
 ### Preserve seu trabalho — volumes
 
@@ -82,7 +137,7 @@ dois e seus projetos, logs, PIDs e cache passam a viver no host:
 docker run --rm -it \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit projects list
+  bootgly/bootgly.kit:rc projects list
 ```
 
 Depois que o wizard rodar, isso lista seus projetos e os exemplos importados.
@@ -108,7 +163,7 @@ plano ele envia logs para o stdout e drena de forma graciosa no `SIGTERM`, que �
 
 ```bash :toolbar="true";
 docker run --rm -p 8082:8082 \
-  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+  bootgly/bootgly.kit:rc project Demo/HTTP_Server_CLI start -f
 ```
 
 Depois, em outro terminal:
@@ -126,7 +181,7 @@ Seu próprio projeto inicia do mesmo jeito, com `projects/` montado:
 docker run --rm -p 8082:8082 \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit project MyApp start -f
+  bootgly/bootgly.kit:rc project MyApp start -f
 ```
 
 Todo servidor que vem no kit lê a variável de ambiente `PORT` (com fallback para o padrão) e
@@ -134,7 +189,7 @@ escuta em `0.0.0.0`, então dá para mudar a porta sem reconstruir nada:
 
 ```bash :toolbar="true";
 docker run --rm -e PORT=9090 -p 9090:9090 \
-  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+  bootgly/bootgly.kit:rc project Demo/HTTP_Server_CLI start -f
 ```
 
 ### Mudar de versão
@@ -357,7 +412,7 @@ framework sozinho — sem Console, sem Web, sem o comando `kit` —, que é exat
 esta separação existe para encerrar. A imagem do framework é sempre puxada por tag explícita.
 
 Uma pre-release **nunca** move a `latest`, nem os apelidos de major/minor — caso contrário um
-`docker pull bootgly/bootgly.kit` entregaria código não lançado a todo mundo. Os apelidos de
+`docker pull bootgly/bootgly.kit:rc` entregaria código não lançado a todo mundo. Os apelidos de
 canal (`rc`, `beta`) são tags móveis que você escolhe usar deliberadamente. A `latest`,
 portanto, só aparece depois de um release estável; enquanto o Bootgly está em pre-release,
 baixe o apelido de canal ou uma versão exata.
