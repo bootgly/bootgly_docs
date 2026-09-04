@@ -171,7 +171,9 @@ php bootgly projects create [<Name>] [--platform=console,web] [--from=scratch|<s
 - `--no-git` — skips the boot hook (the project's own git repository, created and committed by default on from-scratch creates);
 - `--refresh` — with `--from=<source>`, replaces a target that is already a git repository. Without it the command refuses: a repository in `projects/` is your only copy of that history.
 
-A name you pass to `create` is yours: a shipped example that would take the same path is left unstocked, so the first command on a new kit never loses to a name you have not seen.
+A name you pass to `create` is yours: a **platform** example that would take the same path is left unstocked, so the first command on a new kit never loses to a name you have not seen. Names the **framework** itself ships (`Demo/*`) are the exception — those are refused outright, before anything is stocked, because the shelf they would be taken from is where the copy lives.
+
+An unimplemented `--platform` value is refused too, on every layout: it used to be accepted and dropped in a framework checkout and in a kit without `.gitmodules`.
 
 ### `project boot`
 
