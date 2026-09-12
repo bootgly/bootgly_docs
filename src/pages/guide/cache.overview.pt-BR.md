@@ -286,11 +286,12 @@ $KV = new KV([
 
 O store do cache é uma **fronteira de confiança**: só a sua aplicação deveria conseguir gravar
 em `storage/cache/`, no segmento SysV, no pool do APCu ou na instância Redis — proteja todos
-com permissões de filesystem e de rede. Como defesa em profundidade, todo driver que persiste
-decodifica os registros gravados através de uma **allow-list `allowed_classes` fail-closed**,
-então um registro adulterado nunca executa um gadget de object injection
-(`__wakeup`/`__destruct`) enquanto está sendo lido. Rejeitar o valor depois não é defesa — a
-essa altura o gadget já rodou.
+com permissões de filesystem e de rede. Como defesa em profundidade, os drivers `file` e
+`redis` entregam todo registro gravado a uma **allow-list `allowed_classes` fail-closed** antes
+de reconstruir qualquer coisa, então um registro adulterado nunca executa um gadget de object
+injection (`__wakeup`/`__destruct`) enquanto está sendo lido. Rejeitar o valor depois não é
+defesa — a essa altura o gadget já rodou. `shared` e `apcu` decodificam sob a mesma lista, mas
+só *depois* de a extensão do PHP ter reconstruído o registro — veja a ressalva abaixo.
 
 Por padrão nada é reconstruído além do próprio wrapper de registro `Cache\Item` do driver File.
 Cachear um objeto significa declarar a classe dele:
@@ -318,12 +319,17 @@ Enums são a única exceção: o PHP os restaura fora do `allowed_classes`, ent�
 volta sem precisar ser declarado. Um enum não pode ter destructor, então nenhum deles é um
 gadget.
 
-Os quatro drivers que persistem aplicam a lista **antes** de qualquer reconstrução — `file` e
-`redis` protegem uma chamada a `unserialize()` diretamente; `shared` e `apcu` guardam os
-registros como strings opacas e as decodificam em PHP sob a mesma allow-list, já que
-`shm_get_var()` e `apcu_fetch()` não aceitam opção nenhuma e, sem isso, reconstruiriam o que
-quer que o store guardasse antes de qualquer código do driver poder recusar. O `memory` não
-precisa de lista: guarda valores vivos no heap do processo e nunca serializa.
+`file` e `redis` aplicam a lista **antes** de qualquer reconstrução: protegem uma chamada a
+`unserialize()` diretamente. `shared` e `apcu` guardam os registros do Bootgly como strings
+opacas e as decodificam em PHP sob a mesma allow-list — mas `shm_get_var()` e `apcu_fetch()`
+não aceitam opção nenhuma e reconstroem o que quer que o store guarde **antes** de qualquer
+código do driver rodar. Nesses dois drivers a lista barra, portanto, um *registro* adulterado,
+não um *objeto* plantado: um processo que consiga gravar no segmento SysV ou no pool do APCu
+faz o leitor disparar um `__wakeup`/`__destruct` à escolha dele. É uma limitação conhecida das
+duas extensões, não algo que o driver consiga recusar; a única contenção é a própria fronteira
+— as permissões `0600` do segmento e quem consegue executar no pool do APCu — e é por isso que
+o handler de Session usa `file` por padrão. O `memory` não precisa de lista: guarda valores
+vivos no heap do processo e nunca serializa.
 
 Como `shared` e `apcu` agora gravam strings opacas, as escritas do *próprio* Bootgly também
 nunca carregam um grafo de objetos. O primeiro processo que anexa um segmento escrito por um
@@ -335,7 +341,9 @@ mais.
 > Trate o segmento SysV e o store do APCu como qualquer outro recurso compartilhado: mantenha
 > `permissions` em `0600`, não abra o segmento para o grupo, e lembre que a memória do APCu é
 > compartilhada por toda aplicação no mesmo pool PHP. Uma aplicação que não pode compartilhar
-> identidade de cache com vizinhas ainda deve preferir `file` ou `redis`.
+> identidade de cache com vizinhas ainda deve preferir `file` ou `redis` — assim como qualquer
+> host em que código que você não controla roda como o mesmo usuário, já que esse usuário
+> consegue gravar nos dois stores.
 
 ## Referência
 
