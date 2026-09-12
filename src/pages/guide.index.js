@@ -1023,5 +1023,30 @@ export default {
         title: 'Segurança'
       }
     }
+  },
+  '/versioning': {
+    config: {
+      icon: 'new_releases',
+      status: 'draft',
+      meta: {
+        description: {
+          'en-US': 'The compatibility promise behind a Bootgly version number — what a minor or a patch may change, the deprecation policy and how long a release is supported.',
+          'pt-BR': 'A promessa de compatibilidade por trás de um número de versão do Bootgly — o que uma minor ou uma patch pode mudar, a política de descontinuação e por quanto tempo uma release é suportada.'
+        }
+      },
+      book: 'guide',
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Versioning'
+      },
+      'pt-BR': {
+        title: 'Versionamento'
+      }
+    }
   }
 }

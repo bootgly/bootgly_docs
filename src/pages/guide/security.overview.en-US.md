@@ -4,12 +4,18 @@ This page is for security researchers and engineers auditing Bootgly. It tells y
 report, what is in scope, how to get a target running, and — most usefully — how to turn a
 suspected issue into a reproducible PoC inside the framework's own test runner.
 
-If you only need the reporting address: **cybersec@bootgly.com**, private, no public issue.
+If you only need the channel: [GitHub private vulnerability reporting](https://github.com/bootgly/bootgly/security/advisories/new)
+or **cybersec@bootgly.com** — private, no public issue.
 
 ## Report a vulnerability
 
-Send suspected vulnerabilities to **cybersec@bootgly.com**. Do not open a public GitHub issue
-for anything exploitable.
+Send suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/bootgly/bootgly/security/advisories/new)
+(the same form exists on every `bootgly/*` repository — use the one the issue belongs to) or to
+**cybersec@bootgly.com**. Do not open a public GitHub issue for anything exploitable.
+
+Security fixes ship as patch releases of the **latest `1.x` minor** only — there are no
+backports to older minors (see the [Versioning guide](/guide/versioning/overview/)). Check that
+the issue reproduces on the latest release before reporting.
 
 Include:
 
@@ -209,11 +215,13 @@ is no rate limit" or "chunked bodies are unbounded" will already be covered.
 ### Reporting
 
 ```text
+https://github.com/bootgly/bootgly/security/advisories/new
 cybersec@bootgly.com
 ```
 
-Private disclosure address. Acknowledged within 48 hours; coordinated disclosure at fix
-release or 90 days, whichever is first.
+Private disclosure channels — GitHub private vulnerability reporting on the affected repository,
+or e-mail. Acknowledged within 48 hours; coordinated disclosure at fix release or 90 days,
+whichever is first. Fixes land on the latest `1.x` minor as patch releases.
 
 ### Running the security suite
 

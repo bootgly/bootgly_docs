@@ -4,12 +4,18 @@ Esta página é para pesquisadores de segurança e engenheiros auditando o Bootg
 reportar, o que está no escopo, como colocar um alvo no ar e — o mais útil — como transformar
 um problema suspeito em uma PoC reproduzível dentro do próprio runner de testes do framework.
 
-Se você só precisa do endereço: **cybersec@bootgly.com**, privado, sem issue pública.
+Se você só precisa do canal: [report privado de vulnerabilidade no GitHub](https://github.com/bootgly/bootgly/security/advisories/new)
+ou **cybersec@bootgly.com** — privado, sem issue pública.
 
 ## Reportar uma vulnerabilidade
 
-Envie vulnerabilidades suspeitas para **cybersec@bootgly.com**. Não abra issue pública no
-GitHub para nada explorável.
+Envie vulnerabilidades suspeitas pelo [report privado de vulnerabilidade no GitHub](https://github.com/bootgly/bootgly/security/advisories/new)
+(o mesmo formulário existe em todo repositório `bootgly/*` — use o do repositório a que o problema
+pertence) ou para **cybersec@bootgly.com**. Não abra issue pública no GitHub para nada explorável.
+
+As correções de segurança saem como patches da **minor `1.x` mais recente** apenas — não há
+backports para minors anteriores (veja o [guia de Versionamento](/guide/versioning/overview/)).
+Confira se o problema reproduz na release mais recente antes de reportar.
 
 Inclua:
 
@@ -212,11 +218,13 @@ há rate limit" ou "corpos chunked são ilimitados" já está coberto.
 ### Reporte
 
 ```text
+https://github.com/bootgly/bootgly/security/advisories/new
 cybersec@bootgly.com
 ```
 
-Endereço de divulgação privada. Confirmado em até 48 horas; divulgação coordenada na publicação
-do fix ou em 90 dias, o que vier primeiro.
+Canais de divulgação privada — report privado de vulnerabilidade no GitHub, no repositório
+afetado, ou e-mail. Confirmado em até 48 horas; divulgação coordenada na publicação do fix ou em
+90 dias, o que vier primeiro. As correções saem na minor `1.x` mais recente como patches.
 
 ### Rodar a suite de segurança
 
