@@ -63,8 +63,12 @@ O plugin `ed25519` do MariaDB não é suportado — a operação falha com mensa
 
 A config `secure.mode` controla o TLS exatamente como no driver PostgreSQL: `disable`,
 `prefer` (cai para plaintext quando o servidor não tem SSL), `require`, `verify-ca` e
-`verify-full`. Para servidores com certificados self-signed, desabilite a verificação de
-peer explicitamente:
+`verify-full`. Todo modo exceto `disable` verifica a cadeia do certificado e o nome do peer
+(`verify-ca` verifica só a cadeia — nunca o nome do peer — e `verify-full` sempre verifica os
+dois); com `cafile` ausente, vale o trust store padrão do OpenSSL (`openssl.cafile`,
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), então fixe `cafile` para uma CA privada — um `cafile` que não
+é um arquivo legível falha a conexão antes de qualquer byte ser enviado. Para servidores com
+certificados self-signed, desabilite a verificação de peer explicitamente:
 
 ```php
 $Database = new SQL([

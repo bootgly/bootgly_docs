@@ -30,7 +30,12 @@ As operações são assíncronas: `query()` retorna uma `Operation` pendente con
 Métodos de autenticação suportados: **cleartext**, **MD5** e **SCRAM-SHA-256** (channel
 binding não é negociado). O TLS é negociado via `SSLRequest` e controlado por
 `secure.mode`: `disable`, `prefer` (cai para plaintext quando recusado), `require`,
-`verify-ca` e `verify-full` — com `peer` e `cafile` para pinning de certificado.
+`verify-ca` e `verify-full` — com `peer` e `cafile` para pinning de certificado. Todo modo
+exceto `disable` verifica a cadeia do certificado e o nome do peer, a menos que `verify`/`name`
+sejam `false`; `verify-ca` verifica só a cadeia — nunca o nome do peer — e `verify-full`
+sempre verifica os dois. Com `cafile` ausente, vale o trust store padrão do OpenSSL (`openssl.cafile`,
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), então fixe `cafile` para uma CA privada; um `cafile` que não é
+um arquivo legível falha a conexão antes de qualquer byte ser enviado.
 
 ## Prepared statements
 

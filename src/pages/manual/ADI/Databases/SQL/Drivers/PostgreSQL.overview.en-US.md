@@ -30,7 +30,13 @@ or by the Fiber scheduler under the HTTP server.
 Supported authentication methods: **cleartext**, **MD5** and **SCRAM-SHA-256** (channel
 binding is not negotiated). TLS is negotiated through `SSLRequest` and controlled by
 `secure.mode`: `disable`, `prefer` (fall back to plaintext when refused), `require`,
-`verify-ca` and `verify-full` — with `peer` and `cafile` for certificate pinning.
+`verify-ca` and `verify-full` — with `peer` and `cafile` for certificate pinning. Every mode
+but `disable` verifies the certificate chain and peer name unless `verify`/`name` are `false`;
+`verify-ca` checks the chain only — it never checks the peer name — and `verify-full` always
+checks both.
+With `cafile` absent, OpenSSL's default trust store applies (`openssl.cafile`,
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA; a `cafile` that is not a
+readable file fails the connection before any byte is sent.
 
 ## Prepared statements
 

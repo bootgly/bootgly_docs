@@ -285,9 +285,17 @@ return new Config(scope: 'kv')
 remoto, defina `KV_SSLMODE=verify-full`, mantenha `KV_SSLVERIFY=true` e forneça
 `KV_SSLPEER`/`KV_SSLCAFILE` ao usar uma CA interna. Modos strict (`require`, `verify-ca`,
 `verify-full`) concluem TLS antes que `AUTH`, `SELECT` ou um comando da aplicação seja criado
-no wire. `prefer` tenta TLS primeiro, mas pode reconectar em plaintext; `disable` é plaintext
-explícito. Mantenha `KV_PASS` no ambiente do processo ou em secret de runtime, nunca em `.env`
-commitado.
+no wire. `prefer` tenta TLS primeiro e só reconecta em plaintext quando o peer o recusa
+**explicitamente** (reseta ou fecha a conexão durante o handshake TLS, ou responde bytes que não
+são TLS) — nunca por falha de certificado, e nunca por silêncio: um peer que não respondeu
+dentro do budget de handshake (1 s, ou metade de `KV_TIMEOUT`) falha o comando nomeando
+`disable`, porque um Redis plaintext nunca responde a um ClientHello e não se distingue de um
+servidor TLS apenas atrasado. O budget é só do `prefer` — os modos strict esperam o ServerHello
+até `KV_TIMEOUT`. Um Redis plaintext é, portanto, declarado com `KV_SSLMODE=disable`
+— o padrão desta config — em vez de descoberto, e não paga budget de handshake algum. Com
+`KV_SSLCAFILE` ausente, vale o trust store padrão do OpenSSL (`openssl.cafile`,
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), então defina-o sempre que a CA for privada. Mantenha `KV_PASS`
+no ambiente do processo ou em secret de runtime, nunca em `.env` commitado.
 
 `KV::provide()` lança exceção quando o escopo está desabilitado (`KV_ENABLED=false`) ou o contexto
 não é um `Response`. O resource é criado de forma lazy na primeira leitura de `$Response->KV` pela

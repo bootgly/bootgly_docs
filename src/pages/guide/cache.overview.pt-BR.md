@@ -237,7 +237,7 @@ $KV = new KV([
    'driver' => 'redis',
    'host' => '127.0.0.1',
    'port' => 6379,
-   'secure' => ['mode' => 'disable'], // plaintext local explícito
+   'secure' => ['mode' => 'disable'], // um Redis plaintext é declarado, nunca inferido
 ]);
 
 $KV->await($KV->command('SET', ['user:42', 'value']));
@@ -252,12 +252,30 @@ Em scripts CLI você pode `await()` diretamente pelo pool. Em rotas `HTTP_Server
 partir de `$Response->defer()` como qualquer outro recurso assíncrono, para que o código da rota
 nunca chame `advance()` manualmente.
 
+Desde a 1.0.0-rc.2, o padrão `prefer` nunca faz downgrade para plaintext diante de um peer que
+fica em silêncio: um Redis plaintext não declarado — sem `'secure' => ['mode' => 'disable']` na
+config — agora custa o budget de handshake (1 s, ou metade do `timeout`) a cada nova conexão e
+falha toda operação até ser declarado, onde as releases anteriores caíam silenciosamente em
+plaintext. É uma mudança incompatível (breaking) para deployments que dependiam dessa queda.
+
 > [!NOTE]
 > O driver assíncrono faz pipeline de comandos em cada conexão do pool. `AUTH`/`SELECT` são
 > enviados uma vez como preâmbulo; `SELECT` só dispara para um índice `database` numérico.
-> Redis usa TLS implícito: `prefer` tenta TLS primeiro e só reconecta em plaintext se a
-> negociação falhar, enquanto `require`, `verify-ca` e `verify-full` nunca enviam RESP —
-> inclusive `AUTH` — antes de um handshake bem-sucedido. `disable` é plaintext explícito.
+> Redis usa TLS implícito: `prefer` tenta TLS primeiro e só reconecta em plaintext quando o
+> peer o recusa **explicitamente**, enquanto `require`, `verify-ca` e `verify-full` nunca
+> enviam RESP — inclusive `AUTH` — antes de um handshake bem-sucedido. `disable` é plaintext
+> explícito — e o único modo que alcança um Redis plaintext, que nunca responde a um
+> ClientHello (veja o aviso abaixo).
+
+Todo modo exceto `disable` verifica a cadeia do certificado do servidor e o seu nome por
+padrão (`verify => false` e `name => false` desligam; `verify-ca` verifica só a cadeia e
+`verify-full` sempre verifica os dois). Com `cafile` ausente, vale o trust store padrão do
+OpenSSL — as diretivas ini `openssl.cafile`/`openssl.capath`, ou `SSL_CERT_FILE`/`SSL_CERT_DIR`
+quando definidas — então fixe `cafile` sempre que a CA for privada. Um `cafile` que não pode ser
+lido falha a conexão antes de o socket existir, e um que pode ser lido mas não contém certificado
+válido (ou um `openssl.cafile` que não contém) falha o handshake antes de qualquer ClientHello
+ser enviado, com o diagnóstico do OpenSSL nomeando o arquivo — seja o que for que
+`error_reporting()` mascare. Nenhum dos dois cai no store padrão, nem em plaintext.
 
 Use um modo strict em deployment remoto. `verify-full` valida a cadeia do certificado e o
 nome do peer; `cafile` seleciona um bundle de CA privado e `peer` sobrescreve a identidade
@@ -279,8 +297,32 @@ $KV = new KV([
 ```
 
 > [!WARNING]
-> `prefer` permite downgrade deliberadamente depois de uma geração TLS falhar. Use `require`,
-> `verify-ca` ou `verify-full` sempre que plaintext não for aceitável.
+> `prefer` garante uma coisa: só faz downgrade para plaintext diante de uma **recusa
+> explícita** — o peer resetou ou fechou a conexão durante o handshake TLS (RST ou FIN — no
+> ClientHello ou depois de um ServerHello parcial, tanto faz) ou respondeu com bytes que não
+> são TLS. **Silêncio não é recusa.** Um peer que não respondeu dentro do budget de
+> handshake (1 s, ou metade do `timeout`) falha a operação com `Redis TLS handshake timed out:
+> the peer did not answer the TLS handshake within 1s — set secure.mode => 'disable' for a
+> plaintext Redis`, porque um servidor TLS cujo ServerHello atrasa — uma retransmissão, um
+> terminador TLS sobrecarregado — é indistinguível de um Redis plaintext, que guarda o
+> ClientHello no query buffer e nunca responde; fazer downgrade ali enviaria as credenciais em
+> plaintext a um servidor que fala TLS, numa conexão que o pool depois reutiliza. O budget é só
+> do `prefer`: `require`, `verify-ca` e `verify-full` esperam o ServerHello até o `timeout` da
+> operação — silêncio nunca faz downgrade ali, então um peer silencioso os falha com o erro
+> comum `Database operation timed out`, e um servidor TLS que responde tarde ainda conclui o
+> handshake. Por isso um Redis plaintext é **declarado**, com
+> `'secure' => ['mode' => 'disable']` (`KV_SSLMODE=disable` no resource `KV`), nunca
+> descoberto: com o padrão `prefer` ele falha no budget a cada nova conexão em vez de
+> responder. Plaintext declarado também não custa nada — nenhuma tentativa de handshake,
+> nenhum budget por conexão. `prefer` tampouco faz downgrade por certificado não
+> confiável, nome de peer divergente, alerta TLS ou erro local como um `cafile` que o OpenSSL
+> não consegue carregar: esses falham a operação. O que `prefer` **não** garante é criptografia
+> — um peer que recusa TLS, ou um atacante capaz de resetar a primeira conexão, recebe as
+> credenciais em plaintext na segunda; o driver Redis ligado à operação (`$Operation->Protocol`)
+> guarda a recusa que motivou o downgrade na propriedade `downgrade` — e esse registro é o único
+> rastro: nada é logado, porque a camada de banco de dados não tem logger, então um downgrade
+> que ninguém lê ali passa despercebido. Use `require`, `verify-ca` ou `verify-full` sempre que
+> plaintext não for aceitável.
 
 ## Segurança
 
