@@ -49,7 +49,7 @@ $Response->Header->get('Content-Type'); // 'application/json'
 $Response->Header->get('content-type'); // 'application/json'
 
 // @ Obter todos os valores de um header multi-valor (ex: Set-Cookie)
-$Response->Header->getAll('Set-Cookie');
+$Response->Header->collect('Set-Cookie');
 // ['session=abc; Path=/', 'theme=dark; Path=/']
 ```
 
@@ -57,8 +57,8 @@ $Response->Header->getAll('Set-Cookie');
 
 | Método | Assinatura | Descrição |
 |---|---|---|
-| `get` | `get(string $name): ?string` | Obtém o valor de um header. Retorna string concatenada por vírgula para headers multi-valor. Case-insensitive. |
-| `getAll` | `getAll(string $name): array` | Obtém todos os valores de um header como array. Use para headers como `Set-Cookie` que não devem ser combinados. |
+| `get` | `get (string $name): null\|string` | Obtém o valor de um header. Retorna string concatenada por vírgula para headers multi-valor. Case-insensitive. |
+| `collect` | `collect (string $name): array` | Obtém todos os valores de um header como array. Use para headers como `Set-Cookie` que não devem ser combinados. |
 
 ### Headers multi-valor
 
@@ -72,7 +72,7 @@ Headers que aparecem múltiplas vezes na resposta (ex: `Set-Cookie`) são armaze
 $Response->Header->get('Set-Cookie');
 // 'session=abc; Path=/, theme=dark; Path=/'
 
-$Response->Header->getAll('Set-Cookie');
+$Response->Header->collect('Set-Cookie');
 // ['session=abc; Path=/', 'theme=dark; Path=/']
 ```
 

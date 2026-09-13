@@ -34,6 +34,6 @@ Each command maps to a real file under [`projects/Demo/CLI/`](https://github.com
 - **Writing** — paced, typewriter-style output via `Output->writing()`.
 - **Text** — the `Text` escape helpers for colors and font styles (styling and modifying variations live in the [Text showcase](/manual/CLI/Terminal/Output/Text/showcase)).
 - **Cursor** — cursor movements orchestrating dynamic layouts (shaping and visualizing variations live in the [Cursor showcase](/manual/CLI/Terminal/Output/Cursor/showcase)).
-- **Viewport** — the screen panning down and up via `Viewport->panDown()`/`panUp()`, one scroll escape per step.
+- **Viewport** — the screen panning down and up via `Viewport->down()`/`up()`, one scroll escape per step.
 
 Component deep-dives live in the per-component pages under **CLI → UI**, **CLI → UX** and **CLI → Terminal**, several of which embed their own live terminals.

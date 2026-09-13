@@ -34,6 +34,6 @@ Cada comando mapeia para um arquivo real em [`projects/Demo/CLI/`](https://githu
 - **Writing** — saída ritmada, estilo máquina de escrever, via `Output->writing()`.
 - **Texto** — os helpers de escape `Text` para cores e estilos de fonte (variações de estilos e modificação vivem no [showcase do Text](/manual/CLI/Terminal/Output/Text/showcase)).
 - **Cursor** — movimentos de cursor orquestrando layouts dinâmicos (variações de forma e visibilidade vivem no [showcase do Cursor](/manual/CLI/Terminal/Output/Cursor/showcase)).
-- **Viewport** — a tela deslocando para baixo e para cima via `Viewport->panDown()`/`panUp()`, um escape de scroll por passo.
+- **Viewport** — a tela deslocando para baixo e para cima via `Viewport->down()`/`up()`, um escape de scroll por passo.
 
 Os aprofundamentos por componente vivem nas páginas em **CLI → UI**, **CLI → UX** e **CLI → Terminal**, várias das quais embutem seus próprios terminais ao vivo.

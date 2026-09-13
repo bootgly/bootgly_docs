@@ -49,7 +49,7 @@ Moves the cursor to the left the specified number of columns.
 ### Absolute movements
 
 ```php
-moveTo (? int $line = null, ? int $column = null) : self
+place (null|int $line = null, null|int $column = null) : Output
 ```
 
 Moves the cursor to an absolute position on the terminal screen. If only the line is informed, the cursor moves only on this line. If only the column is informed, the cursor moves only on this column. If both are informed, the cursor moves to the specified coordinate.

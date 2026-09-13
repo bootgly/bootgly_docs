@@ -19,7 +19,7 @@ There are no additional settings for this class.
 ### Panorama down
 
 ```php
-panDown (int $lines = null) : Output
+down (null|int $lines = null) : Output
 ```
 
 Used to scroll down to the Terminal window.
@@ -27,13 +27,13 @@ Used to scroll down to the Terminal window.
 Example:
 
 ```php
-$Viewport->panDown(lines: 5);
+$Viewport->down(lines: 5);
 ```
 
 ### Panorama up
 
 ```php
-panUp (int $lines = null) : Output
+up (null|int $lines = null) : Output
 ```
 
 Used to scroll up to Terminal window.
@@ -41,7 +41,7 @@ Used to scroll up to Terminal window.
 Example:
 
 ```php
-$Viewport->panUp(lines: 3);
+$Viewport->up(lines: 3);
 ```
 
 **Notes:**

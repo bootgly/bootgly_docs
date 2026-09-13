@@ -25,7 +25,7 @@ $gutter = Escaped::render('@#Black:│@;') . '  ';
 $Output->write("Host\n");
 $Output->write(str_repeat("{$gutter}\n", 4));
 $Output->Cursor->up(3, column: 1);
-$Output->Cursor->moveTo(column: 4);
+$Output->Cursor->place(column: 4);
 
 // @ A região compartilha o stream do hospedeiro — 3 colunas de gutter
 $Region = new Region($Output->stream, $gutter, 3);
@@ -57,7 +57,7 @@ Host
 O editor emoldurado mostra apenas o que foi digitado — o `default` nunca aparece
 na linha; ele é o que o `ask()` devolve quando a resposta volta vazia.
 
-A primeira linha é responsabilidade do hospedeiro: a região injeta o gutter **após** cada quebra de linha, nunca antes do primeiro byte. Então o hospedeiro pinta a linha onde o componente começa e deixa o cursor na coluna da região (`moveTo(column: 4)` acima) — da primeira `\n` em diante, as linhas são da região.
+A primeira linha é responsabilidade do hospedeiro: a região injeta o gutter **após** cada quebra de linha, nunca antes do primeiro byte. Então o hospedeiro pinta a linha onde o componente começa e deixa o cursor na coluna da região (`place(column: 4)` acima) — da primeira `\n` em diante, as linhas são da região.
 
 ## O que é traduzido
 

@@ -25,7 +25,7 @@ $gutter = Escaped::render('@#Black:│@;') . '  ';
 $Output->write("Host\n");
 $Output->write(str_repeat("{$gutter}\n", 4));
 $Output->Cursor->up(3, column: 1);
-$Output->Cursor->moveTo(column: 4);
+$Output->Cursor->place(column: 4);
 
 // @ The region shares the host stream — 3 columns of gutter
 $Region = new Region($Output->stream, $gutter, 3);
@@ -57,7 +57,7 @@ Host
 The framed editor shows only what was typed — the `default` never appears on the
 line; it is what `ask()` returns when the answer comes back empty.
 
-The first row is the host's job: the region injects the gutter **after** each line break, never before the first byte. So the host paints the row the component starts on and leaves the cursor at the region column (`moveTo(column: 4)` above) — every row from the first `\n` onwards is the region's.
+The first row is the host's job: the region injects the gutter **after** each line break, never before the first byte. So the host paints the row the component starts on and leaves the cursor at the region column (`place(column: 4)` above) — every row from the first `\n` onwards is the region's.
 
 ## What gets translated
 

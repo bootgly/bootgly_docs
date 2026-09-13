@@ -48,9 +48,9 @@ $Cursor->left(columns: 5); // Moves the cursor five columns to the left
 Examples:
 
 ```php
-$Cursor->moveTo(line: 5);             // Moves the cursor to line 5
-$Cursor->moveTo(column: 10);          // Moves the cursor to column 10
-$Cursor->moveTo(line: 5, column: 10); // Moves the cursor to coordinate (5, 10)
+$Cursor->place(line: 5);             // Moves the cursor to line 5
+$Cursor->place(column: 10);          // Moves the cursor to column 10
+$Cursor->place(line: 5, column: 10); // Moves the cursor to coordinate (5, 10)
 ```
 
 ## Memorizing positions

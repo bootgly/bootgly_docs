@@ -23,7 +23,7 @@ Esta classe não possui configurações adicionais.
 ### Panorâmica para baixo
 
 ```php
-panDown (int $lines = null) : Output
+down (null|int $lines = null) : Output
 ```
 
 Método utilizado para rolar a tela do Terminal para baixo.
@@ -31,13 +31,13 @@ Método utilizado para rolar a tela do Terminal para baixo.
 Exemplo:
 
 ```php
-$Viewport->panDown(lines: 5);
+$Viewport->down(lines: 5);
 ```
 
 ### Panorâmica para cima
 
 ```php
-panUp (int $lines = null) : Output
+up (null|int $lines = null) : Output
 ```
 
 Método utilizado para rolar a tela do Terminal para cima.
@@ -45,7 +45,7 @@ Método utilizado para rolar a tela do Terminal para cima.
 Exemplo:
 
 ```php
-$Viewport->panUp(lines: 3);
+$Viewport->up(lines: 3);
 ```
 
 **Observações:**

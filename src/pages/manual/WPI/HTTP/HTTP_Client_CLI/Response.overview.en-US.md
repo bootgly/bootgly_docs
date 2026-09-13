@@ -49,7 +49,7 @@ $Response->Header->get('Content-Type'); // 'application/json'
 $Response->Header->get('content-type'); // 'application/json'
 
 // @ Get all values for a multi-value header (e.g. Set-Cookie)
-$Response->Header->getAll('Set-Cookie');
+$Response->Header->collect('Set-Cookie');
 // ['session=abc; Path=/', 'theme=dark; Path=/']
 ```
 
@@ -57,8 +57,8 @@ $Response->Header->getAll('Set-Cookie');
 
 | Method | Signature | Description |
 |---|---|---|
-| `get` | `get(string $name): ?string` | Get a header value. Returns comma-joined string for multi-value headers. Case-insensitive. |
-| `getAll` | `getAll(string $name): array` | Get all values for a header as an array. Use for headers like `Set-Cookie` that should not be combined. |
+| `get` | `get (string $name): null\|string` | Get a header value. Returns comma-joined string for multi-value headers. Case-insensitive. |
+| `collect` | `collect (string $name): array` | Get all values for a header as an array. Use for headers like `Set-Cookie` that should not be combined. |
 
 ### Multi-value headers
 
@@ -72,7 +72,7 @@ Headers that appear multiple times in the response (e.g. `Set-Cookie`) are store
 $Response->Header->get('Set-Cookie');
 // 'session=abc; Path=/, theme=dark; Path=/'
 
-$Response->Header->getAll('Set-Cookie');
+$Response->Header->collect('Set-Cookie');
 // ['session=abc; Path=/', 'theme=dark; Path=/']
 ```
 

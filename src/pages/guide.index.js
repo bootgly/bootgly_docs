@@ -651,8 +651,8 @@ export default {
       status: 'draft',
       meta: {
         description: {
-          'en-US': 'Lint and auto-fix your use statements — missing imports, unused imports, backslash prefixes and ordering, with a deliberately conservative unused check.',
-          'pt-BR': 'Linte e corrija automaticamente seus use statements — imports faltando, imports não usados, prefixos de barra e ordenação, com uma checagem de não-usado deliberadamente conservadora.'
+          'en-US': 'Lint your code against Bootgly\'s style in four submodules — use statements and nullable shorthands (auto-fixable), constructor promotion and camelCase method names (check-only) — with a JSON report for agents.',
+          'pt-BR': 'Linte o seu código contra o estilo do Bootgly em quatro submódulos — use statements e atalhos nullable (corrigíveis), constructor promotion e métodos em camelCase (só checagem) — com relatório JSON para agentes.'
         }
       },
       book: 'guide',
