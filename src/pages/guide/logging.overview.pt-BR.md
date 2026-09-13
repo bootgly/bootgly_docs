@@ -136,6 +136,51 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 > sinks nunca é tocado (semântica `??=`). Siga qualquer modo ao vivo com
 > **[`bootgly logs -f`](/guide/logs/overview/)** — sem `tail`.
 
+> [!IMPORTANT]
+> **Um lançamento como root nunca escreve um sink de log como root.** Quando o servidor sobe
+> como root com um `user` de runtime, os sinks globais — o fallback acima, ou os que o seu
+> projeto registrou — ficam retidos a partir do momento em que o servidor é configurado — antes
+> do primeiro record que ele escreve: o root só prepara `storage/logs` (um diretório comum, entregue à identidade de runtime por inode) e
+> guarda os próprios records em memória. Logo depois de largar os privilégios, o master e cada
+> worker instalam os sinks e reproduzem o que guardaram — o master escreve o aviso primeiro; um
+> worker pode persistir os próprios records antes dele — então o arquivo nasce da identidade
+> que continua escrevendo nele e o root nunca nomeia um arquivo dentro desse diretório. Se
+> `storage/logs` for um link simbólico, o root o deixa exatamente como encontrou e não entrega
+> nada: torne o alvo gravável pela identidade de runtime você mesmo. Se o daemon sair antes de
+> conseguir largar os privilégios (usuário desconhecido, porta já ocupada), os records
+> guardados vão para o logger do sistema. O próprio sink de arquivo recusa qualquer coisa que
+> não seja um arquivo comum no destino — link simbólico, hard link, link pendurado — precisa de
+> leitura e escrita nele, e reporta cada recusa uma vez ao logger do sistema (ident `bootgly`,
+> silenciado com `BOOTGLY_ENVIRONMENT=test`) onde houver um, então um sink recusado nunca é um
+> sink mudo (o runner de testes o silencia). A fronteira: num lançamento como root, nunca logue
+> por um logger global *antes* de configurar o servidor — um record escrito ali é escrito pelo
+> root, e também um que chega a um sink empurrado em `Logger::$Sinks` *depois* de o servidor ser
+> configurado: registre todo sink antes do `configure()`. O root entrega `storage/logs` só quando
+> este lançamento o criou e ele ainda é o diretório vazio que criou — como o inode que ele
+> decidiu, nunca como um nome — e não toca em nada dentro: um `storage/logs` que já existia e não
+> é da identidade de runtime (do root de um lançamento anterior, ou de qualquer outra pessoa)
+> fica como está, o sink demotado o recusa e o aviso diz isso — torne-o da identidade de runtime
+> você mesmo. Um sink que roda como root (lançamento sem
+> `user`) só escreve sob um caminho que ninguém mais consiga desviar: todo diretório no caminho
+> precisa pertencer ao root e ser gravável por mais ninguém (um diretório sticky vale, a menos
+> que pertença à identidade de runtime, que poderia esvaziá-lo — e sem `user` nenhum, ou com
+> `user: root`, todo diretório sticky que não seja do root é recusado), e um link no caminho precisa
+> pertencer ao root; um volume de outra identidade é recusado, com o motivo no logger do
+> sistema. Dentro de um user namespace (um container rootless), um dono que o namespace não
+> mapeia aparece como a identidade de overflow (`nobody`, 65534) e conta como do root — foi o
+> host que montou aquele volume; quando o namespace mapeia essa identidade, ela é alguém, e
+> estranha. O sink anexa sob um lock consultivo (`flock`), não com o `O_APPEND` do kernel:
+> escritores que ignoram o lock — um `>>` do shell, `logrotate copytruncate` — podem se intercalar.
+> A retenção em si é um `Handlers\Memory` — um handler que guarda records em memória (limitado)
+> para reproduzir depois; é diferente do processador `Processors\Memory` acima, e um projeto pode
+> usar um seu em `Logger::$Sinks` sem confundir a retenção — só a retenção passa para o master
+> destacado; um `Handlers\Memory` seu começa vazio lá, como em qualquer outro fork. Só
+> `Logger::$Sinks` é retido: handlers
+> empurrados nos `Handlers` do próprio logger (o padrão por logger) são escritos por quem loga,
+> root inclusive. E só o `Handlers\File` reabre o arquivo a cada escrita, como quem escreve: um
+> handler que capturou um descritor enquanto o root rodava (um `Stream` aberto no `boot()`) é
+> retido e instalado como qualquer outro, mas continua escrevendo pelo descritor do root.
+
 ## Saiba de quem é o record (procedência)
 
 Todo `Record` carrega um campo `project`: o **id de pasta canônico** do projeto bootado

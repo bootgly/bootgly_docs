@@ -135,6 +135,52 @@ Where an opted-in logger's records land, per server mode:
 > touched (`??=` semantics). Follow any mode live with
 > **[`bootgly logs -f`](/guide/logs/overview/)** — no `tail` needed.
 
+> [!IMPORTANT]
+> **A root launch never writes a log sink as root.** When the server starts as root with a
+> runtime `user`, the global sinks — the fallback above, or the ones your project registered —
+> are held back from the moment the server is configured — before the first record it writes:
+> root only prepares `storage/logs`
+> (a plain directory, handed to the runtime identity by inode) and keeps its own records in
+> memory. Right after privileges are dropped, the master and each worker install the sinks and
+> replay what they held — the master writes the notice first; a worker may persist its own
+> records before it — so the file is created by the identity that keeps writing it and root
+> never names a file inside that directory. If `storage/logs` is a symbolic link, root leaves it
+> exactly as found and hands nothing over: make its target writable by the runtime identity
+> yourself. Should the daemon exit before it could drop privileges (an unknown user, a port
+> already taken), the held records go to the system logger instead. The file sink itself
+> refuses anything but a plain file at the destination — a symbolic link, a hard link, a
+> dangling link — needs read and write access to it, and reports each refusal once to the
+> system logger (ident `bootgly`, muted under `BOOTGLY_ENVIRONMENT=test`) where one listens,
+> so a refused sink is never a silent one (the test runner mutes it). The boundary: on a root
+> launch, never log through a global logger *before* the server is configured — a record
+> written then is written by root, and so is one that reaches a sink pushed onto `Logger::$Sinks`
+> *after* the server was configured: register every sink before `configure()`. Root hands
+> `storage/logs` over only when this launch created it and it is still the empty directory it
+> created — as the inode it decided on, never as a name — and touches nothing inside it: a
+> `storage/logs` that was there before and is not the runtime identity's (root's from an
+> earlier launch, or anybody else's) stays as found, the demoted sink refuses it and the notice
+> says so — make it the runtime identity's yourself. A
+> sink that runs as root (a launch without `user`) writes only under a path nobody else can
+> steer: every directory on the way must belong to root and be writable by nobody else (a
+> sticky directory is fine unless it belongs to the runtime identity, who could empty it — and
+> with no runtime `user` at all, or `user: root`, every sticky directory that is not root's is
+> refused), and
+> a link on the way must belong to root; a volume owned by another identity is refused, with
+> the reason in the system logger. Inside a user namespace (a rootless container) an owner the
+> namespace does not map shows as the overflow identity (`nobody`, 65534) and counts as root's —
+> the host mounted that volume; when the namespace does map that identity, it is somebody, and
+> foreign. The sink appends under an advisory lock (`flock`) rather than
+> the kernel's `O_APPEND`: writers that ignore the lock — a shell `>>`, `logrotate copytruncate` —
+> can interleave with it. The hold itself is a `Handlers\Memory` — a handler that keeps records
+> in memory (bounded) for a later replay; it is distinct from the `Processors\Memory` processor
+> above, and a project may use one of its own in `Logger::$Sinks` without confusing the hold —
+> only the hold is carried into the detached master; a `Handlers\Memory` of your own starts
+> empty there, like in any other fork. Only `Logger::$Sinks` is held: handlers pushed on a logger's own `Handlers` (the per-logger
+> pattern) are written by whoever logs, root included. And only `Handlers\File` re-opens its
+> file on every write, as whoever writes: a handler that captured a descriptor while root ran (a
+> `Stream` opened in `boot()`) is withheld and installed like any other, but keeps writing through
+> root's descriptor.
+
 ## Know whose record it is (provenance)
 
 Every `Record` carries a `project` field: the **canonical folder id** of the booted project
