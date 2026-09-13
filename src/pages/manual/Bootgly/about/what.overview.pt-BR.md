@@ -26,8 +26,8 @@ Cada item abaixo é código próprio — o núcleo tem **zero dependências de t
 - **Licença** — MIT;
 - **Sistema operacional** — Linux nativo; Windows e outros sistemas via Docker.
 
-> [!WARNING]
-> O Bootgly está em **beta**, estabilizando rumo à 1.0. Fixe uma versão e espere algumas mudanças de API antes do release estável — ainda não é recomendado para uso em produção.
+> [!NOTE]
+> O Bootgly é **estável**: a linha `1.x` segue o [Versionamento Semântico](https://semver.org/) — releases minor adicionam capacidades, releases patch corrigem, e nada documentado quebra antes da `2.0.0`. As correções saem no minor `1.x` mais recente; a promessa de compatibilidade completa e a janela de suporte estão no [guia de Versionamento](/guide/versioning/overview/).
 
 ## Próximos passos
 

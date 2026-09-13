@@ -26,8 +26,8 @@ Every item below is first-party code — the core has **zero third-party runtime
 - **License** — MIT;
 - **Operating system** — Linux native; Windows and other systems via Docker.
 
-> [!WARNING]
-> Bootgly is in **beta**, stabilizing toward 1.0. Pin a version and expect some API changes before the stable release — it is not yet recommended for production use.
+> [!NOTE]
+> Bootgly is **stable**: the `1.x` line follows [Semantic Versioning](https://semver.org/) — minor releases add capabilities, patch releases repair, and nothing documented breaks before `2.0.0`. Fixes land on the latest `1.x` minor; the full compatibility promise and the support window are in the [Versioning guide](/guide/versioning/overview/).
 
 ## Next steps
 

@@ -21,28 +21,28 @@ Referência.
 > | Você rodava | Rode agora |
 > |---|---|
 > | `bootgly/bootgly:slim`, ou qualquer tag de versão pura | `bootgly/bootgly.kit` |
-> | `bootgly/bootgly:rc` / `:beta` | `bootgly/bootgly.kit:rc` / `:beta` |
+> | `bootgly/bootgly:rc` / `:beta` | `bootgly/bootgly.kit` (a linha estável) — ou `bootgly/bootgly.kit:rc` / `:beta` para continuar acompanhando pre-releases |
 > | `bootgly/bootgly:full` | `bootgly/bootgly` (framework + suítes) ou `bootgly/bootgly_benchmarks` |
 > | `FROM bootgly/bootgly:<versão>` numa imagem sua | não muda — é exatamente para isso que esta imagem existe |
 >
 > Tags já publicadas nunca são reescritas: a `bootgly/bootgly:1.0.0-rc.1` mantém os bytes com
 > que foi publicada, e os dois workflows de release recusam sobrescrever uma tag de versão
-> exata. O que se move são os canais — `:rc` e `:beta` acompanham a pre-release mais nova do
-> que aquele repositório publica hoje, então fixe uma versão exata se você precisa que a
-> imagem antiga fique onde está. A `:slim`, a `:full` e todas as `*-full` foram **deletadas**
-> em 2026-09-04 e não resolvem mais — um pull nelas falha de vez, em vez de entregar em
-> silêncio uma variante cujo nome dizia o oposto do conteúdo.
+> exata. O que se move são as tags móveis — a `latest`, a `1` e a `1.0` do kit acompanham a
+> linha estável, e a `:rc` / `:beta` acompanham a pre-release mais nova do que aquele
+> repositório publica hoje —, então fixe uma versão exata se você precisa que uma imagem fique
+> onde está. A `:slim`, a `:full` e todas as `*-full` foram **deletadas** em 2026-09-04 e não
+> resolvem mais — um pull nelas falha de vez, em vez de entregar em silêncio uma variante cujo
+> nome dizia o oposto do conteúdo.
 >
 > Por que os nomes de variante sumiram: em qualquer outra imagem do Docker Hub, `slim`
 > significa uma base de SO menor, não menos software — e a `slim` do Bootgly era o produto,
 > enquanto a `full` era o harness de benchmark, ou seja, os nomes diziam o oposto da verdade.
 
-> **A imagem do kit não tem `latest` enquanto o Bootgly está em pre-release** (e a imagem do
-> framework nunca terá — veja o esquema de tags). Por isso todo comando desta página nomeia o
-> canal explicitamente — `bootgly/bootgly.kit:rc` — e uma `bootgly/bootgly.kit` sem tag **não**
-> resolve hoje. Fixe uma versão exata (`bootgly/bootgly.kit:1.0.0-rc.1`) quando quiser um build
-> que nunca se move. A partir da primeira release estável, a `bootgly/bootgly.kit` pura funciona
-> e passa a ser a indicada. Veja [Esquema de tags](#esquema-de-tags).
+> **A `latest` acompanha a linha estável.** A `bootgly/bootgly.kit` pura é a
+> `bootgly/bootgly.kit:latest`, que avança a cada release estável — é ela que todo comando desta
+> página usa, e a imagem do framework nunca recebe uma (veja o esquema de tags). Fixar uma
+> versão é o que torna um deploy imutável: a `bootgly/bootgly.kit:1.0.0` nunca muda, e a
+> `bootgly/bootgly.kit:1` só se move dentro da linha 1.x. Veja [Esquema de tags](#esquema-de-tags).
 
 ## Rodar o Bootgly
 
@@ -54,7 +54,7 @@ Uma execução interativa sem argumentos abre o instalador canônico de projetos
 docker run -it --rm \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit:rc
+  bootgly/bootgly.kit
 ```
 
 É o mesmo wizard por trás do [`bootgly projects create`](/guide/getting-started) — modo de
@@ -70,9 +70,9 @@ lugar. Com Compose, defina `stdin_open: true` e `tty: true`.
 Qualquer comando explícito pula o wizard e vai direto para a CLI `bootgly`:
 
 ```bash
-docker run --rm bootgly/bootgly.kit:rc help
-docker run --rm bootgly/bootgly.kit:rc test --bootgly 102          # uma suíte do framework
-docker run --rm bootgly/bootgly.kit:rc project Demo/HTTP_Server_CLI start -f
+docker run --rm bootgly/bootgly.kit help
+docker run --rm bootgly/bootgly.kit test --bootgly 102          # uma suíte do framework
+docker run --rm bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
 ```
 
 ### Voltar ao kit
@@ -92,7 +92,7 @@ imprime a ajuda. Use uma destas formas.
 docker run -it --rm \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit:rc projects list
+  bootgly/bootgly.kit projects list
 ```
 
 **Abrir um shell dentro do kit** — o mais próximo de "entrar" nele:
@@ -101,7 +101,7 @@ docker run -it --rm \
 docker run -it --rm \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  --entrypoint bash bootgly/bootgly.kit:rc
+  --entrypoint bash bootgly/bootgly.kit
 ```
 
 Você cai em `/bootgly`, com o `bootgly` no `PATH`.
@@ -116,7 +116,7 @@ docker run -dit --name bootgly \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
   -p 8080:8080 \
-  --entrypoint bash bootgly/bootgly.kit:rc
+  --entrypoint bash bootgly/bootgly.kit
 
 docker exec -it bootgly bash     # entra, quantas vezes quiser
 docker stop bootgly              # para
@@ -137,7 +137,7 @@ dois e seus projetos, logs, PIDs e cache passam a viver no host:
 docker run --rm -it \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit:rc projects list
+  bootgly/bootgly.kit projects list
 ```
 
 Depois que o wizard rodar, isso lista seus projetos e os exemplos importados.
@@ -163,7 +163,7 @@ plano ele envia logs para o stdout e drena de forma graciosa no `SIGTERM`, que �
 
 ```bash :toolbar="true";
 docker run --rm -p 8082:8082 \
-  bootgly/bootgly.kit:rc project Demo/HTTP_Server_CLI start -f
+  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
 ```
 
 Depois, em outro terminal:
@@ -181,7 +181,7 @@ Seu próprio projeto inicia do mesmo jeito, com `projects/` montado:
 docker run --rm -p 8082:8082 \
   -v "$PWD/projects:/bootgly/projects" \
   -v "$PWD/storage:/bootgly/storage" \
-  bootgly/bootgly.kit:rc project MyApp start -f
+  bootgly/bootgly.kit project MyApp start -f
 ```
 
 Todo servidor que vem no kit lê a variável de ambiente `PORT` (com fallback para o padrão) e
@@ -189,7 +189,7 @@ escuta em `0.0.0.0`, então dá para mudar a porta sem reconstruir nada:
 
 ```bash :toolbar="true";
 docker run --rm -e PORT=9090 -p 9090:9090 \
-  bootgly/bootgly.kit:rc project Demo/HTTP_Server_CLI start -f
+  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
 ```
 
 ### Mudar de versão
@@ -197,8 +197,11 @@ docker run --rm -e PORT=9090 -p 9090:9090 \
 Dentro da imagem, um release **é** uma tag de imagem:
 
 ```bash
-docker pull bootgly/bootgly.kit:1.0.0-rc.1
+docker pull bootgly/bootgly.kit:1.0.0
 ```
+
+Baixe uma versão exata para cair em um release específico; um `docker pull bootgly/bootgly.kit`
+puro (ou `:1`) avança para a estável mais nova.
 
 Os comandos `kit upgrade`, `kit downgrade` e `kit list` recusam dentro da imagem e explicam
 por quê: a imagem entrega o *layout* do kit, não um checkout git (o build remove o `.git` de
@@ -210,8 +213,8 @@ imprime a versão que a imagem carrega.
 
 ```bash
 docker build -f Dockerfile --target kit \
-  --build-arg BOOTGLY_VERSION=1.0.0-rc.1 \
-  -t bootgly.kit:1.0.0-rc.1 .
+  --build-arg BOOTGLY_VERSION=1.0.0 \
+  -t bootgly.kit:1.0.0 .
 ```
 
 Rode a partir de um clone do repositório
@@ -223,7 +226,7 @@ entra na imagem. Para construir outro ref:
 
 ```bash
 docker build -f Dockerfile --target kit \
-  --build-arg BOOTGLY_VERSION=1.0.0-rc.1 \
+  --build-arg BOOTGLY_VERSION=1.0.0 \
   --build-arg BOOTGLY_KIT_REF=main \
   -t bootgly.kit:main .
 ```
@@ -234,11 +237,12 @@ A `bootgly/bootgly` é o framework e nada mais — o ingrediente com que você c
 for publicar sua própria imagem e não quiser as plataformas do kit nem o registro de projetos
 dele.
 
-O `<version>` abaixo é um placeholder para uma tag real, e ela precisa ser uma publicada
+O `<version>` abaixo é um placeholder para uma tag real — a `1.0.0` é a primeira publicada
 **depois** desta divisão: tudo até a `1.0.0-rc.1` é a imagem antiga, em formato de produto, e
-essas tags nunca são reescritas. Não há alias móvel para cair de volta — este repositório não
-publica `latest`, e `:rc` / `:beta` seguem apenas pre-releases. Escolha a versão em
-[a lista de tags](https://hub.docker.com/r/bootgly/bootgly/tags).
+essas tags nunca são reescritas. Este repositório não publica `latest`, então o `FROM` sempre
+nomeia uma tag: uma versão exata (`bootgly/bootgly:1.0.0`) ou o major (`bootgly/bootgly:1`),
+que acompanha a linha estável 1.x; `:rc` / `:beta` seguem apenas pre-releases. Escolha a
+versão em [a lista de tags](https://hub.docker.com/r/bootgly/bootgly/tags).
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -264,8 +268,9 @@ docker build -t myapp .
 docker run --rm -p 8082:8082 myapp
 ```
 
-Fixe uma versão exata no `FROM`; quando existir um release estável você pode fixar o major
-(`bootgly/bootgly:1`), que avança a cada release 1.x.
+Fixe uma versão exata no `FROM` (`bootgly/bootgly:1.0.0`) quando a imagem precisa se reproduzir
+byte a byte; fixe o major (`bootgly/bootgly:1`) para avançar a cada release 1.x sem mexer no
+Dockerfile.
 
 Escrever esse arquivo substitui o registro do próprio framework, então os projetos `Demo/*`
 que vêm na imagem deixam de resolver — que é exatamente o que você quer em uma imagem de
@@ -381,8 +386,9 @@ docker build -f Dockerfile \
 ```
 
 A imagem base é **obrigatória** — não há default, de propósito: a `bootgly/bootgly` não publica
-alias móvel estável, então qualquer default congelaria numa pre-release no dia em que uma stable
-saísse e passaria a medir, em silêncio, código não lançado.
+`latest`, e uma versão gravada no Dockerfile envelheceria e passaria a medir, em silêncio, um
+framework mais antigo do que o que você queria comparar. Nomear a tag é o que faz um run dizer
+contra qual Bootgly ele correu.
 
 ## Referência
 
@@ -412,10 +418,11 @@ framework sozinho — sem Console, sem Web, sem o comando `kit` —, que é exat
 esta separação existe para encerrar. A imagem do framework é sempre puxada por tag explícita.
 
 Uma pre-release **nunca** move a `latest`, nem os apelidos de major/minor — caso contrário um
-`docker pull bootgly/bootgly.kit:rc` entregaria código não lançado a todo mundo. Os apelidos de
-canal (`rc`, `beta`) são tags móveis que você escolhe usar deliberadamente. A `latest`,
-portanto, só aparece depois de um release estável; enquanto o Bootgly está em pre-release,
-baixe o apelido de canal ou uma versão exata.
+`docker pull bootgly/bootgly.kit` puro entregaria código de pre-release a todo mundo. A `latest`,
+a `1` e a `1.0` acompanham a linha estável; uma versão exata (`1.0.0`) nunca se move. Os apelidos
+de canal (`rc`, `beta`) são tags móveis que você escolhe usar deliberadamente: cada um acompanha
+a pre-release mais nova do seu tipo e fica parado quando uma estável sai — depois da `1.0.0`, a
+`:rc` continua nomeando a `1.0.0-rc.1` até a próxima release candidate ser publicada.
 
 As imagens de benchmark são tagueadas por concorrente (`:swoole`, `:bun`, …) e reconstruídas
 contra cada imagem do framework recém-publicada.

@@ -1,7 +1,5 @@
 # Bootgly Framework Documentation
 
-> Documentation under construction.
-
 The official documentation of [Bootgly PHP Framework](https://github.com/bootgly/bootgly-php-framework/) is maintained by [Rodrigo Vieira](https://github.com/rodrigoslayertech/).
 
 ## Quick Links

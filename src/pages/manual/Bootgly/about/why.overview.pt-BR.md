@@ -45,7 +45,7 @@ Mesmo hardware, mesma data, scripts reproduzíveis — leia a metodologia antes 
 Honestidade faz parte da aposta. Escolher construir tudo como código próprio tem custos reais:
 
 - **Features demoram mais para sair** — construir um componente nativo é mais lento do que plugar um pacote de terceiro, então o roadmap avança deliberadamente;
-- **Status beta** — o Bootgly é pré-1.0: a API pública ainda está sendo finalizada, e o uso em produção ainda não é recomendado;
+- **Suporte contínuo** — a `1.0` não é uma linha de suporte de longo prazo: as correções saem apenas no minor `1.x` mais recente, então manter-se atualizado faz parte do acordo (veja [Versionamento](/guide/versioning/overview/));
 - **Linux nativo** — Windows e outros sistemas são suportados apenas via Docker;
 - **Ecossistema jovem** — não existe um marketplace de pacotes da comunidade; o que o núcleo não traz, você constrói.
 
