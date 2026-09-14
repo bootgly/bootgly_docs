@@ -29,7 +29,7 @@ Configs aceita **apenas named arguments**: um `new HTTP_Server_CLI\Configs('0.0.
 posicional levanta um `TypeError`.
 
 Na plataforma Web (`Web\App`) ele vem **ligado por default** em `/health` — passe
-`health: null` ao `configure()` para desativar.
+`health: null` no `Web\App\Configs` entregue ao `configure()` para desativar.
 
 ```bash
 curl -s http://127.0.0.1:8080/health

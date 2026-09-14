@@ -10,6 +10,7 @@ A closure `boot` do projeto constrói e inicia o App:
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Web\App;
+use Web\App\Configs;
 
 
 return new Project(
@@ -20,7 +21,7 @@ return new Project(
       $App = new App(Mode: Modes::Daemon);
 
       $App
-         ->configure(port: 8080, workers: 1)
+         ->configure(new Configs(port: 8080, workers: 1))
          ->load(__DIR__ . '/router')
          ->start();
    }
@@ -29,21 +30,37 @@ return new Project(
 
 `load()` lê a pasta de router padrão (`router/router.index.php` + `router/routes/<Name>.routes.php`) — a mesma convenção de qualquer projeto WPI. `start()` conecta os eventos, aplica as convenções de views e inicializa o servidor.
 
+`configure()` recebe **Configs** — os mesmos value objects tipados que todo node WPI recebe. Um `Web\App\Configs` carrega toda opção do `HTTP_Server_CLI\Configs` subjacente (endereço de bind, workers, TLS ou Auto-TLS, privilege dropping, HTTP/2, endpoint de health, limites de conexão) com os defaults da plataforma preenchidos — `host: '0.0.0.0'`, `port: 8080`, `workers: 2`, `health: '/health'` — mais os três concerns do shell, `Middlewares`, `Resources` e `deferredTimeout`. Nada é obrigatório: `$App->configure()` sozinho inicializa com os defaults. Apenas named arguments — um `new Configs('0.0.0.0', 8080)` posicional levanta um `TypeError`.
+
+> [!WARNING]
+> **Breaking: os named parameters planos se foram.** `configure(port: 8080, middlewares: [...])` não existe mais, sem alias — o App segue os nodes WPI, que migraram para Configs tipados em `1.0.0-rc.1`. Embrulhe as mesmas opções em um `Web\App\Configs`: `middlewares:` vira `Middlewares:`, `resources:` vira `Resources:`, e `secure: new AutoTLS(...)` vira `AutoTLS: new AutoTLS(...)` (`secure:` fica só com o contexto TLS manual).
+
 Toda rota recebe a **stack de middlewares padrão**: `SecureHeaders`, `RequestId`, `BodyParser` e `CSRF`. Substitua-a por inteiro quando o projeto precisar de outra (uma API REST dispensa o CSRF, por exemplo):
 
 ```php
-$App->configure(
+$App->configure(new Configs(
    port: 8090,
-   middlewares: [
+   Middlewares: [
       new SecureHeaders,
       new RequestId,
       new BodyParser,
       new Problems  // fronteira de erros problem+json (Web\API)
    ]
-);
+));
 ```
 
-Quando o projeto inclui `configs/database/` (ou `configs/kv/`), o response resource **Database** (ou **KV**) é provido automaticamente — controllers apenas usam `$Response->Database`.
+Quando o projeto inclui `configs/database/` (ou `configs/kv/`), o response resource **Database** (ou **KV**) é provido automaticamente — controllers apenas usam `$Response->Database`. Resources extras vão em `Resources:` (nome => factory); uma entrada explícita `Database`/`KV` vence a automática.
+
+Os Configs de node que o servidor recebe por conta própria viajam na mesma chamada: `Request\Configs` (limites de body e multipart) é repassado verbatim, em qualquer ordem. Um `configure()` posterior que só carrega um Configs de node desses refina por cima do `Web\App\Configs` aplicado por último — nunca volta o transporte aos defaults da plataforma. `HTTP_Server_CLI\Configs` e `Response\Configs` são compostos pelo App a partir do seu próprio Configs — entregá-los diretamente lança `InvalidArgumentException` apontando `Web\App\Configs` como o caminho. O conjunto inteiro é validado primeiro (uma classe repetida, uma não suportada), então uma chamada rejeitada não aplica nada:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
+
+$App->configure(
+   new Configs(port: 8080, workers: 1, health: null),  // health: null desliga o endpoint embutido
+   new RequestConfigs(maxBodySize: 32 * 1024 * 1024)
+);
+```
 
 ## Controllers
 
@@ -63,7 +80,7 @@ class Posts extends Controller
    {
       $body = $Response->Database->paginate(Post::class);
 
-      return $this->render('posts/list', ['posts' => $body['items']]);
+      return $this->render('posts/list', ['Posts' => $body['items']]);
    }
 
    public function show (Request $Request, Response $Response): Response
@@ -154,10 +171,10 @@ public function __construct (Modes $Mode = Modes::Daemon)
 Cria o shell: um `HTTP_Server_CLI` no modo dado, as convenções `Views` e a stack de middlewares padrão (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`).
 
 ```php
-public function configure (string $host = '0.0.0.0', int $port = 8080, int $workers = 2, null|array $middlewares = null, null|array|AutoTLS $secure = null, null|array $resources = null, null|string $health = '/health'): self
+public function configure (Bootgly\ABI\Configs ...$Configs): self
 ```
 
-Configura o HTTP Server subjacente. `middlewares:` substitui a stack padrão por inteiro; `secure:` recebe as opções de contexto TLS — ou uma instância de `AutoTLS` para HTTPS automático via Let's Encrypt; `resources:` adiciona response resources (nome => provider) — Database/KV são providos automaticamente quando o projeto inclui suas configs; `health:` define o endpoint embutido de health-check (`null` desabilita).
+Configura o HTTP Server subjacente: no máximo um `Web\App\Configs` (nenhum aplica os defaults da plataforma) mais os Configs de node que o servidor recebe por conta própria — `Request\Configs` é repassado verbatim, em qualquer ordem. Lança `InvalidArgumentException` em uma classe de Configs repetida, em um Configs que o App não aceita, e em `HTTP_Server_CLI\Configs` ou `Response\Configs` entregues diretamente (o App os compõe a partir do seu próprio Configs). O conjunto inteiro é validado antes de qualquer aplicação.
 
 ```php
 public function load (string $path): self
@@ -170,6 +187,51 @@ public function start (): void
 ```
 
 Registra o sink global de logs, conecta os eventos da plataforma (convenções de views + stack global de middlewares no drain do primeiro request, o banner de inicialização em `Events::ServerAdvertised` — renderizado pelo processo que possui o terminal, então sobrevive ao detach do Daemon — e o banner de parada) e inicia o servidor. Lança quando nenhum router foi carregado.
+
+### Web\App\Configs
+
+```php
+public function __construct (
+   Argument $Named = Argument::Undefined,
+   null|string $host = null,                 // '0.0.0.0'
+   null|int $port = null,                    // 8080
+   null|int $workers = null,                 // 2
+   null|array $secure = null,
+   null|string $user = null,
+   null|string $group = null,
+   null|AutoTLS $AutoTLS = null,
+   null|bool $enableHTTP2 = null,
+   null|string $health = '/health',
+   null|int $maxConnections = null,
+   null|int $maxConnectionsPerIP = null,
+   null|int $connectionIdleTimeout = null,
+   null|array $Middlewares = null,
+   null|array $Resources = null,
+   null|int|float $deferredTimeout = null
+)
+```
+
+Estende `HTTP_Server_CLI\Configs`: toda opção do servidor, com os defaults da plataforma Web preenchidos (`host`, `port` e `workers` têm fallback em vez de serem obrigatórios), mais os três concerns do shell. Apenas named arguments — o primeiro slot é o guard `Bootgly\ABI\Argument`, então uma chamada posicional levanta um `TypeError`. Lança `InvalidArgumentException` no `new` quando `secure` e `AutoTLS` são dados juntos, em uma entrada de `Middlewares` que não é um `Middleware`, ou em um valor de `Resources` que não é uma Closure indexada por nome.
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `host` | `null\|string` | `null` (= `'0.0.0.0'`) | Endereço de bind. |
+| `port` | `null\|int` | `null` (= `8080`) | Porta de escuta. |
+| `workers` | `null\|int` | `null` (= `2`) | Número de processos worker forkados. |
+| `secure` | `null\|array` | `null` | Opções de stream context SSL/TLS; troca o scheme para `https://`. Mutuamente exclusivo com `AutoTLS`. |
+| `user` | `null\|string` | `null` | Nome de usuário POSIX para rebaixar o processo após o bind. |
+| `group` | `null\|string` | `null` | Nome de grupo POSIX para rebaixar o processo após o bind. |
+| `AutoTLS` | `null\|AutoTLS` | `null` | HTTPS automático via Let's Encrypt (ACME). Mutuamente exclusivo com `secure`. Veja o guia [Auto-TLS](/auto-tls). |
+| `enableHTTP2` | `null\|bool` | `null` (= habilitado) | `false` serve apenas HTTP/1.x. |
+| `health` | `null\|string` | `'/health'` | Endpoint embutido de health-check, respondido antes de qualquer middleware. `null` desabilita. |
+| `maxConnections` | `null\|int` | `null` (= `10000`) | Máximo de conexões estabelecidas por worker; `0` desabilita o limite. |
+| `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Máximo de conexões estabelecidas por IP de cliente; `0` significa ilimitado. |
+| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos de silêncio antes de uma conexão ociosa ser fechada; `0` desabilita o reaper. |
+| `Middlewares` | `null\|array<int,Middleware>` | `null` | Substitui a stack de middlewares padrão por inteiro; `null` a mantém. |
+| `Resources` | `null\|array<string,Closure>` | `null` | Response resources extras (nome => factory), mesclados com os Database/KV automáticos — entradas explícitas vencem. |
+| `deferredTimeout` | `null\|int\|float` | `null` (= default do servidor) | Segundos que uma resposta deferred pode levar antes de ser cancelada. |
+
+As opções do servidor são as mesmas do node — a semântica completa está na página do [HTTP Server](/manual/WPI/HTTP/HTTP_Server_CLI/).
 
 ### Web\App\Controller
 

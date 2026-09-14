@@ -18,6 +18,7 @@ Create a project (interface **WPI**) with the wizard, then make its `.Project.ph
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Web\App;
+use Web\App\Configs;
 
 
 return new Project(
@@ -31,7 +32,7 @@ return new Project(
       });
 
       $App
-         ->configure(port: 8080, workers: 1)
+         ->configure(new Configs(port: 8080, workers: 1))
          ->load(__DIR__ . '/router')
          ->start();
    }
@@ -68,7 +69,7 @@ class Posts extends Controller
 {
    public function list (Request $Request, Response $Response): Response
    {
-      return $this->render('posts/list', ['posts' => [/* ... */]]);
+      return $this->render('posts/list', ['Posts' => [/* ... */]]);
    }
 
    public function show (Request $Request, Response $Response): Response
@@ -93,10 +94,10 @@ You get the shell for free: SecureHeaders, RequestId, BodyParser and CSRF on eve
 Swap the stack (no CSRF; a problem+json error boundary instead) and use the REST mapping:
 
 ```php
-$App->configure(
+$App->configure(new Configs(
    port: 8090,
-   middlewares: [new SecureHeaders, new RequestId, new BodyParser, new Problems]
-);
+   Middlewares: [new SecureHeaders, new RequestId, new BodyParser, new Problems]
+));
 ```
 
 ```php

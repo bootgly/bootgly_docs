@@ -55,6 +55,7 @@ use function getenv;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Web\App;
+use Web\App\Configs;
 
 
 return new Project(
@@ -73,7 +74,7 @@ return new Project(
       });
 
       $App
-         ->configure(port: getenv('PORT') ? (int) getenv('PORT') : 8088)
+         ->configure(new Configs(port: getenv('PORT') ? (int) getenv('PORT') : 8088))
          ->load(__DIR__ . '/router')
          ->start();
    }

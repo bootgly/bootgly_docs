@@ -26,7 +26,7 @@ $Server->configure(
 That is the whole setup. The same Configs still accepts the raw SSL context array (`local_cert` / `local_pk`) in its `secure:` parameter exactly as before — `AutoTLS:` is the managed alternative, and the two are mutually exclusive: passing both throws `InvalidArgumentException` at construction. Every WPI project scaffold (and the shipped Web projects) carries an Auto-TLS block commented in its `configure()` — set your domain and uncomment. The scaffolded block ships with `staging: true`: validate the flow against the staging CA first, then flip it to `false` for the real certificate.
 
 > [!NOTE]
-> On the Web platform, `App->configure()` keeps its own flat signature and takes the very same instance in its `secure:` parameter (`secure: new AutoTLS(...)`) — it builds the server Configs for you.
+> On the Web platform, `App->configure()` takes the very same instance through its own typed Configs — `new Web\App\Configs(AutoTLS: new AutoTLS(...))` — and builds the server Configs for you.
 
 ## What happens on first boot
 
