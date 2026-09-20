@@ -114,7 +114,59 @@ Reporting follows the answer. The framework's single `Throwables::notify()` inta
 
 The boundaries are the chain the route was dispatched with, captured while the pipeline is running. A deferral started after the pipeline returned — from a `Request\Events::Handled` listener, or from a global middleware after its `$next()` — carries no route chain: only the global `SAPI::$Middlewares` pipeline is offered its failures. Work that already handed the generation off is not offered to a boundary at all: a successful `$Response->SSE->open()` and a nested `defer()` both settle the generation, so a `Throwable` raised after that handoff reaches no `recover()`, no built-in error response and no `Throwables::notify()` — the SSE client keeps the stream it was given, with no error event and no terminating chunk, and a nested child's own answer is what the client sees. Report inside the work, before the handoff, when such a failure must be visible. (A handoff made from inside `recover()` is a different case: the boundary chose it.) A nested `defer()` made from inside `recover()` inherits the chain, so a child that throws is offered to the same boundaries again — a boundary that reports through a child must not let that child throw.
 
-Headers set by a middleware **after** `$next()` do not apply to a deferred response: by then the pipeline has returned, and the response is built later, inside the work. Set them inside the work instead.
+Headers set by a middleware **after** `$next()` do not reach a deferred response on their own: by then the pipeline has returned, and the response is built later, inside the work. Set them inside the work — or implement [`Sealing`](#sealing-deferred-responses) on the same middleware so that decoration runs again at settlement.
+
+## Sealing Deferred Responses
+
+The route onion is synchronous. The code a middleware runs **after** `$next()` — a policy header, a validator, a body encoding — mutates the live `Response` as the onion unwinds, while a deferred generation answers through a private clone taken inside `defer()`, before that unwind happened. Those mutations never reach the deferred wire, so a post-`$next()` decorator is silently lost on a deferred route. (A **pre**-`$next()` mutation survives: the clone inherits it.)
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Sealing` is the missing half. A middleware that also implements it is offered the deferred `Response` at settlement, immediately before serialization, with the **real** outcome in place — final status, final headers, final body:
+
+```php
+use Closure;
+
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middleware;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Sealing;
+
+class Policy implements Middleware, Sealing
+{
+   /**
+    * @param Request $Request
+    * @param Response $Response
+    */
+   public function process (object $Request, object $Response, Closure $next): object
+   {
+      $Result = $next($Request, $Response);
+
+      // @ One pass serves both cycles: here on the unwind, in seal() at settlement
+      $this->seal($Request, $Result);
+
+      return $Result;
+   }
+
+   public function seal (Request $Request, Response $Response): void
+   {
+      // ? Idempotent: set() replaces, so sealing the same answer twice is harmless
+      $Response->Header->set('X-Policy', 'strict');
+
+      if ($Response->code >= 500) {
+         $Response->Header->set('Cache-Control', 'no-store');
+      }
+   }
+}
+```
+
+`Sealing` is a **capability, not a second door**: it deliberately does not extend `Middleware`, so the pipeline's one way in stays `implements Middleware` and a sealing middleware declares both. Parity between the two cycles stays the author's job — share the logic through a private method both call, or call `seal()` right after `$next()` as above. The shipped `ETag` and `Compression` implement `Sealing`, so a deferred route is tagged and compressed exactly like a synchronous one.
+
+**When the pass runs.** On the success path: after the work completed, before serialization, and **before** the deferred Session save point — so a Session written by a seal still persists with the generation. On the errored path it runs over the answer an error boundary or the built-in Catcher chose, so a seal always sees the status that goes on the wire, never the placeholder the onion returned with. Both passes walk in the order the synchronous unwind runs post-`$next()` code: the route's middleware snapshot **innermost first**, then the global `SAPI::$Middlewares` stack — the same visibility `Recovering` documents. A deferral started after the pipeline returned carries no route chain, so only the global stack is walked.
+
+**Mutate in place.** `seal()` returns nothing. Set headers, rewrite the body, or answer a conditional (`$Response(code: 304, ...)`) — `__invoke` mutates the same object.
+
+**Throwing.** On the success path, a throw from `seal()` skips the remaining seals and flows into the `Recovering` boundaries, exactly as a throw after `$next()` skips the outer post-code and reaches the enclosing middleware; the error answer chosen there is then offered to the sealing pass **anew** — so seal idempotently, the way `Header->set()` naturally is. On the errored path a throwing seal is contained and reported through `Throwables::notify()`: the answer already chosen is never forfeited for a decorator.
+
+**Seal synchronously.** `wait()` is not refused, but on the success path the generation's budget deadline is still armed — a parked seal is interrupted with `Response\Timeout` exactly like the work itself.
 
 ## Built-in Middlewares
 
@@ -462,7 +514,7 @@ The default failure response is `422 Unprocessable Entity` with body `{"errors":
 
 With `Sources::Headers`, rule keys match header names case-insensitively (RFC 9110) — a rule keyed `'X-API-Key'` binds to the header the client sent regardless of casing, and validation errors keep the key exactly as you wrote it. All other sources match keys case-sensitively.
 
-See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples, and the [ADI Validation](/manual/ADI/Validation/overview/) page for the full rule catalog and custom rules.
+See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples, and the [Validation guide](/guide/validation/overview/) for the full rule catalog and custom rules.
 
 **Phase:** Pre-processing — validates input before the handler runs.
 
@@ -542,3 +594,11 @@ public function recover (Request $Request, Response $Response, Throwable $Throwa
 ```
 
 Answers a `Throwable` raised by deferred work, or declines with `null`. `$Request` is the generation's captured snapshot, `$Response` the deferred clone as the work left it, `$Throwable` the failure — a `Response\Timeout` when the deferral budget elapsed. Boundaries are walked innermost first along the route's chain, then along the global pipeline last entry first; the first `Response` wins, a throwing `recover()` replaces the `Throwable` for the boundaries further out, and the server's own error response is sent when every boundary declines. Reporting follows the answer: the core's `Throwables::notify()` intake runs only when its own error response answers, so a boundary that answers owns the report. `Recovering` extends the `Middleware` contract, so `process()` keeps its synchronous role on the same class.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Sealing
+
+```php
+public function seal (Request $Request, Response $Response): void
+```
+
+Decorates the `Response` a deferred generation is about to serialize, in place — the pass exists because the post-`$next()` half of the onion never ran against the deferred clone. `$Request` is the generation's captured Request snapshot; `$Response` is the Response actually chosen for the wire (the work's, an error boundary's or the Catcher's), with its final status, headers and body. It runs at settlement, before the deferred Session save point, walking the route's middleware snapshot innermost first and then the global `SAPI::$Middlewares` stack. `seal()` returns nothing: mutate the object. On the success path a throw skips the remaining seals and reaches the `Recovering` boundaries, and the answer they choose is sealed again — so `seal()` must be idempotent; on the errored path a throw is contained and reported. `Sealing` deliberately does **not** extend `Middleware`: a sealing middleware declares `implements Middleware, Sealing`, and keeping `process()` and `seal()` in parity is the author's job.

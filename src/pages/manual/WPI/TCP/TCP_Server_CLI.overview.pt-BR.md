@@ -293,7 +293,7 @@ Na camada de conexão, o Bootgly acompanha:
 - timers de expiração por ociosidade, semeados por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — trabalho deferred pendente conta como atividade
 - verificações opcionais de blacklist
 
-Veja [`Connection`](./TCP_Server_CLI/Connection) e [`Packages`](./TCP_Server_CLI/Packages) para os detalhes de nível mais baixo.
+Veja `Connection` e `Packages` para os detalhes de nível mais baixo.
 
 ## Exemplo Completo
 

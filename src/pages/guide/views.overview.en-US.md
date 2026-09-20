@@ -1,13 +1,13 @@
 # Views
 
 On the Web side, a **view** is a project template rendered into an HTTP response. Views are
-files of the same engine described in [Templates](/templates) — `.template.php` files living
+files of the same engine described in [Templates](/guide/templates) — `.template.php` files living
 under your project `views/` directory — reached through the `View` response resource. On top of
 plain rendering, the Web layer adds a **default layout** and **content negotiation**: one
 payload served as JSON, XML or HTML depending on the request `Accept` header.
 
 > [!NOTE]
-> Everything in [Templates](/templates) (`@extends`, `@section`, `@yield`, `@include`,
+> Everything in [Templates](/guide/templates) (`@extends`, `@section`, `@yield`, `@include`,
 > `@component`, `@>>`, verbatim, the compilation cache and template-line error reporting)
 > applies to `views/*.template.php` unchanged. This page is the Web-side wiring around it.
 

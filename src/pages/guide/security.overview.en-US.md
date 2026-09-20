@@ -54,7 +54,7 @@ cd bootgly
 ```
 
 That binds an HTTP/1.1 + h2c server you can drive with raw sockets. For the TLS and AutoTLS
-surface, see the [Auto-TLS](/auto-tls) guide — `staging: true` points issuance at the Let's
+surface, see the [Auto-TLS](/guide/auto-tls) guide — `staging: true` points issuance at the Let's
 Encrypt staging CA so you never burn rate limits while testing.
 
 Two things worth knowing before you start poking:

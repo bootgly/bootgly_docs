@@ -1,13 +1,13 @@
 # Views
 
 No lado Web, uma **view** é um template do projeto renderizado em uma resposta HTTP. Views são
-arquivos do mesmo engine descrito em [Templates](/templates) — arquivos `.template.php` no
+arquivos do mesmo engine descrito em [Templates](/guide/templates) — arquivos `.template.php` no
 diretório `views/` do seu projeto — acessados pelo resource de resposta `View`. Além da
 renderização simples, a camada Web adiciona um **layout padrão** e **content negotiation**: um
 único payload servido como JSON, XML ou HTML conforme o header `Accept` da requisição.
 
 > [!NOTE]
-> Tudo em [Templates](/templates) (`@extends`, `@section`, `@yield`, `@include`, `@component`,
+> Tudo em [Templates](/guide/templates) (`@extends`, `@section`, `@yield`, `@include`, `@component`,
 > `@>>`, verbatim, o cache de compilação e os erros na linha do template) vale para
 > `views/*.template.php` sem mudanças. Esta página é a integração Web ao redor disso.
 

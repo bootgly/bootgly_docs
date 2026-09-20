@@ -138,7 +138,7 @@ The call itself enforces five rules:
 - **The set is checked before any of it is applied.** Those set-level rules are decided over the whole argument list first, so a call rejected on any of them leaves every process-global limit, budget and cap exactly as it was. What a single Configs *carries* is validated by its own constructor wherever it can be — an invalid response factory, or a `secure` context alongside `AutoTLS`, throws at `new`. A few checks can only run against live state while the call is applying (the Auto-TLS runtime preconditions; a resource name a response property already owns): those throw with the Configs before them already applied.
 
 `configure()` is a **pre-start** contract: after the server crosses its start boundary the call is
-refused with a logged error, and reconfiguration goes through a [reload](/reload)
+refused with a logged error, and reconfiguration goes through a [reload](/guide/reload)
 (`bootgly project <name> reload`), which re-executes the project and its `configure()`.
 
 ### Named arguments only
@@ -301,7 +301,7 @@ secure: [
 > For production, use certificates from a trusted CA such as Let's Encrypt.
 
 For a certificate the server obtains and renews by itself, pass an `AutoTLS` instance in the
-`AutoTLS:` parameter instead of the `secure:` array — see the [Auto-TLS](/auto-tls) guide:
+`AutoTLS:` parameter instead of the `secure:` array — see the [Auto-TLS](/guide/auto-tls) guide:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\AutoTLS;
@@ -587,7 +587,7 @@ $Exchange->observe(static function (Exchange $Exchange, null|int $code): void {
 
 When the transport or the scheduler tears down work before a response became observable, the exchange finishes with `$code === null`.
 
-Bootgly does **not** invent a status class for that case — there is no synthetic `499`. A cancelled exchange closes its core accounting (it counts as a request, its duration is observed, it leaves the in-flight gauge) and contributes nothing to the per-class response counters. See the [Observability](/observability) guide for how that shows up in metrics.
+Bootgly does **not** invent a status class for that case — there is no synthetic `499`. A cancelled exchange closes its core accounting (it counts as a request, its duration is observed, it leaves the in-flight gauge) and contributes nothing to the per-class response counters. See the [Observability](/guide/observability) guide for how that shows up in metrics.
 
 ### Scheduler capability
 
@@ -725,7 +725,7 @@ The server itself. Named arguments only — the constructor's first slot is the 
 | `secure` | `null\|array` | `null` | Secure SSL/TLS stream context options. When provided, the scheme switches to `https://`. Mutually exclusive with `AutoTLS`. |
 | `user` | `null\|string` | `null` | POSIX user name to demote the process to after binding. |
 | `group` | `null\|string` | `null` | POSIX group name to demote the process to after binding. |
-| `AutoTLS` | `null\|AutoTLS` | `null` | Managed certificate lifecycle (ACME): bootstrap, background issuance, hot swap and renewal. Mutually exclusive with `secure` — passing both throws `InvalidArgumentException`. See the [Auto-TLS](/auto-tls) guide. |
+| `AutoTLS` | `null\|AutoTLS` | `null` | Managed certificate lifecycle (ACME): bootstrap, background issuance, hot swap and renewal. Mutually exclusive with `secure` — passing both throws `InvalidArgumentException`. See the [Auto-TLS](/guide/auto-tls) guide. |
 | `enableHTTP2` | `null\|bool` | `null` (= enabled) | `false` serves HTTP/1.x only — no `h2` in the ALPN advertisement and no cleartext prior-knowledge preface probe. See the [HTTP/2](/manual/WPI/HTTP/HTTP_Server_CLI/HTTP2/) page. |
 | `health` | `null\|string` | `null` | Built-in health-check endpoint path (e.g. `'/health'`). GET/HEAD requests to that exact path are answered before the middleware pipeline, so no user middleware can break a probe. `null` keeps it off. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |

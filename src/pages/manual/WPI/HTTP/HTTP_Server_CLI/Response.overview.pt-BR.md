@@ -115,7 +115,7 @@ return $Response->defer(function (Response $Response): void {
 });
 ```
 
-Veja **[Response Resources](./Resources/)** para resources built-in e a ponte com o DBAL.
+Veja **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/)** para resources built-in e a ponte com o DBAL.
 
 ### Enviando arquivos
 
@@ -148,7 +148,7 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 
 **Byte-ranges:**
 
-Um cabeçalho `Range` do cliente sobrepõe `$offset` / `$length`. O conjunto aceito é coalescido — ranges sobrepostos e adjacentes são fundidos — e um conjunto maior que [`Request::$maxRanges`](../Request/#limite-de-byte-ranges) (16 por padrão) é rejeitado com `416 Range Not Satisfiable`. Um valor de `Range` que nem chega a ser um ranges-specifier — sem o separador `=`, ex. `Range: bytes 0-1` — é rejeitado com `400 Bad Request` (a RFC 9110 §14.2 permite ao servidor ignorar ou rejeitar; o Bootgly rejeita).
+Um cabeçalho `Range` do cliente sobrepõe `$offset` / `$length`. O conjunto aceito é coalescido — ranges sobrepostos e adjacentes são fundidos — e um conjunto maior que [`Request::$maxRanges`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#limite-de-byte-ranges) (16 por padrão) é rejeitado com `416 Range Not Satisfiable`. Um valor de `Range` que nem chega a ser um ranges-specifier — sem o separador `=`, ex. `Range: bytes 0-1` — é rejeitado com `400 Bad Request` (a RFC 9110 §14.2 permite ao servidor ignorar ou rejeitar; o Bootgly rejeita).
 
 **Identidade da representação:**
 
@@ -209,7 +209,7 @@ return $Response
    ->authenticate(new Authentication\Basic(realm: "Bootgly Protected Area"));
 ```
 
-Challenges Bearer são emitidos por `Router\Middlewares\Authentication\Bearer` e `Router\Middlewares\Authentication\JWT`. Veja [Authentication](../Authentication/) para detalhes de guards e challenges.
+Challenges Bearer são emitidos por `Router\Middlewares\Authentication\Bearer` e `Router\Middlewares\Authentication\JWT`. Veja [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) para detalhes de guards e challenges.
 
 ### Redirecionar
 

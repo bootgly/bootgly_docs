@@ -221,7 +221,7 @@ Extends `HTTP_Server_CLI\Configs`: every server option, with the Web platform de
 | `secure` | `null\|array` | `null` | Secure SSL/TLS stream context options; switches the scheme to `https://`. Mutually exclusive with `AutoTLS`. |
 | `user` | `null\|string` | `null` | POSIX user name to demote the process to after binding. |
 | `group` | `null\|string` | `null` | POSIX group name to demote the process to after binding. |
-| `AutoTLS` | `null\|AutoTLS` | `null` | Automatic HTTPS via Let's Encrypt (ACME). Mutually exclusive with `secure`. See the [Auto-TLS](/auto-tls) guide. |
+| `AutoTLS` | `null\|AutoTLS` | `null` | Automatic HTTPS via Let's Encrypt (ACME). Mutually exclusive with `secure`. See the [Auto-TLS](/guide/auto-tls) guide. |
 | `enableHTTP2` | `null\|bool` | `null` (= enabled) | `false` serves HTTP/1.x only. |
 | `health` | `null\|string` | `'/health'` | Built-in health-check endpoint, answered before any middleware. `null` disables it. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Maximum established connections per worker; `0` disables the limit. |

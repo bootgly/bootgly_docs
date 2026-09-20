@@ -102,6 +102,48 @@ The card is composed by the runner from three components: a [Fieldset](/manual/C
 
 An agent run executes everything it was asked to run, like any other, and the document lists every failure under `failures`. Only `--fail-fast` stops it at the first failing case — and the document says so instead of hiding it: `suites.total` is what the resolved registry **registered**, and every suite the run did not reach is counted in `suites.skipped`. So a `--fail-fast` run that stopped at the first of 105 suites reports `total: 105, failed: 1, skipped: 104, passed: 0`, never a shrunken total with `skipped: 0`. Case counts stay what actually ran: the cases of a suite that never loaded are unknowable.
 
+## The agent results document
+
+`AI_AGENT=1` — or any of the markers `Bootgly\API\Environment\Agent` knows (`CLAUDECODE`,
+`CODEX_THREAD_ID`, `GEMINI_CLI`, …) — switches the human output off and makes the runner print
+**one JSON object, on a single line**, to `stdout`. That document is produced by
+`Bootgly\ACI\Tests\Results`: the runner calls `record()` once per test case, `compile()` folds
+those records together with the suite tallies into the result array, and `encode()` writes it out.
+
+```bash :toolbar="true";
+AI_AGENT=1 php bootgly test 34 --fail-fast
+```
+
+A real run of suite `34` (`Bootgly/WPI/Nodes/HTTP_Server_CLI/Request/Session/`), verbatim:
+
+```json
+{"result":"passed","agent":"1","suites":{"total":114,"failed":0,"skipped":113,"passed":1},"cases":{"total":12,"failed":0,"skipped":0,"passed":12},"assertions":12,"duration_ms":105.54}
+```
+
+| Key | Type | Meaning |
+| --- | ---- | ------- |
+| `result` | `string` | `failed` when any case failed **or** any suite failed; `passed` otherwise. A suite can fail with no failed case — an error thrown in a test body aborts it before its cases register — and the verdict still reads `failed`. |
+| `agent` | `null\|string` | The detected agent: the trimmed value of `AI_AGENT` when it is set (`"1"` above), otherwise the name behind the marker variable (`claude`, `codex`, `gemini`, …). |
+| `suites.total` | `int` | How many suites the resolved registry **registered** — not how many ran. The targeted run above registered all 114. |
+| `suites.failed` | `int` | Suites that ended with at least one failed case. |
+| `suites.skipped` | `int` | `total − failed − passed`: every registered suite that reported no outcome — the 113 a targeted run never asked for, and the ones a `--fail-fast` run never reached. |
+| `suites.passed` | `int` | Suites that ran to the end with no failure. |
+| `cases.total` | `int` | Cases that actually ran (`failed + skipped + passed`). The cases of a suite that never loaded are unknowable, so nothing is counted for them. |
+| `cases.failed` / `cases.skipped` / `cases.passed` | `int` | Per-status counts over the recorded cases. |
+| `assertions` | `int` | Assertions executed across the suites that ran. |
+| `duration_ms` | `float` | Wall time of the run, in milliseconds, rounded to two decimals. |
+| `failures` | `array` | **Present only when at least one case failed.** One object per failed case: `suite` (the suite directory), `case` (its 1-based index), `file`, `message` (the assertion's failure help, or `null`) and `elapsed_ms`. |
+
+A failing run carries that last key, and lists **every** failure — `--fail-fast` is what reduces
+it to the first one:
+
+```json
+{"result":"failed","agent":"1","suites":{"total":114,"failed":1,"skipped":113,"passed":0},"cases":{"total":2,"failed":1,"skipped":0,"passed":1},"assertions":7,"duration_ms":89.32,"failures":[{"suite":"Bootgly/WPI/Nodes/HTTP_Server_CLI/Request/Session/","case":4,"file":"4-session-regenerate.Test.php","message":"the session id changed but the payload did not follow","elapsed_ms":6.25}]}
+```
+
+Parse the last line of `stdout` and nothing else: the exit status is non-zero for a failing run,
+and a run that produced no document leaves `stdout` empty, with the reason on `stderr`.
+
 ## Fail-fast
 
 By default a run executes everything it was asked to run — every suite of a full run, every case of a targeted one — and reports every failure. Pass `--fail-fast` to stop at the first failing case instead:
@@ -164,3 +206,37 @@ vendor/bin/phpstan analyse -c @/phpstan.neon
 - Hunting one failure in a suite? `php bootgly test <suite> --fail-fast` stops at the first red case; without it the suite always runs to its end.
 - Pair `--coverage-diff` with a specific suite index to verify that new or changed lines are covered.
 - For CI, prefer the global form `bootgly test` — `proc_open` subprocesses inherit CI environment variables (e.g. `GITHUB_ACTIONS`), which can change suite registration if your tests rely on `Environment::CI_CD`.
+
+## Reference
+
+### Results
+
+`Bootgly\ACI\Tests\Results` — the static collector behind the agent document. `TestCommand`
+turns `Results::$enabled` on when `Agent::detect()` reports an agent and stores that agent's name
+in `Results::$agent`. Its public data is `$cases` (every recorded case), `$suitesTotal`,
+`$suitesFailed`, `$suitesSkipped`, `$suitesPassed`, `$assertions` and `$durationMs`.
+
+```php
+public static function record (string $suite, int $case, string $file, string $status, null|string $message = null, float $elapsedMs = 0): void
+```
+
+Records one test case. `$status` is `'passed'`, `'failed'` or `'skipped'`; `$message` carries the
+failure help and stays `null` otherwise; `$elapsedMs` is rounded to two decimals as it is stored.
+It returns immediately while `$enabled` is `false`, so a human run pays nothing for it.
+
+```php
+public static function compile (): array
+```
+
+Folds the recorded cases and the suite tallies into the result array — exactly the structure of the
+JSON document above, `failures` included only when a case failed. The case counts are derived from
+`$cases`, and `suites.skipped` from `total − failed − passed`, so a `--fail-fast` run reports the
+suites it never reached instead of shrinking its total (it falls back to the incremental
+`$suitesSkipped` if that subtraction ever goes negative).
+
+```php
+public static function encode (): string
+```
+
+`compile()` as a single-line JSON document (`JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE`)
+terminated by a newline — what the runner writes to `stdout`.

@@ -221,7 +221,7 @@ Estende `HTTP_Server_CLI\Configs`: toda opção do servidor, com os defaults da 
 | `secure` | `null\|array` | `null` | Opções de stream context SSL/TLS; troca o scheme para `https://`. Mutuamente exclusivo com `AutoTLS`. |
 | `user` | `null\|string` | `null` | Nome de usuário POSIX para rebaixar o processo após o bind. |
 | `group` | `null\|string` | `null` | Nome de grupo POSIX para rebaixar o processo após o bind. |
-| `AutoTLS` | `null\|AutoTLS` | `null` | HTTPS automático via Let's Encrypt (ACME). Mutuamente exclusivo com `secure`. Veja o guia [Auto-TLS](/auto-tls). |
+| `AutoTLS` | `null\|AutoTLS` | `null` | HTTPS automático via Let's Encrypt (ACME). Mutuamente exclusivo com `secure`. Veja o guia [Auto-TLS](/guide/auto-tls). |
 | `enableHTTP2` | `null\|bool` | `null` (= habilitado) | `false` serve apenas HTTP/1.x. |
 | `health` | `null\|string` | `'/health'` | Endpoint embutido de health-check, respondido antes de qualquer middleware. `null` desabilita. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Máximo de conexões estabelecidas por worker; `0` desabilita o limite. |

@@ -183,7 +183,7 @@ Failure stays deterministic — the client never spins:
 | The bridge raises anything else | The exception propagates to the caller. In the handshake it is rethrown after the connection is closed, never laundered into a TLS failure. |
 | The Fiber is unwound mid-dial | The socket is closed in a `finally`. It is registered in no reactor yet, so nothing else would close it. |
 
-Adoption and the bridge are the mechanism, not the everyday API. The ready-made forms are [`HTTP_Client_CLI`](../HTTP/HTTP_Client_CLI) in embedded mode and the HTTP response resource reached as `$Response->Upstream`, both of which wire `react()` and `schedule()` for you — see their own pages. Reach for `TCP_Client_CLI` directly only when you are embedding a raw TCP protocol into a host runtime.
+Adoption and the bridge are the mechanism, not the everyday API. The ready-made forms are [`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/) in embedded mode and the HTTP response resource reached as `$Response->Upstream`, both of which wire `react()` and `schedule()` for you — see their own pages. Reach for `TCP_Client_CLI` directly only when you are embedding a raw TCP protocol into a host runtime.
 
 ```php
 use Fiber;
@@ -286,7 +286,7 @@ Monitor mode keeps the master process attached and logs worker lifecycle until y
 > [!WARNING]
 > **Breaking change in v1.0.0-beta.5.** The reactor, the transport hooks and the counters are per instance now. The former static `TCP_Client_CLI::$Event` no longer exists — read `$Client->Event`, or `$Connection->Client->Event` from inside a hook. Code that referenced the static must be updated. In exchange, two clients in the same process no longer share (or clobber) a loop, callbacks or stats.
 
-See [`Connection`](./TCP_Client_CLI/Connection) and [`Packages`](./TCP_Client_CLI/Packages) for the low-level socket and package details.
+See `Connection` and `Packages` for the low-level socket and package details.
 
 ## Full Example
 

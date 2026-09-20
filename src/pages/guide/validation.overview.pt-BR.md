@@ -135,7 +135,7 @@ Defina `$implicit = true` na sua subclasse quando a regra precisar rodar mesmo p
 
 ## Validando requisições HTTP
 
-Em rotas WPI, conecte as mesmas regras no middleware `Validator` — ele lê uma source do Request e falha fechado com um JSON `422` antes do handler rodar. Veja [Validação de Requisição](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) e [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
+Em rotas WPI, conecte as mesmas regras no middleware `Validator` — ele lê uma source do Request e falha fechado com um JSON `422` antes do handler rodar. Veja [Validação de Requisição](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#validação-de-requisição) e [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
 ## Referência
 

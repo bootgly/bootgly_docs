@@ -138,7 +138,7 @@ A própria chamada garante cinco regras:
 - **O conjunto é conferido antes de qualquer aplicação.** As regras de conjunto acima são decididas sobre a lista inteira primeiro, então uma chamada recusada por qualquer uma delas deixa todo limite, budget e cap global do processo exatamente como estava. O que um Configs *carrega* é validado pelo construtor dele sempre que dá — um factory de resource inválido, ou um `secure` junto com `AutoTLS`, lança no `new`. Algumas verificações só podem rodar contra estado vivo durante a aplicação (as precondições de runtime do Auto-TLS; um nome de resource que uma propriedade da response já ocupa): essas lançam com os Configs anteriores já aplicados.
 
 `configure()` é um contrato **pré-start**: depois que o servidor cruza a fronteira de início, a
-chamada é recusada com um erro logado, e a reconfiguração passa por um [reload](/reload)
+chamada é recusada com um erro logado, e a reconfiguração passa por um [reload](/guide/reload)
 (`bootgly project <nome> reload`), que reexecuta o projeto e o seu `configure()`.
 
 ### Somente argumentos nomeados
@@ -304,7 +304,7 @@ secure: [
 > Para produção, use certificados de uma CA confiável como o Let's Encrypt.
 
 Para um certificado que o próprio servidor obtém e renova, passe uma instância de `AutoTLS` no
-parâmetro `AutoTLS:` em vez do array `secure:` — veja o guia [Auto-TLS](/auto-tls):
+parâmetro `AutoTLS:` em vez do array `secure:` — veja o guia [Auto-TLS](/guide/auto-tls):
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\AutoTLS;
@@ -590,7 +590,7 @@ $Exchange->observe(static function (Exchange $Exchange, null|int $code): void {
 
 Quando o transporte ou o scheduler derruba o trabalho antes que uma resposta se tornasse observável, o exchange finaliza com `$code === null`.
 
-O Bootgly **não** inventa uma classe de status para esse caso — não existe um `499` sintético. Um exchange cancelado fecha sua contabilidade central (conta como requisição, tem a duração observada, sai do gauge de in-flight) e não contribui em nada para os contadores de resposta por classe. Veja o guia de [Observabilidade](/observability) para como isso aparece nas métricas.
+O Bootgly **não** inventa uma classe de status para esse caso — não existe um `499` sintético. Um exchange cancelado fecha sua contabilidade central (conta como requisição, tem a duração observada, sai do gauge de in-flight) e não contribui em nada para os contadores de resposta por classe. Veja o guia de [Observabilidade](/guide/observability) para como isso aparece nas métricas.
 
 ### Capacidade do scheduler
 
@@ -729,7 +729,7 @@ O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor 
 | `secure` | `null\|array` | `null` | Opções de contexto seguro SSL/TLS. Quando fornecido, o esquema muda para `https://`. Mutuamente exclusivo com `AutoTLS`. |
 | `user` | `null\|string` | `null` | Nome do usuário POSIX para rebaixar o processo após o bind. |
 | `group` | `null\|string` | `null` | Nome do grupo POSIX para rebaixar o processo após o bind. |
-| `AutoTLS` | `null\|AutoTLS` | `null` | Ciclo de vida gerenciado do certificado (ACME): bootstrap, emissão em segundo plano, hot swap e renovação. Mutuamente exclusivo com `secure` — passar os dois lança `InvalidArgumentException`. Veja o guia [Auto-TLS](/auto-tls). |
+| `AutoTLS` | `null\|AutoTLS` | `null` | Ciclo de vida gerenciado do certificado (ACME): bootstrap, emissão em segundo plano, hot swap e renovação. Mutuamente exclusivo com `secure` — passar os dois lança `InvalidArgumentException`. Veja o guia [Auto-TLS](/guide/auto-tls). |
 | `enableHTTP2` | `null\|bool` | `null` (= habilitado) | `false` serve apenas HTTP/1.x — sem `h2` no anúncio ALPN e sem a sondagem do preface por prior knowledge em texto claro. Veja a página [HTTP/2](/manual/WPI/HTTP/HTTP_Server_CLI/HTTP2/). |
 | `health` | `null\|string` | `null` | Caminho do endpoint de health-check embutido (ex.: `'/health'`). Requisições GET/HEAD nesse caminho exato são respondidas antes do pipeline de middlewares, então nenhum middleware do usuário quebra um probe. `null` o mantém desligado. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |

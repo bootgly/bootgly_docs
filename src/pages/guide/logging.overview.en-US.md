@@ -181,6 +181,59 @@ Where an opted-in logger's records land, per server mode:
 > `Stream` opened in `boot()`) is withheld and installed like any other, but keeps writing through
 > root's descriptor.
 
+## Steer what a privileged sink accepts
+
+The refusals above are the file sink's default posture, and three statics on `Handlers\File` are
+the only levers over it. All three are process-wide — set them at boot, before the first record is
+written.
+
+**`guard()` — name the identity root must not follow.** A launch that starts as root and will drop
+to a runtime identity tells the sink whose directories to distrust, by uid:
+
+```php
+use Bootgly\ACI\Logs\Handlers\File;
+
+File::guard(1000);   // the uid this process will demote to
+```
+
+Without it, every *sticky* directory on the path that is not root's is refused — the sink cannot
+tell the one identity that could empty it from any other. With it, a sticky directory owned by that
+uid is still refused (its owner may rename anything inside), while one owned by anybody else keeps
+the sticky protection and passes. Never calling it — or calling `File::guard(0)` — is the strict
+posture. The server already does this for you: `WPI\Endpoints\Demotable` calls it with the runtime
+uid right before dropping privileges, so you only reach for it when your own process performs the
+demotion. Naming a uid that is not the one you demote to widens the walk for the very identity you
+meant to guard against.
+
+**`mute()` — stop the reports, not the refusals.** Every refused destination is reported once per
+path and reason to the system logger (ident `bootgly`), so a sink switched off by a planted link is
+never a silent one. A process that refuses on purpose does not want that in the host's journal:
+
+```php
+File::mute();        // File::mute(false) reports again
+```
+
+The test runner does exactly this — `ACI\Tests\Suites` calls `File::mute()` in its constructor —
+and the handler already keeps quiet on its own under `BOOTGLY_ENVIRONMENT=test`. Muting hides only
+the report: the write still fails and the handler still returns `false`. Mute a production process
+and you lose the one signal that says the audit trail stopped.
+
+**`exempt()` — predict the namespace verdict.** Inside a user namespace, an owner the namespace
+does not map shows up as the overflow identity and counts as root's; a rootless container that
+*does* map it makes that identity somebody, and foreign. `exempt()` is that decision on its own —
+it reads nothing, changes nothing, and answers before a refusal reaches the journal:
+
+```php
+$exempt = File::exempt(
+   (string) file_get_contents('/proc/self/uid_map'),
+   (int) file_get_contents('/proc/sys/fs/overflowuid')
+);
+// -1 on a host (or when the map covers the overflow uid): nobody is exempt
+```
+
+Use it to answer "will this volume be accepted?" while you still have a shell. The handler runs the
+same call itself, once, on the first privileged write.
+
 ## Hold records until a sink can be written
 
 Sometimes the destination is not writable **yet** — the case above is the classic one: a root
@@ -408,6 +461,36 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   `control(string $key): bool`, `render(): void`. Driven by `TCP_Server_CLI::monitoring()`.
 - **Layering** — `ACI\Logs` depends only on ABI (template/ANSI helpers, `IO/IPC/Pipe`); the CLI
   viewer and the WPI servers consume it — no `ACI → CLI/WPI` back-dependency.
+
+### Handlers\File
+
+```php
+public static function guard (int $UID): void
+```
+
+Names the runtime identity a privileged writer must guard against — the uid a root launch demotes
+to. A sticky directory on the path belonging to that identity is refused, because its owner may
+rename anything inside it; one belonging to anybody else keeps the sticky protection. With no
+identity named, or with `0`, every foreign sticky directory is refused. Process-wide, and only
+consulted while the writer is root.
+
+```php
+public static function mute (bool $quiet = true): void
+```
+
+Keeps the refusal reports out of the system logger; `false` turns them back on. It silences the
+report alone — a refused destination still fails the write. The test runner calls it because its
+suites refuse on purpose.
+
+```php
+public static function exempt (string $map, int $overflow): int
+```
+
+The uid a privileged writer may treat as root's, given the process's `uid_map` (`inside outside
+count` rows) and the kernel's overflow uid — or `-1` when nobody qualifies. Outside a user
+namespace, and inside one whose map covers the overflow uid (a rootless container's does), the
+answer is `-1`. Pure: it opens no file and sets nothing; the handler calls it once itself, on the
+first privileged write.
 
 ### Handlers\Memory
 

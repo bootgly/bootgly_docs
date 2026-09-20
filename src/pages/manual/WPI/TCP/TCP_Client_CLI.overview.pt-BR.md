@@ -183,7 +183,7 @@ A falha continua determinística — o cliente nunca entra em spin:
 | O bridge lança qualquer outra coisa | A exceção propaga para o chamador. No handshake ela é relançada depois que a conexão é fechada, nunca disfarçada de falha de TLS. |
 | A Fiber é desenrolada no meio do dial | O socket é fechado em um `finally`. Ele ainda não está registrado em reactor nenhum, então nada mais o fecharia. |
 
-A adoção e o bridge são o mecanismo, não a API do dia a dia. As formas prontas são o [`HTTP_Client_CLI`](../HTTP/HTTP_Client_CLI) em modo embarcado e o response resource HTTP alcançado como `$Response->Upstream`, que já ligam `react()` e `schedule()` por você — veja as páginas deles. Use o `TCP_Client_CLI` diretamente apenas quando estiver embarcando um protocolo TCP raw dentro de um runtime hospedeiro.
+A adoção e o bridge são o mecanismo, não a API do dia a dia. As formas prontas são o [`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/) em modo embarcado e o response resource HTTP alcançado como `$Response->Upstream`, que já ligam `react()` e `schedule()` por você — veja as páginas deles. Use o `TCP_Client_CLI` diretamente apenas quando estiver embarcando um protocolo TCP raw dentro de um runtime hospedeiro.
 
 ```php
 use Fiber;
@@ -286,7 +286,7 @@ O modo monitor mantém o processo master anexado e registra o ciclo de vida dos 
 > [!WARNING]
 > **Breaking change na v1.0.0-beta.5.** O reactor, os hooks de transporte e os contadores agora são por instância. O antigo estático `TCP_Client_CLI::$Event` não existe mais — leia `$Client->Event`, ou `$Connection->Client->Event` de dentro de um hook. Código que referenciava o estático precisa ser atualizado. Em troca, dois clientes no mesmo processo não compartilham (nem sobrescrevem) loop, callbacks ou estatísticas.
 
-Veja [`Connection`](./TCP_Client_CLI/Connection) e [`Packages`](./TCP_Client_CLI/Packages) para os detalhes de baixo nível sobre sockets e pacotes.
+Veja `Connection` e `Packages` para os detalhes de baixo nível sobre sockets e pacotes.
 
 ## Exemplo Completo
 

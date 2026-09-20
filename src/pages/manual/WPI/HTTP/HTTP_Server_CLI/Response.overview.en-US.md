@@ -115,7 +115,7 @@ return $Response->defer(function (Response $Response): void {
 });
 ```
 
-See **[Response Resources](./Resources/)** for built-in resources and the DBAL bridge.
+See **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/)** for built-in resources and the DBAL bridge.
 
 ### Upload files
 
@@ -148,7 +148,7 @@ return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
 
 **Byte ranges:**
 
-A client `Range` header overrides `$offset` / `$length`. The accepted set is coalesced — overlapping and adjacent ranges are merged — and a set larger than [`Request::$maxRanges`](../Request/#byte-range-limit) (16 by default) is rejected with `416 Range Not Satisfiable`. A `Range` value that is not even a ranges-specifier — no `=` separator at all, e.g. `Range: bytes 0-1` — is rejected with `400 Bad Request` (RFC 9110 §14.2 allows a server to ignore or reject it; Bootgly rejects).
+A client `Range` header overrides `$offset` / `$length`. The accepted set is coalesced — overlapping and adjacent ranges are merged — and a set larger than [`Request::$maxRanges`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#byte-range-limit) (16 by default) is rejected with `416 Range Not Satisfiable`. A `Range` value that is not even a ranges-specifier — no `=` separator at all, e.g. `Range: bytes 0-1` — is rejected with `400 Bad Request` (RFC 9110 §14.2 allows a server to ignore or reject it; Bootgly rejects).
 
 **Representation identity:**
 
@@ -208,7 +208,7 @@ return $Response
    ->authenticate(new Authentication\Basic(realm: "Bootgly Protected Area"));
 ```
 
-Bearer challenges are emitted by `Router\Middlewares\Authentication\Bearer` and `Router\Middlewares\Authentication\JWT`. See [Authentication](../Authentication/) for middleware guards and challenge details.
+Bearer challenges are emitted by `Router\Middlewares\Authentication\Bearer` and `Router\Middlewares\Authentication\JWT`. See [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) for middleware guards and challenge details.
 
 ### Redirect to new URI
 

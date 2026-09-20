@@ -311,7 +311,7 @@ $Request->identity; // Bootgly\API\Security\Identity|string|null
 $Request->claims; // ['sub' => 'user-1', 'scope' => 'demo:read']
 ```
 
-See [Authentication](../Authentication/) for guard-based Basic, Bearer, JWT, and Session examples.
+See [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) for guard-based Basic, Bearer, JWT, and Session examples.
 
 ## HTTP Content Negotiation
 
@@ -358,7 +358,7 @@ if ( ! empty($selected_language) ) {
 
 ### Parameters
 
-#### $with (opcional)
+#### $with (optional)
 
 An integer indicating the type of negotiation to be performed. Possible values are:
 
@@ -467,7 +467,7 @@ else {
 }
 ```
 
-### Metadados gerados
+### Generated metadata
 
 `fresh`: Flag indicating if the request is to be considered fresh.
 
@@ -613,9 +613,9 @@ A value you assign wins. `php.ini` — `session.gc_maxlifetime`, `session.gc_pro
 
 Bootgly ships a fluent validation system for verifying request data before your handler runs. It revolves around three pieces:
 
-- [`Bootgly\ADI\Validation`](/manual/ADI/Validation/overview/) — the standalone engine: runs a set of rules against an array of input data, accumulating errors per field. It lives in the ADI layer, so the same rules validate CLI input, jobs and seeders.
+- [`Bootgly\ADI\Validation`](/guide/validation/overview/) — the standalone engine: runs a set of rules against an array of input data, accumulating errors per field. It lives in the ADI layer, so the same rules validate CLI input, jobs and seeders.
 - `Bootgly\ADI\Validators\*` — built-in rule classes (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
-- `Validator` middleware — applies validation to one Request source and fails fast (default `422 Unprocessable Entity`) if invalid. See [Middlewares → Validator](../Middlewares/#validator).
+- `Validator` middleware — applies validation to one Request source and fails fast (default `422 Unprocessable Entity`) if invalid. See [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
 ### Standalone Validation
 
@@ -641,7 +641,7 @@ $Validation->valid;  // true | false
 $Validation->errors; // ['email' => ['email must be a valid email address.'], ...]
 ```
 
-Errors are stored as `array<field, array<string>>` — a single field can accumulate multiple messages (one per failed rule). The full engine reference — optional/implicit semantics, custom messages and non-HTTP recipes — lives in the [ADI Validation](/manual/ADI/Validation/overview/) page.
+Errors are stored as `array<field, array<string>>` — a single field can accumulate multiple messages (one per failed rule). The full engine reference — optional/implicit semantics, custom messages and non-HTTP recipes — lives in the [Validation guide](/guide/validation/overview/).
 
 ### Available Sources
 
@@ -665,7 +665,7 @@ With `Sources::Cookies`, rules bind by cookie name; when the same name appears o
 
 ### Built-in Validators
 
-All built-in rules live in `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` and `Extension`. Each accepts an optional `string $message` constructor argument to override the default error message. The one-block-per-rule catalog (arguments, semantics and default messages) lives in the [ADI Validation reference](/manual/ADI/Validation/overview/).
+All built-in rules live in `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` and `Extension`. Each accepts an optional `string $message` constructor argument to override the default error message. The one-block-per-rule catalog (arguments, semantics and default messages) lives in the [Validation guide](/guide/validation/overview/).
 
 ### Custom Rules
 
@@ -713,7 +713,7 @@ yield $Router->route('/users', function (Request $Request, Response $Response) {
 ]);
 ```
 
-See [Middlewares → Validator](../Middlewares/#validator) for the full middleware reference (status code, fallback closure).
+See [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator) for the full middleware reference (status code, fallback closure).
 
 ### End-to-End Example
 

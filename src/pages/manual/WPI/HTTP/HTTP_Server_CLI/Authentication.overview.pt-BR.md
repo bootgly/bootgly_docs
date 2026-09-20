@@ -263,6 +263,104 @@ $Vault = new Vault(
 
 Cada registro carrega um envelope HMAC-SHA256, então uma entrada alterada no backend de armazenamento falha na verificação e é lida como miss.
 
+### Resolvers de chave customizados
+
+`KeySet`, `KeysJWKS` e `Remote` são os resolvers que acompanham o framework, mas o slot que `trust()` preenche é uma interface — `Bootgly\API\Security\JWT\KeyResolver`. Implemente-a quando as chaves vivem em algum lugar que o Bootgly não tem como conhecer: sua própria tabela `jwt_keys`, um KMS, um HSM, um registro de chaves por tenant.
+
+O contrato tem dois métodos. `resolve()` é chamado uma vez por verificação, depois de o header ser decodificado e seu `alg` aceito, e **antes** de a assinatura ser checada: ele recebe o `kid` do header protegido (`null` quando o token não carrega nenhum) e o algoritmo do token, e retorna a única `Key` autorizada a verificar aquele token — ou `null` para recusar. `fail()` só é consultado depois de um `null`, e seu caso de `Failures` vira a falha da `Verification`; retornar `null` ali significa "sem detalhe", e quem chamou vê o genérico `Failures::Key`.
+
+```php
+use function is_array;
+use function is_string;
+
+use Bootgly\ADI\Databases\SQL;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\ADI\Databases\SQL\Builder\Identifier;
+use Bootgly\API\Security\JWT;
+use Bootgly\API\Security\JWT\Failures;
+use Bootgly\API\Security\JWT\Key;
+use Bootgly\API\Security\JWT\KeyResolver;
+
+class Keys implements KeyResolver
+{
+   // * Data
+   private SQL $Database;
+   /**
+    * Chaves já lidas da tabela, por `kid`.
+    *
+    * @var array<string,Key>
+    */
+   private array $Keys = [];
+
+   // * Metadata
+   private null|Failures $failure = null;
+
+
+   public function __construct (SQL $Database)
+   {
+      $this->Database = $Database;
+   }
+
+   public function resolve (null|string $id, string $algorithm): null|Key
+   {
+      // ! Um resultado por chamada: limpa a falha da verificação anterior
+      $this->failure = null;
+
+      // ? Rotação exige um `kid` explícito — nunca adivinhe uma chave
+      if ($id === null) {
+         $this->failure = Failures::Key;
+         return null;
+      }
+
+      $Key = $this->Keys[$id] ?? null;
+
+      if ($Key === null) {
+         $Builder = $this->Database
+            ->table(new Identifier('jwt_keys'))
+            ->select(new Identifier('algorithm'), new Identifier('material'))
+            ->filter(new Identifier('kid'), Operators::Equal, $id)
+            ->filter(new Identifier('retired'), Operators::Equal, 0)
+            ->limit(1);
+
+         $row = $this->Database->query($Builder)->rows[0] ?? null;
+         if (is_array($row) === false || is_string($row['material'] ?? null) === false) {
+            $this->failure = Failures::Key;
+            return null;
+         }
+
+         $Key = new Key($row['material'], (string) $row['algorithm'], $id);
+         $this->Keys[$id] = $Key;
+      }
+
+      // ? O `alg` do token tem de ser aquele para o qual esta chave foi cadastrada
+      if ($Key->algorithm !== $algorithm) {
+         $this->failure = Failures::Algorithm;
+         return null;
+      }
+
+      return $Key;
+   }
+
+   public function fail (): null|Failures
+   {
+      return $this->failure;
+   }
+}
+
+$Verifier = new JWT($currentSecret, 'HS256');
+$Verifier->trust(new Keys($Database));
+```
+
+A rotação vira uma linha: insira a nova chave com um `kid` novo, assine com ela, e marque `retired = 1` na linha antiga assim que nenhum token vivo ainda a carregue. Tokens assinados por uma chave aposentada param de resolver, e `inspect()` responde `Failures::Key` — o resolver nunca recai para "a única chave que ele tem", que é exatamente o que torna a rotação segura.
+
+Três regras que o exemplo segue, e o seu também deve seguir:
+
+- **Nunca ignore `$algorithm`.** Retornar uma chave cadastrada para outro algoritmo é como ataques de confusão de algoritmo acontecem. O `KeySet` recusa do mesmo jeito.
+- **Recuse um `$id` `null`, a menos que você realmente tenha uma chave legada de slot único.** Adivinhar entre candidatas é o modo de falha que o `KeySet` foi desenhado para evitar — ele retorna `null` sempre que um token sem `kid` casa com mais de uma chave.
+- **Zere a falha no topo de `resolve()`.** `fail()` é lido logo depois de um resolve `null`, então um caso velho de uma verificação anterior rotularia esta errado. O `Remote` limpa o dele a cada resolve bem-sucedido pelo mesmo motivo.
+
+Faça cache das chaves resolvidas dentro do resolver, como acima: `resolve()` roda em toda requisição verificada, e um round trip de banco por requisição é custo de hot path. Mantenha o cache local ao processo a menos que o material já esteja protegido — o `Vault` existe para o caso compartilhado.
+
 ### Refresh tokens e uso de `jti`
 
 Para apps fullstack first-party, mantenha access tokens curtos e rotacione refresh tokens opacos com `Bootgly\API\Security\JWT\Tokens`:
@@ -444,3 +542,19 @@ O repositório inclui exemplos funcionais em `projects/Demo/HTTP_Server_CLI`:
 Adicione `'Authentication'` em `router/router.index.php`, inicie o servidor demo e abra `GET /auth` para ver comandos executáveis das rotas Bearer, JWT e Basic.
 
 Para os fluxos de sessão/cookie (registro, verificação de e-mail, login + remember-me, redefinição de senha), veja o demo exportável **Auth** em `bootgly-web/projects/Demo/Auth` e o **[guia de Authentication](/guide/authentication/overview/)**.
+
+## Referência
+
+### Bootgly\API\Security\JWT\KeyResolver
+
+```php
+public function resolve (null|string $id, string $algorithm): null|Key
+```
+
+Retorna a única `Key` autorizada a verificar um token, ou `null` para recusá-lo. O `JWT::inspect()` o chama uma vez por verificação — depois de o header protegido ser decodificado e seu `alg` e `typ` aceitos, e antes de a assinatura ser checada — então a chave devolvida é a chave com que a assinatura é então verificada. `$id` é o `kid` do header, já validado como string, ou `null` quando o token não carrega nenhum; `$algorithm` é o `alg` do token. O resolver é dono da checagem de algoritmo: uma chave cadastrada para outro algoritmo tem de ser recusada, não devolvida. Um `null` encerra a verificação imediatamente — a assinatura nunca é checada e nenhuma claim é lida.
+
+```php
+public function fail (): null|Failures
+```
+
+Retorna o motivo pelo qual o último `resolve()` recusou, ou `null` quando o resolver não guarda estado de falha. Ele é consultado **apenas** depois de `resolve()` retornar `null`, e o resultado é usado como `fail() ?? Failures::Key`, então `null` degrada para a mensagem genérica "JWT key could not be resolved.". Qualquer caso de `Failures` é aceito — `Network`, `Status` e `JWKS` são os que o `Remote` reporta para um fetch de JWKS que falhou — e o caso escolhido chega a quem chamou como `Verification->failure`, com `Verification->message` preenchido a partir da descrição que o framework dá a ele. Zere a falha guardada no início de `resolve()` para que uma verificação nunca leia o motivo da anterior. Failures são diagnósticos internos: os guards HTTP continuam respondendo ao cliente com um erro Bearer genérico.

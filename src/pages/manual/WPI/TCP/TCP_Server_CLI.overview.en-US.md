@@ -293,7 +293,7 @@ At the connection layer, Bootgly tracks:
 - idle expiration timers, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — pending deferred work counts as activity
 - optional blacklist checks
 
-See [`Connection`](./TCP_Server_CLI/Connection) and [`Packages`](./TCP_Server_CLI/Packages) for the lower-level details.
+See `Connection` and `Packages` for the lower-level details.
 
 ## Full Example
 

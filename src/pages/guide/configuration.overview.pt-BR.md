@@ -110,6 +110,25 @@ BOOTGLY_ENV=production php bootgly
 
 Com esse ambiente, o Bootgly também tenta carregar `.env.production` depois de `.env`.
 
+## Escrevendo variáveis de processo
+
+Arquivos `.env` ficam locais ao loader — eles nunca modificam o ambiente do processo. Quando um valor precisa de fato *estar* no ambiente do processo (porque a resolução o lê primeiro, ou porque um processo filho tem de herdá-lo), escreva-o com `Bootgly\API\Environment`:
+
+```php
+use Bootgly\API\Environment;
+use Bootgly\API\Environment\Configs;
+
+// @ Escreva antes do escopo carregar: o ambiente do processo vence o .env local do escopo
+Environment::put('DB_HOST', 'db.internal');
+
+$Configs = new Configs(__DIR__ . '/configs/');
+$Database = $Configs->get('database');
+
+echo $Database->Connections->MySQL->Host->get();   // db.internal
+```
+
+`put()` é `putenv()` com o prefixo e o sufixo configurados aplicados, então o valor passa a ser visível para `getenv()` — o passo 1 da ordem de resolução do `bind()` acima — e para todo processo criado depois. A ordem importa: um nó resolve seu valor uma única vez, enquanto `<escopo>.Config.php` roda, então um `put()` feito depois de o escopo carregar não muda o que `get()` já retorna. Use-o para valores que uma etapa de deploy calcula (um host resolvido, uma porta descoberta) antes de a aplicação subir.
+
 ## Política de `.env` local
 
 Nomes de variáveis em `.env` local devem seguir `[A-Z_][A-Z0-9_]*`. Se um arquivo `.env` ou `.env.<BOOTGLY_ENV>` carregado contiver uma chave inválida, o carregamento do escopo falha e o escopo não é registrado.
@@ -219,3 +238,49 @@ O Bootgly endurece o carregamento de configs com várias regras:
 
 > [!WARNING]
 > Nunca permita que usuário, tenant, upload ou formulário administrativo grave um arquivo `.Config.php`. Para configuração não confiável, use um formato declarativo como JSON, INI ou YAML e converta para `Config` a partir de código confiável da aplicação.
+
+## Referência
+
+A classe `Bootgly\API\Environment` é o lado "ambiente do processo" da configuração: ela lê e escreve o ambiente real que o `bind()` consulta primeiro. Toda chave é composta como `Environment::$prefix . $key . Environment::$suffix` — ambos são strings públicas estáticas, vazias por padrão — **exceto** em `del()`, que recebe a chave literalmente.
+
+```php
+public static function load ($file): bool
+```
+
+Faz o parse de um arquivo no estilo INI e escreve cada par no ambiente do processo através de `put()` (então prefixo/sufixo se aplicam). Retorna `false` quando o arquivo não existe e `true` caso contrário — inclusive quando o arquivo existe mas não pode ser parseado. Tipado como `string` pelo PHPDoc. Este é o equivalente imperativo da leitura de `.env` por escopo descrita acima: diferente de um `.env` de escopo, o que `load()` lê **vira** estado global do processo.
+
+```php
+public static function save (string $file): bool
+```
+
+Escreve o ambiente em `$file` como linhas `CHAVE=valor`, uma por variável, retornando `false` apenas quando a escrita falha. Ele despeja `list()` — o ambiente **inteiro** do processo, não só as chaves que o Bootgly escreveu — então trate a saída como material secreto e nunca a aponte para um caminho dentro de um diretório servido.
+
+```php
+public static function list (): array
+```
+
+Retorna todo o ambiente do processo como `array<string,string>`, exatamente o que `getenv()` retorna. As chaves vêm literais: o prefixo e o sufixo não são removidos.
+
+```php
+public static function get (string $key, null|string|false $default = null): false|string
+```
+
+Lê uma variável. Retorna o valor como string, ou `$default` quando a variável não está definida e um padrão não-`null` foi passado, ou `false` quando ela não está definida e nenhum padrão foi passado. Como o caso ausente é `false`, compare com `===` em vez de testar vazio — `'0'` é um valor válido.
+
+```php
+public static function match (int $type): bool
+```
+
+Testa o ambiente em execução contra uma das constantes da classe: `Environment::CI_CD` (verdadeiro quando `GITHUB_ACTIONS`, `TRAVIS`, `CIRCLECI` ou `GITLAB_CI` está definida) ou `Environment::AI_AGENT` (verdadeiro quando o processo é detectado como um agente de IA). Qualquer outro valor retorna `false`.
+
+```php
+public static function put (string $key, string|int $value): bool
+```
+
+Escreve uma variável no ambiente real do processo via `putenv()`, retornando se a escrita teve sucesso. Um `int` é convertido para string, então `get()` sempre lê uma string de volta. O valor é visível para `getenv()`, para a resolução do `bind()` e para processos criados depois — ele **não** é escrito em nenhum arquivo `.env`, e não alcança processos que já estão rodando.
+
+```php
+public static function del (string $key): bool
+```
+
+Remove uma variável, retornando se a remoção teve sucesso. É o único método que **não** compõe o prefixo e o sufixo: passe o nome real e completo da variável — `Environment::del('BOOTGLY_DB_HOST')`, não `Environment::del('DB_HOST')`, quando há um prefixo configurado.

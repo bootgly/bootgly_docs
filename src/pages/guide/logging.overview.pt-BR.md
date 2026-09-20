@@ -181,6 +181,60 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 > handler que capturou um descritor enquanto o root rodava (um `Stream` aberto no `boot()`) é
 > retido e instalado como qualquer outro, mas continua escrevendo pelo descritor do root.
 
+## Direcione o que um sink privilegiado aceita
+
+As recusas acima são a postura padrão do sink de arquivo, e três estáticos do `Handlers\File` são
+as únicas alavancas sobre ela. Os três valem para o processo inteiro — defina-os no boot, antes do
+primeiro record ser escrito.
+
+**`guard()` — nomeie a identidade que o root não pode seguir.** Um lançamento que sobe como root e
+vai cair para uma identidade de runtime diz ao sink de quem desconfiar, por uid:
+
+```php
+use Bootgly\ACI\Logs\Handlers\File;
+
+File::guard(1000);   // o uid para o qual este processo vai demover
+```
+
+Sem ele, todo diretório *sticky* no caminho que não seja do root é recusado — o sink não consegue
+distinguir a única identidade que poderia esvaziá-lo de qualquer outra. Com ele, um diretório
+sticky daquele uid continua recusado (o dono pode renomear qualquer coisa dentro), enquanto um de
+qualquer outra pessoa mantém a proteção do sticky e passa. Nunca chamá-lo — ou chamar
+`File::guard(0)` — é a postura estrita. O servidor já faz isso por você: o
+`WPI\Endpoints\Demotable` o chama com o uid de runtime logo antes de largar privilégios, então você
+só recorre a ele quando o seu próprio processo faz a demoção. Nomear um uid que não é aquele para o
+qual você demove alarga a caminhada justamente para a identidade da qual você queria se guardar.
+
+**`mute()` — pare os relatos, não as recusas.** Todo destino recusado é relatado uma vez por
+caminho e motivo ao logger do sistema (ident `bootgly`), para que um sink desligado por um link
+plantado nunca seja um sink mudo. Um processo que recusa de propósito não quer isso no journal do
+host:
+
+```php
+File::mute();        // File::mute(false) volta a relatar
+```
+
+O runner de testes faz exatamente isso — o `ACI\Tests\Suites` chama `File::mute()` no construtor —
+e o handler já se cala sozinho sob `BOOTGLY_ENVIRONMENT=test`. Silenciar esconde só o relato: a
+escrita continua falhando e o handler continua devolvendo `false`. Silencie um processo de produção
+e você perde o único sinal que diz que a trilha de auditoria parou.
+
+**`exempt()` — preveja o veredito do namespace.** Dentro de um user namespace, um dono que o
+namespace não mapeia aparece como a identidade de overflow e conta como do root; um container
+rootless que *mapeia* essa identidade a torna alguém, e estrangeira. O `exempt()` é essa decisão
+isolada — ele não lê nada, não muda nada, e responde antes de uma recusa chegar ao journal:
+
+```php
+$exempt = File::exempt(
+   (string) file_get_contents('/proc/self/uid_map'),
+   (int) file_get_contents('/proc/sys/fs/overflowuid')
+);
+// -1 num host (ou quando o mapa cobre o uid de overflow): ninguém é isento
+```
+
+Use-o para responder "este volume vai ser aceito?" enquanto você ainda tem um shell. O handler faz
+a mesma chamada sozinho, uma vez, na primeira escrita privilegiada.
+
 ## Segure records até um sink poder ser escrito
 
 Às vezes o destino ainda **não** é escrevível — o caso acima é o clássico: um launch como root que
@@ -411,6 +465,37 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
   `TCP_Server_CLI::monitoring()`.
 - **Camadas** — `ACI\Logs` depende só do ABI (helpers de template/ANSI, `IO/IPC/Pipe`); o viewer
   CLI e os servidores WPI o consomem — sem back-dependency `ACI → CLI/WPI`.
+
+### Handlers\File
+
+```php
+public static function guard (int $UID): void
+```
+
+Nomeia a identidade de runtime da qual um escritor privilegiado precisa se guardar — o uid para o
+qual um lançamento como root demove. Um diretório sticky no caminho pertencente a essa identidade é
+recusado, porque o dono dele pode renomear qualquer coisa lá dentro; um pertencente a qualquer
+outra pessoa mantém a proteção do sticky. Sem nenhuma identidade nomeada, ou com `0`, todo
+diretório sticky estrangeiro é recusado. Vale para o processo inteiro, e só é consultado enquanto o
+escritor é root.
+
+```php
+public static function mute (bool $quiet = true): void
+```
+
+Mantém os relatos de recusa fora do logger do sistema; `false` os liga de volta. Ele silencia só o
+relato — um destino recusado continua fazendo a escrita falhar. O runner de testes o chama porque
+as suítes dele recusam de propósito.
+
+```php
+public static function exempt (string $map, int $overflow): int
+```
+
+O uid que um escritor privilegiado pode tratar como do root, dados o `uid_map` do processo (linhas
+`dentro fora quantidade`) e o uid de overflow do kernel — ou `-1` quando ninguém se qualifica. Fora
+de um user namespace, e dentro de um cujo mapa cobre o uid de overflow (o de um container rootless
+cobre), a resposta é `-1`. Puro: não abre arquivo nenhum e não define nada; o handler o chama uma
+vez sozinho, na primeira escrita privilegiada.
 
 ### Handlers\Memory
 

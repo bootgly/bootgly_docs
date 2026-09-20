@@ -312,7 +312,7 @@ $Request->identity; // Bootgly\API\Security\Identity|string|null
 $Request->claims; // ['sub' => 'user-1', 'scope' => 'demo:read']
 ```
 
-Veja [Authentication](../Authentication/) para exemplos com guards Basic, Bearer, JWT e Session.
+Veja [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) para exemplos com guards Basic, Bearer, JWT e Session.
 
 ## HTTP Content Negotiation
 
@@ -614,9 +614,9 @@ Um valor que você atribui vence. O `php.ini` — `session.gc_maxlifetime`, `ses
 
 O Bootgly fornece um sistema de validação fluente para verificar dados da requisição antes do seu handler executar. Ele gira em torno de três peças:
 
-- [`Bootgly\ADI\Validation`](/manual/ADI/Validation/overview/) — a engine standalone: executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo. Ela vive na camada ADI, então as mesmas regras validam input de CLI, jobs e seeders.
+- [`Bootgly\ADI\Validation`](/guide/validation/overview/) — a engine standalone: executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo. Ela vive na camada ADI, então as mesmas regras validam input de CLI, jobs e seeders.
 - `Bootgly\ADI\Validators\*` — classes de regra built-in (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
-- Middleware `Validator` — aplica validação a uma fonte do Request e falha rapidamente (padrão `422 Unprocessable Entity`) se inválido. Veja [Middlewares → Validator](../Middlewares/#validator).
+- Middleware `Validator` — aplica validação a uma fonte do Request e falha rapidamente (padrão `422 Unprocessable Entity`) se inválido. Veja [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
 ### Validação Standalone
 
@@ -642,7 +642,7 @@ $Validation->valid;  // true | false
 $Validation->errors; // ['email' => ['email must be a valid email address.'], ...]
 ```
 
-Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada). A referência completa da engine — semântica opcional/implícita, mensagens customizadas e receitas não-HTTP — vive na página [ADI Validation](/manual/ADI/Validation/overview/).
+Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada). A referência completa da engine — semântica opcional/implícita, mensagens customizadas e receitas não-HTTP — vive no [guia de Validation](/guide/validation/overview/).
 
 ### Fontes Disponíveis
 
@@ -666,7 +666,7 @@ Com `Sources::Cookies`, as regras ligam pelo nome do cookie; quando o mesmo nome
 
 ### Validadores Built-in
 
-Todas as regras built-in vivem em `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` e `Extension`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão. O catálogo bloco-a-bloco (argumentos, semântica e mensagens padrão) vive na [referência ADI Validation](/manual/ADI/Validation/overview/).
+Todas as regras built-in vivem em `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` e `Extension`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão. O catálogo bloco-a-bloco (argumentos, semântica e mensagens padrão) vive no [guia de Validation](/guide/validation/overview/).
 
 ### Regras Customizadas
 
@@ -714,7 +714,7 @@ yield $Router->route('/users', function (Request $Request, Response $Response) {
 ]);
 ```
 
-Veja [Middlewares → Validator](../Middlewares/#validator) para a referência completa do middleware (status code, fallback closure).
+Veja [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator) para a referência completa do middleware (status code, fallback closure).
 
 ### Exemplo End-to-End
 

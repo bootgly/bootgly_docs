@@ -55,7 +55,7 @@ cd bootgly
 ```
 
 Isso sobe um servidor HTTP/1.1 + h2c que você pode dirigir com sockets raw. Para a superfície
-de TLS e AutoTLS, veja o guia de [Auto-TLS](/auto-tls) — `staging: true` aponta a emissão para
+de TLS e AutoTLS, veja o guia de [Auto-TLS](/guide/auto-tls) — `staging: true` aponta a emissão para
 a CA de staging da Let's Encrypt, então você nunca queima rate limit testando.
 
 Duas coisas que vale saber antes de começar a cutucar:
