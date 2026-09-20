@@ -580,6 +580,8 @@ Request::$maxRanges = 0;
 $Request->Session; // Session object
 ```
 
+Read and write it through the instance API — `get()`/`set()`, the bulk `put()`/`forget()`, `pull()`, `has()`/`check()`, `list()`, `flush()`, and `regenerate()` right after a privilege change. Every signature is in the [Reference](#reference) at the end of this page.
+
 The server persists the session for you: once at the end of the synchronous cycle, right before the response is encoded, and — when the route deferred its response — again when the deferred work completes — on success, on error, at a handoff to SSE (before its wire is built) and at a handoff to a nested `defer()` (at the handoff itself). A cancelled deferral (the client left while it was parked) gets no save point of its own — the server does not persist it; the Session's own destructor is a safety net, though, so a write made before the client left can still reach storage later, when the cycle collector reclaims the abandoned generation. Inside deferred work reach the session through the snapshot — the closure's second argument, the same object as `$Response->Request` — as `$Request->Session`; a session first touched after the first `wait()` still emits its `Set-Cookie` on the deferred response when the work returns normally, never on an error answer.
 
 When the route touched the Session before `defer()`, the deferral shares that Session object with the live request. If another request presenting the same cookie writes while the deferral is still parked, the deferred save meets a stale revision and is discarded rather than silently overwriting the newer write: the deferred response still answers, its Session write is simply lost, and the client keeps its cookie and the newer data — keep the writes of one session on one side of a parked deferral.
@@ -814,3 +816,81 @@ yield $Router->route('/validation/custom', function (Request $Request, Response 
    ], Source: Sources::Fields),
 ]);
 ```
+
+## Reference
+
+### Session instance API
+
+`$Request->Session` is a `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Session`. Its payload lives in the object, never in `$_SESSION`, and the server persists it for you (see [Session](#session)) — a handler only reads and writes. Two properties are publicly readable: `$id`, the current session ID, and `$loaded`, `true` only when the ID presented by the cookie matched a server-issued record that was read back. Every mutator below also appends the session `Set-Cookie` to the current response, once; reading never does.
+
+```php
+public function get (string $name, mixed $default = null): mixed
+```
+
+Reads one value, or `$default` when the key is absent. The lookup is `??`-based, so a stored `null` yields `$default` too.
+
+```php
+public function set (string $name, mixed $value): void
+```
+
+Stores one value and marks the session dirty for the next save.
+
+```php
+public function put (array|string $key, mixed $value = null): void
+```
+
+Bulk store. An `array<string, mixed>` merges every pair in one call; a `string` key delegates to `set()` with `$value`.
+
+```php
+public function pull (string $name, mixed $default = null): mixed
+```
+
+Reads a value and deletes it in the same call — a `get()` followed by a `delete()`. Returns `$default` when the key is absent.
+
+```php
+public function delete (string $name): void
+```
+
+Removes one key.
+
+```php
+public function forget (array|string $name): void
+```
+
+Bulk remove. An `array<int, string>` unsets every listed key in one call; a scalar delegates to `delete()`.
+
+```php
+public function has (string $name): bool
+```
+
+`true` when the key exists **and** its value is not `null` — it is an `isset()`.
+
+```php
+public function check (string $name): bool
+```
+
+`true` when the key exists, even when its value is `null` — it is an `array_key_exists()`. Use it to tell a stored `null` from a key that was never written.
+
+```php
+public function list (): array
+```
+
+Returns the whole payload as an `array<string, mixed>`.
+
+```php
+public function flush (): void
+```
+
+Drops every key. An emptied session is destroyed at the next save instead of being written back empty.
+
+```php
+public function regenerate (): void
+```
+
+Rotates the session ID — call it immediately after authenticating a user or elevating privileges. The old record is destroyed, a fresh cryptographically random ID is generated, the payload is migrated and the `Set-Cookie` of the current response is updated. When another request already changed or revoked the loaded snapshot, the stale payload is discarded rather than migrated into the new ID. Throws `RuntimeException` when a loaded session's handler does not implement the atomic commit/revoke contract.
+
+```php
+public function save (): void
+```
+
+Persists the session through the configured handler, or destroys the record when `flush()` emptied it. The server already calls it at every save point of the request cycle, so a handler rarely needs to; it returns immediately when nothing changed or no handler is configured.

@@ -181,6 +181,53 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 > handler que capturou um descritor enquanto o root rodava (um `Stream` aberto no `boot()`) é
 > retido e instalado como qualquer outro, mas continua escrevendo pelo descritor do root.
 
+## Segure records até um sink poder ser escrito
+
+Às vezes o destino ainda **não** é escrevível — o caso acima é o clássico: um launch como root que
+não pode criar o arquivo de log como root. O `Handlers\Memory` é o handler dessa janela. Ele não
+escreve em lugar nenhum; guarda todo record que recebe em memória — no máximo `Memory::LIMIT`
+(10000), com o mais antigo dando lugar a partir daí — até que algo os reproduza pelos sinks reais.
+
+O servidor faz isso por você. Você recorre a ele diretamente quando o seu próprio processo tem o
+mesmo formato: muda de identidade, abre o destino tarde ou só decide depois para onde os records
+vão.
+
+```php
+use const BOOTGLY_STORAGE_DIR;
+
+use Bootgly\ACI\Logs\Handlers;
+use Bootgly\ACI\Logs\Handlers\File;
+use Bootgly\ACI\Logs\Handlers\Memory;
+use Bootgly\ACI\Logs\Logger;
+
+// ! Fica no lugar dos sinks reais — nada chega a um destino ainda
+$Sinks = Logger::$Sinks ?? new Handlers;
+$Hold = new Memory;
+Memory::hold($Hold, $Sinks->Handlers);
+Logger::$Sinks = new Handlers;
+Logger::$Sinks->push($Hold);
+
+// ... todo record logado daqui em diante fica retido em memória ...
+
+// @ O destino está seguro agora: instale os sinks reais e reproduza o que foi retido
+Logger::$Sinks = new Handlers;
+Logger::$Sinks->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
+
+$Hold->replay(...Logger::$Sinks->Handlers);
+Memory::release();
+```
+
+O `Memory::hold()` é um registro, por processo, de **uma** retenção: é assim que uma fase
+posterior do mesmo processo — ou um código que não sabe nada do seu launch — encontra a retenção
+em vigor e os handlers pelos quais ela está no lugar (`$Hold->Withheld`), sem passar nada adiante.
+O `replay()` entrega cada record retido aos handlers que você nomear, na ordem de chegada, e os
+esquece, de modo que chamá-lo de novo não reproduz nada; o `release()` então esquece o registro.
+
+A retenção é **por processo**. Um `fork()` herda o array, não a posse: no filho, o próximo record
+retido — ou o próximo `replay()` — limpa o que foi herdado, então um worker nunca reproduz o que
+o pai reteve. O único processo que precisa ficar com a herança — um master daemon destacado,
+forkado do launcher que iniciou a retenção — a reivindica com `adopt()` logo depois do detach.
+
 ## Saiba de quem é o record (procedência)
 
 Todo `Record` carrega um campo `project`: o **id de pasta canônico** do projeto bootado
@@ -346,7 +393,8 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
 - **Handler** — abstrato `Logs\Handler`: `handle(Record): bool`; públicos `$Level` (severidade
   mínima), `$Formatter`, `$Filters`. Concretos: `Handlers\Stream($stream = STDOUT, …)`,
   `Handlers\File($path, …, Rotation)` — o caminho resolve `{channel}` e `{project}` por record,
-  sanitizados —, `Handlers\Syslog($ident, $facility, …)`, `Handlers\Pipe(IPC\Pipe, …)`.
+  sanitizados —, `Handlers\Syslog($ident, $facility, …)`, `Handlers\Pipe(IPC\Pipe, …)`,
+  `Handlers\Memory` (a retenção — detalhada abaixo).
 - **Handlers** — `Logs\Handlers`: `push(Handler $Handler, null|Levels $Level = null): self`.
 - **Formatter** — interface `Logs\Formatter`: `format(Record): string`. Concretos: `Formatters\Line`
   (ANSI + tokens de template), `Formatters\JSON` (um objeto por linha).
@@ -363,6 +411,67 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
   `TCP_Server_CLI::monitoring()`.
 - **Camadas** — `ACI\Logs` depende só do ABI (helpers de template/ANSI, `IO/IPC/Pipe`); o viewer
   CLI e os servidores WPI o consomem — sem back-dependency `ACI → CLI/WPI`.
+
+### Handlers\Memory
+
+```php
+public static function hold (null|self $Hold = null, array $Withheld = []): null|self
+```
+
+Registra — ou lê — a única retenção deste processo. Sem argumentos, apenas lê: o handler em vigor,
+ou `null` quando nenhum está registrado. Recebendo um handler, registra **aquela instância** — uma
+retenção é conhecida por identidade, nunca por classe, então um `Handlers\Memory` que um projeto
+tenha empurrado no `Logger::$Sinks` por conta própria nunca vira a retenção — junto com
+`$Withheld`, os handlers pelos quais ela fica no lugar, e a devolve. Re-registrar a retenção que
+já está em vigor sem nomear handlers mantém aqueles pelos quais ela já está no lugar; nomear
+handlers substitui essa lista, e registrar uma instância diferente sem nomear nenhum a deixa no
+lugar de nada.
+
+```php
+public static function release (): void
+```
+
+Esquece a retenção registrada — o `hold()` volta a ler `null`. Chamado assim que os sinks reais
+estão instalados e o que foi retido já foi reproduzido. A instância `Memory` em si não é tocada.
+
+```php
+public function replay (Handler ...$Handlers): int
+```
+
+Entrega cada record retido, na ordem de chegada, a cada handler informado —
+`$Hold->replay(...Logger::$Sinks->Handlers)` é a chamada usual — então os esquece e devolve
+quantos foram reproduzidos. Uma segunda chamada não reproduz nada (`0`). Num processo que herdou
+os records de um `fork()` e não os adotou, eles são descartados em vez de reproduzidos.
+
+```php
+public function adopt (): void
+```
+
+Torna os records herdados os deste processo, de modo que um `replay()` posterior os persista. Só o
+processo que sucede o que reteve o chama — o master daemon destacado, forkado do launcher que
+iniciou a retenção, logo depois do detach. Sem ele, a herança de um fork é descartada no primeiro
+record retido ou no primeiro replay, que é exatamente o que um worker quer.
+
+```php
+public private(set) array $Records
+```
+
+Data (somente leitura). Os objetos `Record` retidos, na ordem de chegada. Um record abaixo do
+`$Level` do handler, ou descartado pelos filtros dele, nunca é retido.
+
+```php
+public private(set) array $Withheld
+```
+
+Data (somente leitura). Os handlers pelos quais esta retenção fica no lugar — o que foi dado ao
+`hold()`, para que o processo que se estabelecer primeiro os instale.
+
+```php
+public const int LIMIT
+```
+
+`10000` — o máximo de records que uma retenção guarda. A partir daí o mais antigo dá lugar: a
+janela que uma retenção cobre (a emissão do Auto-TLS roda dentro dela) não tem duração controlada.
 
 ## Próximas referências
 

@@ -181,6 +181,53 @@ Where an opted-in logger's records land, per server mode:
 > `Stream` opened in `boot()`) is withheld and installed like any other, but keeps writing through
 > root's descriptor.
 
+## Hold records until a sink can be written
+
+Sometimes the destination is not writable **yet** — the case above is the classic one: a root
+launch that must not create the log file as root. `Handlers\Memory` is the handler for that
+window. It writes nowhere; it keeps every record it receives in memory — at most `Memory::LIMIT`
+(10000), the oldest giving way past it — until something replays them through the real sinks.
+
+The server does this for you. You reach for it directly when your own process has the same shape:
+it changes identity, opens the destination late, or only decides later where the records go.
+
+```php
+use const BOOTGLY_STORAGE_DIR;
+
+use Bootgly\ACI\Logs\Handlers;
+use Bootgly\ACI\Logs\Handlers\File;
+use Bootgly\ACI\Logs\Handlers\Memory;
+use Bootgly\ACI\Logs\Logger;
+
+// ! Stand in for the real sinks — nothing reaches a destination yet
+$Sinks = Logger::$Sinks ?? new Handlers;
+$Hold = new Memory;
+Memory::hold($Hold, $Sinks->Handlers);
+Logger::$Sinks = new Handlers;
+Logger::$Sinks->push($Hold);
+
+// ... every record logged from here on is held in memory ...
+
+// @ The destination is safe now: install the real sinks and replay what was held
+Logger::$Sinks = new Handlers;
+Logger::$Sinks->push(new File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log'));
+
+$Hold->replay(...Logger::$Sinks->Handlers);
+Memory::release();
+```
+
+`Memory::hold()` is a per-process registry of **one** hold: it is how a later phase of the same
+process — or code that knows nothing about your launch — finds the hold in place and the handlers
+it stands in for (`$Hold->Withheld`), with nothing passed around. `replay()` hands every held
+record to the handlers you name, in arrival order, and forgets them, so calling it again replays
+nothing; `release()` then forgets the registration.
+
+The hold is **per process**. A `fork()` inherits the array but not the ownership: in the child,
+the next record held — or the next `replay()` — clears what it inherited, so a worker never
+replays what its parent held. The one process that must keep the inheritance — a detached daemon
+master, forked from the launcher that started the hold — claims it with `adopt()` right after
+detaching.
+
 ## Know whose record it is (provenance)
 
 Every `Record` carries a `project` field: the **canonical folder id** of the booted project
@@ -344,7 +391,8 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
 - **Handler** — abstract `Logs\Handler`: `handle(Record): bool`; public `$Level` (min severity),
   `$Formatter`, `$Filters`. Concretes: `Handlers\Stream($stream = STDOUT, …)`,
   `Handlers\File($path, …, Rotation)` — the path resolves `{channel}` and `{project}` per record,
-  sanitized —, `Handlers\Syslog($ident, $facility, …)`, `Handlers\Pipe(IPC\Pipe, …)`.
+  sanitized —, `Handlers\Syslog($ident, $facility, …)`, `Handlers\Pipe(IPC\Pipe, …)`,
+  `Handlers\Memory` (the hold — detailed below).
 - **Handlers** — `Logs\Handlers`: `push(Handler $Handler, null|Levels $Level = null): self`.
 - **Formatter** — interface `Logs\Formatter`: `format(Record): string`. Concretes: `Formatters\Line`
   (ANSI + template tokens), `Formatters\JSON` (one object per line).
@@ -360,6 +408,66 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   `control(string $key): bool`, `render(): void`. Driven by `TCP_Server_CLI::monitoring()`.
 - **Layering** — `ACI\Logs` depends only on ABI (template/ANSI helpers, `IO/IPC/Pipe`); the CLI
   viewer and the WPI servers consume it — no `ACI → CLI/WPI` back-dependency.
+
+### Handlers\Memory
+
+```php
+public static function hold (null|self $Hold = null, array $Withheld = []): null|self
+```
+
+Registers — or reads — the one hold of this process. With no arguments it only reads: the handler
+in place, or `null` when none is registered. Given a handler it registers **that instance** —
+a hold is known by identity, never by class, so a `Handlers\Memory` a project pushed into
+`Logger::$Sinks` of its own never becomes the hold — together with `$Withheld`, the handlers it
+stands in for, and returns it. Re-registering the hold already in place with no handlers named
+keeps the ones it already stands in for; naming handlers replaces that list, and registering a
+different instance with none named leaves it standing in for nothing.
+
+```php
+public static function release (): void
+```
+
+Forgets the registered hold — `hold()` reads `null` again. Called once the real sinks are
+installed and what was held has been replayed. The `Memory` instance itself is untouched.
+
+```php
+public function replay (Handler ...$Handlers): int
+```
+
+Hands every held record, in arrival order, to each handler given — `$Hold->replay(...Logger::$Sinks->Handlers)`
+is the usual call — then forgets them, and returns how many were replayed. A second call replays
+nothing (`0`). In a process that inherited the records from a `fork()` and did not adopt them,
+they are dropped instead of replayed.
+
+```php
+public function adopt (): void
+```
+
+Makes the inherited records this process's own, so a later `replay()` persists them. Only the
+process that succeeds the one that held calls it — the detached daemon master, forked from the
+launcher that started the hold, right after detaching. Without it a fork's inheritance is dropped
+on its first held record or replay, which is exactly what a worker wants.
+
+```php
+public private(set) array $Records
+```
+
+Data (read-only). The `Record` objects held, in arrival order. A record below the handler's
+`$Level`, or dropped by its filters, is never held.
+
+```php
+public private(set) array $Withheld
+```
+
+Data (read-only). The handlers this hold stands in for — what `hold()` was given, so whichever
+process settles first installs them.
+
+```php
+public const int LIMIT
+```
+
+`10000` — the most records one hold keeps. Past it the oldest gives way: the window a hold spans
+(Auto-TLS issuance runs inside it) has no controlled length.
 
 ## Next references
 

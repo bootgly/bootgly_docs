@@ -269,7 +269,7 @@ export default {
   '/Bootgly/essential/debugging': {
     config: {
       icon: 'bug_report',
-      status: 'empty',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Inspect errors, backtraces and runtime state with Bootgly debugging and diagnostics foundations.',
@@ -289,6 +289,27 @@ export default {
       },
       'pt-BR': {
         title: 'Debugando'
+      }
+    }
+  },
+  '/Bootgly/essential/debugging/backtrace': {
+    config: {
+      icon: 'format_list_numbered',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Capture the call stack as typed frames and render project-relative file:line traces.',
+          'pt-BR': 'Capture a call stack como frames tipados e renderize traces file:line relativos ao projeto.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Backtrace'
       }
     }
   },

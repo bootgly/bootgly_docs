@@ -581,6 +581,8 @@ Request::$maxRanges = 0;
 $Request->Session; // Objeto Session
 ```
 
+Leia e escreva nele pela API de instância — `get()`/`set()`, os bulk `put()`/`forget()`, `pull()`, `has()`/`check()`, `list()`, `flush()` e `regenerate()` logo após uma mudança de privilégio. Todas as assinaturas estão na [Referência](#referência) ao final desta página.
+
 O servidor persiste a sessão por você: uma vez no fim do ciclo síncrono, logo antes de a resposta ser codificada, e — quando a rota deferiu a resposta — de novo quando o trabalho deferred termina — no sucesso, no erro, num handoff para SSE (antes de o wire ser montado) e num handoff para um `defer()` aninhado (no próprio handoff). Um deferral cancelado (o cliente saiu enquanto ele estava estacionado) não ganha ponto de gravação próprio — o servidor não o persiste; o destrutor da própria Session é uma rede de segurança, porém, então uma escrita feita antes de o cliente sair ainda pode chegar ao armazenamento depois, quando o coletor de ciclos recuperar a geração abandonada. Dentro do trabalho deferred, alcance a sessão pelo snapshot — o segundo argumento da closure, o mesmo objeto que `$Response->Request` — como `$Request->Session`; uma sessão tocada pela primeira vez depois do primeiro `wait()` ainda emite o `Set-Cookie` na resposta deferred quando o trabalho retorna normalmente, nunca numa resposta de erro.
 
 Quando a rota tocou a Session antes do `defer()`, o deferral compartilha esse objeto Session com o request vivo. Se outro request apresentando o mesmo cookie escrever enquanto o deferral ainda está estacionado, o save deferred encontra uma revisão obsoleta e é descartado em vez de sobrescrever silenciosamente a escrita mais nova: a resposta deferred ainda responde, a escrita de Session dela simplesmente se perde, e o cliente mantém o cookie e os dados mais novos — mantenha as escritas de uma sessão de um só lado de um deferral estacionado.
@@ -815,3 +817,81 @@ yield $Router->route('/validation/custom', function (Request $Request, Response 
    ], Source: Sources::Fields),
 ]);
 ```
+
+## Referência
+
+### API de instância da Session
+
+`$Request->Session` é um `Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Session`. O payload dele vive no objeto, nunca em `$_SESSION`, e o servidor o persiste por você (veja [Sessão](#sessão)) — um handler apenas lê e escreve. Duas propriedades são publicamente legíveis: `$id`, o ID da sessão atual, e `$loaded`, `true` apenas quando o ID apresentado pelo cookie casou com um registro emitido pelo servidor e ele foi lido de volta. Todo mutador abaixo também acrescenta o `Set-Cookie` da sessão à resposta atual, uma única vez; ler nunca acrescenta.
+
+```php
+public function get (string $name, mixed $default = null): mixed
+```
+
+Lê um valor, ou `$default` quando a chave não existe. A busca é feita com `??`, então um `null` armazenado também devolve `$default`.
+
+```php
+public function set (string $name, mixed $value): void
+```
+
+Armazena um valor e marca a sessão como suja para a próxima gravação.
+
+```php
+public function put (array|string $key, mixed $value = null): void
+```
+
+Armazenamento em lote. Um `array<string, mixed>` mescla todos os pares numa só chamada; uma chave `string` delega para `set()` com `$value`.
+
+```php
+public function pull (string $name, mixed $default = null): mixed
+```
+
+Lê um valor e o apaga na mesma chamada — um `get()` seguido de um `delete()`. Devolve `$default` quando a chave não existe.
+
+```php
+public function delete (string $name): void
+```
+
+Remove uma chave.
+
+```php
+public function forget (array|string $name): void
+```
+
+Remoção em lote. Um `array<int, string>` apaga todas as chaves listadas numa só chamada; um escalar delega para `delete()`.
+
+```php
+public function has (string $name): bool
+```
+
+`true` quando a chave existe **e** seu valor não é `null` — é um `isset()`.
+
+```php
+public function check (string $name): bool
+```
+
+`true` quando a chave existe, mesmo que seu valor seja `null` — é um `array_key_exists()`. Use-o para distinguir um `null` armazenado de uma chave que nunca foi escrita.
+
+```php
+public function list (): array
+```
+
+Devolve todo o payload como um `array<string, mixed>`.
+
+```php
+public function flush (): void
+```
+
+Apaga todas as chaves. Uma sessão esvaziada é destruída na próxima gravação em vez de ser regravada vazia.
+
+```php
+public function regenerate (): void
+```
+
+Rotaciona o ID da sessão — chame-o imediatamente após autenticar um usuário ou elevar privilégios. O registro antigo é destruído, um novo ID criptograficamente aleatório é gerado, o payload é migrado e o `Set-Cookie` da resposta atual é atualizado. Quando outro request já alterou ou revogou o snapshot carregado, o payload obsoleto é descartado em vez de migrado para o novo ID. Lança `RuntimeException` quando o handler de uma sessão carregada não implementa o contrato atômico de commit/revoke.
+
+```php
+public function save (): void
+```
+
+Persiste a sessão pelo handler configurado, ou destrói o registro quando `flush()` a esvaziou. O servidor já o chama em todos os pontos de gravação do ciclo do request, então um handler raramente precisa; ele retorna de imediato quando nada mudou ou quando não há handler configurado.
