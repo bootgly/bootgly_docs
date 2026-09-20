@@ -9,7 +9,7 @@ tag. É o mesmo cache usado internamente pelo rate limiter multi-worker.
 > O cache vive na camada ABI, então todo driver é **bloqueante**. Dentro do worker assíncrono
 > do `HTTP_Server_CLI`, prefira `memory` (por worker, array puro — nunca toca uma syscall) ou
 > `shared`/`apcu` (sem rede) nos caminhos quentes e use o
-> **[driver Redis KV](#redis-assincrono-no-event-loop)** não-bloqueante quando precisar de
+> **[driver Redis KV](#redis-assíncrono-no-event-loop)** não-bloqueante quando precisar de
 > Redis no event loop — uma chamada Redis bloqueante travaria o loop.
 
 ## Gravar e ler
@@ -41,8 +41,14 @@ exatamente o comportamento de um rate limiter de janela fixa (espelha `INCR` + u
 ```php
 $hits = $Cache->increment('hits:home');            // 1, 2, 3, ...
 $left = $Cache->increment("quota:$ip", TTL: 60);    // a janela abre na primeira chamada
+$owed = $Cache->decrement("credits:$id", TTL: 86400);
 $secs = $Cache->remain("quota:$ip");                // segundos restantes (-1 = sem expiração, -2 = ausente)
 ```
+
+`decrement()` recebe o mesmo `TTL` e o aplica da mesma forma. Omitir o `TTL` aplica o padrão
+configurado no cache, como em toda outra escrita — um contador criado num cache configurado
+com `TTL: 0` portanto nunca expira, então passe um `TTL` explícito quando a janela precisa
+fechar.
 
 `remain()` informa o tempo de vida restante seguindo a semântica do Redis: `-2` quando a chave
 está ausente ou expirada, `-1` quando existe sem expiração, caso contrário os segundos
@@ -154,7 +160,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 |---|---|---|---|
 | `driver` | `file` | todos | Driver ativo |
 | `prefix` | `''` | todos | Namespace prefixado em toda chave |
-| `ttl` | `0` | todos | TTL padrão (segundos; `0` = para sempre) |
+| `TTL` | `0` | todos | TTL padrão (segundos; `0` = para sempre) |
 | `path` | `…/storage/cache` | file | Diretório base |
 | `segment` | `0` | shared | Chave System V (`0` deriva uma) |
 | `size` | `16 MiB` | shared | Tamanho do segmento em bytes |
@@ -164,6 +170,12 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `secure` | `false` | redis | Conexão TLS |
 | `classes` | `[]` | file, redis, shared, apcu | Classes que o cache pode reconstruir (veja [Segurança](#segurança)) |
 | `clock` | `null` | file, shared, memory | Override de relógio `Closure(): int` (testes) |
+
+Os nomes das opções são os nomes das propriedades que elas preenchem, e só esses nomes são
+aceitos: uma chave desconhecida — `ttl` no lugar de `TTL`, um erro de digitação, uma opção de
+outro subsistema — lança `InvalidArgumentException` em vez de cair em silêncio no padrão. Um
+`TTL` que não seja um número não-negativo é recusado pelo mesmo motivo (`'1h'` viraria um
+segundo).
 
 ## Rate limiting (backend compartilhado)
 
@@ -252,7 +264,7 @@ Em scripts CLI você pode `await()` diretamente pelo pool. Em rotas `HTTP_Server
 partir de `$Response->defer()` como qualquer outro recurso assíncrono, para que o código da rota
 nunca chame `advance()` manualmente.
 
-Desde a 1.0.0-rc.2, o padrão `prefer` nunca faz downgrade para plaintext diante de um peer que
+Desde a 1.0.0, o padrão `prefer` nunca faz downgrade para plaintext diante de um peer que
 fica em silêncio: um Redis plaintext não declarado — sem `'secure' => ['mode' => 'disable']` na
 config — agora custa o budget de handshake (1 s, ou metade do `timeout`) a cada nova conexão e
 falha toda operação até ser declarado, onde as releases anteriores caíam silenciosamente em

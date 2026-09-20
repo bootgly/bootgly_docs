@@ -112,7 +112,7 @@ printf 'MyApp\nsecret\nWeb\ny\n' | php app.php
 ### Controls
 
 ```php
-enum Bootgly\CLI\UX\Form\Controls
+enum Bootgly\CLI\UX\Components\Form\Controls
 {
    case Text;
    case Secret;

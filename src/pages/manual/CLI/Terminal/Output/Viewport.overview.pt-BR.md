@@ -1,17 +1,16 @@
-# Viewport
+# Terminal Output\Viewport
 
 A classe Viewport é responsável pela manipulação do viewport (área visível) do Terminal.
 
 ## Instância
 
-Para utilizar a classe Viewport, é necessário acessar o objeto Terminal, que por sua vez contém o objeto Output que contém o objeto Viewport.
+Para utilizar a classe Output\Viewport do Terminal, você precisa acessar a instância através da classe Output:
 
 ```php
 use const Bootgly\CLI;
 
 $Output = CLI->Terminal->Output;
-
-$Viewport->Output;
+$Viewport = $Output->Viewport;
 ```
 
 ## Configurações

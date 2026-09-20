@@ -33,8 +33,8 @@ $Cursor->right(columns: 5); // Moves the cursor five columns to the right
 Example with `down()`:
 
 ```php
-$Cursor->down(lines: 2);     // Moves the cursor two lines down
-$Cursor->down(lines: 1, 10); // Moves the cursor one line down and to column 10
+$Cursor->down(lines: 2);             // Moves the cursor two lines down
+$Cursor->down(lines: 1, column: 10); // Moves the cursor one line down and to column 10
 ```
 
 Example with `left()`:

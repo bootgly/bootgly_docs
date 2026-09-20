@@ -40,8 +40,14 @@ behavior a fixed-window rate limiter needs (it mirrors Redis `INCR` + a one-time
 ```php
 $hits = $Cache->increment('hits:home');            // 1, 2, 3, ...
 $left = $Cache->increment("quota:$ip", TTL: 60);    // window opens on first call
+$owed = $Cache->decrement("credits:$id", TTL: 86400);
 $secs = $Cache->remain("quota:$ip");                // seconds left (-1 = no expiry, -2 = missing)
 ```
+
+`decrement()` takes the same `TTL` and applies it the same way. Leaving `TTL` out applies the
+cache's configured default, like every other write does — a counter created on a cache
+configured with `TTL: 0` therefore never expires, so pass an explicit `TTL` when the window
+must close.
 
 `remain()` reports the remaining time-to-live following Redis semantics: `-2` when the key is
 missing or expired, `-1` when it exists without an expiry, otherwise the seconds left.
@@ -161,6 +167,12 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 | `classes` | `[]` | file, redis, shared, apcu | Classes the cache may reconstruct (see [Security](#security)) |
 | `clock` | `null` | file, shared, memory | `Closure(): int` clock override (testing) |
 
+The option names are the names of the properties they fill, and only those names are
+accepted: an unknown key — `ttl` for `TTL`, a typo, an option meant for another subsystem —
+raises `InvalidArgumentException` instead of silently falling back to the default. A `TTL`
+that is not a non-negative number is refused for the same reason (`'1h'` would otherwise
+become one second).
+
 ## Rate limiting (shared backend)
 
 The `RateLimit` HTTP middleware uses this cache as its backend. With the **Shared-memory**
@@ -245,7 +257,7 @@ In CLI scripts you can `await()` directly through the pool. In `HTTP_Server_CLI`
 it from `$Response->defer()` like any other async resource so route code never calls
 `advance()` manually.
 
-Since 1.0.0-rc.2, the default `prefer` never downgrades to plaintext on a peer that stays
+Since 1.0.0, the default `prefer` never downgrades to plaintext on a peer that stays
 silent: an undeclared plaintext Redis — one not configured with `'secure' => ['mode' =>
 'disable']` — now costs the handshake budget (1 s, or half the `timeout`) on every new
 connection and fails every operation until it is declared, where earlier releases silently

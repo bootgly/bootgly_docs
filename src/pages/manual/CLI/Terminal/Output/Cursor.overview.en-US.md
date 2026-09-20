@@ -23,25 +23,25 @@ The Cursor class has no specific settings beyond those already performed by the 
 ### Basic movements
 
 ```php
-up (int $lines, ? int $column = null) : self
+up (int $lines, null|int $column = null) : Output
 ```
 
 Moves the cursor up the specified number of lines. If an optional column value is passed, the cursor is positioned in that column after moving up the lines.
 
 ```php
-right (int $columns) : self
+right (int $columns) : Output
 ```
 
 Moves the cursor to the right the specified number of columns.
 
 ```php
-down (int $lines, ? int $column = null) : self
+down (int $lines, null|int $column = null) : Output
 ```
 
 Moves the cursor down the specified number of lines. If an optional column value is passed, the cursor is positioned in that column after moving down the lines.
 
 ```php
-left (int $columns) : self
+left (int $columns) : Output
 ```
 
 Moves the cursor to the left the specified number of columns.
@@ -57,13 +57,13 @@ Moves the cursor to an absolute position on the terminal screen. If only the lin
 ### Memorizing positions
 
 ```php
-save () : self
+save () : Output
 ```
 
 Saves the current position of the cursor to be retrieved later through the `restore()` method.
 
 ```php
-restore () : self
+restore () : Output
 ```
 
 Restores the previously saved cursor position through the `save()` method.
@@ -71,7 +71,7 @@ Restores the previously saved cursor position through the `save()` method.
 ### Reporting position
 
 ```php
-report () : self
+report () : Output
 ```
 
 Outputs the current position of the cursor. It is possible to know the current position of the cursor through the `position` property.
@@ -79,7 +79,7 @@ Outputs the current position of the cursor. It is possible to know the current p
 ### Changing appearance
 
 ```php
-shape (? string $style = '@user') : self
+shape (null|string $style = '@user') : Output
 ```
 
 Changes the cursor format. Available styles are: "block" (block), "underline" (underlined) and "bar" (little bar).
@@ -87,19 +87,19 @@ Changes the cursor format. Available styles are: "block" (block), "underline" (u
 ### Changing visibility
 
 ```php
-blink (bool $status) : self
+blink (bool $status) : Output
 ```
 
 Enables or disables the cursor's intermittent movement.
 
 ```php
-show () : self
+show () : Output
 ```
 
 Makes the cursor visible.
 
 ```php
-hide () : self
+hide () : Output
 ```
 
 Makes the cursor invisible.

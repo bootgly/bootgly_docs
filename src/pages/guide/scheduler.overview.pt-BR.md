@@ -18,17 +18,20 @@ Os jobs ficam em um arquivo `schedule.php` na raiz do projeto. Ele retorna uma
 
 ```php
 // schedule.php
+use Bootgly\ABI\Resources\Cache;
 use Bootgly\ACI\Schedule;
 use Bootgly\ACI\Schedule\Catchups;
 use Bootgly\ACI\Schedule\Frequencies;
 
 return function (Schedule $Schedule): void {
+   $Cache = new Cache(['driver' => 'file']);
+
    $Schedule->add('backup', BackupJob::class)       // class-string invocável ou Closure
       ->repeat(Frequencies::Daily, at: '03:00')     // todo dia às 03:00
       ->lock()                                       // nunca sobrepõe uma execução anterior
       ->recover(Catchups::Once);                     // roda uma vez se minutos foram perdidos
 
-   $Schedule->add('cleanup', fn () => Cache->prune())
+   $Schedule->add('cleanup', fn () => $Cache->purge())
       ->repeat('*/5 * * * *');                       // cron cru de 5 campos, mesmo verbo
 };
 ```
@@ -37,9 +40,9 @@ O worker procura o `schedule.php` no diretório do projeto bootado
 (`BOOTGLY_PROJECT->path`), com fallback para o diretório de trabalho
 (`BOOTGLY_WORKING_DIR`) quando nenhum projeto está bootado.
 
-Todo `projects create` do zero scaffolda um `schedule.php` com os exemplos acima
-comentados — seguro de apagar, zero jobs até você ativar um (`schedule list` avisa em vez
-de não imprimir nada).
+Todo `projects create` do zero scaffolda um `schedule.php` com dois exemplos comentados —
+uma closure `heartbeat` em um cron cru `*/5 * * * *` e o job `backup` acima — seguro de
+apagar, zero jobs até você ativar um (`schedule list` avisa em vez de não imprimir nada).
 
 ## Defina a cadência — `repeat()`
 

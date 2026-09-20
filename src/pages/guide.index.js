@@ -2,7 +2,7 @@ export default {
   '/getting-started': {
     config: {
       icon: 'flag',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Install Bootgly with one command and create your first project with the wizard.',
@@ -28,7 +28,7 @@ export default {
   '/console-platform': {
     config: {
       icon: 'terminal',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build full-screen terminal apps and games with the opinionated Console platform.',
@@ -54,7 +54,7 @@ export default {
   '/web-platform': {
     config: {
       icon: 'language',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build MVC sites and REST APIs with the opinionated Web platform.',
@@ -84,7 +84,7 @@ export default {
   '/configuration': {
     config: {
       icon: 'tune',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Load scoped configs, local .env values, strict casts, required secrets and project overlays in Bootgly.',
@@ -110,8 +110,8 @@ export default {
   '/authentication': {
     config: {
       icon: 'login',
-      status: 'draft',
-      version: '1.0.0-beta',
+      status: 'done',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Session/cookie authentication scaffolding: registration, e-mail verification, login + remember-me and password reset — argon2id + single-use selector/verifier tokens.',
@@ -137,7 +137,7 @@ export default {
   '/authorization': {
     config: {
       icon: 'verified_user',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Protect HTTP routes with Scope, Role, Policy and persisted RBAC authorization in Bootgly.',
@@ -163,8 +163,8 @@ export default {
   '/auto-tls': {
     config: {
       icon: 'https',
-      status: 'draft',
-      version: '1.0.0-beta',
+      status: 'done',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Automatic HTTPS: the server obtains, hot-swaps and renews Let\'s Encrypt certificates natively (ACME v2, HTTP-01) — no certbot, no cron.',
@@ -190,7 +190,7 @@ export default {
   '/cryptography': {
     config: {
       icon: 'key',
-      status: 'draft',
+      status: 'done',
       version: '0.24.0-beta',
       meta: {
         description: {
@@ -217,7 +217,7 @@ export default {
   '/cache': {
     config: {
       icon: 'cached',
-      status: 'draft',
+      status: 'done',
       version: '0.17.0-beta',
       meta: {
         description: {
@@ -244,7 +244,7 @@ export default {
   '/storage': {
     config: {
       icon: 'folder',
-      status: 'draft',
+      status: 'done',
       version: '0.18.0-beta',
       meta: {
         description: {
@@ -271,7 +271,7 @@ export default {
   '/templates': {
     config: {
       icon: 'code',
-      status: 'draft',
+      status: 'done',
       version: '0.21.0-beta',
       meta: {
         description: {
@@ -298,7 +298,7 @@ export default {
   '/views': {
     config: {
       icon: 'web',
-      status: 'draft',
+      status: 'done',
       version: '0.21.0-beta',
       meta: {
         description: {
@@ -325,7 +325,7 @@ export default {
   '/theme': {
     config: {
       icon: 'palette',
-      status: 'draft',
+      status: 'done',
       version: '0.21.0-beta',
       meta: {
         description: {
@@ -352,7 +352,7 @@ export default {
   '/i18n': {
     config: {
       icon: 'language',
-      status: 'draft',
+      status: 'done',
       version: '0.24.0-beta',
       meta: {
         description: {
@@ -379,7 +379,7 @@ export default {
   '/sse': {
     config: {
       icon: 'stream',
-      status: 'draft',
+      status: 'done',
       version: '0.24.0-beta',
       meta: {
         description: {
@@ -406,7 +406,7 @@ export default {
   '/queues': {
     config: {
       icon: 'queue',
-      status: 'draft',
+      status: 'done',
       version: '0.17.0-beta',
       meta: {
         description: {
@@ -433,7 +433,7 @@ export default {
   '/scheduler': {
     config: {
       icon: 'schedule',
-      status: 'draft',
+      status: 'done',
       version: '0.17.0-beta',
       meta: {
         description: {
@@ -460,7 +460,7 @@ export default {
   '/timers': {
     config: {
       icon: 'timer',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Run process-local cooperative interval callbacks and inspect timer ownership without exposing a second mutation API.',
@@ -486,7 +486,7 @@ export default {
   '/mail': {
     config: {
       icon: 'mail',
-      status: 'draft',
+      status: 'done',
       version: '0.21.0-beta',
       meta: {
         description: {
@@ -513,7 +513,7 @@ export default {
   '/error-handling': {
     config: {
       icon: 'bug_report',
-      status: 'draft',
+      status: 'done',
       version: '0.23.0-beta',
       meta: {
         description: {
@@ -540,7 +540,7 @@ export default {
   '/events': {
     config: {
       icon: 'podcasts',
-      status: 'draft',
+      status: 'done',
       version: '0.17.0-beta',
       meta: {
         description: {
@@ -567,7 +567,7 @@ export default {
   '/logging': {
     config: {
       icon: 'receipt_long',
-      status: 'draft',
+      status: 'done',
       version: '0.18.0-beta',
       meta: {
         description: {
@@ -594,8 +594,8 @@ export default {
   '/logs': {
     config: {
       icon: 'monitor_heart',
-      status: 'draft',
-      version: '1.0.0-beta',
+      status: 'done',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The logs CLI — read the persisted backlog and follow any running instance live (`bootgly logs -f`), from any terminal, in any server mode, with per-project and per-instance filters.',
@@ -621,8 +621,8 @@ export default {
   '/kit': {
     config: {
       icon: 'system_update_alt',
-      status: 'draft',
-      version: '1.0.0-beta',
+      status: 'done',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The kit CLI — `bootgly kit boot` lays down the resource directories; `upgrade`, `downgrade` and `list` move the Bootgly Kit between Bootgly Platform releases: tags fetched from the canonical kit, submodules following the pins, your projects untouched; cloned and template-generated kits alike.',
@@ -648,7 +648,7 @@ export default {
   '/linter': {
     config: {
       icon: 'rule',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Lint your code against Bootgly\'s style in four submodules — use statements and nullable shorthands (auto-fixable), constructor promotion and camelCase method names (check-only) — with a JSON report for agents.',
@@ -674,7 +674,7 @@ export default {
   '/observability': {
     config: {
       icon: 'insights',
-      status: 'draft',
+      status: 'done',
       version: '0.18.0-beta',
       meta: {
         description: {
@@ -701,7 +701,7 @@ export default {
   '/performance': {
     config: {
       icon: 'speed',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Tune HTTP workers, benchmark concurrency, ADI Database pools and PostgreSQL settings for Bootgly projects.',
@@ -761,7 +761,7 @@ export default {
   '/database-dbal': {
     config: {
       icon: 'hub',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Use the Bootgly DBAL inside HTTP Server CLI responses without exposing low-level async loops.',
@@ -787,7 +787,7 @@ export default {
   '/database-queries': {
     config: {
       icon: 'storage',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build, run and inspect SQL SELECT, INSERT, UPDATE and DELETE statements with the Bootgly Query Builder.',
@@ -813,7 +813,7 @@ export default {
   '/database-orm': {
     config: {
       icon: 'account_tree',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Map SQL rows to entities with Bootgly ORM Data Mapper while preserving async DBAL operations.',
@@ -839,7 +839,7 @@ export default {
   '/database-read-replicas': {
     config: {
       icon: 'lan',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Route safe SQL reads to replica pools while writes, locks and transactions stay on primary.',
@@ -869,7 +869,7 @@ export default {
   '/database-transactions': {
     config: {
       icon: 'sync_alt',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Run SQL statements on one pooled connection with commit, rollback and nested savepoints.',
@@ -895,7 +895,7 @@ export default {
   '/database-migrations': {
     config: {
       icon: 'schema',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Create, apply, roll back and sync SQL schema migrations end to end with the Bootgly Schema Builder and CLI.',
@@ -921,7 +921,7 @@ export default {
   '/database-seeders': {
     config: {
       icon: 'playlist_add',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Create, list and run rerunnable SQL data seeders with Query Builder and deterministic fakers.',
@@ -951,7 +951,7 @@ export default {
   '/docker': {
     config: {
       icon: 'view_in_ar',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Run the Bootgly kit image, build your own on the framework image, and benchmark against other frameworks — all with Docker.',
@@ -977,7 +977,7 @@ export default {
   '/reload': {
     config: {
       icon: 'autorenew',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Graceful hot-reload of a running server — drain in-flight requests, re-exec the master, reload all code with the same PID.',
@@ -1002,7 +1002,7 @@ export default {
   '/security': {
     config: {
       icon: 'security',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'For security researchers auditing Bootgly — where to report, what is in scope, and how to turn a suspected issue into a reproducible PoC in the native test runner.',
@@ -1027,7 +1027,7 @@ export default {
   '/versioning': {
     config: {
       icon: 'new_releases',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The compatibility promise behind a Bootgly version number — what a minor or a patch may change, the deprecation policy and how long a release is supported.',

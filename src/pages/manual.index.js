@@ -331,7 +331,6 @@ export default {
   '/Bootgly/essential/testing': {
     config: {
       icon: 'science',
-      status: 'draft',
       meta: {
         description: {
           'en-US': 'Start testing Bootgly code with assertions, suites and project-friendly automation patterns.',
@@ -357,7 +356,7 @@ export default {
     config: {
       icon: 'bolt',
       status: 'done',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The base layer every other one stands on: code primitives, templates, IO, resources, events and debugging.',
@@ -395,7 +394,7 @@ export default {
     config: {
       icon: 'data_array',
       status: 'done',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Chain array operations in a single pass: map, filter, early-exit find/check and reusable pipelines.',
@@ -1211,7 +1210,7 @@ export default {
   '/CLI/Terminal/Input/Line': {
     config: {
       icon: 'short_text',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1234,7 +1233,7 @@ export default {
     config: {
       icon: 'notes',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Edit multiline text with one Line per row — row splitting, merging and a cursor that walks the whole buffer.',
@@ -1298,7 +1297,7 @@ export default {
     config: {
       icon: 'vertical_split',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Nest a component output inside a host area — a painted gutter on every row, no component changes.',
@@ -1359,7 +1358,7 @@ export default {
   '/CLI/Terminal/Output/Window': {
     config: {
       icon: 'web_asset',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1416,7 +1415,7 @@ export default {
     config: {
       icon: 'smart_button',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'A pressable one-row pill — icon/emoji + label, hover background paint and a generic Closure press Action.',
@@ -1440,7 +1439,7 @@ export default {
     config: {
       icon: 'difference',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Diff two texts in the terminal — unified hunks or side-by-side columns with line numbers and word highlight.',
@@ -1462,7 +1461,7 @@ export default {
     config: {
       icon: 'data_object',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Dump any PHP value as colorized, structured terminal output — visibility sigils, cycles, caps and themes.',
@@ -1484,7 +1483,7 @@ export default {
     config: {
       icon: 'title',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Large block-drawing text — banners, versions, scores — with named figlet fonts (A-Z and 0-9 builtin).',
@@ -1506,7 +1505,7 @@ export default {
     config: {
       icon: 'code',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Colorize PHP source in the terminal via the native tokenizer — gutter, marked line and excerpt window.',
@@ -1528,7 +1527,7 @@ export default {
     config: {
       icon: 'unfold_more',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The vertical bar strip — a thumb over a track derived from total/height/first; the bar behind Scrollarea and Listbox.',
@@ -1550,7 +1549,7 @@ export default {
     config: {
       icon: 'call_to_action',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Single-row status bar — left segments, right-aligned hints, styled background; the Console App status row.',
@@ -1571,7 +1570,7 @@ export default {
   '/CLI/UI/Atoms/Text': {
     config: {
       icon: 'animation',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1623,7 +1622,7 @@ export default {
     config: {
       icon: 'expand_more',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The generic anchored overlay — a bordered block a host opens against its own position: context menus, panels, bottom sheets.',
@@ -1645,7 +1644,7 @@ export default {
     config: {
       icon: 'picture_in_picture',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Paint bordered boxes with isolated, individual Outputs — host any component inside.',
@@ -1667,7 +1666,7 @@ export default {
     config: {
       icon: 'list',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The windowed, aimed option list — completions and command menus with query accent, details, scrollbar and circular navigation.',
@@ -1689,7 +1688,7 @@ export default {
     config: {
       icon: 'tab',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Multiplex labeled frames over one rectangle — the bar rides the active border, btop-style.',
@@ -1740,7 +1739,7 @@ export default {
   '/CLI/UI/Components/Charts': {
     config: {
       icon: 'bar_chart',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1763,7 +1762,7 @@ export default {
     config: {
       icon: 'grid_view',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Lay frames out on weighted tracks — btop-like dashboards with gap and resize reflow.',
@@ -1785,7 +1784,7 @@ export default {
     config: {
       icon: 'grid_on',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Dense grids of state-colored cells with corner labels — the assertions grid of the test heatmap view.',
@@ -1827,7 +1826,7 @@ export default {
     config: {
       icon: 'article',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Render markdown in the terminal — headings, lists, tables, quotes and fenced code, styled with raw SGR.',
@@ -1868,7 +1867,7 @@ export default {
   '/CLI/UI/Components/Scrollarea': {
     config: {
       icon: 'swap_vert',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1891,7 +1890,7 @@ export default {
     config: {
       icon: 'checklist',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Pick one or many options from a windowed, filterable terminal list.',
@@ -1912,7 +1911,7 @@ export default {
   '/CLI/UI/Components/Spinner': {
     config: {
       icon: 'autorenew',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1954,7 +1953,7 @@ export default {
   '/CLI/UI/Components/Textarea': {
     config: {
       icon: 'edit_note',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -1977,7 +1976,7 @@ export default {
     config: {
       icon: 'text_fields',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'The single-line text input — validated answers, secret input, autocompletion and search in one component.',
@@ -1998,7 +1997,7 @@ export default {
   '/CLI/UI/Components/Timeline': {
     config: {
       icon: 'timeline',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -2020,7 +2019,7 @@ export default {
   '/CLI/UI/Components/Timer': {
     config: {
       icon: 'timer',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -2043,7 +2042,7 @@ export default {
     config: {
       icon: 'account_tree',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Hierarchical view with expand/collapse, lazy children, programmable Enter actions and an interactive picker.',
@@ -2081,7 +2080,7 @@ export default {
     config: {
       icon: 'picture_in_picture',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Modal box over the running interface — covered components repaint on close; confirm/alert/prompt variants.',
@@ -2105,7 +2104,7 @@ export default {
     config: {
       icon: 'folder_open',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Filesystem picker — a Tree preconfigured for the filesystem: lazy directory scans, icons, extension filtering.',
@@ -2126,7 +2125,7 @@ export default {
   '/CLI/UX/Components/Form': {
     config: {
       icon: 'dynamic_form',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -2148,7 +2147,7 @@ export default {
   '/CLI/UX/Components/Prompt': {
     config: {
       icon: 'terminal',
-      status: 'new',
+      status: 'done',
       version: 'v0.20.0-beta',
       meta: {
         description: {
@@ -2171,7 +2170,7 @@ export default {
     config: {
       icon: 'notifications',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Transient corner notifications — tick-driven stack of auto-sized boxes with severity, ttl and covered-component restore.',
@@ -2193,7 +2192,7 @@ export default {
     config: {
       icon: 'checklist',
       status: 'new',
-      version: 'v1.0.0-beta',
+      version: 'v1.0.0',
       meta: {
         description: {
           'en-US': 'Declarative multi-step flows on the Timeline spine — fixed frame, any component per step, dynamic branches.',
@@ -2216,7 +2215,7 @@ export default {
   '/Console': {
     config: {
       icon: 'terminal',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The opinionated TUI platform over the CLI interface: full-screen apps and terminal games.',
@@ -2245,7 +2244,7 @@ export default {
   '/Console/App': {
     config: {
       icon: 'dashboard',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The TUI application shell: Screens + Router, Keymaps with chords, Statusbar, Toasts, Palette and Tail.',
@@ -2266,7 +2265,7 @@ export default {
   '/Console/Game': {
     config: {
       icon: 'sports_esports',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The game shell: fixed-timestep Loop, diff-rendered Canvas, Keyboard held-key heuristics and Scenes.',
@@ -2289,7 +2288,7 @@ export default {
   '/WPI': {
     config: {
       icon: 'language',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build web-facing systems with Bootgly HTTP, TCP and UDP layers, from datagrams and sockets to high-level servers.',
@@ -2326,7 +2325,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI': {
     config: {
       icon: 'dns',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Run an event-driven HTTP server in pure PHP with workers, fibers, routing and middleware.',
@@ -2350,7 +2349,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/HTTP2': {
     config: {
       icon: 'bolt',
-      status: 'draft',
+      status: 'done',
       version: '0.19.0-beta',
       meta: {
         description: {
@@ -2372,7 +2371,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Request': {
     config: {
       icon: 'last_page',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Inspect HTTP request data, connection details and URL parts inside Bootgly handlers.',
@@ -2393,7 +2392,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Response': {
     config: {
       icon: 'first_page',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Compose HTTP responses with headers, body formats, files and protocol-aware delivery.',
@@ -2414,7 +2413,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Response/Resources': {
     config: {
       icon: 'extension',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View and Database.',
@@ -2438,7 +2437,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Router': {
     config: {
       icon: 'alt_route',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Match routes and dispatch HTTP requests through Bootgly routing.',
@@ -2459,7 +2458,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Authentication': {
     config: {
       icon: 'shield',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Protect HTTP Server CLI routes with Basic, Bearer, JWT and Session authentication guards.',
@@ -2480,7 +2479,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Authorization': {
     config: {
       icon: 'verified_user',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Require Scope, Role and Policy gates after HTTP authentication succeeds.',
@@ -2501,7 +2500,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
     config: {
       icon: 'settings_input_component',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Chain CORS, rate limits, security headers and other HTTP middlewares around each request.',
@@ -2522,7 +2521,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/Queues': {
     config: {
       icon: 'queue',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Enqueue background jobs from request handlers and process them with a queue worker.',
@@ -2547,7 +2546,7 @@ export default {
   '/WPI/HTTP/HTTP_Client_CLI': {
     config: {
       icon: 'desktop_windows',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Send outbound HTTP requests from the CLI with Bootgly client, decoding and connection flow.',
@@ -2568,7 +2567,7 @@ export default {
   '/WPI/HTTP/HTTP_Client_CLI/Request': {
     config: {
       icon: 'last_page',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build outbound HTTP requests with methods, headers, body data and transport options.',
@@ -2589,7 +2588,7 @@ export default {
   '/WPI/HTTP/HTTP_Client_CLI/Response': {
     config: {
       icon: 'first_page',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Read outbound HTTP responses, status codes, headers and payloads from Bootgly CLI clients.',
@@ -2618,7 +2617,7 @@ export default {
   '/WPI/WS/WS_Server_CLI': {
     config: {
       icon: 'sync_alt',
-      status: 'draft',
+      status: 'done',
       version: 'v0.19.0-beta',
       meta: {
         description: {
@@ -2642,7 +2641,7 @@ export default {
   '/WPI/WS/WS_Server_CLI/Channels': {
     config: {
       icon: 'forum',
-      status: 'draft',
+      status: 'done',
       version: 'v0.19.0-beta',
       meta: {
         description: {
@@ -2664,7 +2663,7 @@ export default {
   '/WPI/WS/WS_Server_CLI/Compression': {
     config: {
       icon: 'compress',
-      status: 'draft',
+      status: 'done',
       version: 'v0.19.0-beta',
       meta: {
         description: {
@@ -2689,7 +2688,7 @@ export default {
   '/WPI/WS/WS_Server_CLI/Authentication': {
     config: {
       icon: 'shield',
-      status: 'draft',
+      status: 'done',
       version: 'v0.19.0-beta',
       meta: {
         description: {
@@ -2715,7 +2714,7 @@ export default {
   '/WPI/WS/WS_Client_CLI': {
     config: {
       icon: 'cell_tower',
-      status: 'draft',
+      status: 'done',
       version: 'v0.19.0-beta',
       meta: {
         description: {
@@ -2749,7 +2748,7 @@ export default {
   '/WPI/TCP/TCP_Server_CLI': {
     config: {
       icon: 'dns',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Accept low-level TCP connections with non-blocking sockets, multi-worker runtime and raw package handlers.',
@@ -2776,7 +2775,7 @@ export default {
   '/WPI/TCP/TCP_Client_CLI': {
     config: {
       icon: 'desktop_windows',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
@@ -2805,7 +2804,7 @@ export default {
   '/WPI/UDP/UDP_Server_CLI': {
     config: {
       icon: 'dns',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Accept UDP datagrams with a raw handler API, worker-based execution and terminal-friendly control.',
@@ -2831,7 +2830,7 @@ export default {
   '/WPI/UDP/UDP_Client_CLI': {
     config: {
       icon: 'desktop_windows',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Send UDP datagrams with callback-based client flows, configurable workers and monitor-friendly execution.',
@@ -2854,7 +2853,7 @@ export default {
   '/Web': {
     config: {
       icon: 'public',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The opinionated web platform over the WPI interface: MVC apps and REST APIs.',
@@ -2883,7 +2882,7 @@ export default {
   '/Web/App': {
     config: {
       icon: 'dashboard',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics and view conventions.',
@@ -2904,7 +2903,7 @@ export default {
   '/Web/API': {
     config: {
       icon: 'api',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'The REST shell: Action dispatch, REST routes, RFC 9457 problems and Resource transformers.',

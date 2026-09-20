@@ -72,7 +72,7 @@ Obtenha um `$Schema` fora de uma migration via banco. A engine ativa está em
 ```php
 use Bootgly\ADI\Databases\SQL;
 
-$Schema = new SQL->structure();                         // PostgreSQL
+$Schema = new SQL()->structure();                       // PostgreSQL
 $Schema = new SQL(['driver' => 'mysql'])->structure();  // MySQL
 $Schema = new SQL(['driver' => 'sqlite'])->structure(); // SQLite
 ```

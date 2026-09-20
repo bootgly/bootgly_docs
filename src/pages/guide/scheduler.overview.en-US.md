@@ -18,17 +18,20 @@ Jobs live in a `schedule.php` file at your project root. It returns a
 
 ```php
 // schedule.php
+use Bootgly\ABI\Resources\Cache;
 use Bootgly\ACI\Schedule;
 use Bootgly\ACI\Schedule\Catchups;
 use Bootgly\ACI\Schedule\Frequencies;
 
 return function (Schedule $Schedule): void {
+   $Cache = new Cache(['driver' => 'file']);
+
    $Schedule->add('backup', BackupJob::class)       // invokable class-string or Closure
       ->repeat(Frequencies::Daily, at: '03:00')     // every day at 03:00
       ->lock()                                       // never overlap with a previous run
       ->recover(Catchups::Once);                     // run once if minutes were missed
 
-   $Schedule->add('cleanup', fn () => Cache->prune())
+   $Schedule->add('cleanup', fn () => $Cache->purge())
       ->repeat('*/5 * * * *');                       // raw 5-field cron, same verb
 };
 ```
@@ -37,9 +40,10 @@ The worker looks for `schedule.php` in the booted project directory
 (`BOOTGLY_PROJECT->path`), falling back to the working directory (`BOOTGLY_WORKING_DIR`)
 when no project is booted.
 
-Every from-scratch `projects create` scaffolds a `schedule.php` with the examples above
-commented out — delete-safe, zero jobs until you activate one (`schedule list` says so
-instead of printing nothing).
+Every from-scratch `projects create` scaffolds a `schedule.php` with two commented-out
+examples — a `heartbeat` closure on a raw `*/5 * * * *` cron and the `backup` job above —
+delete-safe, zero jobs until you activate one (`schedule list` says so instead of printing
+nothing).
 
 ## Set the cadence — `repeat()`
 

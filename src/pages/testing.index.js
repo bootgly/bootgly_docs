@@ -14,7 +14,7 @@ export default {
   '/about/testing': {
     config: {
       icon: 'architecture',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Start with test structure, suite bootstrap standards, testing APIs and visual separators.',
@@ -53,7 +53,7 @@ export default {
   '/basic/skip-ignore': {
     config: {
       icon: 'visibility_off',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Control skipped and ignored cases in Tests and Advanced API assertions.',
@@ -79,7 +79,7 @@ export default {
   '/basic/running-tests': {
     config: {
       icon: 'play_arrow',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Run Bootgly suites and individual tests via the bootgly CLI, with coverage and static analysis.',
@@ -116,7 +116,7 @@ export default {
   '/core/assertions': {
     config: {
       icon: 'rule',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Master Basic and Advanced assertion APIs, fluent expectations and comparison operators.',
@@ -145,7 +145,7 @@ export default {
   '/core/assertions/modifiers': {
     config: {
       icon: 'tune',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Compose assertion expectations with NOT, AND and OR modifiers in the Advanced API.',
@@ -169,7 +169,7 @@ export default {
   '/core/assertions/behaviors-types': {
     config: {
       icon: 'category',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Validate value types with Type behaviors in fluent assertions.',
@@ -193,7 +193,7 @@ export default {
   '/core/assertions/behaviors-values': {
     config: {
       icon: 'fact_check',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Validate value properties such as even, positive, email, URL, IP and UUID.',
@@ -217,7 +217,7 @@ export default {
   '/core/assertions/delimiters': {
     config: {
       icon: 'settings_ethernet',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Assert numeric, date and comparable values inside open, closed or half-open intervals.',
@@ -241,7 +241,7 @@ export default {
   '/core/assertions/finders': {
     config: {
       icon: 'search',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Find values in strings, arrays, objects and runtime declarations with finder expectations.',
@@ -265,7 +265,7 @@ export default {
   '/core/assertions/matchers': {
     config: {
       icon: 'pattern',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Match values by regular expressions and dedicated pattern matcher classes.',
@@ -289,7 +289,7 @@ export default {
   '/core/assertions/throwers': {
     config: {
       icon: 'error',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Assert expected exceptions, errors and throwables through the call and throw chain.',
@@ -313,7 +313,7 @@ export default {
   '/core/assertions/waiters': {
     config: {
       icon: 'timer',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Measure callable execution time and assert performance bounds with waiters.',
@@ -350,7 +350,7 @@ export default {
   '/deep/snapshots': {
     config: {
       icon: 'bookmark_added',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Capture and restore expected values for regression testing with Bootgly snapshots.',
@@ -376,7 +376,7 @@ export default {
   '/deep/hooks': {
     config: {
       icon: 'webhook',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Run setup, cleanup and instrumentation around Advanced API assertions with lifecycle hooks.',
@@ -400,7 +400,7 @@ export default {
   '/deep/coverage': {
     config: {
       icon: 'analytics',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Measure test coverage with Bootgly coverage drivers and text, HTML or Clover reports.',
@@ -424,7 +424,7 @@ export default {
   '/deep/doubles': {
     config: {
       icon: 'theater_comedy',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Use Mock, Spy and the Doubles registry to isolate collaborators and verify interactions.',
@@ -448,7 +448,7 @@ export default {
   '/deep/fakers': {
     config: {
       icon: 'casino',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Generate deterministic fake data with built-in fakers and seed-based output.',
@@ -472,7 +472,7 @@ export default {
   '/deep/fixtures': {
     config: {
       icon: 'inventory_2',
-      status: 'draft',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Prepare, inject and dispose deterministic test state with Suite and Test fixtures.',

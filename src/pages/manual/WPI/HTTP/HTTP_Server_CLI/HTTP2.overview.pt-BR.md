@@ -183,7 +183,7 @@ new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(
 
 O Configs do servidor entregue ao `configure()` — somente argumentos nomeados (seu primeiro slot é a
 guarda `Bootgly\ABI\Argument`, então uma chamada posicional lança um `TypeError`). A lista completa
-de campos está na página [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/#referencia).
+de campos está na página [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/#referência).
 
 `enableHTTP2` é o interruptor único do HTTP/2. `null`/`true` (padrão) serve HTTP/2 nos
 dois caminhos: o ALPN anuncia `h2,http/1.1` sempre que `secure` estiver definido, e o

@@ -34,7 +34,7 @@ bootgly.kit/
 
 The installer initializes the required base platform (`git submodule update --init Bootgly`); the wizard's first run initializes the chosen platform submodules and runs `bootgly kit boot` to install your own resource folders:
 
-> **Platforms land on a release, not on a commit.** After initializing a submodule, the installer moves it to the newest tag reachable from the kit's pin — a stable release when one exists, the newest pre-release otherwise. It never moves *forward* past the pin, so you never get a platform the kit was not built against. When a pin has drifted off a release the run says so (`Bootgly was pinned 1 commit past v1.0.0-beta.3 — checked out the release`), and `git status` then shows that submodule as modified: that is the corrected pin, not a change of yours — leave it be. The kit is not yours to commit to; a later `git submodule update` resets the submodule to whatever the kit records, and the next installer run re-applies the correction.
+> **Platforms land on a release, not on a commit.** After initializing a submodule, the installer moves it to the newest tag reachable from the kit's pin — a stable release when one exists, the newest pre-release otherwise. It never moves *forward* past the pin, so you never get a platform the kit was not built against. When a pin has drifted off a release the run says so (`Bootgly was pinned 1 commit past v1.0.0 — checked out the release`), and `git status` then shows that submodule as modified: that is the corrected pin, not a change of yours — leave it be. The kit is not yours to commit to; a later `git submodule update` resets the submodule to whatever the kit records, and the next installer run re-applies the correction.
 
 ```text
 bootgly.kit/
@@ -79,10 +79,10 @@ Everything you own lives at the workspace level — `projects/`, `storage/` — 
 Its header names the build you are installing — the framework version plus the commit it came from:
 
 ```text
-Bootgly — New project wizard v1.0.0-beta.1-dev (39f53a89)
+Bootgly — New project wizard v1.0.0 (39f53a89)
 ```
 
-Every `dev-main` install reports the same version, so the **commit** is what tells two installs apart. Quote that line in bug reports; when a screen looks older than the docs describe, it is the first thing to check (a kit whose submodule pin lags behind installs an older framework — fetch tags inside the platform, `git -C Bootgly fetch --tags`, and check out the newer release to move it forward; avoid `--remote`, which jumps to the branch tip and lands you on unreleased development work). The commit is read from the installation itself: the git metadata of the checkout, or the reference Composer resolved. Sources that carry neither (a release archive) show the version alone.
+Every install of the same release reports the same version, so the **commit** is what tells two installs apart. Quote that line in bug reports; when a screen looks older than the docs describe, it is the first thing to check (a kit whose submodule pin lags behind installs an older framework — fetch tags inside the platform, `git -C Bootgly fetch --tags`, and check out the newer release to move it forward; avoid `--remote`, which jumps to the branch tip and lands you on unreleased development work). The commit is read from the installation itself: the git metadata of the checkout, or the reference Composer resolved. Sources that carry neither (a release archive) show the version alone.
 
 The wizard guides you from an empty kit to a running project:
 
@@ -111,7 +111,7 @@ All wizard inputs are available as flags — with `--yes` (or piped input) nothi
 php bootgly projects create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
 
-Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of from scratch. See the [Reference](#reference) below for all flags.
+Use `--from=Demo/HTTP_Server_CLI` to start from a platform project instead of from scratch. See [Projects → `projects create`](/manual/Bootgly/essential/projects/overview/) for all flags.
 
 ## Execute the Bootgly CLI
 

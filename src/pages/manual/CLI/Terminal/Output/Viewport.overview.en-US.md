@@ -7,7 +7,10 @@ The Viewport class is responsible for manipulating the viewport (visible area) o
 To use the Terminal's Output\Viewport class, you need to access the instance through the Output class:
 
 ```php
-CLI->Terminal->Output->Viewport;
+use const Bootgly\CLI;
+
+$Output = CLI->Terminal->Output;
+$Viewport = $Output->Viewport;
 ```
 
 ## Settings

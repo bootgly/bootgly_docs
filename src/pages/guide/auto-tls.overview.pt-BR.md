@@ -190,7 +190,7 @@ As opções de contexto SSL para o socket do servidor — o certificado instalad
 public function configure (Bootgly\ABI\Configs ...$Configs): self
 ```
 
-Recebe um Configs por preocupação, em qualquer ordem — o Auto-TLS pertence ao Configs do servidor. Veja [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/#referencia) para o modelo de configuração completo.
+Recebe um Configs por preocupação, em qualquer ordem — o Auto-TLS pertence ao Configs do servidor. Veja [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI/#referência) para o modelo de configuração completo.
 
 ```php
 new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(

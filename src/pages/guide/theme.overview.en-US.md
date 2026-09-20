@@ -62,18 +62,20 @@ A theme is a `name => specifications` entry. `options` says how to **open** (`pr
 callback. `add()` accepts one or many at once:
 
 ```php
-use Bootgly\ABI\Code\__String\Escapeable\Text\Formattable;
 use Bootgly\ABI\Code\__String\Theme;
+
+// The opening callback receives the key's `values` and returns the escape sequence:
+$Wrap = static fn (string ...$codes): string => "\e[" . implode(';', $codes) . 'm';
 
 $Theme = new Theme;
 $Theme->add(['ocean' => [
    'options' => [
-      'prepending' => ['type' => 'callback', 'value' => Formattable::wrap(...)],
-      'appending'  => ['type' => 'string',   'value' => Formattable::_RESET_FORMAT]
+      'prepending' => ['type' => 'callback', 'value' => $Wrap],
+      'appending'  => ['type' => 'string',   'value' => Theme::_RESET_FORMAT]
    ],
    'values' => [
-      'success' => Formattable::_CYAN_BRIGHT_FOREGROUND,
-      'error'   => Formattable::_RED_BRIGHT_FOREGROUND
+      'success' => Theme::_CYAN_BRIGHT_FOREGROUND,
+      'error'   => Theme::_RED_BRIGHT_FOREGROUND
    ]
 ]]);
 

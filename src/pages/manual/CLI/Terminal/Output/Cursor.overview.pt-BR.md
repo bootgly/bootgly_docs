@@ -23,25 +23,25 @@ A classe Cursor não possui configurações próprias além das configurações 
 ### Movimentos básicos
 
 ```php
-up (int $lines, ? int $column = null) : self
+up (int $lines, null|int $column = null) : Output
 ```
 
 Move o cursor para cima no número de linhas especificado. Se um valor opcional para coluna for passado, o cursor se posiciona nesta coluna após subir as linhas.
 
 ```php
-right (int $columns) : self
+right (int $columns) : Output
 ```
 
 Move o cursor para a direita no número de colunas especificado.
 
 ```php
-down (int $lines, ? int $column = null) : self
+down (int $lines, null|int $column = null) : Output
 ```
 
 Move o cursor para baixo no número de linhas especificado. Se um valor opcional para coluna for passado, o cursor se posiciona nesta coluna após descer as linhas.
 
 ```php
-left (int $columns) : self
+left (int $columns) : Output
 ```
 
 Move o cursor para a esquerda no número de colunas especificado.
@@ -57,13 +57,13 @@ Move o cursor para um posição absoluta na tela do terminal. Se apenas a linha 
 ### Memorizando posições
 
 ```php
-save () : self
+save () : Output
 ```
 
 Salva a posição atual do cursor para poder ser recuperada posteriormente através do método `restore()`.
 
 ```php
-restore () : self
+restore () : Output
 ```
 
 Restaura a posição do cursor previamente salva através do método `save()`.
@@ -71,7 +71,7 @@ Restaura a posição do cursor previamente salva através do método `save()`.
 ### Relatando posição
 
 ```php
-report () : self
+report () : Output
 ```
 
 Emite a posição atual do cursor. É possível conhecer a posição atual do cursor através da propriedade `position`.
@@ -79,7 +79,7 @@ Emite a posição atual do cursor. É possível conhecer a posição atual do cu
 ### Alterando aparência
 
 ```php
-shape (? string $style = '@user') : self
+shape (null|string $style = '@user') : Output
 ```
 
 Altera o formato do cursor. Os estilos disponíveis são: "block" (bloco), "underline" (sublinhado) e "bar" (barrinha).
@@ -87,19 +87,19 @@ Altera o formato do cursor. Os estilos disponíveis são: "block" (bloco), "unde
 ### Alterando a visibilidade
 
 ```php
-blink (bool $status) : self
+blink (bool $status) : Output
 ```
 
 Ativa ou desativa o movimento intermitente do cursor.
 
 ```php
-show () : self
+show () : Output
 ```
 
 Torna o cursor visível.
 
 ```php
-hide () : self
+hide () : Output
 ```
 
 Torna o cursor invisível.

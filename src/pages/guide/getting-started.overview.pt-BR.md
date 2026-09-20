@@ -34,7 +34,7 @@ bootgly.kit/
 
 O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly kit boot` para instalar as suas próprias pastas de recursos:
 
-> **As plataformas caem em um release, não em um commit.** Depois de inicializar um submodule, o instalador o move para a tag mais nova alcançável a partir do pin do kit — um release estável quando existe, senão o pre-release mais novo. Ele nunca avança *além* do pin, então você nunca recebe uma plataforma com a qual o kit não foi construído. Quando um pin saiu de um release, a execução avisa (`Bootgly was pinned 1 commit past v1.0.0-beta.3 — checked out the release`), e o `git status` passa a mostrar aquele submodule como modificado: esse é o pin corrigido, não uma alteração sua — deixe como está. O kit não é seu para commitar; um `git submodule update` posterior devolve o submodule ao que o kit registra, e a próxima execução do instalador reaplica a correção.
+> **As plataformas caem em um release, não em um commit.** Depois de inicializar um submodule, o instalador o move para a tag mais nova alcançável a partir do pin do kit — um release estável quando existe, senão o pre-release mais novo. Ele nunca avança *além* do pin, então você nunca recebe uma plataforma com a qual o kit não foi construído. Quando um pin saiu de um release, a execução avisa (`Bootgly was pinned 1 commit past v1.0.0 — checked out the release`), e o `git status` passa a mostrar aquele submodule como modificado: esse é o pin corrigido, não uma alteração sua — deixe como está. O kit não é seu para commitar; um `git submodule update` posterior devolve o submodule ao que o kit registra, e a próxima execução do instalador reaplica a correção.
 
 ```text
 bootgly.kit/
@@ -79,10 +79,10 @@ Tudo o que é seu vive no nível do workspace — `projects/`, `storage/` — en
 O cabeçalho dele nomeia o build que você está instalando — a versão do framework mais o commit de onde ela veio:
 
 ```text
-Bootgly — New project wizard v1.0.0-beta.1-dev (39f53a89)
+Bootgly — New project wizard v1.0.0 (39f53a89)
 ```
 
-Toda instalação `dev-main` reporta a mesma versão, então é o **commit** que distingue duas instalações. Cite essa linha em relatórios de bug; quando uma tela parecer mais antiga do que a documentação descreve, é a primeira coisa a conferir (um kit com o pin do submodule atrasado instala um framework mais antigo — busque as tags dentro da plataforma, `git -C Bootgly fetch --tags`, e faça checkout do release mais novo para avançá-lo; evite o `--remote`, que salta para a ponta do branch e deixa você em trabalho de desenvolvimento não lançado). O commit é lido da própria instalação: os metadados git do checkout, ou a referência que o Composer resolveu. Fontes que não têm nenhum dos dois (um arquivo de release) mostram só a versão.
+Toda instalação do mesmo release reporta a mesma versão, então é o **commit** que distingue duas instalações. Cite essa linha em relatórios de bug; quando uma tela parecer mais antiga do que a documentação descreve, é a primeira coisa a conferir (um kit com o pin do submodule atrasado instala um framework mais antigo — busque as tags dentro da plataforma, `git -C Bootgly fetch --tags`, e faça checkout do release mais novo para avançá-lo; evite o `--remote`, que salta para a ponta do branch e deixa você em trabalho de desenvolvimento não lançado). O commit é lido da própria instalação: os metadados git do checkout, ou a referência que o Composer resolveu. Fontes que não têm nenhum dos dois (um arquivo de release) mostram só a versão.
 
 O wizard te guia de um kit vazio até um projeto rodando:
 
@@ -111,7 +111,7 @@ Todas as entradas do wizard existem como flags — com `--yes` (ou entrada via p
 php bootgly projects create App/API --platform=web --from=scratch --interfaces=WPI --port=8080 --yes
 ```
 
-Use `--from=Demo/HTTP_Server_CLI` para partir de um projeto de plataforma em vez de começar do zero. Veja a [Referência](#referencia) abaixo com todas as flags.
+Use `--from=Demo/HTTP_Server_CLI` para partir de um projeto de plataforma em vez de começar do zero. Veja [Projetos → `projects create`](/manual/Bootgly/essential/projects/overview/) com todas as flags.
 
 ## Execute a CLI do Bootgly
 

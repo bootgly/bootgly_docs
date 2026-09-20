@@ -34,8 +34,8 @@ As releases para onde o kit pode mover, da mais nova para a mais antiga, com ond
 ╔═══════════════╤═════════╤═════════╗
 ║ Release       │ Commit  │ Status  ║
 ╟───────────────┼─────────┼─────────╢
-║ v1.0.0-beta.8 │ f8bf626 │ newer   ║
-║ v1.0.0-beta.7 │ c623e11 │ current ║
+║ v1.0.0        │ f8bf626 │ newer   ║
+║ v1.0.0-rc.1   │ 56d0082 │ current ║
 ║ v1.0.0-beta.6 │ c994f0a │ older   ║
 ╚═══════════════╧═════════╧═════════╝
 ```
@@ -62,8 +62,8 @@ mover.
 Nomeie uma release para ir exatamente até ela, com ou sem o `v`:
 
 ```bash :toolbar="true";
-bootgly kit upgrade v1.0.0-beta.8
-bootgly kit upgrade 1.0.0-beta.8
+bootgly kit upgrade v1.0.0
+bootgly kit upgrade 1.0.0
 ```
 
 Rodar de novo é um no-op explícito — "The kit is already on the newest release" — e sai com 0. Um
@@ -129,9 +129,9 @@ bootgly kit upgrade --json --yes
   "reason": null,
   "remote": "origin",
   "fetched": true,
-  "current": { "tag": "v1.0.0-beta.7", "version": "1.0.0-beta.7", "commit": "c623e11…", "distance": 0, "source": "tag" },
-  "target":  { "tag": "v1.0.0-beta.8", "version": "1.0.0-beta.8", "commit": "f8bf626…", "distance": 0, "source": "tag" },
-  "releases": [ { "tag": "v1.0.0-beta.8", "version": "1.0.0-beta.8", "commit": "f8bf626…", "current": false }, "…" ]
+  "current": { "tag": "v1.0.0-rc.1", "version": "1.0.0-rc.1", "commit": "56d0082…", "distance": 0, "source": "tag" },
+  "target":  { "tag": "v1.0.0", "version": "1.0.0", "commit": "f8bf626…", "distance": 0, "source": "tag" },
+  "releases": [ { "tag": "v1.0.0", "version": "1.0.0", "commit": "f8bf626…", "current": false }, "…" ]
 }
 ```
 
@@ -160,7 +160,7 @@ mão para a primeira release que o traz — todo movimento depois disso é o com
 
 ```bash :toolbar="true";
 git fetch --tags
-git checkout refs/tags/v1.0.0-beta.7
+git checkout refs/tags/v1.0.0-rc.1
 git submodule update
 ```
 
@@ -177,7 +177,7 @@ bootgly kit upgrade [<release>] [--json] [--yes]
 ```
 
 Move o kit para a release mais nova — ou para `<release>`, um nome de tag com ou sem o `v`
-(`v1.0.0-beta.8`, `1.0.0-beta.8`). Uma release mais antiga que a atual é recusada com o comando
+(`v1.0.0`, `1.0.0`). Uma release mais antiga que a atual é recusada com o comando
 `downgrade` a rodar no lugar.
 
 ```php

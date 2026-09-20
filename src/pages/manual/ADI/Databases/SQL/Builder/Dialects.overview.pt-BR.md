@@ -118,7 +118,7 @@ builder.
 
 ## Executando os dialetos
 
-Desde a v0.22.0, todo dialeto tem um wire driver nativo correspondente — o SQL que os
+Desde a v0.22.0-beta, todo dialeto tem um wire driver nativo correspondente — o SQL que os
 dialetos MySQL e SQLite geram agora executa de ponta a ponta, com o mesmo Pool, Transações
 e ORM usados pelo PostgreSQL. Veja
 **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para seleção de driver e a

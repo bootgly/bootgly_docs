@@ -119,7 +119,7 @@ $Input->configure(blocking: true, canonical: true, echo: true);
 
 As teclas sempre chegam inteiras: sequências de escape CSI e SS3 são lidas até seu byte final e bytes líderes UTF-8 montam seus bytes de continuação. É por isso que sequências maiores que três bytes — `Delete` (`\e[3~`), `Page Up` / `Page Down` (`\e[5~` / `\e[6~`), `Ctrl`+setas (`\e[1;5A`, ...) — e `Home` / `End` em modo de aplicação (`\eOH` / `\eOF`) nunca são divididas entre leituras.
 
-O stream deve ser não bloqueante (veja [Configurações](#configuracoes)) — em um stream bloqueante um `Escape` puro trava a desambiguação até o próximo byte chegar. Reports do protocolo de teclado estendido são normalizados de volta à sua tecla legada antes de serem retornados (veja [Modo de teclado estendido](#modo-de-teclado-estendido)).
+O stream deve ser não bloqueante (veja [Configurações](#configurações)) — em um stream bloqueante um `Escape` puro trava a desambiguação até o próximo byte chegar. Reports do protocolo de teclado estendido são normalizados de volta à sua tecla legada antes de serem retornados (veja [Modo de teclado estendido](#modo-de-teclado-estendido)).
 
 ### Lendo dados com reading()
 

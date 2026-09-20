@@ -127,7 +127,7 @@ Três preocupações, três classes:
 
 Só `host`, `port` e `workers` são obrigatórios — todos os outros campos de todos os Configs são
 opcionais e mantêm o padrão do framework quando omitidos. A lista completa de campos de cada classe
-está na [Referência](#referencia) ao final desta página.
+está na [Referência](#referência) ao final desta página.
 
 A própria chamada garante cinco regras:
 

@@ -43,6 +43,10 @@ reading(\Closure $CAPI, \Closure $SAPI)
 Exemplo de uma implementação do método `reading`:
 
 ```php
+<?php
+namespace Bootgly\CLI;
+
+
 use const Bootgly\CLI;
 
 
@@ -178,4 +182,7 @@ $Input->reading(
       $Output->write(data: "Closing Server...`\n\n");
    }
 );
+
+echo "Bye...\n";
+sleep(3);
 ```
