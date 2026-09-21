@@ -22,14 +22,20 @@ curl -fsSL https://bootgly.com/install | bash -s -- --no-wizard
 cd bootgly.kit
 ```
 
-A API guarda os contatos em **SQLite**, que precisa da extensão `sqlite3` do PHP. Debian e Ubuntu a distribuem como pacote separado — esta linha a instala só quando falta (no Fedora o pacote é `php-pdo`; Arch e as imagens Docker oficiais já a trazem):
+A API guarda os contatos em **SQLite**, que precisa da extensão `sqlite3` do PHP. Esta linha a instala com o seu gerenciador de pacotes só quando falta (as imagens Docker oficiais já a trazem):
 
 ```bash :toolbar="true";
-php -m | grep -q sqlite3 || sudo apt install -y php-sqlite3
+php -m | grep -q sqlite3 || {
+   if   command -v apt-get >/dev/null; then sudo apt-get install -y php-sqlite3
+   elif command -v dnf     >/dev/null; then sudo dnf install -y php-pdo
+   elif command -v pacman  >/dev/null; then sudo pacman -S --noconfirm php-sqlite
+   elif command -v zypper  >/dev/null; then sudo zypper install -y php-sqlite3
+   fi
+}
 ```
 
 > [!TIP]
-> Já tem um kit? Entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
+> O instalador também pergunta se deve instalar o comando `bootgly` globalmente — qualquer resposta serve, todas as páginas aqui usam `php bootgly …`. Já tem um kit? Entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
 
   </d-block-step>
 
@@ -41,7 +47,7 @@ Crie um projeto **WPI** (web) chamado `Contacts` na plataforma **Web**, na porta
 php bootgly projects create Contacts --platform=web --interfaces=WPI --port=8090 --yes
 ```
 
-O projeto nasce em `projects/Contacts/` como um repositório git próprio — `Contacts.Project.php` (a assinatura), um `router/` com um conjunto de rotas de boas-vindas, `schedule.php` e `tests/`. Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto de rotas `Contacts.routes.php` (apague `Welcome.routes.php` se quiser) e criar as pastas `configs/`, `database/`, `Models/`, `Resources/` e `Controllers/`. Tudo vai dentro de `projects/Contacts/`.
+O projeto nasce em `projects/Contacts/` como um repositório git próprio (o scaffold vira o primeiro commit assim que o git souber seu nome e e-mail) — `Contacts.Project.php` (a assinatura), um `router/` com um conjunto de rotas de boas-vindas, `schedule.php` e `tests/`. Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto de rotas `Contacts.routes.php` (apague `Welcome.routes.php` se quiser) e criar as pastas `configs/`, `database/`, `Models/`, `Resources/` e `Controllers/`. Tudo vai dentro de `projects/Contacts/`.
 
   </d-block-step>
 
@@ -459,7 +465,7 @@ Inicie o servidor a partir da pasta do kit:
 php bootgly project Contacts start
 ```
 
-Depois percorra a API com `curl` — list, show, create, um create inválido, um update parcial, delete, e o 404 que vem em seguida:
+Porta 8090 ocupada? `PORT=8091 php bootgly project Contacts start` — a função de boot lê `PORT`; use essa porta também nas linhas de `curl` abaixo. Depois percorra a API com `curl` — list, show, create, um create inválido, um update parcial, delete, e o 404 que vem em seguida:
 
 ```bash :toolbar="true";
 curl -s -i http://localhost:8090/contacts | grep -E "^HTTP|X-Total-Count|^\{"
@@ -605,7 +611,7 @@ cd projects/Contacts && php ../../bootgly test
 ```
 
 ```text
-1 suite · 2 cases · 5 assertions — passed
+[test] PASSED — 1 suites: 0 failed, 0 skipped, 1 passed
 ```
 
   </d-block-step>

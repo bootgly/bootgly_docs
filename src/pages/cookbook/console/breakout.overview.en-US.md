@@ -19,7 +19,7 @@ You will write 3 short files plus a test (about 25 minutes) and learn how a `Con
 ·                                                                                                  ·
 ·                               ▀▀▀▀▀▀▀▀▀▀▀▀                                                       ·
 · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
- Breakout  ▏ Score 90  ▏ Balls 2                                     38 bricks left  [q] quit
+ Breakout  ▏ Score 90  ▏ Balls 2                                     31 bricks left  [q] quit
 ```
 
 <d-block-stepper>
@@ -33,7 +33,7 @@ cd bootgly.kit
 ```
 
 > [!TIP]
-> Already have a kit? `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
+> The installer also asks whether to install the `bootgly` command globally — either answer is fine, every page here uses `php bootgly …`. Already have a kit? `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
 
   </d-block-step>
 
@@ -45,7 +45,7 @@ Create a **CLI** project named `Breakout` on the **Console** platform. On the fi
 php bootgly projects create Breakout --platform=console --interfaces=CLI --yes
 ```
 
-The project lands in `projects/Breakout/` as a git repository of its own — `Breakout.Project.php` (the signature), `schedule.php` and a `tests/` folder with an example suite. Everything you write next goes inside `projects/Breakout/`.
+The project lands in `projects/Breakout/` as a git repository of its own (the scaffold becomes its first commit once git knows your name and e-mail) — `Breakout.Project.php` (the signature), `schedule.php` and a `tests/` folder with an example suite. Everything you write next goes inside `projects/Breakout/`.
 
   </d-block-step>
 
@@ -68,9 +68,8 @@ use Console\Game\Zone;
 class Brick
 {
    public function __construct (
-      // * Data
-      public Zone $Zone,
       // * Config
+      public Zone $Zone,
       public string $style = ''
    ) {}
 }
@@ -138,8 +137,6 @@ class Breakout extends Game
    public float $paddle = 0.0;
    /** @var array<int,Brick> Bricks still standing */
    public array $Bricks = [];
-
-   // * Metadata
    public private(set) int $score = 0;
    public private(set) int $balls = 0;
 
@@ -240,7 +237,6 @@ class Breakout extends Game
       // * Data
       $this->build();
       $this->paddle = ($this->Canvas->columns - $this->size) / 2.0;
-      // * Metadata
       $this->score = 0;
       $this->balls = $this->lives;
 
@@ -526,9 +522,10 @@ return new Test(
       $Breakout = new Breakout;
 
       $bricks = count($Breakout->Bricks);
+      $columns = intdiv($Breakout->Canvas->columns - 2 + 1, $Breakout->width + 1);
       yield assert(
-         assertion: $bricks > 0 && $bricks % 5 === 0,
-         description: 'five rows of bricks'
+         assertion: $bricks === 5 * $columns,
+         description: 'five rows of bricks across the board'
       );
       yield assert(
          assertion: $Breakout->balls === $Breakout->lives,
@@ -556,7 +553,7 @@ cd projects/Breakout && php ../../bootgly test
 ```
 
 ```text
-1 suite · 1 case · 4 assertions — passed
+[test] PASSED — 1 suites: 0 failed, 0 skipped, 1 passed
 ```
 
   </d-block-step>

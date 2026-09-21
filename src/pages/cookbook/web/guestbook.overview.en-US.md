@@ -24,14 +24,20 @@ curl -fsSL https://bootgly.com/install | bash -s -- --no-wizard
 cd bootgly.kit
 ```
 
-The Guestbook keeps its entries in **SQLite**, which needs PHP's `sqlite3` extension. Debian and Ubuntu ship it as a separate package — this line installs it only when it is missing (on Fedora the package is `php-pdo`; Arch and the official Docker images build it in):
+The Guestbook keeps its entries in **SQLite**, which needs PHP's `sqlite3` extension. This line installs it with your package manager only when it is missing (the official Docker images build it in):
 
 ```bash :toolbar="true";
-php -m | grep -q sqlite3 || sudo apt install -y php-sqlite3
+php -m | grep -q sqlite3 || {
+   if   command -v apt-get >/dev/null; then sudo apt-get install -y php-sqlite3
+   elif command -v dnf     >/dev/null; then sudo dnf install -y php-pdo
+   elif command -v pacman  >/dev/null; then sudo pacman -S --noconfirm php-sqlite
+   elif command -v zypper  >/dev/null; then sudo zypper install -y php-sqlite3
+   fi
+}
 ```
 
 > [!TIP]
-> Already have a kit? `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
+> The installer also asks whether to install the `bootgly` command globally — either answer is fine, every page here uses `php bootgly …`. Already have a kit? `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
 
   </d-block-step>
 
@@ -43,17 +49,20 @@ Create a **WPI** (web) project named `Guestbook` on the **Web** platform, on por
 php bootgly projects create Guestbook --platform=web --interfaces=WPI --port=8080 --yes
 ```
 
-The project lands in `projects/Guestbook/` as a git repository of its own:
+The project lands in `projects/Guestbook/` as a git repository of its own (the scaffold becomes its first commit once git knows your name and e-mail):
 
 ```text
 projects/Guestbook/
 ├── Guestbook.Project.php     ← the project signature: metadata + the boot function
+├── .gitignore
 ├── router/
 │   ├── router.index.php      ← which route sets are active
 │   └── routes/
 │       └── Welcome.routes.php
 ├── schedule.php
 └── tests/
+    ├── autoboot.php          ← the project's test registry
+    └── example/              ← an example suite (de-registered in the last step; delete it when you like)
 ```
 
 You will replace the signature and the router manifest, add a `Guestbook.routes.php` route set (delete `Welcome.routes.php` if you like) and create the `configs/`, `database/`, `Controllers/`, `views/` and `statics/` folders. Everything goes inside `projects/Guestbook/`.
@@ -445,7 +454,7 @@ Start the server from the kit directory and open <http://localhost:8080> — sig
 php bootgly project Guestbook start
 ```
 
-From a terminal, the same flow takes three requests — the session cookie and the masked token from the form are what let the POST through the CSRF middleware:
+Port 8080 already taken? `PORT=8081 php bootgly project Guestbook start` — the boot function reads `PORT`; use that port in the `curl` lines below too. From a terminal, the same flow takes three requests — the session cookie and the masked token from the form are what let the POST through the CSRF middleware:
 
 ```bash :toolbar="true";
 curl -s -c cookies.txt http://localhost:8080/entries -o page.html
@@ -568,7 +577,7 @@ cd projects/Guestbook && php ../../bootgly test
 ```
 
 ```text
-1 suite · 2 cases · 6 assertions — passed
+[test] PASSED — 1 suites: 0 failed, 0 skipped, 1 passed
 ```
 
   </d-block-step>

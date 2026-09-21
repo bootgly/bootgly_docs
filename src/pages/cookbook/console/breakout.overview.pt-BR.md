@@ -19,7 +19,7 @@ Você vai escrever 3 arquivos curtos mais um teste (uns 25 minutos) e aprender c
 ·                                                                                                  ·
 ·                               ▀▀▀▀▀▀▀▀▀▀▀▀                                                       ·
 · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
- Breakout  ▏ Score 90  ▏ Balls 2                                     38 bricks left  [q] quit
+ Breakout  ▏ Score 90  ▏ Balls 2                                     31 bricks left  [q] quit
 ```
 
 <d-block-stepper>
@@ -33,7 +33,7 @@ cd bootgly.kit
 ```
 
 > [!TIP]
-> Já tem um kit? Entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
+> O instalador também pergunta se deve instalar o comando `bootgly` globalmente — qualquer resposta serve, todas as páginas aqui usam `php bootgly …`. Já tem um kit? Entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
 
   </d-block-step>
 
@@ -45,7 +45,7 @@ Crie um projeto **CLI** chamado `Breakout` na plataforma **Console**. Na primeir
 php bootgly projects create Breakout --platform=console --interfaces=CLI --yes
 ```
 
-O projeto nasce em `projects/Breakout/` como um repositório git próprio — `Breakout.Project.php` (a assinatura), `schedule.php` e uma pasta `tests/` com uma suíte de exemplo. Tudo o que você escrever a seguir vai dentro de `projects/Breakout/`.
+O projeto nasce em `projects/Breakout/` como um repositório git próprio (o scaffold vira o primeiro commit assim que o git souber seu nome e e-mail) — `Breakout.Project.php` (a assinatura), `schedule.php` e uma pasta `tests/` com uma suíte de exemplo. Tudo o que você escrever a seguir vai dentro de `projects/Breakout/`.
 
   </d-block-step>
 
@@ -68,9 +68,8 @@ use Console\Game\Zone;
 class Brick
 {
    public function __construct (
-      // * Data
-      public Zone $Zone,
       // * Config
+      public Zone $Zone,
       public string $style = ''
    ) {}
 }
@@ -138,8 +137,6 @@ class Breakout extends Game
    public float $paddle = 0.0;
    /** @var array<int,Brick> Bricks still standing */
    public array $Bricks = [];
-
-   // * Metadata
    public private(set) int $score = 0;
    public private(set) int $balls = 0;
 
@@ -240,7 +237,6 @@ class Breakout extends Game
       // * Data
       $this->build();
       $this->paddle = ($this->Canvas->columns - $this->size) / 2.0;
-      // * Metadata
       $this->score = 0;
       $this->balls = $this->lives;
 
@@ -526,9 +522,10 @@ return new Test(
       $Breakout = new Breakout;
 
       $bricks = count($Breakout->Bricks);
+      $columns = intdiv($Breakout->Canvas->columns - 2 + 1, $Breakout->width + 1);
       yield assert(
-         assertion: $bricks > 0 && $bricks % 5 === 0,
-         description: 'five rows of bricks'
+         assertion: $bricks === 5 * $columns,
+         description: 'five rows of bricks across the board'
       );
       yield assert(
          assertion: $Breakout->balls === $Breakout->lives,
@@ -556,7 +553,7 @@ cd projects/Breakout && php ../../bootgly test
 ```
 
 ```text
-1 suite · 1 case · 4 assertions — passed
+[test] PASSED — 1 suites: 0 failed, 0 skipped, 1 passed
 ```
 
   </d-block-step>

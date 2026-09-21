@@ -14,7 +14,7 @@ Memory                                     11.0 GB / 15.5 GB
  Load average  1.11  0.75  0.47
  CPU history   ▁▆▅█▅▃▂▂▄
 
- Press 2 for processes, 3 for disks, r to refresh now.
+ Press r to refresh — the status bar lists the screens, ? lists every key.
 
  Monitor  ▏ omni          1 Overview · 2 Processes · 3 Disks  ? help · q quit
 ```
@@ -30,7 +30,7 @@ cd bootgly.kit
 ```
 
 > [!TIP]
-> Already have a kit? `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
+> The installer also asks whether to install the `bootgly` command globally — either answer is fine, every page here uses `php bootgly …`. Already have a kit? `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
 
   </d-block-step>
 
@@ -42,15 +42,16 @@ Create a **CLI** project named `Monitor` on the **Console** platform. On the fir
 php bootgly projects create Monitor --platform=console --interfaces=CLI --yes
 ```
 
-The project lands in `projects/Monitor/` — a git repository of its own, with the scaffold as the initial commit:
+The project lands in `projects/Monitor/` — a git repository of its own (the scaffold becomes its first commit once git knows your name and e-mail):
 
 ```text
 projects/Monitor/
+├── .gitignore
 ├── Monitor.Project.php     ← the project signature: metadata + the boot function
 ├── schedule.php            ← cron-like jobs (unused here)
 └── tests/
     ├── autoboot.php        ← the project's test registry
-    └── example/            ← an example suite (replaced in the last step)
+    └── example/            ← an example suite (de-registered in the last step; delete it when you like)
 ```
 
 Everything you write next goes inside `projects/Monitor/`.
@@ -91,6 +92,7 @@ use function preg_split;
 use function round;
 use function sprintf;
 use function str_replace;
+use function str_starts_with;
 use function strpos;
 use function strrpos;
 use function substr;
@@ -237,14 +239,20 @@ class System
          return $this->disks;
       }
 
-      $types = ['ext2', 'ext3', 'ext4', 'xfs', 'btrfs', 'f2fs', 'zfs', 'vfat', 'exfat', 'ntfs', 'overlay'];
+      // ! Block devices, plus the root filesystems containers and VMs mount without one —
+      //   minus read-only images (snaps, discs), which always read as 100% full
+      $roots = ['overlay', 'fuse.fuse-overlayfs', 'virtiofs', '9p', 'erofs'];
+      $images = ['squashfs', 'iso9660'];
 
       $disks = [];
       foreach (file('/proc/mounts', FILE_IGNORE_NEW_LINES) ?: [] as $row) {
-         [, $mount, $type] = explode(' ', $row) + [1 => '', 2 => ''];
+         [$device, $mount, $type] = explode(' ', $row) + [1 => '', 2 => ''];
          $mount = str_replace('\\040', ' ', $mount);
 
-         if (in_array($type, $types, true) === false || isset($disks[$mount]) || is_dir($mount) === false) {
+         if (
+            (str_starts_with($device, '/dev/') === false && in_array($type, $roots, true) === false)
+            || in_array($type, $images, true) || isset($disks[$mount]) || is_dir($mount) === false
+         ) {
             continue;
          }
 
@@ -357,7 +365,7 @@ The constructor takes a first sample right away, so the very first frame already
 
   <d-block-step title="Write the project signature">
 
-Replace the scaffolded `Monitor.Project.php`. The `boot` function is what `php bootgly project Monitor start` runs: it loads the screens directory, fills the status bar, binds the keys and hands control to the app loop.
+Replace the scaffolded `Monitor.Project.php`. The `boot` function is what `php bootgly project Monitor start` runs: it loads the screens directory, binds one number key per screen whose file already exists (`is_file` — so a key never points at a screen you have not written yet), fills the status bar with those keys and hands control to the app loop.
 
 ```php :filename="projects/Monitor/Monitor.Project.php";
 <?php
@@ -383,18 +391,22 @@ return new Project(
       // @ Screens (one file per screen in screens/)
       $App->Screens->load(__DIR__ . '/screens');
 
-      // @ Status bar
-      $App->Statusbar->left = ['Monitor', gethostname()];
-      $App->Statusbar->right = ['1 Overview · 2 Processes · 3 Disks', '? help · q quit'];
-
-      // @ Keymaps (q, ? and Ctrl+P come with the shell)
-      $App->Keymaps->bind('1', 'Overview', fn () => $App->Screens->switch('Overview'));
-      $App->Keymaps->bind('2', 'Processes', fn () => $App->Screens->switch('Processes'));
-      $App->Keymaps->bind('3', 'Disks', fn () => $App->Screens->switch('Disks'));
+      // @ Keymaps — one number per screen whose file exists (q, ? and Ctrl+P come with the shell)
+      $labels = [];
+      foreach (['1' => 'Overview', '2' => 'Processes', '3' => 'Disks'] as $key => $screen) {
+         if (is_file(__DIR__ . "/screens/{$screen}.php") === true) {
+            $App->Keymaps->bind($key, $screen, fn () => $App->Screens->switch($screen));
+            $labels[] = "{$key} {$screen}";
+         }
+      }
       $App->Keymaps->bind('r', 'Refresh now', function () use ($App): void {
          $App->System->reset();
          $App->Toasts->add('Refreshed');
       });
+
+      // @ Status bar
+      $App->Statusbar->left = ['Monitor', gethostname()];
+      $App->Statusbar->right = [implode(' · ', $labels), '? help · q quit'];
 
       $App->boot();
       $App->run('Overview');
@@ -408,7 +420,7 @@ return new Project(
 
   <d-block-step title="Write the first screen">
 
-Screens live in `screens/`: a manifest with the screen names plus one file per screen. A screen is a closure receiving the app and its `Screen` object, and it returns the frame content as a string — one line per row; the app fits every line to the terminal width.
+Screens live in `screens/`: a manifest with the three screen names plus one file per screen — the manifest may name a file before you write it, the boot function only binds the keys of the files that exist:
 
 ```php :filename="projects/Monitor/screens/screens.index.php";
 <?php
@@ -419,6 +431,8 @@ return [
    'Disks'
 ];
 ```
+
+A screen is a closure receiving the app and its `Screen` object, and it returns the frame content as a string — one line per row; the app fits every line to the terminal width.
 
 The **Overview** screen renders two core widgets — a `Meter` gauge for CPU and memory and a `Sparkline` for the CPU history. Any non-interactive widget renders into a string with `Component::RETURN_OUTPUT`, so it can be part of the frame:
 
@@ -474,7 +488,7 @@ return static function (Monitor $App, Screen $Screen): string {
       ' Load average  ' . implode('  ', $System->load),
       ' CPU history   ' . (string) $History->render(Component::RETURN_OUTPUT),
       '',
-      ' Press 2 for processes, 3 for disks, r to refresh now.'
+      ' Press r to refresh — the status bar lists the screens, ? lists every key.'
    ]);
 };
 ```
@@ -494,13 +508,13 @@ The terminal switches to the alternate screen and you see the Overview updating 
 > [!NOTE]
 > Without a terminal (a pipe, CI, an AI agent) the app renders a single frame and exits, so `php bootgly project Monitor start | head` is a safe way to check a screen.
 
-The `2` and `3` keys already exist but point at screens that are still missing — the next two steps add them.
+The status bar shows `1 Overview` only: the other two keys appear as soon as their screen files exist, in the next two steps.
 
   </d-block-step>
 
   <d-block-step title="Add the Processes screen">
 
-Rank the processes by resident memory and render them as a table. The `Markdown` widget turns a Markdown table into a boxed terminal table, so the screen only builds text:
+Rank the processes by resident memory and render them as a table. The `Markdown` widget turns a Markdown table into an aligned terminal table, so the screen only builds text:
 
 ```php :filename="projects/Monitor/screens/Processes.php";
 <?php
@@ -653,9 +667,14 @@ return new Test(
          assertion: $System->memory['total'] > 0,
          description: 'memory total is known'
       );
+
+      // @ A second reading (the interval waived) gives the first CPU delta
+      usleep(50_000);
+      $System->reset();
+      $System->sample();
       yield assert(
-         assertion: $System->CPU >= 0.0 && $System->CPU <= 100.0,
-         description: 'CPU usage stays within 0..100 %'
+         assertion: count($System->history) === 2 && $System->CPU >= 0.0 && $System->CPU <= 100.0,
+         description: 'the second sample yields a CPU usage within 0..100 %'
       );
 
       $processes = $System->rank(5);
@@ -679,7 +698,7 @@ cd projects/Monitor && php ../../bootgly test
 ```
 
 ```text
-1 suite · 1 case · 4 assertions — passed
+[test] PASSED — 1 suites: 0 failed, 0 skipped, 1 passed
 ```
 
   </d-block-step>
@@ -690,7 +709,7 @@ cd projects/Monitor && php ../../bootgly test
 - Add a screen: create `screens/Network.php` (read `/proc/net/dev`), list it in `screens/screens.index.php` and bind a key in `Monitor.Project.php`.
 - Push a screen instead of switching — `$App->Screens->push('Details', ['pid' => 42])` overlays it and `pop()` comes back; the pushed screen reads `$Screen->state['pid']`.
 - Tail a log inside the app with the `Tail` widget, or replace the process table with a `Bars` chart.
-- Commit your work: the project is already a git repository (`git -C projects/Monitor log --oneline`).
+- Commit your work: the project is its own git repository — `git -C projects/Monitor status`; if the scaffold commit was skipped, set `git config --global user.name`/`user.email` and `git -C projects/Monitor commit -m "chore: scaffold"`.
 
 ## Reference
 

@@ -14,7 +14,7 @@ Memory                                     11.0 GB / 15.5 GB
  Load average  1.11  0.75  0.47
  CPU history   ▁▆▅█▅▃▂▂▄
 
- Press 2 for processes, 3 for disks, r to refresh now.
+ Press r to refresh — the status bar lists the screens, ? lists every key.
 
  Monitor  ▏ omni          1 Overview · 2 Processes · 3 Disks  ? help · q quit
 ```
@@ -30,7 +30,7 @@ cd bootgly.kit
 ```
 
 > [!TIP]
-> Já tem um kit? Entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
+> O instalador também pergunta se deve instalar o comando `bootgly` globalmente — qualquer resposta serve, todas as páginas aqui usam `php bootgly …`. Já tem um kit? Entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
 
   </d-block-step>
 
@@ -42,15 +42,16 @@ Crie um projeto **CLI** chamado `Monitor` na plataforma **Console**. Na primeira
 php bootgly projects create Monitor --platform=console --interfaces=CLI --yes
 ```
 
-O projeto nasce em `projects/Monitor/` — um repositório git próprio, com o scaffold como commit inicial:
+O projeto nasce em `projects/Monitor/` — um repositório git próprio (o scaffold vira o primeiro commit assim que o git souber seu nome e e-mail):
 
 ```text
 projects/Monitor/
+├── .gitignore
 ├── Monitor.Project.php     ← a assinatura do projeto: metadados + a função de boot
 ├── schedule.php            ← tarefas estilo cron (não usadas aqui)
 └── tests/
     ├── autoboot.php        ← o registro de testes do projeto
-    └── example/            ← uma suíte de exemplo (substituída no último passo)
+    └── example/            ← uma suíte de exemplo (removida do registro no último passo; apague quando quiser)
 ```
 
 Tudo o que você escrever a seguir vai dentro de `projects/Monitor/`.
@@ -91,6 +92,7 @@ use function preg_split;
 use function round;
 use function sprintf;
 use function str_replace;
+use function str_starts_with;
 use function strpos;
 use function strrpos;
 use function substr;
@@ -237,14 +239,20 @@ class System
          return $this->disks;
       }
 
-      $types = ['ext2', 'ext3', 'ext4', 'xfs', 'btrfs', 'f2fs', 'zfs', 'vfat', 'exfat', 'ntfs', 'overlay'];
+      // ! Block devices, plus the root filesystems containers and VMs mount without one —
+      //   minus read-only images (snaps, discs), which always read as 100% full
+      $roots = ['overlay', 'fuse.fuse-overlayfs', 'virtiofs', '9p', 'erofs'];
+      $images = ['squashfs', 'iso9660'];
 
       $disks = [];
       foreach (file('/proc/mounts', FILE_IGNORE_NEW_LINES) ?: [] as $row) {
-         [, $mount, $type] = explode(' ', $row) + [1 => '', 2 => ''];
+         [$device, $mount, $type] = explode(' ', $row) + [1 => '', 2 => ''];
          $mount = str_replace('\\040', ' ', $mount);
 
-         if (in_array($type, $types, true) === false || isset($disks[$mount]) || is_dir($mount) === false) {
+         if (
+            (str_starts_with($device, '/dev/') === false && in_array($type, $roots, true) === false)
+            || in_array($type, $images, true) || isset($disks[$mount]) || is_dir($mount) === false
+         ) {
             continue;
          }
 
@@ -357,7 +365,7 @@ O construtor colhe uma primeira amostra na hora, então o primeiro frame já mos
 
   <d-block-step title="Escreva a assinatura do projeto">
 
-Substitua o `Monitor.Project.php` gerado. A função `boot` é o que `php bootgly project Monitor start` executa: ela carrega a pasta de telas, preenche a barra de status, associa as teclas e entrega o controle ao loop do app.
+Substitua o `Monitor.Project.php` gerado. A função `boot` é o que `php bootgly project Monitor start` executa: ela carrega a pasta de telas, associa uma tecla numérica por tela cujo arquivo já existe (`is_file` — assim uma tecla nunca aponta para uma tela que você ainda não escreveu), preenche a barra de status com essas teclas e entrega o controle ao loop do app.
 
 ```php :filename="projects/Monitor/Monitor.Project.php";
 <?php
@@ -383,18 +391,22 @@ return new Project(
       // @ Screens (one file per screen in screens/)
       $App->Screens->load(__DIR__ . '/screens');
 
-      // @ Status bar
-      $App->Statusbar->left = ['Monitor', gethostname()];
-      $App->Statusbar->right = ['1 Overview · 2 Processes · 3 Disks', '? help · q quit'];
-
-      // @ Keymaps (q, ? and Ctrl+P come with the shell)
-      $App->Keymaps->bind('1', 'Overview', fn () => $App->Screens->switch('Overview'));
-      $App->Keymaps->bind('2', 'Processes', fn () => $App->Screens->switch('Processes'));
-      $App->Keymaps->bind('3', 'Disks', fn () => $App->Screens->switch('Disks'));
+      // @ Keymaps — one number per screen whose file exists (q, ? and Ctrl+P come with the shell)
+      $labels = [];
+      foreach (['1' => 'Overview', '2' => 'Processes', '3' => 'Disks'] as $key => $screen) {
+         if (is_file(__DIR__ . "/screens/{$screen}.php") === true) {
+            $App->Keymaps->bind($key, $screen, fn () => $App->Screens->switch($screen));
+            $labels[] = "{$key} {$screen}";
+         }
+      }
       $App->Keymaps->bind('r', 'Refresh now', function () use ($App): void {
          $App->System->reset();
          $App->Toasts->add('Refreshed');
       });
+
+      // @ Status bar
+      $App->Statusbar->left = ['Monitor', gethostname()];
+      $App->Statusbar->right = [implode(' · ', $labels), '? help · q quit'];
 
       $App->boot();
       $App->run('Overview');
@@ -408,7 +420,7 @@ return new Project(
 
   <d-block-step title="Escreva a primeira tela">
 
-As telas vivem em `screens/`: um manifesto com os nomes das telas mais um arquivo por tela. Uma tela é uma closure que recebe o app e o seu objeto `Screen`, e devolve o conteúdo do frame como string — uma linha por fileira; o app ajusta cada linha à largura do terminal.
+As telas vivem em `screens/`: um manifesto com os três nomes de tela mais um arquivo por tela — o manifesto pode nomear um arquivo antes de você escrevê-lo, a função de boot só associa as teclas dos arquivos que existem:
 
 ```php :filename="projects/Monitor/screens/screens.index.php";
 <?php
@@ -419,6 +431,8 @@ return [
    'Disks'
 ];
 ```
+
+Uma tela é uma closure que recebe o app e o seu objeto `Screen`, e devolve o conteúdo do frame como string — uma linha por fileira; o app ajusta cada linha à largura do terminal.
 
 A tela **Overview** renderiza dois widgets do core — um medidor `Meter` para CPU e memória e um `Sparkline` para o histórico de CPU. Qualquer widget não interativo renderiza para uma string com `Component::RETURN_OUTPUT`, e assim pode fazer parte do frame:
 
@@ -474,7 +488,7 @@ return static function (Monitor $App, Screen $Screen): string {
       ' Load average  ' . implode('  ', $System->load),
       ' CPU history   ' . (string) $History->render(Component::RETURN_OUTPUT),
       '',
-      ' Press 2 for processes, 3 for disks, r to refresh now.'
+      ' Press r to refresh — the status bar lists the screens, ? lists every key.'
    ]);
 };
 ```
@@ -494,13 +508,13 @@ O terminal muda para a tela alternativa e você vê o Overview atualizando a cad
 > [!NOTE]
 > Sem um terminal (um pipe, CI, um agente de IA) o app renderiza um único frame e sai, então `php bootgly project Monitor start | head` é um jeito seguro de conferir uma tela.
 
-As teclas `2` e `3` já existem, mas apontam para telas que ainda não existem — os próximos dois passos as adicionam.
+A barra de status mostra só `1 Overview`: as outras duas teclas aparecem assim que os arquivos das telas existirem, nos próximos dois passos.
 
   </d-block-step>
 
   <d-block-step title="Adicione a tela Processes">
 
-Ordene os processos por memória residente e renderize-os como tabela. O widget `Markdown` transforma uma tabela Markdown em uma tabela de terminal com bordas, então a tela só monta texto:
+Ordene os processos por memória residente e renderize-os como tabela. O widget `Markdown` transforma uma tabela Markdown em uma tabela de terminal alinhada, então a tela só monta texto:
 
 ```php :filename="projects/Monitor/screens/Processes.php";
 <?php
@@ -653,9 +667,14 @@ return new Test(
          assertion: $System->memory['total'] > 0,
          description: 'memory total is known'
       );
+
+      // @ A second reading (the interval waived) gives the first CPU delta
+      usleep(50_000);
+      $System->reset();
+      $System->sample();
       yield assert(
-         assertion: $System->CPU >= 0.0 && $System->CPU <= 100.0,
-         description: 'CPU usage stays within 0..100 %'
+         assertion: count($System->history) === 2 && $System->CPU >= 0.0 && $System->CPU <= 100.0,
+         description: 'the second sample yields a CPU usage within 0..100 %'
       );
 
       $processes = $System->rank(5);
@@ -679,7 +698,7 @@ cd projects/Monitor && php ../../bootgly test
 ```
 
 ```text
-1 suite · 1 case · 4 assertions — passed
+[test] PASSED — 1 suites: 0 failed, 0 skipped, 1 passed
 ```
 
   </d-block-step>
@@ -690,7 +709,7 @@ cd projects/Monitor && php ../../bootgly test
 - Adicione uma tela: crie `screens/Network.php` (leia `/proc/net/dev`), liste-a em `screens/screens.index.php` e associe uma tecla em `Monitor.Project.php`.
 - Empilhe uma tela em vez de trocar — `$App->Screens->push('Details', ['pid' => 42])` a sobrepõe e `pop()` volta; a tela empilhada lê `$Screen->state['pid']`.
 - Acompanhe um log dentro do app com o widget `Tail`, ou troque a tabela de processos por um gráfico `Bars`.
-- Faça commit do seu trabalho: o projeto já é um repositório git (`git -C projects/Monitor log --oneline`).
+- Faça commit do seu trabalho: o projeto é um repositório git próprio — `git -C projects/Monitor status`; se o commit do scaffold foi pulado, defina `git config --global user.name`/`user.email` e rode `git -C projects/Monitor commit -m "chore: scaffold"`.
 
 ## Referência
 
