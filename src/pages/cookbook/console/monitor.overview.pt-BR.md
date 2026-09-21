@@ -518,6 +518,12 @@ O terminal muda para a tela alternativa e você vê o Overview atualizando a cad
 > [!NOTE]
 > Sem um terminal (um pipe, CI, um agente de IA) o app renderiza um único frame e sai, então `php bootgly project Monitor start | head` é um jeito seguro de conferir uma tela.
 
+O app é dono deste terminal — em um segundo, acompanhe o log do projeto; ele fica quieto até algo dar errado, e é lá que os relatórios de exceção caem:
+
+```bash :toolbar="true";
+php bootgly project Monitor logs -f
+```
+
 A barra de status mostra só `1 Overview`: as outras duas teclas aparecem assim que os arquivos das telas existirem, nos próximos dois passos.
 
   </d-block-step>

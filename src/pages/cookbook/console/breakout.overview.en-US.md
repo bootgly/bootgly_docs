@@ -474,6 +474,12 @@ php bootgly project Breakout start
 > [!NOTE]
 > Without a terminal (a pipe, CI, an AI agent) the game simulates one tick, renders one frame and exits — `php bootgly project Breakout start | cat` is a safe smoke test.
 
+The game owns this terminal — in a second one, follow the project's log; it stays quiet until something goes wrong, and that is where the exception reports land:
+
+```bash :toolbar="true";
+php bootgly project Breakout logs -f
+```
+
   </d-block-step>
 
   <d-block-step title="Test it">

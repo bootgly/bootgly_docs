@@ -462,7 +462,15 @@ Start the server from the kit directory and open <http://localhost:8080> — sig
 php bootgly project Guestbook start
 ```
 
-Port 8080 already taken? `PORT=8081 php bootgly project Guestbook start` — the boot function reads `PORT`; use that port in the `curl` lines below too. From a terminal, the same flow takes three requests — the session cookie and the masked token from the form are what let the POST through the CSRF middleware:
+Port 8080 already taken? `PORT=8081 php bootgly project Guestbook start` — the boot function reads `PORT`; use that port in the `curl` lines below too.
+
+The server is detached, so follow its log in a second terminal — every request, and the exception report when something goes wrong (the files live in `storage/logs/`):
+
+```bash :toolbar="true";
+php bootgly project Guestbook logs -f
+```
+
+From a terminal, the same flow takes three requests — the session cookie and the masked token from the form are what let the POST through the CSRF middleware:
 
 ```bash :toolbar="true";
 curl -s -c cookies.txt http://localhost:8080/entries -o page.html
@@ -476,9 +484,6 @@ A POST without the token is refused with `403`, an empty name or message comes b
 ```bash :toolbar="true";
 php bootgly project Guestbook stop
 ```
-
-> [!NOTE]
-> Errors and the exception reports of a detached server land in `storage/logs/` — `php bootgly project Guestbook logs` tails them.
 
   </d-block-step>
 

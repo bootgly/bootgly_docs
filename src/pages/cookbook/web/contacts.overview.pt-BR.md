@@ -471,7 +471,15 @@ Inicie o servidor a partir da pasta do kit:
 php bootgly project Contacts start
 ```
 
-Porta 8090 ocupada? `PORT=8091 php bootgly project Contacts start` — a função de boot lê `PORT`; use essa porta também nas linhas de `curl` abaixo. Depois percorra a API com `curl` — list, show, create, um create inválido, um update parcial, delete, e o 404 que vem em seguida:
+Porta 8090 ocupada? `PORT=8091 php bootgly project Contacts start` — a função de boot lê `PORT`; use essa porta também nas linhas de `curl` abaixo.
+
+O servidor fica desprendido, então acompanhe o log dele em um segundo terminal — toda requisição, e o relatório de exceção quando algo der errado (os arquivos ficam em `storage/logs/`):
+
+```bash :toolbar="true";
+php bootgly project Contacts logs -f
+```
+
+Depois percorra a API com `curl` — list, show, create, um create inválido, um update parcial, delete, e o 404 que vem em seguida:
 
 ```bash :toolbar="true";
 curl -s -i http://localhost:8090/contacts | grep -E "^HTTP|X-Total-Count|^\{"

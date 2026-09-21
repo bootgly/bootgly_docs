@@ -462,7 +462,15 @@ Inicie o servidor a partir da pasta do kit e abra <http://localhost:8080> — as
 php bootgly project Guestbook start
 ```
 
-Porta 8080 ocupada? `PORT=8081 php bootgly project Guestbook start` — a função de boot lê `PORT`; use essa porta também nas linhas de `curl` abaixo. De um terminal, o mesmo fluxo leva três requisições — o cookie de sessão e o token mascarado do formulário são o que deixa o POST passar pelo middleware CSRF:
+Porta 8080 ocupada? `PORT=8081 php bootgly project Guestbook start` — a função de boot lê `PORT`; use essa porta também nas linhas de `curl` abaixo.
+
+O servidor fica desprendido, então acompanhe o log dele em um segundo terminal — toda requisição, e o relatório de exceção quando algo der errado (os arquivos ficam em `storage/logs/`):
+
+```bash :toolbar="true";
+php bootgly project Guestbook logs -f
+```
+
+De um terminal, o mesmo fluxo leva três requisições — o cookie de sessão e o token mascarado do formulário são o que deixa o POST passar pelo middleware CSRF:
 
 ```bash :toolbar="true";
 curl -s -c cookies.txt http://localhost:8080/entries -o page.html
@@ -476,9 +484,6 @@ Um POST sem o token é recusado com `403`, um nome ou mensagem vazios voltam com
 ```bash :toolbar="true";
 php bootgly project Guestbook stop
 ```
-
-> [!NOTE]
-> Erros e relatórios de exceção de um servidor desprendido caem em `storage/logs/` — `php bootgly project Guestbook logs` os acompanha.
 
   </d-block-step>
 

@@ -518,6 +518,12 @@ The terminal switches to the alternate screen and you see the Overview updating 
 > [!NOTE]
 > Without a terminal (a pipe, CI, an AI agent) the app renders a single frame and exits, so `php bootgly project Monitor start | head` is a safe way to check a screen.
 
+The app owns this terminal — in a second one, follow the project's log; it stays quiet until something goes wrong, and that is where the exception reports land:
+
+```bash :toolbar="true";
+php bootgly project Monitor logs -f
+```
+
 The status bar shows `1 Overview` only: the other two keys appear as soon as their screen files exist, in the next two steps.
 
   </d-block-step>
