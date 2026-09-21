@@ -138,6 +138,13 @@ docker run --rm -it \
   bootgly/bootgly.kit projects list
 ```
 
+Create the two directories yourself before the first run (`mkdir -p projects storage`). Docker
+creates a missing bind-mount source as root; a directory you created is yours, and what the
+image writes into `projects/` — the project the wizard scaffolds, the stocked examples and the
+project registry — is handed to you when the command finishes, so your editor and your `git`
+can touch it without `sudo`. `storage/` is the runtime's: what the servers write there stays
+owned by root and by the `bootgly` account.
+
 Once the wizard has run, that lists your projects and the stocked examples.
 
 Two consequences worth stating plainly:
@@ -200,10 +207,11 @@ docker pull bootgly/bootgly.kit:1.0.0
 Pull an exact version to land on one specific release; a plain `docker pull bootgly/bootgly.kit`
 (or `:1`) moves to the newest stable instead.
 
-`kit upgrade`, `kit downgrade` and `kit list` refuse inside the image and say why: the image
-ships the kit *layout*, not a git checkout (the build removes `.git` deliberately), so there
-is nothing for them to move — and rewriting a filesystem the next `docker run` throws away
-would only look like it worked. The refusal names `docker pull` and prints the version the
+`kit upgrade` and `kit downgrade` refuse inside the image and say why: the image ships the
+kit *layout*, not a git checkout (the build removes `.git` deliberately), so there is nothing
+for them to move — and rewriting a filesystem the next `docker run` throws away would only
+look like it worked. `kit list` answers instead of refusing: the image *is* the release, and
+the other releases are image tags. The refusal names `docker pull` and prints the version the
 image carries.
 
 ### Build the kit image yourself
@@ -513,10 +521,13 @@ value at run time with `-d`.
 
 ```text
 User       The image runs as root on purpose: binding :80/:443 — Auto-TLS' HTTP-01
-           challenge included — needs it, and the server demotes its own workers
-           through the `user`/`group` server Configs. `--user` is not a drop-in
-           override: projects/ and storage/ are created root-owned, so a non-root
-           run needs both mounted from the host, owned by that uid, and binds no
+           challenge included — needs it, and the servers demote their workers to
+           the `bootgly` account the image ships: a project scaffolded by the
+           wizard names it in its `user`/`group` server Configs, and a project with
+           none configured takes it by default on a root launch. What root writes
+           into a mounted projects/ is handed to the directory's owner; storage/
+           stays the runtime's. `--user` is not a drop-in override: a non-root run
+           needs both mounted from the host, owned by that uid, and binds no
            privileged port.
 Stop       STOPSIGNAL is SIGTERM and the server drains in flight work, so
            `docker stop` is a graceful shutdown.

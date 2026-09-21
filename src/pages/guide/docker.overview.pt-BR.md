@@ -140,6 +140,13 @@ docker run --rm -it \
   bootgly/bootgly.kit projects list
 ```
 
+Crie os dois diretórios você mesmo antes da primeira execução (`mkdir -p projects storage`). O
+Docker cria a origem de um bind-mount ausente como root; um diretório criado por você é seu, e
+o que a imagem escreve em `projects/` — o projeto que o wizard gera, os exemplos importados e o
+registro de projetos — é entregue a você quando o comando termina, então seu editor e seu
+`git` mexem nele sem `sudo`. O `storage/` é do runtime: o que os servidores escrevem nele
+continua pertencendo ao root e à conta `bootgly`.
+
 Depois que o wizard rodar, isso lista seus projetos e os exemplos importados.
 
 Duas consequências que vale dizer sem rodeios:
@@ -203,11 +210,12 @@ docker pull bootgly/bootgly.kit:1.0.0
 Baixe uma versão exata para cair em um release específico; um `docker pull bootgly/bootgly.kit`
 puro (ou `:1`) avança para a estável mais nova.
 
-Os comandos `kit upgrade`, `kit downgrade` e `kit list` recusam dentro da imagem e explicam
-por quê: a imagem entrega o *layout* do kit, não um checkout git (o build remove o `.git` de
-propósito), então não há nada para eles moverem — e reescrever um sistema de arquivos que o
-próximo `docker run` joga fora só pareceria ter funcionado. A recusa nomeia o `docker pull` e
-imprime a versão que a imagem carrega.
+Os comandos `kit upgrade` e `kit downgrade` recusam dentro da imagem e explicam por quê: a
+imagem entrega o *layout* do kit, não um checkout git (o build remove o `.git` de propósito),
+então não há nada para eles moverem — e reescrever um sistema de arquivos que o próximo
+`docker run` joga fora só pareceria ter funcionado. O `kit list` responde em vez de recusar: a
+imagem *é* a release, e as outras releases são tags de imagem. A recusa nomeia o `docker pull`
+e imprime a versão que a imagem carrega.
 
 ### Construir a imagem do kit você mesmo
 
@@ -520,11 +528,14 @@ qualquer valor em tempo de execução com `-d`.
 
 ```text
 Usuário    A imagem roda como root de propósito: escutar em :80/:443 — incluindo o
-           desafio HTTP-01 do Auto-TLS — exige isso, e o servidor rebaixa os próprios
-           workers pelos Configs `user`/`group`. `--user` não é substituição direta:
-           projects/ e storage/ nascem com dono root, então uma execução não-root
-           precisa dos dois montados do host, com dono daquele uid, e sem porta
-           privilegiada.
+           desafio HTTP-01 do Auto-TLS — exige isso, e os servidores rebaixam os
+           workers para a conta `bootgly` que a imagem traz: um projeto criado pelo
+           wizard a nomeia nos Configs `user`/`group` do servidor, e um projeto sem
+           nada configurado a assume por padrão quando lançado como root. O que o
+           root escreve num projects/ montado é entregue ao dono do diretório; o
+           storage/ continua sendo do runtime. `--user` não é substituição direta:
+           uma execução não-root precisa dos dois montados do host, com dono
+           daquele uid, e sem porta privilegiada.
 Parada     O STOPSIGNAL é SIGTERM e o servidor drena o que está em andamento, então
            `docker stop` é um desligamento gracioso.
 Coverage   Desabilite o opcache para medições de coverage precisas. O entrypoint É o

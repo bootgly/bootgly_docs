@@ -121,6 +121,9 @@ Para garantir que tudo foi carregado corretamente, execute a tela inicial da CLI
 php bootgly
 ```
 
+`php bootgly --version` (ou `-V`) imprime só as versões do framework e do PHP — a linha que
+um script consegue ler.
+
 ## Instale a CLI do Bootgly globalmente
 
 Para usar `bootgly` como um comando global, execute o setup como seu usuário comum a partir do diretório do Kit:
