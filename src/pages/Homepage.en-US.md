@@ -6,6 +6,7 @@ The official documentation of [Bootgly PHP Framework](https://github.com/bootgly
 
 <d-quick-links>
     <d-quick-link icon="flag" title="Getting Started" description="Installation, setup, and first steps" to="/guide/getting-started/overview/" />
+    <d-quick-link icon="restaurant_menu" title="Cookbook" description="Real projects built step by step on each platform" to="/cookbook/about/cookbook/overview/" />
     <d-quick-link icon="developer_board" title="Architecture" description="Interfaces, layers, and modular design" to="/manual/Bootgly/basic/architecture/overview/" />
     <d-quick-link icon="terminal" title="CLI" description="Commands, Scripts, Terminal I/O, UI Components" to="/manual/CLI/overview/" />
     <d-quick-link icon="language" title="WPI" description="HTTP Server, Router, TCP Client/Server" to="/manual/WPI/overview/" />

@@ -95,3 +95,4 @@ They are compact references for the **Game** module: fixed-timestep loop, diff-r
 - [Console](/manual/Console) — how the platform boots and how projects bind to it.
 - [App](/manual/Console/App) — the app shell: Screens + Router, Keymaps, Statusbar, Toasts, Palette, Tail.
 - [Game](/manual/Console/Game) — the game shell: Loop, Canvas (Block/Half/Braille), Keyboard, Scenes, Sprites and 2D math.
+- Cookbook — build [Monitor](/cookbook/console/monitor/overview/), a live system dashboard on the App shell, and [Breakout](/cookbook/console/breakout/overview/), a game on the Game shell, step by step.

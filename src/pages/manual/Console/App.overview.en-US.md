@@ -125,6 +125,9 @@ return static function (App $App, Screen $Screen): string {
 };
 ```
 
+> [!NOTE]
+> `Table` is the one widget that does not honour `RETURN_OUTPUT` yet — it always writes. Render tabular data through the `Markdown` widget (a Markdown table) instead, as the Cookbook's [Monitor](/cookbook/console/monitor/overview/) does.
+
 The one rule: widgets that run their **own read loop** (Select, Form, Textbox) never render inside a view — the App loop already owns stdin. Screens render strings; actions live in keymaps.
 
 ## Behavior notes

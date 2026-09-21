@@ -95,3 +95,4 @@ Eles são referências compactas para o módulo **Game**: loop de timestep fixo,
 - [Console](/manual/Console) — como a plataforma boota e como projetos se vinculam a ela.
 - [App](/manual/Console/App) — o shell de app: Screens + Router, Keymaps, Statusbar, Toasts, Palette, Tail.
 - [Game](/manual/Console/Game) — o shell de jogo: Loop, Canvas (Block/Half/Braille), Keyboard, Scenes.
+- Cookbook — construa o [Monitor](/cookbook/console/monitor/overview/), um dashboard de sistema ao vivo no shell App, e o [Breakout](/cookbook/console/breakout/overview/), um jogo no shell Game, passo a passo.
