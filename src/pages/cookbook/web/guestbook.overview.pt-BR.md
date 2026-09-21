@@ -61,6 +61,8 @@ Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto
 
 Substitua o `Guestbook.Project.php` gerado. A função `boot` roda as migrations no arquivo SQLite e inicia um `Web\App` — a pilha de middlewares padrão (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`) e o recurso de resposta `Database` vêm junto:
 
+**Arquivo** `projects/Guestbook/Guestbook.Project.php`
+
 ```php :filename="projects/Guestbook/Guestbook.Project.php";
 <?php
 
@@ -117,6 +119,8 @@ return new Project(
 
 O recurso de resposta `Database` lê `configs/database/` — uma conexão SQLite apontando para um arquivo dentro do projeto:
 
+**Arquivo** `projects/Guestbook/configs/database/database.Config.php`
+
 ```php :filename="projects/Guestbook/configs/database/database.Config.php";
 <?php
 
@@ -140,6 +144,8 @@ return new Config(scope: 'database')
   <d-block-step title="Escreva a migration">
 
 As migrations vivem em `database/migrations/` e são executadas pela função de boot antes do servidor bifurcar, então a tabela sempre existe quando a primeira requisição chega:
+
+**Arquivo** `projects/Guestbook/database/migrations/20260921000000_create_entries.php`
 
 ```php :filename="projects/Guestbook/database/migrations/20260921000000_create_entries.php";
 <?php
@@ -175,6 +181,8 @@ return new Migration(
   <d-block-step title="Escreva o controller">
 
 Um controller é um substantivo no plural; suas ações são verbos de uma palavra que recebem `(Request, Response)`. `list` renderiza a página com as entradas, a mensagem flash e um token CSRF mascarado para o formulário; `create` valida o POST, insere a linha, registra a mensagem flash e redireciona com `303 See Other`. Uma instância nova do controller é construída por requisição, então nada sobrevive entre visitantes:
+
+**Arquivo** `projects/Guestbook/Controllers/Entries.php`
 
 ```php :filename="projects/Guestbook/Controllers/Entries.php";
 <?php
@@ -246,6 +254,8 @@ class Entries extends Controller
 
 O manifesto do router nomeia os conjuntos de rotas ativos; cada conjunto é um arquivo que faz `yield` das rotas. `Controllers::map()` expande uma linha nas rotas do recurso — filtradas aqui para `list` (`GET /entries`) e `create` (`GET /entries/create`, `POST /entries`) — e `Statics` serve a folha de estilo inline com o media type certo:
 
+**Arquivo** `projects/Guestbook/router/router.index.php`
+
 ```php :filename="projects/Guestbook/router/router.index.php";
 <?php
 
@@ -253,6 +263,8 @@ return [
    'Guestbook'
 ];
 ```
+
+**Arquivo** `projects/Guestbook/router/routes/Guestbook.routes.php`
 
 ```php :filename="projects/Guestbook/router/routes/Guestbook.routes.php";
 <?php
@@ -293,6 +305,8 @@ return static function (Request $Request, Response $Response, Router $Router): G
 
 Views são templates PHP em `views/`; `views/layouts/main.template.php` envolve toda renderização e `@yield content;` é onde a view entra. A view da página contém o formulário (com o `_token` oculto que o middleware CSRF confere) e as entradas:
 
+**Arquivo** `projects/Guestbook/views/layouts/main.template.php`
+
 ```php :filename="projects/Guestbook/views/layouts/main.template.php";
 <!DOCTYPE html>
 <html lang="en">
@@ -314,6 +328,8 @@ Views são templates PHP em `views/`; `views/layouts/main.template.php` envolve 
 </body>
 </html>
 ```
+
+**Arquivo** `projects/Guestbook/views/entries/list.template.php`
 
 ```php :filename="projects/Guestbook/views/entries/list.template.php";
 <h1>Sign the book</h1>
@@ -349,10 +365,14 @@ Views são templates PHP em `views/`; `views/layouts/main.template.php` envolve 
 <?php endif; ?>
 ```
 
+**Arquivo** `projects/Guestbook/views/errors/404.template.php`
+
 ```php :filename="projects/Guestbook/views/errors/404.template.php";
 <h1>404</h1>
 <p>There is nothing here. <a href="/entries">Back to the book</a>.</p>
 ```
+
+**Arquivo** `projects/Guestbook/statics/guestbook.css`
 
 ```css :filename="projects/Guestbook/statics/guestbook.css";
 :root {
@@ -466,6 +486,8 @@ php bootgly project Guestbook stop
 
 Um projeto carrega as próprias suítes. Substitua o registro gerado para que ele liste uma suíte `Project` com dois testes — o contrato da assinatura e os arquivos de router/migration:
 
+**Arquivo** `projects/Guestbook/tests/autoboot.php`
+
 ```php :filename="projects/Guestbook/tests/autoboot.php";
 <?php
 
@@ -478,6 +500,8 @@ return new Suites(
    ]
 );
 ```
+
+**Arquivo** `projects/Guestbook/tests/project/autoboot.php`
 
 ```php :filename="projects/Guestbook/tests/project/autoboot.php";
 <?php
@@ -500,6 +524,8 @@ return new Suite(
    ]
 );
 ```
+
+**Arquivo** `projects/Guestbook/tests/project/1.1-signature.Test.php`
 
 ```php :filename="projects/Guestbook/tests/project/1.1-signature.Test.php";
 <?php
@@ -528,6 +554,8 @@ return new Test(
    }
 );
 ```
+
+**Arquivo** `projects/Guestbook/tests/project/1.2-router.Test.php`
 
 ```php :filename="projects/Guestbook/tests/project/1.2-router.Test.php";
 <?php

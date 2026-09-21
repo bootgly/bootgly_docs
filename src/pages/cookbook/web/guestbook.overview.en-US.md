@@ -61,6 +61,8 @@ You will replace the signature and the router manifest, add a `Guestbook.routes.
 
 Replace the scaffolded `Guestbook.Project.php`. Its `boot` function runs the migrations on the SQLite file and starts a `Web\App` — the default middleware stack (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`) and the `Database` response resource come with it:
 
+**File** `projects/Guestbook/Guestbook.Project.php`
+
 ```php :filename="projects/Guestbook/Guestbook.Project.php";
 <?php
 
@@ -117,6 +119,8 @@ return new Project(
 
 The `Database` response resource reads `configs/database/` — one SQLite connection pointing at a file inside the project:
 
+**File** `projects/Guestbook/configs/database/database.Config.php`
+
 ```php :filename="projects/Guestbook/configs/database/database.Config.php";
 <?php
 
@@ -140,6 +144,8 @@ return new Config(scope: 'database')
   <d-block-step title="Write the migration">
 
 Migrations live in `database/migrations/` and are run by the boot function before the server forks, so the table always exists when the first request lands:
+
+**File** `projects/Guestbook/database/migrations/20260921000000_create_entries.php`
 
 ```php :filename="projects/Guestbook/database/migrations/20260921000000_create_entries.php";
 <?php
@@ -175,6 +181,8 @@ return new Migration(
   <d-block-step title="Write the controller">
 
 A controller is a plural noun; its actions are single-word verbs receiving `(Request, Response)`. `list` renders the page with the entries, the flash message and a masked CSRF token for the form; `create` validates the POST, inserts the row, flashes a message and redirects with `303 See Other`. A fresh controller instance is built per request, so nothing survives between visitors:
+
+**File** `projects/Guestbook/Controllers/Entries.php`
 
 ```php :filename="projects/Guestbook/Controllers/Entries.php";
 <?php
@@ -246,6 +254,8 @@ class Entries extends Controller
 
 The router manifest names the active route sets; each set is a file yielding routes. `Controllers::map()` expands one line into the resource routes — filtered here to `list` (`GET /entries`) and `create` (`GET /entries/create`, `POST /entries`) — and `Statics` serves the stylesheet inline with the right media type:
 
+**File** `projects/Guestbook/router/router.index.php`
+
 ```php :filename="projects/Guestbook/router/router.index.php";
 <?php
 
@@ -253,6 +263,8 @@ return [
    'Guestbook'
 ];
 ```
+
+**File** `projects/Guestbook/router/routes/Guestbook.routes.php`
 
 ```php :filename="projects/Guestbook/router/routes/Guestbook.routes.php";
 <?php
@@ -293,6 +305,8 @@ return static function (Request $Request, Response $Response, Router $Router): G
 
 Views are PHP templates in `views/`; `views/layouts/main.template.php` wraps every render and `@yield content;` is where the view goes. The page view holds the form (with the hidden `_token` the CSRF middleware checks) and the entries:
 
+**File** `projects/Guestbook/views/layouts/main.template.php`
+
 ```php :filename="projects/Guestbook/views/layouts/main.template.php";
 <!DOCTYPE html>
 <html lang="en">
@@ -314,6 +328,8 @@ Views are PHP templates in `views/`; `views/layouts/main.template.php` wraps eve
 </body>
 </html>
 ```
+
+**File** `projects/Guestbook/views/entries/list.template.php`
 
 ```php :filename="projects/Guestbook/views/entries/list.template.php";
 <h1>Sign the book</h1>
@@ -349,10 +365,14 @@ Views are PHP templates in `views/`; `views/layouts/main.template.php` wraps eve
 <?php endif; ?>
 ```
 
+**File** `projects/Guestbook/views/errors/404.template.php`
+
 ```php :filename="projects/Guestbook/views/errors/404.template.php";
 <h1>404</h1>
 <p>There is nothing here. <a href="/entries">Back to the book</a>.</p>
 ```
+
+**File** `projects/Guestbook/statics/guestbook.css`
 
 ```css :filename="projects/Guestbook/statics/guestbook.css";
 :root {
@@ -466,6 +486,8 @@ php bootgly project Guestbook stop
 
 A project carries its own suites. Replace the scaffolded registry so it lists a `Project` suite with two tests — the signature contract and the router/migration files:
 
+**File** `projects/Guestbook/tests/autoboot.php`
+
 ```php :filename="projects/Guestbook/tests/autoboot.php";
 <?php
 
@@ -478,6 +500,8 @@ return new Suites(
    ]
 );
 ```
+
+**File** `projects/Guestbook/tests/project/autoboot.php`
 
 ```php :filename="projects/Guestbook/tests/project/autoboot.php";
 <?php
@@ -500,6 +524,8 @@ return new Suite(
    ]
 );
 ```
+
+**File** `projects/Guestbook/tests/project/1.1-signature.Test.php`
 
 ```php :filename="projects/Guestbook/tests/project/1.1-signature.Test.php";
 <?php
@@ -528,6 +554,8 @@ return new Test(
    }
 );
 ```
+
+**File** `projects/Guestbook/tests/project/1.2-router.Test.php`
 
 ```php :filename="projects/Guestbook/tests/project/1.2-router.Test.php";
 <?php

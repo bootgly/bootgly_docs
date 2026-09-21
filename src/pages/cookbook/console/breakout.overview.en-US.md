@@ -53,6 +53,8 @@ The project lands in `projects/Breakout/` as a git repository of its own (the sc
 
 A brick is a `Zone` — an axis-aligned rectangle on the board — plus a color. `Zone::contain()` will tell whether the ball is inside it:
 
+**File** `projects/Breakout/Brick.php`
+
 ```php :filename="projects/Breakout/Brick.php";
 <?php
 
@@ -84,6 +86,8 @@ class Brick
 A game extends `Console\Game` and implements two methods the loop calls: `update(float $delta)` advances the simulation at a fixed rate (`$this->Loop->tps` ticks per second) and `draw()` paints the frame into the `Canvas`, which flushes only the cells that changed.
 
 Read it top to bottom — the constructor sizes the board and declares the three scenes; `reset()`, `build()` and `launch()` set a game up; `play()` is one tick of gameplay:
+
+**File** `projects/Breakout/Breakout.php`
 
 ```php :filename="projects/Breakout/Breakout.php";
 <?php
@@ -414,6 +418,8 @@ The pieces worth knowing:
 
 Replace the scaffolded `Breakout.Project.php`. Its `boot` function is what `php bootgly project Breakout start` runs — it builds the game and hands the terminal to it:
 
+**File** `projects/Breakout/Breakout.Project.php`
+
 ```php :filename="projects/Breakout/Breakout.Project.php";
 <?php
 
@@ -474,6 +480,8 @@ php bootgly project Breakout start
 
 A project carries its own suites. Replace the scaffolded registry so it lists a `Game` suite, then write the suite and one test that builds the game headless and checks the wall, the balls and the serve:
 
+**File** `projects/Breakout/tests/autoboot.php`
+
 ```php :filename="projects/Breakout/tests/autoboot.php";
 <?php
 
@@ -486,6 +494,8 @@ return new Suites(
    ]
 );
 ```
+
+**File** `projects/Breakout/tests/game/autoboot.php`
 
 ```php :filename="projects/Breakout/tests/game/autoboot.php";
 <?php
@@ -507,6 +517,8 @@ return new Suite(
    ]
 );
 ```
+
+**File** `projects/Breakout/tests/game/1.1-wall.Test.php`
 
 ```php :filename="projects/Breakout/tests/game/1.1-wall.Test.php";
 <?php

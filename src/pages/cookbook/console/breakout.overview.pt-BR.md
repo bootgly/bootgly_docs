@@ -53,6 +53,8 @@ O projeto nasce em `projects/Breakout/` como um repositório git próprio (o sca
 
 Um tijolo é uma `Zone` — um retângulo alinhado aos eixos no tabuleiro — mais uma cor. `Zone::contain()` dirá se a bola está dentro dele:
 
+**Arquivo** `projects/Breakout/Brick.php`
+
 ```php :filename="projects/Breakout/Brick.php";
 <?php
 
@@ -84,6 +86,8 @@ class Brick
 Um jogo estende `Console\Game` e implementa dois métodos que o loop chama: `update(float $delta)` avança a simulação a uma taxa fixa (`$this->Loop->tps` ticks por segundo) e `draw()` pinta o frame no `Canvas`, que descarrega só as células que mudaram.
 
 Leia de cima para baixo — o construtor dimensiona o tabuleiro e declara as três cenas; `reset()`, `build()` e `launch()` preparam uma partida; `play()` é um tick de jogo:
+
+**Arquivo** `projects/Breakout/Breakout.php`
 
 ```php :filename="projects/Breakout/Breakout.php";
 <?php
@@ -414,6 +418,8 @@ As peças que valem conhecer:
 
 Substitua o `Breakout.Project.php` gerado. A função `boot` é o que `php bootgly project Breakout start` executa — ela constrói o jogo e entrega o terminal a ele:
 
+**Arquivo** `projects/Breakout/Breakout.Project.php`
+
 ```php :filename="projects/Breakout/Breakout.Project.php";
 <?php
 
@@ -474,6 +480,8 @@ php bootgly project Breakout start
 
 Um projeto carrega as próprias suítes. Substitua o registro gerado para que ele liste uma suíte `Game`, depois escreva a suíte e um teste que constrói o jogo sem terminal e confere a parede, as bolas e o saque:
 
+**Arquivo** `projects/Breakout/tests/autoboot.php`
+
 ```php :filename="projects/Breakout/tests/autoboot.php";
 <?php
 
@@ -486,6 +494,8 @@ return new Suites(
    ]
 );
 ```
+
+**Arquivo** `projects/Breakout/tests/game/autoboot.php`
 
 ```php :filename="projects/Breakout/tests/game/autoboot.php";
 <?php
@@ -507,6 +517,8 @@ return new Suite(
    ]
 );
 ```
+
+**Arquivo** `projects/Breakout/tests/game/1.1-wall.Test.php`
 
 ```php :filename="projects/Breakout/tests/game/1.1-wall.Test.php";
 <?php

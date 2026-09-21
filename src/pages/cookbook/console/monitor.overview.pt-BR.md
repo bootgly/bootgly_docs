@@ -64,6 +64,8 @@ O dashboard lê os arquivos do `/proc` do Linux: `/proc/stat` para o tempo de CP
 
 As telas são renderizadas muitas vezes por segundo, então cada sonda relê no máximo uma vez por segundo (`elapse()`) e devolve a última leitura no intervalo:
 
+**Arquivo** `projects/Monitor/System.php`
+
 ```php :filename="projects/Monitor/System.php";
 <?php
 
@@ -330,6 +332,8 @@ class System
 
 `Console\App` é o shell TUI: tela alternativa, entrada de teclado em modo raw, um loop de renderização, a barra de status, toasts, a sobreposição de ajuda (`?`) e a paleta de comandos (`Ctrl+P`). Estenda-o para que toda tela alcance as mesmas sondas por `$App->System`:
 
+**Arquivo** `projects/Monitor/Monitor.php`
+
 ```php :filename="projects/Monitor/Monitor.php";
 <?php
 
@@ -366,6 +370,8 @@ O construtor colhe uma primeira amostra na hora, então o primeiro frame já mos
   <d-block-step title="Escreva a assinatura do projeto">
 
 Substitua o `Monitor.Project.php` gerado. A função `boot` é o que `php bootgly project Monitor start` executa: ela carrega a pasta de telas, associa uma tecla numérica por tela cujo arquivo já existe (`is_file` — assim uma tecla nunca aponta para uma tela que você ainda não escreveu), preenche a barra de status com essas teclas e entrega o controle ao loop do app.
+
+**Arquivo** `projects/Monitor/Monitor.Project.php`
 
 ```php :filename="projects/Monitor/Monitor.Project.php";
 <?php
@@ -422,6 +428,8 @@ return new Project(
 
 As telas vivem em `screens/`: um manifesto com os três nomes de tela mais um arquivo por tela — o manifesto pode nomear um arquivo antes de você escrevê-lo, a função de boot só associa as teclas dos arquivos que existem:
 
+**Arquivo** `projects/Monitor/screens/screens.index.php`
+
 ```php :filename="projects/Monitor/screens/screens.index.php";
 <?php
 
@@ -435,6 +443,8 @@ return [
 Uma tela é uma closure que recebe o app e o seu objeto `Screen`, e devolve o conteúdo do frame como string — uma linha por fileira; o app ajusta cada linha à largura do terminal.
 
 A tela **Overview** renderiza dois widgets do core — um medidor `Meter` para CPU e memória e um `Sparkline` para o histórico de CPU. Qualquer widget não interativo renderiza para uma string com `Component::RETURN_OUTPUT`, e assim pode fazer parte do frame:
+
+**Arquivo** `projects/Monitor/screens/Overview.php`
 
 ```php :filename="projects/Monitor/screens/Overview.php";
 <?php
@@ -516,6 +526,8 @@ A barra de status mostra só `1 Overview`: as outras duas teclas aparecem assim 
 
 Ordene os processos por memória residente e renderize-os como tabela. O widget `Markdown` transforma uma tabela Markdown em uma tabela de terminal alinhada, então a tela só monta texto:
 
+**Arquivo** `projects/Monitor/screens/Processes.php`
+
 ```php :filename="projects/Monitor/screens/Processes.php";
 <?php
 
@@ -558,6 +570,8 @@ return static function (Monitor $App, Screen $Screen): string {
   <d-block-step title="Adicione a tela Disks">
 
 Um medidor por sistema de arquivos montado, com os rótulos de canto que o `Meter` oferece — heading e summary acima da barra, caption e note abaixo:
+
+**Arquivo** `projects/Monitor/screens/Disks.php`
 
 ```php :filename="projects/Monitor/screens/Disks.php";
 <?php
@@ -615,6 +629,8 @@ php bootgly project Monitor start
 
 Um projeto carrega as próprias suítes. Substitua o registro gerado para que ele liste uma suíte `System`, depois escreva a suíte e um teste — a API Básica é um generator que faz `yield` de um `assert()` nativo por verificação:
 
+**Arquivo** `projects/Monitor/tests/autoboot.php`
+
 ```php :filename="projects/Monitor/tests/autoboot.php";
 <?php
 
@@ -627,6 +643,8 @@ return new Suites(
    ]
 );
 ```
+
+**Arquivo** `projects/Monitor/tests/system/autoboot.php`
 
 ```php :filename="projects/Monitor/tests/system/autoboot.php";
 <?php
@@ -648,6 +666,8 @@ return new Suite(
    ]
 );
 ```
+
+**Arquivo** `projects/Monitor/tests/system/1.1-probes.Test.php`
 
 ```php :filename="projects/Monitor/tests/system/1.1-probes.Test.php";
 <?php

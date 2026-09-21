@@ -43,6 +43,8 @@ O projeto nasce em `projects/Contacts/` como um repositório git próprio (o sca
 
 Substitua o `Contacts.Project.php` gerado. A função `boot` migra e semeia o arquivo SQLite, depois inicia um `Web\App` com a **pilha REST**: sem CSRF (não há formulários de navegador) e `Problems` como a fronteira de erros que transforma qualquer `Problem` lançado em `application/problem+json`:
 
+**Arquivo** `projects/Contacts/Contacts.Project.php`
+
 ```php :filename="projects/Contacts/Contacts.Project.php";
 <?php
 
@@ -109,6 +111,8 @@ return new Project(
 
 O recurso de resposta `Database` lê `configs/database/` — uma conexão SQLite apontando para um arquivo dentro do projeto:
 
+**Arquivo** `projects/Contacts/configs/database/database.Config.php`
+
 ```php :filename="projects/Contacts/configs/database/database.Config.php";
 <?php
 
@@ -132,6 +136,8 @@ return new Config(scope: 'database')
   <d-block-step title="Escreva a migration e o seeder">
 
 A migration cria a tabela (`phone` é opcional — `nullable`); o seeder faz upsert de três contatos por id, então reiniciar o servidor nunca os duplica:
+
+**Arquivo** `projects/Contacts/database/migrations/20260921000000_create_contacts.php`
 
 ```php :filename="projects/Contacts/database/migrations/20260921000000_create_contacts.php";
 <?php
@@ -166,6 +172,8 @@ return new Migration(
 );
 ```
 
+**Arquivo** `projects/Contacts/database/seeders/contacts.php`
+
 ```php :filename="projects/Contacts/database/seeders/contacts.php";
 <?php
 
@@ -195,6 +203,8 @@ return new Seeder(
   <d-block-step title="Escreva o model e o resource">
 
 O **model** mapeia a tabela para o ORM — `paginate()` hidrata as linhas nele. O **resource** é a forma pública de um contato: ele tipa os campos e descarta o que a API não deve expor (`created_at` aqui), tanto de um model quanto de um array de linha:
+
+**Arquivo** `projects/Contacts/Models/Contact.php`
 
 ```php :filename="projects/Contacts/Models/Contact.php";
 <?php
@@ -227,6 +237,8 @@ class Contact
    public null|string $created = null;
 }
 ```
+
+**Arquivo** `projects/Contacts/Resources/Contacts.php`
 
 ```php :filename="projects/Contacts/Resources/Contacts.php";
 <?php
@@ -266,6 +278,8 @@ class Contacts extends Resource
   <d-block-step title="Escreva o controller">
 
 Cinco ações, uma por endpoint. `list` pagina pelo core (`?page`, `?limit`, `?cursor` — os cabeçalhos `X-Total-Count` e `Link` são definidos para você) e transforma os itens; `show`, `update` e `delete` buscam a linha roteada ou lançam um problem `404`; `create` e `update` validam com a `Validation` do core e lançam um problem `422` carregando as mensagens de erro:
+
+**Arquivo** `projects/Contacts/Controllers/Contacts.php`
 
 ```php :filename="projects/Contacts/Controllers/Contacts.php";
 <?php
@@ -411,6 +425,8 @@ Uma instância nova do controller é construída por requisição; `$this->Route
 
 `Routes::map()` expande uma linha no conjunto de rotas REST — `GET /contacts`, `POST /contacts`, `GET|PUT|PATCH|DELETE /contacts/:id` — e o fallback também lança um problem, então até um caminho desconhecido responde em `problem+json`:
 
+**Arquivo** `projects/Contacts/router/router.index.php`
+
 ```php :filename="projects/Contacts/router/router.index.php";
 <?php
 
@@ -418,6 +434,8 @@ return [
    'Contacts'
 ];
 ```
+
+**Arquivo** `projects/Contacts/router/routes/Contacts.routes.php`
 
 ```php :filename="projects/Contacts/router/routes/Contacts.routes.php";
 <?php
@@ -496,6 +514,8 @@ php bootgly project Contacts stop
 
 Um projeto carrega as próprias suítes. Substitua o registro gerado para que ele liste uma suíte `Project` com dois testes — o contrato da assinatura e o transformador do resource, um teste unitário puro que não precisa de servidor:
 
+**Arquivo** `projects/Contacts/tests/autoboot.php`
+
 ```php :filename="projects/Contacts/tests/autoboot.php";
 <?php
 
@@ -508,6 +528,8 @@ return new Suites(
    ]
 );
 ```
+
+**Arquivo** `projects/Contacts/tests/project/autoboot.php`
 
 ```php :filename="projects/Contacts/tests/project/autoboot.php";
 <?php
@@ -530,6 +552,8 @@ return new Suite(
    ]
 );
 ```
+
+**Arquivo** `projects/Contacts/tests/project/1.1-signature.Test.php`
 
 ```php :filename="projects/Contacts/tests/project/1.1-signature.Test.php";
 <?php
@@ -558,6 +582,8 @@ return new Test(
    }
 );
 ```
+
+**Arquivo** `projects/Contacts/tests/project/1.2-resource.Test.php`
 
 ```php :filename="projects/Contacts/tests/project/1.2-resource.Test.php";
 <?php

@@ -64,6 +64,8 @@ The dashboard reads Linux's `/proc` files: `/proc/stat` for CPU time, `/proc/mem
 
 Screens are rendered many times per second, so every probe re-reads at most once per second (`elapse()`) and hands back the last reading in between:
 
+**File** `projects/Monitor/System.php`
+
 ```php :filename="projects/Monitor/System.php";
 <?php
 
@@ -330,6 +332,8 @@ class System
 
 `Console\App` is the TUI shell: alternate screen, raw keyboard input, a render loop, the status bar, toasts, the help overlay (`?`) and the command palette (`Ctrl+P`). Extend it so every screen reaches the same probes through `$App->System`:
 
+**File** `projects/Monitor/Monitor.php`
+
 ```php :filename="projects/Monitor/Monitor.php";
 <?php
 
@@ -366,6 +370,8 @@ The constructor takes a first sample right away, so the very first frame already
   <d-block-step title="Write the project signature">
 
 Replace the scaffolded `Monitor.Project.php`. The `boot` function is what `php bootgly project Monitor start` runs: it loads the screens directory, binds one number key per screen whose file already exists (`is_file` — so a key never points at a screen you have not written yet), fills the status bar with those keys and hands control to the app loop.
+
+**File** `projects/Monitor/Monitor.Project.php`
 
 ```php :filename="projects/Monitor/Monitor.Project.php";
 <?php
@@ -422,6 +428,8 @@ return new Project(
 
 Screens live in `screens/`: a manifest with the three screen names plus one file per screen — the manifest may name a file before you write it, the boot function only binds the keys of the files that exist:
 
+**File** `projects/Monitor/screens/screens.index.php`
+
 ```php :filename="projects/Monitor/screens/screens.index.php";
 <?php
 
@@ -435,6 +443,8 @@ return [
 A screen is a closure receiving the app and its `Screen` object, and it returns the frame content as a string — one line per row; the app fits every line to the terminal width.
 
 The **Overview** screen renders two core widgets — a `Meter` gauge for CPU and memory and a `Sparkline` for the CPU history. Any non-interactive widget renders into a string with `Component::RETURN_OUTPUT`, so it can be part of the frame:
+
+**File** `projects/Monitor/screens/Overview.php`
 
 ```php :filename="projects/Monitor/screens/Overview.php";
 <?php
@@ -516,6 +526,8 @@ The status bar shows `1 Overview` only: the other two keys appear as soon as the
 
 Rank the processes by resident memory and render them as a table. The `Markdown` widget turns a Markdown table into an aligned terminal table, so the screen only builds text:
 
+**File** `projects/Monitor/screens/Processes.php`
+
 ```php :filename="projects/Monitor/screens/Processes.php";
 <?php
 
@@ -558,6 +570,8 @@ return static function (Monitor $App, Screen $Screen): string {
   <d-block-step title="Add the Disks screen">
 
 One gauge per mounted filesystem, with the corner labels `Meter` offers — heading and summary above the bar, caption and note below:
+
+**File** `projects/Monitor/screens/Disks.php`
 
 ```php :filename="projects/Monitor/screens/Disks.php";
 <?php
@@ -615,6 +629,8 @@ php bootgly project Monitor start
 
 A project carries its own suites. Replace the scaffolded registry so it lists a `System` suite, then write the suite and one test — the Basic API is a generator that `yield`s one native `assert()` per check:
 
+**File** `projects/Monitor/tests/autoboot.php`
+
 ```php :filename="projects/Monitor/tests/autoboot.php";
 <?php
 
@@ -627,6 +643,8 @@ return new Suites(
    ]
 );
 ```
+
+**File** `projects/Monitor/tests/system/autoboot.php`
 
 ```php :filename="projects/Monitor/tests/system/autoboot.php";
 <?php
@@ -648,6 +666,8 @@ return new Suite(
    ]
 );
 ```
+
+**File** `projects/Monitor/tests/system/1.1-probes.Test.php`
 
 ```php :filename="projects/Monitor/tests/system/1.1-probes.Test.php";
 <?php
