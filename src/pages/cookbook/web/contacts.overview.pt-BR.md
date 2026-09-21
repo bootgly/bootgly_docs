@@ -15,23 +15,11 @@ $ curl -s -X POST http://localhost:8090/contacts -H 'Content-Type: application/j
 <d-block-stepper>
   <d-block-step title="Instale o Bootgly">
 
-Um comando instala tudo no Linux (ou WSL2): ele verifica **git** e **PHP 8.4+**, oferece instalar o que faltar pelo seu gerenciador de pacotes e clona o Bootgly Kit em `./bootgly.kit`. `--no-wizard` pula o wizard interativo de projetos — o próximo passo cria o projeto com um comando explícito.
+Um comando instala tudo no Linux (ou WSL2): ele verifica **git** e **PHP 8.4+** (com as extensões que os recursos embutidos do Bootgly usam — o driver SQLite entre eles), oferece instalar o que faltar pelo seu gerenciador de pacotes e clona o Bootgly Kit em `./bootgly.kit`. `--no-wizard` pula o wizard interativo de projetos — o próximo passo cria o projeto com um comando explícito.
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash -s -- --no-wizard
 cd bootgly.kit
-```
-
-A API guarda os contatos em **SQLite**, que precisa da extensão `sqlite3` do PHP. Esta linha a instala com o seu gerenciador de pacotes só quando falta (as imagens Docker oficiais já a trazem):
-
-```bash :toolbar="true";
-php -m | grep -q sqlite3 || {
-   if   command -v apt-get >/dev/null; then sudo apt-get install -y php-sqlite3
-   elif command -v dnf     >/dev/null; then sudo dnf install -y php-pdo
-   elif command -v pacman  >/dev/null; then sudo pacman -S --noconfirm php-sqlite
-   elif command -v zypper  >/dev/null; then sudo zypper install -y php-sqlite3
-   fi
-}
 ```
 
 > [!TIP]

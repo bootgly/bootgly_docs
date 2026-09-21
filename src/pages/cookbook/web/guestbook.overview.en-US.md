@@ -17,23 +17,11 @@ $ curl -s -b cookies.txt http://localhost:8080/entries | grep -E "flash|Hello"
 <d-block-stepper>
   <d-block-step title="Install Bootgly">
 
-One command installs everything on Linux (or WSL2): it checks for **git** and **PHP 8.4+**, offers to install what is missing through your package manager and clones the Bootgly Kit into `./bootgly.kit`. `--no-wizard` skips the interactive project wizard — the next step creates the project with an explicit command instead.
+One command installs everything on Linux (or WSL2): it checks for **git** and **PHP 8.4+** (with the extensions Bootgly's built-ins use — the SQLite driver among them), offers to install what is missing through your package manager and clones the Bootgly Kit into `./bootgly.kit`. `--no-wizard` skips the interactive project wizard — the next step creates the project with an explicit command instead.
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash -s -- --no-wizard
 cd bootgly.kit
-```
-
-The Guestbook keeps its entries in **SQLite**, which needs PHP's `sqlite3` extension. This line installs it with your package manager only when it is missing (the official Docker images build it in):
-
-```bash :toolbar="true";
-php -m | grep -q sqlite3 || {
-   if   command -v apt-get >/dev/null; then sudo apt-get install -y php-sqlite3
-   elif command -v dnf     >/dev/null; then sudo dnf install -y php-pdo
-   elif command -v pacman  >/dev/null; then sudo pacman -S --noconfirm php-sqlite
-   elif command -v zypper  >/dev/null; then sudo zypper install -y php-sqlite3
-   fi
-}
 ```
 
 > [!TIP]
