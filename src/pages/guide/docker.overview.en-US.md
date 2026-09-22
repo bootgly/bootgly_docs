@@ -83,7 +83,10 @@ over the same mounts**, and the mounts are what make it the same kit.
 
 Re-running the bare command does *not* reopen the wizard: the first run leaves a
 `projects/.initialized` marker, which is on the volume, so from then on a plain `docker run`
-prints the help. Reach for one of these instead.
+prints the help. Every start of a prepared kit also lays the image's agent rules down again in
+`projects/AGENTS.md` and `projects/.agents/rules/` when they drifted — a mounted `projects/` never
+sees `kit upgrade`, so a new image is what updates them; your own files elsewhere in
+`projects/.agents/` are never touched. Reach for one of these instead.
 
 **Run a command.** Anything explicit goes straight to the `bootgly` CLI:
 

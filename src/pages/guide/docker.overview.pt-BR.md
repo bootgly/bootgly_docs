@@ -84,7 +84,10 @@ montagens**, e são elas que fazem dele o mesmo kit.
 
 Repetir o comando puro **não** reabre o wizard: a primeira execução deixa um marcador
 `projects/.initialized`, que está no volume, então dali em diante um `docker run` simples
-imprime a ajuda. Use uma destas formas.
+imprime a ajuda. Toda inicialização de um kit preparado também reinstala as regras para agentes da
+imagem em `projects/AGENTS.md` e `projects/.agents/rules/` quando elas divergem — um `projects/`
+montado nunca vê o `kit upgrade`, então é uma imagem nova que as atualiza; os seus próprios arquivos
+em outros lugares de `projects/.agents/` nunca são mexidos. Use uma destas formas.
 
 **Rodar um comando.** Qualquer comando explícito vai direto para a CLI do `bootgly`:
 

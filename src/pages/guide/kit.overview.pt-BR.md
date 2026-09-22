@@ -17,10 +17,17 @@ bootgly kit boot
 Um kit roda sobre três diretórios seus: `scripts/` (copiado do template do framework), `storage/`
 (criado com o seu layout — `cache/`, `logs/`, `pids/`, `temp/`, … — o framework não traz
 template para ele; `sessions/` e `security/` são criados pelos seus donos, trancados) e `projects/` (com um registro vazio — os Demos do próprio framework nunca
-aparecem num kit). O `kit boot` instala o que estiver faltando e nunca toca no que existe; o
+aparecem num kit). O `kit boot` instala o que estiver faltando e nunca toca no que existe;
 uma cópia que falha não deixa nada pela metade, e o registro vem por último, então um boot que falha
 deixa o kit por preparar para a próxima execução completar. Você raramente o roda à mão: o
 primeiro `projects create` ou `projects import` num kit novo faz o boot por você.
+
+A única exceção são as regras para agentes — `projects/AGENTS.md` e `projects/.agents/rules/`, as
+regras do Bootgly adaptadas para os agentes de IA que constroem os seus projetos. Elas são do
+framework: o `kit boot` as instala e as reescreve sempre que diferem dos templates do framework
+fixado, então não as edite. Ele as reconhece pelo selo na primeira linha do `AGENTS.md` — um arquivo
+seu no lugar delas fica intocado (o boot avisa), e o que mais você guardar em `projects/.agents/`
+nunca é mexido. `kit boot --agents` instala só as regras, `--resources` só os diretórios.
 
 ## Veja para onde pode mover
 
@@ -55,9 +62,12 @@ bootgly kit upgrade
 Sem argumento, o kit move para a release **mais nova**. O comando busca as tags de release, faz o
 checkout do kit na tag e deixa os submódulos (`Bootgly/`, `Console/`, `Web/`) seguirem os pins que
 a tag registra — uma plataforma que você nunca inicializou continua assim. Seus `projects/`,
-`storage/` e todo outro diretório ignorado são seus: um movimento nunca escreve neles — e o único
+`storage/` e todo outro diretório ignorado são seus: um movimento nunca escreve neles — exceto as
+regras para agentes do framework em `projects/` (`AGENTS.md`, `.agents/rules/`), que a nova release
+instala de novo (ou remove, quando é anterior a elas) — e o único
 caso em que uma release carrega um arquivo nesse caminho é recusado pelo nome antes de qualquer coisa
-mover.
+mover. Atualizar **a partir de** uma release anterior às regras roda o código dessa release, que não
+sabe nada delas: rode `bootgly kit boot --agents` uma vez depois.
 
 Nomeie uma release para ir exatamente até ela, com ou sem o `v`:
 
@@ -144,7 +154,9 @@ primeira do comando acrescenta `predates: true`, `added: true` diz que o remote 
 criado por esta execução, `verified` diz que as releases foram conferidas contra o que o remote
 canônico anuncia (uma tag de um fork ou de um mirror nunca é release), e `mixed: true` num `list`
 diz que um submódulo está fora do pin do kit — um movimento que não se completou, reportado como
-`partial` de novo a cada nova tentativa até ser reparado.
+`partial` de novo a cada nova tentativa até ser reparado — e `agents` num movimento diz o que
+aconteceu com as regras para agentes: `refreshed`, `removed` (a release é anterior a elas), `kept`
+(os arquivos no lugar delas são seus) ou `failed`.
 
 ## Kits gerados pelo template do GitHub
 
@@ -166,7 +178,8 @@ git submodule update
 
 > [!NOTE]
 > O comando roda de dentro dos próprios arquivos que substitui, então o checkout é a última coisa
-> que ele faz: nada é carregado do kit depois dele. Não interrompa os dois passos que seguem
+> que ele faz: nada é carregado do kit depois dele — as regras para agentes são reinstaladas pelo
+> launcher da nova release, num processo próprio. Não interrompa os dois passos que seguem
 > "Upgrading the kit" — se os submódulos não conseguirem seguir, o comando imprime o
 > `git submodule update` a rodar, e o `git checkout` que volta.
 
@@ -189,13 +202,16 @@ atual é recusada com o comando `upgrade` a rodar no lugar. Um kit que não est�
 (e não tem pin do framework para ser localizado) precisa nomear a release.
 
 ```php
-bootgly kit boot [--resources]
+bootgly kit boot [--resources] [--agents]
 ```
 
 Instala os diretórios de recursos do kit — o template `scripts/` do framework, o layout de
-`storage/` e `projects/` com o registro vazio — cada um só onde ainda não existe. `--resources` nomeia o conjunto padrão
-(e, hoje, o único). Recusado no checkout do framework, cujos diretórios são os templates. Sem forma
-`--json`.
+`storage/` e `projects/` com o registro vazio — cada um só onde ainda não existe; depois as regras
+para agentes (`projects/AGENTS.md`, `projects/.agents/rules/`), reescritas sempre que diferem dos
+templates enquanto carregam o selo. `--resources` instala só os diretórios, `--agents` só as regras
+(e falha quando não consegue escrevê-las; um arquivo seu no lugar delas é um pulo, não uma falha);
+as duas flags, ou nenhuma, instalam os dois. Recusado no checkout do framework, cujos diretórios são os templates.
+Sem forma `--json`.
 
 ```php
 bootgly kit list [--json]

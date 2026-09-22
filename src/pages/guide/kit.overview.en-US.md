@@ -22,6 +22,14 @@ never touches one that exists; a copy that fails leaves nothing half-laid, and t
 last, so a boot that fails leaves the kit unprepared for the next run to complete. You rarely run it by hand: the first `projects create` or `projects import` on a fresh
 kit boots it for you.
 
+The one exception is the agent rules — `projects/AGENTS.md` and `projects/.agents/rules/`, the
+Bootgly rules adapted for the AI agents that build your projects. They are the framework's:
+`kit boot` lays them down and rewrites them whenever they differ from the pinned framework's
+templates, so do not edit them. It recognizes them by the stamp on the first line of
+`AGENTS.md` — a file of yours in their place is left alone (the boot says so), and anything else
+you keep in `projects/.agents/` is never touched. `kit boot --agents` lays down only the rules,
+`--resources` only the directories.
+
 ## See what you can move to
 
 ```bash :toolbar="true";
@@ -55,8 +63,12 @@ bootgly kit upgrade
 Without an argument the kit moves to the **newest** release. The command fetches the release tags,
 checks the kit out at the tag and lets the submodules (`Bootgly/`, `Console/`, `Web/`) follow the
 pins that tag records — a platform you never set up stays that way. Your `projects/`, `storage/`
-and every other ignored directory are yours: a move never writes into them — and the one case
-where a release carries a file at such a path is refused by name before anything moves.
+and every other ignored directory are yours: a move never writes into them — except the
+framework's agent rules in `projects/` (`AGENTS.md`, `.agents/rules/`), which the new release
+lays down again (or removes, when it predates them) — and the one case where a release carries a
+file at such a path is refused by name before anything moves. Upgrading **from** a release that
+predates the rules runs that release's code, which knows nothing of them: run
+`bootgly kit boot --agents` once afterwards.
 
 Name a release to go exactly there, with or without the `v`:
 
@@ -139,8 +151,10 @@ submodules could not follow (the document then carries the `git submodule update
 (what, paths, fix), a live instance adds `running`, a release below the command's first one adds
 `predates: true`, `added: true` says the `bootgly` remote was created by this run, `verified`
 says the releases were checked against what the canonical remote advertises (a tag from a fork or
-a mirror is never a release), and `mixed: true` on a `list` says a submodule sits off the kit's pin
-— a move that did not complete, reported as `partial` again on every retry until it is repaired.
+a mirror is never a release), `mixed: true` on a `list` says a submodule sits off the kit's pin
+— a move that did not complete, reported as `partial` again on every retry until it is repaired —
+and `agents` on a move says what happened to the agent rules: `refreshed`, `removed` (the release
+predates them), `kept` (the files in their place are yours) or `failed`.
 
 ## Kits generated from the GitHub template
 
@@ -162,7 +176,8 @@ git submodule update
 
 > [!NOTE]
 > The command runs out of the very files it replaces, so the checkout is the last thing it does:
-> nothing is loaded from the kit after it. Do not interrupt the two steps that follow "Upgrading
+> nothing is loaded from the kit after it — the agent rules are re-laid by the new release's
+> launcher, in a process of its own. Do not interrupt the two steps that follow "Upgrading
 > the kit" — if the submodules fail to follow, the command prints the `git submodule update` to
 > run, and the `git checkout` that goes back.
 
@@ -185,13 +200,16 @@ the current one is refused with the `upgrade` command to run instead. A kit that
 (and has no framework pin to be located by) must name the release.
 
 ```php
-bootgly kit boot [--resources]
+bootgly kit boot [--resources] [--agents]
 ```
 
 Lay down the kit's resource directories — the framework's `scripts/` template, the `storage/`
-layout, and `projects/` with the empty registry — each only where it does not exist yet. `--resources` names the
-default (and, today, the only) set. Refused in the framework checkout, whose directories are the
-templates. No `--json` form.
+layout, and `projects/` with the empty registry — each only where it does not exist yet; then the
+agent rules (`projects/AGENTS.md`, `projects/.agents/rules/`), rewritten whenever they differ from
+the templates while they carry the stamp. `--resources` lays down only the directories, `--agents`
+only the rules (and fails when it cannot write them; a file of yours in their place is a skip, not
+a failure); both flags, or neither, lay down both. Refused in the framework checkout, whose directories are
+the templates. No `--json` form.
 
 ```php
 bootgly kit list [--json]
