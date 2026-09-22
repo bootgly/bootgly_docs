@@ -125,6 +125,77 @@ $Database
    ->order(Orders::Asc, Columns::Name, Nulls::Last);
 ```
 
+## Counting and aggregates
+
+Count per group with `Aggregates::Count` — here, how many posts each user has written:
+
+```php
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Aggregates;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Joins;
+
+$Query = $Database
+   ->table(Tables::Users)
+   ->alias(Tables::Users, Aliases::U)
+   ->select(Columns::UsersId)
+   ->aggregate(Aggregates::Count, Columns::PostsId, Aliases::Posts)
+   ->join(Tables::Posts, Columns::PostsUser, Operators::Equal, Columns::UsersId, Joins::Left)
+   ->alias(Tables::Posts, Aliases::P)
+   ->group(Columns::UsersId)
+   ->compile();
+```
+
+PostgreSQL:
+
+```sql
+SELECT "u"."id", COUNT("p"."id") AS "posts" FROM "users" AS "u" LEFT JOIN "posts" AS "p" ON "p"."user_id" = "u"."id" GROUP BY "u"."id"
+```
+
+Count the joined column, not the rows. A user with no posts still gets one row from the
+`LEFT JOIN`, with every `posts` column `NULL`: `count()` compiles `COUNT(*)` and reports that
+user with 1 post, while `COUNT("p"."id")` skips the `NULL` and reports 0. The aggregated
+column follows table aliases like every other reference, whether the alias is registered
+before or after `aggregate()`.
+
+To filter on the count, pass `having()` an `Expression`, before `compile()`. Its text reaches
+the database as written, so spell the table aliases in it:
+
+```php
+use Bootgly\ADI\Databases\SQL\Builder\Expression;
+
+$Query = $Database
+   ->table(Tables::Users)
+   ->alias(Tables::Users, Aliases::U)
+   ->select(Columns::UsersId)
+   ->aggregate(Aggregates::Count, Columns::PostsId, Aliases::Posts)
+   ->join(Tables::Posts, Columns::PostsUser, Operators::Equal, Columns::UsersId, Joins::Left)
+   ->alias(Tables::Posts, Aliases::P)
+   ->group(Columns::UsersId)
+   ->having(new Expression('COUNT("p"."id")'), Operators::Greater, 1)
+   ->compile();
+```
+
+The statement ends in `GROUP BY "u"."id" HAVING COUNT("p"."id") > $1`.
+
+`distinct: true` aggregates each distinct value once:
+
+```php
+$Database
+   ->table(Tables::Users)
+   ->aggregate(Aggregates::Count, Columns::City, Aliases::Cities, distinct: true);
+```
+
+Compiles to:
+
+```sql
+SELECT COUNT(DISTINCT "city") AS "cities" FROM "users"
+```
+
+It works with every aggregate. It is not `distinct()`, which removes duplicate result rows
+(`SELECT DISTINCT`) and never enters the aggregate.
+
+> Since 1.0.3 — before, `Aggregates` had no `Count`, `aggregate()` had no `distinct`
+> argument, and an aggregated column ignored table aliases.
+
 ## Limit, offset and locks
 
 ```php
@@ -180,14 +251,14 @@ alias (BackedEnum|Stringable $Identifier, BackedEnum|Stringable $Alias): static
 Alias a table, column or expression.
 
 ```php
-aggregate (Aggregates $Aggregate, BackedEnum|Stringable $Column, null|BackedEnum|Stringable $Alias = null): static
+aggregate (Aggregates $Aggregate, BackedEnum|Stringable $Column, null|BackedEnum|Stringable $Alias = null, bool $distinct = false): static
 ```
-Append `AVG`, `MAX`, `MIN` or `SUM`.
+Append `AVG`, `COUNT`, `MAX`, `MIN` or `SUM` over one column. The column resolves through table aliases at compile time. `distinct: true` compiles `FUNC(DISTINCT column)`. A bare `*` column is refused — `COUNT(*)` is `count()`. Since 1.0.3 for `Count`, `distinct` and the alias resolution.
 
 ```php
 count (null|BackedEnum|Stringable $Alias = null): static
 ```
-Append `COUNT(*)`.
+Append `COUNT(*)`, which counts rows — including the `NULL`-filled row a `LEFT JOIN` produces for an unmatched parent. To count a column's non-`NULL` values, use `aggregate(Aggregates::Count, ...)`.
 
 ```php
 group (BackedEnum|Stringable ...$Columns): static

@@ -28,7 +28,7 @@ cd bootgly.kit
 ```
 
 > [!TIP]
-> O instalador também pergunta se deve instalar o comando `bootgly` globalmente — qualquer resposta serve, todas as páginas aqui usam `php bootgly …`. Já tem um kit? O instalador retoma o que encontrar em `./bootgly.kit` e oferece movê-lo para a release atual — aceite, estas páginas assumem a 1.0.2 ou mais nova — depois entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
+> O instalador também pergunta se deve instalar o comando `bootgly` globalmente — qualquer resposta serve, todas as páginas aqui usam `php bootgly …`. Já tem um kit? O instalador retoma o que encontrar em `./bootgly.kit` e oferece movê-lo para a release atual — aceite, esta página assume a 1.0.3 ou mais nova — depois entre nele com `cd` e vá para o próximo passo. Todos os comandos abaixo rodam da pasta do kit como `php bootgly …` — se você instalou a CLI globalmente (`php bootgly setup`), `bootgly …` também funciona. O guia [Começando](/guide/getting-started/overview/) explica o instalador e a estrutura do kit.
 
   </d-block-step>
 
@@ -401,7 +401,7 @@ class Vote
 
   <d-block-step title="Escreva o controller">
 
-Um controller, quatro ações. `list` pagina as enquetes (a view mostra a página que recebe — dez por padrão; `?page=2` alcança o resto, e o cabeçalho `Link` diz isso). `create` valida o formulário e grava a enquete e suas opções dentro do `transact()` — `output()` é o `RETURNING`, então o novo id volta junto com o `INSERT` e as opções podem apontar para ele. `show` carrega a enquete com suas opções pelo ORM, conta os votos com SQL raw (os placeholders do PostgreSQL são `$1`, `$2`, …; `COUNT(v.id)` sobre um `LEFT JOIN` mantém em zero as opções que ninguém escolheu) e lê o voto do próprio visitante pelo model `Vote`. `vote` é um único `INSERT … ON CONFLICT (poll_id, voter) DO UPDATE`: o primeiro voto insere, um segundo o altera — sem ler-e-depois-escrever, sem corrida. O visitante é um token anônimo cunhado uma vez e guardado na sessão:
+Um controller, quatro ações. `list` pagina as enquetes (a view mostra a página que recebe — dez por padrão; `?page=2` alcança o resto, e o cabeçalho `Link` diz isso). `create` valida o formulário e grava a enquete e suas opções dentro do `transact()` — `output()` é o `RETURNING`, então o novo id volta junto com o `INSERT` e as opções podem apontar para ele. `show` carrega a enquete com suas opções pelo ORM, conta os votos com o query builder (`Aggregates::Count` sobre o `votes.id` da junção mantém em zero as opções que ninguém escolheu — `COUNT(*)` contaria a linha vazia que o `LEFT JOIN` dá a elas) e lê o voto do próprio visitante pelo model `Vote`. `vote` é um único `INSERT … ON CONFLICT (poll_id, voter) DO UPDATE`: o primeiro voto insere, um segundo o altera — sem ler-e-depois-escrever, sem corrida. O visitante é um token anônimo cunhado uma vez e guardado na sessão:
 
 **Arquivo** `projects/Polls/Controllers/Polls.php`
 
@@ -421,6 +421,8 @@ use function range;
 use function trim;
 use function usort;
 
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Aggregates;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Joins;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
 use Bootgly\ADI\Databases\SQL\Builder\Identifier;
@@ -527,10 +529,15 @@ class Polls extends Controller
 
       usort($Poll->Options, fn (Option $A, Option $B): int => $A->position <=> $B->position);
 
-      // @ The results — raw SQL with PostgreSQL's $1 placeholders: one COUNT per option, zero included
+      // @ The results — one row per option, zero included: counting the joined vote id skips
+      //   the NULL row the LEFT JOIN yields for an option nobody picked (COUNT(*) would count it)
       $Result = $Response->Database->fetch(
-         'SELECT o.id, COUNT(v.id) AS votes FROM options o LEFT JOIN votes v ON v.option_id = o.id WHERE o.poll_id = $1 GROUP BY o.id',
-         [$id]
+         $Response->Database->table(new Identifier('options'))
+            ->select(new Identifier('options.id'))
+            ->aggregate(Aggregates::Count, new Identifier('votes.id'), new Identifier('votes'))
+            ->join(new Identifier('votes'), new Identifier('votes.option_id'), Operators::Equal, new Identifier('options.id'), Joins::Left)
+            ->filter(new Identifier('options.poll_id'), Operators::Equal, $id)
+            ->group(new Identifier('options.id'))
       );
       $votes = [];
       $total = 0;
@@ -1113,14 +1120,14 @@ cd projects/Polls && php ../../bootgly test
 - Encerre uma enquete: uma coluna `closed_at` `Timestamptz`, um `update()` pelo Builder, e `vote` recusando assim que ela estiver definida.
 - Mostre quem lidera na lista: um `LEFT JOIN … GROUP BY` por página é barato — ou um `#[Relation(Relations::HasMany, Vote::class, 'id', 'poll', lazy: true)]` em `Poll`, carregado no acesso.
 - Deixe os resultados fluírem: o [Guestbook](/cookbook/web/guestbook/overview/) mostra o fluxo simples de formulário; o recurso de resposta `SSE` da plataforma Web pode empurrar cada nova contagem para as páginas abertas.
-- Troque o banco: `DB_CONNECTION=mysql` com um bloco `Connections->MySQL` leva as migrations e o ORM intactos — os pontos específicos de dialeto são o `output(new Identifier('id'))` em `create` (o MySQL não tem `RETURNING`; leia `Result->inserted`), os placeholders `$1` em `show` (`?` no MySQL) e as duas instruções `setval()` do seeder, de que o MySQL não precisa. A página do [Shop](/cookbook/web/shop/overview/) mostra o lado MySQL (atenção à nota sobre TLS).
+- Troque o banco: `DB_CONNECTION=mysql` com um bloco `Connections->MySQL` leva as migrations e o ORM intactos — os pontos específicos de dialeto são o `output(new Identifier('id'))` em `create` (o MySQL não tem `RETURNING`; leia `Result->inserted`) e as duas instruções `setval()` do seeder, de que o MySQL não precisa — a consulta de resultados em `show` vem do Builder, que escreve os placeholders de cada dialeto sozinho. A página do [Shop](/cookbook/web/shop/overview/) mostra o lado MySQL (atenção à nota sobre TLS).
 
 ## Referência
 
 - [Web App](/manual/Web/App/overview/) — `App`, `Configs`, `Controller`, `Controllers`, `Statics`, `Views`.
 - [Database DBAL](/guide/database-dbal/overview/) — o escopo de configuração `database`, os drivers, o recurso de resposta `Database`.
 - [Driver PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/) — protocolo nativo, placeholders `$1`, `RETURNING`, modos TLS.
-- [Query Builder](/manual/ADI/Databases/SQL/Builder/overview/) — `table()`, `select()`, `filter()`, `output()`, `upsert()` e os enums.
+- [Query Builder](/manual/ADI/Databases/SQL/Builder/overview/) — `table()`, `select()`, `join()`, `filter()`, `group()`, `aggregate()`, `output()`, `upsert()` e os enums.
 - [Database ORM](/guide/database-orm/overview/) — `#[Table]`, `#[Key]`, `#[Column]`, `#[Relation]`, repositórios, `load()`.
 - [Database transactions](/guide/database-transactions/overview/) — `transact()`, savepoints, o que desfaz e o que confirma.
 - [Database migrations](/guide/database-migrations/overview/) — `Migration`, `Blueprint`, `reference()`, `index()`, tipos e o runner.

@@ -101,7 +101,7 @@ Namespace: `Bootgly\ADI\Databases\SQL\Builder\Auxiliaries`.
 
 | Enum | Cases |
 |------|-------|
-| `Aggregates` | `Average`, `Maximum`, `Minimum`, `Sum` |
+| `Aggregates` | `Average`, `Count` (since 1.0.3), `Maximum`, `Minimum`, `Sum` |
 | `Capabilities` | `Output`, `Upsert` |
 | `Joins` | `Full`, `Inner`, `Left`, `Right` |
 | `Junctions` | `And`, `Or` |

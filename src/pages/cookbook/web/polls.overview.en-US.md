@@ -28,7 +28,7 @@ cd bootgly.kit
 ```
 
 > [!TIP]
-> The installer also asks whether to install the `bootgly` command globally — either answer is fine, every page here uses `php bootgly …`. Already have a kit? The installer resumes the one it finds at `./bootgly.kit` and offers to move it to the current release — accept it, these pages assume 1.0.2 or newer — then `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
+> The installer also asks whether to install the `bootgly` command globally — either answer is fine, every page here uses `php bootgly …`. Already have a kit? The installer resumes the one it finds at `./bootgly.kit` and offers to move it to the current release — accept it, this page assumes 1.0.3 or newer — then `cd` into it and go to the next step. Every command below runs from the kit directory as `php bootgly …` — if you installed the CLI globally (`php bootgly setup`), `bootgly …` works too. The [Getting started](/guide/getting-started/overview/) guide explains the installer and the kit layout.
 
   </d-block-step>
 
@@ -401,7 +401,7 @@ class Vote
 
   <d-block-step title="Write the controller">
 
-One controller, four actions. `list` paginates the polls (the view shows the page it gets — ten by default; `?page=2` reaches the rest, and the `Link` header says so). `create` validates the form and writes the poll and its options inside `transact()` — `output()` is `RETURNING`, so the new id comes back with the `INSERT` and the options can point at it. `show` loads the poll with its options through the ORM, counts the votes with raw SQL (PostgreSQL's placeholders are `$1`, `$2`, …; `COUNT(v.id)` over a `LEFT JOIN` keeps the options nobody picked at zero) and reads the visitor's own vote through the `Vote` model. `vote` is a single `INSERT … ON CONFLICT (poll_id, voter) DO UPDATE`: the first vote inserts, a second one changes it — no read-then-write, no race. The visitor is an anonymous token minted once and kept in the session:
+One controller, four actions. `list` paginates the polls (the view shows the page it gets — ten by default; `?page=2` reaches the rest, and the `Link` header says so). `create` validates the form and writes the poll and its options inside `transact()` — `output()` is `RETURNING`, so the new id comes back with the `INSERT` and the options can point at it. `show` loads the poll with its options through the ORM, counts the votes with the query builder (`Aggregates::Count` over the joined `votes.id` keeps the options nobody picked at zero — `COUNT(*)` would count the empty row a `LEFT JOIN` gives them) and reads the visitor's own vote through the `Vote` model. `vote` is a single `INSERT … ON CONFLICT (poll_id, voter) DO UPDATE`: the first vote inserts, a second one changes it — no read-then-write, no race. The visitor is an anonymous token minted once and kept in the session:
 
 **File** `projects/Polls/Controllers/Polls.php`
 
@@ -421,6 +421,8 @@ use function range;
 use function trim;
 use function usort;
 
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Aggregates;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Joins;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
 use Bootgly\ADI\Databases\SQL\Builder\Identifier;
@@ -527,10 +529,15 @@ class Polls extends Controller
 
       usort($Poll->Options, fn (Option $A, Option $B): int => $A->position <=> $B->position);
 
-      // @ The results — raw SQL with PostgreSQL's $1 placeholders: one COUNT per option, zero included
+      // @ The results — one row per option, zero included: counting the joined vote id skips
+      //   the NULL row the LEFT JOIN yields for an option nobody picked (COUNT(*) would count it)
       $Result = $Response->Database->fetch(
-         'SELECT o.id, COUNT(v.id) AS votes FROM options o LEFT JOIN votes v ON v.option_id = o.id WHERE o.poll_id = $1 GROUP BY o.id',
-         [$id]
+         $Response->Database->table(new Identifier('options'))
+            ->select(new Identifier('options.id'))
+            ->aggregate(Aggregates::Count, new Identifier('votes.id'), new Identifier('votes'))
+            ->join(new Identifier('votes'), new Identifier('votes.option_id'), Operators::Equal, new Identifier('options.id'), Joins::Left)
+            ->filter(new Identifier('options.poll_id'), Operators::Equal, $id)
+            ->group(new Identifier('options.id'))
       );
       $votes = [];
       $total = 0;
@@ -1113,14 +1120,14 @@ cd projects/Polls && php ../../bootgly test
 - Close a poll: a `closed_at` `Timestamptz` column, an `update()` through the Builder, and `vote` refusing once it is set.
 - Show who leads in the list: one `LEFT JOIN … GROUP BY` per page is cheap — or a `#[Relation(Relations::HasMany, Vote::class, 'id', 'poll', lazy: true)]` on `Poll`, loaded on access.
 - Let the results stream: the [Guestbook](/cookbook/web/guestbook/overview/) shows the plain form flow; the Web platform's `SSE` response resource can push each new count to open pages.
-- Switch the database: `DB_CONNECTION=mysql` with a `Connections->MySQL` block moves the migrations and the ORM over untouched — the dialect-specific spots are `output(new Identifier('id'))` in `create` (MySQL has no `RETURNING`; read `Result->inserted` instead), the `$1` placeholders in `show` (`?` on MySQL) and the two `setval()` statements in the seeder, which MySQL does not need. The [Shop](/cookbook/web/shop/overview/) page shows the MySQL side (mind its note on TLS).
+- Switch the database: `DB_CONNECTION=mysql` with a `Connections->MySQL` block moves the migrations and the ORM over untouched — the dialect-specific spots are `output(new Identifier('id'))` in `create` (MySQL has no `RETURNING`; read `Result->inserted` instead) and the two `setval()` statements in the seeder, which MySQL does not need — the results query in `show` comes from the Builder, which writes each dialect's placeholders itself. The [Shop](/cookbook/web/shop/overview/) page shows the MySQL side (mind its note on TLS).
 
 ## Reference
 
 - [Web App](/manual/Web/App/overview/) — `App`, `Configs`, `Controller`, `Controllers`, `Statics`, `Views`.
 - [Database DBAL](/guide/database-dbal/overview/) — the `database` config scope, drivers, the `Database` response resource.
 - [PostgreSQL driver](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/) — native protocol, `$1` placeholders, `RETURNING`, TLS modes.
-- [Query Builder](/manual/ADI/Databases/SQL/Builder/overview/) — `table()`, `select()`, `filter()`, `output()`, `upsert()` and the enums.
+- [Query Builder](/manual/ADI/Databases/SQL/Builder/overview/) — `table()`, `select()`, `join()`, `filter()`, `group()`, `aggregate()`, `output()`, `upsert()` and the enums.
 - [Database ORM](/guide/database-orm/overview/) — `#[Table]`, `#[Key]`, `#[Column]`, `#[Relation]`, repositories, `load()`.
 - [Database transactions](/guide/database-transactions/overview/) — `transact()`, savepoints, what rolls back and what commits.
 - [Database migrations](/guide/database-migrations/overview/) — `Migration`, `Blueprint`, `reference()`, `index()`, types and the runner.
