@@ -97,7 +97,7 @@ php bootgly projects create --from=Demo/HTTP_Server_CLI --yes
 **Every project you create is booted — a git repository of its own.** `create`
 runs the `bootgly project <Name> boot` hook: the scaffold — the project
 signature, a `tests/` registry with an example suite and a `.gitignore`
-(ignoring `/vendor/`) — lands as one initial commit, so `git log`, branches
+(ignoring `/vendor/` and the `configs/**/.env` secrets) — lands as one initial commit, so `git log`, branches
 and a remote of your choosing work from minute one. `--no-git` skips the hook;
 on a machine with no git identity configured, the repository is left
 initialized with the scaffold staged and nothing is committed in your name. A

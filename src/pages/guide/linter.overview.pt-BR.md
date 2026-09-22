@@ -20,7 +20,8 @@ reportado quando é um método sendo declarado, nunca quando é um sendo chamado
 
 ## Verificar o código
 
-Rode um submódulo sem caminho para lintar a própria árvore `Bootgly/` do framework:
+No checkout do framework, um submódulo sem caminho linta a própria árvore `Bootgly/` do framework
+(dentro de um kit o padrão é o seu projeto — veja *Dentro de um kit* abaixo):
 
 ```bash
 bootgly lint imports
@@ -55,6 +56,26 @@ for submodule in imports nullables promotions methods; do
    bootgly lint "$submodule" app/ || exit 1
 done
 ```
+
+### Dentro de um kit
+
+Num kit, o `lint` segue o diretório de onde você o roda. Fique no seu projeto e nomeie os caminhos
+a partir dali:
+
+```bash
+cd projects/App
+php ../../bootgly lint nullables                 # o projeto inteiro
+php ../../bootgly lint nullables Models/         # projects/App/Models
+php ../../bootgly lint imports Models/ --fix
+```
+
+- Um caminho relativo é resolvido a partir do diretório atual.
+- Sem caminho, o escopo é o diretório em que você está, quando ele fica sob `projects/`. Em
+  qualquer outro lugar — a raiz do kit, `Console/` — não há padrão: a execução é recusada até você
+  nomear um caminho.
+- O `--fix` nunca reescreve `Bootgly/`, `Console/` ou `Web/`, nem um caminho que os contenha — nem
+  mesmo pelo launcher do próprio framework dentro de `Bootgly/`: são submódulos fixados, e um
+  reescrito bloquearia o próximo `bootgly kit upgrade`. Checá-los sem `--fix` é permitido.
 
 ## Corrigir automaticamente
 
@@ -323,7 +344,8 @@ parseia) mantêm `result` em `failed`, e `issues.unresolved` diz quantas sobrara
 `check`, `dry-run` ou `fix` — um submódulo só de checagem reporta `check` mesmo quando `--fix`
 foi passado, e `fixable` diz que tipo de submódulo você rodou. Um caminho sem arquivos PHP
 responde o mesmo documento com `files.scanned` em `0`; um caminho que não existe acrescenta um
-`message` e falha. Um arquivo que um analisador recusa — `imports` recusa um que declara mais de
+`message` e falha, assim como uma execução que o kit recusa (sem caminho padrão fora de `projects/`, um diretório de trabalho que não existe mais,
+`--fix` num submódulo fixado). Um arquivo que um analisador recusa — `imports` recusa um que declara mais de
 um namespace, já que os imports são por bloco — é listado em `skipped` com o motivo, contado em
 `files.skipped`, e nunca deixa a execução verde por silêncio nem vermelha por si só. O mesmo
 balde guarda um nome que o próprio comando não leria — um que deixou de ser um arquivo regular
@@ -335,9 +357,11 @@ balde guarda um nome que o próprio comando não leria — um que deixou de ser 
 bootgly lint imports [path]
 ```
 
-Linta os `use` de todo arquivo PHP sob `path`. O padrão é `Bootgly/` relativo ao diretório de
-trabalho; um caminho relativo é resolvido a partir dele, um caminho absoluto é usado como veio.
-Um arquivo único é aceito no lugar de um diretório. Corrigível.
+Linta os `use` de todo arquivo PHP sob `path`. O padrão é `Bootgly/` relativo ao diretório do
+launcher, e um caminho relativo é resolvido a partir dele. Num kit, um caminho relativo é
+resolvido a partir do diretório atual, e o padrão é o diretório sob `projects/` de onde o comando
+roda — não há padrão fora de `projects/`. Um caminho absoluto é usado como veio. Um arquivo único é
+aceito no lugar de um diretório. Corrigível.
 
 ```bash
 bootgly lint nullables [path]
@@ -366,7 +390,9 @@ PHP impõe. Mesmas regras de caminho. Só checagem.
 
 Reescreve cada arquivo reportado no lugar — o bloco de imports no `imports`, cada `?T` no
 `nullables`. Só é gravado se o resultado ainda for PHP válido. Ignorado, com um aviso, pelos
-submódulos só de checagem.
+submódulos só de checagem. Num kit, recusado para um caminho que seja, contenha ou fique dentro de
+`Bootgly/`, `Console/` ou `Web/` — também pelo launcher do próprio framework dentro do `Bootgly/`
+do kit.
 
 ```bash
 --dry-run

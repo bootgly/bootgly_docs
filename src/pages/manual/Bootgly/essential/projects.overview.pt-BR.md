@@ -97,7 +97,7 @@ php bootgly projects create --from=Demo/HTTP_Server_CLI --yes
 **Todo projeto que você cria é bootado — um repositório git próprio.** O
 `create` roda o hook `bootgly project <Name> boot`: o scaffold — a assinatura
 do projeto, um registro `tests/` com uma suíte de exemplo e um `.gitignore`
-(ignorando `/vendor/`) — chega como um commit inicial, então `git log`,
+(ignorando `/vendor/` e os segredos `configs/**/.env`) — chega como um commit inicial, então `git log`,
 branches e um remote da sua escolha funcionam desde o primeiro minuto.
 `--no-git` pula o hook; numa máquina sem identidade git configurada, o
 repositório fica inicializado com o scaffold em stage e nada é commitado em

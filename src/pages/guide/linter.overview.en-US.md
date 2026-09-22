@@ -20,7 +20,8 @@ method being declared, never when it is one being called.
 
 ## Check your code
 
-Run a submodule with no path to lint the framework's own `Bootgly/` tree:
+In the framework checkout, a submodule with no path lints the framework's own `Bootgly/` tree
+(inside a kit the default is your project — see *Inside a kit* below):
 
 ```bash
 bootgly lint imports
@@ -54,6 +55,25 @@ for submodule in imports nullables promotions methods; do
    bootgly lint "$submodule" app/ || exit 1
 done
 ```
+
+### Inside a kit
+
+In a kit, `lint` follows the directory you run it from. Stand in your project and name paths from
+there:
+
+```bash
+cd projects/App
+php ../../bootgly lint nullables                 # the whole project
+php ../../bootgly lint nullables Models/         # projects/App/Models
+php ../../bootgly lint imports Models/ --fix
+```
+
+- A relative path is resolved against the current directory.
+- With no path, the scope is the directory you stand in, when it is under `projects/`. Anywhere
+  else — the kit root, `Console/` — there is no default: the run is refused until you name a path.
+- `--fix` never rewrites `Bootgly/`, `Console/` or `Web/`, nor a path that holds them — not even
+  through the framework's own launcher inside `Bootgly/`: they are pinned submodules, and a
+  rewritten one would block the next `bootgly kit upgrade`. Checking them without `--fix` is allowed.
 
 ## Fix it automatically
 
@@ -318,7 +338,9 @@ file untouched (a comment in its import block, a rewrite that would not parse) k
 `failed`, and `issues.unresolved` says how many remain. `mode` is `check`, `dry-run` or `fix` — a
 check-only submodule reports `check` even when `--fix` was passed, and `fixable` says which kind
 of submodule you ran. A path with no PHP files answers the same document with `files.scanned`
-at `0`; a path that does not exist adds a `message` and fails. A file an analyzer declines —
+at `0`; a path that does not exist adds a `message` and fails, and so does a run a kit refuses
+(no default path outside `projects/`, a working directory that no longer exists, `--fix` on a
+pinned submodule). A file an analyzer declines —
 `imports` declines one that declares more than one namespace, since its imports are per block —
 is listed under `skipped` with the reason, counted in `files.skipped`, and never turns the run
 green by silence nor red by itself. The same bucket holds a name the command itself would not
@@ -331,7 +353,9 @@ bootgly lint imports [path]
 ```
 
 Lints the `use` statements of every PHP file under `path`. Defaults to `Bootgly/` relative to
-the working directory; a relative path is resolved against it, an absolute path is used as
+the launcher's directory, and a relative path is resolved against it. In a kit, a relative path
+is resolved against the current directory instead, and the default is the directory under
+`projects/` the command runs from — there is none outside `projects/`. An absolute path is used as
 given. A single file is accepted in place of a directory. Fixable.
 
 ```bash
@@ -360,7 +384,8 @@ path rules. Check-only.
 
 Rewrites each reported file in place — the import block for `imports`, each `?T` for
 `nullables`. Only written when the result still parses. Ignored, with a notice, by the
-check-only submodules.
+check-only submodules. In a kit, refused for a path that is, holds or lies inside `Bootgly/`,
+`Console/` or `Web/` — also from the framework's own launcher inside the kit's `Bootgly/`.
 
 ```bash
 --dry-run
