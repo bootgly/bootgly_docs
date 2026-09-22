@@ -41,7 +41,7 @@ certificado e lê tudo, credenciais inclusive — então use `verify-ca`/`verify
 vale o trust store padrão do OpenSSL (`openssl.cafile`, `SSL_CERT_FILE`/`SSL_CERT_DIR`), então
 fixe `cafile` para uma CA privada; um `cafile` só é lido por um handshake que verifica, então
 um sob `prefer`/`require` sem `verify` é recusado na config, e um que não é um arquivo legível
-falha a conexão antes de qualquer byte ser enviado. Desde a 1.1.0 — antes, todo modo exceto
+falha a conexão antes de qualquer byte ser enviado. Desde a 1.0.3 — antes, todo modo exceto
 `disable` verificava por padrão.
 
 ## Prepared statements

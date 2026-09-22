@@ -263,7 +263,7 @@ silent: an undeclared plaintext Redis — one not configured with `'secure' => [
 connection and fails every operation until it is declared, where earlier releases silently
 fell back to plaintext. This is a breaking change for deployments that relied on that fallback.
 
-Since 1.1.0, `prefer` and `require` no longer verify the server certificate by default —
+Since 1.0.3, `prefer` and `require` no longer verify the server certificate by default —
 before, every mode but `disable` did. A `require` connection that pinned a `cafile` now needs
 `verify-ca`/`verify-full` (or `verify => true`) to keep verifying.
 

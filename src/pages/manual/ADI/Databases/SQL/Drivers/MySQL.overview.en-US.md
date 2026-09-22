@@ -88,7 +88,7 @@ $Database = new SQL([
 ```
 
 > [!NOTE]
-> Since 1.1.0, `prefer` and `require` no longer verify the certificate by default — before,
+> Since 1.0.3, `prefer` and `require` no longer verify the certificate by default — before,
 > every mode but `disable` did, and a self-signed server needed `'verify' => false`. A
 > `require` block that pinned a `cafile` now needs `verify-ca`/`verify-full` (or
 > `'verify' => true`) to keep verifying.

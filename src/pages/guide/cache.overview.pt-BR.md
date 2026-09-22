@@ -270,7 +270,7 @@ config — agora custa o budget de handshake (1 s, ou metade do `timeout`) a cad
 falha toda operação até ser declarado, onde as releases anteriores caíam silenciosamente em
 plaintext. É uma mudança incompatível (breaking) para deployments que dependiam dessa queda.
 
-Desde a 1.1.0, `prefer` e `require` não verificam mais o certificado do servidor por padrão —
+Desde a 1.0.3, `prefer` e `require` não verificam mais o certificado do servidor por padrão —
 antes, todo modo exceto `disable` verificava. Uma conexão `require` que fixava um `cafile`
 agora precisa de `verify-ca`/`verify-full` (ou `verify => true`) para continuar verificando.
 

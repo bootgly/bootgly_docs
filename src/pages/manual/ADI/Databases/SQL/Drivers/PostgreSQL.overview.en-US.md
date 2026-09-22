@@ -42,7 +42,7 @@ With `cafile` absent, OpenSSL's default trust store applies (`openssl.cafile`,
 `SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA; a `cafile` is only read by
 a verifying handshake, so one under `prefer`/`require` without `verify` is refused at config
 time, and one that is not a readable file fails the connection before any byte is sent.
-Since 1.1.0 — before, every mode but `disable` verified by default.
+Since 1.0.3 — before, every mode but `disable` verified by default.
 
 ## Prepared statements
 

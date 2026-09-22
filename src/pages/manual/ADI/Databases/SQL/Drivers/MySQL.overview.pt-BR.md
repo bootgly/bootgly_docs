@@ -89,7 +89,7 @@ $Database = new SQL([
 ```
 
 > [!NOTE]
-> Desde a 1.1.0, `prefer` e `require` não verificam mais o certificado por padrão — antes,
+> Desde a 1.0.3, `prefer` e `require` não verificam mais o certificado por padrão — antes,
 > todo modo exceto `disable` verificava, e um servidor self-signed exigia `'verify' => false`.
 > Um bloco `require` que fixava um `cafile` agora precisa de `verify-ca`/`verify-full` (ou
 > `'verify' => true`) para continuar verificando.
