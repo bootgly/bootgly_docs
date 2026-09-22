@@ -118,7 +118,7 @@ The constructor accepts a `Bootgly\API\Endpoints\Server\Modes` enum.
 
 | Mode | Description |
 |---|---|
-| `Modes::Daemon` | Forks the server to the background and keeps the master process alive without a UI. When `Logger::$Sinks` is unset, it installs the default file sink (`storage/logs/{channel}.log`) so a daemon is never logless. |
+| `Modes::Daemon` | Forks the server to the background and keeps the master process alive without a UI. When `Logger::$Sinks` is unset, it installs the default file sink (`storage/logs/{channel}.log`) so a daemon is never logless; a sink registered before `start()` takes its place. |
 | `Modes::Interactive` | Runs a REPL-like CLI loop with commands such as `status`, `stop`, `pause` and `reload`. |
 | `Modes::Monitor` | Displays a live status screen and performs hot-reload checks against the server application layer. |
 | `Modes::Test` | Uses a separate process-state instance intended for automated server testing. |

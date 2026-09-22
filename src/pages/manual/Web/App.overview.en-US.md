@@ -156,7 +156,7 @@ Files resolve inside the project `statics/` jail (path-normalized and base-conta
 
 ## Logs
 
-`start()` registers a global file sink: exception reports and opted-in loggers persist to `storage/logs/<channel>.log` in every mode. In **Daemon** mode the workers detach from the terminal — the log file is where errors land.
+`start()` registers a global file sink: exception reports and opted-in loggers persist to `storage/logs/<channel>.log` in every mode. In **Daemon** mode the workers detach from the terminal — the log file is where errors land — and this sink takes the place of the default one the server would otherwise install at that path, so no record is persisted twice.
 
 ---
 

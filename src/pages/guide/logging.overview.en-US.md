@@ -131,8 +131,11 @@ Where an opted-in logger's records land, per server mode:
 > [!NOTE]
 > **Daemon is never a silent black hole.** When a server daemonizes with `Logger::$Sinks` still
 > unset, it installs the default sink — `File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log')` — and a
-> NOTICE saying so is that file's first record. A project that registered its own sinks is never
-> touched (`??=` semantics). Follow any mode live with
+> NOTICE saying so is the first record `start()` writes. A project that registered its own sinks is
+> never touched (`??=` semantics), and the default stands in only until `start()`: a sink registered
+> in between — the Web platform's `App` pushes its own `File` sink at that very path — takes its
+> place, notice included, so no record is persisted twice. Register sinks before `start()`: one
+> pushed after it began is a second writer beside the default. Follow any mode live with
 > **[`bootgly logs -f`](/guide/logs/overview/)** — no `tail` needed.
 
 > [!IMPORTANT]
@@ -154,7 +157,8 @@ Where an opted-in logger's records land, per server mode:
 > so a refused sink is never a silent one (the test runner mutes it). The boundary: on a root
 > launch, never log through a global logger *before* the server is configured — a record
 > written then is written by root, and so is one that reaches a sink pushed onto `Logger::$Sinks`
-> *after* the server was configured: register every sink before `configure()`. Root hands
+> *after* `start()` began — a sink registered between `configure()` and `start()` is withheld like
+> the fallback it replaces: register every sink before `start()`. Root hands
 > `storage/logs` over only when this launch created it and it is still the empty directory it
 > created — as the inode it decided on, never as a name — and touches nothing inside it: a
 > `storage/logs` that was there before and is not the runtime identity's (root's from an

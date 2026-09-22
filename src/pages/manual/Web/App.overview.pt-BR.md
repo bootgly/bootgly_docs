@@ -156,7 +156,7 @@ Os arquivos resolvem dentro da jail `statics/` do projeto (caminho normalizado e
 
 ## Logs
 
-`start()` registra um sink global de arquivo: relatórios de exceção e loggers opted-in persistem em `storage/logs/<channel>.log` em todos os modos. No modo **Daemon** os workers se desconectam do terminal — o arquivo de log é onde os erros aparecem.
+`start()` registra um sink global de arquivo: relatórios de exceção e loggers opted-in persistem em `storage/logs/<channel>.log` em todos os modos. No modo **Daemon** os workers se desconectam do terminal — o arquivo de log é onde os erros aparecem — e esse sink toma o lugar do sink padrão que o servidor instalaria nesse path, então nenhum record é persistido duas vezes.
 
 ---
 

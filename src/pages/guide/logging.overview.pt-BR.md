@@ -132,8 +132,12 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 > [!NOTE]
 > **Daemon nunca é um buraco negro silencioso.** Quando um servidor daemoniza com `Logger::$Sinks`
 > ainda não definido, ele instala o sink padrão — `File(BOOTGLY_STORAGE_DIR . 'logs/{channel}.log')`
-> — e um NOTICE dizendo isso é o primeiro record do arquivo. Um projeto que registrou seus próprios
-> sinks nunca é tocado (semântica `??=`). Siga qualquer modo ao vivo com
+> — e um NOTICE dizendo isso é o primeiro record que o `start()` escreve. Um projeto que registrou
+> seus próprios sinks nunca é tocado (semântica `??=`), e o padrão só vale até o `start()`: um sink
+> registrado nesse intervalo — o `App` da plataforma Web empilha o seu próprio sink `File`
+> exatamente nesse path — toma o lugar dele, NOTICE incluído, e nenhum record é persistido duas
+> vezes. Registre os sinks antes do `start()`: um empilhado depois que ele começou é um segundo
+> escritor ao lado do padrão. Siga qualquer modo ao vivo com
 > **[`bootgly logs -f`](/guide/logs/overview/)** — sem `tail`.
 
 > [!IMPORTANT]
@@ -154,8 +158,9 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 > silenciado com `BOOTGLY_ENVIRONMENT=test`) onde houver um, então um sink recusado nunca é um
 > sink mudo (o runner de testes o silencia). A fronteira: num lançamento como root, nunca logue
 > por um logger global *antes* de configurar o servidor — um record escrito ali é escrito pelo
-> root, e também um que chega a um sink empurrado em `Logger::$Sinks` *depois* de o servidor ser
-> configurado: registre todo sink antes do `configure()`. O root entrega `storage/logs` só quando
+> root, e também um que chega a um sink empurrado em `Logger::$Sinks` *depois* de o `start()`
+> começar — um sink registrado entre o `configure()` e o `start()` fica retido como o fallback que
+> ele substitui: registre todo sink antes do `start()`. O root entrega `storage/logs` só quando
 > este lançamento o criou e ele ainda é o diretório vazio que criou — como o inode que ele
 > decidiu, nunca como um nome — e não toca em nada dentro: um `storage/logs` que já existia e não
 > é da identidade de runtime (do root de um lançamento anterior, ou de qualquer outra pessoa)
