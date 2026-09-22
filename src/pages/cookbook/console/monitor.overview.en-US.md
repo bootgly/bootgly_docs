@@ -1,4 +1,4 @@
-# Monitor
+# Build a system dashboard Console App
 
 Build **Monitor**, a live system dashboard for your terminal: CPU and memory gauges with a CPU history sparkline, the top processes by memory and the usage of every mounted disk — three screens switched with one key, plus a status bar, a help overlay and a command palette that the Console platform gives you for free.
 
@@ -55,6 +55,17 @@ projects/Monitor/
 ```
 
 Everything you write next goes inside `projects/Monitor/`.
+
+  </d-block-step>
+
+  <d-block-step title="Create the folders">
+
+Every folder the next steps write into, in one command — from here on you only create files and paste their content. Run it from the kit directory (`mkdir -p` leaves the folders the scaffold already created alone):
+
+```bash :toolbar="true";
+mkdir -p projects/Monitor/screens \
+   projects/Monitor/tests/system
+```
 
   </d-block-step>
 

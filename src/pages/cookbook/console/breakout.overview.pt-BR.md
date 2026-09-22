@@ -1,4 +1,4 @@
-# Breakout
+# Construa um Console Game de quebrar tijolos
 
 Construa o **Breakout**, o clássico dos fliperamas, no seu terminal: uma raquete que você desliza com as setas, uma bola que quica nas paredes e nos tijolos, cinco fileiras de tijolos coloridos, três bolas e uma pontuação — com um menu, o jogo em si e uma tela de fim de jogo como três cenas. O shell **Game** da plataforma Console traz o loop de passo fixo, o canvas renderizado por diff, as heurísticas de teclado e a barra de status; você escreve o jogo.
 
@@ -46,6 +46,16 @@ php bootgly projects create Breakout --platform=console --interfaces=CLI --yes
 ```
 
 O projeto nasce em `projects/Breakout/` como um repositório git próprio (o scaffold vira o primeiro commit assim que o git souber seu nome e e-mail) — `Breakout.Project.php` (a assinatura), `schedule.php` e uma pasta `tests/` com uma suíte de exemplo. Tudo o que você escrever a seguir vai dentro de `projects/Breakout/`.
+
+  </d-block-step>
+
+  <d-block-step title="Crie as pastas">
+
+Todas as pastas em que os próximos passos escrevem, em um comando — daqui em diante você só cria arquivos e cola o conteúdo deles. Rode da pasta do kit (`mkdir -p` não mexe nas pastas que o scaffold já criou):
+
+```bash :toolbar="true";
+mkdir -p projects/Breakout/tests/game
+```
 
   </d-block-step>
 

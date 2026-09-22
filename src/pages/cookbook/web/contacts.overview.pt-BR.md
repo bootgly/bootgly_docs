@@ -1,4 +1,4 @@
-# Contacts
+# Construa uma Web REST API de contatos
 
 Construa o **Contacts**, uma API REST de agenda de contatos: JSON entra, JSON sai, cinco endpoints (list, show, create, update, delete), validação com mensagens de erro claras, erros `problem+json` da RFC 9457, cabeçalhos de paginação e um arquivo SQLite — semeado com três contatos para a API responder desde a primeira requisição. O shell **API** da plataforma Web traz o roteamento de recursos, a fronteira de erros problem+json e os transformadores de entidades; você escreve o recurso.
 
@@ -35,7 +35,24 @@ Crie um projeto **WPI** (web) chamado `Contacts` na plataforma **Web**, na porta
 php bootgly projects create Contacts --platform=web --interfaces=WPI --port=8090 --yes
 ```
 
-O projeto nasce em `projects/Contacts/` como um repositório git próprio (o scaffold vira o primeiro commit assim que o git souber seu nome e e-mail) — `Contacts.Project.php` (a assinatura), um `router/` com um conjunto de rotas de boas-vindas, `schedule.php` e `tests/`. Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto de rotas `Contacts.routes.php` (apague `Welcome.routes.php` se quiser) e criar as pastas `configs/`, `database/`, `Models/`, `Resources/` e `Controllers/`. Tudo vai dentro de `projects/Contacts/`.
+O projeto nasce em `projects/Contacts/` como um repositório git próprio (o scaffold vira o primeiro commit assim que o git souber seu nome e e-mail) — `Contacts.Project.php` (a assinatura), um `router/` com um conjunto de rotas de boas-vindas, `schedule.php` e `tests/`. Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto de rotas `Contacts.routes.php` (apague `Welcome.routes.php` se quiser); o próximo passo cria todas as pastas de uma vez. Tudo vai dentro de `projects/Contacts/`.
+
+  </d-block-step>
+
+  <d-block-step title="Crie as pastas">
+
+Todas as pastas em que os próximos passos escrevem, em um comando — daqui em diante você só cria arquivos e cola o conteúdo deles. Rode da pasta do kit (`mkdir -p` não mexe nas pastas que o scaffold já criou):
+
+```bash :toolbar="true";
+mkdir -p projects/Contacts/Controllers \
+   projects/Contacts/Models \
+   projects/Contacts/Resources \
+   projects/Contacts/configs/database \
+   projects/Contacts/database/migrations \
+   projects/Contacts/database/seeders \
+   projects/Contacts/router/routes \
+   projects/Contacts/tests/project
+```
 
   </d-block-step>
 

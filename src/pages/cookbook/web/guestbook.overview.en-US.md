@@ -1,4 +1,4 @@
-# Guestbook
+# Build a guestbook Web App
 
 Build **Guestbook**, a small web app where visitors sign a book: a form and the list of entries on one page, stored in SQLite, protected by CSRF, wrapped in a layout with its own stylesheet. The Web platform's **App** shell brings the HTTP server, the middleware stack (secure headers, request ids, body parsing, CSRF), sessions, controllers, views and static files; you write the app.
 
@@ -53,7 +53,25 @@ projects/Guestbook/
     └── example/              ← an example suite (de-registered in the last step; delete it when you like)
 ```
 
-You will replace the signature and the router manifest, add a `Guestbook.routes.php` route set (delete `Welcome.routes.php` if you like) and create the `configs/`, `database/`, `Controllers/`, `views/` and `statics/` folders. Everything goes inside `projects/Guestbook/`.
+You will replace the signature and the router manifest, add a `Guestbook.routes.php` route set (delete `Welcome.routes.php` if you like); the next step creates every folder in one go. Everything goes inside `projects/Guestbook/`.
+
+  </d-block-step>
+
+  <d-block-step title="Create the folders">
+
+Every folder the next steps write into, in one command — from here on you only create files and paste their content. Run it from the kit directory (`mkdir -p` leaves the folders the scaffold already created alone):
+
+```bash :toolbar="true";
+mkdir -p projects/Guestbook/Controllers \
+   projects/Guestbook/configs/database \
+   projects/Guestbook/database/migrations \
+   projects/Guestbook/router/routes \
+   projects/Guestbook/statics \
+   projects/Guestbook/tests/project \
+   projects/Guestbook/views/entries \
+   projects/Guestbook/views/errors \
+   projects/Guestbook/views/layouts
+```
 
   </d-block-step>
 

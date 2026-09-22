@@ -1,4 +1,4 @@
-# Guestbook
+# Construa um Web App de livro de visitas
 
 Construa o **Guestbook**, um pequeno app web em que visitantes assinam um livro: um formulário e a lista de entradas em uma página, guardados em SQLite, protegidos por CSRF, dentro de um layout com a própria folha de estilo. O shell **App** da plataforma Web traz o servidor HTTP, a pilha de middlewares (cabeçalhos seguros, ids de requisição, parsing do corpo, CSRF), sessões, controllers, views e arquivos estáticos; você escreve o app.
 
@@ -53,7 +53,25 @@ projects/Guestbook/
     └── example/              ← uma suíte de exemplo (removida do registro no último passo; apague quando quiser)
 ```
 
-Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto de rotas `Guestbook.routes.php` (apague `Welcome.routes.php` se quiser) e criar as pastas `configs/`, `database/`, `Controllers/`, `views/` e `statics/`. Tudo vai dentro de `projects/Guestbook/`.
+Você vai substituir a assinatura e o manifesto do router, adicionar um conjunto de rotas `Guestbook.routes.php` (apague `Welcome.routes.php` se quiser); o próximo passo cria todas as pastas de uma vez. Tudo vai dentro de `projects/Guestbook/`.
+
+  </d-block-step>
+
+  <d-block-step title="Crie as pastas">
+
+Todas as pastas em que os próximos passos escrevem, em um comando — daqui em diante você só cria arquivos e cola o conteúdo deles. Rode da pasta do kit (`mkdir -p` não mexe nas pastas que o scaffold já criou):
+
+```bash :toolbar="true";
+mkdir -p projects/Guestbook/Controllers \
+   projects/Guestbook/configs/database \
+   projects/Guestbook/database/migrations \
+   projects/Guestbook/router/routes \
+   projects/Guestbook/statics \
+   projects/Guestbook/tests/project \
+   projects/Guestbook/views/entries \
+   projects/Guestbook/views/errors \
+   projects/Guestbook/views/layouts
+```
 
   </d-block-step>
 

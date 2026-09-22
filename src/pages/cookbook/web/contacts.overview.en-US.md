@@ -1,4 +1,4 @@
-# Contacts
+# Build a contacts Web REST API
 
 Build **Contacts**, a REST API for an address book: JSON in, JSON out, five endpoints (list, show, create, update, delete), validation with clear error messages, RFC 9457 `problem+json` errors, pagination headers and a SQLite file — seeded with three contacts so the API answers from the first request. The Web platform's **API** shell brings resource routing, the problem+json error boundary and entity transformers; you write the resource.
 
@@ -35,7 +35,24 @@ Create a **WPI** (web) project named `Contacts` on the **Web** platform, on port
 php bootgly projects create Contacts --platform=web --interfaces=WPI --port=8090 --yes
 ```
 
-The project lands in `projects/Contacts/` as a git repository of its own (the scaffold becomes its first commit once git knows your name and e-mail) — `Contacts.Project.php` (the signature), a `router/` with a welcome route set, `schedule.php` and `tests/`. You will replace the signature and the router manifest, add a `Contacts.routes.php` route set (delete `Welcome.routes.php` if you like) and create the `configs/`, `database/`, `Models/`, `Resources/` and `Controllers/` folders. Everything goes inside `projects/Contacts/`.
+The project lands in `projects/Contacts/` as a git repository of its own (the scaffold becomes its first commit once git knows your name and e-mail) — `Contacts.Project.php` (the signature), a `router/` with a welcome route set, `schedule.php` and `tests/`. You will replace the signature and the router manifest, add a `Contacts.routes.php` route set (delete `Welcome.routes.php` if you like); the next step creates every folder in one go. Everything goes inside `projects/Contacts/`.
+
+  </d-block-step>
+
+  <d-block-step title="Create the folders">
+
+Every folder the next steps write into, in one command — from here on you only create files and paste their content. Run it from the kit directory (`mkdir -p` leaves the folders the scaffold already created alone):
+
+```bash :toolbar="true";
+mkdir -p projects/Contacts/Controllers \
+   projects/Contacts/Models \
+   projects/Contacts/Resources \
+   projects/Contacts/configs/database \
+   projects/Contacts/database/migrations \
+   projects/Contacts/database/seeders \
+   projects/Contacts/router/routes \
+   projects/Contacts/tests/project
+```
 
   </d-block-step>
 

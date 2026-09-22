@@ -11,20 +11,20 @@ The Cookbook teaches Bootgly by **building real, small projects** — one page p
 
 ## Requirements
 
-Linux (or WSL2) with a terminal. The installer checks for **git** and **PHP 8.4+** and offers to install what is missing through your package manager — nothing else is needed.
+Linux (or WSL2) with a terminal. The installer checks for **git** and **PHP 8.4+** and offers to install what is missing through your package manager — nothing else is needed. Shop and Polls additionally need **Docker** to run their database in a container (or an existing MySQL/PostgreSQL server to point them at).
 
 ## Projects
 
 <d-block-cards title="Console platform — terminal apps and games">
   <d-block-card
-    title="Monitor"
-    description="A live system dashboard: screens, keymaps, status bar and tables over /proc."
+    title="Build a system dashboard Console App"
+    description="Monitor — a live system dashboard: screens, keymaps, status bar and tables over /proc."
     to="/cookbook/console/monitor/overview/"
     icon="monitor_heart"
   />
   <d-block-card
-    title="Breakout"
-    description="A terminal game: fixed-timestep loop, diff-rendered canvas, held keys, scenes and collisions."
+    title="Build a brick-breaker Console Game"
+    description="Breakout — a terminal game: fixed-timestep loop, diff-rendered canvas, held keys, scenes and collisions."
     to="/cookbook/console/breakout/overview/"
     icon="sports_esports"
   />
@@ -32,16 +32,28 @@ Linux (or WSL2) with a terminal. The installer checks for **git** and **PHP 8.4+
 
 <d-block-cards title="Web platform — sites and APIs">
   <d-block-card
-    title="Guestbook"
-    description="An MVC web app: a form, a list, SQLite migrations, CSRF, a layout and static assets."
+    title="Build a guestbook Web App"
+    description="Guestbook — an MVC web app: a form, a list, SQLite migrations, CSRF, a layout and static assets."
     to="/cookbook/web/guestbook/overview/"
     icon="edit_note"
   />
   <d-block-card
-    title="Contacts"
-    description="A REST API: JSON CRUD, validation, problem+json errors, pagination and SQLite."
+    title="Build a contacts Web REST API"
+    description="Contacts — a REST API: JSON CRUD, validation, problem+json errors, pagination and SQLite."
     to="/cookbook/web/contacts/overview/"
     icon="contacts"
+  />
+  <d-block-card
+    title="Build a store Web App on MySQL"
+    description="Shop — a store on MySQL: catalogue with pagination, a session cart, a checkout in one transaction with row locks, ORM relations."
+    to="/cookbook/web/shop/overview/"
+    icon="storefront"
+  />
+  <d-block-card
+    title="Build a voting Web App on PostgreSQL"
+    description="Polls — a voting app on PostgreSQL: one vote per visitor by upsert, RETURNING in a transaction, TIMESTAMPTZ, ORM relations."
+    to="/cookbook/web/polls/overview/"
+    icon="how_to_vote"
   />
 </d-block-cards>
 

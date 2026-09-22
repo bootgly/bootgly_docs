@@ -69,10 +69,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Monitor'
+        title: 'Build a system dashboard Console App'
       },
       'pt-BR': {
-        title: 'Monitor'
+        title: 'Construa um Console App de dashboard do sistema'
       }
     }
   },
@@ -93,10 +93,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Breakout'
+        title: 'Build a brick-breaker Console Game'
       },
       'pt-BR': {
-        title: 'Breakout'
+        title: 'Construa um Console Game de quebrar tijolos'
       }
     }
   },
@@ -132,10 +132,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Guestbook'
+        title: 'Build a guestbook Web App'
       },
       'pt-BR': {
-        title: 'Guestbook'
+        title: 'Construa um Web App de livro de visitas'
       }
     }
   },
@@ -156,10 +156,58 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Contacts'
+        title: 'Build a contacts Web REST API'
       },
       'pt-BR': {
-        title: 'Contacts'
+        title: 'Construa uma Web REST API de contatos'
+      }
+    }
+  },
+  '/web/shop': {
+    config: {
+      icon: 'storefront',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Build Shop, a store on MySQL: catalogue with pagination, a session cart, a checkout in one transaction with row locks, ORM relations.',
+          'pt-BR': 'Construa o Shop, uma loja em MySQL: catálogo com paginação, carrinho na sessão, checkout em uma transação com bloqueio de linhas, relações do ORM.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Build a store Web App on MySQL'
+      },
+      'pt-BR': {
+        title: 'Construa um Web App de loja em MySQL'
+      }
+    }
+  },
+  '/web/polls': {
+    config: {
+      icon: 'how_to_vote',
+      status: 'new',
+      meta: {
+        description: {
+          'en-US': 'Build Polls, a voting app on PostgreSQL: one vote per visitor by upsert, RETURNING in a transaction, TIMESTAMPTZ, ORM relations.',
+          'pt-BR': 'Construa o Polls, um app de votação em PostgreSQL: um voto por visitante via upsert, RETURNING em uma transação, TIMESTAMPTZ, relações do ORM.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Build a voting Web App on PostgreSQL'
+      },
+      'pt-BR': {
+        title: 'Construa um Web App de votação em PostgreSQL'
       }
     }
   }

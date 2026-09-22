@@ -140,4 +140,4 @@ Each is a compact reference: **Blog** for the full MVC loop (ORM models, migrati
 - [Web](/manual/Web) — how the platform boots and how projects bind to it.
 - [App](/manual/Web/App) — the MVC shell: App, Controller, Controllers, Statics, Views.
 - [API](/manual/Web/API) — the REST shell: Action, Problem/Problems, Resource, Routes.
-- Cookbook — build [Guestbook](/cookbook/web/guestbook/overview/), an MVC app on the App shell, and [Contacts](/cookbook/web/contacts/overview/), a REST API on the API shell, step by step.
+- Cookbook — build [Guestbook](/cookbook/web/guestbook/overview/), an MVC app on the App shell, [Contacts](/cookbook/web/contacts/overview/), a REST API on the API shell, [Shop](/cookbook/web/shop/overview/), a store on MySQL, and [Polls](/cookbook/web/polls/overview/), a voting app on PostgreSQL, step by step.

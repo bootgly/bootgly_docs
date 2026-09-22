@@ -1,4 +1,4 @@
-# Breakout
+# Build a brick-breaker Console Game
 
 Build **Breakout**, the classic arcade game, in your terminal: a paddle you slide with the arrow keys, a ball that bounces off walls and bricks, five rows of colored bricks, three balls and a score — with a menu, the game itself and a game-over screen as three scenes. The Console platform's **Game** shell brings the fixed-timestep loop, the diff-rendered canvas, the keyboard heuristics and the status bar; you write the game.
 
@@ -46,6 +46,16 @@ php bootgly projects create Breakout --platform=console --interfaces=CLI --yes
 ```
 
 The project lands in `projects/Breakout/` as a git repository of its own (the scaffold becomes its first commit once git knows your name and e-mail) — `Breakout.Project.php` (the signature), `schedule.php` and a `tests/` folder with an example suite. Everything you write next goes inside `projects/Breakout/`.
+
+  </d-block-step>
+
+  <d-block-step title="Create the folders">
+
+Every folder the next steps write into, in one command — from here on you only create files and paste their content. Run it from the kit directory (`mkdir -p` leaves the folders the scaffold already created alone):
+
+```bash :toolbar="true";
+mkdir -p projects/Breakout/tests/game
+```
 
   </d-block-step>
 

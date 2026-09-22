@@ -140,4 +140,4 @@ Cada um é uma referência compacta: **Blog** para o ciclo MVC completo (models 
 - [Web](/manual/Web) — como a plataforma inicializa e como projetos se vinculam a ela.
 - [App](/manual/Web/App) — o shell MVC: App, Controller, Controllers, Statics, Views.
 - [API](/manual/Web/API) — o shell REST: Action, Problem/Problems, Resource, Routes.
-- Cookbook — construa o [Guestbook](/cookbook/web/guestbook/overview/), um app MVC no shell App, e o [Contacts](/cookbook/web/contacts/overview/), uma API REST no shell API, passo a passo.
+- Cookbook — construa o [Guestbook](/cookbook/web/guestbook/overview/), um app MVC no shell App, o [Contacts](/cookbook/web/contacts/overview/), uma API REST no shell API, o [Shop](/cookbook/web/shop/overview/), uma loja em MySQL, e o [Polls](/cookbook/web/polls/overview/), um app de votação em PostgreSQL, passo a passo.

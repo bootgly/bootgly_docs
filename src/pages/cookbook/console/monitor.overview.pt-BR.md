@@ -1,4 +1,4 @@
-# Monitor
+# Construa um Console App de dashboard do sistema
 
 Construa o **Monitor**, um dashboard de sistema ao vivo para o seu terminal: medidores de CPU e memória com um sparkline do histórico de CPU, os processos que mais usam memória e o uso de cada disco montado — três telas trocadas com uma tecla, mais uma barra de status, uma sobreposição de ajuda e uma paleta de comandos que a plataforma Console te dá de graça.
 
@@ -55,6 +55,17 @@ projects/Monitor/
 ```
 
 Tudo o que você escrever a seguir vai dentro de `projects/Monitor/`.
+
+  </d-block-step>
+
+  <d-block-step title="Crie as pastas">
+
+Todas as pastas em que os próximos passos escrevem, em um comando — daqui em diante você só cria arquivos e cola o conteúdo deles. Rode da pasta do kit (`mkdir -p` não mexe nas pastas que o scaffold já criou):
+
+```bash :toolbar="true";
+mkdir -p projects/Monitor/screens \
+   projects/Monitor/tests/system
+```
 
   </d-block-step>
 
