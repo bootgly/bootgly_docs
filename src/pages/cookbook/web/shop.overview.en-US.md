@@ -175,8 +175,8 @@ return new Config(scope: 'database')
       ->up();
 ```
 
-> [!WARNING]
-> The `Secure` block matters. The MySQL image enables TLS with a self-signed certificate, and Bootgly's driver verifies certificates even in its default `prefer` mode — so without `DB_SSLMODE=disable` the very first connection fails with `certificate verify failed`. On a real server keep TLS on: `DB_SSLMODE=verify-full` with `DB_SSLCAFILE` pointing at the server's CA certificate.
+> [!NOTE]
+> The `Secure` block keeps this page working on every release it covers. The MySQL image enables TLS with a self-signed certificate: up to 1.0.2, Bootgly's driver verified certificates even in its default `prefer` mode, so without `DB_SSLMODE=disable` the very first connection failed with `certificate verify failed`. Since 1.0.3, `prefer` encrypts without verifying — as it does in libpq and MySQL — and the block is optional. On a real server keep TLS on and verified: `DB_SSLMODE=verify-full` with `DB_SSLCAFILE` pointing at the server's CA certificate.
 
   </d-block-step>
 

@@ -175,8 +175,8 @@ return new Config(scope: 'database')
       ->up();
 ```
 
-> [!WARNING]
-> O bloco `Secure` importa. A imagem do MySQL habilita TLS com um certificado autoassinado, e o driver do Bootgly verifica certificados mesmo no modo padrão `prefer` — então sem `DB_SSLMODE=disable` a primeira conexão falha com `certificate verify failed`. Em um servidor real mantenha o TLS ligado: `DB_SSLMODE=verify-full` com `DB_SSLCAFILE` apontando para o certificado da CA do servidor.
+> [!NOTE]
+> O bloco `Secure` mantém esta página funcionando em todas as releases que ela cobre. A imagem do MySQL habilita TLS com um certificado autoassinado: até a 1.0.2, o driver do Bootgly verificava certificados mesmo no modo padrão `prefer`, então sem `DB_SSLMODE=disable` a primeira conexão falhava com `certificate verify failed`. Desde a 1.0.3, o `prefer` cifra sem verificar — como no libpq e no MySQL — e o bloco é opcional. Em um servidor real mantenha o TLS ligado e verificado: `DB_SSLMODE=verify-full` com `DB_SSLCAFILE` apontando para o certificado da CA do servidor.
 
   </d-block-step>
 
