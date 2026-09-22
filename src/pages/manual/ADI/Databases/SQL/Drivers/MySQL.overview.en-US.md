@@ -37,7 +37,9 @@ server:
   plaintext connections.
 
 > **Security** — over plaintext the driver never requests the RSA key from the server:
-> an active MITM could substitute its own key and decrypt the password. Full
+> an active MITM could substitute its own key and decrypt the password. The same attacker
+> reads it through an unverified TLS handshake (`prefer`/`require` without `verify` — the
+> shipped default), so verify the certificate on any untrusted network (see TLS below). Full
 > authentication without TLS fails unless you pin the server public key locally:
 
 ```php
@@ -61,21 +63,35 @@ MariaDB's `ed25519` plugin is not supported — the operation fails with a clear
 ## TLS
 
 The `secure.mode` config controls TLS exactly like the PostgreSQL driver: `disable`,
-`prefer` (fall back to plaintext when the server lacks SSL), `require`, `verify-ca` and
-`verify-full`. Every mode but `disable` verifies the certificate chain and peer name
-(`verify-ca` checks the chain only — never the peer name — and `verify-full` always checks
-both); with `cafile` absent, OpenSSL's default trust store applies (`openssl.cafile`,
-`SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA — a `cafile` that is not a
-readable file fails the connection before any byte is sent. For servers with self-signed
-certificates, disable peer verification explicitly:
+`prefer` (the default — TLS when the server offers it, plaintext when it does not),
+`require` (TLS or nothing), `verify-ca` and `verify-full`. Only the two `verify-*` modes
+verify the server certificate — `verify-ca` checks the chain, `verify-full` the chain and
+the peer name — which is what libpq's and MySQL's own `sslmode` do: `prefer` and `require`
+encrypt without checking who signed the certificate, so the shipped defaults reach a stock
+`mysql:8` image (TLS on, auto-generated self-signed certificate) at the very first
+connection. `verify` opts a `prefer`/`require` connection into chain verification (`name` then
+checks the host name too; `name` alone checks only the name, against any certificate). Unverified
+TLS defeats passive eavesdropping only: an active on-path attacker can answer the handshake with
+its own certificate and read everything, credentials included — on any network you do not trust,
+use `verify-ca`/`verify-full` (or `verify => true`). With `cafile` absent, OpenSSL's default trust store applies (`openssl.cafile`,
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA — a `cafile` is only read
+by a verifying handshake, so one under `prefer`/`require` without `verify` is refused at
+config time, and one that is not a readable file fails the connection before any byte is
+sent. For a real deployment, verify:
 
 ```php
 $Database = new SQL([
    'driver' => 'mysql',
    // ...
-   'secure' => ['mode' => 'require', 'verify' => false],
+   'secure' => ['mode' => 'verify-full', 'cafile' => '/etc/mysql/ca.pem'],
 ]);
 ```
+
+> [!NOTE]
+> Since 1.1.0, `prefer` and `require` no longer verify the certificate by default — before,
+> every mode but `disable` did, and a self-signed server needed `'verify' => false`. A
+> `require` block that pinned a `cafile` now needs `verify-ca`/`verify-full` (or
+> `'verify' => true`) to keep verifying.
 
 ## Prepared statements
 

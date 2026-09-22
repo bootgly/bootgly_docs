@@ -29,13 +29,20 @@ As operações são assíncronas: `query()` retorna uma `Operation` pendente con
 
 Métodos de autenticação suportados: **cleartext**, **MD5** e **SCRAM-SHA-256** (channel
 binding não é negociado). O TLS é negociado via `SSLRequest` e controlado por
-`secure.mode`: `disable`, `prefer` (cai para plaintext quando recusado), `require`,
-`verify-ca` e `verify-full` — com `peer` e `cafile` para pinning de certificado. Todo modo
-exceto `disable` verifica a cadeia do certificado e o nome do peer, a menos que `verify`/`name`
-sejam `false`; `verify-ca` verifica só a cadeia — nunca o nome do peer — e `verify-full`
-sempre verifica os dois. Com `cafile` ausente, vale o trust store padrão do OpenSSL (`openssl.cafile`,
-`SSL_CERT_FILE`/`SSL_CERT_DIR`), então fixe `cafile` para uma CA privada; um `cafile` que não é
-um arquivo legível falha a conexão antes de qualquer byte ser enviado.
+`secure.mode`: `disable`, `prefer` (o padrão — cai para plaintext quando recusado),
+`require`, `verify-ca` e `verify-full` — com `peer` e `cafile` para pinning de certificado.
+Só `verify-ca` e `verify-full` verificam o certificado do servidor — a cadeia, e com
+`verify-full` também o nome do peer — como o `sslmode` da libpq faz: `prefer` e `require`
+criptografam sem verificação a menos que `verify`/`name` a liguem, então os padrões de fábrica
+alcançam um servidor com certificado self-signed já na primeira conexão. TLS sem verificação
+derrota só a escuta passiva — um atacante ativo no caminho responde o handshake com o próprio
+certificado e lê tudo, credenciais inclusive — então use `verify-ca`/`verify-full` (ou
+`verify => true`) em qualquer rede em que você não confia. Com `cafile` ausente,
+vale o trust store padrão do OpenSSL (`openssl.cafile`, `SSL_CERT_FILE`/`SSL_CERT_DIR`), então
+fixe `cafile` para uma CA privada; um `cafile` só é lido por um handshake que verifica, então
+um sob `prefer`/`require` sem `verify` é recusado na config, e um que não é um arquivo legível
+falha a conexão antes de qualquer byte ser enviado. Desde a 1.1.0 — antes, todo modo exceto
+`disable` verificava por padrão.
 
 ## Prepared statements
 

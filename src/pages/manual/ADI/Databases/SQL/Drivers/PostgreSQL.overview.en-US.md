@@ -29,14 +29,20 @@ or by the Fiber scheduler under the HTTP server.
 
 Supported authentication methods: **cleartext**, **MD5** and **SCRAM-SHA-256** (channel
 binding is not negotiated). TLS is negotiated through `SSLRequest` and controlled by
-`secure.mode`: `disable`, `prefer` (fall back to plaintext when refused), `require`,
-`verify-ca` and `verify-full` — with `peer` and `cafile` for certificate pinning. Every mode
-but `disable` verifies the certificate chain and peer name unless `verify`/`name` are `false`;
-`verify-ca` checks the chain only — it never checks the peer name — and `verify-full` always
-checks both.
+`secure.mode`: `disable`, `prefer` (the default — fall back to plaintext when refused),
+`require`, `verify-ca` and `verify-full` — with `peer` and `cafile` for certificate pinning.
+Only `verify-ca` and `verify-full` verify the server certificate — the chain, and with
+`verify-full` the peer name too — as libpq's `sslmode` does: `prefer` and `require` encrypt
+without verification unless `verify`/`name` opt in, so the shipped defaults reach a server
+with a self-signed certificate at the first connection. Unverified TLS defeats passive
+eavesdropping only — an active on-path attacker can answer the handshake with its own certificate
+and read everything, credentials included — so use `verify-ca`/`verify-full` (or `verify => true`)
+on any network you do not trust.
 With `cafile` absent, OpenSSL's default trust store applies (`openssl.cafile`,
-`SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA; a `cafile` that is not a
-readable file fails the connection before any byte is sent.
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA; a `cafile` is only read by
+a verifying handshake, so one under `prefer`/`require` without `verify` is refused at config
+time, and one that is not a readable file fails the connection before any byte is sent.
+Since 1.1.0 — before, every mode but `disable` verified by default.
 
 ## Prepared statements
 

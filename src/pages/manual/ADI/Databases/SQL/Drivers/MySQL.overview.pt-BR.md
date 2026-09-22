@@ -37,8 +37,10 @@ solicitadas pelo servidor:
   conexões plaintext.
 
 > **Segurança** — em plaintext o driver nunca solicita a chave RSA ao servidor: um MITM
-> ativo poderia substituir a chave pela dele e descriptografar a senha. Full
-> authentication sem TLS falha, a menos que você pine a chave pública do servidor
+> ativo poderia substituir a chave pela dele e descriptografar a senha. O mesmo atacante a
+> lê por um handshake TLS sem verificação (`prefer`/`require` sem `verify` — o padrão de
+> fábrica), então verifique o certificado em qualquer rede não confiável (veja TLS abaixo).
+> Full authentication sem TLS falha, a menos que você pine a chave pública do servidor
 > localmente:
 
 ```php
@@ -62,21 +64,35 @@ O plugin `ed25519` do MariaDB não é suportado — a operação falha com mensa
 ## TLS
 
 A config `secure.mode` controla o TLS exatamente como no driver PostgreSQL: `disable`,
-`prefer` (cai para plaintext quando o servidor não tem SSL), `require`, `verify-ca` e
-`verify-full`. Todo modo exceto `disable` verifica a cadeia do certificado e o nome do peer
-(`verify-ca` verifica só a cadeia — nunca o nome do peer — e `verify-full` sempre verifica os
-dois); com `cafile` ausente, vale o trust store padrão do OpenSSL (`openssl.cafile`,
-`SSL_CERT_FILE`/`SSL_CERT_DIR`), então fixe `cafile` para uma CA privada — um `cafile` que não
-é um arquivo legível falha a conexão antes de qualquer byte ser enviado. Para servidores com
-certificados self-signed, desabilite a verificação de peer explicitamente:
+`prefer` (o padrão — TLS quando o servidor oferece, plaintext quando não), `require` (TLS ou
+nada), `verify-ca` e `verify-full`. Só os dois modos `verify-*` verificam o certificado do
+servidor — `verify-ca` verifica a cadeia, `verify-full` a cadeia e o nome do peer — que é o
+que o `sslmode` da libpq e do próprio MySQL fazem: `prefer` e `require` criptografam sem
+conferir quem assinou o certificado, então os padrões de fábrica alcançam uma imagem `mysql:8`
+de estoque (TLS ligado, certificado self-signed gerado automaticamente) já na primeira
+conexão. `verify` inclui uma conexão `prefer`/`require` na verificação da cadeia (`name` então
+confere também o nome do host; `name` sozinho confere só o nome, contra qualquer certificado). TLS
+sem verificação derrota só a escuta passiva: um atacante ativo no caminho responde o handshake com
+o próprio certificado e lê tudo, credenciais inclusive — em qualquer rede em que você não confia,
+use `verify-ca`/`verify-full` (ou `verify => true`). Com `cafile` ausente, vale o trust store padrão do OpenSSL (`openssl.cafile`,
+`SSL_CERT_FILE`/`SSL_CERT_DIR`), então fixe `cafile` para uma CA privada — um `cafile` só é
+lido por um handshake que verifica, então um sob `prefer`/`require` sem `verify` é recusado na
+config, e um que não é um arquivo legível falha a conexão antes de qualquer byte ser enviado.
+Em um deployment real, verifique:
 
 ```php
 $Database = new SQL([
    'driver' => 'mysql',
    // ...
-   'secure' => ['mode' => 'require', 'verify' => false],
+   'secure' => ['mode' => 'verify-full', 'cafile' => '/etc/mysql/ca.pem'],
 ]);
 ```
+
+> [!NOTE]
+> Desde a 1.1.0, `prefer` e `require` não verificam mais o certificado por padrão — antes,
+> todo modo exceto `disable` verificava, e um servidor self-signed exigia `'verify' => false`.
+> Um bloco `require` que fixava um `cafile` agora precisa de `verify-ca`/`verify-full` (ou
+> `'verify' => true`) para continuar verificando.
 
 ## Prepared statements
 

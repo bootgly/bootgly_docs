@@ -46,7 +46,7 @@ return new Config(scope: 'database')
          ->Statements->bind(key: 'DB_STATEMENTS', default: 256, cast: Types::Integer)
          ->Secure
             ->Mode->bind(key: 'DB_SSLMODE', default: 'prefer')
-            ->Verify->bind(key: 'DB_SSLVERIFY', default: true, cast: Types::Boolean)
+            ->Verify->bind(key: 'DB_SSLVERIFY', default: null, cast: Types::Boolean)
             ->Peer->bind(key: 'DB_SSLPEER', default: null)
             ->CAFile->bind(key: 'DB_SSLCAFILE', default: '')
             ->up()

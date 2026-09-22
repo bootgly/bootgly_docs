@@ -39,6 +39,14 @@ Replica configs inherit the primary connection fields unless a replica overrides
 replica `host` to enable that endpoint. Optional fields include `driver`, `port`, `database`,
 `username`, `password`, `timeout`, `secure`, `pool` and `statements`.
 
+A replica that declares `secure.mode` re-derives `secure.verify` and `secure.name` from that
+mode — the same rule the primary follows: `prefer`/`require` unverified, `verify-ca`/`verify-full`
+verifying — so restate `verify` on the replica to keep a primary's explicit opt-in. A replica that
+declares neither `mode` nor `verify` inherits the primary's resolved flags. A `cafile` is inherited
+only by a replica that verifies; one the replica declares itself under an unverified mode is
+refused at config time. Since 1.1.0 — before, a replica inherited the primary's flags whatever its
+own mode said.
+
 `routing.sticky` is the best-effort read-after-write window in seconds. After a write, reads
 inside the same logical scope stay on primary until the window expires.
 

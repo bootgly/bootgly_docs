@@ -263,6 +263,10 @@ silent: an undeclared plaintext Redis — one not configured with `'secure' => [
 connection and fails every operation until it is declared, where earlier releases silently
 fell back to plaintext. This is a breaking change for deployments that relied on that fallback.
 
+Since 1.1.0, `prefer` and `require` no longer verify the server certificate by default —
+before, every mode but `disable` did. A `require` connection that pinned a `cafile` now needs
+`verify-ca`/`verify-full` (or `verify => true`) to keep verifying.
+
 > [!NOTE]
 > The async driver pipelines commands on each pooled connection. `AUTH`/`SELECT` are sent once
 > as its preamble; `SELECT` only fires for a numeric `database` index. Redis uses implicit TLS:
@@ -271,11 +275,14 @@ fell back to plaintext. This is a breaking change for deployments that relied on
 > before a successful handshake. `disable` is explicit plaintext — and the only mode that
 > reaches a plaintext Redis, which never answers a ClientHello (see the warning below).
 
-Every mode but `disable` verifies the server certificate chain and its name by default
-(`verify => false` and `name => false` opt out; `verify-ca` checks the chain only and
-`verify-full` always checks both). With `cafile` absent, OpenSSL's default trust store applies
-— the `openssl.cafile`/`openssl.capath` ini settings, or `SSL_CERT_FILE`/`SSL_CERT_DIR` when
-set — so pin `cafile` whenever the CA is private. A `cafile` that cannot be read fails the
+Only `verify-ca` and `verify-full` verify the server certificate — the chain, and with
+`verify-full` its name too. `prefer` and `require` encrypt without verification, as libpq's and
+MySQL's `sslmode` do (`verify => true`, and `name`, opt them in); unverified TLS defeats passive
+eavesdropping only, so use a `verify-*` mode on any network you do not trust. With `cafile` absent,
+OpenSSL's default trust store applies — the `openssl.cafile`/`openssl.capath` ini settings, or
+`SSL_CERT_FILE`/`SSL_CERT_DIR` when set — so pin `cafile` whenever the CA is private. A
+`cafile` is only read by a verifying handshake, so one under `prefer`/`require` without
+`verify` is refused at config time. A `cafile` that cannot be read fails the
 connection before the socket exists, and one that can be read but holds no valid certificate
 (or an `openssl.cafile` that does not) fails the handshake before any ClientHello is sent, with
 the OpenSSL diagnostic naming the file — whatever `error_reporting()` masks. Neither ever falls

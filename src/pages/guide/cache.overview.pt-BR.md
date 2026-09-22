@@ -270,6 +270,10 @@ config — agora custa o budget de handshake (1 s, ou metade do `timeout`) a cad
 falha toda operação até ser declarado, onde as releases anteriores caíam silenciosamente em
 plaintext. É uma mudança incompatível (breaking) para deployments que dependiam dessa queda.
 
+Desde a 1.1.0, `prefer` e `require` não verificam mais o certificado do servidor por padrão —
+antes, todo modo exceto `disable` verificava. Uma conexão `require` que fixava um `cafile`
+agora precisa de `verify-ca`/`verify-full` (ou `verify => true`) para continuar verificando.
+
 > [!NOTE]
 > O driver assíncrono faz pipeline de comandos em cada conexão do pool. `AUTH`/`SELECT` são
 > enviados uma vez como preâmbulo; `SELECT` só dispara para um índice `database` numérico.
@@ -279,11 +283,15 @@ plaintext. É uma mudança incompatível (breaking) para deployments que dependi
 > explícito — e o único modo que alcança um Redis plaintext, que nunca responde a um
 > ClientHello (veja o aviso abaixo).
 
-Todo modo exceto `disable` verifica a cadeia do certificado do servidor e o seu nome por
-padrão (`verify => false` e `name => false` desligam; `verify-ca` verifica só a cadeia e
-`verify-full` sempre verifica os dois). Com `cafile` ausente, vale o trust store padrão do
-OpenSSL — as diretivas ini `openssl.cafile`/`openssl.capath`, ou `SSL_CERT_FILE`/`SSL_CERT_DIR`
-quando definidas — então fixe `cafile` sempre que a CA for privada. Um `cafile` que não pode ser
+Só `verify-ca` e `verify-full` verificam o certificado do servidor — a cadeia, e com
+`verify-full` também o nome. `prefer` e `require` criptografam sem verificação, como o
+`sslmode` da libpq e do MySQL (`verify => true`, e `name`, ligam-na); TLS sem verificação derrota
+só a escuta passiva, então use um modo `verify-*` em qualquer rede em que você não confia. Com
+`cafile` ausente,
+vale o trust store padrão do OpenSSL — as diretivas ini `openssl.cafile`/`openssl.capath`, ou
+`SSL_CERT_FILE`/`SSL_CERT_DIR` quando definidas — então fixe `cafile` sempre que a CA for
+privada. Um `cafile` só é lido por um handshake que verifica, então um sob `prefer`/`require`
+sem `verify` é recusado na config. Um `cafile` que não pode ser
 lido falha a conexão antes de o socket existir, e um que pode ser lido mas não contém certificado
 válido (ou um `openssl.cafile` que não contém) falha o handshake antes de qualquer ClientHello
 ser enviado, com o diagnóstico do OpenSSL nomeando o arquivo — seja o que for que

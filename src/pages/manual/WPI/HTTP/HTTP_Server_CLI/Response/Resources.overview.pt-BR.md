@@ -282,12 +282,14 @@ return new Config(scope: 'kv')
 ```
 
 `KV::provide()` aplica allow-list a todas as chaves mostradas acima. Para um deployment Redis
-remoto, defina `KV_SSLMODE=verify-full`, mantenha `KV_SSLVERIFY=true` e forneça
-`KV_SSLPEER`/`KV_SSLCAFILE` ao usar uma CA interna. Modos strict (`require`, `verify-ca`,
-`verify-full`) concluem TLS antes que `AUTH`, `SELECT` ou um comando da aplicação seja criado
-no wire. `prefer` tenta TLS primeiro e só reconecta em plaintext quando o peer o recusa
+remoto, defina `KV_SSLMODE=verify-full` — ele verifica a cadeia do certificado e o nome do peer
+por si só; `KV_SSLVERIFY=true` é como `prefer`/`require` entram na verificação — e forneça
+`KV_SSLPEER`/`KV_SSLCAFILE` ao usar uma CA interna (um `KV_SSLCAFILE` sob um modo sem
+verificação é recusado na config). Modos strict (`require`, `verify-ca`, `verify-full`)
+concluem TLS antes que `AUTH`, `SELECT` ou um comando da aplicação seja criado no wire.
+`prefer` tenta TLS primeiro e só reconecta em plaintext quando o peer o recusa
 **explicitamente** (reseta ou fecha a conexão durante o handshake TLS, ou responde bytes que não
-são TLS) — nunca por falha de certificado, e nunca por silêncio: um peer que não respondeu
+são TLS) — nunca por falha de certificado com a verificação ligada, e nunca por silêncio: um peer que não respondeu
 dentro do budget de handshake (1 s, ou metade de `KV_TIMEOUT`) falha o comando nomeando
 `disable`, porque um Redis plaintext nunca responde a um ClientHello e não se distingue de um
 servidor TLS apenas atrasado. O budget é só do `prefer` — os modos strict esperam o ServerHello

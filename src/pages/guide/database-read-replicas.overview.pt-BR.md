@@ -40,6 +40,14 @@ Configs de réplica herdam os campos da conexão primária, a menos que a répli
 algum valor. Defina `host` para habilitar o endpoint. Campos opcionais incluem `driver`, `port`,
 `database`, `username`, `password`, `timeout`, `secure`, `pool` e `statements`.
 
+Uma réplica que declara `secure.mode` deriva de novo `secure.verify` e `secure.name` a partir desse
+modo — a mesma regra do primário: `prefer`/`require` sem verificação, `verify-ca`/`verify-full`
+verificando — então repita `verify` na réplica para manter um opt-in explícito do primário. Uma
+réplica que não declara nem `mode` nem `verify` herda os flags resolvidos do primário. Um `cafile`
+só é herdado por uma réplica que verifica; um que a própria réplica declara sob um modo sem
+verificação é recusado na config. Desde a 1.1.0 — antes, a réplica herdava os flags do primário
+fosse qual fosse o seu próprio modo.
+
 `routing.sticky` é a janela best-effort de read-after-write em segundos. Depois de uma escrita,
 leituras dentro do mesmo escopo lógico ficam no primário até a janela expirar.
 
