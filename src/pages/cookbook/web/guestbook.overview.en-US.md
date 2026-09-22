@@ -1,4 +1,4 @@
-# Build a guestbook Web App
+# Build a Web App on SQLite
 
 Build **Guestbook**, a small web app where visitors sign a book: a form and the list of entries on one page, stored in SQLite, protected by CSRF, wrapped in a layout with its own stylesheet. The Web platform's **App** shell brings the HTTP server, the middleware stack (secure headers, request ids, body parsing, CSRF), sessions, controllers, views and static files; you write the app.
 

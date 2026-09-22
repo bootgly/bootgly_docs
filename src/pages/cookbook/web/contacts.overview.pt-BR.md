@@ -1,4 +1,4 @@
-# Construa uma Web REST API de contatos
+# Construa uma Web REST API
 
 Construa o **Contacts**, uma API REST de agenda de contatos: JSON entra, JSON sai, cinco endpoints (list, show, create, update, delete), validação com mensagens de erro claras, erros `problem+json` da RFC 9457, cabeçalhos de paginação e um arquivo SQLite — semeado com três contatos para a API responder desde a primeira requisição. O shell **API** da plataforma Web traz o roteamento de recursos, a fronteira de erros problem+json e os transformadores de entidades; você escreve o recurso.
 

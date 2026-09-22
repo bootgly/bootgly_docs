@@ -1,4 +1,4 @@
-# Construa um Web App de livro de visitas
+# Construa um Web App em SQLite
 
 Construa o **Guestbook**, um pequeno app web em que visitantes assinam um livro: um formulário e a lista de entradas em uma página, guardados em SQLite, protegidos por CSRF, dentro de um layout com a própria folha de estilo. O shell **App** da plataforma Web traz o servidor HTTP, a pilha de middlewares (cabeçalhos seguros, ids de requisição, parsing do corpo, CSRF), sessões, controllers, views e arquivos estáticos; você escreve o app.
 

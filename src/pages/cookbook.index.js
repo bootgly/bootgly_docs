@@ -69,10 +69,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Build a system dashboard Console App'
+        title: 'Build a Console App'
       },
       'pt-BR': {
-        title: 'Construa um Console App de dashboard do sistema'
+        title: 'Construa um Console App'
       }
     }
   },
@@ -93,10 +93,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Build a brick-breaker Console Game'
+        title: 'Build a Console Game'
       },
       'pt-BR': {
-        title: 'Construa um Console Game de quebrar tijolos'
+        title: 'Construa um Console Game'
       }
     }
   },
@@ -132,10 +132,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Build a guestbook Web App'
+        title: 'Build a Web App on SQLite'
       },
       'pt-BR': {
-        title: 'Construa um Web App de livro de visitas'
+        title: 'Construa um Web App em SQLite'
       }
     }
   },
@@ -156,10 +156,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Build a contacts Web REST API'
+        title: 'Build a Web REST API'
       },
       'pt-BR': {
-        title: 'Construa uma Web REST API de contatos'
+        title: 'Construa uma Web REST API'
       }
     }
   },
@@ -180,10 +180,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Build a store Web App on MySQL'
+        title: 'Build a Web App on MySQL'
       },
       'pt-BR': {
-        title: 'Construa um Web App de loja em MySQL'
+        title: 'Construa um Web App em MySQL'
       }
     }
   },
@@ -204,10 +204,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Build a voting Web App on PostgreSQL'
+        title: 'Build a Web App on PostgreSQL'
       },
       'pt-BR': {
-        title: 'Construa um Web App de votação em PostgreSQL'
+        title: 'Construa um Web App em PostgreSQL'
       }
     }
   }

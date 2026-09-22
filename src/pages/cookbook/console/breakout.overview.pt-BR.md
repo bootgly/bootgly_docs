@@ -1,4 +1,4 @@
-# Construa um Console Game de quebrar tijolos
+# Construa um Console Game
 
 Construa o **Breakout**, o clássico dos fliperamas, no seu terminal: uma raquete que você desliza com as setas, uma bola que quica nas paredes e nos tijolos, cinco fileiras de tijolos coloridos, três bolas e uma pontuação — com um menu, o jogo em si e uma tela de fim de jogo como três cenas. O shell **Game** da plataforma Console traz o loop de passo fixo, o canvas renderizado por diff, as heurísticas de teclado e a barra de status; você escreve o jogo.
 

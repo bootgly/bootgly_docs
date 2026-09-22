@@ -1,4 +1,4 @@
-# Build a voting Web App on PostgreSQL
+# Build a Web App on PostgreSQL
 
 Build **Polls**, a small voting app on PostgreSQL: anyone asks a question with two or three options, everyone votes once per poll — and can change their mind, because the vote is an **upsert** on a unique index — and the results show live counts. The poll and its options are written in one transaction with `RETURNING`, the timestamps are `TIMESTAMPTZ`, the models load their relations through the ORM. PostgreSQL runs in a container you start with one command; Bootgly talks to it natively, no PHP extension involved. The Web platform's **App** shell brings the HTTP server, the middleware stack (secure headers, request ids, body parsing, CSRF), sessions, controllers, views and static files; you write the app.
 

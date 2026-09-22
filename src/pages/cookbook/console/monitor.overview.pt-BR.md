@@ -1,4 +1,4 @@
-# Construa um Console App de dashboard do sistema
+# Construa um Console App
 
 Construa o **Monitor**, um dashboard de sistema ao vivo para o seu terminal: medidores de CPU e memória com um sparkline do histórico de CPU, os processos que mais usam memória e o uso de cada disco montado — três telas trocadas com uma tecla, mais uma barra de status, uma sobreposição de ajuda e uma paleta de comandos que a plataforma Console te dá de graça.
 

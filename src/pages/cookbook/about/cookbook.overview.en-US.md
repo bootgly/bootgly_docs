@@ -17,13 +17,13 @@ Linux (or WSL2) with a terminal. The installer checks for **git** and **PHP 8.4+
 
 <d-block-cards title="Console platform — terminal apps and games">
   <d-block-card
-    title="Build a system dashboard Console App"
+    title="Build a Console App"
     description="Monitor — a live system dashboard: screens, keymaps, status bar and tables over /proc."
     to="/cookbook/console/monitor/overview/"
     icon="monitor_heart"
   />
   <d-block-card
-    title="Build a brick-breaker Console Game"
+    title="Build a Console Game"
     description="Breakout — a terminal game: fixed-timestep loop, diff-rendered canvas, held keys, scenes and collisions."
     to="/cookbook/console/breakout/overview/"
     icon="sports_esports"
@@ -32,25 +32,25 @@ Linux (or WSL2) with a terminal. The installer checks for **git** and **PHP 8.4+
 
 <d-block-cards title="Web platform — sites and APIs">
   <d-block-card
-    title="Build a guestbook Web App"
+    title="Build a Web App on SQLite"
     description="Guestbook — an MVC web app: a form, a list, SQLite migrations, CSRF, a layout and static assets."
     to="/cookbook/web/guestbook/overview/"
     icon="edit_note"
   />
   <d-block-card
-    title="Build a contacts Web REST API"
+    title="Build a Web REST API"
     description="Contacts — a REST API: JSON CRUD, validation, problem+json errors, pagination and SQLite."
     to="/cookbook/web/contacts/overview/"
     icon="contacts"
   />
   <d-block-card
-    title="Build a store Web App on MySQL"
+    title="Build a Web App on MySQL"
     description="Shop — a store on MySQL: catalogue with pagination, a session cart, a checkout in one transaction with row locks, ORM relations."
     to="/cookbook/web/shop/overview/"
     icon="storefront"
   />
   <d-block-card
-    title="Build a voting Web App on PostgreSQL"
+    title="Build a Web App on PostgreSQL"
     description="Polls — a voting app on PostgreSQL: one vote per visitor by upsert, RETURNING in a transaction, TIMESTAMPTZ, ORM relations."
     to="/cookbook/web/polls/overview/"
     icon="how_to_vote"

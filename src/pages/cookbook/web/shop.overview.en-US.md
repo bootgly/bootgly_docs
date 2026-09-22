@@ -1,4 +1,4 @@
-# Build a store Web App on MySQL
+# Build a Web App on MySQL
 
 Build **Shop**, a small store on MySQL: a product catalogue with pagination, a cart kept in the session, a checkout that writes the order and its items in **one transaction** — with row locks, so two shoppers cannot both buy the last unit — and an order page that loads its relations through the ORM. MySQL runs in a container you start with one command; Bootgly talks to it natively, no PHP extension involved. The Web platform's **App** shell brings the HTTP server, the middleware stack (secure headers, request ids, body parsing, CSRF), sessions, controllers, views and static files; you write the store.
 

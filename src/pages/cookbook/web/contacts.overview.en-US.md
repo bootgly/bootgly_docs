@@ -1,4 +1,4 @@
-# Build a contacts Web REST API
+# Build a Web REST API
 
 Build **Contacts**, a REST API for an address book: JSON in, JSON out, five endpoints (list, show, create, update, delete), validation with clear error messages, RFC 9457 `problem+json` errors, pagination headers and a SQLite file — seeded with three contacts so the API answers from the first request. The Web platform's **API** shell brings resource routing, the problem+json error boundary and entity transformers; you write the resource.
 

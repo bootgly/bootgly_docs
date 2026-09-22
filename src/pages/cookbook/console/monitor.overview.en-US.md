@@ -1,4 +1,4 @@
-# Build a system dashboard Console App
+# Build a Console App
 
 Build **Monitor**, a live system dashboard for your terminal: CPU and memory gauges with a CPU history sparkline, the top processes by memory and the usage of every mounted disk — three screens switched with one key, plus a status bar, a help overlay and a command palette that the Console platform gives you for free.
 

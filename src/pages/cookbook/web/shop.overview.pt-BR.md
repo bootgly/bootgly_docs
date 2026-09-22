@@ -1,4 +1,4 @@
-# Construa um Web App de loja em MySQL
+# Construa um Web App em MySQL
 
 Construa o **Shop**, uma pequena loja em MySQL: um catálogo de produtos com paginação, um carrinho guardado na sessão, um checkout que grava o pedido e seus itens em **uma transação** — com bloqueio de linhas, para que dois compradores não levem a última unidade — e uma página de pedido que carrega as relações pelo ORM. O MySQL roda em um container que você sobe com um comando; o Bootgly fala com ele nativamente, sem extensão PHP envolvida. O shell **App** da plataforma Web traz o servidor HTTP, a pilha de middlewares (cabeçalhos seguros, ids de requisição, parsing do corpo, CSRF), sessões, controllers, views e arquivos estáticos; você escreve a loja.
 

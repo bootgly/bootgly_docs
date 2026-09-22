@@ -1,4 +1,4 @@
-# Build a brick-breaker Console Game
+# Build a Console Game
 
 Build **Breakout**, the classic arcade game, in your terminal: a paddle you slide with the arrow keys, a ball that bounces off walls and bricks, five rows of colored bricks, three balls and a score — with a menu, the game itself and a game-over screen as three scenes. The Console platform's **Game** shell brings the fixed-timestep loop, the diff-rendered canvas, the keyboard heuristics and the status bar; you write the game.
 
