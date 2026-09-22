@@ -117,6 +117,13 @@ compile (null|Dialect $Dialect = null): Query
 Compila o builder para SQL e parâmetros ordenados. Passar um dialeto reexecuta as ações
 fluentes por esse dialeto e memoriza o resultado pela classe do dialeto.
 
+```php
+public private(set) array $assignments
+```
+Os valores que cada `set()` atribuiu, indexados pela coluna compilada — o identificador entre
+aspas do dialeto, ou o SQL raw de uma `Expression` — com um valor por linha. Somente leitura
+fora do builder; o Runner de seeders o lê para mover sequências de identidade no PostgreSQL.
+
 ### Objetos de apoio
 
 ```php

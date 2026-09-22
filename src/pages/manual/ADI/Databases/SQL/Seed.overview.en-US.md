@@ -49,6 +49,11 @@ Rules of thumb:
   no history table.
 - `Runner::preview()` and `seed run --dry-run` skip execution of returned SQL only; seeders
   that call `$Database->query(...)` directly inside the closure still touch the database.
+- On PostgreSQL the runner follows each `Builder` INSERT with the dialect's identity resync
+  (`Dialect::resync()`), so the integer ids it writes do not leave the sequence behind;
+  `preview()` lists it. Raw SQL strings, compiled `Query` objects and `Expression` tables or
+  columns are not tracked. The seeding role needs `USAGE`/`SELECT` and `UPDATE` on those
+  sequences.
 
 ## Reference
 
@@ -72,7 +77,7 @@ Supporting classes:
 - `Seeder` — returned by seeder files; owns the `Run` closure and resolved name.
 - `Seeders` — discovers, loads and creates seeder files.
 - `Runner` — previews, locks, loads and executes seeders; transactional per seeder when
-  supported.
+  supported; follows each `Builder` INSERT with the dialect's identity resync.
 
 ### Errors
 

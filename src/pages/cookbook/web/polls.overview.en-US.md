@@ -2,7 +2,7 @@
 
 Build **Polls**, a small voting app on PostgreSQL: anyone asks a question with two or three options, everyone votes once per poll — and can change their mind, because the vote is an **upsert** on a unique index — and the results show live counts. The poll and its options are written in one transaction with `RETURNING`, the timestamps are `TIMESTAMPTZ`, the models load their relations through the ORM. PostgreSQL runs in a container you start with one command; Bootgly talks to it natively, no PHP extension involved. The Web platform's **App** shell brings the HTTP server, the middleware stack (secure headers, request ids, body parsing, CSRF), sessions, controllers, views and static files; you write the app.
 
-You will write 20 short files (about 45 minutes) and learn how a `Web\App` connects to PostgreSQL, how a migration declares foreign keys and a composite unique index, how a seeder keeps identity sequences honest, how ORM models and relations work, how `transact()` and `RETURNING` fit together, how one `INSERT … ON CONFLICT` replaces a read-then-write, and how a project is tested with `bootgly test`.
+You will write 20 short files (about 45 minutes) and learn how a `Web\App` connects to PostgreSQL, how a migration declares foreign keys and a composite unique index, how a rerunnable seeder writes fixed ids, how ORM models and relations work, how `transact()` and `RETURNING` fit together, how one `INSERT … ON CONFLICT` replaces a read-then-write, and how a project is tested with `bootgly test`.
 
 ```text
 $ curl -s -b cookies.txt -c cookies.txt -i -X POST http://localhost:8082/polls/3/vote \
@@ -244,7 +244,7 @@ return new Migration(
 
   <d-block-step title="Write the seeder">
 
-Seeders live in `database/seeders/` and run on **every** start — the runner keeps no ledger of applied seeders (its lock file only stops two runs from overlapping), which is why the two multi-row `INSERT`s use `upsert()` on the id: the second start updates the rows instead of failing on them. The two raw statements at the end matter on PostgreSQL: an identity column does not advance its sequence when you insert explicit ids, so the next poll created through the form would collide with id 1 — `setval()` moves the sequences past the seeds:
+Seeders live in `database/seeders/` and run on **every** start — the runner keeps no ledger of applied seeders (its lock file only stops two runs from overlapping), which is why the two multi-row `INSERT`s use `upsert()` on the id: the second start updates the rows instead of failing on them. The ids are fixed, and a PostgreSQL identity column does not advance its sequence past explicit ids — the seed runner moves each sequence past the seeds right after its `INSERT`, so the first poll created through the form gets id 3:
 
 **File** `projects/Polls/database/seeders/polls.php`
 
@@ -274,10 +274,6 @@ return new Seeder(
             ->set(new Identifier('label'), 'VS Code', 'PhpStorm', 'Vim or Neovim', 'Tabs', 'Spaces', 'Both, it depends')
             ->set(new Identifier('position'), 1, 2, 3, 1, 2, 3)
             ->upsert(new Identifier('id')),
-         // ! Explicit ids do not advance PostgreSQL's identity sequences — move them past the
-         //   seeds, or the first poll created through the form would collide with id 1
-         "SELECT setval(pg_get_serial_sequence('polls', 'id'), (SELECT MAX(id) FROM polls))",
-         "SELECT setval(pg_get_serial_sequence('options', 'id'), (SELECT MAX(id) FROM options))"
       ];
    }
 );
@@ -1120,7 +1116,7 @@ cd projects/Polls && php ../../bootgly test
 - Close a poll: a `closed_at` `Timestamptz` column, an `update()` through the Builder, and `vote` refusing once it is set.
 - Show who leads in the list: one `LEFT JOIN … GROUP BY` per page is cheap — or a `#[Relation(Relations::HasMany, Vote::class, 'id', 'poll', lazy: true)]` on `Poll`, loaded on access.
 - Let the results stream: the [Guestbook](/cookbook/web/guestbook/overview/) shows the plain form flow; the Web platform's `SSE` response resource can push each new count to open pages.
-- Switch the database: `DB_CONNECTION=mysql` with a `Connections->MySQL` block moves the migrations and the ORM over untouched — the dialect-specific spots are `output(new Identifier('id'))` in `create` (MySQL has no `RETURNING`; read `Result->inserted` instead) and the two `setval()` statements in the seeder, which MySQL does not need — the results query in `show` comes from the Builder, which writes each dialect's placeholders itself. The [Shop](/cookbook/web/shop/overview/) page shows the MySQL side (mind its note on TLS).
+- Switch the database: `DB_CONNECTION=mysql` with a `Connections->MySQL` block moves the migrations and the ORM over untouched — the dialect-specific spot is `output(new Identifier('id'))` in `create` (MySQL has no `RETURNING`; read `Result->inserted` instead) — the seeder runs unchanged, and the results query in `show` comes from the Builder, which writes each dialect's placeholders itself. The [Shop](/cookbook/web/shop/overview/) page shows the MySQL side (mind its note on TLS).
 
 ## Reference
 

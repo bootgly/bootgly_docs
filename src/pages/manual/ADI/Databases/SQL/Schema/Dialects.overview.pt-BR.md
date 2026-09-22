@@ -62,6 +62,24 @@ new SQL(['driver' => 'sqlite']);
 Prefira esta tabela a suposições; se você mira várias engines, fique nas linhas que são ✅
 em todas.
 
+## Chaves explícitas e sequências de identidade
+
+| Engine | Depois de um INSERT com ids explícitos | `resync()` |
+|--------|----------------------------------------|------------|
+| PostgreSQL | a sequência de identidade (ou serial) fica para trás | `setval()`, só quando a sequência está atrás |
+| MySQL/MariaDB | o `AUTO_INCREMENT` passa do maior id | `null` |
+| SQLite | o `AUTOINCREMENT` passa do maior id | `null` |
+
+No PostgreSQL, o papel que roda a instrução precisa de `USAGE` (ou `SELECT`) e `UPDATE` na
+sequência — o dono da tabela tem os dois. Sem esses privilégios, ela falha com
+`permission denied for sequence …`.
+
+A instrução nunca abaixa uma sequência que já está à frente quando ela roda. Seus limites: uma
+chave acima do `MAXVALUE` próprio de uma identidade falha com `setval: value … is out of
+bounds`; uma chave no máximo do tipo da coluna não deixa ids para as linhas geradas; e um
+insert na mesma tabela enquanto ela roda pode entrar entre a leitura e o movimento — rode os
+seeders enquanto nada mais escreve.
+
 ## Referência
 
 Cheque o suporte em código com `Capabilities` (namespace
@@ -88,6 +106,18 @@ $my->rename('users', 'members');             // RENAME TABLE `users` TO `members
 $pg->unindex('audit.users', 'users_email_index');
 // DROP INDEX IF EXISTS "audit"."users_email_index"  (qualificado por schema)
 ```
+
+```php
+resync (string $table, array $assignments): null|Query
+```
+
+Compila a instrução que move as sequências de identidade para depois das chaves inteiras
+explícitas que um INSERT gravou. Recebe o que o Builder compilou para esse INSERT — a tabela
+entre aspas e `Builder::$assignments` — e o
+**[Runner](/manual/ADI/Databases/SQL/Seed/overview/)** de seeders a chama depois de cada INSERT
+de `Builder` que um seeder retorna. O PostgreSQL retorna uma instrução `setval()` que só avança:
+uma sequência que já passou das chaves quando ela roda não é tocada. MySQL e SQLite retornam `null`, já que
+seus contadores de auto-incremento passam sozinhos dos valores explícitos.
 
 O PostgreSQL mantém `Types::Json` e `Types::JsonB` distintos (`JSON` vs `JSONB`); outras
 engines mapeiam ambos para o seu tipo JSON. O

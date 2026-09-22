@@ -118,6 +118,13 @@ compile (null|Dialect $Dialect = null): Query
 Compile the builder into SQL and ordered parameters. Passing a dialect replays the fluent
 actions through that dialect and memoizes the result by dialect class.
 
+```php
+public private(set) array $assignments
+```
+The values each `set()` assigned, keyed by the compiled column — the dialect-quoted
+identifier, or the raw SQL of an `Expression` — with one value per row. Read-only outside the
+builder; the seed Runner reads it to move identity sequences on PostgreSQL.
+
 ### Supporting objects
 
 ```php

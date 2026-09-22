@@ -61,6 +61,23 @@ new SQL(['driver' => 'sqlite']);
 Prefer this table over assumptions; if you target multiple engines, stick to the rows that
 are ✅ everywhere.
 
+## Explicit keys and identity sequences
+
+| Engine | After an INSERT with explicit ids | `resync()` |
+|--------|-----------------------------------|------------|
+| PostgreSQL | the identity (or serial) sequence stays behind | `setval()`, only when the sequence is behind |
+| MySQL/MariaDB | `AUTO_INCREMENT` moves past the highest id | `null` |
+| SQLite | `AUTOINCREMENT` moves past the highest id | `null` |
+
+On PostgreSQL the role that runs the statement needs `USAGE` (or `SELECT`) and `UPDATE` on the
+sequence — the owner of the table has them. Without those privileges it fails with
+`permission denied for sequence …`.
+
+The statement never lowers a sequence that is already ahead when it runs. Its limits: a key
+above an identity's own `MAXVALUE` fails with `setval: value … is out of bounds`; a key at the
+column type's maximum leaves no ids for generated rows; and an insert into the same table while
+it runs can slip between its read and its move — seed while nothing else writes.
+
 ## Reference
 
 Check support in code with `Capabilities` (namespace
@@ -87,6 +104,17 @@ $my->rename('users', 'members');             // RENAME TABLE `users` TO `members
 $pg->unindex('audit.users', 'users_email_index');
 // DROP INDEX IF EXISTS "audit"."users_email_index"  (schema-qualified)
 ```
+
+```php
+resync (string $table, array $assignments): null|Query
+```
+
+Compile the statement that moves identity sequences past the explicit integer keys one INSERT
+wrote. It takes what the Builder compiled for that INSERT — the quoted table and
+`Builder::$assignments` — and the seed **[Runner](/manual/ADI/Databases/SQL/Seed/overview/)**
+calls it after every `Builder` INSERT a seeder returns. PostgreSQL returns a forward-only
+`setval()` statement: a sequence already past the keys when it runs is left untouched. MySQL and SQLite
+return `null`, since their auto-increment counters already move past explicit values.
 
 PostgreSQL keeps `Types::Json` and `Types::JsonB` distinct (`JSON` vs `JSONB`); other
 engines map both to their JSON type. The migration

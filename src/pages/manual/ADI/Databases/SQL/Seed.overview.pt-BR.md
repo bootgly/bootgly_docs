@@ -50,6 +50,11 @@ Regras práticas:
   têm tabela de histórico.
 - `Runner::preview()` e `seed run --dry-run` pulam apenas a execução do SQL retornado; seeders
   que chamam `$Database->query(...)` diretamente dentro da closure ainda tocam o banco.
+- No PostgreSQL o runner segue cada INSERT de `Builder` com o resync de identidade do dialeto
+  (`Dialect::resync()`), então os ids inteiros que ele grava não deixam a sequência para trás;
+  `preview()` o lista. Strings de SQL raw, objetos `Query` compilados e tabelas ou colunas
+  `Expression` não são rastreados. O papel que roda os seeders precisa de `USAGE`/`SELECT` e
+  `UPDATE` nessas sequências.
 
 ## Referência
 
@@ -73,7 +78,7 @@ Classes de apoio:
 - `Seeder` — retornado pelos arquivos; guarda a closure `Run` e o nome resolvido.
 - `Seeders` — descobre, carrega e cria arquivos de seeder.
 - `Runner` — pré-visualiza, faz lock, carrega e executa seeders; transação por seeder
-  quando suportado.
+  quando suportado; segue cada INSERT de `Builder` com o resync de identidade do dialeto.
 
 ### Erros
 

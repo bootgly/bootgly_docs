@@ -2,7 +2,7 @@
 
 Construa o **Polls**, um pequeno app de votação em PostgreSQL: qualquer um faz uma pergunta com duas ou três opções, cada um vota uma vez por enquete — e pode mudar de ideia, porque o voto é um **upsert** sobre um índice único — e os resultados mostram as contagens ao vivo. A enquete e suas opções são gravadas em uma transação com `RETURNING`, os timestamps são `TIMESTAMPTZ`, os models carregam as relações pelo ORM. O PostgreSQL roda em um container que você sobe com um comando; o Bootgly fala com ele nativamente, sem extensão PHP envolvida. O shell **App** da plataforma Web traz o servidor HTTP, a pilha de middlewares (cabeçalhos seguros, ids de requisição, parsing do corpo, CSRF), sessões, controllers, views e arquivos estáticos; você escreve o app.
 
-Você vai escrever 20 arquivos curtos (uns 45 minutos) e aprender como um `Web\App` se conecta ao PostgreSQL, como uma migration declara chaves estrangeiras e um índice único composto, como um seeder mantém as sequências de identidade honestas, como models e relações do ORM funcionam, como `transact()` e `RETURNING` se encaixam, como um `INSERT … ON CONFLICT` substitui um ler-e-depois-escrever e como um projeto é testado com `bootgly test`.
+Você vai escrever 20 arquivos curtos (uns 45 minutos) e aprender como um `Web\App` se conecta ao PostgreSQL, como uma migration declara chaves estrangeiras e um índice único composto, como um seeder reexecutável grava ids fixos, como models e relações do ORM funcionam, como `transact()` e `RETURNING` se encaixam, como um `INSERT … ON CONFLICT` substitui um ler-e-depois-escrever e como um projeto é testado com `bootgly test`.
 
 ```text
 $ curl -s -b cookies.txt -c cookies.txt -i -X POST http://localhost:8082/polls/3/vote \
@@ -244,7 +244,7 @@ return new Migration(
 
   <d-block-step title="Escreva o seeder">
 
-Os seeders vivem em `database/seeders/` e rodam a **cada** subida — o runner não guarda um registro de seeders aplicados (o arquivo de trava só impede duas execuções simultâneas), e é por isso que os dois `INSERT`s de várias linhas usam `upsert()` no id: a segunda subida atualiza as linhas em vez de falhar nelas. As duas instruções raw no final importam no PostgreSQL: uma coluna de identidade não avança a sequência quando você insere ids explícitos, então a próxima enquete criada pelo formulário colidiria com o id 1 — `setval()` move as sequências para depois das sementes:
+Os seeders vivem em `database/seeders/` e rodam a **cada** subida — o runner não guarda um registro de seeders aplicados (o arquivo de trava só impede duas execuções simultâneas), e é por isso que os dois `INSERT`s de várias linhas usam `upsert()` no id: a segunda subida atualiza as linhas em vez de falhar nelas. Os ids são fixos, e uma coluna de identidade do PostgreSQL não avança a sequência para depois de ids explícitos — o runner de seeders move cada sequência para depois das sementes logo após o seu `INSERT`, então a primeira enquete criada pelo formulário recebe o id 3:
 
 **Arquivo** `projects/Polls/database/seeders/polls.php`
 
@@ -274,10 +274,6 @@ return new Seeder(
             ->set(new Identifier('label'), 'VS Code', 'PhpStorm', 'Vim or Neovim', 'Tabs', 'Spaces', 'Both, it depends')
             ->set(new Identifier('position'), 1, 2, 3, 1, 2, 3)
             ->upsert(new Identifier('id')),
-         // ! Explicit ids do not advance PostgreSQL's identity sequences — move them past the
-         //   seeds, or the first poll created through the form would collide with id 1
-         "SELECT setval(pg_get_serial_sequence('polls', 'id'), (SELECT MAX(id) FROM polls))",
-         "SELECT setval(pg_get_serial_sequence('options', 'id'), (SELECT MAX(id) FROM options))"
       ];
    }
 );
@@ -1120,7 +1116,7 @@ cd projects/Polls && php ../../bootgly test
 - Encerre uma enquete: uma coluna `closed_at` `Timestamptz`, um `update()` pelo Builder, e `vote` recusando assim que ela estiver definida.
 - Mostre quem lidera na lista: um `LEFT JOIN … GROUP BY` por página é barato — ou um `#[Relation(Relations::HasMany, Vote::class, 'id', 'poll', lazy: true)]` em `Poll`, carregado no acesso.
 - Deixe os resultados fluírem: o [Guestbook](/cookbook/web/guestbook/overview/) mostra o fluxo simples de formulário; o recurso de resposta `SSE` da plataforma Web pode empurrar cada nova contagem para as páginas abertas.
-- Troque o banco: `DB_CONNECTION=mysql` com um bloco `Connections->MySQL` leva as migrations e o ORM intactos — os pontos específicos de dialeto são o `output(new Identifier('id'))` em `create` (o MySQL não tem `RETURNING`; leia `Result->inserted`) e as duas instruções `setval()` do seeder, de que o MySQL não precisa — a consulta de resultados em `show` vem do Builder, que escreve os placeholders de cada dialeto sozinho. A página do [Shop](/cookbook/web/shop/overview/) mostra o lado MySQL (atenção à nota sobre TLS).
+- Troque o banco: `DB_CONNECTION=mysql` com um bloco `Connections->MySQL` leva as migrations e o ORM intactos — o ponto específico de dialeto é o `output(new Identifier('id'))` em `create` (o MySQL não tem `RETURNING`; leia `Result->inserted`) — o seeder roda sem mudança, e a consulta de resultados em `show` vem do Builder, que escreve os placeholders de cada dialeto sozinho. A página do [Shop](/cookbook/web/shop/overview/) mostra o lado MySQL (atenção à nota sobre TLS).
 
 ## Referência
 

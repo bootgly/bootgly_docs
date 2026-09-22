@@ -79,6 +79,52 @@ executa o arquivo de novo. Use `seed run --dry-run` para inspecionar as instruç
 e torne um seeder idempotente quando necessário usando `upsert`, deletes com filtro ou
 limpeza da tabela antes de inserir dados de demo.
 
+### Ids fixos em qualquer banco
+
+O seeder reexecutável de costume grava ids fixos e faz `upsert` neles, então a segunda
+execução atualiza as linhas em vez de falhar nelas:
+
+```php
+use Bootgly\ADI\Databases\SQL;
+use Bootgly\ADI\Databases\SQL\Builder\Identifier;
+use Bootgly\ADI\Databases\SQL\Seed;
+use Bootgly\ADI\Databases\SQL\Seed\Seeder;
+
+return new Seeder(
+   Run: fn (SQL $Database, Seed $Seed) => $Database
+      ->table(new Identifier('roles'))
+      ->insert()
+      ->set(new Identifier('id'), 1, 2)
+      ->set(new Identifier('name'), 'admin', 'editor')
+      ->upsert(new Identifier('id'))
+);
+```
+
+MySQL e SQLite movem seus contadores de auto-incremento para depois dos ids explícitos
+sozinhos. Uma coluna de identidade do PostgreSQL não: a sequência fica onde estava, então o
+primeiro insert gerado da aplicação reutilizaria o id 1. O runner fecha essa lacuna. No
+PostgreSQL, todo INSERT que um seeder retorna pelo Query Builder é seguido de uma instrução
+que move a sequência da coluna para depois da maior chave explícita — só quando a sequência
+está atrás dela, então uma sequência que já está à frente quando a instrução roda não é
+tocada. `seed run --dry-run` lista essa instrução logo depois do seu INSERT.
+
+Só são rastreados os INSERTs que um seeder retorna como builders, em uma tabela nomeada — com
+chaves dadas como inteiros ou strings inteiras canônicas (`'7'`, não `'007'` nem `7.0`).
+Strings de SQL raw, objetos `Query` compilados, tabelas ou colunas `Expression` e instruções
+emitidas com `$Database->query(...)` dentro da closure não são; mova a sequência você mesmo
+depois deles.
+
+Rode os seeders enquanto nada mais insere nas tabelas semeadas: a instrução lê a sequência e
+a move em dois passos, e um insert concorrente pode entrar no meio. Mantenha linhas sentinela
+no id 0 ou abaixo — uma chave semeada no máximo do tipo da coluna não deixa ids para as
+linhas geradas.
+
+> [!WARNING]
+> No PostgreSQL, o papel que roda os seeders precisa de `USAGE` (ou `SELECT`) e `UPDATE` nas
+> sequências de identidade — o papel que rodou as migrations é dono delas. Sem esses
+> privilégios, `seed run` falha com `permission denied for sequence …`, mesmo quando nada
+> precisa mudar, e as escritas do seeder são desfeitas.
+
 ## Referência
 
 - **[Migrations de banco](/guide/database-migrations/overview/)** — crie as tabelas primeiro.
