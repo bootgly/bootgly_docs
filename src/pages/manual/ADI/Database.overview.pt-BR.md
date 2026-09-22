@@ -38,6 +38,22 @@ nenhuma, como uma recusa do framework ou uma perda de transporte. Cada falha é 
 vez através de `SQL\Events::Failed` — veja
 **[Events](/guide/events/overview/)**.
 
+Uma conexão que não pode ser aberta falha a operação com um `error` que nomeia o endpoint e a
+causa — `MySQL connection failed: 127.0.0.1:3306 refused the connection (ECONNREFUSED).`
+(os drivers PostgreSQL e Redis usam o mesmo texto). A causa é lida do socket quando a
+`ext-sockets` está carregada — recusada, inalcançável, resetada ou expirada; sem ela a mensagem
+lista essas quatro. Uma discagem apenas lenta — o primeiro SYN descartado e retransmitido — é
+aguardada, nunca relatada como recusada: o `timeout` limita a espera e, sem `timeout`, o limite
+do próprio kernel a encerra como `timed out (ETIMEDOUT)`.
+
+Um servidor MySQL ou PostgreSQL que aceita a conexão TCP e desliga antes de enviar um único byte
+também é nomeado: `MySQL connection failed: 127.0.0.1:3306 closed the connection before sending
+its greeting; the server may still be starting.` (o PostgreSQL diz `during SSL negotiation` ou
+`during startup`). É o que uma porta publicada do Docker faz enquanto o banco dentro do container
+ainda está inicializando: espere o servidor ficar pronto e inicie de novo. Um servidor que desliga
+depois de ter respondido mantém a mensagem simples de transporte (`socket closed`,
+`socket read failed`).
+
 Em rotas HTTP, prefira
 **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** e
 `$Response->Database` em vez de chamar `Pool->wait()` ou `advance()` manualmente.

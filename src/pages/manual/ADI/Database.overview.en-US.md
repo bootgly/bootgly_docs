@@ -38,6 +38,22 @@ SQLSTATE, MySQL errno or SQLite extended result code — paired with `error` and
 transport loss. Each failure is announced once through `SQL\Events::Failed` — see
 **[Events](/guide/events/overview/)**.
 
+A connection that cannot be opened fails the operation with an `error` naming the endpoint and
+the cause — `MySQL connection failed: 127.0.0.1:3306 refused the connection (ECONNREFUSED).`
+(the PostgreSQL and Redis drivers use the same wording). The cause is read from the socket when
+`ext-sockets` is loaded — refused, unreachable, reset or timed out; without it the message lists
+those four. A dial that is only slow — its first SYN dropped and retransmitted — is waited on,
+never reported as refused: `timeout` bounds the wait, and with no `timeout` the kernel's own
+limit ends it as `timed out (ETIMEDOUT)`.
+
+A MySQL or PostgreSQL server that accepts the TCP connection and hangs up before sending a single
+byte is named too: `MySQL connection failed: 127.0.0.1:3306 closed the connection before sending
+its greeting; the server may still be starting.` (PostgreSQL says `during SSL negotiation` or
+`during startup`). That is what a published Docker port does while the database inside the
+container is still initializing: wait until the server reports ready, then start again. A server
+that hangs up after it has answered keeps the plain transport message (`socket closed`,
+`socket read failed`).
+
 In HTTP routes, prefer WPI
 **[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** and
 `$Response->Database` instead of calling `Pool->wait()` or `advance()` manually.
