@@ -37,7 +37,7 @@ $Response->status; // 'OK'
 | `0` | `'Truncated Response'` | The connection closed before the declared body ended. |
 | `0` | `'Response Too Large'` | The response passed `maxResponseBytes` (16 MiB by default). |
 | `0` | `'Response Header Fields Too Large'` | The response head passed its 64 KiB cap. |
-| `0` | `'Invalid Response'` | The status line, a header field, `Content-Length` or `Transfer-Encoding` is not valid HTTP/1.x framing. |
+| `0` | `'Invalid Response'` | The status line, a header field, `Content-Length` or `Transfer-Encoding` is not valid HTTP/1.x framing, or more than 64 interim (1xx) responses came before the final one (HTTP/1.1). |
 | `0` | `'Invalid Chunked Encoding'` | The chunked framing is not valid. |
 
 A status line without a reason phrase (`HTTP/1.1 200`) is valid: `code` is `200` and `status` is `''`. A code from 600 to 999 is handled like a server error: the response is framed normally and `code` keeps the value the upstream sent.
@@ -155,6 +155,8 @@ carrying both `Transfer-Encoding` and `Content-Length` is read by `Transfer-Enco
 connection closed afterwards (`closeConnection` is `true`).
 
 All decoding is transparent — `$Response->body` always contains the final, decoded body regardless of transfer encoding.
+
+Every body is collected read by read and its head is parsed once, so a large `Content-Length` or close-delimited body costs about what a chunked one does. A `Content-Length` or close-delimited body that never completes — truncated, timed out — still reports the bytes that arrived in `Body->raw` and `Body->downloaded`, with `Body->waiting` left `true`.
 
 ## Reset
 

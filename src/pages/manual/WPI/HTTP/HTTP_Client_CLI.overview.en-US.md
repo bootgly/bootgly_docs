@@ -9,7 +9,7 @@ The HTTP Client CLI is the native HTTP client of the Bootgly PHP Framework. It i
 | **HTTP Methods** | GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS |
 | **RFC 9112 Decoding** | Chunked transfer-encoding, content-length, close-delimited |
 | **100-Continue** | Two-phase request: headers-first, body on server acceptance |
-| **1xx Informational** | Full handling of informational responses |
+| **1xx Informational** | Full handling of informational responses (at most 64 before the final one on HTTP/1.1) |
 | **Body Encoding** | Raw, JSON, form-urlencoded |
 | **Headers** | Multi-value response headers, OWS trimming per RFC 7230 |
 | **Keep-Alive** | Automatic connection reuse (`Connection: keep-alive`) |
@@ -364,9 +364,11 @@ if ($Response->code === 0) {
 }
 ```
 
-`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, `'Response Header Fields Too Large'` when the response head (status line + header fields) exceeds 64 KiB, `'Invalid Response'` when the head is not valid HTTP/1.x framing, or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real or longer than 8 KiB, a trailer section past 64 KiB, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
+`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, `'Response Header Fields Too Large'` when the response head (status line + header fields) exceeds 64 KiB, `'Invalid Response'` when the head is not valid HTTP/1.x framing or more than 64 interim responses came before the final one (HTTP/1.1), or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real or longer than 8 KiB, a trailer section past 64 KiB, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
 
 The client trusts no upstream's framing. A response is `'Invalid Response'` when its status line is not `HTTP/1.x SP 3DIGIT [SP reason]` with a code from 100 to 999 (a missing reason phrase is fine; a code from 600 to 999 is handled like a server error and keeps its value in `code`); when its head carries a bare CR or LF, a field line without a colon, a field name that is not a token (whitespace before the colon, a NUL, a control byte), or a NUL in a field value; when `Content-Length` is not one exact number (a sign, a suffix, an overflow, or repeats that disagree — identical repeats are fine); when `Transfer-Encoding` is empty; or when an HTTP/1.0 response uses `Transfer-Encoding`. A folded header line (obs-fold) is joined with a space before it is read. A response framed by both `Transfer-Encoding` and `Content-Length` is read by `Transfer-Encoding` and its connection is never reused. `Connection` is read as a token list: `Connection: TE, close` or `Connection:close` closes the connection.
+
+Interim (1xx) responses — `100 Continue`, `102 Processing`, `103 Early Hints` — are read and dropped before the final response. On HTTP/1.1, at most `HTTP_Client_CLI::INTERIM_LIMIT` (64) are accepted per response; one more fails the request with `'Invalid Response'`, so an upstream cannot keep streaming interims instead of answering. The count starts again on each redirect leg and each retry. HTTP/2 interims are not counted.
 
 The two timeouts bound different phases. `connectTimeout` bounds each **dial attempt** — the TCP connect and the TLS handshake together; it is spent again on every attempt (a retry, a redirect leg, a replay). `timeout` arms only the **response window**, and only once the connection is up and the request has been dispatched.
 
@@ -677,6 +679,12 @@ public int $maxResponseBytes = 16_777_216;
 ```
 
 Maximum raw response bytes (headers + body) per request — 16 MiB by default. `0` = unbounded (an explicit opt-out). Exceeding it fails the request with code `0` and status `'Response Too Large'`, and it is never retried. Enforced on both HTTP/1.1 and HTTP/2. On HTTP/1.1, declared sizes fail fast: a `Content-Length` that, with the head, is past the limit, or a chunk whose declared size would push the decoded body past it, fails the request as soon as it is read, before the body is downloaded (HTTP/2 counts the bytes as they arrive). The response head has its own fixed cap of 64 KiB (`'Response Header Fields Too Large'`), whatever this allows.
+
+```php
+public const int INTERIM_LIMIT = 64;
+```
+
+Maximum interim (1xx) responses accepted before the final one, per HTTP/1.1 response. One more fails the request with code `0` and status `'Invalid Response'`, which is never retried. Counted per redirect leg and per retry; HTTP/2 interims are not counted.
 
 ```php
 public int $maxRetries = 0;
