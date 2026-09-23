@@ -112,6 +112,12 @@ export default {
     copyright: 'Copyright (c) 2023-present Bootgly and contributors'
   },
 
+  // @ Page feedback — "Was this helpful?" votes go to the Workers Analytics
+  // Engine binding FEEDBACK of the Cloudflare Pages project
+  feedback: {
+    enabled: true
+  },
+
   // @ GitHub
   github: {
     repo: 'bootgly/bootgly_docs',
