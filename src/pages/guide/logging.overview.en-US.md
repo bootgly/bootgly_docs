@@ -43,6 +43,43 @@ $Logger->log(
 );
 ```
 
+## Log text you did not write
+
+A message is **Bootgly template markup** — `@#red:…@;` colors a span and `@.;` is a line break —
+and the formatters render it. Control characters are handled for you: every formatter escapes
+them **visibly**, in the form `json_encode()` uses (`\n`, `\r`, `\u001b`, `\u009b`, …), so an OSC,
+DCS or CSI sequence inside a value shows up as text instead of acting on the terminal. The `Line`
+formatter keeps only the tabs, line feeds and complete SGR color sequences of the message; the
+channel and the context keep none. This holds for a UTF-8 terminal: bytes that are not UTF-8 are
+written as they are.
+
+Markup and line feeds are still live, though. When the text comes from outside — a request
+field, a remote reply, an exception message — make it inert first:
+
+```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Templates\Template\Escaped;
+
+$value = "x@.;[2026-01-01] App.CRITICAL: forged\n"; // a request field, a remote reply…
+
+$inert = Escaped::scrub(Controls::escape($value));
+$Logger->log(notice: "Lookup for {$inert} found nothing.");
+// Lookup for x.;[2026-01-01] App.CRITICAL: forged\n found nothing.   ← one record, shown as is
+```
+
+`Controls::escape()` turns every control character — the line feed included — into its visible
+escape; `Escaped::scrub()` drops the `@` that would open a directive (an e-mail address such as
+`admin@example.com` keeps its `@`). When the text may not be UTF-8 at all (a binary payload),
+pass it through `mb_scrub()` first.
+
+> [!WARNING]
+> Never write `@`, `*`, `~`, `_` or `-` directly before a scrubbed value: `"{$user}@{$host}"`
+> with a host of `.;` rebuilds the `@.;` line break.
+
+> [!NOTE]
+> The HTTP Server's `exceptions` channel does this for every exception message it logs, so a
+> multi-line message shows a literal `\n`.
+
 ## Send logs to a file (with rotation)
 
 Push a `File` handler. Rotation is built in — it rotates on a size cap **or** a day change,
@@ -320,7 +357,9 @@ $Logger->Handlers->push(new Stream(STDERR, new JSON));
 ```
 
 A JSON line carries `timestamp`, `level`, `project`, `instance`, `channel`, `message`, `context`
-and `extra` (ANSI is stripped from the message).
+and `extra` (ANSI is stripped from the message). DEL and C1 characters, which `json_encode()` leaves
+raw, are written as `\u007f` / `\u009b` escapes — the line stays valid JSON and decodes back to
+the original text.
 
 ## Enrich records with processors
 
@@ -452,7 +491,8 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   `Handlers\Memory` (the hold — detailed below).
 - **Handlers** — `Logs\Handlers`: `push(Handler $Handler, null|Levels $Level = null): self`.
 - **Formatter** — interface `Logs\Formatter`: `format(Record): string`. Concretes: `Formatters\Line`
-  (ANSI + template tokens), `Formatters\JSON` (one object per line).
+  (ANSI + template tokens; control characters escaped, the message keeps TAB, LF and SGR),
+  `Formatters\JSON` (one object per line; DEL and C1 escaped, lossless).
 - **Processor** — abstract `Logs\Processor`: `process(Record): Record`. Concretes:
   `Processors\PID`, `Processors\Memory`, `Processors\RequestID` (static `$id`). `Logs\Processors`
   collection: `push()`, `process()`.
@@ -465,6 +505,28 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   `control(string $key): bool`, `render(): void`. Driven by `TCP_Server_CLI::monitoring()`.
 - **Layering** — `ACI\Logs` depends only on ABI (template/ANSI helpers, `IO/IPC/Pipe`); the CLI
   viewer and the WPI servers consume it — no `ACI → CLI/WPI` back-dependency.
+
+### Untrusted text
+
+```php
+Controls::escape (string $text, string $keep = '', bool $SGR = false): string
+```
+
+`Bootgly\ABI\Code\__String\Controls`. Escapes every C0 (U+0000–U+001F), DEL and C1
+(U+0080–U+009F) character visibly, as `json_encode()` does (`\b \t \n \f \r`, else `\u00xx`).
+`$keep` lists the C0 characters to leave as they are (e.g. `"\t\n"`); `$SGR: true` leaves complete
+`ESC [ 0-9 ; m` color/style sequences. Never shortens the text, adds no `@`, is idempotent, reads
+bytes (invalid UTF-8 never fails; its stray bytes are left — `mb_scrub()` first), and keeps JSON
+valid and lossless when applied to `json_encode()` output.
+
+```php
+Escaped::scrub (string $text): string
+```
+
+`Bootgly\ABI\Templates\Template\Escaped`. Drops every `@` that could open or close a directive —
+one not followed by a letter, a digit or a non-ASCII byte, and one right after `*`, `~`, `_`, `-`
+— until none is left, so `render()` shows the text as is. Leaves control characters to
+`Controls::escape()`.
 
 ### Handlers\File
 

@@ -84,6 +84,9 @@ registered reporters:
 - **Log channel** — the HTTP Server registers an `exceptions` Logger channel (skipped in the
   Test environment). With the Demo's file sink, failures land in
   `storage/logs/exceptions.log` as JSON lines with class, file, line, method, URI and peer.
+  The message is logged inert — an exception often quotes a client's bytes: capped at 4 KiB,
+  control characters and line feeds escaped (`\n`, `\u001b`), markup defused and invalid UTF-8
+  replaced by `?`.
 - **Observability** — when `Observability::$Instance` is configured (e.g. by a `/metrics`
   route), an `exceptions_total` counter increments per reported throwable.
 - **Your own reporter** — push a closure; it receives the throwable and a context array.
@@ -115,6 +118,11 @@ Uncaught throwables in console scripts and commands render the ANSI report (clas
 highlighted source excerpt, backtrace) and the process now exits with status **255** — so
 `&&` chains, cron jobs and CI pipelines see the failure (before v0.23 the process exited `0`).
 Opt out with `Throwables::$exit = false`.
+
+The report cannot drive a UTF-8 terminal: the control characters a throwable carries — in its
+message, file or trace — are escaped visibly (`\u001b`, `\u009b`), the message keeping its tabs
+and line feeds; a message that is not UTF-8 keeps printable ASCII only (`?` for the other bytes),
+and an anonymous class is named after its parent (`RuntimeException@anonymous`).
 
 Fatal errors (out-of-memory, parse errors in includes) bypass PHP's error handlers entirely —
 Bootgly synthesizes them at shutdown into an `ErrorException` report, so they are rendered and

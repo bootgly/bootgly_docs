@@ -85,7 +85,9 @@ registrados:
 
 - **Canal de log** — o HTTP Server registra um canal Logger `exceptions` (pulado no ambiente
   Test). Com o file sink do Demo, falhas caem em `storage/logs/exceptions.log` como linhas
-  JSON com classe, arquivo, linha, método, URI e peer.
+  JSON com classe, arquivo, linha, método, URI e peer. A mensagem é registrada inerte — uma
+  exceção costuma citar bytes do cliente: limitada a 4 KiB, com caracteres de controle e quebras
+  de linha escapados (`\n`, `\u001b`), o markup neutralizado e UTF-8 inválido trocado por `?`.
 - **Observability** — quando `Observability::$Instance` está configurado (por exemplo por uma
   rota `/metrics`), um contador `exceptions_total` incrementa por throwable reportado.
 - **Seu próprio reporter** — faça push de uma closure; ela recebe o throwable e um array de
@@ -117,6 +119,12 @@ Throwables não capturados em scripts e comandos de console renderizam o report 
 mensagem, trecho de código com highlight, backtrace) e o processo agora termina com status
 **255** — assim cadeias com `&&`, cron jobs e pipelines de CI enxergam a falha (antes da v0.23
 o processo saía com `0`). Desligue com `Throwables::$exit = false`.
+
+O report não consegue dirigir um terminal UTF-8: os caracteres de controle que um throwable
+carrega — na mensagem, no arquivo ou no trace — são escapados visivelmente (`\u001b`, `\u009b`),
+a mensagem mantendo seus tabs e quebras de linha; uma mensagem que não é UTF-8 mantém só ASCII
+imprimível (`?` nos outros bytes), e uma classe anônima leva o nome da classe pai
+(`RuntimeException@anonymous`).
 
 Erros fatais (out-of-memory, parse errors em includes) passam por fora dos error handlers do
 PHP — o Bootgly os sintetiza no shutdown em um report de `ErrorException`, então eles são
