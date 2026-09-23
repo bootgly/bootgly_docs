@@ -122,7 +122,7 @@ Handing two instances of the same Configs class to one `configure()` call throws
 | `allowInsecureRedirect` | `bool` | `false` | Follow a redirect that steps down from `https` to `http`. |
 | `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds, per dial attempt. On an adopted reactor the dial and the TLS handshake park instead of blocking the host loop (0 = no timeout). |
 | `timeout` | `int\|float` | `30` | Response timeout in seconds. |
-| `maxResponseBytes` | `int` | `0` | Maximum raw response bytes — headers + body (0 = unbounded). |
+| `maxResponseBytes` | `int` | `16777216` | Maximum raw response bytes — headers + body (16 MiB; `0` = unbounded). |
 | `maxRetries` | `int` | `0` | Maximum retries on failure (0 = disabled). |
 | `retryDelay` | `int\|float` | `1.0` | Base backoff delay in seconds — doubles on each attempt. |
 | `retryMaxDelay` | `int\|float` | `30.0` | Backoff delay cap in seconds. |
@@ -364,7 +364,9 @@ if ($Response->code === 0) {
 }
 ```
 
-`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
+`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, `'Response Header Fields Too Large'` when the response head (status line + header fields) exceeds 64 KiB, `'Invalid Response'` when the head is not valid HTTP/1.x framing, or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real or longer than 8 KiB, a trailer section past 64 KiB, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
+
+The client trusts no upstream's framing. A response is `'Invalid Response'` when its status line is not `HTTP/1.x SP 3DIGIT [SP reason]` with a code from 100 to 999 (a missing reason phrase is fine; a code from 600 to 999 is handled like a server error and keeps its value in `code`); when its head carries a bare CR or LF, a field line without a colon, a field name that is not a token (whitespace before the colon, a NUL, a control byte), or a NUL in a field value; when `Content-Length` is not one exact number (a sign, a suffix, an overflow, or repeats that disagree — identical repeats are fine); when `Transfer-Encoding` is empty; or when an HTTP/1.0 response uses `Transfer-Encoding`. A folded header line (obs-fold) is joined with a space before it is read. A response framed by both `Transfer-Encoding` and `Content-Length` is read by `Transfer-Encoding` and its connection is never reused. `Connection` is read as a token list: `Connection: TE, close` or `Connection:close` closes the connection.
 
 The two timeouts bound different phases. `connectTimeout` bounds each **dial attempt** — the TCP connect and the TLS handshake together; it is spent again on every attempt (a retry, a redirect leg, a replay). `timeout` arms only the **response window**, and only once the connection is up and the request has been dispatched.
 
@@ -411,6 +413,7 @@ Retry rules:
 - **Backoff**: `retryDelay` doubles on each attempt, capped at `retryMaxDelay`, plus a proportional jitter of up to `retryJitter` × delay.
 - **Campaign budget**: `retryTimeout` (default `60.0`; `0` = unbounded) is a wall-clock budget per request — a retry whose wait would exceed it is vetoed and the request stays failed.
 - **Network-failure retries** (connection refused/reset, timeout) apply to idempotent methods only: GET, HEAD, PUT, DELETE, OPTIONS. Non-idempotent methods (POST, PATCH) are only retried when the request was provably never sent.
+- **Deterministic failures are never retried**: `'Response Too Large'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'` and `'Redirect Failed'` — the same answer would come back. `'Truncated Response'`, `'Connection Lost'` and `'Timeout'` are network failures and follow the rules above.
 - **HTTP-level retries** (`retryOn`) are server-solicited and apply to **any** method. `Retry-After` is honored in both delta-seconds and HTTP-date forms, clamped to 300 seconds (`MAX_RETRY_AFTER`); it can extend the computed backoff wait, never shorten it.
 - `retryOn` requires `maxRetries > 0` — the same budget caps both retry kinds.
 - Backoff is **scheduled on the event loop** — waiting for the next attempt never blocks the process.
@@ -670,10 +673,10 @@ public null|bool $enableHTTP2 = null;
 HTTP/2 negotiation mode. `null` (default): offer `h2,http/1.1` via TLS-ALPN when `secure` is set — cleartext stays HTTP/1.1. `true`: also speak h2c prior knowledge on cleartext connections. `false`: never negotiate HTTP/2.
 
 ```php
-public int $maxResponseBytes = 0;
+public int $maxResponseBytes = 16_777_216;
 ```
 
-Maximum raw response bytes (headers + body). `0` = unbounded. Exceeding it fails the request with code `0` and status `'Response Too Large'`. Enforced on both HTTP/1.1 and HTTP/2. Chunked responses also fail fast: a chunk whose declared size would push the decoded body past the limit fails the request immediately, before the chunk data is downloaded.
+Maximum raw response bytes (headers + body) per request — 16 MiB by default. `0` = unbounded (an explicit opt-out). Exceeding it fails the request with code `0` and status `'Response Too Large'`, and it is never retried. Enforced on both HTTP/1.1 and HTTP/2. On HTTP/1.1, declared sizes fail fast: a `Content-Length` that, with the head, is past the limit, or a chunk whose declared size would push the decoded body past it, fails the request as soon as it is read, before the body is downloaded (HTTP/2 counts the bytes as they arrive). The response head has its own fixed cap of 64 KiB (`'Response Header Fields Too Large'`), whatever this allows.
 
 ```php
 public int $maxRetries = 0;

@@ -438,6 +438,19 @@ concurrent legs over HTTP/1.1:
 ),
 ```
 
+Every upstream response is capped at 16 MiB by default — a single answer from the upstream (or from
+any redirect target it sends you to) cannot grow past it. An answer past the cap reaches your handler as
+`code` `0` with `status` `'Response Too Large'`. Set `maxResponseBytes` to size it for the upstream
+you trust:
+
+```php
+'Reports' => static fn (object $Context): HTTP => new HTTP(
+   host: 'reports.example.com',
+   secure: [],
+   maxResponseBytes: 64 * 1024 * 1024,
+),
+```
+
 The factory runs lazily in the worker, the first time a deferral reads the name — and it runs
 again for the next deferral. Each one therefore gets its own `HTTP` instance with its own fresh
 embedded client, adopted onto the worker reactor; never a shared prototype whose pool, connection
@@ -507,8 +520,8 @@ return $Response->defer(function (Response $Response): void {
 
 Failures do not throw — they arrive as a completed `Response` with `code` `0` and a named
 `status`: `Timeout`, `Connection Failed`, `Connection Lost`, `Connection Closed`,
-`Truncated Response`, `Response Too Large`, `Redirect Failed`, `Insecure Redirect` or
-`Invalid Chunked Encoding`. A route that reads `code` alone already treats every one of them as
+`Truncated Response`, `Response Too Large`, `Response Header Fields Too Large`,
+`Invalid Response`, `Redirect Failed`, `Insecure Redirect` or `Invalid Chunked Encoding`. A route that reads `code` alone already treats every one of them as
 "no answer"; read `status` when the reason matters.
 
 Every leg of the exchange parks the deferred Fiber instead of pumping a private event loop: the
@@ -570,7 +583,7 @@ never crosses contexts.
 ## HTTP methods
 
 ```php
-__construct (string $host, null|int $port = null, null|array $secure = null, null|array $pool = null, int|float $timeout = 30, int|float $connectTimeout = 30, int $maxRedirects = 10, int $maxRetries = 0, null|bool $enableHTTP2 = null)
+__construct (string $host, null|int $port = null, null|array $secure = null, null|array $pool = null, int|float $timeout = 30, int|float $connectTimeout = 30, int $maxRedirects = 10, int $maxRetries = 0, null|bool $enableHTTP2 = null, null|int $maxResponseBytes = null)
 ```
 
 Builds the resource and the fresh `HTTP_Client_CLI` it embeds on the worker reactor. `$host` is
@@ -581,7 +594,8 @@ inside one deferral (`['min' => N, 'max' => N]`); `$timeout` is the response tim
 the dial **and** the TLS handshake (`0` = no timeout); `$maxRedirects` caps redirect following
 (`0` = disabled); `$maxRetries` caps retries on connection/timeout failure (`0` = disabled); and
 `$enableHTTP2` selects HTTP/2 negotiation (`null` = ALPN when secure; `true` = also h2c;
-`false` = never). Throws `RuntimeException` when constructed outside the HTTP server reactor.
+`false` = never); `$maxResponseBytes` caps the raw bytes of each upstream response (`null` = the
+client's default, 16 MiB; `0` = unbounded). Throws `RuntimeException` when constructed outside the HTTP server reactor.
 
 ```php
 request (string $method = 'GET', string $URI = '/', array $headers = [], mixed $body = null): Response
@@ -622,7 +636,7 @@ public private(set) HTTP_Client_CLI $Client
 ```
 
 The embedded client — knob surface only. Every knob the constructor does not cover is set here:
-`retryOn`, `retryDelay`, `retryMaxDelay`, `retryTimeout`, `retryJitter`, `maxResponseBytes`,
+`retryOn`, `retryDelay`, `retryMaxDelay`, `retryTimeout`, `retryJitter`,
 `allowInsecureRedirect`, `enableHTTP2`, and the `timeout` family. Never send through it.
 
 ## Boundary

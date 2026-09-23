@@ -28,10 +28,19 @@ $Response->status; // 'OK'
 
 ### Special status values
 
+`code === 0` means no HTTP response was produced; `status` names why:
+
 | `code` | `status` | Meaning |
 |---|---|---|
 | `0` | `'Timeout'` | The request timed out before receiving a response. |
-| `0` | `''` | Connection failure — the request was never sent. |
+| `0` | `'Connection Failed'` / `'Connection Lost'` / `'Connection Closed'` | The connection failed, was lost, or was closed before a response head arrived. |
+| `0` | `'Truncated Response'` | The connection closed before the declared body ended. |
+| `0` | `'Response Too Large'` | The response passed `maxResponseBytes` (16 MiB by default). |
+| `0` | `'Response Header Fields Too Large'` | The response head passed its 64 KiB cap. |
+| `0` | `'Invalid Response'` | The status line, a header field, `Content-Length` or `Transfer-Encoding` is not valid HTTP/1.x framing. |
+| `0` | `'Invalid Chunked Encoding'` | The chunked framing is not valid. |
+
+A status line without a reason phrase (`HTTP/1.1 200`) is valid: `code` is `200` and `status` is `''`. A code from 600 to 999 is handled like a server error: the response is framed normally and `code` keeps the value the upstream sent.
 
 ## Headers
 
@@ -139,6 +148,11 @@ The client automatically handles different transfer encodings:
 | **Chunked** | `Transfer-Encoding: chunked` | Decodes chunks, assembles final body, handles trailers. |
 | **Content-Length** | `Content-Length: N` | Reads exactly N bytes for the body. |
 | **Close-delimited** | No Content-Length, no chunked | Reads until connection closes. |
+
+Framing is strict: `Content-Length` must be one exact number (identical repeats are accepted; a
+sign, a suffix, an overflow or disagreeing repeats fail with `'Invalid Response'`), and a response
+carrying both `Transfer-Encoding` and `Content-Length` is read by `Transfer-Encoding` with its
+connection closed afterwards (`closeConnection` is `true`).
 
 All decoding is transparent — `$Response->body` always contains the final, decoded body regardless of transfer encoding.
 

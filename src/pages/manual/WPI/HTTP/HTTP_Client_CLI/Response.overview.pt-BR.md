@@ -28,10 +28,19 @@ $Response->status; // 'OK'
 
 ### Valores de status especiais
 
+`code === 0` significa que nenhuma resposta HTTP foi produzida; `status` diz o motivo:
+
 | `code` | `status` | Significado |
 |---|---|---|
 | `0` | `'Timeout'` | A requisição expirou antes de receber uma resposta. |
-| `0` | `''` | Falha de conexão — a requisição nunca foi enviada. |
+| `0` | `'Connection Failed'` / `'Connection Lost'` / `'Connection Closed'` | A conexão falhou, se perdeu ou foi fechada antes de chegar o head da resposta. |
+| `0` | `'Truncated Response'` | A conexão fechou antes do fim do body declarado. |
+| `0` | `'Response Too Large'` | A resposta passou de `maxResponseBytes` (16 MiB por padrão). |
+| `0` | `'Response Header Fields Too Large'` | O head da resposta passou do teto de 64 KiB. |
+| `0` | `'Invalid Response'` | A status line, um campo de header, o `Content-Length` ou o `Transfer-Encoding` não são framing HTTP/1.x válido. |
+| `0` | `'Invalid Chunked Encoding'` | O framing chunked não é válido. |
+
+Uma status line sem reason phrase (`HTTP/1.1 200`) é válida: `code` é `200` e `status` é `''`. Um código de 600 a 999 é tratado como erro do servidor: a resposta é enquadrada normalmente e `code` mantém o valor que o upstream enviou.
 
 ## Headers
 
@@ -139,6 +148,11 @@ O cliente trata automaticamente diferentes codificações de transferência:
 | **Chunked** | `Transfer-Encoding: chunked` | Decodifica chunks, monta body final, trata trailers. |
 | **Content-Length** | `Content-Length: N` | Lê exatamente N bytes para o body. |
 | **Close-delimited** | Sem Content-Length, sem chunked | Lê até a conexão fechar. |
+
+O framing é estrito: o `Content-Length` precisa ser um único número exato (repetições idênticas
+são aceitas; sinal, sufixo, overflow ou repetições que discordam falham com `'Invalid Response'`),
+e uma resposta com `Transfer-Encoding` e `Content-Length` ao mesmo tempo é lida pelo
+`Transfer-Encoding` e tem a conexão fechada depois (`closeConnection` é `true`).
 
 Toda decodificação é transparente — `$Response->body` sempre contém o body final e decodificado, independente da codificação de transferência.
 
