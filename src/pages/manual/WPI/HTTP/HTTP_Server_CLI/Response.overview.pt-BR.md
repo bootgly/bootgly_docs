@@ -127,7 +127,9 @@ public function upload (string $file, int $offset = 0, null|int $length = null, 
 
 Envia o conteúdo de um arquivo para o cliente HTTP **como download**. O arquivo é transmitido do disco em blocos — nunca é carregado inteiro na memória —, então `upload()` é o método para arquivos de qualquer tamanho. (O nome "upload" é do ponto de vista do servidor: o servidor faz o upload do arquivo para o cliente.)
 
-Uma resposta do arquivo inteiro (ou de um único range) leva `Content-Type: application/octet-stream` e `Content-Disposition: attachment; filename="<basename>"`, então o navegador salva o arquivo em vez de exibi-lo. Para exibir o conteúdo de um arquivo no navegador, veja [Enviar o conteúdo de um arquivo inline](#enviar-o-conteúdo-de-um-arquivo-inline) abaixo.
+Uma resposta do arquivo inteiro (ou de um único range) leva `Content-Type: application/octet-stream` e `Content-Disposition: attachment; filename="<basename>"`, então o navegador salva o arquivo em vez de exibi-lo. Para exibir o conteúdo de um arquivo no navegador, veja [Enviar o conteúdo de um arquivo inline](#enviar-o-conteúdo-de-um-arquivo-inline) abaixo. Toda resposta de `upload()` também leva `Last-Modified`, `Cache-Control: no-cache, must-revalidate` e `Expires: 0` — e `Accept-Ranges: bytes` quando o arquivo inteiro é enviado.
+
+**Como os bytes trafegam:** cada fatia é lida pelo PHP e escrita na conexão não bloqueante — até 1 MiB por vez no HTTP/1.1, dimensionada pela janela de controle de fluxo do stream no HTTP/2 — e o worker continua atendendo as suas outras conexões enquanto um cliente lento esvazia o buffer. Não há um caminho zero-copy com `sendfile(2)`: o PHP não tem binding para essa system call. A seção [Arquivos Estáticos](/manual/WPI/HTTP/HTTP_Server_CLI/#arquivos-estáticos) do manual do HTTP Server CLI explica quando colocar um CDN ou um proxy reverso na frente.
 
 **Parâmetros:**
 
@@ -206,6 +208,8 @@ $Router->route('/terms', function (Request $Request, Response $Response) {
 ```
 
 Os headers só são serializados depois que o handler retorna, então os valores definidos depois do `upload()` substituem os que ele escreveu. Mantenha a verificação de `Content-Disposition`: quando um cliente pede vários ranges de uma vez, o `upload()` responde `206` com `Content-Type: multipart/byteranges; boundary=…` e não define `Content-Disposition`. Sobrescrever esse `Content-Type` quebraria o corpo multipart. A verificação também ignora respostas de erro (`403`, `416`, …), que não definem nenhum dos dois headers.
+
+Em um projeto da plataforma Web, o [`Statics`](/manual/Web/App/overview/) serve inline uma pasta inteira de assets, com o media type mapeado a partir da extensão — ele lê cada arquivo para a memória, então mantenha esta receita para arquivos grandes. A seção [Arquivos Estáticos](/manual/WPI/HTTP/HTTP_Server_CLI/#arquivos-estáticos) do manual do HTTP Server CLI compara os dois caminhos.
 
 > Procurando o `serve()`? Ele não é um método do Response e não lê arquivos: o [`Router::serve()`](/manual/WPI/HTTP/HTTP_Server_CLI/Router/#rotas-de-corpo-fixo) registra uma rota que sempre responde com uma string fixa, passada no registro.
 

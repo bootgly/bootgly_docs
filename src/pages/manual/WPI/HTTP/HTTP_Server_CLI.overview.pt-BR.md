@@ -6,7 +6,7 @@ O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um 
 
 | Recurso | Descrição |
 |---|---|
-| **Modos de Operação** | Daemon (background), Interactive (REPL), Monitor (hot-reload) e Test (automatizado) |
+| **Modos de Operação** | Daemon (background), Foreground, Interactive (REPL), Monitor (visualizador de logs ao vivo) e Test (automatizado) |
 | **Multi-Worker** | Workers via fork com `SO_REUSEPORT`; master reinicia workers automaticamente em caso de falha |
 | **PHP Fibers** | Respostas assíncronas adiadas via `$Response->defer()`, integradas ao event loop `stream_select` |
 | **Event-Driven** | Event loop baseado em `stream_select`; I/O non-blocking, zero CPU em idle |
@@ -88,8 +88,9 @@ O servidor suporta múltiplos modos de operação, selecionados ao construir a i
 | Modo | Descrição |
 |---|---|
 | `Modes::Daemon` | Faz fork para segundo plano. O processo master se torna líder de sessão, despacha sinais e gerencia workers. Modo padrão. |
+| `Modes::Foreground` | Fica preso ao terminal, com os logs do servidor (e tudo o que um handler escreve com `echo`) impressos na sua frente. |
 | `Modes::Interactive` | Loop REPL aceitando comandos CLI (`stop`, `help`, `monitor`). |
-| `Modes::Monitor` | Modo hot-reload. Verifica mudanças nos arquivos a cada 2 segundos e envia sinais de reload para os workers. Exibe um dashboard de status em tempo real. |
+| `Modes::Monitor` | Visualizador de logs em tela cheia: os registros do master e dos workers chegam em uma visão filtrável. Ele **não** observa arquivos — publique mudanças de código com `project reload` (veja [Reload](/guide/reload/overview/)). |
 | `Modes::Test` | Cria um cliente TCP, carrega a suíte de testes, envia requisições HTTP e valida as respostas. Usado internamente para testes automatizados. |
 
 ## Configuração
@@ -559,7 +560,189 @@ Cada worker executa um event loop baseado em `stream_select()` que lida com:
 - **Escrita de respostas**: Respostas HTTP codificadas são escritas nos sockets dos clientes.
 - **PHP Fibers**: O event loop se integra com PHP Fibers para suportar respostas deferred (assíncronas). Veja `$Response->defer()` para detalhes.
 
-O event loop suporta aproximadamente 1000 file descriptors simultâneos (limite do `stream_select()`). Quando Fibers estão ativas, o loop opera em modo non-blocking (polling); caso contrário, ele bloqueia até que I/O esteja disponível, garantindo zero uso de CPU em idle.
+O event loop suporta aproximadamente 1000 file descriptors simultâneos **por worker** (limite do `stream_select()`), então a capacidade total cresce com a quantidade de workers. `maxConnections` e `maxConnectionsPerIP` ([Limites de conexão](#limites-de-conexão)) limitam a admissão por worker. Quando Fibers estão ativas, o loop opera em modo non-blocking (polling); caso contrário, ele bloqueia até que I/O esteja disponível, garantindo zero uso de CPU em idle.
+
+## Modelo de Processos
+
+Cada worker inicializa seu projeto uma única vez — rotas, classes, objetos — e então atende
+requisição após requisição a partir do seu event loop. Nada é desmontado entre uma requisição e
+outra. Se você vem do PHP-FPM, essa é a ideia que muda a forma de escrever código; se vem do
+Swoole, do Workerman ou do RoadRunner, é o modelo que você já conhece, com as diferenças listadas
+em [Vindo do Swoole](#vindo-do-swoole).
+
+### O que sobrevive entre requisições
+
+Variáveis globais, propriedades estáticas, variáveis `static` dentro de funções e closures, e todo
+objeto criado enquanto as rotas foram registradas vivem enquanto o worker viver — elas **não** são
+zeradas quando uma requisição termina:
+
+```php
+yield $Router->route('/count', function (Request $Request, Response $Response) {
+   static $count = 0; // vive enquanto o worker viver
+   $count++;
+
+   return $Response(body: 'pid=' . getmypid() . " count={$count}");
+}, GET);
+```
+
+Disso decorrem duas regras:
+
+- **Nunca guarde dados da requisição nelas.** Um valor colocado em uma static ou em uma global
+  ainda está lá — com o conteúdo da requisição anterior — quando a próxima requisição chega.
+- **Mantenha caches em processo limitados.** Tudo o que só cresce (um cache em array sem
+  descarte, uma lista que recebe um item por requisição) cresce durante toda a vida do worker.
+  Ainda não existe reciclagem automática de workers (nenhuma opção de *max requests*); o
+  [`reload`](/guide/reload/overview/) reinicia todos os workers de forma graciosa.
+
+Use isso a seu favor para o que é caro de construir e seguro de compartilhar: configuração já
+interpretada, templates compilados, prepared statements, pools de conexão.
+
+### Workers não compartilham memória
+
+Cada worker é um processo separado com a sua própria cópia de tudo o que foi dito acima. Com
+`workers: 2`, a rota `/count` conta por worker:
+
+```text
+pid=50609 count=1
+pid=50608 count=1
+pid=50609 count=2
+```
+
+Estado que precisa ser o mesmo para todos os workers pertence a algo fora do processo — o driver
+`shared` do [Cache](/guide/cache/overview/) (memória compartilhada System V, mesmo host), `apcu`,
+Redis ou o banco de dados:
+
+```php
+use Bootgly\ABI\Resources\Cache;
+
+$Visits = new Cache(['driver' => 'shared', 'prefix' => 'visits:']);
+
+yield $Router->route('/visits', function (Request $Request, Response $Response) use ($Visits) {
+   return $Response(body: (string) $Visits->increment('home')); // 1, 2, 3... entre os workers
+}, GET);
+```
+
+### Leia a requisição em `$Request`, responda por `$Response`
+
+As superglobais de requisição do PHP não são preenchidas: `$_GET`, `$_POST`, `$_COOKIE`, `$_FILES`
+e `$_REQUEST` ficam vazias, e `$_SERVER` descreve o processo CLI, não a requisição. As funções que
+escrevem na SAPI também não chegam ao cliente. Use os objetos que todo handler recebe:
+
+| Em vez de | Use |
+| --- | --- |
+| `$_GET['page']` | `$Request->queries['page']` |
+| `$_POST['name']` | `$Request->fields['name']` |
+| `$_FILES['avatar']` | `$Request->files['avatar']` |
+| `$_COOKIE['theme']` | `$Request->Cookies->get('theme')` |
+| `$_SERVER['REQUEST_METHOD']`, `$_SERVER['REQUEST_URI']` | `$Request->method`, `$Request->URI` |
+| `$_SERVER['REMOTE_ADDR']` | `$Request->address` |
+| `$_SERVER['HTTP_X_TOKEN']`, `getallheaders()` | `$Request->Header->get('X-Token')` |
+| `session_start()`, `$_SESSION` | `$Request->Session` |
+| `header('X-Frame-Options: DENY')` | `$Response->Header->set('X-Frame-Options', 'DENY')` |
+| `setcookie('theme', 'dark')` | `$Response->Header->Cookies->append(new Cookie('theme', 'dark'))` |
+| `echo`, `print` | `return $Response(body: '...')` |
+| `exit`, `die` | `return $Response` |
+
+`Cookie` é `Bootgly\WPI\Modules\HTTP\Server\Response\Raw\Header\Cookie`. Saída escrita com `echo`
+vai para a saída padrão do worker — o seu terminal no modo foreground, lugar nenhum no modo
+daemon — e nunca para o cliente. Veja [Request](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/)
+e [Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/) para a API completa.
+
+### `exit()` encerra o worker
+
+`exit()` e `die()` terminam o próprio processo do worker. O cliente recebe uma resposta vazia,
+todas as outras conexões daquele worker caem, e o master faz fork de um substituto — que começa
+com estado novo:
+
+```text
+WARNING: Worker #1 (PID: 50609) crashed, reforking...
+NOTICE: Worker #1 recovered (new PID: 51400)
+```
+
+Retorne uma resposta em vez disso; para parar antes, retorne-a de onde você estiver.
+
+### Uma requisição por vez em cada worker
+
+Um handler síncrono roda do início ao fim antes que o seu worker leia a próxima requisição. Nada
+mais roda naquele worker no meio do seu handler, então uma global definida no começo de um
+handler ainda é sua no final dele.
+
+O outro lado: **uma chamada bloqueante bloqueia todas as conexões daquele worker.** Com um
+worker, uma rota que passa 1,5 s em um loop de CPU fez uma rota trivial em outra conexão esperar
+1,2 s. `sleep()`, um cliente HTTP bloqueante (`file_get_contents('https://...')`, curl), PDO e
+qualquer outro I/O síncrono têm o mesmo efeito — e o `sleep()` ainda é interrompido pelo sinal de
+timer do próprio worker, então nem como pausa ele é confiável.
+
+O Bootgly é PHP puro: ele não consegue transformar as funções bloqueantes do PHP em não
+bloqueantes por baixo dos panos. Use os clientes que estacionam no event loop:
+
+- **SQL** — os drivers PostgreSQL e MySQL do [ADI Database](/guide/database-dbal/overview/).
+- **Redis** — o driver KV descrito em [Cache](/guide/cache/overview/) (o driver `redis` do próprio
+  Cache é bloqueante).
+- **HTTP** — o cliente upstream em [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/).
+
+Distribua trabalho pesado de CPU entre os workers, ou mova-o para uma [fila](/guide/queues/overview/).
+[Performance](/guide/performance/overview/) cobre o dimensionamento de workers e pools.
+
+### Trabalho diferido se intercala no `wait()`
+
+`$Response->defer()` executa o seu trabalho em uma Fiber. Cada `$Response->wait()` devolve o
+worker ao event loop, e outras requisições rodam até a Fiber ser retomada. Este é o único lugar
+em que duas requisições se intercalam dentro de um worker — e ali, estado compartilhado é
+compartilhado:
+
+```php
+yield $Router->route('/hello', function (Request $Request, Response $Response) {
+   $name = (string) ($Request->queries['name'] ?? '');
+
+   return $Response->defer(function (Response $Response) use ($name): void {
+      $GLOBALS['name'] = $name; // ❌ uma global por worker, compartilhada por toda requisição
+
+      $until = microtime(true) + 1;
+      while (microtime(true) < $until) {
+         $Response->wait(); // outras requisições rodam aqui
+      }
+
+      $Response->send("Hello, {$name}! (the global now says {$GLOBALS['name']})\n");
+   });
+}, GET);
+```
+
+Duas requisições sobrepostas no mesmo worker, `?name=alice` e depois `?name=bob`, respondem:
+
+```text
+Hello, bob! (the global now says bob)
+Hello, alice! (the global now says bob)
+```
+
+Mantenha tudo o que uma deferral precisa em variáveis locais ou na lista `use` da closure — o
+`$name` acima continua correto. Leia a requisição pelos parâmetros da closure, nunca por uma cópia
+do `$Request`/`$Response` da rota guardada à parte: as regras estão em
+[Deferred Responses](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/).
+
+### Mudanças de código pedem um reload
+
+Um worker carrega o seu código uma vez. Editar um arquivo não muda nada até os workers serem
+substituídos: rode [`project reload`](/guide/reload/overview/) — gracioso, as requisições em
+andamento terminam. Ainda nenhum modo observa o disco por você. Um reload também zera todo o
+estado em processo descrito acima.
+
+### Vindo do Swoole
+
+As regras são quase as mesmas que você já segue: globais persistem por worker, workers não
+compartilham memória, superglobais ficam vazias, `exit()` mata o worker. O que muda:
+
+- **Sem concorrência implícita.** O Swoole pode fazer hook de funções bloqueantes em corrotinas,
+  então qualquer chamada de I/O pode trocar para outra requisição no meio do handler. O Bootgly
+  nunca troca implicitamente: requisições só se intercalam em um `wait()` explícito dentro de
+  `defer()`.
+- **Sem hooks para funções bloqueantes.** O preço do item anterior — PDO, curl e `sleep()`
+  bloqueiam o worker. Use os clientes assíncronos nativos listados acima.
+- **`Swoole\Table` → Cache `shared`.** Estado entre workers no mesmo host é o driver `shared` do
+  Cache; entre hosts, Redis ou o banco de dados.
+- **`max_request` → ainda não.** Workers não são reciclados automaticamente; acompanhe a memória
+  e use o `reload`.
+- **`sendfile` → streaming.** Veja [Arquivos Estáticos](#arquivos-estáticos).
 
 ## Ciclo de vida da resposta deferred
 
@@ -687,6 +870,186 @@ handle ao pool — e lembre de duas regras:
 
 Um `Fiber::getCurrent()` guardado numa variável através de um `wait()` prende a Fiber à própria pilha e
 anula a liberação imediata — leia, use, `unset()`.
+
+## Arquivos Estáticos
+
+O Bootgly serve arquivos por conta própria — sem Nginx ou Apache na frente. Há dois caminhos, um
+para cada tarefa:
+
+- **`Statics`** (plataforma Web) para os assets que as suas páginas carregam: stylesheets,
+  scripts, imagens, fontes. Servidos inline, com o media type correto e uma política de cache
+  para o navegador.
+- **`$Response->upload()`** para downloads e arquivos grandes: transmitidos do disco em fatias,
+  nunca carregados inteiros na memória, com byte ranges, em HTTP/1.1 e HTTP/2.
+
+Nenhum dos dois usa a system call `sendfile(2)`. [Por que, e o que isso significa](#por-que-não-há-sendfile),
+está explicado abaixo.
+
+### Sirva os assets do seu site
+
+Coloque os arquivos na pasta `statics/` do projeto e registre uma rota catch-all para eles:
+
+```text
+projects/Blog/
+├── router/routes/Blog.routes.php
+└── statics/
+    ├── app.css
+    └── logo.png
+```
+
+```php
+use Web\App\Statics;
+
+yield $Router->route('/statics/:file*', new Statics, GET);
+```
+
+As páginas os referenciam pela URL:
+
+```html
+<link rel="stylesheet" href="/statics/app.css">
+<img src="/statics/logo.png" alt="Logo">
+```
+
+A resposta leva o media type mapeado a partir da extensão e uma política de cache para o
+navegador:
+
+```text
+HTTP/1.1 200 OK
+Content-Type: text/css; charset=UTF-8
+Cache-Control: public, max-age=3600
+Content-Length: 4400
+```
+
+O `Statics` mapeia 25 extensões comuns — CSS, JavaScript, JSON e source maps, HTML, SVG e os
+formatos usuais de imagem, fonte, vídeo, PDF e WebAssembly. Uma extensão desconhecida é enviada
+como `application/octet-stream`. Um caminho que sai da pasta `statics/` (`../`, codificado ou não)
+ou que aponta para um arquivo inexistente responde `404`.
+
+O construtor recebe a pasta, o parâmetro da rota e o valor de `Cache-Control`. Para nomes de
+arquivo com fingerprint (`app.3f9a1c.css`), que nunca mudam, deixe os navegadores guardá-los por
+um ano:
+
+```php
+yield $Router->route('/statics/:file*', new Statics(cache: 'public, max-age=31536000, immutable'), GET);
+```
+
+### Revalide e comprima
+
+Adicione os middlewares [`ETag` e `Compression`](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/)
+à rota. O `ETag` vem primeiro — o mais externo — para que a tag descreva os bytes comprimidos que
+de fato vão para a rede:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
+use Web\App\Statics;
+
+yield $Router->route('/statics/:file*', new Statics, GET, middlewares: [new ETag, new Compression]);
+```
+
+A primeira requisição recebe o corpo em gzip e uma tag; um navegador que devolve a tag recebe um
+`304` vazio:
+
+```text
+HTTP/1.1 200 OK
+Content-Encoding: gzip
+ETag: W/"f060e02266f84f8e"
+Content-Length: 73
+
+HTTP/1.1 304 Not Modified
+ETag: W/"f060e02266f84f8e"
+```
+
+### Use o `Statics` para assets web
+
+O `Statics` lê o arquivo inteiro para a memória a cada requisição. É a troca certa para
+stylesheets, scripts, ícones e fontes — arquivos pequenos, servidos com frequência, que depois o
+navegador guarda em cache. É a troca errada para vídeo, PDFs grandes ou downloads de muitos
+megabytes: transmita esses com `upload()`, como mostrado a seguir, ou sirva-os a partir de um
+CDN.
+
+### Envie downloads e arquivos grandes
+
+`$Response->upload()` transmite um arquivo do diretório do projeto:
+
+```php
+yield $Router->route('/reports/latest', function (Request $Request, Response $Response) {
+   return $Response->upload('storage/files/report.pdf');
+}, GET);
+```
+
+- O arquivo é lido em **fatias** — até 1 MiB por vez no HTTP/1.1, dimensionadas pela janela de
+  controle de fluxo do stream no HTTP/2 — e escrito à medida que a conexão as aceita. Quando o
+  cliente é lento, o restante espera o próximo evento de escrita: enquanto isso o worker continua
+  atendendo as suas outras conexões.
+- Requisições com `Range` são respondidas com `206 Partial Content`, incluindo
+  `multipart/byteranges` com vários intervalos, em HTTP/1.1 e HTTP/2.
+- O caminho fica confinado ao diretório do projeto; qualquer coisa fora dele responde `403`.
+
+`upload()` escreve headers de **download**: `Content-Type: application/octet-stream`,
+`Content-Disposition: attachment` e `Cache-Control: no-cache, must-revalidate`, então o
+navegador salva o arquivo em vez de exibi-lo.
+
+### Transmita um arquivo grande que o navegador exibe
+
+Para um vídeo, um PDF grande ou qualquer outra coisa que a página deve mostrar, chame `upload()`
+e depois substitua os headers que ele escreveu — eles só são serializados depois que o handler
+retorna. O arquivo continua sendo transmitido, com ranges:
+
+```php
+yield $Router->route('/media/intro.mp4', function (Request $Request, Response $Response) {
+   $Response->upload('storage/media/intro.mp4');
+
+   // ? Só uma resposta de corpo único (o arquivo inteiro ou um range) leva esses headers
+   if ($Response->Header->get('Content-Disposition') !== '') {
+      $Response->Header->set('Content-Type', 'video/mp4');
+      $Response->Header->set('Content-Disposition', 'inline');
+      $Response->Header->set('Cache-Control', 'public, max-age=3600');
+   }
+
+   return $Response;
+}, GET);
+```
+
+Mantenha a verificação de `Content-Disposition`: um pedido de vários ranges de uma vez é
+respondido como `multipart/byteranges`, cujo `Content-Type` não pode ser substituído, e respostas
+de erro (`403`, `416`) não definem nenhum dos dois headers. O
+[manual do Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/#enviar-o-conteúdo-de-um-arquivo-inline)
+cobre essa receita, offsets, ranges e as verificações de identidade do arquivo.
+
+### Por que não há `sendfile`
+
+O Nginx (com `sendfile on`) e o `$response->sendfile()` do Swoole pedem ao kernel que copie um
+arquivo direto para o socket com `sendfile(2)`, sem que os bytes passem pela aplicação. O PHP não
+expõe nenhuma função `sendfile()`, e o Bootgly não precisa de extensão, então todo byte que ele
+serve passa pelo PHP: lê uma fatia, escreve no socket não bloqueante. O mesmo caminho carrega o
+TLS (que de qualquer forma criptografa na camada OpenSSL do PHP) e o framing do HTTP/2.
+
+Na prática:
+
+- **Assets da aplicação e downloads** — sirva-os pelo Bootgly, como mostrado acima.
+- **Tráfego estático pesado** — mídia grande, muitos megabytes por página, alto volume de
+  requisições — coloque um CDN ou um proxy reverso (Nginx, Caddy) na frente e deixe-o servir ou
+  guardar esses arquivos em cache. Seus workers do Bootgly passam então o tempo com as requisições
+  da aplicação.
+
+### O cache de resposta de rota não é para assets
+
+O [cache de resposta de rota](/manual/WPI/HTTP/HTTP_Server_CLI/Router/overview/)
+(`cache: ['TTL' => 60]`) reproduz respostas prontas a partir da memória, mas sai de cena
+justamente nas situações em que os assets vivem: uma requisição que leva um `Cookie` (o navegador
+envia o cookie de sessão em toda requisição de asset do seu site), uma requisição que passou por
+um proxy (`X-Forwarded-*`), uma rota com middlewares (portanto não junto com o `ETag`) e qualquer
+servidor com um middleware global. Para assets, conte com `Cache-Control` e um CDN.
+
+### Sem a plataforma Web
+
+O `Statics` vem com a plataforma Web. Um projeto que usa só o HTTP Server serve os seus assets
+com a receita acima — `upload()` mais os headers inline, com o `Content-Type` de cada arquivo —
+ou com `upload()` sozinho para downloads.
+
+A assinatura completa de `upload()` está no manual do [Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/);
+o construtor do `Statics`, no manual do [Web App](/manual/Web/App/overview/).
 
 ## Referência
 

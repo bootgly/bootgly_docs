@@ -344,12 +344,39 @@ exchange is safely cacheable:
 Credentialed requests also never **read** the cache — a logged-in user always
 reaches the handler.
 
+### When the cache steps aside
+
+Each of these keeps a `cache:` route running its handler on every request.
+None of them is reported — the route simply behaves as if it had no `cache`
+option:
+
+- **The route has middlewares** — its own `middlewares:` or a group's
+  `intercept()`. Cache replay skips the handler, so a route whose middlewares
+  must run on every request is never stored.
+- **The server has a global middleware** — any entry in `SAPI::$Middlewares`,
+  or a listener on `Request\Events::Received` / `Request\Events::Handled`,
+  turns the cache off for every route.
+- **The request came through a proxy** — a request carrying
+  `X-Forwarded-For`, `X-Forwarded-Proto` or `X-Real-IP` is looked up in its own
+  key space and never stores an entry, so behind a load balancer that adds
+  these fields the cache stays empty.
+- **The request asks for a fresh answer** — `Cache-Control: no-cache` skips
+  the lookup.
+- **The response is too large** — an entry is stored only up to 1 MiB of wire
+  bytes.
+
+Browsers send their cookies with every request to your site, so on a site
+that uses a Session the cache serves only cookieless clients. It fits public
+API responses fetched by clients without cookies; for static assets, rely on
+`Cache-Control` and a CDN — see [Static Files](/manual/WPI/HTTP/HTTP_Server_CLI/#static-files).
+
 ### Scope and limits
 
 The store is **per worker** (in-process), holds up to 512 entries (oldest
 evicted first) and refreshes the `Date` header of stored responses once per
 second. There is no cross-worker sharing: each worker warms its own entry
-within one `TTL` window.
+within one `TTL` window. The stored bytes of one worker are capped at 64 MiB
+(`HTTP_Server_CLI\Cache::$maxBytes`, set before the server starts).
 
 ## Route Group Middlewares (intercept)
 

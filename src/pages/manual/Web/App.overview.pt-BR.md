@@ -152,7 +152,9 @@ use Web\App\Statics;
 yield $Router->route('/statics/:file*', new Statics, GET);
 ```
 
-Os arquivos resolvem dentro da jail `statics/` do projeto (caminho normalizado e contido na base); extensões desconhecidas permanecem `application/octet-stream`.
+Os arquivos resolvem dentro da jail `statics/` do projeto (caminho normalizado e contido na base); extensões desconhecidas permanecem `application/octet-stream`. Todo arquivo é enviado com `Cache-Control: public, max-age=3600`, a menos que o `cache:` do construtor diga outra coisa.
+
+O `Statics` lê o arquivo inteiro para a memória a cada requisição — certo para stylesheets, scripts, imagens e fontes, errado para vídeo ou downloads de vários megabytes (use `Response->upload()` ou um CDN). Adicione `middlewares: [new ETag, new Compression]` para revalidação com `304` e gzip; a seção [Arquivos Estáticos](/manual/WPI/HTTP/HTTP_Server_CLI/#arquivos-estáticos) do manual do HTTP Server CLI percorre a configuração e as trocas em produção.
 
 ## Logs
 

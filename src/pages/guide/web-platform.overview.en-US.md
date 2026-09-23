@@ -139,5 +139,6 @@ Each is a compact reference: **Blog** for the full MVC loop (ORM models, migrati
 
 - [Web](/manual/Web) — how the platform boots and how projects bind to it.
 - [App](/manual/Web/App) — the MVC shell: App, Controller, Controllers, Statics, Views.
+- [Static Files](/manual/WPI/HTTP/HTTP_Server_CLI/#static-files) — serving assets and downloads, browser caching and when a CDN belongs in front.
 - [API](/manual/Web/API) — the REST shell: Action, Problem/Problems, Resource, Routes.
 - Cookbook — build [Guestbook](/cookbook/web/guestbook/overview/), an MVC app on the App shell, [Contacts](/cookbook/web/contacts/overview/), a REST API on the API shell, [Shop](/cookbook/web/shop/overview/), a store on MySQL, and [Polls](/cookbook/web/polls/overview/), a voting app on PostgreSQL, step by step.

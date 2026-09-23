@@ -127,7 +127,9 @@ public function upload (string $file, int $offset = 0, null|int $length = null, 
 
 Sends the contents of a file to the HTTP client **as a download**. The file is streamed from disk in chunks — it is never loaded into memory whole — so `upload()` is the method for files of any size. ("Upload" is named from the server's point of view: the server uploads the file to the client.)
 
-A whole-file (or single-range) response carries `Content-Type: application/octet-stream` and `Content-Disposition: attachment; filename="<basename>"`, so browsers save the file instead of displaying it. To show a file's contents in the browser, see [Send file contents inline](#send-file-contents-inline) below.
+A whole-file (or single-range) response carries `Content-Type: application/octet-stream` and `Content-Disposition: attachment; filename="<basename>"`, so browsers save the file instead of displaying it. To show a file's contents in the browser, see [Send file contents inline](#send-file-contents-inline) below. Every `upload()` response also carries `Last-Modified`, `Cache-Control: no-cache, must-revalidate` and `Expires: 0` — and `Accept-Ranges: bytes` when the whole file is sent.
+
+**How the bytes move:** each slice is read by PHP and written to the non-blocking connection — up to 1 MiB at a time on HTTP/1.1, sized by the stream's flow-control window on HTTP/2 — and the worker keeps serving its other connections while a slow client drains. There is no `sendfile(2)` zero-copy path: PHP has no binding to that system call. [Static Files](/manual/WPI/HTTP/HTTP_Server_CLI/#static-files) in the HTTP Server CLI manual covers when to put a CDN or a reverse proxy in front.
 
 **Parameters:**
 
@@ -206,6 +208,8 @@ $Router->route('/terms', function (Request $Request, Response $Response) {
 ```
 
 Headers are serialized only after the handler returns, so values set after `upload()` replace the ones it wrote. Keep the `Content-Disposition` check: when a client asks for several ranges at once, `upload()` answers `206` with `Content-Type: multipart/byteranges; boundary=…` and sets no `Content-Disposition`. Overwriting that `Content-Type` would break the multipart body. The check also skips error answers (`403`, `416`, …), which set neither header.
+
+In a Web platform project, [`Statics`](/manual/Web/App/overview/) serves a whole folder of assets inline, with the media type mapped from the extension — it reads each file into memory, so keep this recipe for large files. [Static Files](/manual/WPI/HTTP/HTTP_Server_CLI/#static-files) in the HTTP Server CLI manual compares both paths.
 
 > Looking for `serve()`? It is not a Response method and it does not read files: [`Router::serve()`](/manual/WPI/HTTP/HTTP_Server_CLI/Router/#fixed-body-routes) registers a route that always answers with a fixed string you pass at registration.
 

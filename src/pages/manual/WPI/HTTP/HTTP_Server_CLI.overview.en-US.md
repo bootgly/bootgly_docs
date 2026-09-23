@@ -6,7 +6,7 @@ The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It i
 
 | Feature | Description |
 |---|---|
-| **Operation Modes** | Daemon (background), Interactive (REPL), Monitor (hot-reload), and Test (automated) |
+| **Operation Modes** | Daemon (background), Foreground, Interactive (REPL), Monitor (live log viewer), and Test (automated) |
 | **Multi-Worker** | Fork-based workers with `SO_REUSEPORT`; master auto-reforks on unexpected worker death |
 | **PHP Fibers** | Deferred async responses via `$Response->defer()`, integrated in the `stream_select` event loop |
 | **Event-Driven** | `stream_select`-based event loop; non-blocking I/O, zero idle CPU usage |
@@ -89,8 +89,9 @@ The server supports multiple operation modes, selected when constructing the `HT
 | Mode | Description |
 |---|---|
 | `Modes::Daemon` | Forks to background. The master process becomes a session leader, dispatches signals and reaps workers. Default mode. |
+| `Modes::Foreground` | Stays attached to the terminal, with the server logs (and anything a handler `echo`es) printed in front of you. |
 | `Modes::Interactive` | REPL loop accepting CLI commands (`stop`, `help`, `monitor`). |
-| `Modes::Monitor` | Hot-reload mode. Checks for file changes every 2 seconds and sends reload signals to workers. Displays a live status dashboard. |
+| `Modes::Monitor` | Full-screen live log viewer: master and worker records stream into a filterable view. It does **not** watch files — ship code changes with `project reload` (see [Reload](/guide/reload/overview/)). |
 | `Modes::Test` | Creates a TCP client, loads the test suite, sends HTTP requests and asserts responses. Used internally for automated testing. Saves PID state with a `.test` instance qualifier (e.g. `HTTP_Server_CLI.test.json`), so it can coexist with a running production server without PID file conflicts. |
 
 ## Configuration
@@ -556,7 +557,187 @@ Each worker runs a `stream_select()`-based event loop that handles:
 - **Response writing**: Encoded HTTP responses are written to client sockets.
 - **PHP Fibers**: The event loop integrates with PHP Fibers to support deferred (asynchronous) responses. See `$Response->defer()` for details.
 
-The event loop supports up to approximately 1000 simultaneous file descriptors (the `stream_select()` limit). When Fibers are active, the loop operates in non-blocking mode (polling); otherwise, it blocks until I/O is available, ensuring zero idle CPU usage.
+The event loop supports up to approximately 1000 simultaneous file descriptors **per worker** (the `stream_select()` limit), so total capacity grows with the worker count. `maxConnections` and `maxConnectionsPerIP` ([Connection limits](#connection-limits)) cap admission per worker. When Fibers are active, the loop operates in non-blocking mode (polling); otherwise, it blocks until I/O is available, ensuring zero idle CPU usage.
+
+## Process Model
+
+Every worker boots your project once — routes, classes, objects — and then serves request after
+request from its event loop. Nothing is torn down between requests. If you come from PHP-FPM,
+that is the one idea that changes how you write code; if you come from Swoole, Workerman or
+RoadRunner, it is the model you already know, with the differences listed in
+[Coming from Swoole](#coming-from-swoole).
+
+### What survives between requests
+
+Global variables, static properties, `static` variables inside functions and closures, and every
+object created while the routes were registered live as long as the worker — they are **not**
+reset when a request ends:
+
+```php
+yield $Router->route('/count', function (Request $Request, Response $Response) {
+   static $count = 0; // lives as long as the worker
+   $count++;
+
+   return $Response(body: 'pid=' . getmypid() . " count={$count}");
+}, GET);
+```
+
+Two things follow from it:
+
+- **Never keep per-request data in them.** A value you put in a static or a global is still
+  there — with the previous request's content — when the next request arrives.
+- **Keep in-process caches bounded.** Anything that only grows (an array cache without eviction,
+  a list you append to per request) grows for the whole life of the worker. There is no
+  automatic worker recycling (no *max requests* option) yet; [`reload`](/guide/reload/overview/)
+  restarts every worker gracefully.
+
+Use this to your advantage for things that are expensive to build and safe to share: parsed
+configuration, compiled templates, prepared statements, connection pools.
+
+### Workers do not share memory
+
+Each worker is a separate process with its own copy of everything above. With `workers: 2`, the
+`/count` route counts per worker:
+
+```text
+pid=50609 count=1
+pid=50608 count=1
+pid=50609 count=2
+```
+
+State that must be the same for every worker belongs outside the process — the
+[Cache](/guide/cache/overview/) `shared` driver (System V shared memory, same host), `apcu`,
+Redis or the database:
+
+```php
+use Bootgly\ABI\Resources\Cache;
+
+$Visits = new Cache(['driver' => 'shared', 'prefix' => 'visits:']);
+
+yield $Router->route('/visits', function (Request $Request, Response $Response) use ($Visits) {
+   return $Response(body: (string) $Visits->increment('home')); // 1, 2, 3... across workers
+}, GET);
+```
+
+### Read the request from `$Request`, answer through `$Response`
+
+PHP's request superglobals are not populated: `$_GET`, `$_POST`, `$_COOKIE`, `$_FILES` and
+`$_REQUEST` stay empty, and `$_SERVER` describes the CLI process, not the request. The
+functions that write to the SAPI do not reach the client either. Use the objects every handler
+receives:
+
+| Instead of | Use |
+| --- | --- |
+| `$_GET['page']` | `$Request->queries['page']` |
+| `$_POST['name']` | `$Request->fields['name']` |
+| `$_FILES['avatar']` | `$Request->files['avatar']` |
+| `$_COOKIE['theme']` | `$Request->Cookies->get('theme')` |
+| `$_SERVER['REQUEST_METHOD']`, `$_SERVER['REQUEST_URI']` | `$Request->method`, `$Request->URI` |
+| `$_SERVER['REMOTE_ADDR']` | `$Request->address` |
+| `$_SERVER['HTTP_X_TOKEN']`, `getallheaders()` | `$Request->Header->get('X-Token')` |
+| `session_start()`, `$_SESSION` | `$Request->Session` |
+| `header('X-Frame-Options: DENY')` | `$Response->Header->set('X-Frame-Options', 'DENY')` |
+| `setcookie('theme', 'dark')` | `$Response->Header->Cookies->append(new Cookie('theme', 'dark'))` |
+| `echo`, `print` | `return $Response(body: '...')` |
+| `exit`, `die` | `return $Response` |
+
+`Cookie` is `Bootgly\WPI\Modules\HTTP\Server\Response\Raw\Header\Cookie`. Output written with
+`echo` goes to the worker's standard output — your terminal in foreground mode, nowhere in
+daemon mode — never to the client. See [Request](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/)
+and [Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/) for the full API.
+
+### `exit()` ends the worker
+
+`exit()` and `die()` terminate the worker process itself. The client gets an empty reply, every
+other connection that worker held is dropped, and the master forks a replacement — which starts
+with fresh state:
+
+```text
+WARNING: Worker #1 (PID: 50609) crashed, reforking...
+NOTICE: Worker #1 recovered (new PID: 51400)
+```
+
+Return a response instead; to stop early, return it from wherever you are.
+
+### One request at a time per worker
+
+A synchronous handler runs from start to finish before its worker reads the next request.
+Nothing else runs in that worker in the middle of your handler, so a global you set at the top
+of a handler is still yours at the bottom.
+
+The flip side: **a blocking call blocks every connection of that worker.** With one worker, a
+route that spends 1.5 s in a CPU loop made a trivial route on another connection wait 1.2 s.
+`sleep()`, a blocking HTTP client (`file_get_contents('https://...')`, curl), PDO and any other
+synchronous I/O have the same effect — and `sleep()` is also cut short by the worker's own timer
+signal, so it is not even a reliable delay.
+
+Bootgly is pure PHP: it cannot turn PHP's blocking functions into non-blocking ones behind your
+back. Use the clients that park on the event loop instead:
+
+- **SQL** — the [ADI Database](/guide/database-dbal/overview/) PostgreSQL and MySQL drivers.
+- **Redis** — the KV driver described in [Cache](/guide/cache/overview/) (the Cache `redis`
+  driver itself is blocking).
+- **HTTP** — the upstream client in [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/).
+
+Spread CPU-heavy work across workers, or move it to a [queue](/guide/queues/overview/).
+[Performance](/guide/performance/overview/) covers worker and pool sizing.
+
+### Deferred work interleaves at `wait()`
+
+`$Response->defer()` runs your work in a Fiber. Every `$Response->wait()` hands the worker back
+to the event loop, and other requests run until the Fiber resumes. This is the only place where
+two requests interleave inside one worker — and there, shared state is shared:
+
+```php
+yield $Router->route('/hello', function (Request $Request, Response $Response) {
+   $name = (string) ($Request->queries['name'] ?? '');
+
+   return $Response->defer(function (Response $Response) use ($name): void {
+      $GLOBALS['name'] = $name; // ❌ one global per worker, shared by every request
+
+      $until = microtime(true) + 1;
+      while (microtime(true) < $until) {
+         $Response->wait(); // other requests run here
+      }
+
+      $Response->send("Hello, {$name}! (the global now says {$GLOBALS['name']})\n");
+   });
+}, GET);
+```
+
+Two overlapping requests on the same worker, `?name=alice` then `?name=bob`, answer:
+
+```text
+Hello, bob! (the global now says bob)
+Hello, alice! (the global now says bob)
+```
+
+Keep everything a deferral needs in local variables or in the closure's `use` list — `$name`
+above stays correct. Read the request through the closure's parameters, never through a copy of
+the route's `$Request`/`$Response` kept aside: the rules are in
+[Deferred Responses](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/).
+
+### Code changes need a reload
+
+A worker loads your code once. Editing a file changes nothing until the workers are replaced:
+run [`project reload`](/guide/reload/overview/) — graceful, in-flight requests finish. No mode
+watches the disk for you yet. A reload also resets every in-process state described above.
+
+### Coming from Swoole
+
+The rules are mostly the ones you already follow: globals persist per worker, workers do not
+share memory, superglobals are empty, `exit()` kills the worker. What differs:
+
+- **No implicit concurrency.** Swoole can hook blocking functions into coroutines, so any I/O
+  call may switch to another request mid-handler. Bootgly never switches implicitly: requests
+  interleave only at an explicit `wait()` inside `defer()`.
+- **No hooks for blocking functions.** The price of the above — PDO, curl and `sleep()` block the
+  worker. Use the native async clients listed earlier.
+- **`Swoole\Table` → Cache `shared`.** Cross-worker state on one host is the `shared` Cache
+  driver; across hosts, Redis or the database.
+- **`max_request` → not yet.** Workers are not recycled automatically; watch memory and use
+  `reload`.
+- **`sendfile` → streamed.** See [Static Files](#static-files).
 
 ## Deferred Response Lifecycle
 
@@ -683,6 +864,181 @@ cleanup that must not wait — releasing a lock, closing a file, returning a poo
 
 A `Fiber::getCurrent()` kept in a variable across a `wait()` pins the Fiber to its own stack and
 defeats the prompt release — read it, use it, `unset()` it.
+
+## Static Files
+
+Bootgly serves files itself — no Nginx or Apache in front. There are two paths, one per job:
+
+- **`Statics`** (Web platform) for the assets your pages load: stylesheets, scripts, images,
+  fonts. Served inline, with the right media type and a browser cache policy.
+- **`$Response->upload()`** for downloads and large files: streamed from disk in slices, never
+  loaded whole into memory, with byte ranges, over HTTP/1.1 and HTTP/2.
+
+Neither uses the `sendfile(2)` system call. [Why, and what that means](#why-there-is-no-sendfile)
+is explained below.
+
+### Serve your site's assets
+
+Put the files in the project's `statics/` folder and register one catch-all route for them:
+
+```text
+projects/Blog/
+├── router/routes/Blog.routes.php
+└── statics/
+    ├── app.css
+    └── logo.png
+```
+
+```php
+use Web\App\Statics;
+
+yield $Router->route('/statics/:file*', new Statics, GET);
+```
+
+Pages reference them by URL:
+
+```html
+<link rel="stylesheet" href="/statics/app.css">
+<img src="/statics/logo.png" alt="Logo">
+```
+
+The response carries the media type mapped from the extension and a cache policy for the
+browser:
+
+```text
+HTTP/1.1 200 OK
+Content-Type: text/css; charset=UTF-8
+Cache-Control: public, max-age=3600
+Content-Length: 4400
+```
+
+`Statics` maps 25 common extensions — CSS, JavaScript, JSON and source maps, HTML, SVG and the
+usual image, font, video, PDF and WebAssembly formats. An unknown extension is sent as
+`application/octet-stream`. A path that leaves the `statics/` folder (`../`, encoded or not) or
+names a missing file answers `404`.
+
+The constructor takes the folder, the route parameter and the `Cache-Control` value. For
+fingerprinted file names (`app.3f9a1c.css`) that never change, let browsers keep them for a year:
+
+```php
+yield $Router->route('/statics/:file*', new Statics(cache: 'public, max-age=31536000, immutable'), GET);
+```
+
+### Revalidate and compress
+
+Add the [`ETag` and `Compression`](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/)
+middlewares to the route. `ETag` goes first — outermost — so the tag describes the compressed
+bytes that actually go on the wire:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
+use Web\App\Statics;
+
+yield $Router->route('/statics/:file*', new Statics, GET, middlewares: [new ETag, new Compression]);
+```
+
+The first request gets the gzipped body and a tag; a browser that sends the tag back gets an
+empty `304`:
+
+```text
+HTTP/1.1 200 OK
+Content-Encoding: gzip
+ETag: W/"f060e02266f84f8e"
+Content-Length: 73
+
+HTTP/1.1 304 Not Modified
+ETag: W/"f060e02266f84f8e"
+```
+
+### Keep `Statics` for web assets
+
+`Statics` reads the whole file into memory on every request. That is the right trade for
+stylesheets, scripts, icons and fonts — small files, served often, that the browser then
+caches. It is the wrong one for video, large PDFs or downloads of many megabytes: stream those
+with `upload()`, as shown next, or serve them from a CDN.
+
+### Send downloads and large files
+
+`$Response->upload()` streams a file from the project directory:
+
+```php
+yield $Router->route('/reports/latest', function (Request $Request, Response $Response) {
+   return $Response->upload('storage/files/report.pdf');
+}, GET);
+```
+
+- The file is read in **slices** — up to 1 MiB at a time on HTTP/1.1, sized by the stream's
+  flow-control window on HTTP/2 — and written as the connection accepts them. When the client is
+  slow, the rest waits for the next writable event: the worker keeps serving its other
+  connections meanwhile.
+- `Range` requests are answered with `206 Partial Content`, including multi-range
+  `multipart/byteranges`, on HTTP/1.1 and HTTP/2.
+- The path is confined to the project directory; anything outside answers `403`.
+
+`upload()` writes **download** headers: `Content-Type: application/octet-stream`,
+`Content-Disposition: attachment` and `Cache-Control: no-cache, must-revalidate`, so the browser
+saves the file instead of showing it.
+
+### Stream a large file the browser displays
+
+For a video, a large PDF or anything else the page should show, call `upload()` and then replace
+the headers it wrote — they are serialized only after the handler returns. The file is still
+streamed, with ranges:
+
+```php
+yield $Router->route('/media/intro.mp4', function (Request $Request, Response $Response) {
+   $Response->upload('storage/media/intro.mp4');
+
+   // ? Only a single-body answer (the whole file or one range) carries these headers
+   if ($Response->Header->get('Content-Disposition') !== '') {
+      $Response->Header->set('Content-Type', 'video/mp4');
+      $Response->Header->set('Content-Disposition', 'inline');
+      $Response->Header->set('Cache-Control', 'public, max-age=3600');
+   }
+
+   return $Response;
+}, GET);
+```
+
+Keep the `Content-Disposition` check: a request for several ranges at once is answered as
+`multipart/byteranges`, whose `Content-Type` must not be replaced, and error answers (`403`,
+`416`) set neither header. The
+[Response manual](/manual/WPI/HTTP/HTTP_Server_CLI/Response/#send-file-contents-inline) covers
+this recipe, offsets, ranges and the file identity checks.
+
+### Why there is no `sendfile`
+
+Nginx (with `sendfile on`) and Swoole's `$response->sendfile()` ask the kernel to copy a file
+straight to the socket with `sendfile(2)`, without the bytes passing through the application.
+PHP exposes no `sendfile()` function, and Bootgly needs no extension, so every byte it serves
+goes through PHP: read a slice, write it to the non-blocking socket. The same path carries TLS
+(which encrypts in PHP's OpenSSL layer anyway) and HTTP/2 framing.
+
+In practice:
+
+- **Application assets and downloads** — serve them from Bootgly as shown above.
+- **Heavy static traffic** — large media, many megabytes per page, high request volume — put a
+  CDN or a reverse proxy (Nginx, Caddy) in front and let it serve or cache those files. Your
+  Bootgly workers then spend their time on application requests.
+
+### The route response cache is not for assets
+
+The [route response cache](/manual/WPI/HTTP/HTTP_Server_CLI/Router/overview/)
+(`cache: ['TTL' => 60]`) replays prebuilt responses from memory, but it steps aside in exactly the
+situations assets live in: a request that carries a `Cookie` (a browser sends its session cookie
+with every asset request of your site), a request that came through a proxy
+(`X-Forwarded-*`), a route that has middlewares (so not together with `ETag`), and any server
+with a global middleware. For assets, rely on `Cache-Control` and a CDN instead.
+
+### Without the Web platform
+
+`Statics` ships with the Web platform. A project that uses only the HTTP Server serves its
+assets with the recipe above — `upload()` plus the inline headers, with the `Content-Type` of
+each file — or with `upload()` alone for downloads.
+
+The full `upload()` signature is in the [Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/)
+manual; the `Statics` constructor is in the [Web App](/manual/Web/App/overview/) manual.
 
 ## Reference
 

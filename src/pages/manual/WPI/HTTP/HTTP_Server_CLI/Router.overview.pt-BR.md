@@ -346,12 +346,41 @@ armazenada quando a troca é segura de cachear:
 Requisições com credenciais também nunca **leem** o cache — um usuário logado
 sempre alcança o handler.
 
+### Quando o cache sai de cena
+
+Cada um destes casos faz uma rota com `cache:` executar o handler em toda
+requisição. Nenhum deles é reportado — a rota simplesmente se comporta como se
+não tivesse a opção `cache`:
+
+- **A rota tem middlewares** — os seus próprios `middlewares:` ou o
+  `intercept()` de um grupo. O replay do cache pula o handler, então uma rota
+  cujos middlewares precisam rodar em toda requisição nunca é armazenada.
+- **O servidor tem um middleware global** — qualquer entrada em
+  `SAPI::$Middlewares`, ou um listener de `Request\Events::Received` /
+  `Request\Events::Handled`, desliga o cache para todas as rotas.
+- **A requisição veio por um proxy** — uma requisição com `X-Forwarded-For`,
+  `X-Forwarded-Proto` ou `X-Real-IP` é buscada em um espaço de chaves próprio e
+  nunca armazena uma entrada, então atrás de um load balancer que adiciona esses
+  campos o cache fica vazio.
+- **A requisição pede uma resposta nova** — `Cache-Control: no-cache` pula a
+  busca.
+- **A resposta é grande demais** — uma entrada só é armazenada com até 1 MiB de
+  bytes de wire.
+
+Navegadores enviam os seus cookies em toda requisição ao seu site, então em um
+site que usa Session o cache atende apenas clientes sem cookie. Ele serve para
+respostas de API públicas buscadas por clientes sem cookies; para assets
+estáticos, conte com `Cache-Control` e um CDN — veja
+[Arquivos Estáticos](/manual/WPI/HTTP/HTTP_Server_CLI/#arquivos-estáticos).
+
 ### Escopo e limites
 
 O armazenamento é **por worker** (in-process), guarda até 512 entradas (a mais
 antiga é removida primeiro) e atualiza o header `Date` das respostas
 armazenadas uma vez por segundo. Não há compartilhamento entre workers: cada
-worker aquece a própria entrada dentro de uma janela de `TTL`.
+worker aquece a própria entrada dentro de uma janela de `TTL`. Os bytes
+armazenados de um worker são limitados a 64 MiB
+(`HTTP_Server_CLI\Cache::$maxBytes`, definido antes de o servidor iniciar).
 
 ## Middlewares de Grupo de Rotas (intercept)
 
