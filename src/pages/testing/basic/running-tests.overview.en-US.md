@@ -100,7 +100,7 @@ php bootgly test --view=heatmap
 
 The card is composed by the runner from three components: a [Fieldset](/manual/CLI/UI/Base/Fieldset) boxes a [Charts Meter](/manual/CLI/UI/Components/Charts) (the cases progress) and a [Heatmap](/manual/CLI/UI/Components/Heatmap) (the assertions grid). AI agents (`AI_AGENT=1`) always receive the JSON results document, regardless of the view. When a run produces no document, `stdout` stays empty — the reason and the child's output go to `stderr`.
 
-An agent run executes everything it was asked to run, like any other, and the document lists every failure under `failures`. Only `--fail-fast` stops it at the first failing case — and the document says so instead of hiding it: `suites.total` is what the resolved registry **registered**, and every suite the run did not reach is counted in `suites.skipped`. So a `--fail-fast` run that stopped at the first of 105 suites reports `total: 105, failed: 1, skipped: 104, passed: 0`, never a shrunken total with `skipped: 0`. Case counts stay what actually ran: the cases of a suite that never loaded are unknowable.
+An agent run executes everything it was asked to run, like any other, and the document lists every failure under `failures`. Only `--fail-fast` stops it at the first failing case — and the document says so instead of hiding it: `suites.total` is what the resolved registry **registered**, and every suite the run did not reach is counted in `suites.skipped`. So a `--fail-fast` run that stopped at the first of 105 suites reports `total: 105, failed: 1, skipped: 104, passed: 0`, never a shrunken total with `skipped: 0`. Inside a suite that loaded, the same holds for cases: a registered case the run never reached — a `--fail-fast` stop, a Throwable that escaped the suite, a live test server that stopped taking requests — is counted in `cases.skipped` with the message `not reached`. Only the cases of a suite that never loaded are unknowable.
 
 ## The agent results document
 
@@ -128,11 +128,11 @@ A real run of suite `34` (`Bootgly/WPI/Nodes/HTTP_Server_CLI/Request/Session/`),
 | `suites.failed` | `int` | Suites that ended with at least one failed case. |
 | `suites.skipped` | `int` | `total − failed − passed`: every registered suite that reported no outcome — the 113 a targeted run never asked for, and the ones a `--fail-fast` run never reached. |
 | `suites.passed` | `int` | Suites that ran to the end with no failure. |
-| `cases.total` | `int` | Cases that actually ran (`failed + skipped + passed`). The cases of a suite that never loaded are unknowable, so nothing is counted for them. |
+| `cases.total` | `int` | `failed + skipped + passed`: every registered case of the suites that loaded — the ones that ran and the ones the run never reached (skipped, `not reached`). The cases of a suite that never loaded are unknowable, so nothing is counted for them. |
 | `cases.failed` / `cases.skipped` / `cases.passed` | `int` | Per-status counts over the recorded cases. |
 | `assertions` | `int` | Assertions executed across the suites that ran. |
 | `duration_ms` | `float` | Wall time of the run, in milliseconds, rounded to two decimals. |
-| `failures` | `array` | **Present only when at least one case failed.** One object per failed case: `suite` (the suite directory), `case` (its 1-based index), `file`, `message` (the assertion's failure help, or `null`) and `elapsed_ms`. |
+| `failures` | `array` | **Present only when at least one case failed.** One object per failed case: `suite` (the suite directory), `case` (its 1-based index), `file`, `message` (the assertion's failure help, or the cause the runner saw — a Throwable's class, message and origin, a timeout, an unreachable server) and `elapsed_ms`. A Throwable that escapes a suite is a failed case too: the case that was running, or `case: 0` with an empty `file` when no case had started or the suite never loaded. |
 
 A failing run carries that last key, and lists **every** failure — `--fail-fast` is what reduces
 it to the first one:
@@ -154,7 +154,7 @@ php bootgly test 23 --fail-fast
 AI_AGENT=1 php bootgly test --fail-fast
 ```
 
-`--fail-fast` is a bare switch (a value fails with an alert) and it decides the contract alone — `--view` never does, and neither does the agent mode. A suite that manages its own cases (the E2E harnesses declare `exitOnFailure: false` in their autoboot) still runs its remaining cases; the run then stops at the end of that suite. The suites never reached are reported as skipped, in the summary line and in the agent document alike.
+`--fail-fast` is a bare switch (a value fails with an alert) and it decides the contract alone — `--view` never does, and neither does the agent mode. A suite that manages its own cases (the E2E harnesses declare `exitOnFailure: false` in their autoboot) still runs its remaining cases; the run then stops at the end of that suite. Without `--fail-fast` the HTTP server harness runs every case even when one fails, times out or its request throws; the HTTP client harness stays in lock-step with its mock server, so it stops at its first failure and reports the rest as `not reached`. The suites never reached are reported as skipped, in the summary line and in the agent document alike.
 
 ## Coverage
 
@@ -221,7 +221,8 @@ public static function record (string $suite, int $case, string $file, string $s
 ```
 
 Records one test case. `$status` is `'passed'`, `'failed'` or `'skipped'`; `$message` carries the
-failure help and stays `null` otherwise; `$elapsedMs` is rounded to two decimals as it is stored.
+failure help, or why a case was skipped without running (`not reached`, `ignored`), and stays `null`
+otherwise; `$elapsedMs` is rounded to two decimals as it is stored.
 It returns immediately while `$enabled` is `false`, so a human run pays nothing for it.
 
 ```php

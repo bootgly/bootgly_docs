@@ -100,7 +100,7 @@ php bootgly test --view=heatmap
 
 O card é composto pelo runner com três componentes: um [Fieldset](/manual/CLI/UI/Base/Fieldset) encaixota um [Meter de Charts](/manual/CLI/UI/Components/Charts) (o progresso por cases) e um [Heatmap](/manual/CLI/UI/Components/Heatmap) (a grade de assertions). Agentes de IA (`AI_AGENT=1`) sempre recebem o documento JSON de resultados, independentemente da view. Quando um run não produz documento, o `stdout` fica vazio — o motivo e a saída do processo filho vão para o `stderr`.
 
-Um run de agente executa tudo o que lhe foi pedido, como qualquer outro, e o documento lista todas as falhas em `failures`. Só o `--fail-fast` o faz parar no primeiro caso que falha — e o documento diz isso em vez de esconder: `suites.total` é o que o registro resolvido **registrou**, e toda suíte que o run não alcançou entra em `suites.skipped`. Então um run com `--fail-fast` que parou na primeira de 105 suítes reporta `total: 105, failed: 1, skipped: 104, passed: 0`, nunca um total encolhido com `skipped: 0`. Os contadores de casos continuam sendo o que de fato rodou: os casos de uma suíte que nunca carregou são desconhecidos.
+Um run de agente executa tudo o que lhe foi pedido, como qualquer outro, e o documento lista todas as falhas em `failures`. Só o `--fail-fast` o faz parar no primeiro caso que falha — e o documento diz isso em vez de esconder: `suites.total` é o que o registro resolvido **registrou**, e toda suíte que o run não alcançou entra em `suites.skipped`. Então um run com `--fail-fast` que parou na primeira de 105 suítes reporta `total: 105, failed: 1, skipped: 104, passed: 0`, nunca um total encolhido com `skipped: 0`. Dentro de uma suíte que carregou, o mesmo vale para os casos: um caso registrado que o run nunca alcançou — uma parada por `--fail-fast`, um Throwable que escapou da suíte, um servidor de teste que parou de aceitar requisições — entra em `cases.skipped` com a mensagem `not reached`. Só os casos de uma suíte que nunca carregou são desconhecidos.
 
 ## O documento de resultados do agente
 
@@ -128,11 +128,11 @@ Um run real da suíte `34` (`Bootgly/WPI/Nodes/HTTP_Server_CLI/Request/Session/`
 | `suites.failed` | `int` | Suítes que terminaram com ao menos um caso falho. |
 | `suites.skipped` | `int` | `total − failed − passed`: toda suíte registrada que não reportou desfecho — as 113 que um run focado nunca pediu, e as que um run com `--fail-fast` nunca alcançou. |
 | `suites.passed` | `int` | Suítes que rodaram até o fim sem falha. |
-| `cases.total` | `int` | Casos que de fato rodaram (`failed + skipped + passed`). Os casos de uma suíte que nunca carregou são desconhecidos, então nada é contado por eles. |
+| `cases.total` | `int` | `failed + skipped + passed`: todo caso registrado das suítes que carregaram — os que rodaram e os que o run nunca alcançou (skipped, `not reached`). Os casos de uma suíte que nunca carregou são desconhecidos, então nada é contado por eles. |
 | `cases.failed` / `cases.skipped` / `cases.passed` | `int` | Contagens por status sobre os casos registrados. |
 | `assertions` | `int` | Assertions executadas nas suítes que rodaram. |
 | `duration_ms` | `float` | Tempo de parede do run, em milissegundos, arredondado a duas casas. |
-| `failures` | `array` | **Presente só quando ao menos um caso falhou.** Um objeto por caso falho: `suite` (o diretório da suíte), `case` (o índice dele, começando em 1), `file`, `message` (o help da falha da assertion, ou `null`) e `elapsed_ms`. |
+| `failures` | `array` | **Presente só quando ao menos um caso falhou.** Um objeto por caso falho: `suite` (o diretório da suíte), `case` (o índice dele, começando em 1), `file`, `message` (o help da falha da assertion, ou a causa que o runner viu — classe, mensagem e origem de um Throwable, um timeout, um servidor inalcançável) e `elapsed_ms`. Um Throwable que escapa de uma suíte também é um caso falho: o caso que estava rodando, ou `case: 0` com `file` vazio quando nenhum caso tinha começado ou a suíte nunca carregou. |
 
 Um run que falha carrega essa última chave, e lista **todas** as falhas — é o `--fail-fast` que a
 reduz à primeira:
@@ -154,7 +154,7 @@ php bootgly test 23 --fail-fast
 AI_AGENT=1 php bootgly test --fail-fast
 ```
 
-`--fail-fast` é um switch sem valor (um valor falha com um alerta) e decide o contrato sozinho — `--view` nunca decide, nem o modo agente. Uma suíte que gerencia os próprios casos (os harnesses E2E declaram `exitOnFailure: false` no autoboot) ainda executa os casos restantes; o run então para ao fim dessa suíte. As suítes nunca alcançadas são reportadas como skipped, tanto na linha de resumo quanto no documento do agente.
+`--fail-fast` é um switch sem valor (um valor falha com um alerta) e decide o contrato sozinho — `--view` nunca decide, nem o modo agente. Uma suíte que gerencia os próprios casos (os harnesses E2E declaram `exitOnFailure: false` no autoboot) ainda executa os casos restantes; o run então para ao fim dessa suíte. Sem `--fail-fast`, o harness do servidor HTTP executa todos os casos mesmo quando um falha, estoura o tempo ou tem a requisição lançando exceção; o harness do cliente HTTP anda em lock-step com o servidor mock, então para na primeira falha e reporta o resto como `not reached`. As suítes nunca alcançadas são reportadas como skipped, tanto na linha de resumo quanto no documento do agente.
 
 ## Cobertura (Coverage)
 
@@ -221,7 +221,8 @@ public static function record (string $suite, int $case, string $file, string $s
 ```
 
 Registra um caso de teste. `$status` é `'passed'`, `'failed'` ou `'skipped'`; `$message` carrega o
-help da falha e fica `null` nos demais casos; `$elapsedMs` é arredondado a duas casas já ao ser
+help da falha, ou por que um caso foi pulado sem rodar (`not reached`, `ignored`), e fica `null`
+nos demais casos; `$elapsedMs` é arredondado a duas casas já ao ser
 guardado. Retorna de imediato enquanto `$enabled` for `false`, então um run humano não paga nada
 por ele.
 
