@@ -33,10 +33,13 @@ Elas são do Bootgly: o `kit boot` as instala e as reescreve sempre que diferem 
 framework e das plataformas fixados, então não as edite. Ele as reconhece por um selo — a primeira
 linha do `AGENTS.md`, a linha abaixo do frontmatter de cada skill — e deixa em paz tudo o que não tem
 selo: um `AGENTS.md` seu no lugar delas (o boot avisa) e tudo o mais que você guardar em
-`projects/.agents/`, inclusive as suas próprias skills. O prefixo de skill `bootgly-` é reservado,
+`projects/.agents/`, inclusive as suas próprias skills. Um `AGENTS.md` seu assume o conjunto inteiro: o
+boot então não instala nem atualiza nada dele, regras e skills, e as skills com selo que já estão lá
+ficam até você removê-las. O que tem selo é substituído por inteiro,
+`.agents/rules/` incluído: não guarde nada seu lá dentro. O prefixo de skill `bootgly-` é reservado,
 então dê outro nome às suas: uma sua já com um nome que o Bootgly entrega é mantida, e aquela skill do
-Bootgly não é instalada (o boot avisa também). `kit boot --agents` instala só as regras e skills,
-`--resources` só os diretórios.
+Bootgly não é instalada (o boot avisa também — renomeie a sua e o próximo boot a instala). `kit boot
+--agents` instala só as regras e skills, `--resources` só os diretórios.
 
 ## Veja para onde pode mover
 
@@ -72,7 +75,8 @@ Sem argumento, o kit move para a release **mais nova**. O comando busca as tags 
 checkout do kit na tag e deixa os submódulos (`Bootgly/`, `Console/`, `Web/`) seguirem os pins que
 a tag registra — uma plataforma que você nunca inicializou continua assim. Seus `projects/`,
 `storage/` e todo outro diretório ignorado são seus: um movimento nunca escreve neles — exceto as
-regras para agentes do framework em `projects/` (`AGENTS.md`, `.agents/rules/`), que a nova release
+regras para agentes em `projects/` (`AGENTS.md`, `.agents/rules/`, as skills `bootgly-*` com selo e os
+links delas em `.claude/skills/`), que a nova release
 instala de novo (ou remove, quando é anterior a elas) — e o único
 caso em que uma release carrega um arquivo nesse caminho é recusado pelo nome antes de qualquer coisa
 mover. Atualizar **a partir de** uma release anterior às regras roda o código dessa release, que não
@@ -216,8 +220,10 @@ bootgly kit boot [--resources] [--agents]
 
 Instala os diretórios de recursos do kit — o template `scripts/` do framework, o layout de
 `storage/` e `projects/` com o registro vazio — cada um só onde ainda não existe; depois as regras
-para agentes (`projects/AGENTS.md`, `projects/.agents/rules/`), reescritas sempre que diferem dos
-templates enquanto carregam o selo. `--resources` instala só os diretórios, `--agents` só as regras
+para agentes (`projects/AGENTS.md`, `projects/.agents/rules/`, as skills `bootgly-*` com selo em
+`projects/.agents/skills/` e os links delas em `projects/.claude/skills/`), reescritas sempre que
+diferem dos templates do framework e das plataformas enquanto carregam o selo. `--resources` instala só
+os diretórios, `--agents` só as regras e skills
 (e falha quando não consegue escrevê-las; um arquivo seu no lugar delas é um pulo, não uma falha);
 as duas flags, ou nenhuma, instalam os dois. Recusado no checkout do framework, cujos diretórios são os templates.
 Sem forma `--json`.

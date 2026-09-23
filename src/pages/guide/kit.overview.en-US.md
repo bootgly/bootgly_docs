@@ -33,10 +33,13 @@ Bootgly's: `kit boot` lays them down and rewrites them whenever they differ from
 framework's and platforms' templates, so do not edit them. It recognizes them by a stamp — the first
 line of `AGENTS.md`, the line under each skill's frontmatter — and leaves anything unstamped alone: an
 `AGENTS.md` of yours in their place (the boot says so), and everything else you keep in
-`projects/.agents/`, your own skills included. The `bootgly-` skill prefix is reserved, so name your
-own skills otherwise: one of yours already under a name Bootgly ships is kept, and that Bootgly skill
-is not laid (the boot says so too). `kit boot --agents` lays down only the rules and skills,
-`--resources` only the directories.
+`projects/.agents/`, your own skills included. An `AGENTS.md` of yours takes over the whole set: the
+boot then lays and refreshes none of it, rules and skills alike, and the stamped skills already there
+stay until you remove them. What is stamped is replaced whole, `.agents/rules/`
+included: keep nothing of yours inside it. The `bootgly-` skill prefix is reserved, so name your own
+skills otherwise: one of yours already under a name Bootgly ships is kept, and that Bootgly skill is
+not laid (the boot says so too — rename yours and the next boot lays it). `kit boot --agents` lays
+down only the rules and skills, `--resources` only the directories.
 
 ## See what you can move to
 
@@ -72,7 +75,8 @@ Without an argument the kit moves to the **newest** release. The command fetches
 checks the kit out at the tag and lets the submodules (`Bootgly/`, `Console/`, `Web/`) follow the
 pins that tag records — a platform you never set up stays that way. Your `projects/`, `storage/`
 and every other ignored directory are yours: a move never writes into them — except the
-framework's agent rules in `projects/` (`AGENTS.md`, `.agents/rules/`), which the new release
+agent rules in `projects/` (`AGENTS.md`, `.agents/rules/`, the stamped `bootgly-*` skills and their
+`.claude/skills/` links), which the new release
 lays down again (or removes, when it predates them) — and the one case where a release carries a
 file at such a path is refused by name before anything moves. Upgrading **from** a release that
 predates the rules runs that release's code, which knows nothing of them: run
@@ -213,9 +217,10 @@ bootgly kit boot [--resources] [--agents]
 
 Lay down the kit's resource directories — the framework's `scripts/` template, the `storage/`
 layout, and `projects/` with the empty registry — each only where it does not exist yet; then the
-agent rules (`projects/AGENTS.md`, `projects/.agents/rules/`), rewritten whenever they differ from
-the templates while they carry the stamp. `--resources` lays down only the directories, `--agents`
-only the rules (and fails when it cannot write them; a file of yours in their place is a skip, not
+agent rules (`projects/AGENTS.md`, `projects/.agents/rules/`, the stamped `bootgly-*` skills in
+`projects/.agents/skills/` and their `projects/.claude/skills/` links), rewritten whenever they differ
+from the framework's and platforms' templates while they carry the stamp. `--resources` lays down only
+the directories, `--agents` only the rules and skills (and fails when it cannot write them; a file of yours in their place is a skip, not
 a failure); both flags, or neither, lay down both. Refused in the framework checkout, whose directories are
 the templates. No `--json` form.
 
