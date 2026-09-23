@@ -106,6 +106,28 @@ yield $Router->route('/dados', function ($Request, $Response) {
 }, [GET, POST]);
 ```
 
+## Rotas de corpo fixo
+
+```php
+serve (string $route, string $body, null|string|array $methods = null, array $middlewares = []) : false
+```
+
+`serve()` registra uma rota que sempre responde com a mesma string — não há handler. É a forma mais curta e mais rápida de publicar uma resposta constante, como um health check ou uma página fixa:
+
+```php
+yield $Router->serve('/health', 'OK', GET);
+yield $Router->serve('/sobre', '<h1>Sobre nós</h1>', GET);
+```
+
+Ela se comporta como um `route()` com um handler que retorna `$Response(body: $body)`:
+
+- A resposta é `200 OK` com `$body` como corpo. Ela não define headers próprios.
+- `$methods`, parâmetros de rota, grupos e catch-all funcionam exatamente como em `route()`. Registrar a mesma rota com `route()` e com `serve()` mantém o último registro.
+- `$middlewares` (e os middlewares de grupo via `intercept()`) continuam rodando em toda requisição.
+- Uma rota estática sem middlewares pula a chamada de handler por completo: a string armazenada é copiada direto para a resposta.
+
+`$body` é o próprio conteúdo da resposta, fixado quando as rotas são registradas — **não** é um caminho de arquivo: `serve('/logo', 'statics/logo.png')` responde com o texto `statics/logo.png`. Para enviar um arquivo, use [`Response::upload()`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/#enviando-arquivos) (download) ou [leia-o num handler](/manual/WPI/HTTP/HTTP_Server_CLI/Response/#enviar-o-conteúdo-de-um-arquivo-inline) (inline). Para conteúdo que muda a cada requisição, use `route()`.
+
 ## Parâmetros de Rota
 
 Parâmetros de rota são definidos com a sintaxe `:nomeDoParametro`. Dentro de handlers Closure, acesse os parâmetros via `$this->Params->nomeDoParametro`.

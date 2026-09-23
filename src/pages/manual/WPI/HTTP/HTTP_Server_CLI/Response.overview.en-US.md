@@ -125,25 +125,27 @@ public function upload (string $file, int $offset = 0, null|int $length = null, 
 
 **Description:**
 
-Upload a file to the HTTP client.
+Sends the contents of a file to the HTTP client **as a download**. The file is streamed from disk in chunks — it is never loaded into memory whole — so `upload()` is the method for files of any size. ("Upload" is named from the server's point of view: the server uploads the file to the client.)
+
+A whole-file (or single-range) response carries `Content-Type: application/octet-stream` and `Content-Disposition: attachment; filename="<basename>"`, so browsers save the file instead of displaying it. To show a file's contents in the browser, see [Send file contents inline](#send-file-contents-inline) below.
 
 **Parameters:**
 
-- `$file` (string): The file path to upload.
-- `$offset` (int): The data offset.
-- `$length` (int|null): The length of the data to upload.
+- `$file` (string): The file path, **relative to the project directory** (`BOOTGLY_PROJECT->path`). A leading `/` is still read from the project directory, and a path that resolves outside it answers `403 Forbidden`.
+- `$offset` (int): The byte offset where the data starts.
+- `$length` (int|null): How many bytes to send (`null` = up to the end of the file).
 - `$close` (bool): Close the connection after sending.
 
-**Example 1:**
+**Example 1 — the whole file:**
 
 ```php
-return $Response->upload('/path/to/file.pdf');
+return $Response->upload('storage/files/report.pdf');
 ```
 
-**Example 2:**
+**Example 2 — a window of the file (the first 2 bytes, answered as `206 Partial Content`):**
 
 ```php
-return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
+return $Response->upload('statics/alphanumeric.txt', offset: 0, length: 2);
 ```
 
 **Byte ranges:**
@@ -184,6 +186,26 @@ ln /srv/app/.env  /srv/app/public/uploads/notes.txt   # now servable
 Linux blocks the interesting half of this by default: with `fs.protected_hardlinks=1` (the default on current kernels) you may only hard-link a file you own or can already read, so this cannot be used to reach a file you were denied. What remains is a change of *exposure* — code running as the application can turn a file it could already read locally into one the world can fetch.
 
 So: **do not let less-trusted code write into a served tree.** A directory that accepts uploads should not be the same directory a route serves back, and neither should sit next to application secrets. If you cannot separate them, serve uploads through a handler that reads and returns the bytes itself, rather than through `upload()`.
+
+### Send file contents inline
+
+To send a file's contents as the response body — rendered by the browser instead of downloaded — read the file and send the bytes with the right `Content-Type`. This loads the whole file into memory, so keep it for small files; use `upload()` for large ones.
+
+```php
+$Router->route('/terms', function (Request $Request, Response $Response) {
+   $contents = file_get_contents(BOOTGLY_PROJECT->path . 'statics/terms.txt');
+   if ($contents === false) {
+      return $Response(code: 404, body: 'Not Found');
+   }
+
+   return $Response(
+      headers: ['Content-Type' => 'text/plain; charset=utf-8'],
+      body: $contents
+   );
+}, GET);
+```
+
+> Looking for `serve()`? It is not a Response method and it does not read files: [`Router::serve()`](/manual/WPI/HTTP/HTTP_Server_CLI/Router/#fixed-body-routes) registers a route that always answers with a fixed string you pass at registration.
 
 ### HTTP Authentication
 

@@ -125,25 +125,27 @@ public function upload (string $file, int $offset = 0, null|int $length = null, 
 
 **Descrição:**
 
-Envia arquivo para o cliente HTTP.
+Envia o conteúdo de um arquivo para o cliente HTTP **como download**. O arquivo é transmitido do disco em blocos — nunca é carregado inteiro na memória —, então `upload()` é o método para arquivos de qualquer tamanho. (O nome "upload" é do ponto de vista do servidor: o servidor faz o upload do arquivo para o cliente.)
+
+Uma resposta do arquivo inteiro (ou de um único range) leva `Content-Type: application/octet-stream` e `Content-Disposition: attachment; filename="<basename>"`, então o navegador salva o arquivo em vez de exibi-lo. Para exibir o conteúdo de um arquivo no navegador, veja [Enviar o conteúdo de um arquivo inline](#enviar-o-conteúdo-de-um-arquivo-inline) abaixo.
 
 **Parâmetros:**
 
-- `$file` (string): O caminho do arquivo para upload.
-- `$offset` (int): O deslocamento dos dados.
-- `$length` (int|null): O comprimento dos dados para upload.
+- `$file` (string): O caminho do arquivo, **relativo ao diretório do projeto** (`BOOTGLY_PROJECT->path`). Uma `/` inicial continua sendo lida a partir do diretório do projeto, e um caminho que resolve para fora dele responde `403 Forbidden`.
+- `$offset` (int): O deslocamento, em bytes, onde os dados começam.
+- `$length` (int|null): Quantos bytes enviar (`null` = até o fim do arquivo).
 - `$close` (bool): Fechar a conexão após o envio.
 
-**Exemplo 1:**
+**Exemplo 1 — o arquivo inteiro:**
 
 ```php
-return $Response->upload('/caminho/para/arquivo.pdf');
+return $Response->upload('storage/files/report.pdf');
 ```
 
-**Exemplo 2:**
+**Exemplo 2 — uma janela do arquivo (os 2 primeiros bytes, respondidos como `206 Partial Content`):**
 
 ```php
-return $Response('statics/alphanumeric.txt')->upload(offset: 0, length: 2);
+return $Response->upload('statics/alphanumeric.txt', offset: 0, length: 2);
 ```
 
 **Byte-ranges:**
@@ -184,6 +186,26 @@ ln /srv/app/.env  /srv/app/public/uploads/notas.txt   # agora é servível
 O Linux bloqueia a metade interessante disso por padrão: com `fs.protected_hardlinks=1` (padrão nos kernels atuais) só é possível criar hard link para arquivo que você possui ou já consegue ler, então isso não serve para alcançar um arquivo que lhe foi negado. O que sobra é mudança de *exposição* — código rodando como a aplicação transforma um arquivo que ele já lia localmente em um que o mundo pode baixar.
 
 Portanto: **não deixe código menos confiável escrever numa árvore servida.** Um diretório que recebe uploads não deve ser o mesmo que uma rota devolve, e nenhum dos dois deve ficar ao lado dos segredos da aplicação. Se não der para separar, sirva os uploads por um handler que leia e devolva os bytes ele mesmo, em vez de usar o `upload()`.
+
+### Enviar o conteúdo de um arquivo inline
+
+Para enviar o conteúdo de um arquivo como corpo da resposta — exibido pelo navegador em vez de baixado —, leia o arquivo e envie os bytes com o `Content-Type` correto. Isso carrega o arquivo inteiro na memória, então use apenas para arquivos pequenos; para arquivos grandes, use `upload()`.
+
+```php
+$Router->route('/terms', function (Request $Request, Response $Response) {
+   $contents = file_get_contents(BOOTGLY_PROJECT->path . 'statics/terms.txt');
+   if ($contents === false) {
+      return $Response(code: 404, body: 'Not Found');
+   }
+
+   return $Response(
+      headers: ['Content-Type' => 'text/plain; charset=utf-8'],
+      body: $contents
+   );
+}, GET);
+```
+
+> Procurando o `serve()`? Ele não é um método do Response e não lê arquivos: o [`Router::serve()`](/manual/WPI/HTTP/HTTP_Server_CLI/Router/#rotas-de-corpo-fixo) registra uma rota que sempre responde com uma string fixa, passada no registro.
 
 ### HTTP Authentication
 

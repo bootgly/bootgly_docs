@@ -106,6 +106,28 @@ yield $Router->route('/data', function ($Request, $Response) {
 }, [GET, POST]);
 ```
 
+## Fixed-body routes
+
+```php
+serve (string $route, string $body, null|string|array $methods = null, array $middlewares = []) : false
+```
+
+`serve()` registers a route that always answers with the same string — there is no handler. It is the shortest and fastest way to publish a constant response, such as a health check or a fixed page:
+
+```php
+yield $Router->serve('/health', 'OK', GET);
+yield $Router->serve('/about', '<h1>About us</h1>', GET);
+```
+
+It behaves like `route()` with a handler that returns `$Response(body: $body)`:
+
+- The response is `200 OK` with `$body` as the body. It sets no headers of its own.
+- `$methods`, route params, groups and catch-all work exactly as in `route()`. Registering the same route with both `route()` and `serve()` keeps the last registration.
+- `$middlewares` (and group middlewares from `intercept()`) still run for every request.
+- A static route without middlewares skips the handler call altogether: the stored string is copied straight into the response.
+
+`$body` is the response content itself, fixed when the routes are registered — it is **not** a file path: `serve('/logo', 'statics/logo.png')` answers with the text `statics/logo.png`. To send a file, use [`Response::upload()`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/#upload-files) (download) or [read it in a handler](/manual/WPI/HTTP/HTTP_Server_CLI/Response/#send-file-contents-inline) (inline). For content that changes per request, use `route()`.
+
 ## Route Params
 
 Route params are defined with the `:paramName` syntax. Inside Closure handlers, access params via `$this->Params->paramName`.
