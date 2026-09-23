@@ -22,12 +22,21 @@ uma cópia que falha não deixa nada pela metade, e o registro vem por último, 
 deixa o kit por preparar para a próxima execução completar. Você raramente o roda à mão: o
 primeiro `projects create` ou `projects import` num kit novo faz o boot por você.
 
-A única exceção são as regras para agentes — `projects/AGENTS.md` e `projects/.agents/rules/`, as
-regras do Bootgly adaptadas para os agentes de IA que constroem os seus projetos. Elas são do
-framework: o `kit boot` as instala e as reescreve sempre que diferem dos templates do framework
-fixado, então não as edite. Ele as reconhece pelo selo na primeira linha do `AGENTS.md` — um arquivo
-seu no lugar delas fica intocado (o boot avisa), e o que mais você guardar em `projects/.agents/`
-nunca é mexido. `kit boot --agents` instala só as regras, `--resources` só os diretórios.
+A única exceção são as regras para agentes — `projects/AGENTS.md`, `projects/.agents/rules/` e as
+skills `bootgly-*` em `projects/.agents/skills/` (ligadas em `projects/.claude/skills/` para o Claude
+Code), as regras e receitas do Bootgly adaptadas para os agentes de IA que constroem os seus
+projetos: as skills do framework (`bootgly-project`, `bootgly-build`, `bootgly-config`, `bootgly-test`,
+`bootgly-review`) mais uma `bootgly-build-<plataforma>` de cada pacote de plataforma configurado no kit
+(`bootgly-build-console`, `bootgly-build-web`). Uma plataforma configurada com `projects create
+--platform=` traz a sua skill na hora; uma configurada ou removida de outro jeito, no próximo `kit boot`.
+Elas são do Bootgly: o `kit boot` as instala e as reescreve sempre que diferem dos templates do
+framework e das plataformas fixados, então não as edite. Ele as reconhece por um selo — a primeira
+linha do `AGENTS.md`, a linha abaixo do frontmatter de cada skill — e deixa em paz tudo o que não tem
+selo: um `AGENTS.md` seu no lugar delas (o boot avisa) e tudo o mais que você guardar em
+`projects/.agents/`, inclusive as suas próprias skills. O prefixo de skill `bootgly-` é reservado,
+então dê outro nome às suas: uma sua já com um nome que o Bootgly entrega é mantida, e aquela skill do
+Bootgly não é instalada (o boot avisa também). `kit boot --agents` instala só as regras e skills,
+`--resources` só os diretórios.
 
 ## Veja para onde pode mover
 

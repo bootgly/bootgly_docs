@@ -22,12 +22,20 @@ never touches one that exists; a copy that fails leaves nothing half-laid, and t
 last, so a boot that fails leaves the kit unprepared for the next run to complete. You rarely run it by hand: the first `projects create` or `projects import` on a fresh
 kit boots it for you.
 
-The one exception is the agent rules — `projects/AGENTS.md` and `projects/.agents/rules/`, the
-Bootgly rules adapted for the AI agents that build your projects. They are the framework's:
-`kit boot` lays them down and rewrites them whenever they differ from the pinned framework's
-templates, so do not edit them. It recognizes them by the stamp on the first line of
-`AGENTS.md` — a file of yours in their place is left alone (the boot says so), and anything else
-you keep in `projects/.agents/` is never touched. `kit boot --agents` lays down only the rules,
+The one exception is the agent rules — `projects/AGENTS.md`, `projects/.agents/rules/` and the
+`bootgly-*` skills in `projects/.agents/skills/` (linked into `projects/.claude/skills/` for Claude
+Code), the Bootgly rules and recipes adapted for the AI agents that build your projects: the
+framework's skills (`bootgly-project`, `bootgly-build`, `bootgly-config`, `bootgly-test`,
+`bootgly-review`) plus a `bootgly-build-<platform>` from each platform package set up in the kit
+(`bootgly-build-console`, `bootgly-build-web`). A platform set up with `projects create --platform=`
+brings its skill at once; one set up or removed any other way does on the next `kit boot`. They are
+Bootgly's: `kit boot` lays them down and rewrites them whenever they differ from the pinned
+framework's and platforms' templates, so do not edit them. It recognizes them by a stamp — the first
+line of `AGENTS.md`, the line under each skill's frontmatter — and leaves anything unstamped alone: an
+`AGENTS.md` of yours in their place (the boot says so), and everything else you keep in
+`projects/.agents/`, your own skills included. The `bootgly-` skill prefix is reserved, so name your
+own skills otherwise: one of yours already under a name Bootgly ships is kept, and that Bootgly skill
+is not laid (the boot says so too). `kit boot --agents` lays down only the rules and skills,
 `--resources` only the directories.
 
 ## See what you can move to
