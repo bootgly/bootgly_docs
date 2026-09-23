@@ -189,21 +189,23 @@ So: **do not let less-trusted code write into a served tree.** A directory that 
 
 ### Send file contents inline
 
-To send a file's contents as the response body — rendered by the browser instead of downloaded — read the file and send the bytes with the right `Content-Type`. This loads the whole file into memory, so keep it for small files; use `upload()` for large ones.
+`upload()` marks the file as a download. To have the browser display it instead — a PDF, an image, a text file — call `upload()` and then replace the two headers it set. The file is still streamed from disk, never loaded into memory:
 
 ```php
 $Router->route('/terms', function (Request $Request, Response $Response) {
-   $contents = file_get_contents(BOOTGLY_PROJECT->path . 'statics/terms.txt');
-   if ($contents === false) {
-      return $Response(code: 404, body: 'Not Found');
+   $Response->upload('statics/terms.txt');
+
+   // ? Only a single-body answer (the whole file or one range) carries these headers
+   if ($Response->Header->get('Content-Disposition') !== '') {
+      $Response->Header->set('Content-Type', 'text/plain; charset=utf-8');
+      $Response->Header->set('Content-Disposition', 'inline');
    }
 
-   return $Response(
-      headers: ['Content-Type' => 'text/plain; charset=utf-8'],
-      body: $contents
-   );
+   return $Response;
 }, GET);
 ```
+
+Headers are serialized only after the handler returns, so values set after `upload()` replace the ones it wrote. Keep the `Content-Disposition` check: when a client asks for several ranges at once, `upload()` answers `206` with `Content-Type: multipart/byteranges; boundary=…` and sets no `Content-Disposition`. Overwriting that `Content-Type` would break the multipart body. The check also skips error answers (`403`, `416`, …), which set neither header.
 
 > Looking for `serve()`? It is not a Response method and it does not read files: [`Router::serve()`](/manual/WPI/HTTP/HTTP_Server_CLI/Router/#fixed-body-routes) registers a route that always answers with a fixed string you pass at registration.
 

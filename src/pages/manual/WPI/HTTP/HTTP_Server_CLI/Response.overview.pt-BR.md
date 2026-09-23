@@ -189,21 +189,23 @@ Portanto: **não deixe código menos confiável escrever numa árvore servida.**
 
 ### Enviar o conteúdo de um arquivo inline
 
-Para enviar o conteúdo de um arquivo como corpo da resposta — exibido pelo navegador em vez de baixado —, leia o arquivo e envie os bytes com o `Content-Type` correto. Isso carrega o arquivo inteiro na memória, então use apenas para arquivos pequenos; para arquivos grandes, use `upload()`.
+O `upload()` marca o arquivo como download. Para o navegador exibi-lo — um PDF, uma imagem, um arquivo de texto —, chame `upload()` e depois substitua os dois headers que ele definiu. O arquivo continua sendo transmitido do disco, sem ser carregado na memória:
 
 ```php
 $Router->route('/terms', function (Request $Request, Response $Response) {
-   $contents = file_get_contents(BOOTGLY_PROJECT->path . 'statics/terms.txt');
-   if ($contents === false) {
-      return $Response(code: 404, body: 'Not Found');
+   $Response->upload('statics/terms.txt');
+
+   // ? Só uma resposta de corpo único (o arquivo inteiro ou um range) leva esses headers
+   if ($Response->Header->get('Content-Disposition') !== '') {
+      $Response->Header->set('Content-Type', 'text/plain; charset=utf-8');
+      $Response->Header->set('Content-Disposition', 'inline');
    }
 
-   return $Response(
-      headers: ['Content-Type' => 'text/plain; charset=utf-8'],
-      body: $contents
-   );
+   return $Response;
 }, GET);
 ```
+
+Os headers só são serializados depois que o handler retorna, então os valores definidos depois do `upload()` substituem os que ele escreveu. Mantenha a verificação de `Content-Disposition`: quando um cliente pede vários ranges de uma vez, o `upload()` responde `206` com `Content-Type: multipart/byteranges; boundary=…` e não define `Content-Disposition`. Sobrescrever esse `Content-Type` quebraria o corpo multipart. A verificação também ignora respostas de erro (`403`, `416`, …), que não definem nenhum dos dois headers.
 
 > Procurando o `serve()`? Ele não é um método do Response e não lê arquivos: o [`Router::serve()`](/manual/WPI/HTTP/HTTP_Server_CLI/Router/#rotas-de-corpo-fixo) registra uma rota que sempre responde com uma string fixa, passada no registro.
 
