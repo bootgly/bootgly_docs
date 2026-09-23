@@ -24,7 +24,6 @@ export default {
       }
     }
   },
-
   '/console-platform': {
     config: {
       icon: 'terminal',
@@ -50,7 +49,6 @@ export default {
       }
     }
   },
-
   '/web-platform': {
     config: {
       icon: 'language',
@@ -103,6 +101,35 @@ export default {
       },
       'pt-BR': {
         title: 'Configuração'
+      }
+    }
+  },
+  '/security': {
+    config: {
+      icon: 'security',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'For security researchers auditing Bootgly — where to report, what is in scope, and how to turn a suspected issue into a reproducible PoC in the native test runner.',
+          'pt-BR': 'Para pesquisadores de segurança auditando o Bootgly — onde reportar, o que está no escopo e como transformar um problema suspeito em uma PoC reproduzível no runner de testes nativo.'
+        }
+      },
+      book: 'guide',
+      menu: {
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Security'
+      },
+      'pt-BR': {
+        title: 'Segurança'
       }
     }
   },
@@ -996,31 +1023,6 @@ export default {
       },
       'pt-BR': {
         title: 'Reload'
-      }
-    }
-  },
-  '/security': {
-    config: {
-      icon: 'security',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'For security researchers auditing Bootgly — where to report, what is in scope, and how to turn a suspected issue into a reproducible PoC in the native test runner.',
-          'pt-BR': 'Para pesquisadores de segurança auditando o Bootgly — onde reportar, o que está no escopo e como transformar um problema suspeito em uma PoC reproduzível no runner de testes nativo.'
-        }
-      },
-      book: 'guide',
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Security'
-      },
-      'pt-BR': {
-        title: 'Segurança'
       }
     }
   },
