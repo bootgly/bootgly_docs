@@ -104,6 +104,19 @@ export default {
     ]
   },
 
+  // @ Header links — centered in the header where they fit; elsewhere they
+  // open from the arrow attached to the brand
+  header: {
+    links: [
+      { label: 'GitHub', icon: 'code', href: 'https://github.com/bootgly/bootgly/' },
+      { label: 'Kit', icon: 'rocket_launch', href: 'https://github.com/bootgly/bootgly.kit/' },
+      { label: { 'en-US': 'Ecosystem', 'pt-BR': 'Ecossistema' }, icon: 'hub', children: [
+        { label: 'Bootgly Web', icon: 'language', href: 'https://github.com/bootgly/bootgly-web/' },
+        { label: 'Bootgly Console', icon: 'terminal', href: 'https://github.com/bootgly/bootgly-console/' }
+      ] }
+    ]
+  },
+
   // @ Footer
   // Legal / compliance links shown in a row above the "Powered by" line.
   footer: {
