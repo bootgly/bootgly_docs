@@ -605,8 +605,32 @@ return $Response->defer(function (Response $Response): void {
 Failures do not throw — they arrive as a completed `Response` with `code` `0` and a named
 `status`: `Timeout`, `Connection Failed`, `Connection Lost`, `Connection Closed`,
 `Truncated Response`, `Response Too Large`, `Response Header Fields Too Large`,
-`Invalid Response`, `Redirect Failed`, `Insecure Redirect` or `Invalid Chunked Encoding`. A route that reads `code` alone already treats every one of them as
+`Invalid Response`, `Redirect Failed`, `Redirect Refused`, `Too Many Redirects`, `Insecure Redirect` or `Invalid Chunked Encoding`. A route that reads `code` alone already treats every one of them as
 "no answer"; read `status` when the reason matters.
+
+Redirects stay on the upstream. The resource's client comes pinned to the scheme, host and port
+you constructed it with: a same-origin redirect is followed, and a hop anywhere else fails the leg
+with `code` `0` and status `Redirect Refused` before anything is sent there — an upstream cannot
+bounce the worker's requests, with their API keys and bodies, to a service the worker can reach.
+When an upstream legitimately redirects elsewhere — a CDN, a file host — replace the policy in the
+factory:
+
+```php
+'Upstream' => static function (object $Context): HTTP {
+   $HTTP = new HTTP(host: 'api.example.com', secure: []);
+   // ! One more trusted destination, over TLS only
+   $HTTP->Client->Redirection = static fn (string $host, int $port, bool $secure): bool =>
+      $secure && ($host === 'api.example.com' || $host === 'files.example.com');
+
+   return $HTTP;
+},
+```
+
+`$HTTP->Client->Redirection = null` follows any http(s) target. Either way, a hop to another
+origin carries only the client's `crossOriginHeaders` — never `Authorization`, cookies or API keys
+(see [Redirect Handling](/manual/WPI/HTTP/HTTP_Client_CLI/#redirect-handling)). Inside `batch()`
+the pin refuses the same hops; a same-origin hop that needs another connection comes back as the
+final 3xx, since a batch never re-dials.
 
 Every leg of the exchange parks the deferred Fiber instead of pumping a private event loop: the
 wait for the response, the dial that opens the connection, and the TLS handshake. The worker
@@ -675,8 +699,8 @@ the upstream host; `$port` defaults to `80`, or `443` when `secure` is set; `$se
 stream context options (`[]` enables TLS with the defaults); `$pool` bounds the connection pool
 inside one deferral (`['min' => N, 'max' => N]`); `$timeout` is the response timeout in seconds
 (`0` = no timeout); `$connectTimeout` is the connection timeout per dial attempt and alone bounds
-the dial **and** the TLS handshake (`0` = no timeout); `$maxRedirects` caps redirect following
-(`0` = disabled); `$maxRetries` caps retries on connection/timeout failure (`0` = disabled); and
+the dial **and** the TLS handshake (`0` = no timeout); `$maxRedirects` caps redirect following,
+which stays within the upstream origin (`0` = disabled); `$maxRetries` caps retries on connection/timeout failure (`0` = disabled); and
 `$enableHTTP2` selects HTTP/2 negotiation (`null` = ALPN when secure; `true` = also h2c;
 `false` = never); `$maxResponseBytes` caps the raw bytes of each upstream response (`null` = the
 client's default, 16 MiB; `0` = unbounded). Throws `RuntimeException` when constructed outside the HTTP server reactor.
@@ -721,7 +745,8 @@ public private(set) HTTP_Client_CLI $Client
 
 The embedded client — knob surface only. Every knob the constructor does not cover is set here:
 `retryOn`, `retryDelay`, `retryMaxDelay`, `retryTimeout`, `retryJitter`,
-`allowInsecureRedirect`, `enableHTTP2`, and the `timeout` family. Never send through it.
+`allowInsecureRedirect`, `Redirection` (pinned to the upstream origin by default),
+`crossOriginHeaders`, `enableHTTP2`, and the `timeout` family. Never send through it.
 
 ## Boundary
 

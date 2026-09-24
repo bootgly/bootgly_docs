@@ -19,7 +19,7 @@ O HTTP Client CLI é o cliente HTTP nativo do Bootgly PHP Framework. Ele é cons
 | **Modo Batch** | `batch()` + múltiplos `request()` + `drain()` |
 | **Event-Driven** | Modo async via hooks `on()` com rastreamento de requisição por socket |
 | **SSL/TLS** | Suporte completo a HTTPS |
-| **Redirects** | Seguimento automático até limite configurável |
+| **Redirects** | Seguidos até um limite configurável, sob uma política de destino por salto |
 | **Timeouts** | Timeout de conexão e de resposta |
 | **Retries** | Backoff exponencial com jitter, retry HTTP opt-in honrando `Retry-After` |
 | **Multi-Worker** | Geração de carga baseada em fork para benchmarking |
@@ -118,7 +118,9 @@ Passar duas instâncias da mesma classe de Configs em uma mesma chamada de `conf
 
 | Propriedade | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `maxRedirects` | `int` | `10` | Máximo de redirects a seguir (0 = desabilitado). |
+| `maxRedirects` | `int` | `10` | Máximo de redirects a seguir; passado dele a requisição falha com `'Too Many Redirects'` (0 = desabilitado). |
+| `Redirection` | `null\|Closure` | `null` | Política de destino consultada em cada salto de redirect (veja Tratamento de Redirects). |
+| `crossOriginHeaders` | `array` | `['accept', 'accept-encoding', 'accept-language', 'user-agent']` | Headers da requisição que um redirect leva para outra origem. |
 | `allowInsecureRedirect` | `bool` | `false` | Seguir um redirect que rebaixa de `https` para `http`. |
 | `connectTimeout` | `int\|float` | `30` | Timeout de conexão em segundos, por tentativa de discagem. Em um reactor adotado, a discagem e o handshake TLS fazem park em vez de bloquear o loop do host (0 = sem timeout). |
 | `timeout` | `int\|float` | `30` | Timeout de resposta em segundos. |
@@ -311,7 +313,7 @@ Notas de HTTP/2:
 
 ## Tratamento de Redirects
 
-O cliente segue automaticamente redirects HTTP (301, 302, 303, 307, 308) até `maxRedirects`:
+O cliente segue redirects HTTP (301, 302, 303, 307, 308) até `maxRedirects`:
 
 ```php
 $Client->maxRedirects = 5;  // padrão: 10
@@ -321,24 +323,92 @@ $Response = $Client->request(method: 'GET', URI: '/old-page');
 echo $Response->code;  // 200 (do destino final)
 ```
 
-### Comportamento de redirect por RFC 7231
+### Como um Location é resolvido
 
-| Código | Mudança de Método | Body Preservado |
+O `Location` é resolvido contra a requisição atual como uma URI-reference da RFC 3986: um caminho
+relativo é mesclado e seus segmentos `.` / `..` removidos, uma referência de rede (`//host/caminho`)
+vai para o host que ela nomeia, e o esquema não diferencia maiúsculas — `HTTPS://` é TLS, nunca texto
+claro. Só alvos `http` e `https` viram requisições. Qualquer outra coisa faz a requisição falhar com
+código `0` e status `'Redirect Refused'` — o 3xx nunca é devolvido como se fosse a resposta:
+
+- outro esquema (`gopher:`, `ftp:`, `file:`, `javascript:` ...) ou um esquema sem autoridade (`https:foo`);
+- informação de usuário na autoridade (`http://user:pass@host/`);
+- bytes de controle, espaços ou barras invertidas, uma porta fora de 1–65535, um host malformado;
+- um request-target maior que `HTTP_Client_CLI::TARGET_LIMIT` (8 KiB), seja como for que o `Location` chegou lá.
+
+Um 3xx sem `Location` é devolvido como a resposta final.
+
+### Comportamento de redirect por RFC 9110
+
+| Código | Mudança de Método | Body e seus campos |
 |---|---|---|
-| 301, 302, 303 | Muda para GET (exceto HEAD) | Não (body limpo) |
-| 307, 308 | Preservado | Sim |
+| 301, 302, 303 | Muda para GET (exceto HEAD) | Removidos (`Content-Type`, `Content-Length`, `Content-Encoding`, `Expect` ...) — todos os outros headers ficam |
+| 307, 308 | Preservado | Preservados |
+
+### Escolhendo para onde um redirect pode ir
+
+Defina `Redirection` com uma `Closure` que decide cada salto — inclusive na mesma origem — antes de
+qualquer coisa ser enviada para lá. Ela recebe o host do alvo (em minúsculas; um literal IPv6 sem
+colchetes, sem ponto final), a porta e se é `https`. Retorne `true` para seguir; qualquer outra
+coisa, ou uma exceção, faz a requisição falhar com código `0` e status `'Redirect Refused'`:
+
+```php
+$Client->Redirection = static fn (string $host, int $port, bool $secure): bool =>
+   $secure && ($host === 'api.example.com' || $host === 'files.example.com');
+```
+
+`pin()` instala a política que mantém o cliente na origem para a qual ele está configurado — o
+esquema, o host e a porta exatos. É o que o [resource HTTP da resposta](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/) embarcado aplica por padrão:
+
+```php
+$Client->pin();
+```
+
+A política roda no event loop do cliente: mantenha-a como uma decisão rápida, nunca bloqueie nem
+chame o cliente dentro dela. Ela julga o host como o `Location` o nomeia, antes do DNS — um nome
+ainda pode resolver para um endereço privado.
 
 ### O que uma perna de redirect carrega
 
-Cada perna é discada com a configuração TLS que você passou para `configure()`. `verify_peer`, o bundle da CA, um certificado de cliente, um `peer_fingerprint` fixado e a lista de cifras sobrevivem ao salto — apenas `peer_name` é reapontado para o novo host.
+Headers pertencem à origem que os recebeu. Um salto para outra origem — outro esquema, host ou
+porta, inclusive um upgrade `http` → `https` — carrega só os headers listados em
+`crossOriginHeaders` (por padrão `Accept`, `Accept-Encoding`, `Accept-Language` e `User-Agent`),
+mais os campos que descrevem um body que um 307/308 reenvia. `Authorization`, cookies, chaves de API
+e um `Host` que você definiu ficam para trás — a nova origem recebe o próprio `Host` — e um salto
+posterior de volta à primeira origem não os traz de volta. Acrescente um nome para carregá-lo:
 
-Credenciais pertencem à origem que as emitiu. Quando um salto muda host, porta ou esquema, `Authorization`, `Cookie` e `Proxy-Authorization` são removidos antes do envio da perna — a mesma regra que curl, `requests` do Python e `net/http` do Go aplicam. Um redirect que permanece na mesma origem os mantém.
+```php
+$Client->crossOriginHeaders[] = 'X-Request-Id';
+```
 
-Um salto que rebaixa de `https` para `http` é recusado: a requisição falha com código `0` e status `'Insecure Redirect'`, e nada é discado. Como 307 e 308 reenviam os headers e o body originais, seguir esse salto os colocaria em texto claro na rede. Opte por permitir quando realmente precisar:
+Um salto que permanece na mesma origem mantém todos os headers.
+
+As opções TLS seguem a mesma regra. A mesma origem mantém o contexto TLS da perna. Outra origem
+recebe as opções que você passou para `configure()` menos as que pertencem à origem para a qual você
+as configurou: o certificado de cliente (`local_cert`, `local_pk`, `passphrase`) nunca é apresentado
+lá, `verify_peer`, `verify_peer_name` e `allow_self_signed` voltam aos padrões seguros do PHP,
+`SNI_server_name` é removido e `peer_name` nomeia o novo host. Um bundle de CA (`cafile`, `capath`),
+`peer_fingerprint` e a lista de cifras continuam valendo — um fingerprint fixado faz todo salto para
+outro host falhar. Como os headers, essas opções não voltam num salto posterior à origem configurada:
+a identidade do cliente só é apresentada nas pernas que nunca saíram dela.
+
+Um salto que rebaixa de `https` para `http` é recusado: a requisição falha com código `0` e status `'Insecure Redirect'`, e nada é discado. Como 307 e 308 reenviam o body original, seguir esse salto o colocaria em texto claro na rede. Opte por permitir quando realmente precisar:
 
 ```php
 $Client->allowInsecureRedirect = true;
 ```
+
+### Quando uma cadeia para
+
+- Passado o `maxRedirects`, a requisição falha com código `0` e status `'Too Many Redirects'`; o head
+  do 3xx recusado continua legível (`$Response->Header->get('Location')`). `maxRedirects = 0`
+  desabilita redirects: todo 3xx é devolvido como a resposta final.
+- `'Redirect Refused'`, `'Too Many Redirects'`, `'Insecure Redirect'` e `'Redirect Failed'` nunca
+  são retentados.
+- Os modos batch e event-driven não conseguem rediscar: um salto que passa por todas as verificações
+  acima mas precisa de outra conexão (outra origem, ou um 3xx com `Connection: close`) é entregue como
+  o 3xx final. Uma recusa — pelas regras de esquema, pelo limite de saltos, pela regra de rebaixamento
+  ou pela `Redirection` — chega a eles com código `0`, como qualquer outra falha.
 
 Uma cadeia de redirects nunca re-aponta o cliente. Onde quer que a cadeia termine — em outra origem, ou em uma perna que não pôde ser discada — o host, a porta, as opções TLS e a contagem de workers que você configurou são restaurados e o pool de conexões é reconstruído para a sua própria origem, de modo que a próxima requisição vai para onde você a mandou. Uma perna que não pode ser discada falha com código `0` e status `'Redirect Failed'`, e nunca é repetida: repetir enviaria o caminho do alvo do redirect para o seu host original.
 
@@ -415,7 +485,7 @@ Regras de retry:
 - **Backoff**: `retryDelay` dobra a cada tentativa, limitado por `retryMaxDelay`, mais um jitter proporcional de até `retryJitter` × delay.
 - **Orçamento da campanha**: `retryTimeout` (padrão `60.0`; `0` = ilimitado) é um orçamento wall-clock por requisição — um retry cuja espera excederia o orçamento é vetado e a requisição permanece falhada.
 - **Retries por falha de rede** (conexão recusada/reset, timeout) aplicam-se apenas a métodos idempotentes: GET, HEAD, PUT, DELETE, OPTIONS. Métodos não-idempotentes (POST, PATCH) só são retentados quando a requisição comprovadamente nunca foi enviada.
-- **Falhas determinísticas nunca são retentadas**: `'Response Too Large'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'` e `'Redirect Failed'` — a mesma resposta voltaria. `'Truncated Response'`, `'Connection Lost'` e `'Timeout'` são falhas de rede e seguem as regras acima.
+- **Falhas determinísticas nunca são retentadas**: `'Response Too Large'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'`, `'Redirect Failed'`, `'Redirect Refused'` e `'Too Many Redirects'` — a mesma resposta voltaria. `'Truncated Response'`, `'Connection Lost'` e `'Timeout'` são falhas de rede e seguem as regras acima.
 - **Retries em nível HTTP** (`retryOn`) são solicitados pelo servidor e aplicam-se a **qualquer** método. `Retry-After` é honrado nas formas delta-seconds e HTTP-date, limitado a 300 segundos (`MAX_RETRY_AFTER`); ele pode estender a espera de backoff computada, nunca encurtá-la.
 - `retryOn` exige `maxRetries > 0` — o mesmo orçamento limita os dois tipos de retry.
 - O backoff é **agendado no event loop** — esperar pela próxima tentativa nunca bloqueia o processo.
@@ -663,10 +733,34 @@ public function unpark (): void
 Aposenta o episódio de drain parkeado de um contexto que nunca vai retomar. O notificador do episódio é o par de descritores do próprio cliente, fechado pela Fiber parkeada quando ela retoma; uma Fiber despejada (com a geração já resolvida) nunca retoma, então o caminho resolvido aposenta o par ele mesmo. Nunca o chame enquanto a Fiber parkeada ainda puder retomar — o reactor ainda segura a ponta de leitura.
 
 ```php
+public function pin (): static
+```
+
+Instala uma política `Redirection` que segue um salto só quando ele mantém o esquema, o host e a porta exatos para os quais o cliente está configurado agora, e retorna o cliente. O pino não se move quando o cliente é reconfigurado depois — chame `pin()` de novo; `$Redirection = null` o remove. Lança `LogicException` num cliente que nunca foi configurado: ele não tem origem para prender.
+
+```php
 public bool $parked { get; }
 ```
 
 Se há um episódio de drain atualmente parkeado neste cliente.
+
+```php
+public int $maxRedirects = 10;
+```
+
+Máximo de redirects a seguir por requisição. Passado dele, a requisição falha com código `0` e status `'Too Many Redirects'`, nunca retentada. `0` desabilita redirects: todo 3xx é devolvido como a resposta final.
+
+```php
+public null|Closure $Redirection = null;
+```
+
+Política de destino para redirects: `Closure(string $host, int $port, bool $secure): bool`, consultada em cada salto — inclusive na mesma origem — com o host do alvo (em minúsculas; um literal IPv6 sem colchetes, sem ponto final). Qualquer coisa diferente de `true`, ou uma exceção, faz a requisição falhar com código `0` e status `'Redirect Refused'`. `null` segue qualquer alvo http(s).
+
+```php
+public array $crossOriginHeaders = ['accept', 'accept-encoding', 'accept-language', 'user-agent'];
+```
+
+Headers da requisição que um redirect leva para outra origem, comparados sem diferenciar maiúsculas. Todo outro header que você definiu fica com a origem que o recebeu; um 307/308 que reenvia o body também leva `Content-Type`, `Content-Length`, `Content-Encoding` e `Content-Language`.
 
 ```php
 public null|bool $enableHTTP2 = null;
@@ -685,6 +779,12 @@ public const int INTERIM_LIMIT = 64;
 ```
 
 Máximo de respostas intermediárias (1xx) aceitas antes da final, por resposta HTTP/1.1. Uma a mais falha a requisição com code `0` e status `'Invalid Response'`, que nunca é retentada. Contado por perna de redirect e por retry; respostas intermediárias do HTTP/2 não são contadas.
+
+```php
+public const int TARGET_LIMIT = 8192;
+```
+
+Maior request-target, em bytes, que um redirect pode produzir. Um maior — um `Location` hostil, ou referências relativas que se acumulam salto após salto — faz a requisição falhar com código `0` e status `'Redirect Refused'`.
 
 ```php
 public int $maxRetries = 0;

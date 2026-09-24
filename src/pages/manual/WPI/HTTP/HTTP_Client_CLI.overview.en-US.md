@@ -19,7 +19,7 @@ The HTTP Client CLI is the native HTTP client of the Bootgly PHP Framework. It i
 | **Batch Mode** | `batch()` + multiple `request()` + `drain()` |
 | **Event-Driven** | Async mode via `on()` hooks with per-socket request tracking |
 | **SSL/TLS** | Full HTTPS support |
-| **Redirects** | Automatic follow up to configurable limit |
+| **Redirects** | Followed up to a configurable limit, under a per-hop destination policy |
 | **Timeouts** | Connection and response timeout |
 | **Retries** | Exponential backoff with jitter, opt-in HTTP-level retry honoring `Retry-After` |
 | **Multi-Worker** | Fork-based load generation for benchmarking |
@@ -118,7 +118,9 @@ Handing two instances of the same Configs class to one `configure()` call throws
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `maxRedirects` | `int` | `10` | Maximum redirects to follow (0 = disabled). |
+| `maxRedirects` | `int` | `10` | Maximum redirects to follow; past it the request fails with `'Too Many Redirects'` (0 = disabled). |
+| `Redirection` | `null\|Closure` | `null` | Destination policy asked on every redirect hop (see Redirect Handling). |
+| `crossOriginHeaders` | `array` | `['accept', 'accept-encoding', 'accept-language', 'user-agent']` | Request headers a redirect carries to another origin. |
 | `allowInsecureRedirect` | `bool` | `false` | Follow a redirect that steps down from `https` to `http`. |
 | `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds, per dial attempt. On an adopted reactor the dial and the TLS handshake park instead of blocking the host loop (0 = no timeout). |
 | `timeout` | `int\|float` | `30` | Response timeout in seconds. |
@@ -311,7 +313,7 @@ HTTP/2 notes:
 
 ## Redirect Handling
 
-The client automatically follows HTTP redirects (301, 302, 303, 307, 308) up to `maxRedirects`:
+The client follows HTTP redirects (301, 302, 303, 307, 308) up to `maxRedirects`:
 
 ```php
 $Client->maxRedirects = 5;  // default: 10
@@ -321,24 +323,92 @@ $Response = $Client->request(method: 'GET', URI: '/old-page');
 echo $Response->code;  // 200 (from the final destination)
 ```
 
-### Redirect behavior per RFC 7231
+### How a Location is resolved
 
-| Status Code | Method Change | Body Preserved |
+`Location` is resolved against the current request as an RFC 3986 URI-reference: a relative path is
+merged and its `.` / `..` segments removed, a network-path reference (`//host/path`) goes to the host
+it names, and the scheme is case-insensitive — `HTTPS://` is TLS, never cleartext. Only `http` and
+`https` targets are requests. Anything else fails the request with code `0` and status
+`'Redirect Refused'` — it is never handed back as if the 3xx were the answer:
+
+- another scheme (`gopher:`, `ftp:`, `file:`, `javascript:` ...) or a scheme without an authority (`https:foo`);
+- user information in the authority (`http://user:pass@host/`);
+- control bytes, spaces or backslashes, a port outside 1–65535, a malformed host;
+- a request-target longer than `HTTP_Client_CLI::TARGET_LIMIT` (8 KiB), however the `Location` got there.
+
+A 3xx without a `Location` is returned as the final response.
+
+### Redirect behavior per RFC 9110
+
+| Status Code | Method Change | Body and its fields |
 |---|---|---|
-| 301, 302, 303 | Changes to GET (except HEAD) | No (body cleared) |
-| 307, 308 | Preserved | Yes |
+| 301, 302, 303 | Changes to GET (except HEAD) | Dropped (`Content-Type`, `Content-Length`, `Content-Encoding`, `Expect` ...) — every other header stays |
+| 307, 308 | Preserved | Preserved |
+
+### Choosing where a redirect may go
+
+Set `Redirection` to a `Closure` that decides every hop — the same origin included — before
+anything is sent there. It receives the target's host (lowercased; an IPv6 literal without its
+brackets, no trailing dot), its port and whether it is `https`. Return `true` to follow; anything
+else, or an exception, fails the request with code `0` and status `'Redirect Refused'`:
+
+```php
+$Client->Redirection = static fn (string $host, int $port, bool $secure): bool =>
+   $secure && ($host === 'api.example.com' || $host === 'files.example.com');
+```
+
+`pin()` installs the policy that keeps the client on the origin it is configured for — the exact
+scheme, host and port. It is what the embedded [HTTP response resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/) applies by default:
+
+```php
+$Client->pin();
+```
+
+The policy runs on the client's event loop: keep it to a quick decision, never block or call the
+client from it. It judges the host as `Location` names it, before DNS — a name can still resolve to
+a private address.
 
 ### What a redirect leg carries
 
-Every leg is dialed with the TLS configuration you passed to `configure()`. `verify_peer`, the CA bundle, a client certificate, a pinned `peer_fingerprint` and the cipher list all survive the hop — only `peer_name` is re-pointed at the new host.
+Headers belong to the origin that received them. A hop to another origin — a different scheme,
+host or port, an `http` → `https` upgrade included — carries only the headers listed in
+`crossOriginHeaders` (by default `Accept`, `Accept-Encoding`, `Accept-Language` and `User-Agent`),
+plus the fields that describe a body a 307/308 replays. `Authorization`, cookies, API keys and a
+`Host` you set stay behind — the new origin gets its own `Host` — and a later hop back to the first
+origin does not bring them back. Add a name to carry it:
 
-Credentials belong to the origin that issued them. When a hop changes host, port or scheme, `Authorization`, `Cookie` and `Proxy-Authorization` are dropped before the leg is sent — the same rule curl, Python `requests` and Go's `net/http` apply. A redirect that stays on the same origin keeps them.
+```php
+$Client->crossOriginHeaders[] = 'X-Request-Id';
+```
 
-A hop that steps down from `https` to `http` is refused: the request fails with code `0` and status `'Insecure Redirect'`, and nothing is dialed. Since 307 and 308 replay the original headers and body, following such a hop would put them on the wire in the clear. Opt in when you really want it:
+A hop that stays on the same origin keeps every header.
+
+TLS options follow the same rule. The same origin keeps the leg's TLS context. Another origin gets
+the options you passed to `configure()` minus those that belong to the origin you configured them
+for: the client certificate (`local_cert`, `local_pk`, `passphrase`) is never presented there,
+`verify_peer`, `verify_peer_name` and `allow_self_signed` fall back to PHP's secure defaults,
+`SNI_server_name` is dropped and `peer_name` names the new host. A CA bundle (`cafile`, `capath`),
+`peer_fingerprint` and the cipher list still apply — a pinned fingerprint makes every hop to another
+host fail. Like headers, those options do not come back on a later hop to the configured origin: the
+client identity is presented only on legs that never left it.
+
+A hop that steps down from `https` to `http` is refused: the request fails with code `0` and status `'Insecure Redirect'`, and nothing is dialed. Since 307 and 308 replay the original body, following such a hop would put it on the wire in the clear. Opt in when you really want it:
 
 ```php
 $Client->allowInsecureRedirect = true;
 ```
+
+### When a chain stops
+
+- Past `maxRedirects` the request fails with code `0` and status `'Too Many Redirects'`; the refused
+  3xx head stays readable (`$Response->Header->get('Location')`). `maxRedirects = 0` disables
+  redirects: every 3xx is returned as the final response.
+- `'Redirect Refused'`, `'Too Many Redirects'`, `'Insecure Redirect'` and `'Redirect Failed'` are
+  never retried.
+- Batch and event-driven modes cannot re-dial: a hop that passes every check above but needs
+  another connection (another origin, or a `Connection: close` 3xx) is delivered as the final 3xx.
+  A refusal — by the scheme rules, the hop cap, the downgrade rule or `Redirection` — reaches them
+  as code `0`, like any other failure.
 
 A redirect chain never re-points the client. Wherever the chain ends — another origin, or a leg that could not be dialed — the host, port, TLS options and worker count you configured are restored and the connection pool is rebuilt for your own origin, so the next request goes where you sent it. A leg that cannot be dialed fails with code `0` and status `'Redirect Failed'`, and it is never retried: retrying would send the redirect target's path to your original host.
 
@@ -415,7 +485,7 @@ Retry rules:
 - **Backoff**: `retryDelay` doubles on each attempt, capped at `retryMaxDelay`, plus a proportional jitter of up to `retryJitter` × delay.
 - **Campaign budget**: `retryTimeout` (default `60.0`; `0` = unbounded) is a wall-clock budget per request — a retry whose wait would exceed it is vetoed and the request stays failed.
 - **Network-failure retries** (connection refused/reset, timeout) apply to idempotent methods only: GET, HEAD, PUT, DELETE, OPTIONS. Non-idempotent methods (POST, PATCH) are only retried when the request was provably never sent.
-- **Deterministic failures are never retried**: `'Response Too Large'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'` and `'Redirect Failed'` — the same answer would come back. `'Truncated Response'`, `'Connection Lost'` and `'Timeout'` are network failures and follow the rules above.
+- **Deterministic failures are never retried**: `'Response Too Large'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'`, `'Redirect Failed'`, `'Redirect Refused'` and `'Too Many Redirects'` — the same answer would come back. `'Truncated Response'`, `'Connection Lost'` and `'Timeout'` are network failures and follow the rules above.
 - **HTTP-level retries** (`retryOn`) are server-solicited and apply to **any** method. `Retry-After` is honored in both delta-seconds and HTTP-date forms, clamped to 300 seconds (`MAX_RETRY_AFTER`); it can extend the computed backoff wait, never shorten it.
 - `retryOn` requires `maxRetries > 0` — the same budget caps both retry kinds.
 - Backoff is **scheduled on the event loop** — waiting for the next attempt never blocks the process.
@@ -663,10 +733,34 @@ public function unpark (): void
 Retires the parked drain episode of a context that will never resume. The episode notifier is this client's own pair of descriptors, closed by the parked Fiber when it resumes; an evicted Fiber (its generation settled) never does, so the settled path retires the pair itself. Never call it while the parked Fiber can still resume — the reactor still holds the read end.
 
 ```php
+public function pin (): static
+```
+
+Installs a `Redirection` policy that follows a hop only when it keeps the exact scheme, host and port the client is configured for now, and returns the client. The pin does not move when the client is reconfigured later — call `pin()` again; `$Redirection = null` removes it. Throws `LogicException` on a client that was never configured: it has no origin to pin.
+
+```php
 public bool $parked { get; }
 ```
 
 Whether a drain episode is currently parked on this client.
+
+```php
+public int $maxRedirects = 10;
+```
+
+Maximum redirects to follow per request. Past it the request fails with code `0` and status `'Too Many Redirects'`, never retried. `0` disables redirects: every 3xx is returned as the final response.
+
+```php
+public null|Closure $Redirection = null;
+```
+
+Destination policy for redirects: `Closure(string $host, int $port, bool $secure): bool`, asked on every hop — the same origin included — with the target's host (lowercased; an IPv6 literal without brackets, no trailing dot). Anything but `true`, or a throw, fails the request with code `0` and status `'Redirect Refused'`. `null` follows every http(s) target.
+
+```php
+public array $crossOriginHeaders = ['accept', 'accept-encoding', 'accept-language', 'user-agent'];
+```
+
+Request headers a redirect carries to another origin, compared case-insensitively. Every other header you set stays with the origin that received it; a 307/308 that replays the body also carries `Content-Type`, `Content-Length`, `Content-Encoding` and `Content-Language`.
 
 ```php
 public null|bool $enableHTTP2 = null;
@@ -685,6 +779,12 @@ public const int INTERIM_LIMIT = 64;
 ```
 
 Maximum interim (1xx) responses accepted before the final one, per HTTP/1.1 response. One more fails the request with code `0` and status `'Invalid Response'`, which is never retried. Counted per redirect leg and per retry; HTTP/2 interims are not counted.
+
+```php
+public const int TARGET_LIMIT = 8192;
+```
+
+Longest request-target, in bytes, a redirect may produce. A longer one — a hostile `Location`, or relative references compounding hop after hop — fails the request with code `0` and status `'Redirect Refused'`.
 
 ```php
 public int $maxRetries = 0;

@@ -435,6 +435,38 @@ export default {
       }
     }
   },
+  '/ABI/Data': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Data'
+      }
+    }
+  },
+  '/ABI/Data/URI': {
+    config: {
+      icon: 'link',
+      status: 'done',
+      version: 'v1.0.6',
+      meta: {
+        description: {
+          'en-US': 'Parse RFC 3986 URIs and resolve references — the one resolver behind every redirect Location.',
+          'pt-BR': 'Interprete URIs RFC 3986 e resolva referências — o único resolvedor por trás de todo Location de redirect.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Data'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'URI'
+      }
+    }
+  },
 
   // ADI
   '/ADI': {

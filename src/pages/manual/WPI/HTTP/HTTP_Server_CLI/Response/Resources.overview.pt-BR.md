@@ -610,8 +610,32 @@ return $Response->defer(function (Response $Response): void {
 Falhas não lançam exceção — elas chegam como um `Response` concluído com `code` `0` e um `status`
 nomeado: `Timeout`, `Connection Failed`, `Connection Lost`, `Connection Closed`,
 `Truncated Response`, `Response Too Large`, `Response Header Fields Too Large`,
-`Invalid Response`, `Redirect Failed`, `Insecure Redirect` ou `Invalid Chunked Encoding`. Uma rota que lê só o `code` já trata todas elas como "sem resposta";
+`Invalid Response`, `Redirect Failed`, `Redirect Refused`, `Too Many Redirects`, `Insecure Redirect` ou `Invalid Chunked Encoding`. Uma rota que lê só o `code` já trata todas elas como "sem resposta";
 leia o `status` quando o motivo importar.
+
+Redirects ficam no upstream. O client do resource já vem preso ao esquema, ao host e à porta com
+que você o construiu: um redirect para a mesma origem é seguido, e um salto para qualquer outro
+lugar faz a perna falhar com `code` `0` e status `Redirect Refused` antes de qualquer coisa ser
+enviada para lá — um upstream não consegue ricochetear as requisições do worker, com suas chaves de
+API e bodies, para um serviço que o worker alcança. Quando um upstream redireciona legitimamente
+para outro lugar — uma CDN, um host de arquivos —, troque a política na factory:
+
+```php
+'Upstream' => static function (object $Context): HTTP {
+   $HTTP = new HTTP(host: 'api.example.com', secure: []);
+   // ! Mais um destino confiável, só sobre TLS
+   $HTTP->Client->Redirection = static fn (string $host, int $port, bool $secure): bool =>
+      $secure && ($host === 'api.example.com' || $host === 'files.example.com');
+
+   return $HTTP;
+},
+```
+
+`$HTTP->Client->Redirection = null` segue qualquer alvo http(s). De todo modo, um salto para outra
+origem leva só os `crossOriginHeaders` do client — nunca `Authorization`, cookies ou chaves de API
+(veja [Tratamento de Redirects](/manual/WPI/HTTP/HTTP_Client_CLI/#tratamento-de-redirects)). Dentro de
+`batch()` o pino recusa os mesmos saltos; um salto para a mesma origem que precisa de outra conexão
+volta como o 3xx final, já que um batch nunca redisca.
 
 Toda perna do exchange estaciona o Fiber deferido em vez de girar um event loop privado: a espera
 pela resposta, a discagem que abre a conexão e o handshake TLS. O worker continua atendendo suas
@@ -682,7 +706,7 @@ carrega opções de stream context TLS (`[]` liga o TLS com os defaults); `$pool
 conexões dentro de um deferral (`['min' => N, 'max' => N]`); `$timeout` é o timeout de resposta em
 segundos (`0` = sem timeout); `$connectTimeout` é o timeout de conexão por tentativa de discagem e
 sozinho limita a discagem **e** o handshake TLS (`0` = sem timeout); `$maxRedirects` limita o
-seguimento de redirects (`0` = desabilitado); `$maxRetries` limita as retentativas em falha de
+seguimento de redirects, que fica dentro da origem do upstream (`0` = desabilitado); `$maxRetries` limita as retentativas em falha de
 conexão/timeout (`0` = desabilitado); `$enableHTTP2` escolhe a negociação HTTP/2 (`null` = ALPN
 quando secure; `true` = também h2c; `false` = nunca); e `$maxResponseBytes` limita os bytes raw de
 cada resposta do upstream (`null` = o default do client, 16 MiB; `0` = ilimitado). Lança `RuntimeException` quando construído
@@ -728,7 +752,8 @@ public private(set) HTTP_Client_CLI $Client
 
 O client embarcado — apenas superfície de knobs. Todo knob que o construtor não cobre é definido
 aqui: `retryOn`, `retryDelay`, `retryMaxDelay`, `retryTimeout`, `retryJitter`,
-`allowInsecureRedirect`, `enableHTTP2` e a família do `timeout`. Nunca envie por ele.
+`allowInsecureRedirect`, `Redirection` (preso à origem do upstream por padrão),
+`crossOriginHeaders`, `enableHTTP2` e a família do `timeout`. Nunca envie por ele.
 
 ## Fronteira
 
