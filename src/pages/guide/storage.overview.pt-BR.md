@@ -14,7 +14,11 @@ memória do PHP.
 > [!NOTE]
 > A pasta de dados de runtime do Bootgly é `storage/` (renomeada de `storage/`). Seu caminho
 > absoluto é a constante `BOOTGLY_STORAGE_DIR`, que você pode pré-definir antes do boot (por
-> exemplo, apontando para um volume montado). O disk **local** padrão é ancorado nela.
+> exemplo, apontando para um volume montado). O disk **local** padrão é ancorado nela. Os
+> uploads HTTP são gravados em `BOOTGLY_UPLOADS_DIR`, sempre `BOOTGLY_STORAGE_DIR .
+> 'temp/files/downloaded/'`: o servidor é dono dessa pasta e apaga os arquivos dela a cada start,
+> então ela segue o caminho do storage e não pode ser pré-definida (o boot lança uma
+> `LogicException`). Guarde seus próprios arquivos em um disk, nunca ali.
 
 ## Armazenar e buscar arquivos
 

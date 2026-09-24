@@ -137,6 +137,46 @@ Set `$implicit = true` in your subclass when the rule must run even for missing/
 
 In WPI routes, plug the same rules into the `Validator` middleware — it reads one Request source and fails closed with a JSON `422` before the handler runs. See [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) and [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
+## Validating uploads
+
+`MIME` decides by what an uploaded file **is**, not by what the client says it is. It sniffs
+the bytes the server received (PHP's `fileinfo` extension) and never reads the record's
+`type` — the part's `Content-Type`, which any client can set to anything:
+
+```php
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators\Extension;
+use Bootgly\ADI\Validators\MIME;
+use Bootgly\ADI\Validators\Size;
+
+$Request->download();
+
+$Validation = new Validation($Request->files, [
+   'avatar' => [
+      new Size(2 * 1024 * 1024),
+      new MIME(['image/jpeg', 'image/png']),
+      new Extension(['jpg', 'jpeg', 'png']),
+   ],
+]);
+```
+
+A PHP script sent as `avatar.png` with `Content-Type: image/png` fails `MIME`; a real PNG sent
+as `text/plain` passes.
+
+- **Only files the server wrote are inspected.** The rule reads `tmp_name` only when it is a
+  regular file directly inside `BOOTGLY_UPLOADS_DIR`, where the HTTP server streams uploads. A
+  path anywhere else, a symlink or a directory fails — a hand-built record cannot point the
+  rule at `/etc/passwd`.
+- **List types as libmagic names them** — `image/jpeg` (never `image/jpg`), `application/pdf`,
+  `text/plain`. The allowlist is case-insensitive and ignores parameters (`; charset=…`).
+- **`fileinfo` is required.** Without it, `new MIME(…)` throws a `RuntimeException` instead of
+  building a rule that would pass or fail every upload silently.
+- **A sniff is not a malware scan.** It names the format the bytes start with: a polyglot
+  (`GIF89a<?php …`) sniffs as `image/gif`, and an SVG (`image/svg+xml`) can carry scripts. Never
+  keep uploads under an executable or web-served path — persist them with
+  [`store()`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#persist-an-upload-store) to a disk the
+  web server does not execute.
+
 ## Reference
 
 ### Validation
@@ -327,7 +367,7 @@ new MIME('application/pdf');
 new MIME(['image/jpeg', 'image/png']);
 ```
 
-Validates upload structures against an allowlist of MIME types (case-sensitive). Default message: `"{field} must have an allowed MIME type."`
+Validates upload structures by their content: passes when `error === 0`, `tmp_name` is a regular file directly inside `BOOTGLY_UPLOADS_DIR` (never a symlink), and the type sniffed from its bytes (`fileinfo`) is in the allowlist — case-insensitive, parameters ignored. The record's `type` (the client-declared `Content-Type`) is never read. Throws `RuntimeException` at construction when the `fileinfo` extension is not available. Default message: `"{field} must have an allowed MIME type."`
 
 ---
 

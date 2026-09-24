@@ -188,6 +188,32 @@ sanitized file name), `type`, `size`, `error` (an `UPLOAD_ERR_*` constant) and
 $Request->files; // Array ( [file_name] => file_attributes )
 ```
 
+`type` is the part's `Content-Type` as the client sent it (surrounding spaces trimmed) — a hint, never proof:
+anything can claim `image/png`. To accept a file by what it really is, validate it with the
+[`MIME` rule](/guide/validation/overview/#validating-uploads), which sniffs the bytes.
+`tmp_name` lives in `BOOTGLY_UPLOADS_DIR` (`BOOTGLY_STORAGE_DIR . 'temp/files/downloaded/'`), a folder
+the server owns: persist an upload with `store()` before the request ends.
+
+Each part's header block is parsed by the multipart grammar (RFC 7578): the
+`Content-Disposition` parameters may come in any order, quoted or not, with or without a space
+after `:` and `;`, and `Content-Type` may come before or after it. A part that breaks the
+grammar makes the whole request a **`400 Bad Request`**, before any temp file is written for
+it:
+
+- no `Content-Disposition`, or one whose type is not `form-data`;
+- a missing or empty `name`;
+- a repeated `Content-Disposition`, `Content-Type`, `name` or `filename`;
+- a parameter that breaks the list: whitespace around `=`, no value, or text after its value;
+- a header line that is not a field (folded, without `:`, or with an invalid field name);
+- a control byte in a header value, or an unterminated quoted string.
+
+Inside a quoted value, `\"` and `\\` are escapes (the quoted-string grammar) and every other
+backslash is kept, so a Windows path arrives whole. Browsers do not escape `\`: a name or
+filename that *ends* in `\` reads as an unterminated string and is refused.
+
+`filename*` (the RFC 5987 form) is ignored: a part that carries only `filename*` is a text
+field.
+
 An **empty file input** — a form submitted with no file chosen — still arrives as a
 multipart part (`filename=""`), and decodes exactly as PHP's native parser would: the
 record carries `error` = `UPLOAD_ERR_NO_FILE` (4) with empty `name`, `type` and

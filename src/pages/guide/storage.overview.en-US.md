@@ -12,7 +12,10 @@ chunks, so even a multi-gigabyte file never lands whole in PHP memory.
 > [!NOTE]
 > Bootgly's runtime data folder is `storage/` (renamed from `storage/`). Its absolute path
 > is the `BOOTGLY_STORAGE_DIR` constant, which you can pre-define before boot (e.g. to point
-> at a mounted volume). The default **local** disk is rooted there.
+> at a mounted volume). The default **local** disk is rooted there. HTTP uploads stream into
+> `BOOTGLY_UPLOADS_DIR`, always `BOOTGLY_STORAGE_DIR . 'temp/files/downloaded/'`: the server owns
+> that folder and deletes its files at every start, so it follows the storage path and cannot be
+> pre-defined (boot throws a `LogicException`). Keep your own files on a disk, never there.
 
 ## Store and fetch files
 

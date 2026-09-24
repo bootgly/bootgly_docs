@@ -188,6 +188,35 @@ de arquivo sanitizado), `type`, `size`, `error` (uma constante `UPLOAD_ERR_*`) e
 $Request->files; // Array ( [nome_do_arquivo] => atributos_do_arquivo )
 ```
 
+`type` é o `Content-Type` da part como o cliente o enviou (sem os espaços das pontas) — uma
+dica, nunca uma prova: qualquer coisa pode se declarar `image/png`. Para aceitar um arquivo pelo que ele
+realmente é, valide-o com a [regra `MIME`](/guide/validation/overview/#validando-uploads), que
+inspeciona os bytes. `tmp_name` fica em `BOOTGLY_UPLOADS_DIR` (`BOOTGLY_STORAGE_DIR .
+'temp/files/downloaded/'`), uma pasta que pertence ao servidor: persista o upload com `store()`
+antes de a requisição terminar.
+
+O bloco de cabeçalhos de cada part é interpretado pela gramática multipart (RFC 7578): os
+parâmetros do `Content-Disposition` podem vir em qualquer ordem, com ou sem aspas, com ou sem
+espaço depois de `:` e `;`, e o `Content-Type` pode vir antes ou depois dele. Uma part que
+quebra a gramática transforma a requisição inteira em **`400 Bad Request`**, antes de qualquer
+arquivo temporário ser escrito para ela:
+
+- sem `Content-Disposition`, ou com um cujo tipo não é `form-data`;
+- um `name` ausente ou vazio;
+- um `Content-Disposition`, `Content-Type`, `name` ou `filename` repetido;
+- um parâmetro que quebra a lista: espaço em volta do `=`, sem valor, ou texto depois do valor;
+- uma linha de cabeçalho que não é um campo (dobrada, sem `:`, ou com um nome de campo
+  inválido);
+- um byte de controle em um valor de cabeçalho, ou uma string entre aspas não terminada.
+
+Dentro de um valor entre aspas, `\"` e `\\` são escapes (a gramática de quoted-string) e toda
+outra barra invertida é mantida, então um caminho do Windows chega inteiro. Navegadores não
+escapam `\`: um name ou filename que *termina* em `\` é lido como uma string não terminada e é
+recusado.
+
+`filename*` (a forma da RFC 5987) é ignorado: uma part que carrega apenas `filename*` é um
+campo de texto.
+
 Um **input de arquivo vazio** — um formulário enviado sem nenhum arquivo escolhido —
 ainda chega como uma part multipart (`filename=""`) e decodifica exatamente como o
 parser nativo do PHP faria: o registro carrega `error` = `UPLOAD_ERR_NO_FILE` (4) com

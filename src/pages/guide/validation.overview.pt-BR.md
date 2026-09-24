@@ -137,6 +137,48 @@ Defina `$implicit = true` na sua subclasse quando a regra precisar rodar mesmo p
 
 Em rotas WPI, conecte as mesmas regras no middleware `Validator` — ele lê uma source do Request e falha fechado com um JSON `422` antes do handler rodar. Veja [Validação de Requisição](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#validação-de-requisição) e [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
+## Validando uploads
+
+`MIME` decide pelo que um arquivo enviado **é**, não pelo que o cliente diz que ele é. Ele
+inspeciona os bytes que o servidor recebeu (a extensão `fileinfo` do PHP) e nunca lê o `type`
+do registro — o `Content-Type` da part, que qualquer cliente pode definir como quiser:
+
+```php
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators\Extension;
+use Bootgly\ADI\Validators\MIME;
+use Bootgly\ADI\Validators\Size;
+
+$Request->download();
+
+$Validation = new Validation($Request->files, [
+   'avatar' => [
+      new Size(2 * 1024 * 1024),
+      new MIME(['image/jpeg', 'image/png']),
+      new Extension(['jpg', 'jpeg', 'png']),
+   ],
+]);
+```
+
+Um script PHP enviado como `avatar.png` com `Content-Type: image/png` falha em `MIME`; um PNG
+de verdade enviado como `text/plain` passa.
+
+- **Só arquivos escritos pelo servidor são inspecionados.** A regra lê `tmp_name` apenas quando
+  ele é um arquivo regular diretamente dentro de `BOOTGLY_UPLOADS_DIR`, onde o servidor HTTP
+  grava os uploads. Um caminho em qualquer outro lugar, um symlink ou um diretório falha — um
+  registro montado à mão não consegue apontar a regra para `/etc/passwd`.
+- **Liste os tipos como a libmagic os nomeia** — `image/jpeg` (nunca `image/jpg`),
+  `application/pdf`, `text/plain`. A allowlist é case-insensitive e ignora parâmetros
+  (`; charset=…`).
+- **`fileinfo` é obrigatória.** Sem ela, `new MIME(…)` lança uma `RuntimeException` em vez de
+  montar uma regra que passaria ou falharia todo upload em silêncio.
+- **Identificar o formato não é varrer malware.** A inspeção nomeia o formato com que os bytes
+  começam: um poliglota (`GIF89a<?php …`) é identificado como `image/gif`, e um SVG
+  (`image/svg+xml`) pode carregar scripts. Nunca mantenha uploads sob um caminho executável ou
+  servido pela web — persista-os com
+  [`store()`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#persistir-um-upload-store) em um disco
+  que o servidor web não executa.
+
 ## Referência
 
 ### Validation
@@ -327,7 +369,7 @@ new MIME('application/pdf');
 new MIME(['image/jpeg', 'image/png']);
 ```
 
-Valida estruturas de upload contra uma allowlist de tipos MIME (case-sensitive). Mensagem padrão: `"{field} must have an allowed MIME type."`
+Valida estruturas de upload pelo conteúdo: passa quando `error === 0`, `tmp_name` é um arquivo regular diretamente dentro de `BOOTGLY_UPLOADS_DIR` (nunca um symlink) e o tipo identificado nos seus bytes (`fileinfo`) está na allowlist — case-insensitive, parâmetros ignorados. O `type` do registro (o `Content-Type` declarado pelo cliente) nunca é lido. Lança `RuntimeException` na construção quando a extensão `fileinfo` não está disponível. Mensagem padrão: `"{field} must have an allowed MIME type."`
 
 ---
 
