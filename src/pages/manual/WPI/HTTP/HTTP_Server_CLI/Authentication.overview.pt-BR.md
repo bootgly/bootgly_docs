@@ -247,7 +247,16 @@ $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 
 `Remote` mantém um `KeySet` por processo e pode usar `Vault` para compartilhar registros JWKS versionados entre workers. A propriedade pública mutável `$TTL` (maiúscula) é o limite definido pelo operador, de `0` a `31.536.000` segundos; o argumento nomeado do construtor continua `ttl:`. A construção e atribuições posteriores a `$TTL` rejeitam valores negativos ou maiores sem substituir a última configuração válida. A antiga propriedade minúscula `$ttl` não é mais pública.
 
-Redirects são seguidos um hop por vez, e todo destino precisa continuar em HTTPS, exceto quando `insecure: true` foi selecionado explicitamente para testes ou ambiente local controlado. Referências URI de `Location` são resolvidas conforme a RFC 3986 pelo resolvedor compartilhado [`URI`](/manual/ABI/Data/URI/): segmentos de ponto são removidos sem colapsar barras consecutivas significativas, fragmentos nunca são enviados no alvo da requisição, e um destino que não é uma URI absoluta com host (`g:h`, `https:keys`) encerra a busca. Somente a resposta final fornece o status aceito e os headers de cache. Sua validade efetiva é o menor `Cache-Control: max-age`, reduzido por `Age` e limitado por `$TTL`; `no-store`, `no-cache` e `max-age=0` tornam a resposta imediatamente obsoleta e impedem a escrita no cache compartilhado. Leitores compartilhados herdam a expiração absoluta do escritor, em vez de iniciar um novo TTL. `Remote` atualiza diante de um `kid` desconhecido e falha fechado em erros de busca, destinos de redirect inválidos, resposta final não-2xx, JSON inválido ou JWKS inválido. OIDC Discovery, `ETag`/`Last-Modified` e backoff exponencial continuam como camadas futuras.
+Redirects são seguidos um hop por vez, e todo destino precisa continuar em HTTPS, exceto quando `insecure: true` foi selecionado explicitamente para testes ou ambiente local controlado. Referências URI de `Location` são resolvidas conforme a RFC 3986 pelo resolvedor compartilhado [`URI`](/manual/ABI/Data/URI/): segmentos de ponto são removidos sem colapsar barras consecutivas significativas, fragmentos nunca são enviados no alvo da requisição, e um destino que não é uma URI absoluta com host (`g:h`, `https:keys`) encerra a busca. Somente a resposta final fornece o status aceito e os headers de cache. Sua validade efetiva é o menor `Cache-Control: max-age`, reduzido por `Age` e limitado por `$TTL`; `no-store`, `no-cache` e `max-age=0` tornam a resposta obsoleta na hora e impedem a escrita no cache compartilhado (o piso abaixo ainda a retém em memória). Leitores compartilhados herdam a expiração absoluta do escritor, em vez de iniciar um novo TTL. `Remote` atualiza diante de um `kid` desconhecido e falha fechado em erros de busca, destinos de redirect inválidos, resposta final não-2xx, JSON inválido ou JWKS inválido. OIDC Discovery, `ETag`/`Last-Modified` e backoff exponencial continuam como camadas futuras.
+
+**Um piso de origem.** A chave é resolvida antes de a assinatura ser checada, então sem um piso todo token — inclusive os forjados — faria um `Remote` obsoleto buscar o JWKS, travando o worker enquanto espera. Cada processo worker limita a frequência com que consulta a origem, independentemente dos headers de cache do IdP:
+
+- um conjunto de chaves que a origem confirmou é **retido** — servido — por uma janela: o `cooldown` (padrão `60` segundos), ou o `$TTL` quando ele é positivo e menor. Ele é retido mesmo quando o IdP responde `no-store`, `no-cache` ou `max-age=0`, e mesmo com `ttl: 0` (que, portanto, retém pelo `cooldown` inteiro); esse conjunto continua nunca entrando no `Vault` compartilhado;
+- uma busca que falhou é **repetida** — a mesma falha, falhando fechado — por um `cooldown`, então um erro transitório do IdP custa até um `cooldown` de rejeições naquele worker; passada a retenção, um conjunto expirado nunca é servido enquanto o IdP falha, e uma chamada feita enquanto uma busca está em andamento falha com `Network`;
+- um `kid` desconhecido continua disparando uma atualização imediata — no máximo uma por `cooldown` por worker, e uma para a frota inteira enquanto o conjunto está fresco e compartilhado por um `Vault` — então uma chave que o IdP adiciona é aceita na hora no worker que atualiza, a menos que outro `kid` desconhecido já tenha gasto essa atualização; atrás de um `Vault`, os outros workers pegam uma rotação cacheável quando o próprio conjunto expira. Uma chave que o IdP remove é rejeitada depois que a validade do conjunto e a retenção tiverem passado;
+- um resolvedor fixado em `RS256` recusa um token com outro `alg` sem buscar.
+
+`refresh()` nunca passa pelo piso. Construa o `Remote` uma vez — no escopo do arquivo de rotas, como acima — nunca por requisição: o piso vive na instância. `cooldown: 0` o desliga e faz um IdP com `no-store` custar uma busca por verificação — deixe isso para testes.
 
 `Vault` guarda seus registros no facade `Cache` do Bootgly. Por padrão usa o driver `file` (compartilhado entre workers no mesmo filesystem); passando um `Cache` com driver Redis, o JWKS, o estado de refresh tokens e as revogações são compartilhados entre hosts — injete um segredo HMAC compartilhado (≥ 32 bytes) para que todos os hosts consigam verificar os registros:
 
@@ -558,3 +567,35 @@ public function fail (): null|Failures
 ```
 
 Retorna o motivo pelo qual o último `resolve()` recusou, ou `null` quando o resolver não guarda estado de falha. Ele é consultado **apenas** depois de `resolve()` retornar `null`, e o resultado é usado como `fail() ?? Failures::Key`, então `null` degrada para a mensagem genérica "JWT key could not be resolved.". Qualquer caso de `Failures` é aceito — `Network`, `Status` e `JWKS` são os que o `Remote` reporta para um fetch de JWKS que falhou — e o caso escolhido chega a quem chamou como `Verification->failure`, com `Verification->message` preenchido a partir da descrição que o framework dá a ele. Zere a falha guardada no início de `resolve()` para que uma verificação nunca leia o motivo da anterior. Failures são diagnósticos internos: os guards HTTP continuam respondendo ao cliente com um erro Bearer genérico.
+
+### Bootgly\API\Security\JWT\Remote
+
+```php
+public function __construct (string $URI, null|callable $Fetcher = null, null|string $algorithm = 'RS256', int $ttl = 3600, int $cooldown = 60, int $size = 1048576, bool $insecure = false)
+```
+
+Cria um resolvedor para o JWKS em `$URI` (HTTPS, ou HTTP apenas com `insecure: true`). `$Fetcher` substitui o GET HTTPS nativo e devolve a string do corpo ou um `Remote\Response`. `$algorithm` fixa o resolvedor em `RS256` (`null` aceita qualquer chave suportada). `$ttl` limita a validade de um conjunto buscado; `$cooldown` define o piso de origem; `$size` limita o corpo da resposta em bytes. Lança `InvalidArgumentException` para uma `$URI` vazia ou não-HTTPS, um algoritmo não suportado, um `$ttl` ou `$cooldown` fora de `0`–`31.536.000`, ou um `$size` menor que `1`.
+
+```php
+public int $TTL
+```
+
+O teto definido pelo operador para a validade de um conjunto buscado e para sua vida no cache compartilhado, em segundos (`0`–`31.536.000`). Headers de cache só podem encurtá-lo; um valor positivo menor que o `cooldown` também encurta por quanto tempo um conjunto confirmado pela origem fica retido (`0` ainda retém por um `cooldown`). Uma atribuição inválida lança exceção e mantém o último valor válido.
+
+```php
+public int $cooldown
+```
+
+O piso de origem, em segundos (`0`–`31.536.000`, padrão `60`): uma busca que falhou é repetida por um `cooldown`, e um conjunto confirmado pela origem é retido por um — ou pelo `$TTL`, quando ele é positivo e menor. Ele também espaça a atualização diante de um `kid` desconhecido. `0` desliga as duas coisas. Um novo valor vale a partir da próxima busca na origem; uma atribuição inválida lança exceção e mantém o último valor válido.
+
+```php
+public function fetch (): KeySet|Failures
+```
+
+Devolve o conjunto de chaves enquanto ele está fresco ou retido, lê um registro vivo do `Vault` compartilhado, ou consulta a origem — a menos que a origem ainda esteja pausada depois de uma busca que falhou (um `cooldown`) ou de uma tentativa em andamento, caso em que a última falha (ou `Network`) é devolvida de novo.
+
+```php
+public function refresh (): KeySet|Failures
+```
+
+Consulta a origem agora, ignorando a validade e o piso de origem.

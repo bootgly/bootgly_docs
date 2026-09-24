@@ -245,7 +245,16 @@ $JWT = new Authenticating(new JWTGuard($Verifier, $Policies));
 
 `Remote` keeps a process-local `KeySet` and can use `Vault` to share versioned JWKS records across workers. The mutable public `$TTL` property (uppercase) is the operator ceiling, from `0` through `31,536,000` seconds; the constructor's named argument remains `ttl:`. Construction and later `$TTL` assignments reject negative or larger values without replacing the last valid setting. The former lowercase `$ttl` property is no longer public.
 
-Redirects are followed one hop at a time, and every target must remain HTTPS unless `insecure: true` was explicitly selected for tests or a controlled local environment. `Location` URI references are resolved according to RFC 3986 by the shared [`URI`](/manual/ABI/Data/URI/) resolver: dot segments are removed without collapsing meaningful consecutive slashes, fragments are never sent in the request target, and a target that is not an absolute URI with a host (`g:h`, `https:keys`) ends the fetch. Only the final response supplies the accepted status and cache headers. Its effective lifetime is the shortest `Cache-Control: max-age`, reduced by `Age` and capped by `$TTL`; `no-store`, `no-cache`, and `max-age=0` make the response immediately stale and prevent a shared-cache write. Shared readers inherit the writer's absolute expiry instead of starting a new TTL. `Remote` refreshes on an unknown `kid` and fails closed for fetch errors, invalid redirect targets, final non-2xx responses, invalid JSON, or invalid JWKS. OIDC Discovery, `ETag`/`Last-Modified`, and exponential backoff remain future layers.
+Redirects are followed one hop at a time, and every target must remain HTTPS unless `insecure: true` was explicitly selected for tests or a controlled local environment. `Location` URI references are resolved according to RFC 3986 by the shared [`URI`](/manual/ABI/Data/URI/) resolver: dot segments are removed without collapsing meaningful consecutive slashes, fragments are never sent in the request target, and a target that is not an absolute URI with a host (`g:h`, `https:keys`) ends the fetch. Only the final response supplies the accepted status and cache headers. Its effective lifetime is the shortest `Cache-Control: max-age`, reduced by `Age` and capped by `$TTL`; `no-store`, `no-cache`, and `max-age=0` make the response stale at once and prevent a shared-cache write (the floor below still holds it in memory). Shared readers inherit the writer's absolute expiry instead of starting a new TTL. `Remote` refreshes on an unknown `kid` and fails closed for fetch errors, invalid redirect targets, final non-2xx responses, invalid JSON, or invalid JWKS. OIDC Discovery, `ETag`/`Last-Modified`, and exponential backoff remain future layers.
+
+**An origin floor.** The key is resolved before the signature is checked, so without a floor every token — forged ones included — would make a stale `Remote` fetch the JWKS, blocking the worker while it waits. Each worker process bounds how often it asks the origin, whatever the IdP's cache headers say:
+
+- a key set the origin confirmed is **held** — served — for one window: `cooldown` (default `60` seconds), or `$TTL` when that is positive and shorter. It is held even when the IdP answers `no-store`, `no-cache` or `max-age=0`, and even with `ttl: 0` (which therefore holds for the whole `cooldown`); such a set still never enters the shared `Vault`;
+- a failed fetch is **replayed** — the same failure, fail closed — for one `cooldown`, so one transient IdP error costs up to one `cooldown` of rejections on that worker; once the hold is over, an expired set is never served while the IdP fails, and a call made while a fetch is in flight fails with `Network`;
+- an unknown `kid` still triggers one immediate refresh — at most one per `cooldown` per worker, and one for the whole fleet while the set is fresh and shared through a `Vault` — so a key the IdP adds is accepted at once on the worker that refreshes, unless another unknown `kid` already spent that refresh; behind a `Vault`, the other workers pick up a cacheable rotation when their own set expires. A key the IdP removes is rejected once the set's lifetime and its hold have both passed;
+- a resolver pinned to `RS256` refuses a token with another `alg` without fetching.
+
+`refresh()` is never floored. Build `Remote` once — at route-file scope, as above — never per request: the floor lives in the instance. `cooldown: 0` disables it and makes a `no-store` IdP cost one fetch per verification — keep it for tests.
 
 `Vault` stores its records on the Bootgly `Cache` facade. By default it uses the `file` driver (shared across workers on the same filesystem); passing a Redis-backed `Cache` shares JWKS, refresh-token state, and revocations across hosts — inject a shared HMAC secret (≥ 32 bytes) so every host can verify the records:
 
@@ -551,3 +560,35 @@ public function fail (): null|Failures
 ```
 
 Returns the reason the last `resolve()` refused, or `null` when the resolver keeps no failure state. It is consulted **only** after `resolve()` returned `null`, and the result is used as `fail() ?? Failures::Key`, so `null` degrades to the generic "JWT key could not be resolved." message. Any `Failures` case is accepted — `Network`, `Status` and `JWKS` are what `Remote` reports for a JWKS fetch that failed — and the chosen case surfaces to the caller as `Verification->failure`, with `Verification->message` filled from the framework's description of it. Clear the stored failure at the start of `resolve()` so one verification never reads the previous one's reason. Failures are internal diagnostics: HTTP guards still answer the client with a generic Bearer error.
+
+### Bootgly\API\Security\JWT\Remote
+
+```php
+public function __construct (string $URI, null|callable $Fetcher = null, null|string $algorithm = 'RS256', int $ttl = 3600, int $cooldown = 60, int $size = 1048576, bool $insecure = false)
+```
+
+Creates a resolver for the JWKS at `$URI` (HTTPS, or HTTP only with `insecure: true`). `$Fetcher` replaces the native HTTPS GET and returns the body string or a `Remote\Response`. `$algorithm` pins the resolver to `RS256` (`null` accepts any supported key). `$ttl` caps the lifetime of a fetched set; `$cooldown` sets the origin floor; `$size` bounds the response body in bytes. Throws `InvalidArgumentException` for an empty or non-HTTPS `$URI`, an unsupported algorithm, a `$ttl` or `$cooldown` outside `0`–`31,536,000`, or a `$size` below `1`.
+
+```php
+public int $TTL
+```
+
+The operator ceiling on a fetched set's freshness and shared-cache lifetime, in seconds (`0`–`31,536,000`). Cache headers can only shorten it; a positive value shorter than `cooldown` also shortens how long a set the origin confirmed is held (`0` still holds it for one `cooldown`). An invalid assignment throws and keeps the last valid value.
+
+```php
+public int $cooldown
+```
+
+The origin floor, in seconds (`0`–`31,536,000`, default `60`): a failed fetch is replayed for one `cooldown`, and a set the origin confirmed is held for one — or for `$TTL`, when that is positive and shorter. It also spaces the refresh on an unknown `kid`. `0` disables both. A new value shapes the next origin attempt; an invalid assignment throws and keeps the last valid value.
+
+```php
+public function fetch (): KeySet|Failures
+```
+
+Returns the key set while it is fresh or held, reads a live shared `Vault` record, or asks the origin — unless the origin is still paused after a failed fetch (one `cooldown`) or an attempt in flight, in which case the last failure (or `Network`) is returned again.
+
+```php
+public function refresh (): KeySet|Failures
+```
+
+Asks the origin now, bypassing freshness and the origin floor.
