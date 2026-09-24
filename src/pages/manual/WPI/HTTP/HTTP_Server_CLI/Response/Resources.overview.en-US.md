@@ -147,6 +147,17 @@ return $Response->defer(function (Response $Response): void {
 });
 ```
 
+A wait that does not come back does not strand its connection. When the selector refuses it
+(`Fiber I/O resource failed selector admission.` — see `headroom` in
+[Connection limits](/manual/WPI/HTTP/HTTP_Server_CLI/#connection-limits)), a `defer()` timeout
+interrupts it, or the client disconnects and the request Fiber is destroyed, the operations it
+was waiting for are withdrawn locally — see `withdraw()` in
+[Database DBAL](/manual/ADI/Database/overview/) — and the pool takes their slot back instead of
+leaving the connection busy forever; a statement the server already received may keep that slot
+counted until its own deadline. The refusal or the `Timeout` still reaches your handler —
+unless the withdrawal itself fails: its exception then propagates instead, with the original
+chained at the end of its `getPrevious()` chain.
+
 ## Database methods
 
 ```php
@@ -223,6 +234,18 @@ discarded if the outer one fails.
 
 A transaction is a **serial** surface: it carries one operation at a time. Issue the next query
 after awaiting the previous one, and keep `drain()` for groups created on the pool.
+
+If the request Fiber is destroyed mid-transaction — the client left — no callback returns and
+nothing throws, so the outermost `transact()` rolls the whole transaction back locally with
+`Transaction::abort()`: its `ROLLBACK` is withdrawn before it reaches the wire, the session is
+severed, the server rolls back and the connection reservation is released.
+
+The final `COMMIT` is the exception. When the wait for it does not come back — a `defer()`
+timeout, a selector refusal, or the Fiber destroyed while it waits — that `COMMIT` is withdrawn
+and its session severed like any other teardown. A `COMMIT` that never reached the server ends in
+a server-side rollback, but one that already reached it may have committed. `transact()` only
+reports that it failed (the `Timeout` or the refusal reaches your handler), so do not retry the
+unit of work blindly: check whether its writes landed, or make it idempotent.
 
 ## Register the KV resource
 
@@ -380,6 +403,67 @@ drain (array $Operations): array
 
 Await one operation, or a group of operations, on the connection readiness. `drain()`
 re-scans the group after each advance pass so pipelined FIFO replies resolve correctly.
+
+A wait that does not come back — refused by the selector, interrupted by a `defer()` timeout, or
+ended by the client disconnecting — withdraws what it was waiting for. On an exception only the
+awaited commands go, and the exception still reaches your handler, which can catch it and keep
+using the others (if the withdrawal itself fails, its exception propagates instead, with the
+original at the end of its `getPrevious()` chain). When the request Fiber is destroyed while
+parked in one of these waits, every unfinished command it issued through this resource is
+withdrawn too.
+
+Before withdrawing, the resource gives each command already waiting for its reply one
+non-blocking read: one whose reply has already arrived is finished by it, with that reply, and its
+connection stays up. The rest fail with `Database operation was withdrawn: its caller stopped waiting.` and free their
+pool slot. A withdrawn command already on the wire closes its session unless a command that is not
+being withdrawn still reads on that connection, and one still being written or dialed always
+closes it: the connection is not handed back open, and the next command dials it again (plus TLS,
+`AUTH` and `SELECT` when configured). A command withdrawn while still waiting for a connection was
+never sent and never runs; one already sent may have run on the server although it fails as
+withdrawn.
+
+Commands nobody awaits are covered as well. When a deferred job ends, the response cleans the
+job's own resources and keeps them mounted — `Resources::release()` calls `clean()` on every
+instance the job built from a registered definition, this one included — so a stream the job
+opened, such as SSE, stays reachable through the response. This resource's `clean()` treats every
+unfinished command issued through it the same way: one you never awaited, one left behind by an
+uncaught exception, one issued by a Fiber destroyed while parked on another wait (a database
+query, for example), or one issued outside any Fiber. Await every command whose effect you rely on.
+
+Await a command through the resource that issued it. Handing the `Operation` to another deferred
+job — a nested `defer()`, for example — and awaiting it there is unsupported: when the issuing job
+ends, its resource withdraws the command even while that other job is still waiting for it, and
+unless its reply has already arrived the command fails as withdrawn instead of delivering it.
+
+The same goes for the synchronous handler and its `defer()`. `$Response->KV` in the handler and
+`$Response->KV` inside `defer()` are different instances: the deferral runs on a clone of the
+response, which builds its own. The handler's instance stays on the worker's response until the
+worker's next request resets it, and that reset withdraws a command issued before `defer()` that
+has no reply yet, even while the deferral waits for it. The next request can come from any client,
+so this fails under load while it passes with a single client in development. Issue the command
+inside the deferral:
+
+```php
+// ❌ issued by the handler's instance, awaited by the deferral's
+$Operation = $Response->KV->command('SET', ['bootgly:demo', 'async-kv']);
+
+return $Response->defer(function (Response $Response) use ($Operation): void {
+   $Response->KV->await($Operation);
+});
+```
+
+```php
+// ✅ issued and awaited inside the deferral
+return $Response->defer(function (Response $Response): void {
+   $Response->KV->fetch('SET', ['bootgly:demo', 'async-kv']);
+});
+```
+
+Only definition-backed instances, such as the one `KV::provide()` registers, are cleaned per job.
+An instance you mount yourself — `$Response->mount()`, which calls `Resources::set()`, with no
+definition registered — is carried into every response clone and shared across contexts, so it is
+not cleaned when a job ends: its unfinished commands are withdrawn only by a wait that does not
+come back, or when the instance itself is destroyed.
 
 ## Register the HTTP resource
 

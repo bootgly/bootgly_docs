@@ -177,6 +177,7 @@ new WS_Server_CLI\Configs (
    array $Guards = [],
    null|int $maxConnections = null,
    null|int $maxConnectionsPerIP = null,
+   null|int $headroom = null,
    null|Closure $Fallback = null
 )
 ```
@@ -188,7 +189,13 @@ quando o heartbeat está desligado. `maxFrameSize` (1 MiB) e `maxMessageSize` (8
 frame e uma mensagem remontada — exceder qualquer um fecha com `1009`. `subprotocols` é a lista
 ordenada de preferência do servidor. `compression` liga/desliga o `permessage-deflate`. `Guards` é uma
 lista de guards de autenticação do handshake. `maxConnections` / `maxConnectionsPerIP` limitam as
-conexões estabelecidas por worker e por IP de cliente. `Fallback` responde requisições HTTP simples
+conexões estabelecidas por worker e por IP de cliente. `headroom` (padrão `32`) é o número de
+entradas do selector que cada worker mantém livres para o próprio I/O de dependências, descartando
+clientes mais cedo: o selector admite `1000` entradas, então os clientes param em
+`1000 − headroom` (968 por padrão) mesmo quando `maxConnections` é maior. O socket de escuta ocupa
+uma das entradas reservadas e, com mais de um worker, o relay de broadcast outra, então
+dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma para cada um
+deles; `0` o desativa. `Fallback` responde requisições HTTP simples
 (sem upgrade) — por exemplo, servindo a página do cliente na mesma porta. `secure` é um array de
 contexto de stream TLS para `wss://`.
 

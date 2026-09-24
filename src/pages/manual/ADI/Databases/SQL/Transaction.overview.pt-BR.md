@@ -31,6 +31,13 @@ certo ou não. Se o `BEGIN` falhar, a transação está morta e avisa: `query()`
 isso, o trabalho rodaria numa conexão onde nenhuma transação foi aberta — commitado por
 autocommit e sobrevivendo ao rollback que você pediu.
 
+Uma transação também passa a ler como inativa assim que a sessão em que o `BEGIN` rodou deixa
+de existir — a conexão caiu, ou o pool reconstruiu o mesmo objeto de conexão para outro caller.
+`query()`, `commit()`, `rollback()`, `abort()` e `save()` então devolvem o mesmo `Operation` com
+falha, e `release()` um dizendo *"SQL transaction savepoint is not active."*, sem tocar o pool, em
+vez de compor uma instrução que rodaria dentro da sessão de outro caller e cujo teardown a
+encerraria.
+
 ## Estado
 
 - `Database` — a fachada SQL que criou a transação.
@@ -87,7 +94,19 @@ transação. A instrução pendente é descartada: ela falha com
 vai junto, então ele nunca alcança o fio depois e nunca roda fora da transação que deveria
 contê-lo. Um rollback de savepoint é uma instrução comum e é recusado como qualquer outra.
 
-Os dois métodos falham sem tocar o pool quando a transação está inativa.
+```php
+abort (): Operation
+```
+
+Aborta a transação inteira em qualquer profundidade de savepoint: compõe o `ROLLBACK` de nível
+superior, que encerra todos os savepoints junto e devolve a reserva do pool. Como o `rollback()`
+externo, ele roda mesmo com uma instrução pendente e a descarta. Diferente do `rollback()`, ele
+não emite evento de transação (`Transaction\Events::Rollback`) — é o teardown de um caller que
+não pode mais esperar, como uma resposta deferred cujo Fiber está sendo destruído, onde um
+listener não conseguiria suspender.
+
+Os três métodos falham sem tocar o pool quando a transação está inativa, devolvendo um
+`Operation` com falha dizendo *"SQL transaction is not active."*
 
 ## Savepoints
 

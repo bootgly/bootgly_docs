@@ -175,6 +175,7 @@ new WS_Server_CLI\Configs (
    array $Guards = [],
    null|int $maxConnections = null,
    null|int $maxConnectionsPerIP = null,
+   null|int $headroom = null,
    null|Closure $Fallback = null
 )
 ```
@@ -186,6 +187,11 @@ cadence in seconds (`0` disables). `idleTimeout` reaps silent peers when heartbe
 exceeding either closes with `1009`. `subprotocols` is the server's ordered preference list.
 `compression` toggles `permessage-deflate`. `Guards` is a list of handshake auth guards.
 `maxConnections` / `maxConnectionsPerIP` cap established connections per worker and per client IP.
+`headroom` (default `32`) is the number of selector entries each worker keeps free for its own
+dependency I/O by shedding clients earlier: the selector admits `1000` entries, so clients stop at
+`1000 − headroom` (968 by default) even when `maxConnections` is higher. The listener takes one of
+the reserved entries and, with more than one worker, the broadcast relay another, so size it to at
+least the sum of the `pool.max` of the worker's resources plus one for each of them; `0` disables it.
 `Fallback` answers plain (non-upgrade) HTTP requests — e.g. serving the client page on the same
 port. `secure` is a TLS stream-context array for `wss://`.
 

@@ -245,7 +245,7 @@ O processo master do servidor expõe uma superfície rica de controle.
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Para o servidor e encerra os workers. |
 | `SIGTSTP`, `pause` | Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. `bootgly project show` reporta a instância como `paused`. No modo Monitor, SIGTSTP troca para Interactive. |
-| `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. |
+| `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. Um worker cujo socket de escuta não consegue voltar ao selector (as entradas estão ocupadas por esperas de dependências) registra uma mensagem crítica, continua Paused e tenta de novo a cada segundo até entrar — ele nunca reporta Running sem aceitar nada. Um `pause` cancela uma nova tentativa pendente e o worker continua Paused; um `resume` bem-sucedido também a cancela. |
 | `SIGUSR2`, `reload` | Recarrega o estado da aplicação nos workers. |
 | `SIGIOT`, `connections` | Imprime informações das conexões ativas. |
 | `SIGIO`, `stats` | Imprime estatísticas de conexões e tráfego. |
@@ -283,6 +283,8 @@ As opções de socket configuradas por padrão incluem:
 ## Event Loop e Conexões
 
 Cada worker adiciona o socket principal de escuta ao event loop com um evento de aceite/conexão. Os peers aceitos passam então a ser monitorados para leitura e escrita.
+
+O selector admite `1000` entradas por tabela de descriptors (`Select::CAPACITY`), compartilhadas entre os sockets de clientes e o próprio I/O de dependências do worker — esperas deferred de banco/KV, o cliente HTTP embarcado. `TCP_Server_CLI::$headroom` (padrão `32`; os servidores HTTP e WebSocket o expõem como `headroom:` nas suas Configs) mantém essa quantidade de entradas livre descartando clientes quando um worker já segura `1000 − headroom` conexões, antes de `$maxConnections` quando este é maior. O socket de escuta do worker ocupa uma dessas entradas (o relay de broadcast de um worker WebSocket, mais uma), então dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma para o socket de escuta (e mais uma para o relay); `0` o desativa, e ele é limitado para que um worker sempre admita clientes. Um descriptor fechado enquanto ainda registrado — uma sessão de dependência derrubada enquanto outro Fiber aguarda o socket dela — é removido do selector e quem o aguardava é retomado para observar o fechamento, em vez de derrubar o worker.
 
 Na camada de conexão, o Bootgly acompanha:
 

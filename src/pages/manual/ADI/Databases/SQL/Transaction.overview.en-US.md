@@ -30,6 +30,13 @@ succeeds. If the `BEGIN` fails, the transaction is dead and says so: `query()`, 
 that, work would run on a connection where no transaction was ever opened — committed by
 autocommit and surviving the rollback you asked for.
 
+A transaction also reads as not active once the session its `BEGIN` ran on is gone — the
+connection was dropped, or the pool rebuilt the same connection object for another caller.
+`query()`, `commit()`, `rollback()`, `abort()` and `save()` then return the same failed
+`Operation`, and `release()` one reading *"SQL transaction savepoint is not active."*, without
+touching the pool, instead of composing a statement that would run inside another caller's
+session and whose teardown would end it.
+
 ## State
 
 - `Database` — the SQL facade that created the transaction.
@@ -86,7 +93,19 @@ with it, so it can never reach the wire afterwards and run outside the transacti
 meant to contain it. A savepoint rollback is an ordinary statement and is refused like any
 other.
 
-Both methods fail without touching the pool when the transaction is inactive.
+```php
+abort (): Operation
+```
+
+Aborts the whole transaction at any savepoint depth: composes the top-level `ROLLBACK`, which
+ends every savepoint with it and gives the pool reservation back. Like the outer `rollback()`, it
+runs with a statement still outstanding and discards that statement. Unlike `rollback()`, it
+emits no transaction event (`Transaction\Events::Rollback`) — it is the teardown for a caller
+that can no longer wait, such as a deferred response whose Fiber is being destroyed, where a
+listener could not suspend.
+
+All three methods fail without touching the pool when the transaction is inactive, returning a
+failed `Operation` that reads *"SQL transaction is not active."*
 
 ## Savepoints
 

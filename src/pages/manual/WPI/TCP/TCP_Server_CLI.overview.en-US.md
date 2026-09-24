@@ -245,7 +245,7 @@ The server master process listens for a rich control surface.
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Stop the server and terminate workers. |
 | `SIGTSTP`, `pause` | Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. `bootgly project show` reports the instance as `paused`. In Monitor mode, SIGTSTP switches to Interactive instead. |
-| `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. |
+| `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. A worker whose listener cannot re-enter its selector (the entries are taken by dependency waits) logs a critical message, stays Paused and retries every second until it gets back in — it never reports Running while accepting nothing. A `pause` cancels a pending retry and the worker stays Paused; a successful `resume` cancels it too. |
 | `SIGUSR2`, `reload` | Reload application state in workers. |
 | `SIGIOT`, `connections` | Print connection information. |
 | `SIGIO`, `stats` | Print connection and traffic statistics. |
@@ -283,6 +283,8 @@ Socket options configured by default include:
 ## Event Loop and Connections
 
 Each worker adds the main listening socket to the event loop with an accept/connect event. Accepted peers are then monitored for reads and writes.
+
+The selector admits `1000` entries per descriptor table (`Select::CAPACITY`), shared by client sockets and the worker's own dependency I/O — deferred database/KV waits, the embedded HTTP client. `TCP_Server_CLI::$headroom` (default `32`; the HTTP and WebSocket servers expose it as `headroom:` in their Configs) keeps that many entries free by shedding clients once a worker holds `1000 − headroom` connections, before `$maxConnections` when that is higher. The worker's listener takes one of those entries (a WebSocket worker's broadcast relay one more), so size it to at least the sum of the `pool.max` of the worker's resources plus one for the listener (plus one for the relay); `0` disables it, and it is clamped so a worker always admits clients. A descriptor closed while still registered — a dependency session torn down while another Fiber awaits its socket — is dropped from the selector and its waiters are resumed to observe the close, instead of failing the worker.
 
 At the connection layer, Bootgly tracks:
 

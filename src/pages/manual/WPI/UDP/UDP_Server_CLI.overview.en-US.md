@@ -323,6 +323,10 @@ These are useful for operating and observing the running server from the termina
   dispatch fairness and lifetime authority are reusable foundations, but QUIC additionally needs
   connection IDs, migration, anti-amplification, TLS 1.3, streams and congestion control.
 - `pause()` and `resume()` are available when you need to temporarily stop and continue the listening flow.
+  A worker whose socket the selector refuses on resume (its entries taken by dependency waits) logs a
+  critical message, stays `Paused` and retries every second until it gets back in — it never reports
+  `Running` while reading nothing. A `pause()` cancels a pending retry and the worker stays
+  `Paused`; a successful `resume()` cancels it too.
 
 ## Full Example
 

@@ -60,8 +60,11 @@ In HTTP routes, prefer WPI
 
 ## Pool behavior
 
-The pool tracks `idle`, `busy`, `pending` and `created` connections. When all connections are
-busy and `created >= max`, new operations wait in `pending`. When a connection is released,
+The pool tracks `idle`, `busy`, `pending` and `created` connections. It is exhausted when no idle
+connection is available and `created` plus the slots still held for withdrawn SQL statements
+(each until its deadline — see [Withdrawn operations](#withdrawn-operations)) reaches `max`. Past
+that point a new operation joins a ready busy connection that no transaction holds; a `BEGIN`, or
+an operation with no such connection to join, waits in `pending`. When a connection is released,
 the pool promotes pending operations.
 
 `created` is the pool's own count, and every connection it holds — idle, busy or reserved by a
@@ -155,6 +158,52 @@ A cancellation that never reaches the server takes the same route: `cancel()` is
 so when its side channel cannot be established the operation is finished locally while the
 server keeps answering the original command, and the pool reconciles that wire before
 taking the connection back.
+
+### Withdrawn operations
+
+When the caller simply stops waiting — a deferred response whose wait was refused or
+interrupted, or whose Fiber was destroyed — the local counterpart of `cancel()` is
+`withdraw()`, and nothing is sent to the server. `Pool::withdraw()` fails one unfinished
+operation with `Database operation was withdrawn: its caller stopped waiting.`, marks it
+`revoked` so no fallback pool re-dispatches it, lets the driver reconcile the wire and takes the
+slot back; a connection still connecting or authenticating is discarded. An operation that
+already finished keeps its result, is marked `revoked` and is only forgotten. It is synchronous
+and never suspends, so it is safe in the `finally` of a Fiber being destroyed. `Database::withdraw()` — on the SQL
+and KV facades — takes several operations in a safe order (parked ones first, then those not
+reading yet, then the pipelined readers), attempts every one and rethrows the first failure.
+
+A withdrawal does not stop a statement the server already received. This applies to SQL drivers
+(`Driver::LINGERING`): when the withdrawn operation had reached the server (state `Querying` or
+`Reading`) and its session is dropped, a SQL server usually finishes — or rolls back — what it
+was asked before it notices the client left, so the pool keeps that slot counted against `max`
+until the operation's own deadline. The trade-off is that the slot stays unavailable until that
+deadline passes. When the session survives — a co-located sibling still reads on it — the
+connection itself still counts and nothing extra is held. A key-value server such as Redis drops
+a disconnected client's work at once, so a withdrawn KV command never holds its slot past its
+dropped session.
+
+That hold keeps a burst of client disconnects from flooding the database with abandoned queries,
+but the `pool.max` cap on statements running on the server holds only while those statements
+finish within their own deadline, and only when the operation has a deadline. An operation with
+`timeout` `0` has none, so a withdrawal holds no slot. A statement still running once its deadline
+passes — withdrawn or timed out — is no longer counted, so the server can then run more than
+`pool.max` statements at once. Pair the pool's `timeout` with a server-side statement timeout at or
+below it (PostgreSQL's `statement_timeout`, for example) so the server stops what the pool no
+longer counts.
+
+A withdrawn transaction teardown — the top-level `COMMIT` or `ROLLBACK` — always counts as
+never sent, so its session is severed instead of trusting an answer nobody will read. What that
+leaves on the server depends on how far the teardown got. A `ROLLBACK`, or a `COMMIT` that never
+reached the server, ends in a server-side rollback when the session is severed. A `COMMIT` that
+already reached the server (`Querying` or `Reading`) may have committed: the server usually
+processes the statement it already read before it notices the hangup. The caller only knows the
+operation failed as withdrawn, so its outcome is unknown — check whether its writes landed, or
+make the unit of work idempotent, before retrying it.
+`Transaction::abort()` composes that teardown for a caller that can no longer wait: the
+top-level `ROLLBACK` at any savepoint depth, discarding the outstanding statement and emitting no
+transaction events. A transaction also reads as not active once the session its `BEGIN` ran on
+is gone — the connection was dropped, or rebuilt for another caller — so its next statement
+fails with `SQL transaction is not active.` instead of running inside someone else's session.
 
 ## Native drivers
 

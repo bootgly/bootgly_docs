@@ -174,6 +174,7 @@ $Server->configure(
       health: null,                    // null — the built-in health endpoint is opt-in
       maxConnections: 10000,           // 10000 (default) — concurrent-connection ceiling per worker (0 = unlimited)
       maxConnectionsPerIP: 0,          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
+      headroom: 32,                    // 32 (default) — selector entries kept for the worker's own dependency I/O (0 = disabled)
       connectionIdleTimeout: 15        // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
    ),
    new RequestConfigs(
@@ -207,6 +208,16 @@ balancer — every request then arrives from the proxy's IP, and a per-IP cap wo
 legitimate traffic. Enable it (a value comfortably above your real per-client concurrency) only
 when clients connect to the server directly.
 
+`headroom` (default `32`) keeps part of each worker's selector free for the worker's own
+dependency I/O — deferred responses awaiting their database or KV pools, the embedded HTTP
+client — by shedding clients earlier. The selector admits `1000` entries per table and client
+sockets share them, so a worker stops admitting clients at `1000 − headroom` (968 by default);
+the effective per-worker ceiling is the smaller of that and `maxConnections`. Without the
+reserve, a flood of idle connections leaves every dependency wait refused. The worker's own
+listener takes one of the reserved entries, so the default leaves 31 for dependency waits: size
+it to at least the sum of the `pool.max` of the worker's resources plus one for the listener;
+`0` disables it, and it is clamped so a worker always admits clients.
+
 ```php
 // Direct-to-internet worker: cap total and per-client concurrency.
 $Server->configure(
@@ -214,8 +225,9 @@ $Server->configure(
       host: '0.0.0.0',
       port: 8080,
       workers: 8,
-      maxConnections: 20000,    // per worker
-      maxConnectionsPerIP: 200  // per source IP (only safe without a fronting proxy)
+      maxConnections: 900,      // per worker (the selector already stops clients at 1000 − headroom)
+      maxConnectionsPerIP: 200, // per source IP (only safe without a fronting proxy)
+      headroom: 64              // per worker: the listener + up to 63 pooled DB/KV/HTTP-client connections
    )
 );
 ```
@@ -557,7 +569,7 @@ Each worker runs a `stream_select()`-based event loop that handles:
 - **Response writing**: Encoded HTTP responses are written to client sockets.
 - **PHP Fibers**: The event loop integrates with PHP Fibers to support deferred (asynchronous) responses. See `$Response->defer()` for details.
 
-The event loop supports up to approximately 1000 simultaneous file descriptors **per worker** (the `stream_select()` limit), so total capacity grows with the worker count. `maxConnections` and `maxConnectionsPerIP` ([Connection limits](#connection-limits)) cap admission per worker. When Fibers are active, the loop operates in non-blocking mode (polling); otherwise, it blocks until I/O is available, ensuring zero idle CPU usage.
+The event loop admits up to 1000 descriptors per selector table **per worker** (bounded by `stream_select()`), shared by client sockets and the worker's own dependency waits, so total capacity grows with the worker count. Clients stop at `1000 − headroom` — about 968 by default — which keeps the rest free for the worker's listener (one entry) and for deferred database, KV and HTTP-client I/O. `maxConnections`, `maxConnectionsPerIP` and `headroom` ([Connection limits](#connection-limits)) cap admission per worker. When Fibers are active, the loop operates in non-blocking mode (polling); otherwise, it blocks until I/O is available, ensuring zero idle CPU usage.
 
 ## Process Model
 
@@ -1086,6 +1098,7 @@ The server itself. Named arguments only — the constructor's first slot is the 
 | `health` | `null\|string` | `null` | Built-in health-check endpoint path (e.g. `'/health'`). GET/HEAD requests to that exact path are answered before the middleware pipeline, so no user middleware can break a probe. `null` keeps it off. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: `0` means unlimited, because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
+| `headroom` | `null\|int` | `null` (= `32`) | Selector entries each worker keeps free for its own dependency I/O (deferred DB/KV waits, the embedded HTTP client) by shedding clients earlier: once a worker holds `1000 − headroom` connections, the next one is accepted and immediately closed, so the effective ceiling is the smaller of that and `maxConnections`. The listener takes one of these entries, so size it to at least the sum of the `pool.max` of the worker's resources plus one. `0` disables it; it is clamped so a worker always admits clients. Sets `TCP_Server_CLI::$headroom`. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
 
 ### `Request\Configs`

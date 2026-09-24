@@ -60,9 +60,12 @@ Em rotas HTTP, prefira
 
 ## Comportamento do pool
 
-O pool acompanha conexões `idle`, `busy`, `pending` e `created`. Quando todas as conexões
-estão ocupadas e `created >= max`, novas operações aguardam em `pending`. Quando uma conexão
-é liberada, o pool promove operações pendentes.
+O pool acompanha conexões `idle`, `busy`, `pending` e `created`. Ele se esgota quando não há
+conexão idle disponível e `created` mais as vagas ainda retidas por statements SQL retirados (cada
+uma até o próprio deadline — veja [Operações retiradas](#operações-retiradas)) alcança o `max`. A
+partir daí uma nova operação se junta a uma conexão busy pronta que nenhuma transação segura; um
+`BEGIN`, ou uma operação sem uma conexão dessas para se juntar, aguarda em `pending`. Quando uma
+conexão é liberada, o pool promove operações pendentes.
 
 `created` é a contagem do próprio pool, e toda conexão que ele segura — idle, busy ou
 reservada por uma transação — é uma que ele conta. Uma conexão que o pool descartou continua
@@ -158,6 +161,53 @@ Um cancelamento que nunca chega ao servidor segue o mesmo caminho: `cancel()` é
 então quando o side channel não pode ser estabelecido a operação é finalizada localmente
 enquanto o servidor continua respondendo ao comando original, e o pool reconcilia esse wire
 antes de retomar a conexão.
+
+### Operações retiradas
+
+Quando quem chamou simplesmente para de esperar — uma resposta deferred cuja espera foi recusada
+ou interrompida, ou cuja Fiber foi destruída — a contraparte local do `cancel()` é o
+`withdraw()`, e nada é enviado ao servidor. `Pool::withdraw()` falha uma operação não terminada
+com `Database operation was withdrawn: its caller stopped waiting.`, marca-a como `revoked` para
+que nenhum pool de fallback a re-despache, deixa o driver reconciliar o wire e retoma a vaga; uma
+conexão ainda conectando ou autenticando é descartada. Uma operação que já terminou mantém seu
+resultado, é marcada como `revoked` e é apenas esquecida. Ele é síncrono e nunca suspende, então
+é seguro no `finally` de uma Fiber sendo destruída. `Database::withdraw()` — nas fachadas SQL e KV — recebe várias
+operações e as retira numa ordem segura (primeiro as estacionadas, depois as que ainda não estão
+lendo, por fim os leitores em pipeline), tenta todas e relança a primeira falha.
+
+Uma retirada não interrompe um statement que o servidor já recebeu. Isso vale para os drivers SQL
+(`Driver::LINGERING`): quando a operação retirada já tinha chegado ao servidor (estado `Querying`
+ou `Reading`) e a sessão dela é derrubada, um servidor SQL em geral termina — ou desfaz com
+rollback — o que lhe foi pedido antes de perceber que o cliente saiu, então o pool mantém essa
+vaga contada contra o `max` até o deadline da própria operação. A contrapartida é que a vaga fica
+indisponível até esse deadline passar. Quando a sessão sobrevive — uma irmã co-localizada ainda lê
+nela — a própria conexão continua contando e nada extra fica retido. Um servidor key-value como o
+Redis descarta na hora o trabalho de um cliente desconectado, então um comando KV retirado nunca
+retém a vaga além da sessão derrubada.
+
+Essa retenção impede que uma rajada de desconexões de clientes inunde o banco com queries
+abandonadas, mas o teto de `pool.max` statements rodando no servidor só vale enquanto esses
+statements terminam dentro do próprio deadline, e só quando a operação tem um deadline. Uma
+operação com `timeout` `0` não tem nenhum, então a retirada não retém vaga alguma. Um statement que
+continua rodando depois que o deadline passa — retirado ou expirado — deixa de ser contado, e aí o
+servidor pode executar mais de `pool.max` statements ao mesmo tempo. Combine o `timeout` do pool com
+um timeout de statement no servidor igual ou menor (o `statement_timeout` do PostgreSQL, por
+exemplo), para que o servidor interrompa o que o pool deixou de contar.
+
+Um teardown de transação retirado — o `COMMIT` ou `ROLLBACK` de nível superior — sempre conta
+como nunca enviado, então a sessão dele é cortada em vez de confiar numa resposta que ninguém vai
+ler. O que isso deixa no servidor depende de até onde o teardown chegou. Um `ROLLBACK`, ou um
+`COMMIT` que nunca chegou ao servidor, termina num rollback feito pelo servidor quando a sessão é
+cortada. Um `COMMIT` que já chegou ao servidor (`Querying` ou `Reading`) pode ter sido commitado: o
+servidor em geral processa o statement que já leu antes de perceber a desconexão. Quem chamou só
+sabe que a operação falhou como retirada, então o resultado dela é desconhecido — verifique se as
+escritas dela foram gravadas, ou torne a unidade de trabalho idempotente, antes de repeti-la.
+`Transaction::abort()` compõe esse teardown para um chamador que não pode mais esperar: o
+`ROLLBACK` de nível superior em qualquer profundidade de savepoint, descartando o statement
+pendente e sem emitir eventos de transação. Uma transação também passa a ler como inativa assim
+que a sessão em que o `BEGIN` rodou deixa de existir — a conexão caiu, ou foi reconstruída para
+outro chamador —, então o próximo statement dela falha com `SQL transaction is not active.` em
+vez de rodar dentro da sessão de outra pessoa.
 
 ## Drivers nativos
 

@@ -328,6 +328,10 @@ Eles são úteis para operar e observar o servidor em execução pelo terminal.
   fairness de dispatch e autoridade por vida útil são fundações reutilizáveis, mas QUIC também
   exige IDs de conexão, migração, antiamplificação, TLS 1.3, streams e controle de congestionamento.
 - `pause()` e `resume()` estão disponíveis quando você precisa interromper e retomar temporariamente a escuta.
+  Um worker cujo socket o selector recusa no resume (as entradas ocupadas por esperas de dependências)
+  registra uma mensagem crítica, continua `Paused` e tenta de novo a cada segundo até entrar — ele nunca
+  reporta `Running` sem ler nada. Um `pause()` cancela uma nova tentativa pendente e o worker
+  continua `Paused`; um `resume()` bem-sucedido também a cancela.
 
 ## Exemplo Completo
 

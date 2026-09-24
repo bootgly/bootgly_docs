@@ -148,6 +148,17 @@ return $Response->defer(function (Response $Response): void {
 });
 ```
 
+Uma espera que não volta não deixa a conexão presa. Quando o selector a recusa
+(`Fiber I/O resource failed selector admission.` — veja `headroom` em
+[Limites de conexão](/manual/WPI/HTTP/HTTP_Server_CLI/#limites-de-conexão)), um timeout do
+`defer()` a interrompe, ou o cliente desconecta e o Fiber da requisição é destruído, as operações
+que ela aguardava são retiradas localmente — veja `withdraw()` em
+[DBAL de banco](/manual/ADI/Database/overview/) — e o pool retoma a vaga delas em vez de deixar a
+conexão ocupada para sempre; um statement que o servidor já recebeu pode manter essa vaga contada
+até o próprio deadline. A recusa ou o `Timeout` continua chegando ao seu handler — a menos
+que a própria retirada falhe: a exceção dela propaga no lugar, com a original encadeada no fim da
+cadeia de `getPrevious()` dela.
+
 ## Métodos do Database
 
 ```php
@@ -224,6 +235,18 @@ sucesso ainda é descartada se a externa falhar.
 
 Uma transação é uma superfície **serial**: ela carrega uma operação por vez. Emita a próxima
 query depois de aguardar a anterior, e reserve o `drain()` para grupos criados no pool.
+
+Se o Fiber da requisição é destruído no meio da transação — o cliente foi embora — nenhum
+callback retorna e nada é lançado, então o `transact()` mais externo faz rollback da transação
+inteira localmente com `Transaction::abort()`: o `ROLLBACK` dele é retirado antes de chegar ao
+wire, a sessão é cortada, o servidor faz rollback e a reserva da conexão é liberada.
+
+O `COMMIT` final é a exceção. Quando a espera por ele não volta — um timeout do `defer()`, uma
+recusa do selector, ou o Fiber destruído enquanto espera — esse `COMMIT` é retirado e a sessão
+dele é cortada como qualquer outro teardown. Um `COMMIT` que nunca chegou ao servidor termina num
+rollback feito pelo servidor, mas um que já chegou pode ter sido commitado. O `transact()` só
+informa que falhou (o `Timeout` ou a recusa chega ao seu handler), então não repita a unidade de
+trabalho às cegas: verifique se as escritas dela foram gravadas, ou torne-a idempotente.
 
 ## Registrar o resource KV
 
@@ -383,6 +406,67 @@ drain (array $Operations): array
 
 Aguarda uma operação, ou um grupo de operações, na prontidão da conexão. `drain()` re-escaneia o
 grupo após cada passagem de avanço para que as respostas FIFO pipelined resolvam corretamente.
+
+Uma espera que não volta — recusada pelo selector, interrompida por um timeout do `defer()` ou
+encerrada pela desconexão do cliente — retira o que aguardava. Numa exceção só os comandos
+aguardados saem, e a exceção continua chegando ao seu handler, que pode capturá-la e seguir usando
+os outros (se a própria retirada falhar, a exceção dela propaga no lugar, com a original no fim da
+cadeia de `getPrevious()` dela). Quando o Fiber da requisição é destruído enquanto estacionado numa
+dessas esperas, todo comando não terminado que ele emitiu por este resource também é retirado.
+
+Antes de retirar, o resource dá a cada comando que já aguarda a resposta uma leitura não
+bloqueante: um cuja resposta já chegou termina nela, com essa resposta, e sua conexão continua de
+pé. Os demais falham com `Database operation was withdrawn: its caller stopped waiting.` e liberam
+sua vaga no pool. Um comando retirado que já está no fio fecha a sessão dele, a menos que um
+comando que não está sendo retirado ainda leia naquela conexão, e um que ainda está sendo escrito
+ou discado sempre a fecha: a conexão não é devolvida aberta, e o próximo comando a disca de novo
+(mais TLS, `AUTH` e `SELECT` quando configurados). Um comando retirado enquanto ainda esperava uma
+conexão nunca foi enviado e nunca roda; um já enviado pode ter rodado no servidor, embora falhe
+como retirado.
+
+Comandos que ninguém aguarda também são cobertos. Quando um job deferred termina, a resposta limpa
+os resources do próprio job e os mantém montados — `Resources::release()` chama `clean()` em toda
+instância que o job construiu a partir de uma definição registrada, este resource incluído — então
+um stream que o job abriu, como o SSE, continua alcançável pela resposta. O `clean()` deste resource
+trata do mesmo jeito todo comando não terminado emitido por ele: um que você nunca aguardou, um
+deixado para trás por uma exceção não capturada, um emitido por um Fiber destruído enquanto
+estacionado em outra espera (uma query de banco, por exemplo), ou um emitido fora de qualquer Fiber.
+Aguarde todo comando de cujo efeito você depende.
+
+Aguarde um comando pelo resource que o emitiu. Entregar a `Operation` a outro job deferred — um
+`defer()` aninhado, por exemplo — e aguardá-la lá não é suportado: quando o job que a emitiu
+termina, o resource dele retira o comando mesmo enquanto esse outro job ainda o aguarda, e, a menos
+que a resposta dele já tenha chegado, o comando falha como retirado em vez de entregá-la.
+
+O mesmo vale para o handler síncrono e o `defer()` dele. `$Response->KV` no handler e
+`$Response->KV` dentro do `defer()` são instâncias diferentes: o deferral roda num clone da
+resposta, que constrói a sua própria. A instância do handler fica na resposta do worker até a
+próxima requisição do worker resetá-la, e esse reset retira um comando emitido antes do `defer()`
+que ainda não tem resposta, mesmo enquanto o deferral o aguarda. A próxima requisição pode vir de
+qualquer cliente, então isso falha sob carga e passa com um único cliente em desenvolvimento. Emita
+o comando dentro do deferral:
+
+```php
+// ❌ emitido pela instância do handler, aguardado pela do deferral
+$Operation = $Response->KV->command('SET', ['bootgly:demo', 'async-kv']);
+
+return $Response->defer(function (Response $Response) use ($Operation): void {
+   $Response->KV->await($Operation);
+});
+```
+
+```php
+// ✅ emitido e aguardado dentro do deferral
+return $Response->defer(function (Response $Response): void {
+   $Response->KV->fetch('SET', ['bootgly:demo', 'async-kv']);
+});
+```
+
+Só instâncias apoiadas numa definição, como a que o `KV::provide()` registra, são limpas por job.
+Uma instância que você mesmo monta — `$Response->mount()`, que chama `Resources::set()`, sem
+definição registrada — é carregada para todo clone da resposta e compartilhada entre contextos,
+então não é limpa quando um job termina: seus comandos não terminados só são retirados por uma
+espera que não volta, ou quando a própria instância é destruída.
 
 ## Registrar o resource HTTP
 

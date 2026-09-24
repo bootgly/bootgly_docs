@@ -174,6 +174,7 @@ $Server->configure(
       health: null,                    // null — o endpoint de health embutido é opcional
       maxConnections: 10000,           // 10000 (padrão) — teto de conexões simultâneas por worker (0 = ilimitado)
       maxConnectionsPerIP: 0,          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
+      headroom: 32,                    // 32 (padrão) — entradas do selector reservadas para o I/O de dependências do próprio worker (0 = desativado)
       connectionIdleTimeout: 15        // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
    ),
    new RequestConfigs(
@@ -208,6 +209,17 @@ balanceador de carga — toda requisição chega do IP do proxy, e um limite por
 todo o tráfego legítimo. Habilite-o (com um valor confortavelmente acima da concorrência real
 por cliente) apenas quando os clientes se conectam diretamente ao servidor.
 
+`headroom` (padrão `32`) mantém parte do selector de cada worker livre para o I/O de
+dependências do próprio worker — respostas deferred aguardando seus pools de banco ou KV, o
+cliente HTTP embarcado — descartando clientes mais cedo. O selector admite `1000` entradas por
+tabela e os sockets de clientes as compartilham, então um worker para de admitir clientes em
+`1000 − headroom` (968 por padrão); o teto efetivo por worker é o menor entre esse valor e
+`maxConnections`. Sem essa reserva, uma inundação de conexões ociosas deixa toda espera de
+dependência recusada. O próprio socket de escuta do worker ocupa uma das entradas reservadas,
+então o padrão deixa 31 para as esperas de dependências: dimensione-o para pelo menos a soma dos
+`pool.max` dos resources do worker mais uma para o socket de escuta; `0` o desativa, e ele é
+limitado para que um worker sempre admita clientes.
+
 ```php
 // Worker direto para a internet: limita a concorrência total e por cliente.
 $Server->configure(
@@ -215,8 +227,9 @@ $Server->configure(
       host: '0.0.0.0',
       port: 8080,
       workers: 8,
-      maxConnections: 20000,    // por worker
-      maxConnectionsPerIP: 200  // por IP de origem (seguro apenas sem um proxy à frente)
+      maxConnections: 900,      // por worker (o selector já para os clientes em 1000 − headroom)
+      maxConnectionsPerIP: 200, // por IP de origem (seguro apenas sem um proxy à frente)
+      headroom: 64              // por worker: o socket de escuta + até 63 conexões de pool de DB/KV/cliente HTTP
    )
 );
 ```
@@ -560,7 +573,7 @@ Cada worker executa um event loop baseado em `stream_select()` que lida com:
 - **Escrita de respostas**: Respostas HTTP codificadas são escritas nos sockets dos clientes.
 - **PHP Fibers**: O event loop se integra com PHP Fibers para suportar respostas deferred (assíncronas). Veja `$Response->defer()` para detalhes.
 
-O event loop suporta aproximadamente 1000 file descriptors simultâneos **por worker** (limite do `stream_select()`), então a capacidade total cresce com a quantidade de workers. `maxConnections` e `maxConnectionsPerIP` ([Limites de conexão](#limites-de-conexão)) limitam a admissão por worker. Quando Fibers estão ativas, o loop opera em modo non-blocking (polling); caso contrário, ele bloqueia até que I/O esteja disponível, garantindo zero uso de CPU em idle.
+O event loop admite até 1000 descriptors por tabela do selector **por worker** (limitado pelo `stream_select()`), compartilhados entre os sockets de clientes e as esperas de dependências do próprio worker, então a capacidade total cresce com a quantidade de workers. Os clientes param em `1000 − headroom` — cerca de 968 por padrão — o que mantém o restante livre para o socket de escuta do worker (uma entrada) e para o I/O deferred de banco, KV e cliente HTTP. `maxConnections`, `maxConnectionsPerIP` e `headroom` ([Limites de conexão](#limites-de-conexão)) limitam a admissão por worker. Quando Fibers estão ativas, o loop opera em modo non-blocking (polling); caso contrário, ele bloqueia até que I/O esteja disponível, garantindo zero uso de CPU em idle.
 
 ## Modelo de Processos
 
@@ -1097,6 +1110,7 @@ O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor 
 | `health` | `null\|string` | `null` | Caminho do endpoint de health-check embutido (ex.: `'/health'`). Requisições GET/HEAD nesse caminho exato são respondidas antes do pipeline de middlewares, então nenhum middleware do usuário quebra um probe. `null` o mantém desligado. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: `0` significa ilimitado, porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
+| `headroom` | `null\|int` | `null` (= `32`) | Entradas do selector que cada worker mantém livres para o próprio I/O de dependências (esperas deferred de DB/KV, o cliente HTTP embarcado), descartando clientes mais cedo: quando um worker já segura `1000 − headroom` conexões, a próxima é aceita e imediatamente fechada, então o teto efetivo é o menor entre esse valor e `maxConnections`. O socket de escuta ocupa uma dessas entradas, então dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma. `0` o desativa; ele é limitado para que um worker sempre admita clientes. Define `TCP_Server_CLI::$headroom`. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
 
 ### `Request\Configs`
