@@ -5,7 +5,7 @@ faq:
   - q: Quanto custa?
     a: |
       Os espaços são combinados caso a caso, conforme o tier e o período. Escreva para
-      [public@bootgly.com](mailto:public@bootgly.com) e respondemos com a disponibilidade e as condições.
+      [ads@bootgly.com](mailto:ads@bootgly.com) e respondemos com a disponibilidade e as condições.
   - q: Quais patrocinadores e anúncios vocês aceitam?
     a: |
       Produtos e serviços relevantes para desenvolvedores: hospedagem, ferramentas, serviços, cursos,
@@ -46,7 +46,7 @@ O cartão de anúncio acima do conteúdo de todas as páginas da documentação 
 
 ## Como Patrocinar
 
-- **Platinum, Gold e anúncios** — escreva para [public@bootgly.com](mailto:public@bootgly.com) com a sua empresa, o espaço desejado e o período. Respondemos com a disponibilidade e as condições.
+- **Platinum, Gold e anúncios** — escreva para [ads@bootgly.com](mailto:ads@bootgly.com) com a sua empresa, o espaço desejado e o período. Respondemos com a disponibilidade e as condições.
 - **Apoio individual** — [patrocine o Bootgly no GitHub](https://github.com/sponsors/bootgly/).
 
 ## O Que Aceitamos

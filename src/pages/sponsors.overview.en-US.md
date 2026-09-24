@@ -5,7 +5,7 @@ faq:
   - q: How much does it cost?
     a: |
       Placements are agreed case by case, depending on the tier and the period. Write to
-      [public@bootgly.com](mailto:public@bootgly.com) and we reply with availability and terms.
+      [ads@bootgly.com](mailto:ads@bootgly.com) and we reply with availability and terms.
   - q: Which sponsors and ads do you accept?
     a: |
       Products and services relevant to developers: hosting, tools, services, courses, books,
@@ -46,7 +46,7 @@ The ad card above the content of every documentation page — an image, a title,
 
 ## Become a Sponsor
 
-- **Platinum, Gold and ads** — write to [public@bootgly.com](mailto:public@bootgly.com) with your company, the placement you want and the period. We reply with availability and terms.
+- **Platinum, Gold and ads** — write to [ads@bootgly.com](mailto:ads@bootgly.com) with your company, the placement you want and the period. We reply with availability and terms.
 - **Individual support** — [sponsor Bootgly on GitHub](https://github.com/sponsors/bootgly/).
 
 ## What We Accept
