@@ -24,6 +24,18 @@ if ($id !== false && Registry::check($id)) {
 interval is not positive. Persistent timers rearm after each callback; pass
 `persistent: false` for a one-shot timer.
 
+Each due timer runs at most once per `tick()`, and a timer added or rearmed during a tick first
+runs on a later one. When a callback throws, the wheel keeps going: the failure is reported
+through `Throwables::notify()` — every reporter registered in `Throwables::$reporters` receives it
+with the context `['origin' => 'timer', 'id' => $id]`, once per Throwable instance (a callback that
+throws the same stored instance again is reported only the first time) — a persistent timer keeps
+its schedule, and a one-shot timer is released. The values a callback leaves behind (its
+captures, its arguments, the failure itself) are released contained too, so a destructor that
+throws — even one whose exception's own destructor throws — never escapes into the worker's
+signal handler. Only a chain of destructor failures deeper than 64 generations is cut: its
+last failure is parked for the rest of the process instead of released — PHP destroys it at
+shutdown, where a throwing destructor turns the exit status into 255.
+
 `Timer\Registry::check(int $id): bool` reports whether that identifier is still live. It becomes `false`
 after targeted deletion, global deletion, or completion of a one-shot callback. Use it when
 an owner must recover after another component intentionally clears the process timer wheel.
@@ -41,8 +53,8 @@ that requests another targeted or full deletion only commits and queues that gen
 recursing. One outer timer touch releases at most 256 detached generations, then performs the
 coalesced reset notification; any bounded remainder advances on a later `add()`, `tick()` or
 `del()`. This keeps owner recovery reachable without an attacker-controlled deletion stack.
-Deletion is not a barrier for the due snapshot already executing: a callback detached into
-that snapshot may still run once later in the same `tick()`.
+Deletion is a barrier inside `tick()` as well: a timer that an earlier callback of the same
+tick deleted — by identifier, or by clearing the wheel — never runs in that tick.
 
 `Timer\Reset::add(Closure $Observer): int` and `del(int $id): void` manage this process-local
 owner notification. `notify()` is the dispatch operation used by the timer wheel; application
@@ -89,7 +101,10 @@ Schedules a callback, or returns `false` for a non-positive interval.
 public static function tick (): void
 ```
 
-Dispatches due callbacks and rearms persistent ones.
+Dispatches each due callback once — never one an earlier callback of the tick deleted — and
+rearms persistent ones. A callback failure is reported through `Throwables::notify()` with
+`['origin' => 'timer', 'id' => $id]` (once per Throwable instance), and every value a callback
+leaves behind is released contained.
 
 ```php
 public static function del (int $id = 0): bool

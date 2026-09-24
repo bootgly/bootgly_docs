@@ -24,6 +24,18 @@ if ($id !== false && Registry::check($id)) {
 o intervalo não é positivo. Timers persistentes são rearmados após cada callback; passe
 `persistent: false` para um timer one-shot.
 
+Cada timer vencido roda no máximo uma vez por `tick()`, e um timer adicionado ou rearmado durante
+um tick só roda num tick seguinte. Quando um callback lança uma exceção, a roda continua: a falha
+é reportada por `Throwables::notify()` — todo reporter registrado em `Throwables::$reporters` a
+recebe com o contexto `['origin' => 'timer', 'id' => $id]`, uma vez por instância de Throwable (um
+callback que lança de novo a mesma instância guardada só é reportado na primeira vez) —, um timer
+persistente mantém seu agendamento e um timer one-shot é liberado. Os valores que um callback
+deixa para trás (suas capturas, seus argumentos, a própria falha) também são liberados de forma
+contida, então um destrutor que lança — mesmo um cuja exceção lança no próprio destrutor — nunca
+escapa para o handler de sinal do worker. Só uma cadeia de falhas de destrutores com mais de 64
+gerações é cortada: sua última falha fica estacionada pelo resto do processo em vez de liberada —
+o PHP a destrói no encerramento, onde um destrutor que lança transforma o status de saída em 255.
+
 `Timer\Registry::check(int $id): bool` informa se aquele identificador ainda está vivo. O resultado passa a
 `false` após remoção específica, remoção global ou conclusão do callback one-shot. Use-o
 quando um owner precisar se recuperar depois que outro componente limpar intencionalmente
@@ -41,9 +53,9 @@ fila FIFO local ao processo: um destructor que pede outra remoção específica 
 e enfileira aquela geração, sem recursão. Um toque externo do Timer libera no máximo 256 gerações
 destacadas e então executa a notificação de reset coalescida; qualquer restante limitado avança
 em um `add()`, `tick()` ou `del()` posterior. Isso mantém o recovery dos owners alcançável
-sem uma pilha de remoções controlada pelo atacante. A remoção não é uma barreira
-para o snapshot vencido já em execução:
-um callback destacado naquele snapshot ainda pode rodar uma vez depois, no mesmo `tick()`.
+sem uma pilha de remoções controlada pelo atacante. A remoção também é uma barreira dentro do
+`tick()`: um timer que um callback anterior do mesmo tick removeu — pelo identificador ou limpando
+a roda — nunca roda naquele tick.
 
 `Timer\Reset::add(Closure $Observer): int` e `del(int $id): void` gerenciam essa notificação
 local ao processo. `notify()` é a operação de despacho usada pela roda; código da aplicação
@@ -91,7 +103,10 @@ Agenda um callback ou retorna `false` para um intervalo não positivo.
 public static function tick (): void
 ```
 
-Despacha callbacks vencidos e rearma os persistentes.
+Despacha cada callback vencido uma vez — nunca um que um callback anterior do tick removeu — e
+rearma os persistentes. A falha de um callback é reportada por `Throwables::notify()` com
+`['origin' => 'timer', 'id' => $id]` (uma vez por instância de Throwable), e todo valor que um
+callback deixa para trás é liberado de forma contida.
 
 ```php
 public static function del (int $id = 0): bool
