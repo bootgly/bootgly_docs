@@ -96,7 +96,8 @@ export default {
     email: 'public@bootgly.com',
     changelog: 'https://github.com/bootgly/bootgly/releases/',
     roadmap: 'https://github.com/bootgly/bootgly/milestones/',
-    sponsor: 'https://github.com/sponsors/bootgly/',
+    // a page of the site opens in place: the standalone sponsors page
+    sponsor: '/sponsors/',
     explore: [
       { label: '🤯 Bootgly Awesome', url: 'https://github.com/bootgly/bootgly_awesome/' },
       { label: '⏱️ Bootgly Benchmarks', url: 'https://github.com/bootgly/bootgly_benchmarks/' }
@@ -120,6 +121,26 @@ export default {
   // Engine binding FEEDBACK of the Cloudflare Pages project
   feedback: {
     enabled: true
+  },
+
+  // @ Sponsors — logos under the Table of Contents. With no sponsor yet, each
+  // tier shows a "Your sponsor here" slot and the panel ends with "Your logo
+  // here"; both open the sponsors page
+  sponsors: {
+    enabled: true,
+    fallbackUrl: '/sponsors/',
+    tiers: [
+      { id: 'platinum', layout: 'wide' },
+      { id: 'gold', layout: 'square' }
+    ],
+    items: []
+  },
+
+  // @ Page ad — one creative above the content of every page; with none yet,
+  // a "Your ad here" example opens the sponsors page
+  ads: {
+    enabled: true,
+    items: []
   },
 
   // @ GitHub

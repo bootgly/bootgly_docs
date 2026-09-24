@@ -1050,5 +1050,34 @@ export default {
         title: 'Versionamento'
       }
     }
+  },
+
+  // ! Standalone page: book 'sponsors' has no *.book.js, so it routes at
+  //   /sponsors/overview/ with no book tab; menu.hidden keeps it out of
+  //   previous/next and the page trees. Opened from links.sponsor.
+  '': {
+    config: {
+      book: 'sponsors',
+      icon: 'favorite',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Sponsor Bootgly and reach PHP developers where they read the docs.',
+          'pt-BR': 'Patrocine o Bootgly e alcance desenvolvedores PHP onde eles leem a documentação.'
+        }
+      },
+      menu: { hidden: true },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Sponsors'
+      },
+      'pt-BR': {
+        title: 'Patrocinadores'
+      }
+    }
   }
 }
