@@ -105,7 +105,19 @@ $Logger->Handlers->push(
 ```
 
 `push()`'s second argument sets the handler's **minimum severity** (lower RFC 5424 value = more
-severe). Archives are numbered `app.log.1` … `app.log.7`; the oldest is dropped.
+severe). Archives are numbered `app.log.1` … `app.log.7`, newest first: a rotation fills the first
+free number and drops the oldest only when every number is taken. `keep: 0` keeps no archive — the
+file that ended is deleted. An empty file is never archived.
+
+Every process writing the same file — a server's master and its workers — rotates it **once**: the
+rotation is decided and made under the lock each write takes on the file, so a process that waited
+finds the file already rotated and writes to the new one. Give every process that shares a file the
+same `Rotation`, and keep the file on a local filesystem (the lock is `flock()`). The day's rotation
+waits out the first 50 ms after midnight: a filesystem that stamps files with a coarse clock could
+otherwise date a file created in those moments to the day before and rotate it again. A rotation that
+cannot complete — an archive name taken by a directory, a folder that refuses the rename — stops
+where it failed: nothing is thrown, records keep going to the active file, and the failure is
+reported once to the system log.
 
 A `{channel}` placeholder in the path writes **one file per channel** — each record lands in a file
 named after its module:
@@ -189,7 +201,9 @@ Where an opted-in logger's records land, per server mode:
 > yourself. Should the daemon exit before it could drop privileges (an unknown user, a port
 > already taken), the held records go to the system logger instead. The file sink itself
 > refuses anything but a plain file at the destination — a symbolic link, a hard link, a
-> dangling link — needs read and write access to it, and reports each refusal once to the
+> dangling link (an unprivileged writer rotates a *due* file with a second name away first,
+> since only names move; root never touches one) — needs read and write access to it, and
+> reports each refusal once to the
 > system logger (ident `bootgly`, muted under `BOOTGLY_ENVIRONMENT=test`) where one listens,
 > so a refused sink is never a silent one (the test runner mutes it). The boundary: on a root
 > launch, never log through a global logger *before* the server is configured — a record
@@ -248,7 +262,8 @@ meant to guard against.
 
 **`mute()` — stop the reports, not the refusals.** Every refused destination is reported once per
 path and reason to the system logger (ident `bootgly`), so a sink switched off by a planted link is
-never a silent one. A process that refuses on purpose does not want that in the host's journal:
+never a silent one — and so is a rotation that failed while the record still went to the active
+file. A process that refuses on purpose does not want that in the host's journal:
 
 ```php
 File::mute();        // File::mute(false) reports again
@@ -500,7 +515,11 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   `Filters\Channel(allowed, denied)`, `Filters\Callback(Closure)`, `Filters\Tags(tags, all)`,
   `Filters\Search(term)`. `Logs\Filters` collection: `push()`, `check()`.
 - **Rotation** — `Handlers\File\Rotation(int $size = 10_485_760, bool $daily = true, int $keep = 7)`:
-  `rotate(string $path): void`.
+  `check(string $path): bool` — the policy: due when a regular, non-empty file reached the size
+  cap or was last modified on another day (a link is never followed; in the first 50 ms of a day it
+  waits them out first); a custom rotation overrides it. `rotate(string $path): void` — acts only
+  when `check()` answers true; the File handler calls it holding `flock(LOCK_EX)` on the active file
+  after checking the name still holds that inode, and a direct caller must do the same.
 - **Live viewer** — `Bootgly\CLI\UI\Components\Logs(Input, Output, int $max = 5000)`: `feed(string)`,
   `control(string $key): bool`, `render(): void`. Driven by `TCP_Server_CLI::monitoring()`.
 - **Layering** — `ACI\Logs` depends only on ABI (template/ANSI helpers, `IO/IPC/Pipe`); the CLI
@@ -544,9 +563,9 @@ consulted while the writer is root.
 public static function mute (bool $quiet = true): void
 ```
 
-Keeps the refusal reports out of the system logger; `false` turns them back on. It silences the
-report alone — a refused destination still fails the write. The test runner calls it because its
-suites refuse on purpose.
+Keeps the sink's reports — refusals, and rotations that failed — out of the system logger; `false`
+turns them back on. It silences the report alone — a refused destination still fails the write. The
+test runner calls it because its suites refuse on purpose.
 
 ```php
 public static function exempt (string $map, int $overflow): int

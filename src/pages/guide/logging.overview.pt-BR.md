@@ -105,7 +105,20 @@ $Logger->Handlers->push(
 ```
 
 O segundo argumento de `push()` define a **severidade mínima** do handler (valor RFC 5424 menor =
-mais severo). Os arquivos são numerados `app.log.1` … `app.log.7`; o mais antigo é descartado.
+mais severo). Os arquivos são numerados `app.log.1` … `app.log.7`, do mais novo ao mais antigo: uma
+rotação ocupa o primeiro número livre e só descarta o mais antigo quando todos os números estão
+ocupados. `keep: 0` não guarda nenhum arquivo — o arquivo que terminou é apagado. Um arquivo vazio
+nunca é arquivado.
+
+Todo processo que escreve no mesmo arquivo — o master e os workers de um servidor — o rotaciona
+**uma vez**: a rotação é decidida e feita sob o lock que cada escrita pega no arquivo, então um
+processo que esperou encontra o arquivo já rotacionado e escreve no novo. Dê a mesma `Rotation` a
+todo processo que compartilha um arquivo, e mantenha o arquivo num sistema de arquivos local (o lock
+é `flock()`). A rotação do dia espera passarem os primeiros 50 ms depois da meia-noite: um sistema
+de arquivos que carimba arquivos com um relógio grosso poderia datar do dia anterior um arquivo
+criado nesses instantes e rotacioná-lo de novo. Uma rotação que não consegue terminar — um nome de
+arquivo ocupado por um diretório, uma pasta que recusa o rename — para onde falhou: nada é lançado,
+os records continuam indo para o arquivo ativo, e a falha é reportada uma vez ao log do sistema.
 
 Um placeholder `{channel}` no caminho escreve **um arquivo por canal** — cada record cai num arquivo
 nomeado pelo seu módulo:
@@ -190,8 +203,10 @@ Onde os records de um logger opted-in caem, por modo do servidor:
 > nada: torne o alvo gravável pela identidade de runtime você mesmo. Se o daemon sair antes de
 > conseguir largar os privilégios (usuário desconhecido, porta já ocupada), os records
 > guardados vão para o logger do sistema. O próprio sink de arquivo recusa qualquer coisa que
-> não seja um arquivo comum no destino — link simbólico, hard link, link pendurado — precisa de
-> leitura e escrita nele, e reporta cada recusa uma vez ao logger do sistema (ident `bootgly`,
+> não seja um arquivo comum no destino — link simbólico, hard link, link pendurado (um escritor
+> sem privilégios antes rotaciona para longe um arquivo *vencido* com um segundo nome, já que só
+> nomes se movem; o root nunca toca num desses) — precisa de leitura e escrita nele, e reporta
+> cada recusa uma vez ao logger do sistema (ident `bootgly`,
 > silenciado com `BOOTGLY_ENVIRONMENT=test`) onde houver um, então um sink recusado nunca é um
 > sink mudo (o runner de testes o silencia). A fronteira: num lançamento como root, nunca logue
 > por um logger global *antes* de configurar o servidor — um record escrito ali é escrito pelo
@@ -249,7 +264,8 @@ qual você demove alarga a caminhada justamente para a identidade da qual você 
 
 **`mute()` — pare os relatos, não as recusas.** Todo destino recusado é relatado uma vez por
 caminho e motivo ao logger do sistema (ident `bootgly`), para que um sink desligado por um link
-plantado nunca seja um sink mudo. Um processo que recusa de propósito não quer isso no journal do
+plantado nunca seja um sink mudo — e o mesmo vale para uma rotação que falhou enquanto o record
+ainda foi para o arquivo ativo. Um processo que recusa de propósito não quer isso no journal do
 host:
 
 ```php
@@ -504,7 +520,12 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
   `Filters\Channel(allowed, denied)`, `Filters\Callback(Closure)`, `Filters\Tags(tags, all)`,
   `Filters\Search(term)`. Coleção `Logs\Filters`: `push()`, `check()`.
 - **Rotation** — `Handlers\File\Rotation(int $size = 10_485_760, bool $daily = true, int $keep = 7)`:
-  `rotate(string $path): void`.
+  `check(string $path): bool` — a política: vencido quando um arquivo regular, não vazio, chegou
+  ao limite de tamanho ou foi modificado pela última vez em outro dia (um link nunca é seguido; nos
+  primeiros 50 ms de um dia ele os espera passar antes); uma rotação personalizada o sobrescreve.
+  `rotate(string $path): void` — só age quando `check()` responde true; o handler File o chama
+  segurando `flock(LOCK_EX)` no arquivo ativo depois de conferir que o nome ainda aponta para esse
+  inode, e quem chama direto precisa fazer o mesmo.
 - **Viewer ao vivo** — `Bootgly\CLI\UI\Components\Logs(Input, Output, int $max = 5000)`:
   `feed(string)`, `control(string $key): bool`, `render(): void`. Dirigido por
   `TCP_Server_CLI::monitoring()`.
@@ -550,9 +571,9 @@ escritor é root.
 public static function mute (bool $quiet = true): void
 ```
 
-Mantém os relatos de recusa fora do logger do sistema; `false` os liga de volta. Ele silencia só o
-relato — um destino recusado continua fazendo a escrita falhar. O runner de testes o chama porque
-as suítes dele recusam de propósito.
+Mantém os relatos do sink — recusas, e rotações que falharam — fora do logger do sistema; `false`
+os liga de volta. Ele silencia só o relato — um destino recusado continua fazendo a escrita falhar.
+O runner de testes o chama porque as suítes dele recusam de propósito.
 
 ```php
 public static function exempt (string $map, int $overflow): int
