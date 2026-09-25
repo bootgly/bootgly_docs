@@ -427,6 +427,9 @@ new RateLimit(
 > [!WARNING]
 > **Shared-memory capacity.** The default Shared backend has fixed capacity. Expired records stop counting, but their segment space is not automatically reclaimed until an explicit `$Cache->purge()`; `clear()` or segment removal also reclaims space but resets every live entry sharing that segment. Sliding windows and changing principals create new records over time, and a custom `key` resolver can accelerate growth. Policy-scope hashing does not bound the custom principal key stored beside it. Never return unbounded, unauthenticated attacker-controlled values directly: bound both input length and cardinality and prefer stable authenticated identifiers. Hashing the principal yourself limits each entry's key size, but not the number of entries. For long-lived Shared deployments, manage an injected cache and arrange periodic purge outside the request hot path, or choose a backend whose reclamation and operational trade-offs fit the workload. Capacity exhaustion can surface as HTTP `500` responses. See [Cache](/guide/cache/overview/) for backend behavior.
 
+> [!NOTE]
+> **Redis backend.** On a Redis cache each window counter is created together with its expiry in one `EVAL` script, and Redis checks every command inside it against the ACL: the Redis user needs `EVAL` plus `SET`, `INCRBY` and `GET` (and `TTL`), for example `+eval +set +incrby +get +ttl` or `+@scripting +@string`. A denied or renamed `EVAL` surfaces as HTTP `500`, never as a counter that stops expiring. A window key that an earlier version already left without expiry is not repaired by the upgrade: delete the `<prefix>v2:*` keys whose `TTL` is `-1` once.
+
 **Phase:** Pre-processing — rejects requests that exceed the rate limit before reaching the handler.
 
 ---

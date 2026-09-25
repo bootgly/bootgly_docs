@@ -34,8 +34,10 @@ tell a stored `null` apart from a miss.
 ## Counters and TTL
 
 `increment()` and `decrement()` are atomic. A positive `TTL` is applied **only when the
-counter is first created**, so the window does not slide on later hits — exactly the
-behavior a fixed-window rate limiter needs (it mirrors Redis `INCR` + a one-time `EXPIRE`):
+counter is first created** — in the same atomic step that creates it — so the window does not
+slide on later hits, and a counter created with a `TTL` never exists without its expiry:
+exactly the behavior a fixed-window rate limiter needs. A counter that already exists keeps its
+expiry, including having none:
 
 ```php
 $hits = $Cache->increment('hits:home');            // 1, 2, 3, ...
@@ -410,7 +412,13 @@ reads cost about 9-13 % more.
   cleared on process exit); File stores one hash-sharded
   file per key (atomic temp + rename, `flock` for counters); Shared uses a System V segment +
   semaphore with a live-key index for `clear`/`purge`; Redis maps the contract to
-  `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`, batching multi-command
+  `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`. A counter with a `TTL` and
+  `swap`/`evict`/`renew` run as one `EVAL` script each, and Redis checks every command inside
+  a script against the ACL too: counters need `EVAL` plus `SET`, `INCRBY` and `GET` (for
+  example `+eval +set +incrby +get`, or `+@scripting +@string`); a counter without `TTL` is a
+  plain `INCRBY`. When Redis refuses an increment — a value that is not a counter, a `TTL`
+  it cannot store, a command the ACL denies — the driver raises on both transports instead
+  of answering `0`. The driver batches multi-command
   operations into single round-trips (tagged stores pipeline `SET`+`SADD`s; `invalidate`
   and `clear` use chunked variadic `UNLINK`) and accepting a `persistent` config key for
   persistent connections. `persistent` is honoured only for a connection whose session is

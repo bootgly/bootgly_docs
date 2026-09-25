@@ -34,9 +34,10 @@ distinguir um `null` armazenado de um miss.
 ## Contadores e TTL
 
 `increment()` e `decrement()` são atômicos. Um `TTL` positivo é aplicado **apenas quando o
-contador é criado pela primeira vez**, então a janela não desliza nas próximas chamadas —
-exatamente o comportamento de um rate limiter de janela fixa (espelha `INCR` + um `EXPIRE`
-único do Redis):
+contador é criado pela primeira vez** — no mesmo passo atômico que o cria — então a janela não
+desliza nas próximas chamadas, e um contador criado com `TTL` nunca existe sem a sua expiração:
+exatamente o comportamento de um rate limiter de janela fixa. Um contador que já existe mantém a
+sua expiração, inclusive a de não ter nenhuma:
 
 ```php
 $hits = $Cache->increment('hits:home');            // 1, 2, 3, ...
@@ -425,7 +426,13 @@ mais.
   entre workers e limpo ao encerrar o processo); File grava um arquivo por chave
   com sharding por hash (temp + rename atômico, `flock` para contadores); Shared usa um segmento
   System V + semáforo com um índice de chaves vivas para `clear`/`purge`; Redis mapeia o
-  contrato para `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`, agrupando
+  contrato para `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`. Um contador com
+  `TTL` e `swap`/`evict`/`renew` rodam como um script `EVAL` cada, e o Redis confere cada
+  comando dentro de um script contra a ACL também: contadores precisam de `EVAL` mais `SET`,
+  `INCRBY` e `GET` (por exemplo `+eval +set +incrby +get`, ou `+@scripting +@string`); um
+  contador sem `TTL` é um `INCRBY` simples. Quando o Redis recusa um increment — um valor que
+  não é contador, um `TTL` que ele não consegue guardar, um comando que a ACL nega — o driver
+  lança exceção nos dois transportes em vez de responder `0`. O driver agrupa
   operações multi-comando em round-trips únicos (stores com tags fazem pipeline de
   `SET`+`SADD`s; `invalidate` e `clear` usam `UNLINK` variádico em chunks) e aceitando a
   chave de config `persistent` para conexões persistentes. O `persistent` só é honrado para
