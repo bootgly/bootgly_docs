@@ -132,3 +132,50 @@ graph TB
 ```
 
 No futuro poderá surgir uma outra interface chamada de "GUI" (Graphical User Interface), que poderá dar origem a uma outra plataforma chamada de "Graphical", que servirá para construções de aplicações gráficas utilizando o PHP.
+
+## Interoperabilidade por Protocolo
+
+O Bootgly fala os protocolos da web com o rigor das RFCs, mas não herda as abstrações de outros frameworks.
+
+A interoperabilidade acontece em dois níveis diferentes, e o Bootgly trata cada um de um jeito:
+
+- **Interoperabilidade de código** — contratos PHP compartilhados (como as PSRs) que permitem trocar componentes entre frameworks. O Bootgly não os segue: sua arquitetura, suas convenções de nomenclatura e suas interfaces são próprias.
+- **Interoperabilidade de protocolo** — formatos de transmissão, padrões e RFCs que permitem ao Bootgly conversar com clientes, servidores, bancos de dados e ferramentas fora do framework. O Bootgly os segue à risca.
+
+Em resumo: **interoperável no protocolo, soberano na arquitetura.**
+
+### Por que não interoperabilidade de código?
+
+Contratos de código compartilhados existem para que pacotes de terceiros se encaixem em um framework. O núcleo do Bootgly é livre de dependências por design, e tem exatamente uma forma canônica de fazer cada coisa (os dois princípios são explicados em [Por que Bootgly?](/manual/Bootgly/about/why/overview/)). Moldar suas interfaces em torno de abstrações externas adicionaria indireção e padrões concorrentes sem entregar ao núcleo nada de que ele precise.
+
+Isso também deixa o Bootgly livre para projetar em função dos próprios objetivos — um runtime assíncrono nativo de event loop, os recursos da linguagem PHP 8.4 e a separação estrita de camadas descrita acima — sem comprometê-los para caber em contratos pensados para outras arquiteturas.
+
+Na era do desenvolvimento assistido por IA, o custo de escrever um adaptador entre duas convenções de código é próximo de zero. O que costumava ser o argumento mais forte a favor de padrões de código — reaproveitar sem reescrever — perdeu boa parte do seu peso. Se algum dia for necessária uma ponte para outro ecossistema, ela pode ser construída rapidamente e mantida fora do núcleo do framework.
+
+### Por que a interoperabilidade de protocolo é inegociável
+
+O mundo externo não se adapta a um framework. Navegadores, proxies, bancos de dados, servidores de e-mail, autoridades certificadoras e sistemas de monitoramento falam protocolos estabelecidos, e o Bootgly precisa falá-los corretamente — não aproximadamente.
+
+Protocolos que o Bootgly implementa nativamente, sem extensão de protocolo (como `pgsql`, `mysqli` ou `redis`) e sem pacote de terceiros:
+
+- **HTTP/1.1** — semântica e framing das RFCs 9110 e 9112, incluindo parsing estrito blindado contra request smuggling
+- **HTTP/2** — framing binário da RFC 9113, HPACK (RFC 7541), multiplexação de streams e controle de fluxo, negociado via ALPN sobre TLS ou por conhecimento prévio em texto claro (h2c)
+- **WebSocket** — servidor e cliente da RFC 6455, com compressão `permessage-deflate` (RFC 7692)
+- **Server-Sent Events** — respostas em streaming conforme o HTML Living Standard
+- **TLS + ACME v2** — emissão e renovação automáticas de certificados conforme a RFC 8555 (desafio HTTP-01), com troca a quente nos workers em execução
+- **PostgreSQL Frontend/Backend Protocol 3.0** — cliente de protocolo nativo com TLS, autenticação SCRAM-SHA-256 e o protocolo Extended Query
+- **Protocolo cliente/servidor do MySQL** — cliente de protocolo nativo para MySQL e MariaDB, com TLS, `caching_sha2_password` e prepared statements binários
+- **RESP2 / RESP3** — codec e cliente nativos do protocolo do Redis
+- **SMTP** — cliente da RFC 5321 com STARTTLS ou TLS implícito e AUTH PLAIN, LOGIN e XOAUTH2, renderizando mensagens RFC 5322 / MIME
+- **JWT / JWKS** — assinatura e verificação de tokens (RFC 7519) e JSON Web Key Sets (RFC 7517)
+- **OpenTelemetry (OTLP/HTTP)** e **formato de exposição em texto do Prometheus** — exportação de métricas para pipelines de observabilidade padrão
+- **TCP / UDP** — transportes nativos de cliente e servidor
+
+> [!NOTE]
+> "Nativamente" significa que o protocolo em si — framing, parsing, máquinas de estado e fluxos de autenticação — é escrito no Bootgly. Só as primitivas de criptografia e compressão vêm das extensões do próprio PHP: `openssl` para TLS e assinaturas, `zlib` para a compressão do WebSocket.
+
+### Princípios de Design
+
+- **Soberania**: o Bootgly define sua própria arquitetura, nomenclatura e interfaces em vez de herdar abstrações projetadas para outros frameworks.
+- **Corretude na fronteira**: onde quer que o Bootgly encontre o mundo externo, ele segue a especificação com precisão. As regras do protocolo — framing, limites e tratamento de erros — são implementadas como especificadas, não aproximadas a partir do que os clientes mais comuns costumam tolerar.
+- **Pontes fora do núcleo**: quando for necessária compatibilidade com outro ecossistema de código, ela é um adaptador que vive fora do núcleo do framework — nunca remodela as interfaces do núcleo.

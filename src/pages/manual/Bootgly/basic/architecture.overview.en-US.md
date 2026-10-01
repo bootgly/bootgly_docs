@@ -132,3 +132,50 @@ graph TB
 ```
 
 In the future, there may be another interface called "GUI" (Graphical User Interface), which could give rise to another platform called "Graphical", which will serve for the construction of graphical applications using PHP.
+
+## Interoperability by Protocol
+
+Bootgly speaks the protocols of the web with RFC-level rigor, but does not inherit the abstractions of other frameworks.
+
+Interoperability happens at two different levels, and Bootgly treats them differently:
+
+- **Code-level interoperability** — shared PHP contracts (such as PSRs) that let components be swapped between frameworks. Bootgly does not follow them: its architecture, naming conventions and interfaces are its own.
+- **Protocol-level interoperability** — wire formats, standards and RFCs that let Bootgly talk to clients, servers, databases and tools outside the framework. Bootgly follows them strictly.
+
+In short: **interoperable at the protocol, sovereign in the architecture.**
+
+### Why not code-level interoperability?
+
+Shared code contracts exist to let third-party packages plug into a framework. Bootgly's core is dependency-free by design, and it has exactly one canonical way to do each thing (both principles are explained in [Why Bootgly?](/manual/Bootgly/about/why/overview/)). Shaping its interfaces around external abstractions would add indirection and competing patterns while giving the core nothing it needs.
+
+This also frees Bootgly to design for its own goals — an event-loop-native async runtime, PHP 8.4 language features and the strict layer separation described above — without compromising them to fit contracts designed for other architectures.
+
+In the age of AI-assisted development, the cost of writing an adapter between two code conventions is close to zero. What used to be the strongest argument for code-level standards — reuse without rewriting — has lost much of its weight. If a bridge to another ecosystem is ever needed, it can be built quickly and kept outside the framework core.
+
+### Why protocol-level interoperability is non-negotiable
+
+The outside world does not adapt to a framework. Browsers, proxies, databases, mail servers, certificate authorities and monitoring systems all speak established protocols, and Bootgly must speak them correctly — not approximately.
+
+Protocols Bootgly implements natively, with no protocol extension (such as `pgsql`, `mysqli` or `redis`) and no third-party package:
+
+- **HTTP/1.1** — RFC 9110 and 9112 semantics and framing, including strict parsing hardened against request smuggling
+- **HTTP/2** — RFC 9113 binary framing, HPACK (RFC 7541), stream multiplexing and flow control, negotiated via ALPN over TLS or by prior knowledge in cleartext (h2c)
+- **WebSocket** — RFC 6455 server and client, with `permessage-deflate` compression (RFC 7692)
+- **Server-Sent Events** — streaming responses per the HTML Living Standard
+- **TLS + ACME v2** — automatic certificate issuance and renewal per RFC 8555 (HTTP-01 challenge), hot-swapped into live workers
+- **PostgreSQL Frontend/Backend Protocol 3.0** — native wire client with TLS, SCRAM-SHA-256 authentication and the Extended Query protocol
+- **MySQL client/server protocol** — native wire client for MySQL and MariaDB, with TLS, `caching_sha2_password` and binary prepared statements
+- **RESP2 / RESP3** — native Redis protocol codec and client
+- **SMTP** — RFC 5321 client with STARTTLS or implicit TLS and AUTH PLAIN, LOGIN and XOAUTH2, rendering RFC 5322 / MIME messages
+- **JWT / JWKS** — token signing and verification (RFC 7519) and JSON Web Key Sets (RFC 7517)
+- **OpenTelemetry (OTLP/HTTP)** and **Prometheus text exposition** — metrics export to standard observability pipelines
+- **TCP / UDP** — native client and server transports
+
+> [!NOTE]
+> "Natively" means the protocol itself — framing, parsing, state machines and authentication flows — is written in Bootgly. Only the cryptographic and compression primitives come from PHP's own extensions: `openssl` for TLS and signatures, `zlib` for WebSocket compression.
+
+### Design Principles
+
+- **Sovereignty**: Bootgly defines its own architecture, naming and interfaces instead of inheriting abstractions designed for other frameworks.
+- **Correctness at the boundary**: Wherever Bootgly meets the outside world, it follows the specification precisely. Protocol rules — framing, limits and error handling — are implemented as specified, not approximated from what common clients happen to tolerate.
+- **Bridges outside the core**: When compatibility with another code ecosystem is needed, it is an adapter that lives outside the framework core — it never reshapes the core's interfaces.
