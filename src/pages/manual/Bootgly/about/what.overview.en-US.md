@@ -8,12 +8,13 @@ In practice, the ecosystem is three repositories: [`bootgly`](https://github.com
 
 ## What is in the box
 
-Every item below is first-party code — the core has **zero third-party runtime dependencies**:
+Every item below is first-party code — the core has **zero third-party runtime dependencies**, and the protocols it speaks with the outside world are implemented natively ([Interoperability by Protocol](/manual/Bootgly/basic/architecture/overview/#interoperability-by-protocol)):
 
-- **HTTP** — HTTP/1.1 and native HTTP/2 (HPACK, multiplexing, ALPN), TLS, generator-based router with per-route response cache, and an async HTTP client;
+- **HTTP** — HTTP/1.1 and native HTTP/2 (HPACK, multiplexing, ALPN), TLS with automatic certificates (ACME / Let's Encrypt), Server-Sent Events, generator-based router with per-route response cache, and an async HTTP client;
 - **WebSockets** — server and client, RFC 6455, channels and broadcasting, permessage-deflate compression;
 - **TCP / UDP** — raw socket servers and clients for custom protocols;
-- **Data** — async PostgreSQL DBAL with connection pooling, Query Builder, Schema Builder, migrations, seeders, ORM (Data Mapper) and read replicas;
+- **Data** — async DBAL with native PostgreSQL and MySQL/MariaDB drivers (plus SQLite), connection pooling, Query Builder, Schema Builder, migrations, seeders, ORM (Data Mapper) and read replicas;
+- **Mail** — SMTP client with STARTTLS or implicit TLS, AUTH PLAIN / LOGIN / XOAUTH2 and MIME messages;
 - **Security** — CORS, CSRF with token masking, sliding-window rate limiting, secure headers, trusted proxies, JWT (HS256/RS256/JWKS), RBAC authorization and server-side sessions;
 - **Testing** — suites, expressive assertions, Mock/Spy/Fake doubles, code coverage, snapshots and deterministic fakers;
 - **CLI** — command system, ANSI terminal I/O and UI components: Progress, Table, Select, Alert, Logs;

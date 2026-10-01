@@ -18,7 +18,7 @@ Bootgly attacks the three costs directly, with three deliberate design decisions
 
 **One canonical way.** There is exactly one way to do each thing — one HTTP server, one config schema, one autoloader, one test framework, one template engine. When you ask "how do I do X in Bootgly?", there is one answer. Onboarding gets faster, reviews get faster, and AI-assisted development gets precise, because there is no ambiguity about which tool or pattern to use.
 
-**Minimum dependency.** The core has zero third-party runtime packages: the server, router, ORM, sessions, cache and test framework are first-party code, designed together. That means full-stack integration, a much smaller supply-chain surface to audit, and patch reaction time that depends only on Bootgly itself. See [What is in the box](/manual/Bootgly/about/what/overview/) for the concrete inventory.
+**Minimum dependency.** The core has zero third-party runtime packages: the server, router, ORM, sessions, cache and test framework are first-party code, designed together. That means full-stack integration, a much smaller supply-chain surface to audit, and patch reaction time that depends only on Bootgly itself. First-party does not mean closed: wherever Bootgly meets the outside world — HTTP/2, WebSocket, PostgreSQL, MySQL, Redis, SMTP — it speaks the protocol natively and to the specification ([Interoperability by Protocol](/manual/Bootgly/basic/architecture/overview/#interoperability-by-protocol)). See [What is in the box](/manual/Bootgly/about/what/overview/) for the concrete inventory.
 
 **One core, two platforms.** The I2P (Interface-to-Platform) architecture organizes the framework into six interfaces with a strict one-way dependency direction — the same foundation serves the **Console** and **Web** platforms, so a CLI tool and an HTTP API share components instead of duplicating them. The layers are covered in depth in [Architecture](/manual/Bootgly/basic/architecture/overview/).
 
@@ -47,9 +47,10 @@ Honesty is part of the bet. Choosing to build everything first-party has real co
 - **Features take longer to ship** — building a native component is slower than wiring a third-party package, so the roadmap moves deliberately;
 - **Rolling support** — `1.0` is not a long-term-support line: fixes ship on the latest `1.x` minor only, so staying current is part of the deal (see [Versioning](/guide/versioning/overview/));
 - **Linux-native** — Windows and other systems are supported through Docker only;
-- **Young ecosystem** — there is no marketplace of community packages; what the core does not ship, you build.
+- **Young ecosystem** — there is no marketplace of community packages; what the core does not ship, you build;
+- **No code-level standards** — Bootgly does not implement PHP's shared code contracts (PSRs), so PSR-based middleware and packages do not plug in directly; it interoperates through the protocols themselves instead (see [Interoperability by Protocol](/manual/Bootgly/basic/architecture/overview/#interoperability-by-protocol)).
 
-Bootgly is probably **not** the right choice today if you need a large ecosystem of ready-made packages, long-term-support stability in production right now, or native Windows execution. If those are your constraints, a traditional full-stack framework will serve you better — and the comparison page above stays honest about that.
+Bootgly is probably **not** the right choice today if you need a large ecosystem of ready-made packages (including drop-in PSR components), long-term-support stability in production right now, or native Windows execution. If those are your constraints, a traditional full-stack framework will serve you better — and the comparison page above stays honest about that.
 
 ## Next steps
 

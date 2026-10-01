@@ -8,12 +8,13 @@ Na prática, o ecossistema são três repositórios: [`bootgly`](https://github.
 
 ## O que vem na caixa
 
-Cada item abaixo é código próprio — o núcleo tem **zero dependências de terceiros em runtime**:
+Cada item abaixo é código próprio — o núcleo tem **zero dependências de terceiros em runtime**, e os protocolos que ele fala com o mundo externo são implementados nativamente ([Interoperabilidade por Protocolo](/manual/Bootgly/basic/architecture/overview/#interoperabilidade-por-protocolo)):
 
-- **HTTP** — HTTP/1.1 e HTTP/2 nativo (HPACK, multiplexação, ALPN), TLS, router baseado em generators com cache de resposta por rota, e um cliente HTTP assíncrono;
+- **HTTP** — HTTP/1.1 e HTTP/2 nativo (HPACK, multiplexação, ALPN), TLS com certificados automáticos (ACME / Let's Encrypt), Server-Sent Events, router baseado em generators com cache de resposta por rota, e um cliente HTTP assíncrono;
 - **WebSockets** — servidor e cliente, RFC 6455, canais e broadcast, compressão permessage-deflate;
 - **TCP / UDP** — servidores e clientes de socket raw para protocolos customizados;
-- **Dados** — DBAL PostgreSQL assíncrono com pool de conexões, Query Builder, Schema Builder, migrations, seeders, ORM (Data Mapper) e réplicas de leitura;
+- **Dados** — DBAL assíncrono com drivers nativos de PostgreSQL e MySQL/MariaDB (além de SQLite), pool de conexões, Query Builder, Schema Builder, migrations, seeders, ORM (Data Mapper) e réplicas de leitura;
+- **E-mail** — cliente SMTP com STARTTLS ou TLS implícito, AUTH PLAIN / LOGIN / XOAUTH2 e mensagens MIME;
 - **Segurança** — CORS, CSRF com masking de token, rate limiting de janela deslizante, secure headers, trusted proxies, JWT (HS256/RS256/JWKS), autorização RBAC e sessões server-side;
 - **Testes** — suites, assertions expressivas, doubles Mock/Spy/Fake, cobertura de código, snapshots e fakers determinísticos;
 - **CLI** — sistema de comandos, I/O de terminal ANSI e componentes de UI: Progress, Table, Select, Alert, Logs;

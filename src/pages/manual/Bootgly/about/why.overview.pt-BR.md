@@ -18,7 +18,7 @@ O Bootgly ataca os três custos diretamente, com três decisões deliberadas de 
 
 **Um único caminho canônico.** Existe exatamente uma forma de fazer cada coisa — um servidor HTTP, um schema de configuração, um autoloader, um framework de testes, um template engine. Quando você pergunta "como faço X no Bootgly?", há uma resposta. O onboarding acelera, os reviews aceleram, e o desenvolvimento assistido por IA fica preciso, porque não há ambiguidade sobre qual ferramenta ou padrão usar.
 
-**Dependência mínima.** O núcleo tem zero pacotes de terceiros em runtime: servidor, router, ORM, sessões, cache e framework de testes são código próprio, projetados juntos. Isso significa integração full-stack, uma superfície de supply chain muito menor para auditar, e tempo de reação a patches que depende só do próprio Bootgly. Veja [O que vem na caixa](/manual/Bootgly/about/what/overview/) para o inventário concreto.
+**Dependência mínima.** O núcleo tem zero pacotes de terceiros em runtime: servidor, router, ORM, sessões, cache e framework de testes são código próprio, projetados juntos. Isso significa integração full-stack, uma superfície de supply chain muito menor para auditar, e tempo de reação a patches que depende só do próprio Bootgly. Código próprio não significa fechado: onde quer que o Bootgly encontre o mundo externo — HTTP/2, WebSocket, PostgreSQL, MySQL, Redis, SMTP — ele fala o protocolo nativamente e conforme a especificação ([Interoperabilidade por Protocolo](/manual/Bootgly/basic/architecture/overview/#interoperabilidade-por-protocolo)). Veja [O que vem na caixa](/manual/Bootgly/about/what/overview/) para o inventário concreto.
 
 **Um núcleo, duas plataformas.** A arquitetura I2P (Interface-to-Platform) organiza o framework em seis interfaces com direção de dependência estrita e unidirecional — a mesma fundação serve as plataformas **Console** e **Web**, então uma ferramenta CLI e uma API HTTP compartilham componentes em vez de duplicá-los. As camadas são cobertas em profundidade em [Arquitetura](/manual/Bootgly/basic/architecture/overview/).
 
@@ -47,9 +47,10 @@ Honestidade faz parte da aposta. Escolher construir tudo como código próprio t
 - **Features demoram mais para sair** — construir um componente nativo é mais lento do que plugar um pacote de terceiro, então o roadmap avança deliberadamente;
 - **Suporte contínuo** — a `1.0` não é uma linha de suporte de longo prazo: as correções saem apenas no minor `1.x` mais recente, então manter-se atualizado faz parte do acordo (veja [Versionamento](/guide/versioning/overview/));
 - **Linux nativo** — Windows e outros sistemas são suportados apenas via Docker;
-- **Ecossistema jovem** — não existe um marketplace de pacotes da comunidade; o que o núcleo não traz, você constrói.
+- **Ecossistema jovem** — não existe um marketplace de pacotes da comunidade; o que o núcleo não traz, você constrói;
+- **Sem padrões de código** — o Bootgly não implementa os contratos de código compartilhados do PHP (PSRs), então middlewares e pacotes baseados em PSR não se encaixam diretamente; ele interopera pelos próprios protocolos (veja [Interoperabilidade por Protocolo](/manual/Bootgly/basic/architecture/overview/#interoperabilidade-por-protocolo)).
 
-O Bootgly provavelmente **não** é a escolha certa hoje se você precisa de um grande ecossistema de pacotes prontos, de estabilidade com suporte de longo prazo em produção agora, ou de execução nativa no Windows. Se essas são as suas restrições, um framework full-stack tradicional vai te servir melhor — e a página de comparação acima se mantém honesta sobre isso.
+O Bootgly provavelmente **não** é a escolha certa hoje se você precisa de um grande ecossistema de pacotes prontos (incluindo componentes PSR plugáveis), de estabilidade com suporte de longo prazo em produção agora, ou de execução nativa no Windows. Se essas são as suas restrições, um framework full-stack tradicional vai te servir melhor — e a página de comparação acima se mantém honesta sobre isso.
 
 ## Próximos passos
 
