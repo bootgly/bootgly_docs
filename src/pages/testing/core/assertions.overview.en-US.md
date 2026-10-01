@@ -107,8 +107,6 @@ Use `yield` to return multiple assertions in the same test case.
 ```php
 <?php
 
-use Generator;
-
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Suite\Test;
 
@@ -134,8 +132,6 @@ Use the `Op` enum for direct comparisons.
 
 ```php
 <?php
-
-use Generator;
 
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertion\Auxiliaries\Op;

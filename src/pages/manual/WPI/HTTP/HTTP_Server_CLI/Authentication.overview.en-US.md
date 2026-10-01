@@ -277,6 +277,8 @@ Every record carries an HMAC-SHA256 envelope, so an entry altered in the storage
 The contract has two methods. `resolve()` is called once per verification, after the header was decoded and its `alg` accepted, and **before** the signature is checked: it receives the protected header's `kid` (`null` when the token carries none) and the token's algorithm, and returns the one `Key` allowed to verify that token — or `null` to refuse. `fail()` is consulted only after a `null`, and its `Failures` case becomes the `Verification` failure; returning `null` there means "no detail", and the caller sees the generic `Failures::Key`.
 
 ```php
+namespace Demo\Blog\Security;
+
 use function is_array;
 use function is_string;
 

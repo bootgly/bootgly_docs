@@ -279,6 +279,8 @@ Cada registro carrega um envelope HMAC-SHA256, então uma entrada alterada no ba
 O contrato tem dois métodos. `resolve()` é chamado uma vez por verificação, depois de o header ser decodificado e seu `alg` aceito, e **antes** de a assinatura ser checada: ele recebe o `kid` do header protegido (`null` quando o token não carrega nenhum) e o algoritmo do token, e retorna a única `Key` autorizada a verificar aquele token — ou `null` para recusar. `fail()` só é consultado depois de um `null`, e seu caso de `Failures` vira a falha da `Verification`; retornar `null` ali significa "sem detalhe", e quem chamou vê o genérico `Failures::Key`.
 
 ```php
+namespace Demo\Blog\Security;
+
 use function is_array;
 use function is_string;
 

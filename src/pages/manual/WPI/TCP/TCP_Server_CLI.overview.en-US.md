@@ -21,8 +21,6 @@ The TCP Server CLI is the low-level TCP server foundation of the Bootgly PHP Fra
 In Bootgly, servers are usually started by Projects. A project file instantiates the server, configures its socket and registers the package handler before calling `start()`.
 
 ```php
-use function getenv;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
@@ -40,6 +38,7 @@ return new Project(
 	boot: function (array $arguments = [], array $options = []): void
 	{
 		$Server = new TCP_Server_CLI(Mode: match (true) {
+			isset($options['f']) => Modes::Foreground,
 			isset($options['i']) => Modes::Interactive,
 			isset($options['m']) => Modes::Monitor,
 			default => Modes::Daemon
@@ -55,7 +54,7 @@ return new Project(
 
 		$Server->on(
 			Events::DataReceive,
-			require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
+			static fn ($input) => "HTTP/1.1 200 OK\r\nServer: Bootgly\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 13\r\n\r\nHello, World!"
 		);
 
 		$Server->start();
@@ -244,7 +243,7 @@ The server master process listens for a rich control surface.
 | Signal / command | Effect |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Stop the server and terminate workers. |
-| `SIGTSTP`, `pause` | Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. `bootgly project show` reports the instance as `paused`. In Monitor mode, SIGTSTP switches to Interactive instead. |
+| `SIGTSTP`, `pause` | Interactive mode only — `Daemon` and `Foreground` ignore `SIGTSTP`. Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. `bootgly project show` reports the instance as `paused`. In Monitor mode, SIGTSTP switches to Interactive instead. |
 | `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. A worker whose listener cannot re-enter its selector (the entries are taken by dependency waits) logs a critical message, stays Paused and retries every second until it gets back in — it never reports Running while accepting nothing. A `pause` cancels a pending retry and the worker stays Paused; a successful `resume` cancels it too. |
 | `SIGUSR2`, `reload` | Reload application state in workers. |
 | `SIGIOT`, `connections` | Print connection information. |
@@ -300,8 +299,6 @@ See `Connection` and `Packages` for the lower-level details.
 ## Full Example
 
 ```php
-use function getenv;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
@@ -319,6 +316,7 @@ return new Project(
 	boot: function (array $arguments = [], array $options = []): void
 	{
 		$Server = new TCP_Server_CLI(Mode: match (true) {
+			isset($options['f']) => Modes::Foreground,
 			isset($options['i']) => Modes::Interactive,
 			isset($options['m']) => Modes::Monitor,
 			default => Modes::Daemon
@@ -334,7 +332,7 @@ return new Project(
 
 		$Server->on(
 			Events::DataReceive,
-			require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
+			static fn ($input) => "HTTP/1.1 200 OK\r\nServer: Bootgly\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 13\r\n\r\nHello, World!"
 		);
 
 		$Server->start();

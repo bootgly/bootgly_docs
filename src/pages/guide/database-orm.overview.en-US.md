@@ -9,6 +9,8 @@ Use the ORM when application code wants entity-shaped data without moving query 
 Entity metadata comes from attributes in `Bootgly\ADI\Databases\SQL\Model`.
 
 ```php
+namespace Demo\HTTP_Server_CLI\Models;
+
 use DateTimeImmutable;
 
 use Bootgly\ADI\Databases\SQL\Model\Auxiliaries\Relations;

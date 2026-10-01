@@ -9,7 +9,7 @@ O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos basead
 | **Servidor orientado a datagramas** | Receba payloads UDP brutos e retorne payloads brutos para o remetente. |
 | **Runtime multi-worker** | Inicie um ou mais processos worker para lidar com o tráfego. |
 | **Modos operacionais** | Execute em `Daemon`, `Foreground`, `Interactive`, `Monitor` ou `Test`. |
-| **Recuperação de workers** | Nos modos `Daemon` e `Foreground`, um worker que morre — um `exit()` da aplicação, um kill do operador, um kill por OOM — é recriado a partir do loop do master e serve exatamente como o original: seus timers disparam, ele atende seus sinais de ciclo de vida e para junto com o master. `Monitor` e `Interactive` não supervisionam os workers de forma confiável: um worker que falha pode parar o servidor, e um que sai com status `0` pode não ser substituído — o master continua rodando sem ele. Rode servidores de produção nos modos `Daemon` ou `Foreground`. |
+| **Recuperação de workers** | Nos modos `Daemon`, `Foreground`, `Monitor` e `Interactive`, um worker que morre — um `exit()` da aplicação com qualquer status, um kill do operador, um kill por OOM — é recriado a partir do loop do master e serve exatamente como o original: seus timers disparam, ele atende seus sinais de ciclo de vida e para junto com o master. Um console `Interactive` ocioso recria quando o prompt é interrompido, o que pode esperar a próxima tecla quando vários workers morrem ao mesmo tempo ou o PHP usa GNU readline. Rode servidores de produção nos modos `Daemon` ou `Foreground`; `Monitor` e `Interactive` são consoles de desenvolvimento. |
 | **API simples de handler** | Registre um único callback `on(Events::DatagramReceive, Closure $Callback)` para os datagramas recebidos. |
 | **Estado de peers limitado** | Aplique tetos globais/por IP em cada worker, expiração ociosa e batch finito antes que o estado de peers esgote o worker. |
 | **Controles via CLI** | Use comandos como `status`, `stop`, `pause`, `resume` e `reload` em fluxos interativos. |
@@ -21,9 +21,6 @@ O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos basead
 No Bootgly, servidores UDP normalmente são iniciados por um Project. O projeto cria o servidor, configura, registra o handler de datagramas e então chama `start()`.
 
 ```php
-use function getenv;
-use function shell_exec;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
@@ -41,6 +38,7 @@ return new Project(
    boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new UDP_Server_CLI(Mode: match (true) {
+         isset($options['f']) => Modes::Foreground,
          isset($options['i']) => Modes::Interactive,
          isset($options['m']) => Modes::Monitor,
          default => Modes::Daemon
@@ -102,7 +100,7 @@ O construtor recebe `Bootgly\API\Endpoints\Server\Modes`.
 | Modo | Descrição |
 |---|---|
 | `Modes::Daemon` | Executa em segundo plano, sem interface interativa; recria um worker que morre. |
-| `Modes::Foreground` | Fica em primeiro plano como o processo do contêiner ou serviço (logs no stdout, `SIGTERM`/`SIGINT` o param); recria um worker que morre. |
+| `Modes::Foreground` | Fica em primeiro plano como o processo do container ou serviço (logs no stdout, `SIGTERM`/`SIGINT` o param); recria um worker que morre. |
 | `Modes::Interactive` | Mantém o servidor anexado ao terminal para emissão de comandos. |
 | `Modes::Monitor` | Mostra status em tempo real e é conveniente durante o desenvolvimento. |
 | `Modes::Test` | Usa uma instância orientada a testes para fluxos automatizados. |
@@ -239,17 +237,17 @@ sem sobrescrever a contabilidade. O fechamento terminal também revoga toda gera
 mesma chave que observar; um objeto estrangeiro armazenado sob a chave pública errada perde somente
 esse alias e preserva a autoridade do seu próprio peer.
 
-O `check()` e o `limit()` de um peer agem sobre o IP de origem com que o peer foi admitido —
-reescrever o `$ip` público de uma conexão não muda nenhum dos dois. Quando um IP entra na blacklist,
-todo peer já admitido a partir dele é retirado no seu próximo datagrama, que então é recusado como
-um peer novo daquele IP.
-
 A concessão de autoridade e a publicação do ledger rodam como uma única transação local ao processo.
 Um `accept()` reentrante, `close()` do manager ou sweep de ociosidade durante essa transação falha
 fechado; um datagrama posterior é o retry natural. Se o cleanup da aplicação interromper a publicação,
 o rollback reconstrói os contadores por IP, timeout e quarentena a partir das tuplas autoritativas de
 peers e reconcilia o supervisor antes de retomar a admissão. Isso impede que um callback assíncrono ou
 sinal se intercale entre o check final dos tetos e o commit do ledger.
+
+O `check()` e o `limit()` de um peer agem sobre o IP de origem com que o peer foi admitido —
+reescrever o `$ip` público de uma conexão não muda nenhum dos dois. Quando um IP entra na blacklist,
+todo peer já admitido a partir dele é retirado no seu próximo datagrama, que então é recusado como
+um peer novo daquele IP.
 
 Envios de rede e rejeições terminais usam o `Connection::$id` readonly capturado pelo construtor.
 Alterar ou adicionar hooks ao campo público legado `peer` não consegue redirecionar um datagrama
@@ -335,7 +333,12 @@ Eles são úteis para operar e observar o servidor em execução pelo terminal.
 - Este servidor trata UDP bruto; ele não implementa QUIC nem HTTP/3. Seus tetos de admissão,
   fairness de dispatch e autoridade por vida útil são fundações reutilizáveis, mas QUIC também
   exige IDs de conexão, migração, antiamplificação, TLS 1.3, streams e controle de congestionamento.
-- `pause()` e `resume()` estão disponíveis quando você precisa interromper e retomar temporariamente a escuta.
+- A pausa é um recurso do console: no modo `Interactive`, `pause` (ou `SIGTSTP` / Ctrl+Z para o master)
+  faz os workers pararem de ler e `resume` (ou `SIGCONT`) os retoma; no `Monitor`, o primeiro Ctrl+Z
+  troca para `Interactive`. `Daemon` e `Foreground` ignoram `SIGTSTP`. Um worker pausado mantém o
+  socket vinculado, então os datagramas enviados nesse meio-tempo não são recusados nem respondidos:
+  ficam na fila do buffer de recepção (o kernel descarta o que transbordar) e são respondidos depois
+  do resume.
   Um worker cujo socket o selector recusa no resume (as entradas ocupadas por esperas de dependências)
   registra uma mensagem crítica, continua `Paused` e tenta de novo a cada segundo até entrar — ele nunca
   reporta `Running` sem ler nada. Um `pause()` cancela uma nova tentativa pendente e o worker
@@ -343,23 +346,24 @@ Eles são úteis para operar e observar o servidor em execução pelo terminal.
 - Uma partida cujo socket de worker o backend de eventos não consegue observar (um processo que já
   segura cerca de FD_SETSIZE descritores) é recusada antes de qualquer worker ser criado:
   "Listener rejected by the event backend during startup." e status de saída 1. Um worker que não
-  consegue registrar seu socket registra uma mensagem crítica e sai, em vez de servir nada.
+  consegue registrar seu socket registra uma mensagem crítica e sai, em vez de servir nada — e o
+  master o recria de novo e de novo (em `Daemon` e `Foreground`, muitas vezes por segundo) até o
+  servidor ser parado: mantenha o número de descritores do processo bem abaixo de FD_SETSIZE.
 - Todo worker — criado na partida, recriado após uma morte ou criado por um master recarregado —
   serve sob a máscara de sinais que o lançador tinha quando chamou `start()`. Um lançador que bloqueia
   `SIGTERM` ou `SIGALRM`, portanto, recebe workers que não conseguem atendê-los.
-- Um worker recriado enquanto o servidor está pausado começa pausado e volta no próximo `resume()`.
+- No modo `Interactive`, um worker recriado enquanto o servidor está pausado começa pausado e volta no
+  próximo resume.
 - Um sinal de parada (`SIGTERM`, `SIGINT`, `SIGQUIT`, `SIGHUP`) que chega durante um reload para o
   servidor, em vez de se perder no master reexecutado.
 - Como PID 1 — um container cujo entrypoint roda o servidor sem um init — o master também colhe os
   órfãos que herda, como processos em segundo plano iniciados por um handler, para que nunca se
-  acumulem como zumbis.
+  acumulem como zumbis. Rode containers no modo `Foreground`: o lançador do `Daemon` sai assim que o
+  daemon sobe, o que encerra um container do qual ele é o entrypoint.
 
 ## Exemplo Completo
 
 ```php
-use function getenv;
-use function shell_exec;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
@@ -377,6 +381,7 @@ return new Project(
    boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new UDP_Server_CLI(Mode: match (true) {
+         isset($options['f']) => Modes::Foreground,
          isset($options['i']) => Modes::Interactive,
          isset($options['m']) => Modes::Monitor,
          default => Modes::Daemon

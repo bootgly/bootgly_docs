@@ -9,7 +9,7 @@ The UDP Server CLI is Bootgly's low-level server for datagram-based protocols. I
 | **Datagram-based server** | Receive raw UDP payloads and return raw payloads back to the sender. |
 | **Multi-worker runtime** | Start one or more worker processes to handle traffic. |
 | **Operational modes** | Run in `Daemon`, `Foreground`, `Interactive`, `Monitor` or `Test` mode. |
-| **Worker recovery** | In `Daemon` and `Foreground` mode a worker that dies — an application `exit()`, an operator kill, an OOM kill — is reforked from the master loop and serves exactly like the original: its timers tick, it fields its lifecycle signals and it stops with the master. `Monitor` and `Interactive` do not supervise workers reliably: a worker that crashes can stop the server, and one that exits with status `0` can go unreplaced — the master keeps running without it. Run production servers in `Daemon` or `Foreground` mode. |
+| **Worker recovery** | In `Daemon`, `Foreground`, `Monitor` and `Interactive` mode a worker that dies — an application `exit()` with any status, an operator kill, an OOM kill — is reforked from the master loop and serves exactly like the original: its timers tick, it fields its lifecycle signals and it stops with the master. An idle `Interactive` console reforks when its prompt is interrupted, which can wait for the next keystroke when several workers die at once or PHP is built with GNU readline. Run production servers in `Daemon` or `Foreground` mode; `Monitor` and `Interactive` are development consoles. |
 | **Simple handler API** | Register a single `on(Events::DatagramReceive, Closure $Callback)` callback for received datagrams. |
 | **Bounded peer state** | Apply per-worker global/per-IP retention ceilings, idle expiry and a finite dispatch batch before peer state can exhaust the worker. |
 | **CLI controls** | Use commands such as `status`, `stop`, `pause`, `resume` and `reload` in interactive workflows. |
@@ -21,9 +21,6 @@ The UDP Server CLI is Bootgly's low-level server for datagram-based protocols. I
 In Bootgly, UDP servers are typically started from a Project. The project creates the server, configures it, registers the datagram handler and then calls `start()`.
 
 ```php
-use function getenv;
-use function shell_exec;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
@@ -41,6 +38,7 @@ return new Project(
    boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new UDP_Server_CLI(Mode: match (true) {
+         isset($options['f']) => Modes::Foreground,
          isset($options['i']) => Modes::Interactive,
          isset($options['m']) => Modes::Monitor,
          default => Modes::Daemon
@@ -329,7 +327,11 @@ These are useful for operating and observing the running server from the termina
 - This server handles raw UDP; it does not implement QUIC or HTTP/3. Its admission caps,
   dispatch fairness and lifetime authority are reusable foundations, but QUIC additionally needs
   connection IDs, migration, anti-amplification, TLS 1.3, streams and congestion control.
-- `pause()` and `resume()` are available when you need to temporarily stop and continue the listening flow.
+- Pausing is a console feature: in `Interactive` mode, `pause` (or `SIGTSTP` / Ctrl+Z to the master)
+  stops the workers from reading and `resume` (or `SIGCONT`) restarts them; in `Monitor` the first
+  Ctrl+Z switches to `Interactive`. `Daemon` and `Foreground` ignore `SIGTSTP`. A paused worker keeps
+  its socket bound, so datagrams sent meanwhile are neither refused nor answered: they queue in its
+  receive buffer (the kernel drops what overflows it) and are answered after the resume.
   A worker whose socket the selector refuses on resume (its entries taken by dependency waits) logs a
   critical message, stays `Paused` and retries every second until it gets back in — it never reports
   `Running` while reading nothing. A `pause()` cancels a pending retry and the worker stays
@@ -337,23 +339,24 @@ These are useful for operating and observing the running server from the termina
 - A start whose worker socket the event backend could not watch (a process already holding about
   FD_SETSIZE descriptors) is refused before any worker is forked:
   "Listener rejected by the event backend during startup." and exit status 1. A worker that cannot
-  register its socket logs a critical message and exits instead of serving nothing.
+  register its socket logs a critical message and exits instead of serving nothing — and the master
+  reforks it again and again (in `Daemon` and `Foreground`, many times a second) until the server is
+  stopped: keep the process's descriptor count well below FD_SETSIZE.
 - Every worker — forked at start, reforked after a death or forked by a reloaded master — serves
   under the signal mask the launcher held when it called `start()`. A launcher that blocks `SIGTERM`
   or `SIGALRM` therefore gets workers that cannot field them.
-- A worker reforked while the server is paused starts paused and joins the next `resume()`.
+- In `Interactive` mode, a worker reforked while the server is paused starts paused and joins the next
+  resume.
 - A stop signal (`SIGTERM`, `SIGINT`, `SIGQUIT`, `SIGHUP`) that arrives while a reload is under way
   stops the server instead of being lost in the re-executed master.
 - As PID 1 — a container whose entrypoint runs the server without an init — the master also reaps
   the orphans it inherits, such as background processes a handler started, so they never pile up
-  as zombies.
+  as zombies. Run containers in `Foreground` mode: a `Daemon` launcher exits once the daemon is up,
+  which ends a container whose entrypoint it is.
 
 ## Full Example
 
 ```php
-use function getenv;
-use function shell_exec;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\UDP_Server_CLI;
@@ -371,6 +374,7 @@ return new Project(
    boot: function (array $arguments = [], array $options = []): void
    {
       $Server = new UDP_Server_CLI(Mode: match (true) {
+         isset($options['f']) => Modes::Foreground,
          isset($options['i']) => Modes::Interactive,
          isset($options['m']) => Modes::Monitor,
          default => Modes::Daemon

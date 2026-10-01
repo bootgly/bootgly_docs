@@ -132,8 +132,6 @@ O dispatch aceita aliases canônicos para os fakers nativos, incluindo `uuid`, `
 ```php
 <?php
 
-use Generator;
-
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertions;
 use Bootgly\ACI\Fakers\Email;

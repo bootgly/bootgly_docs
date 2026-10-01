@@ -186,8 +186,6 @@ Failure stays deterministic — the client never spins:
 Adoption and the bridge are the mechanism, not the everyday API. The ready-made forms are [`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/) in embedded mode and the HTTP response resource reached as `$Response->Upstream`, both of which wire `react()` and `schedule()` for you — see their own pages. Reach for `TCP_Client_CLI` directly only when you are embedding a raw TCP protocol into a host runtime.
 
 ```php
-use Fiber;
-
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI\Configs;
 
@@ -291,8 +289,6 @@ See `Connection` and `Packages` for the low-level socket and package details.
 ## Full Example
 
 ```php
-use function getenv;
-
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;

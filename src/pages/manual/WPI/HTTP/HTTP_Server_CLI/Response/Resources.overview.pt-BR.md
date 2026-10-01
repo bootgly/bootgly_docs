@@ -89,8 +89,6 @@ Uma factory é só um closure, então quando você precisa de controle total sob
 montar e encapsular o resource você mesmo em vez de chamar `provide()`:
 
 ```php
-use RuntimeException;
-
 use Bootgly\ADI\Databases\SQL;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;

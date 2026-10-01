@@ -21,8 +21,6 @@ O TCP Server CLI é a base de servidor TCP de baixo nível do Bootgly PHP Framew
 No Bootgly, servidores normalmente são iniciados por Projects. Um arquivo de projeto instancia o servidor, configura o socket e registra o handler de pacotes antes de chamar `start()`.
 
 ```php
-use function getenv;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
@@ -40,6 +38,7 @@ return new Project(
 	boot: function (array $arguments = [], array $options = []): void
 	{
 		$Server = new TCP_Server_CLI(Mode: match (true) {
+			isset($options['f']) => Modes::Foreground,
 			isset($options['i']) => Modes::Interactive,
 			isset($options['m']) => Modes::Monitor,
 			default => Modes::Daemon
@@ -55,7 +54,7 @@ return new Project(
 
 		$Server->on(
 			Events::DataReceive,
-			require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
+			static fn ($input) => "HTTP/1.1 200 OK\r\nServer: Bootgly\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 13\r\n\r\nHello, World!"
 		);
 
 		$Server->start();
@@ -244,7 +243,7 @@ O processo master do servidor expõe uma superfície rica de controle.
 | Sinal / comando | Efeito |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Para o servidor e encerra os workers. |
-| `SIGTSTP`, `pause` | Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. `bootgly project show` reporta a instância como `paused`. No modo Monitor, SIGTSTP troca para Interactive. |
+| `SIGTSTP`, `pause` | Só no modo Interactive — `Daemon` e `Foreground` ignoram `SIGTSTP`. Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. `bootgly project show` reporta a instância como `paused`. No modo Monitor, SIGTSTP troca para Interactive. |
 | `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. Um worker cujo socket de escuta não consegue voltar ao selector (as entradas estão ocupadas por esperas de dependências) registra uma mensagem crítica, continua Paused e tenta de novo a cada segundo até entrar — ele nunca reporta Running sem aceitar nada. Um `pause` cancela uma nova tentativa pendente e o worker continua Paused; um `resume` bem-sucedido também a cancela. |
 | `SIGUSR2`, `reload` | Recarrega o estado da aplicação nos workers. |
 | `SIGIOT`, `connections` | Imprime informações das conexões ativas. |
@@ -300,8 +299,6 @@ Veja `Connection` e `Packages` para os detalhes de nível mais baixo.
 ## Exemplo Completo
 
 ```php
-use function getenv;
-
 use Bootgly\API\Projects\Project;
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\WPI\Interfaces\TCP_Server_CLI;
@@ -319,6 +316,7 @@ return new Project(
 	boot: function (array $arguments = [], array $options = []): void
 	{
 		$Server = new TCP_Server_CLI(Mode: match (true) {
+			isset($options['f']) => Modes::Foreground,
 			isset($options['i']) => Modes::Interactive,
 			isset($options['m']) => Modes::Monitor,
 			default => Modes::Daemon
@@ -334,7 +332,7 @@ return new Project(
 
 		$Server->on(
 			Events::DataReceive,
-			require __DIR__ . '/../Demo/TCP_Server_CLI/TCP_Server_CLI.SAPI.php'
+			static fn ($input) => "HTTP/1.1 200 OK\r\nServer: Bootgly\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 13\r\n\r\nHello, World!"
 		);
 
 		$Server->start();

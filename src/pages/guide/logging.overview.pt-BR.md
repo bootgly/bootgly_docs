@@ -86,8 +86,6 @@ Adicione um handler `File`. A rotação é embutida — rotaciona por limite de 
 mudança de dia, o que vier primeiro, e mantém um número limitado de arquivos:
 
 ```php
-use const BOOTGLY_STORAGE_DIR;
-
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Handlers\File\Rotation;
 use Bootgly\ACI\Logs\Data\Levels;
@@ -145,8 +143,6 @@ Um handler `File` por logger cobre um logger. Para persistir **todo logger que o
 um canal de todo o framework — registre um **sink** global uma vez e faça os módulos optarem:
 
 ```php
-use const BOOTGLY_STORAGE_DIR;
-
 use Bootgly\ACI\Logs\Handlers;
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Logger;
@@ -305,8 +301,6 @@ mesmo formato: muda de identidade, abre o destino tarde ou só decide depois par
 vão.
 
 ```php
-use const BOOTGLY_STORAGE_DIR;
-
 use Bootgly\ACI\Logs\Handlers;
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Handlers\Memory;

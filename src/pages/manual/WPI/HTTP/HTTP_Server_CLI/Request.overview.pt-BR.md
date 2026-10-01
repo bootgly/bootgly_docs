@@ -750,8 +750,6 @@ Veja [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#v
 Um router completo demonstrando todos os modos de validação — corpo, query string, upload de arquivo, regra customizada e resposta de falha customizada:
 
 ```php
-use function is_string;
-
 use Bootgly\ADI\Validation;
 use Bootgly\ADI\Validators;
 use Bootgly\ADI\Validators\Email;

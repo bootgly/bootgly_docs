@@ -156,8 +156,6 @@ Ao usar `SQL` diretamente entre Fibers, passe o mesmo objeto de escopo para escr
 relacionadas:
 
 ```php
-use stdClass;
-
 $Scope = new stdClass;
 
 $Database->query('UPDATE users SET name = $1 WHERE id = $2', ['Ada', 7], $Scope);

@@ -186,8 +186,6 @@ A falha continua determinística — o cliente nunca entra em spin:
 A adoção e o bridge são o mecanismo, não a API do dia a dia. As formas prontas são o [`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/) em modo embarcado e o response resource HTTP alcançado como `$Response->Upstream`, que já ligam `react()` e `schedule()` por você — veja as páginas deles. Use o `TCP_Client_CLI` diretamente apenas quando estiver embarcando um protocolo TCP raw dentro de um runtime hospedeiro.
 
 ```php
-use Fiber;
-
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI\Configs;
 
@@ -291,8 +289,6 @@ Veja `Connection` e `Packages` para os detalhes de baixo nível sobre sockets e 
 ## Exemplo Completo
 
 ```php
-use function getenv;
-
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\TCP_Client_CLI;

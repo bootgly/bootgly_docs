@@ -50,8 +50,6 @@ return [
 And give it a `.Project.php` signature whose `boot` closure runs the [App shell](/manual/Web/App):
 
 ```php
-use function getenv;
-
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Web\App;

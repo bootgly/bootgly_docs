@@ -9,6 +9,8 @@ Use o ORM quando o código da aplicação precisa de dados em formato de entidad
 A metadata da entidade vem de attributes em `Bootgly\ADI\Databases\SQL\Model`.
 
 ```php
+namespace Demo\HTTP_Server_CLI\Models;
+
 use DateTimeImmutable;
 
 use Bootgly\ADI\Databases\SQL\Model\Auxiliaries\Relations;

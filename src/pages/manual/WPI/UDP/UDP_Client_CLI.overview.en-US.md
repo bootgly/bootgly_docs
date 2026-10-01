@@ -127,9 +127,6 @@ The demo project uses exactly this pattern with monitor mode and a timer-based s
 ## Example with Monitor Mode
 
 ```php
-use const PHP_EOL;
-use function getenv;
-
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI;
@@ -213,9 +210,6 @@ For many use cases, the most important controls are your callbacks, your worker 
 ## Full Example
 
 ```php
-use const PHP_EOL;
-use function getenv;
-
 use Bootgly\ACI\Events\Timer;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Interfaces\UDP_Client_CLI;

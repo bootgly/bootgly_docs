@@ -40,6 +40,8 @@ public string $id = '';
 `Column` maps a persistent property. When no name is passed, the property name is used as the SQL column.
 
 ```php
+namespace Demo\HTTP_Server_CLI\Models;
+
 use DateTimeImmutable;
 
 use Bootgly\ADI\Databases\SQL\Model\Column;

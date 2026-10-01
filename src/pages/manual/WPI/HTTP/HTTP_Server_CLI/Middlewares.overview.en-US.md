@@ -69,6 +69,8 @@ A middleware that wraps `$next()` in a `try`/`catch` is an error boundary for **
 To answer those failures too, implement `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering` — a `Middleware` with one more method, `recover()`, which the server calls when deferred work throws:
 
 ```php
+namespace Demo\Blog\Middlewares;
+
 use Closure;
 use Throwable;
 
@@ -123,6 +125,8 @@ The route onion is synchronous. The code a middleware runs **after** `$next()` �
 `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Sealing` is the missing half. A middleware that also implements it is offered the deferred `Response` at settlement, immediately before serialization, with the **real** outcome in place — final status, final headers, final body:
 
 ```php
+namespace Demo\Blog\Middlewares;
+
 use Closure;
 
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;

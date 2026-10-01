@@ -40,6 +40,8 @@ public string $id = '';
 `Column` mapeia uma propriedade persistente. Quando nenhum nome é passado, o nome da propriedade é usado como coluna SQL.
 
 ```php
+namespace Demo\HTTP_Server_CLI\Models;
+
 use DateTimeImmutable;
 
 use Bootgly\ADI\Databases\SQL\Model\Column;

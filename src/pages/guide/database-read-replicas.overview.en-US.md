@@ -154,8 +154,6 @@ requests.
 When using `SQL` directly across Fibers, pass the same scope object to related writes and reads:
 
 ```php
-use stdClass;
-
 $Scope = new stdClass;
 
 $Database->query('UPDATE users SET name = $1 WHERE id = $2', ['Ada', 7], $Scope);

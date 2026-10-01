@@ -86,8 +86,6 @@ Push a `File` handler. Rotation is built in — it rotates on a size cap **or** 
 whichever comes first, and keeps a bounded number of archives:
 
 ```php
-use const BOOTGLY_STORAGE_DIR;
-
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Handlers\File\Rotation;
 use Bootgly\ACI\Logs\Data\Levels;
@@ -143,8 +141,6 @@ A per-logger `File` handler covers one logger. To persist **every opted-in logge
 a framework-wide channel — register a global **sink** once and opt modules in:
 
 ```php
-use const BOOTGLY_STORAGE_DIR;
-
 use Bootgly\ACI\Logs\Handlers;
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Logger;
@@ -301,8 +297,6 @@ The server does this for you. You reach for it directly when your own process ha
 it changes identity, opens the destination late, or only decides later where the records go.
 
 ```php
-use const BOOTGLY_STORAGE_DIR;
-
 use Bootgly\ACI\Logs\Handlers;
 use Bootgly\ACI\Logs\Handlers\File;
 use Bootgly\ACI\Logs\Handlers\Memory;
