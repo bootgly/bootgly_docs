@@ -248,7 +248,7 @@ The server master process listens for a rich control surface.
 | `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. A worker whose listener cannot re-enter its selector (the entries are taken by dependency waits) logs a critical message, stays Paused and retries every second until it gets back in — it never reports Running while accepting nothing. A `pause` cancels a pending retry and the worker stays Paused; a successful `resume` cancels it too. |
 | `SIGUSR2`, `reload` | Reload application state in workers. |
 | `SIGIOT`, `connections` | Print connection information. |
-| `SIGIO`, `stats` | Print connection and traffic statistics. |
+| `SIGIO`, `stats` | Print connection and traffic statistics; `stats reset` zeroes them. |
 | `status` | Render an overview of server state in the terminal. |
 | `monitor` | Enter live monitor mode. |
 | `check jit`, `error on/off` | Operational and debugging utilities. |

@@ -8,7 +8,8 @@ The UDP Server CLI is Bootgly's low-level server for datagram-based protocols. I
 |---|---|
 | **Datagram-based server** | Receive raw UDP payloads and return raw payloads back to the sender. |
 | **Multi-worker runtime** | Start one or more worker processes to handle traffic. |
-| **Operational modes** | Run in `Daemon`, `Interactive`, `Monitor` or `Test` mode. |
+| **Operational modes** | Run in `Daemon`, `Foreground`, `Interactive`, `Monitor` or `Test` mode. |
+| **Worker recovery** | In `Daemon` and `Foreground` mode a worker that dies — an application `exit()`, an operator kill, an OOM kill — is reforked from the master loop and serves exactly like the original: its timers tick, it fields its lifecycle signals and it stops with the master. `Monitor` and `Interactive` do not supervise workers reliably: a worker that crashes can stop the server, and one that exits with status `0` can go unreplaced — the master keeps running without it. Run production servers in `Daemon` or `Foreground` mode. |
 | **Simple handler API** | Register a single `on(Events::DatagramReceive, Closure $Callback)` callback for received datagrams. |
 | **Bounded peer state** | Apply per-worker global/per-IP retention ceilings, idle expiry and a finite dispatch batch before peer state can exhaust the worker. |
 | **CLI controls** | Use commands such as `status`, `stop`, `pause`, `resume` and `reload` in interactive workflows. |
@@ -100,7 +101,8 @@ The constructor accepts `Bootgly\API\Endpoints\Server\Modes`.
 
 | Mode | Description |
 |---|---|
-| `Modes::Daemon` | Runs in the background without an interactive UI. |
+| `Modes::Daemon` | Runs in the background without an interactive UI; reforks a worker that dies. |
+| `Modes::Foreground` | Stays in the foreground as the container or service process (logs to stdout, `SIGTERM`/`SIGINT` stop it); reforks a worker that dies. |
 | `Modes::Interactive` | Keeps the server attached to the terminal so you can issue commands. |
 | `Modes::Monitor` | Shows live runtime status and is convenient during development. |
 | `Modes::Test` | Uses a test-oriented server instance for automated flows. |
@@ -240,6 +242,10 @@ per-IP, timeout and quarantine counters from the authoritative peer tuples and r
 supervisor before admission resumes. This prevents an asynchronous callback or signal from
 interleaving the final ceiling check with ledger commit.
 
+A peer's `check()` and `limit()` act on the source IP the peer was admitted with — rewriting a
+connection's public `$ip` changes neither. Once an IP is blacklisted, every peer already admitted
+from it is retired on its next datagram, which is then refused like a new peer from that IP.
+
 Network sends and terminal rejections use the readonly `Connection::$id` captured by the
 constructor. Mutating or hooking the legacy public `peer` field cannot retarget an authorized
 datagram.
@@ -296,6 +302,7 @@ This is the main consumer-facing extension point for `UDP_Server_CLI`.
 | Input | Raw datagram payload received by the server. |
 | Output | Raw payload to be sent back as the server response. |
 | Execution | Runs in worker processes while the server is active. |
+| Empty datagram | A zero-length datagram is counted as a read error and never delivered; it does not end the batch of datagrams queued behind it. |
 
 Because UDP is datagram-oriented, design the callback around self-contained messages instead of connection sessions.
 
@@ -309,7 +316,7 @@ When running interactively, the server exposes commands such as:
 - `resume`
 - `reload`
 - `monitor`
-- `stats`
+- `stats` (`stats reset` zeroes the counters)
 - `connections`
 - `help`
 
@@ -327,6 +334,19 @@ These are useful for operating and observing the running server from the termina
   critical message, stays `Paused` and retries every second until it gets back in — it never reports
   `Running` while reading nothing. A `pause()` cancels a pending retry and the worker stays
   `Paused`; a successful `resume()` cancels it too.
+- A start whose worker socket the event backend could not watch (a process already holding about
+  FD_SETSIZE descriptors) is refused before any worker is forked:
+  "Listener rejected by the event backend during startup." and exit status 1. A worker that cannot
+  register its socket logs a critical message and exits instead of serving nothing.
+- Every worker — forked at start, reforked after a death or forked by a reloaded master — serves
+  under the signal mask the launcher held when it called `start()`. A launcher that blocks `SIGTERM`
+  or `SIGALRM` therefore gets workers that cannot field them.
+- A worker reforked while the server is paused starts paused and joins the next `resume()`.
+- A stop signal (`SIGTERM`, `SIGINT`, `SIGQUIT`, `SIGHUP`) that arrives while a reload is under way
+  stops the server instead of being lost in the re-executed master.
+- As PID 1 — a container whose entrypoint runs the server without an init — the master also reaps
+  the orphans it inherits, such as background processes a handler started, so they never pile up
+  as zombies.
 
 ## Full Example
 

@@ -248,7 +248,7 @@ O processo master do servidor expõe uma superfície rica de controle.
 | `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. Um worker cujo socket de escuta não consegue voltar ao selector (as entradas estão ocupadas por esperas de dependências) registra uma mensagem crítica, continua Paused e tenta de novo a cada segundo até entrar — ele nunca reporta Running sem aceitar nada. Um `pause` cancela uma nova tentativa pendente e o worker continua Paused; um `resume` bem-sucedido também a cancela. |
 | `SIGUSR2`, `reload` | Recarrega o estado da aplicação nos workers. |
 | `SIGIOT`, `connections` | Imprime informações das conexões ativas. |
-| `SIGIO`, `stats` | Imprime estatísticas de conexões e tráfego. |
+| `SIGIO`, `stats` | Imprime estatísticas de conexões e tráfego; `stats reset` as zera. |
 | `status` | Renderiza uma visão geral do estado do servidor no terminal. |
 | `monitor` | Entra no modo de monitoramento em tempo real. |
 | `check jit`, `error on/off` | Utilidades operacionais e de debugging. |
