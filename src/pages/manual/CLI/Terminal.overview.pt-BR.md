@@ -68,4 +68,22 @@ Escreve as sequências de escape de cursor-home e erase-in-display no stream do 
 public function interact (): bool
 ```
 
-Lê uma linha do usuário com o prompt `>_: `, mantendo histórico de comandos (↑/↓) e registrando autocompleção via TAB contra a lista estática `Terminal::$commands`. Retorna `false` quando o stream de entrada é fechado.
+Lê uma linha do usuário com o prompt `>_: `, mantendo histórico de comandos (↑/↓) e registrando autocompleção via TAB contra a lista estática `Terminal::$commands`. Retorna `false` quando o stream de entrada é fechado. **Descontinuado:** bloqueia quem chama até uma linha ser digitada; use `prompting()`.
+
+```php
+public function prompting (Closure $Supervise): Generator
+```
+
+Pede linhas de comando sem nunca bloquear quem chama e entrega cada linha completa (`Generator<int,string>`). `$Supervise` roda antes de cada espera por entrada e retorna quanto essa espera pode durar em microssegundos (`0` só verifica), ou `false` para encerrar o prompt; qualquer sinal interrompe a espera. Num terminal, a linha é editada pelo readline (histórico, autocompleção via TAB) e uma linha digitada pela metade sobrevive a cada espera; Ctrl-D numa linha vazia ou o terminal desligado encerram o prompt. Qualquer outra entrada (um pipe, um arquivo, `/dev/null`) é lida como linhas simples e, quando termina, o prompt segue rodando `$Supervise` sem entrada. Cada linha entregue chega com o prompt desarmado, então quem chama a executa com o terminal no próprio modo.
+
+```php
+public function disarm (): void
+```
+
+Remove o handler de callback do readline que o `prompting()` instalou — sem efeito quando não há nenhum — e reescreve os handlers de sinal que o readline substituiu enquanto estava armado. Chame antes de o processo sair ou se reexecutar de dentro de um prompt — um `exit()` num handler de sinal despachado enquanto o prompt roda, ou um `pcntl_exec()`, pula o `finally` do generator —, senão o terminal fica em modo raw.
+
+```php
+public private(set) bool $armed
+```
+
+Se o handler de callback do readline do `prompting()` está instalado neste momento.

@@ -7,7 +7,7 @@ O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um 
 | Recurso | Descrição |
 |---|---|
 | **Modos de Operação** | Daemon (background), Foreground, Interactive (REPL), Monitor (visualizador de logs ao vivo) e Test (automatizado) |
-| **Multi-Worker** | Workers via fork com `SO_REUSEPORT`; master reinicia workers automaticamente em caso de falha |
+| **Multi-Worker** | Workers via fork com `SO_REUSEPORT`; master reinicia workers automaticamente em caso de falha (um slot cujos boots continuam falhando espera até 5 s) |
 | **PHP Fibers** | Respostas assíncronas adiadas via `$Response->defer()`, integradas ao event loop `stream_select` |
 | **Event-Driven** | Event loop baseado em `stream_select`; I/O non-blocking, zero CPU em idle |
 | **Roteamento** | Rotas estáticas e dinâmicas com restrições de parâmetros tipadas; cache de warmup único |
@@ -89,7 +89,7 @@ O servidor suporta múltiplos modos de operação, selecionados ao construir a i
 |---|---|
 | `Modes::Daemon` | Faz fork para segundo plano. O processo master se torna líder de sessão, despacha sinais e gerencia workers. Modo padrão. |
 | `Modes::Foreground` | Fica preso ao terminal, com os logs do servidor (e tudo o que um handler escreve com `echo`) impressos na sua frente. |
-| `Modes::Interactive` | Loop REPL aceitando comandos CLI (`stop`, `help`, `monitor`). |
+| `Modes::Interactive` | Loop REPL aceitando comandos CLI (`stop`, `help`, `monitor`). O prompt nunca bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita. Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
 | `Modes::Monitor` | Visualizador de logs em tela cheia: os registros do master e dos workers chegam em uma visão filtrável. Ele **não** observa arquivos — publique mudanças de código com `project reload` (veja [Reload](/guide/reload/overview/)). |
 | `Modes::Test` | Cria um cliente TCP, carrega a suíte de testes, envia requisições HTTP e valida as respostas. Usado internamente para testes automatizados. |
 
@@ -553,7 +553,7 @@ O servidor utiliza uma arquitetura **multi-processo** com `fork()`:
 
 - O processo **master** gerencia o ciclo de vida: tratamento de sinais, recuperação de workers e coordenação.
 - Cada processo **worker** cria seu próprio socket de servidor usando `SO_REUSEPORT`, de forma que todos fazem bind independentemente na mesma porta. Isso evita contenção em um socket compartilhado.
-- Quando um worker morre inesperadamente, o master automaticamente cria um substituto no mesmo índice via tratamento do `SIGCHLD`.
+- Quando um worker morre inesperadamente, o master automaticamente cria um substituto no mesmo índice via tratamento do `SIGCHLD`. Um slot cujos workers morrem antes de entrar no loop de eventos três vezes seguidas é recriado após 0,5 s, dobrando até 5 s, e cerca de uma em cada N conexões novas espera essa tentativa; um fork recusado é tentado de novo a cada segundo, em vez de encerrar o master.
 - Opções de socket por worker: `backlog: 102400`, `SO_KEEPALIVE`, `TCP_NODELAY`.
 
 ```

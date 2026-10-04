@@ -12,7 +12,7 @@ O TCP Server CLI é a base de servidor TCP de baixo nível do Bootgly PHP Framew
 | **Handler raw de pacotes** | Registre um único `on(Events::DataReceive, Closure $Callback)` que recebe entrada bruta e retorna saída bruta. |
 | **Sinais e controle** | Pause, retome, recarregue, pare, inspecione conexões e veja estatísticas com sinais POSIX e comandos CLI. |
 | **SSL/TLS** | Aceita conexões criptografadas por meio de opções SSL em stream contexts do PHP. |
-| **Recuperação de workers** | No processo master, workers que caem são recriados automaticamente via `SIGCHLD`. |
+| **Recuperação de workers** | O master recria um worker que morre a partir do próprio loop (nunca dentro do handler de `SIGCHLD`). Um slot cujos workers morrem antes de entrar no loop de eventos três vezes seguidas (um boot que sempre falha) é recriado após 0,5 s, dobrando até 5 s, enquanto um worker que já serviu é sempre recriado na hora. Um slot em espera mantém sua parte do socket de escuta, então cerca de uma em cada N conexões novas espera a próxima tentativa. Um fork recusado (um limite de processos atingido) mantém o master e o slot e é tentado de novo a cada segundo. |
 | **Rebaixamento de privilégios** | Faça bind como root quando necessário e depois reduza para um usuário/grupo POSIX menos privilegiado. |
 | **Estatísticas de conexão** | Acompanha leituras, escritas, bytes transferidos, erros e metadados de conexões ativas. |
 
@@ -118,7 +118,7 @@ O construtor recebe um enum `Bootgly\API\Endpoints\Server\Modes`.
 | Modo | Descrição |
 |---|---|
 | `Modes::Daemon` | Faz fork para segundo plano e mantém o processo master vivo sem interface. Quando `Logger::$Sinks` não está definido, instala o sink de arquivo padrão (`storage/logs/{channel}.log`) para um daemon nunca ficar sem log; um sink registrado antes do `start()` toma o lugar dele. |
-| `Modes::Interactive` | Executa um loop CLI estilo REPL com comandos como `status`, `stop`, `pause` e `reload`. |
+| `Modes::Interactive` | Executa um loop CLI estilo REPL com comandos como `status`, `stop`, `pause` e `reload`. O prompt nunca bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita. Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
 | `Modes::Monitor` | Exibe uma tela de status em tempo real e faz hot-reload da camada de aplicação. |
 | `Modes::Test` | Usa uma instância separada de estado de processo voltada para testes automatizados do servidor. |
 
@@ -243,6 +243,7 @@ O processo master do servidor expõe uma superfície rica de controle.
 | Sinal / comando | Efeito |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Para o servidor e encerra os workers. |
+| Ctrl-D (Interactive) | Numa linha vazia, para o servidor como `stop`. |
 | `SIGTSTP`, `pause` | Só no modo Interactive — `Daemon` e `Foreground` ignoram `SIGTSTP`. Pausa o serving: os workers saem do accept enquanto o master continua supervisionando (workers que morrem seguem sendo reforkados) e o console permanece interativo. `bootgly project show` reporta a instância como `paused`. No modo Monitor, SIGTSTP troca para Interactive. |
 | `SIGCONT`, `resume` | Retoma um servidor pausado: os workers voltam ao accept e o status retorna a Running. Um worker cujo socket de escuta não consegue voltar ao selector (as entradas estão ocupadas por esperas de dependências) registra uma mensagem crítica, continua Paused e tenta de novo a cada segundo até entrar — ele nunca reporta Running sem aceitar nada. Um `pause` cancela uma nova tentativa pendente e o worker continua Paused; um `resume` bem-sucedido também a cancela. |
 | `SIGUSR2`, `reload` | Recarrega o estado da aplicação nos workers. |
@@ -267,7 +268,7 @@ Processo master
 └── Worker #N → bind do socket → event loop
 ```
 
-- O **master** instala sinais, salva o estado do processo, monitora workers e recria um substituto se algum cair.
+- O **master** instala sinais, salva o estado do processo, monitora workers e recria um substituto se algum cair — com espera crescente para um slot cujos workers continuam morrendo no boot. Um reload cujo fork do relay é recusado é abortado, e o servidor continua servindo.
 - Cada **worker** cria seu próprio socket de servidor com `SO_REUSEPORT` e entra no event loop compartilhado `Select`.
 - Os sockets aceitos são encapsulados em objetos de conexão que acompanham peer remoto, timers, escritas e status da conexão.
 

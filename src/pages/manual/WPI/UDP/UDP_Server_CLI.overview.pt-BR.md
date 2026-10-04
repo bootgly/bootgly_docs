@@ -9,7 +9,7 @@ O UDP Server CLI é o servidor de baixo nível do Bootgly para protocolos basead
 | **Servidor orientado a datagramas** | Receba payloads UDP brutos e retorne payloads brutos para o remetente. |
 | **Runtime multi-worker** | Inicie um ou mais processos worker para lidar com o tráfego. |
 | **Modos operacionais** | Execute em `Daemon`, `Foreground`, `Interactive`, `Monitor` ou `Test`. |
-| **Recuperação de workers** | Nos modos `Daemon`, `Foreground`, `Monitor` e `Interactive`, um worker que morre — um `exit()` da aplicação com qualquer status, um kill do operador, um kill por OOM — é recriado a partir do loop do master e serve exatamente como o original: seus timers disparam, ele atende seus sinais de ciclo de vida e para junto com o master. Um console `Interactive` ocioso recria quando o prompt é interrompido, o que pode esperar a próxima tecla quando vários workers morrem ao mesmo tempo ou o PHP usa GNU readline. Rode servidores de produção nos modos `Daemon` ou `Foreground`; `Monitor` e `Interactive` são consoles de desenvolvimento. |
+| **Recuperação de workers** | Nos modos `Daemon`, `Foreground`, `Monitor` e `Interactive`, um worker que morre — um `exit()` da aplicação com qualquer status, um kill do operador, um kill por OOM — é recriado a partir do loop do master e serve exatamente como o original: seus timers disparam, ele atende seus sinais de ciclo de vida e para junto com o master. Um slot cujos workers morrem antes de entrar no loop de eventos três vezes seguidas (um boot que sempre falha) é recriado após 0,5 s, dobrando até 5 s, enquanto um worker que já serviu é sempre recriado na hora. Um fork recusado (um limite de processos atingido) mantém o master e o slot e é tentado de novo a cada segundo. Rode servidores de produção nos modos `Daemon` ou `Foreground`; `Monitor` e `Interactive` são consoles de desenvolvimento. |
 | **API simples de handler** | Registre um único callback `on(Events::DatagramReceive, Closure $Callback)` para os datagramas recebidos. |
 | **Estado de peers limitado** | Aplique tetos globais/por IP em cada worker, expiração ociosa e batch finito antes que o estado de peers esgote o worker. |
 | **Controles via CLI** | Use comandos como `status`, `stop`, `pause`, `resume` e `reload` em fluxos interativos. |
@@ -101,7 +101,7 @@ O construtor recebe `Bootgly\API\Endpoints\Server\Modes`.
 |---|---|
 | `Modes::Daemon` | Executa em segundo plano, sem interface interativa; recria um worker que morre. |
 | `Modes::Foreground` | Fica em primeiro plano como o processo do container ou serviço (logs no stdout, `SIGTERM`/`SIGINT` o param); recria um worker que morre. |
-| `Modes::Interactive` | Mantém o servidor anexado ao terminal para emissão de comandos. |
+| `Modes::Interactive` | Mantém o servidor anexado ao terminal para emissão de comandos. O prompt nunca bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita. Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
 | `Modes::Monitor` | Mostra status em tempo real e é conveniente durante o desenvolvimento. |
 | `Modes::Test` | Usa uma instância orientada a testes para fluxos automatizados. |
 
@@ -346,9 +346,9 @@ Eles são úteis para operar e observar o servidor em execução pelo terminal.
 - Uma partida cujo socket de worker o backend de eventos não consegue observar (um processo que já
   segura cerca de FD_SETSIZE descritores) é recusada antes de qualquer worker ser criado:
   "Listener rejected by the event backend during startup." e status de saída 1. Um worker que não
-  consegue registrar seu socket registra uma mensagem crítica e sai, em vez de servir nada — e o
-  master o recria de novo e de novo (em `Daemon` e `Foreground`, muitas vezes por segundo) até o
-  servidor ser parado: mantenha o número de descritores do processo bem abaixo de FD_SETSIZE.
+  consegue registrar seu socket registra uma mensagem crítica e sai, em vez de servir nada. O master o
+  recria na hora duas vezes e depois após 0,5 s, dobrando até 5 s, enquanto ele continuar falhando:
+  mantenha o número de descritores do processo bem abaixo de FD_SETSIZE.
 - Todo worker — criado na partida, recriado após uma morte ou criado por um master recarregado —
   serve sob a máscara de sinais que o lançador tinha quando chamou `start()`. Um lançador que bloqueia
   `SIGTERM` ou `SIGALRM`, portanto, recebe workers que não conseguem atendê-los.

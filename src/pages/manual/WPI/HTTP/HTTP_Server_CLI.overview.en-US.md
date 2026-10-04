@@ -7,7 +7,7 @@ The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It i
 | Feature | Description |
 |---|---|
 | **Operation Modes** | Daemon (background), Foreground, Interactive (REPL), Monitor (live log viewer), and Test (automated) |
-| **Multi-Worker** | Fork-based workers with `SO_REUSEPORT`; master auto-reforks on unexpected worker death |
+| **Multi-Worker** | Fork-based workers with `SO_REUSEPORT`; master auto-reforks on unexpected worker death (a slot whose boots keep failing is backed off up to 5 s) |
 | **PHP Fibers** | Deferred async responses via `$Response->defer()`, integrated in the `stream_select` event loop |
 | **Event-Driven** | `stream_select`-based event loop; non-blocking I/O, zero idle CPU usage |
 | **Routing** | Static and dynamic routes with typed parameter constraints; one-time warmup cache |
@@ -90,7 +90,7 @@ The server supports multiple operation modes, selected when constructing the `HT
 |---|---|
 | `Modes::Daemon` | Forks to background. The master process becomes a session leader, dispatches signals and reaps workers. Default mode. |
 | `Modes::Foreground` | Stays attached to the terminal, with the server logs (and anything a handler `echo`es) printed in front of you. |
-| `Modes::Interactive` | REPL loop accepting CLI commands (`stop`, `help`, `monitor`). |
+| `Modes::Interactive` | REPL loop accepting CLI commands (`stop`, `help`, `monitor`). The prompt never blocks supervision: workers are reforked and signals handled while you type. Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
 | `Modes::Monitor` | Full-screen live log viewer: master and worker records stream into a filterable view. It does **not** watch files — ship code changes with `project reload` (see [Reload](/guide/reload/overview/)). |
 | `Modes::Test` | Creates a TCP client, loads the test suite, sends HTTP requests and asserts responses. Used internally for automated testing. Saves PID state with a `.test` instance qualifier (e.g. `HTTP_Server_CLI.test.json`), so it can coexist with a running production server without PID file conflicts. |
 
@@ -549,7 +549,7 @@ The server uses a **multi-process** architecture with `fork()`:
 
 - The **master** process manages the lifecycle: signal handling, worker recovery, and coordination.
 - Each **worker** process creates its own server socket using `SO_REUSEPORT`, so they all independently bind to the same port. This avoids contention on a shared socket.
-- When a worker dies unexpectedly, the master automatically reforks a replacement at the same index via `SIGCHLD` handling.
+- When a worker dies unexpectedly, the master automatically reforks a replacement at the same index via `SIGCHLD` handling. A slot whose workers die before entering their event loop three times in a row is reforked after 0.5 s, doubling up to 5 s, and about one in N new connections waits for that attempt; a refused fork is retried every second instead of ending the master.
 - Socket options per worker: `backlog: 102400`, `SO_KEEPALIVE`, `TCP_NODELAY`.
 
 ```

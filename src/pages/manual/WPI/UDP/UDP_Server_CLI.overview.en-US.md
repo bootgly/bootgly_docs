@@ -9,7 +9,7 @@ The UDP Server CLI is Bootgly's low-level server for datagram-based protocols. I
 | **Datagram-based server** | Receive raw UDP payloads and return raw payloads back to the sender. |
 | **Multi-worker runtime** | Start one or more worker processes to handle traffic. |
 | **Operational modes** | Run in `Daemon`, `Foreground`, `Interactive`, `Monitor` or `Test` mode. |
-| **Worker recovery** | In `Daemon`, `Foreground`, `Monitor` and `Interactive` mode a worker that dies — an application `exit()` with any status, an operator kill, an OOM kill — is reforked from the master loop and serves exactly like the original: its timers tick, it fields its lifecycle signals and it stops with the master. An idle `Interactive` console reforks when its prompt is interrupted, which can wait for the next keystroke when several workers die at once or PHP is built with GNU readline. Run production servers in `Daemon` or `Foreground` mode; `Monitor` and `Interactive` are development consoles. |
+| **Worker recovery** | In `Daemon`, `Foreground`, `Monitor` and `Interactive` mode a worker that dies — an application `exit()` with any status, an operator kill, an OOM kill — is reforked from the master loop and serves exactly like the original: its timers tick, it fields its lifecycle signals and it stops with the master. A slot whose workers die before entering their event loop three times in a row (a boot that always fails) is reforked after 0.5 s, doubling up to 5 s, while a worker that served is always reforked at once. A refused fork (a process limit reached) keeps the master and the slot and is retried every second. Run production servers in `Daemon` or `Foreground` mode; `Monitor` and `Interactive` are development consoles. |
 | **Simple handler API** | Register a single `on(Events::DatagramReceive, Closure $Callback)` callback for received datagrams. |
 | **Bounded peer state** | Apply per-worker global/per-IP retention ceilings, idle expiry and a finite dispatch batch before peer state can exhaust the worker. |
 | **CLI controls** | Use commands such as `status`, `stop`, `pause`, `resume` and `reload` in interactive workflows. |
@@ -101,7 +101,7 @@ The constructor accepts `Bootgly\API\Endpoints\Server\Modes`.
 |---|---|
 | `Modes::Daemon` | Runs in the background without an interactive UI; reforks a worker that dies. |
 | `Modes::Foreground` | Stays in the foreground as the container or service process (logs to stdout, `SIGTERM`/`SIGINT` stop it); reforks a worker that dies. |
-| `Modes::Interactive` | Keeps the server attached to the terminal so you can issue commands. |
+| `Modes::Interactive` | Keeps the server attached to the terminal so you can issue commands. The prompt never blocks supervision: workers are reforked and signals handled while you type. Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
 | `Modes::Monitor` | Shows live runtime status and is convenient during development. |
 | `Modes::Test` | Uses a test-oriented server instance for automated flows. |
 
@@ -339,9 +339,9 @@ These are useful for operating and observing the running server from the termina
 - A start whose worker socket the event backend could not watch (a process already holding about
   FD_SETSIZE descriptors) is refused before any worker is forked:
   "Listener rejected by the event backend during startup." and exit status 1. A worker that cannot
-  register its socket logs a critical message and exits instead of serving nothing — and the master
-  reforks it again and again (in `Daemon` and `Foreground`, many times a second) until the server is
-  stopped: keep the process's descriptor count well below FD_SETSIZE.
+  register its socket logs a critical message and exits instead of serving nothing. The master reforks
+  it at once twice, then after 0.5 s doubling up to 5 s for as long as it keeps failing: keep the
+  process's descriptor count well below FD_SETSIZE.
 - Every worker — forked at start, reforked after a death or forked by a reloaded master — serves
   under the signal mask the launcher held when it called `start()`. A launcher that blocks `SIGTERM`
   or `SIGALRM` therefore gets workers that cannot field them.

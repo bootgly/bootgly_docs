@@ -12,7 +12,7 @@ The TCP Server CLI is the low-level TCP server foundation of the Bootgly PHP Fra
 | **Raw package handler** | Register a single `on(Events::DataReceive, Closure $Callback)` callback that receives raw input and returns raw output. |
 | **Signals and control** | Pause, resume, reload, stop, inspect connections and view stats with POSIX signals and CLI commands. |
 | **SSL/TLS** | Accept encrypted connections through PHP stream context SSL options. |
-| **Worker recovery** | In master mode, crashed workers are automatically reforked via `SIGCHLD`. |
+| **Worker recovery** | The master reforks a worker that dies from its own loop (never inside the `SIGCHLD` handler). A slot whose workers die before entering their event loop three times in a row (a boot that always fails) is reforked after 0.5 s, doubling up to 5 s, while a worker that served is always reforked at once. A waiting slot keeps its share of the listening socket, so about one in N new connections waits for its next attempt. A refused fork (a process limit reached) keeps the master and the slot and is retried every second. |
 | **Privilege dropping** | Bind as root when necessary, then demote to a less privileged POSIX user/group. |
 | **Connection stats** | Tracks reads, writes, bytes transferred, errors and active connection metadata. |
 
@@ -118,7 +118,7 @@ The constructor accepts a `Bootgly\API\Endpoints\Server\Modes` enum.
 | Mode | Description |
 |---|---|
 | `Modes::Daemon` | Forks the server to the background and keeps the master process alive without a UI. When `Logger::$Sinks` is unset, it installs the default file sink (`storage/logs/{channel}.log`) so a daemon is never logless; a sink registered before `start()` takes its place. |
-| `Modes::Interactive` | Runs a REPL-like CLI loop with commands such as `status`, `stop`, `pause` and `reload`. |
+| `Modes::Interactive` | Runs a REPL-like CLI loop with commands such as `status`, `stop`, `pause` and `reload`. The prompt never blocks supervision: workers are reforked and signals handled while you type. Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
 | `Modes::Monitor` | Displays a live status screen and performs hot-reload checks against the server application layer. |
 | `Modes::Test` | Uses a separate process-state instance intended for automated server testing. |
 
@@ -243,6 +243,7 @@ The server master process listens for a rich control surface.
 | Signal / command | Effect |
 |---|---|
 | `SIGINT`, `SIGTERM`, `stop` | Stop the server and terminate workers. |
+| Ctrl-D (Interactive) | On an empty line, stops the server like `stop`. |
 | `SIGTSTP`, `pause` | Interactive mode only — `Daemon` and `Foreground` ignore `SIGTSTP`. Pause serving: workers leave the accept set while the master keeps supervising (crashed workers are still reforked) and the console stays interactive. `bootgly project show` reports the instance as `paused`. In Monitor mode, SIGTSTP switches to Interactive instead. |
 | `SIGCONT`, `resume` | Resume a paused server: workers re-join the accept set and the status returns to Running. A worker whose listener cannot re-enter its selector (the entries are taken by dependency waits) logs a critical message, stays Paused and retries every second until it gets back in — it never reports Running while accepting nothing. A `pause` cancels a pending retry and the worker stays Paused; a successful `resume` cancels it too. |
 | `SIGUSR2`, `reload` | Reload application state in workers. |
@@ -267,7 +268,7 @@ Master process
 └── Worker #N → bind socket → event loop
 ```
 
-- The **master** process installs signals, stores process state, monitors workers and reforks a replacement if one crashes.
+- The **master** process installs signals, stores process state, monitors workers and reforks a replacement if one crashes — backing off a slot whose workers keep dying at boot. A reload whose relay fork is refused is aborted, and the server keeps serving.
 - Each **worker** creates its own server socket with `SO_REUSEPORT`, then enters the shared `Select` event loop.
 - Accepted sockets are wrapped in connection objects that track remote peer info, timers, writes and connection status.
 

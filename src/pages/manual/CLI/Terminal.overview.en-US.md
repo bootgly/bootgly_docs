@@ -68,4 +68,22 @@ Writes the cursor-home and erase-in-display escape sequences to the `Output` str
 public function interact (): bool
 ```
 
-Reads one line from the user with a `>_: ` prompt, keeping a command history (↑/↓) and registering TAB autocompletion against the static `Terminal::$commands` list. Returns `false` when the input stream is closed.
+Reads one line from the user with a `>_: ` prompt, keeping a command history (↑/↓) and registering TAB autocompletion against the static `Terminal::$commands` list. Returns `false` when the input stream is closed. **Deprecated:** it blocks the caller until a line is typed; use `prompting()`.
+
+```php
+public function prompting (Closure $Supervise): Generator
+```
+
+Prompts for command lines without ever blocking the caller and yields each complete line (`Generator<int,string>`). `$Supervise` runs before every wait for input and returns how long that wait may last in microseconds (`0` polls), or `false` to end the prompt; any signal cuts a wait short. On a terminal the line is edited through readline (history, TAB completion) and a half-typed line survives every wait; Ctrl-D on an empty line or a hangup ends the prompt. Any other stdin (a pipe, a file, `/dev/null`) is read as plain lines, and at its end the prompt keeps running `$Supervise` without input. Each yielded line arrives with the prompt disarmed, so the caller runs it with the terminal in its own mode.
+
+```php
+public function disarm (): void
+```
+
+Removes the readline callback handler `prompting()` installed — a no-op when none is — and rewrites the signal handlers readline replaced while it was armed. Call it before the process exits or re-execs from inside a prompt — an `exit()` from a signal handler dispatched while the prompt runs, or a `pcntl_exec()`, skips the generator's `finally` — or the terminal is left raw.
+
+```php
+public private(set) bool $armed
+```
+
+Whether the readline callback handler of `prompting()` is installed right now.
