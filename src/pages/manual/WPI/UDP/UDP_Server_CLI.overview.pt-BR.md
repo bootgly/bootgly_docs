@@ -101,7 +101,7 @@ O construtor recebe `Bootgly\API\Endpoints\Server\Modes`.
 |---|---|
 | `Modes::Daemon` | Executa em segundo plano, sem interface interativa; recria um worker que morre. |
 | `Modes::Foreground` | Fica em primeiro plano como o processo do container ou serviço (logs no stdout, `SIGTERM`/`SIGINT` o param); recria um worker que morre. |
-| `Modes::Interactive` | Mantém o servidor anexado ao terminal para emissão de comandos. O prompt nunca bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita. Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
+| `Modes::Interactive` | Mantém o servidor anexado ao terminal para emissão de comandos. O prompt não bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita (no libedit, um ESC, ^V ou ^R inacabado segura as recriações agendadas até a próxima tecla). Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
 | `Modes::Monitor` | Mostra status em tempo real e é conveniente durante o desenvolvimento. |
 | `Modes::Test` | Usa uma instância orientada a testes para fluxos automatizados. |
 

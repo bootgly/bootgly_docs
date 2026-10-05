@@ -1,6 +1,6 @@
 # HTTP Server CLI
 
-The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It is an event-driven, multi-worker server built on top of a non-blocking TCP infrastructure with support for PHP Fibers for asynchronous responses — everything is 100% pure PHP and no extensions.
+The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It is an event-driven, multi-worker server built on top of a non-blocking TCP infrastructure with support for PHP Fibers for asynchronous responses — everything is 100% pure PHP, with no third-party packages.
 
 ## Features
 
@@ -90,9 +90,9 @@ The server supports multiple operation modes, selected when constructing the `HT
 |---|---|
 | `Modes::Daemon` | Forks to background. The master process becomes a session leader, dispatches signals and reaps workers. Default mode. |
 | `Modes::Foreground` | Stays attached to the terminal, with the server logs (and anything a handler `echo`es) printed in front of you. |
-| `Modes::Interactive` | REPL loop accepting CLI commands (`stop`, `help`, `monitor`). The prompt never blocks supervision: workers are reforked and signals handled while you type. Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
+| `Modes::Interactive` | REPL loop accepting CLI commands (`stop`, `help`, `monitor`). The prompt does not block supervision: workers are reforked and signals handled while you type (on libedit, an unfinished ESC, ^V or ^R holds timed reforks until the next key). Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
 | `Modes::Monitor` | Full-screen live log viewer: master and worker records stream into a filterable view. It does **not** watch files — ship code changes with `project reload` (see [Reload](/guide/reload/overview/)). |
-| `Modes::Test` | Creates a TCP client, loads the test suite, sends HTTP requests and asserts responses. Used internally for automated testing. Saves PID state with a `.test` instance qualifier (e.g. `HTTP_Server_CLI.test.json`), so it can coexist with a running production server without PID file conflicts. |
+| `Modes::Test` | Creates a TCP client, loads the test suite, sends HTTP requests and asserts responses. Used internally for automated testing. Like every mode, it saves PID state qualified by the bound port (e.g. `HTTP_Server_CLI.8080.json`), so it runs beside a live server only on another port. |
 
 ## Configuration
 

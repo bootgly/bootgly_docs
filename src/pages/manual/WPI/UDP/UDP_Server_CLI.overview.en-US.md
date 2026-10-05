@@ -101,7 +101,7 @@ The constructor accepts `Bootgly\API\Endpoints\Server\Modes`.
 |---|---|
 | `Modes::Daemon` | Runs in the background without an interactive UI; reforks a worker that dies. |
 | `Modes::Foreground` | Stays in the foreground as the container or service process (logs to stdout, `SIGTERM`/`SIGINT` stop it); reforks a worker that dies. |
-| `Modes::Interactive` | Keeps the server attached to the terminal so you can issue commands. The prompt never blocks supervision: workers are reforked and signals handled while you type. Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
+| `Modes::Interactive` | Keeps the server attached to the terminal so you can issue commands. The prompt does not block supervision: workers are reforked and signals handled while you type (on libedit, an unfinished ESC, ^V or ^R holds timed reforks until the next key). Ctrl-D on an empty line stops the server; a non-terminal stdin (a pipe, `/dev/null`) is read line by line, and once it ends the master keeps supervising until it is stopped. |
 | `Modes::Monitor` | Shows live runtime status and is convenient during development. |
 | `Modes::Test` | Uses a test-oriented server instance for automated flows. |
 

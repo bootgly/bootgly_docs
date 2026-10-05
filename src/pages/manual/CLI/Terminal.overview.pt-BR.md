@@ -68,13 +68,13 @@ Escreve as sequências de escape de cursor-home e erase-in-display no stream do 
 public function interact (): bool
 ```
 
-Lê uma linha do usuário com o prompt `>_: `, mantendo histórico de comandos (↑/↓) e registrando autocompleção via TAB contra a lista estática `Terminal::$commands`. Retorna `false` quando o stream de entrada é fechado. **Descontinuado:** bloqueia quem chama até uma linha ser digitada; use `prompting()`.
+Lê uma linha do usuário com o prompt `>_: `, mantendo histórico de comandos (↑/↓) e registrando autocompleção via TAB contra a lista estática `Terminal::$commands`. Retorna `false` quando o stream de entrada é fechado; senão, retorna o que o comando executado retorna — sempre `true` num Terminal base, enquanto uma subclasse pode retornar `false` para um comando que responde de forma assíncrona, e quem chama espera essa saída antes de pedir a próxima linha. Bloqueia quem chama até uma linha ser digitada e precisa da ext-readline; quem precisa seguir trabalhando enquanto ninguém digita usa o `prompting()`.
 
 ```php
 public function prompting (Closure $Supervise): Generator
 ```
 
-Pede linhas de comando sem nunca bloquear quem chama e entrega cada linha completa (`Generator<int,string>`). `$Supervise` roda antes de cada espera por entrada e retorna quanto essa espera pode durar em microssegundos (`0` só verifica), ou `false` para encerrar o prompt; qualquer sinal interrompe a espera. Num terminal, a linha é editada pelo readline (histórico, autocompleção via TAB) e uma linha digitada pela metade sobrevive a cada espera; Ctrl-D numa linha vazia ou o terminal desligado encerram o prompt. Qualquer outra entrada (um pipe, um arquivo, `/dev/null`) é lida como linhas simples e, quando termina, o prompt segue rodando `$Supervise` sem entrada. Cada linha entregue chega com o prompt desarmado, então quem chama a executa com o terminal no próprio modo.
+Pede linhas de comando sem bloquear quem chama enquanto espera e entrega cada linha completa (`Generator<int,string>`). `$Supervise` roda antes de cada espera por entrada e retorna quanto essa espera pode durar em microssegundos (`0` só verifica), ou `false` para encerrar o prompt; qualquer sinal interrompe a espera. Num terminal, a linha é editada pelo readline (autocompleção via TAB contra `Terminal::$commands`, ↑/↓ para recuperar as linhas passadas ao `execute()`) e uma linha digitada pela metade sobrevive a cada espera; Ctrl-D numa linha vazia ou o terminal desligado encerram o prompt. No libedit, um ESC, ^V ou ^R inacabado segura a espera até a próxima tecla; um sinal ainda a interrompe. Sem a ext-readline, o terminal mostra o mesmo prompt `>_: ` e é lido como linhas simples que o próprio terminal edita: sem recuperar linhas nem autocompleção via TAB, e as setas chegam à linha como bytes de escape. Qualquer outra entrada (um pipe, um arquivo, `/dev/null`) é lida como linhas simples, sem prompt, e, quando termina, o prompt segue rodando `$Supervise` sem entrada. Cada linha entregue chega com o prompt desarmado, então quem chama a executa com o terminal no próprio modo.
 
 ```php
 public function disarm (): void
@@ -87,3 +87,9 @@ public private(set) bool $armed
 ```
 
 Se o handler de callback do readline do `prompting()` está instalado neste momento.
+
+```php
+public bool $editing
+```
+
+Se o `prompting()` edita a linha pelo readline (autocompleção via TAB, recuperação das linhas executadas): a entrada é um terminal e a ext-readline está carregada. Os consoles dos servidores só anunciam autocompleção e histórico quando é `true`.

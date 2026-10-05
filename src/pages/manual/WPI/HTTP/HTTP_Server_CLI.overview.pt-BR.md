@@ -1,6 +1,6 @@
 # HTTP Server CLI
 
-O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um servidor event-driven, multi-worker, construído sobre uma infraestrutura TCP non-blocking com suporte a PHP Fibers para respostas assíncronas.
+O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um servidor event-driven, multi-worker, construído sobre uma infraestrutura TCP non-blocking com suporte a PHP Fibers para respostas assíncronas — tudo em PHP 100% puro, sem pacotes de terceiros.
 
 ## Recursos
 
@@ -89,9 +89,9 @@ O servidor suporta múltiplos modos de operação, selecionados ao construir a i
 |---|---|
 | `Modes::Daemon` | Faz fork para segundo plano. O processo master se torna líder de sessão, despacha sinais e gerencia workers. Modo padrão. |
 | `Modes::Foreground` | Fica preso ao terminal, com os logs do servidor (e tudo o que um handler escreve com `echo`) impressos na sua frente. |
-| `Modes::Interactive` | Loop REPL aceitando comandos CLI (`stop`, `help`, `monitor`). O prompt nunca bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita. Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
+| `Modes::Interactive` | Loop REPL aceitando comandos CLI (`stop`, `help`, `monitor`). O prompt não bloqueia a supervisão: workers são recriados e sinais são tratados enquanto você digita (no libedit, um ESC, ^V ou ^R inacabado segura as recriações agendadas até a próxima tecla). Ctrl-D numa linha vazia para o servidor; uma entrada que não é um terminal (um pipe, `/dev/null`) é lida linha a linha e, quando termina, o master segue supervisionando até ser parado. |
 | `Modes::Monitor` | Visualizador de logs em tela cheia: os registros do master e dos workers chegam em uma visão filtrável. Ele **não** observa arquivos — publique mudanças de código com `project reload` (veja [Reload](/guide/reload/overview/)). |
-| `Modes::Test` | Cria um cliente TCP, carrega a suíte de testes, envia requisições HTTP e valida as respostas. Usado internamente para testes automatizados. |
+| `Modes::Test` | Cria um cliente TCP, carrega a suíte de testes, envia requisições HTTP e valida as respostas. Usado internamente para testes automatizados. Como todo modo, salva o estado de PID qualificado pela porta (ex.: `HTTP_Server_CLI.8080.json`), então só roda ao lado de um servidor ativo em outra porta. |
 
 ## Configuração
 

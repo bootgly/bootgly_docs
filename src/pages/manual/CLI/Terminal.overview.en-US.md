@@ -68,13 +68,13 @@ Writes the cursor-home and erase-in-display escape sequences to the `Output` str
 public function interact (): bool
 ```
 
-Reads one line from the user with a `>_: ` prompt, keeping a command history (↑/↓) and registering TAB autocompletion against the static `Terminal::$commands` list. Returns `false` when the input stream is closed. **Deprecated:** it blocks the caller until a line is typed; use `prompting()`.
+Reads one line from the user with a `>_: ` prompt, keeping a command history (↑/↓) and registering TAB autocompletion against the static `Terminal::$commands` list. Returns `false` when the input stream is closed; otherwise it returns what the executed command returns — always `true` on a base Terminal, while a subclass may return `false` for a command that answers asynchronously, so the caller waits for that output before prompting again. It blocks the caller until a line is typed and needs ext-readline; a caller that must keep working while nobody types uses `prompting()`.
 
 ```php
 public function prompting (Closure $Supervise): Generator
 ```
 
-Prompts for command lines without ever blocking the caller and yields each complete line (`Generator<int,string>`). `$Supervise` runs before every wait for input and returns how long that wait may last in microseconds (`0` polls), or `false` to end the prompt; any signal cuts a wait short. On a terminal the line is edited through readline (history, TAB completion) and a half-typed line survives every wait; Ctrl-D on an empty line or a hangup ends the prompt. Any other stdin (a pipe, a file, `/dev/null`) is read as plain lines, and at its end the prompt keeps running `$Supervise` without input. Each yielded line arrives with the prompt disarmed, so the caller runs it with the terminal in its own mode.
+Prompts for command lines without blocking the caller while it waits and yields each complete line (`Generator<int,string>`). `$Supervise` runs before every wait for input and returns how long that wait may last in microseconds (`0` polls), or `false` to end the prompt; any signal cuts a wait short. On a terminal the line is edited through readline (TAB completion against `Terminal::$commands`, ↑/↓ recall of the lines passed to `execute()`) and a half-typed line survives every wait; Ctrl-D on an empty line or a hangup ends the prompt. On libedit an unfinished ESC, ^V or ^R holds the wait until the next key; a signal still cuts it short. Without ext-readline a terminal shows the same `>_: ` prompt and is read as plain lines that the terminal itself edits: no recall or TAB completion, and the arrow keys reach the line as escape bytes. Any other stdin (a pipe, a file, `/dev/null`) is read as plain lines without a prompt, and at its end the prompt keeps running `$Supervise` without input. Each yielded line arrives with the prompt disarmed, so the caller runs it with the terminal in its own mode.
 
 ```php
 public function disarm (): void
@@ -87,3 +87,9 @@ public private(set) bool $armed
 ```
 
 Whether the readline callback handler of `prompting()` is installed right now.
+
+```php
+public bool $editing
+```
+
+Whether `prompting()` edits the line through readline (TAB completion, recall of executed lines): stdin is a terminal and ext-readline is loaded. The server consoles announce autocompletion and history only when it is `true`.
