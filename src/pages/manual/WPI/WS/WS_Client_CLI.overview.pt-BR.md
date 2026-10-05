@@ -92,7 +92,9 @@ $Session->subprotocol;   // ex.: 'json', ou '' se nenhum
 
 A compressão é **ligada por padrão**: o cliente oferece `permessage-deflate` e, quando o servidor
 aceita, as mensagens de saída são deflacionadas e as de entrada infladas automaticamente — seus
-handlers sempre veem bytes puros. A inflação de entrada consome incrementalmente o orçamento de
+handlers sempre veem bytes puros. O cliente respeita as flags `no_context_takeover` que o servidor
+responde: com `client_no_context_takeover` (sempre respondida pelo servidor Bootgly) cada mensagem de
+saída é comprimida por si. A inflação de entrada consome incrementalmente o orçamento de
 `maxMessageSize`; uma expansão que o ultrapassa é interrompida com o código de close `1009` antes de
 reter toda a saída. Verifique o que foi negociado com `$Session->Deflator !== null`. Entrada comprimida
 malformada fica contida como erro de protocolo e encerra com `1007`; o warning do zlib nunca escapa.

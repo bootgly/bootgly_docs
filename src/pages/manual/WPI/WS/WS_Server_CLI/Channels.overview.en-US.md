@@ -62,8 +62,8 @@ Session->broadcast (string $channel, string $payload, bool $binary = false, bool
 
 Encode the message once and write it to every member of `$channel`, republishing to peer workers over
 the relay so members on other workers receive it too. The sender is skipped unless `$self` is `true`.
-Returns the number of **local** recipients. Broadcast frames are sent uncompressed (a single shared
-frame cannot carry per-session compression state).
+Returns the number of **local** recipients. Broadcast frames are sent uncompressed (one frame is built
+once for every member, whether or not each member negotiated compression).
 
 ```php
 Channel->count (): int

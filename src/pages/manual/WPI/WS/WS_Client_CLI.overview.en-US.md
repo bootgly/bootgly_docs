@@ -90,7 +90,9 @@ $Session->subprotocol;   // e.g. 'json', or '' if none
 
 Compression is **on by default**: the client offers `permessage-deflate`, and when the server accepts
 it, outbound messages are deflated and inbound ones inflated automatically — your handlers always see
-plain bytes. Inbound inflation is budgeted incrementally against `maxMessageSize`; an expansion that
+plain bytes. The client honors the `no_context_takeover` flags the server answers: under
+`client_no_context_takeover` (always answered by the Bootgly server) each outbound message is
+compressed on its own. Inbound inflation is budgeted incrementally against `maxMessageSize`; an expansion that
 crosses it is stopped with close code `1009` before the complete output is retained. Check what was
 negotiated with `$Session->Deflator !== null`. Malformed compressed input is contained as a protocol
 error and closes with `1007`; the zlib warning never escapes. A runtime that selectively disables

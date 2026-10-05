@@ -65,7 +65,8 @@ Session->broadcast (string $channel, string $payload, bool $binary = false, bool
 Codifica a mensagem uma vez e a escreve em cada membro de `$channel`, republicando para os workers
 vizinhos pelo relay para que membros em outros workers também recebam. O remetente é pulado a menos
 que `$self` seja `true`. Retorna o número de destinatários **locais**. Frames de broadcast são
-enviados sem compressão (um único frame compartilhado não carrega o estado de compressão por sessão).
+enviados sem compressão (um único frame é montado uma vez para todos os membros, tenha cada membro
+negociado compressão ou não).
 
 ```php
 Channel->count (): int
