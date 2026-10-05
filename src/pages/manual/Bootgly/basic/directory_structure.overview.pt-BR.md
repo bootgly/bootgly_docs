@@ -20,7 +20,6 @@ bootgly/
 │   └── WPI/
 ├── configs/      ← diretórios de recursos (minúsculas)
 ├── projects/
-├── public/
 ├── scripts/
 ├── storage/
 └── tests/
@@ -63,8 +62,6 @@ Esses diretórios de recursos são utilizados para armazenar recursos padronizad
 O diretório `configs/` armazena arquivos de configuração carregados em escopos (veja o guia de [Configuração](/guide/configuration/overview/)). Ele existe no diretório raiz e também pode existir dentro de cada projeto.
 
 O diretório `projects/` será utilizado por usuários desenvolvedores para armazenar os seus projetos desenvolvidos a partir do Bootgly. Nele devem ser encontrados Apps, APIs, etc. Este diretório só deve existir dentro do diretório raiz.
-
-O diretório `public/` servirá para armazenar arquivos da Web e só deve existir dentro do diretório raiz.
 
 O diretório `scripts/` armazena os scripts para o CLI/Console e só deve existir dentro do diretório raiz.
 

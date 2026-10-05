@@ -20,7 +20,6 @@ bootgly/
 │   └── WPI/
 ├── configs/      ← resource dirs (lowercase)
 ├── projects/
-├── public/
 ├── scripts/
 ├── storage/
 └── tests/
@@ -63,8 +62,6 @@ These resource dirs are used to store resources standardized by the `Resources` 
 The `configs/` dir stores configuration files loaded in scopes (see the [Configuration](/guide/configuration/overview/) guide). It exists in the root dir and can also exist inside each project.
 
 The `projects/` dir will be used by developer users to store their projects developed from Bootgly such as APIs, Apps, etc. This dir should only be created in the root dir.
-
-The `public/` dir will serve to store Web files and should only be placed in the root dir.
 
 The `scripts/` dir stores scripts for the CLI/Console and should only be placed in the root dir.
 

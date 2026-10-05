@@ -1,7 +1,7 @@
 # Kit CLI
 
 The kit you installed is a delivery vehicle: you never commit to it, everything of yours at its
-root (`projects/`, `storage/`, `scripts/`, `tests/`, `public/`) is ignored by git, and every kit
+root (`projects/`, `storage/`, `scripts/`, `tests/`) is ignored by git, and every kit
 **release** is a tag pinning one coherent set of Bootgly Platform versions — framework, Console,
 Web. `bootgly kit` is the kit's own command: `boot` lays down the directories a kit runs on, and
 `upgrade`, `downgrade` and `list` move it between releases — forward, back, and a look at them. No

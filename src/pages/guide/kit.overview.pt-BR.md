@@ -1,7 +1,7 @@
 # CLI do Kit
 
 O kit que você instalou é um veículo de entrega: você nunca commita nele, tudo que é seu na raiz
-(`projects/`, `storage/`, `scripts/`, `tests/`, `public/`) é ignorado pelo git, e cada **release**
+(`projects/`, `storage/`, `scripts/`, `tests/`) é ignorado pelo git, e cada **release**
 do kit é uma tag que pina um conjunto coerente de versões da Bootgly Platform — framework, Console,
 Web. `bootgly kit` é o comando do próprio kit: `boot` instala os diretórios em que um kit roda, e
 `upgrade`, `downgrade` e `list` o movem entre releases — para frente, para trás, e uma olhada nelas.
