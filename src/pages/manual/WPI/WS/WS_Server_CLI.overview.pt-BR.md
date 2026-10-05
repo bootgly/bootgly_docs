@@ -107,6 +107,21 @@ $WS->configure(
 
 Use `heartbeatInterval: 0` para desativar os pings do servidor e contar com `idleTimeout`.
 
+Bytes em trânsito contam como atividade, então um peer que continua enviando nunca recebe ping. O que
+limita uma mensagem que nunca termina é o `maxMessageWallTime` (segundos, padrão `60`, no mínimo `1`):
+do primeiro byte que o servidor guarda de uma mensagem inacabada — um frame que atravessa leituras, ou
+uma mensagem fragmentada ainda esperando o frame final — até esse frame final. Passado esse prazo, a
+sessão é fechada com `1008`. O supervisor verifica o prazo no próprio tick — `heartbeatInterval` ou,
+com o heartbeat desligado, o menor entre `idleTimeout` (30 s quando não definido) e
+`maxMessageWallTime` —, então o fechamento chega até um tick depois. No padrão, uma mensagem de 8 MiB precisa chegar a cerca de 140 KiB/s ou
+mais; aumente o valor para quem envia mais devagar.
+
+```php
+$WS->configure(
+   new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1, maxMessageWallTime: 120)
+);
+```
+
 ## Seguro (wss://)
 
 Passe um array de contexto de stream TLS em `secure` para servir `wss://`. O TLS é terminado pelo
@@ -172,12 +187,14 @@ new WS_Server_CLI\Configs (
    null|int $idleTimeout = null,
    int $maxFrameSize = 1048576,
    int $maxMessageSize = 8388608,
+   int $maxMessageWallTime = 60,
    array $subprotocols = [],
    bool $compression = true,
    array $Guards = [],
    null|int $maxConnections = null,
    null|int $maxConnectionsPerIP = null,
    null|int $headroom = null,
+   null|int $maxWorkerPendingBytes = null,
    null|Closure $Fallback = null
 )
 ```
@@ -186,7 +203,9 @@ Faz o bind de host/porta e define a política por conexão — **apenas named ar
 precede todos os parâmetros, então uma chamada posicional levanta um `TypeError`). `heartbeatInterval`
 é a cadência do ping do servidor em segundos (`0` desativa). `idleTimeout` remove peers silenciosos
 quando o heartbeat está desligado. `maxFrameSize` (1 MiB) e `maxMessageSize` (8 MiB) limitam um único
-frame e uma mensagem remontada — exceder qualquer um fecha com `1009`. `subprotocols` é a lista
+frame e uma mensagem remontada — exceder qualquer um fecha com `1009`. `maxMessageWallTime` (60 s)
+limita quanto tempo uma mensagem inacabada pode ficar retida — passado esse prazo, a sessão fecha com
+`1008` (veja *Heartbeat ping / pong*). `subprotocols` é a lista
 ordenada de preferência do servidor. `compression` liga/desliga o `permessage-deflate`. `Guards` é uma
 lista de guards de autenticação do handshake. `maxConnections` / `maxConnectionsPerIP` limitam as
 conexões estabelecidas por worker e por IP de cliente. `headroom` (padrão `32`) é o número de
@@ -195,7 +214,21 @@ clientes mais cedo: o selector admite `1000` entradas, então os clientes param 
 `1000 − headroom` (968 por padrão) mesmo quando `maxConnections` é maior. O socket de escuta ocupa
 uma das entradas reservadas e, com mais de um worker, o relay de broadcast outra, então
 dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma para cada um
-deles; `0` o desativa. `Fallback` responde requisições HTTP simples
+deles; `0` o desativa. `maxWorkerPendingBytes` é o orçamento de memória do worker para os bytes
+retidos entre leituras (`null` mantém o padrão do transporte, 64 MiB). A saída pendente e as
+retenções de entrada — frames parciais e mensagens inacabadas — o compartilham, e a entrada usa no
+máximo metade, então a saída sempre tem folga. Uma retenção de entrada é cobrada pelo que o alocador
+do PHP gasta para mantê-la (uma string retida um pouco acima de 1 MiB custa um chunk inteiro de
+2 MiB), não pelo tamanho. Quando uma retenção de entrada não cabe, a sessão que mais retém é fechada
+com `1009` enquanto retiver mais do que a sessão que pede passaria a reter depois desta leitura; senão,
+a que pede é fechada. Uma reserva de saída recusada derruba aquela conexão. O orçamento limita os bytes retidos entre leituras, não o tamanho da
+mensagem: um frame ou fragmento final que se completa em uma leitura e o payload inflado de uma
+mensagem comprimida não são cobrados — `maxFrameSize` e `maxMessageSize` os limitam. A saída pendente
+é cobrada pelo tamanho, e o PHP pode gastar até cerca do dobro para mantê-la; então mantenha o
+`memory_limit` acima de cerca de duas vezes o orçamento mais `maxMessageSize`, cerca de cinco vezes
+`maxFrameSize` (cópias da decodificação) e o heap da própria aplicação — nos padrões, cerca de 150 MiB
+mais a aplicação: aumente o `memory_limit` (256M) ou reduza o orçamento (32 MiB com 128M). Servidores
+alcançáveis diretamente (sem proxy na frente) também devem definir `maxConnectionsPerIP`. `Fallback` responde requisições HTTP simples
 (sem upgrade) — por exemplo, servindo a página do cliente na mesma porta. `secure` é um array de
 contexto de stream TLS para `wss://`.
 

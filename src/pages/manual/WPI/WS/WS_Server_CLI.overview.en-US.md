@@ -105,6 +105,22 @@ $WS->configure(
 
 Set `heartbeatInterval: 0` to disable server pings and rely on `idleTimeout` instead.
 
+Bytes in flight count as activity, so a peer that keeps sending is never pinged. What bounds a
+message that never finishes is `maxMessageWallTime` (seconds, default `60`, at least `1`): from the
+first byte the server holds of an unfinished message — a frame that spans reads, or a fragmented
+message still waiting for its final frame — to that final frame. Past it the session is closed with
+`1008`. The supervisor checks it on its own tick — `heartbeatInterval`, or with the heartbeat off the
+shorter of `idleTimeout` (30 s when unset) and `maxMessageWallTime` — so the close lands up to one tick
+late. At the
+default, an 8 MiB message must arrive at roughly 140 KiB/s or faster; raise the value for slower
+senders.
+
+```php
+$WS->configure(
+   new WS_Server_CLI\Configs(host: '0.0.0.0', port: 8083, workers: 1, maxMessageWallTime: 120)
+);
+```
+
 ## Secure (wss://)
 
 Pass a TLS stream-context array as `secure` to serve `wss://`. TLS is terminated by the transport
@@ -170,12 +186,14 @@ new WS_Server_CLI\Configs (
    null|int $idleTimeout = null,
    int $maxFrameSize = 1048576,
    int $maxMessageSize = 8388608,
+   int $maxMessageWallTime = 60,
    array $subprotocols = [],
    bool $compression = true,
    array $Guards = [],
    null|int $maxConnections = null,
    null|int $maxConnectionsPerIP = null,
    null|int $headroom = null,
+   null|int $maxWorkerPendingBytes = null,
    null|Closure $Fallback = null
 )
 ```
@@ -184,7 +202,9 @@ Binds host/port and sets the per-connection policy — **named arguments only** 
 every parameter, so a positional call raises a `TypeError`). `heartbeatInterval` is the server ping
 cadence in seconds (`0` disables). `idleTimeout` reaps silent peers when heartbeat is off.
 `maxFrameSize` (1 MiB) and `maxMessageSize` (8 MiB) cap a single frame and a reassembled message —
-exceeding either closes with `1009`. `subprotocols` is the server's ordered preference list.
+exceeding either closes with `1009`. `maxMessageWallTime` (60 s) bounds how long an unfinished
+message may stay held — past it the session closes with `1008` (see *Ping / pong heartbeat*).
+`subprotocols` is the server's ordered preference list.
 `compression` toggles `permessage-deflate`. `Guards` is a list of handshake auth guards.
 `maxConnections` / `maxConnectionsPerIP` cap established connections per worker and per client IP.
 `headroom` (default `32`) is the number of selector entries each worker keeps free for its own
@@ -192,6 +212,20 @@ dependency I/O by shedding clients earlier: the selector admits `1000` entries, 
 `1000 − headroom` (968 by default) even when `maxConnections` is higher. The listener takes one of
 the reserved entries and, with more than one worker, the broadcast relay another, so size it to at
 least the sum of the `pool.max` of the worker's resources plus one for each of them; `0` disables it.
+`maxWorkerPendingBytes` is the worker's memory budget for bytes held between reads (`null` keeps the
+transport default, 64 MiB). Pending output and inbound holds — partial frames and unfinished
+messages — share it, and inbound holds take at most half, so output always keeps room. An inbound
+hold is charged at what PHP's allocator spends to keep it (a held string just over 1 MiB costs a
+whole 2 MiB chunk), not at its length. When an inbound hold does not fit, the session holding the
+most inbound bytes is closed with `1009` while it holds more than the asking session would hold after
+this read; otherwise the asking session is. A refused output reservation drops that connection. The budget bounds bytes held between
+reads, not message size: a frame or final fragment that completes within one read and the inflated
+payload of a compressed message are not charged — `maxFrameSize` and `maxMessageSize` cap those.
+Pending output is charged at its length, and PHP can spend up to about twice that to keep it, so keep
+`memory_limit` above about twice the budget plus `maxMessageSize`, about five times `maxFrameSize`
+(decode copies) and the application's own heap — at the defaults about 150 MiB plus the application:
+raise `memory_limit` (256M) or lower the budget (32 MiB under 128M). Directly reachable servers (no
+proxy in front) should also set `maxConnectionsPerIP`.
 `Fallback` answers plain (non-upgrade) HTTP requests — e.g. serving the client page on the same
 port. `secure` is a TLS stream-context array for `wss://`.
 
