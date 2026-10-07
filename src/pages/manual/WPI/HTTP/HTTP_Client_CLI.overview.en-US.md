@@ -125,6 +125,7 @@ Handing two instances of the same Configs class to one `configure()` call throws
 | `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds, per dial attempt. On an adopted reactor the dial and the TLS handshake park instead of blocking the host loop (0 = no timeout). |
 | `timeout` | `int\|float` | `30` | Response timeout in seconds. |
 | `maxResponseBytes` | `int` | `16777216` | Maximum raw response bytes — headers + body (16 MiB; `0` = unbounded). |
+| `maxControlBytes` | `int` | `1048576` | HTTP/2: maximum bytes of answers (acknowledgements) a server may make one connection owe it at once (1 MiB; `0` = unbounded). |
 | `maxRetries` | `int` | `0` | Maximum retries on failure (0 = disabled). |
 | `retryDelay` | `int\|float` | `1.0` | Base backoff delay in seconds — doubles on each attempt. |
 | `retryMaxDelay` | `int\|float` | `30.0` | Backoff delay cap in seconds. |
@@ -307,7 +308,9 @@ $Client->drain();
 HTTP/2 notes:
 
 - `$Response->protocol` reports `'HTTP/2'`; `$Response->status` is empty — HTTP/2 has no reason-phrase, use `$Response->code`.
-- Redirects, timeouts and `maxResponseBytes` work over h2 exactly as over HTTP/1.1.
+- Redirects, timeouts and `maxResponseBytes` work over h2 as over HTTP/1.1; h2 counts the response bytes as they arrive (a declared `Content-Length` fails early on HTTP/1.1 only).
+- HTTP/2 makes the client answer some server frames (PING and SETTINGS acknowledgements, flow-control window updates). A server that keeps sending them without reading the answers cannot make the client owe more than `maxControlBytes` (1 MiB) of them at once — counted since the connection last drained its output: past it the connection is closed and every request on it fails with code `0` and status `'Control Flood'`, never retried. Uploads and request bodies never count. This also applies to HTTPS without any setting, since the client offers h2 by default there.
+- A request that times out while its connection still had unsent bytes queued (for example, the server stopped reading) and no other stream is open closes that connection instead of returning it to the pool.
 - `Expect: 100-continue` is HTTP/1.1-only: connection-specific headers are stripped on h2 (RFC 9113 §8.2.2) and the body is sent immediately.
 - The pool co-locates extra acquisitions on multiplexing-capable connections before dialing new ones — an h2 connection advertises its stream capacity to the pool.
 
@@ -434,7 +437,7 @@ if ($Response->code === 0) {
 }
 ```
 
-`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Request Header Fields Too Large'`, `'Response Header Fields Too Large'` when the response head (status line + header fields) exceeds 64 KiB, `'Invalid Response'` when the head is not valid HTTP/1.x framing or more than 64 interim responses came before the final one (HTTP/1.1), or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real or longer than 8 KiB, a trailer section past 64 KiB, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
+`code === 0` always means no HTTP response was produced, and `status` says why: `'Timeout'`, `'Connection Failed'`, `'Connection Lost'`, `'Connection Closed'`, `'Truncated Response'`, `'Response Too Large'`, `'Control Flood'` (HTTP/2: the server forced more than `maxControlBytes` of unsent answers), `'Request Header Fields Too Large'`, `'Response Header Fields Too Large'` when the response head (status line + header fields) exceeds 64 KiB, `'Invalid Response'` when the head is not valid HTTP/1.x framing or more than 64 interim responses came before the final one (HTTP/1.1), or `'Invalid Chunked Encoding'` when a chunked response's framing is not valid HTTP (a chunk-size line that is not hexadecimal, one too large to be real or longer than 8 KiB, a trailer section past 64 KiB, or chunk data that is not terminated by CRLF as RFC 9112 §7.1 requires).
 
 The client trusts no upstream's framing. A response is `'Invalid Response'` when its status line is not `HTTP/1.x SP 3DIGIT [SP reason]` with a code from 100 to 999 (a missing reason phrase is fine; a code from 600 to 999 is handled like a server error and keeps its value in `code`); when its head carries a bare CR or LF, a field line without a colon, a field name that is not a token (whitespace before the colon, a NUL, a control byte), or a NUL in a field value; when `Content-Length` is not one exact number (a sign, a suffix, an overflow, or repeats that disagree — identical repeats are fine); when `Transfer-Encoding` is empty; or when an HTTP/1.0 response uses `Transfer-Encoding`. A folded header line (obs-fold) is joined with a space before it is read. A response framed by both `Transfer-Encoding` and `Content-Length` is read by `Transfer-Encoding` and its connection is never reused. `Connection` is read as a token list: `Connection: TE, close` or `Connection:close` closes the connection.
 
@@ -485,7 +488,7 @@ Retry rules:
 - **Backoff**: `retryDelay` doubles on each attempt, capped at `retryMaxDelay`, plus a proportional jitter of up to `retryJitter` × delay.
 - **Campaign budget**: `retryTimeout` (default `60.0`; `0` = unbounded) is a wall-clock budget per request — a retry whose wait would exceed it is vetoed and the request stays failed.
 - **Network-failure retries** (connection refused/reset, timeout) apply to idempotent methods only: GET, HEAD, PUT, DELETE, OPTIONS. Non-idempotent methods (POST, PATCH) are only retried when the request was provably never sent.
-- **Deterministic failures are never retried**: `'Response Too Large'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'`, `'Redirect Failed'`, `'Redirect Refused'` and `'Too Many Redirects'` — the same answer would come back. `'Truncated Response'`, `'Connection Lost'` and `'Timeout'` are network failures and follow the rules above.
+- **Deterministic failures are never retried**: `'Response Too Large'`, `'Control Flood'`, `'Response Header Fields Too Large'`, `'Invalid Response'`, `'Invalid Chunked Encoding'`, `'Request Header Fields Too Large'`, `'Insecure Redirect'`, `'Redirect Failed'`, `'Redirect Refused'` and `'Too Many Redirects'` — the same answer would come back. `'Truncated Response'`, `'Connection Lost'` and `'Timeout'` are network failures and follow the rules above.
 - **HTTP-level retries** (`retryOn`) are server-solicited and apply to **any** method. `Retry-After` is honored in both delta-seconds and HTTP-date forms, clamped to 300 seconds (`MAX_RETRY_AFTER`); it can extend the computed backoff wait, never shorten it.
 - `retryOn` requires `maxRetries > 0` — the same budget caps both retry kinds.
 - Backoff is **scheduled on the event loop** — waiting for the next attempt never blocks the process.
@@ -773,6 +776,12 @@ public int $maxResponseBytes = 16_777_216;
 ```
 
 Maximum raw response bytes (headers + body) per request — 16 MiB by default. `0` = unbounded (an explicit opt-out). Exceeding it fails the request with code `0` and status `'Response Too Large'`, and it is never retried. Enforced on both HTTP/1.1 and HTTP/2. On HTTP/1.1, declared sizes fail fast: a `Content-Length` that, with the head, is past the limit, or a chunk whose declared size would push the decoded body past it, fails the request as soon as it is read, before the body is downloaded (HTTP/2 counts the bytes as they arrive). The response head has its own fixed cap of 64 KiB (`'Response Header Fields Too Large'`), whatever this allows.
+
+```php
+public int $maxControlBytes = 1_048_576;
+```
+
+Maximum bytes of answers an HTTP/2 server may make one connection owe it — SETTINGS and PING acknowledgements, WINDOW_UPDATE replenishes — counted since the connection last drained its output, a single read's answers included, so a server that does not read them cannot grow the client. Uploads, request heads and bodies never count. Past it the connection is closed and every request on it fails with code `0` and status `'Control Flood'`, which is never retried. `0` = unbounded; budgets far below the default can trip on a bursty server that does read. HTTP/1.1 is not affected: the client owes an HTTP/1.1 server no answers.
 
 ```php
 public const int INTERIM_LIMIT = 64;

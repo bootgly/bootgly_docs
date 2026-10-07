@@ -120,13 +120,20 @@ $WS->configure(
 );
 ```
 
+Enquanto uma saída anterior ainda espera o servidor lê-la, o cliente não enfileira um pong por ping:
+guarda só o payload do ping mais recente e o responde uma vez — à frente do próximo frame que enfileirar
+(um `send()` ou seu frame de close), ou quando a fila esvazia (RFC 6455 §5.5.3). Assim, um servidor que
+continua pingando sem ler não consegue fazer a memória do cliente crescer.
+
 ## Reconexão
 
 Ative `reconnect` para rediscar automaticamente após uma queda **abrupta** (um reset do peer ou erro de
 transporte sem frame de close WebSocket). Cada tentativa usa backoff exponencial limitado —
 `reconnectDelay` dobrando até `reconnectMaxDelay` — por até `reconnectAttempts` vezes (`0` = ilimitado).
 Um close **gracioso** (seu `$Session->close()`, um frame de close do servidor, ou uma falha de
-protocolo) **não** reconecta; o loop encerra.
+protocolo) **não** reconecta; o loop encerra. Um handshake recusado também não — um status diferente de
+`101`, uma chave de aceite inválida, uma extensão ou subprotocolo não oferecido, ou um head do `101` maior
+que 64 KiB: `Disconnected` dispara com `$Session->closing === true` e o motivo é registrado como warning.
 
 `reconnectTimeout` é um **orçamento de tempo de parede** (em segundos) para toda a campanha — o loop
 sempre desiste quando esse tempo se passa desde a primeira queda, mesmo com `reconnectAttempts: 0`
@@ -243,7 +250,7 @@ O destino e a política por conexão. Apenas named arguments — o primeiro slot
 | `reconnectDelay` | `int` | `1` | Backoff base em segundos, dobrando a cada tentativa. |
 | `reconnectMaxDelay` | `int` | `30` | Teto do backoff em segundos. |
 | `reconnectTimeout` | `int` | `60` | Orçamento total de tempo de parede em segundos para toda a campanha de reconexão; `0` = sem limite. |
-| `handshakeTimeout` | `int` | `10` | Segundos para receber e verificar o `101` após cada disca; `0` = sem limite. |
+| `handshakeTimeout` | `int` | `10` | Segundos para receber e verificar o `101` após cada disca; `0` = sem limite. O head do `101` tem teto de 64 KiB, seja qual for este valor. |
 | `closeTimeout` | `float` | `5.0` | Segundos que um close frame enfileirado pode esperar um socket congestionado drenar antes de o transporte ser fechado à força. `0` fecha à força imediatamente quando o frame não pode ser escrito de forma síncrona. |
 
 ### Métodos

@@ -116,12 +116,20 @@ $WS->configure(
 );
 ```
 
+While earlier output is still waiting for the server to read it, the client does not queue one pong per
+ping: it keeps only the latest ping's payload and answers it once — ahead of the next frame it queues (a
+`send()` or its close frame), or when the queue drains (RFC 6455 §5.5.3). A server that keeps pinging
+without reading therefore cannot grow the client's memory.
+
 ## Reconnect
 
 Enable `reconnect` to auto re-dial after an **abrupt** drop (a peer reset or transport error with no
 WebSocket close frame). Each attempt uses capped exponential backoff — `reconnectDelay` doubling up to
 `reconnectMaxDelay` — for up to `reconnectAttempts` tries (`0` = unlimited). A **graceful** close (your
 `$Session->close()`, a server close frame, or a protocol fault) does **not** reconnect; the loop ends.
+Neither does a refused handshake — a non-`101` status, a bad accept key, an unoffered extension or
+subprotocol, or a `101` head longer than 64 KiB: `Disconnected` fires with `$Session->closing === true`
+and the reason is logged as a warning.
 
 `reconnectTimeout` is a total **wall-clock budget** (in seconds) for the whole campaign — the loop always
 gives up once that many seconds have elapsed since the first drop, even with `reconnectAttempts: 0`
@@ -237,7 +245,7 @@ The target and the per-connection policy. Named arguments only — the construct
 | `reconnectDelay` | `int` | `1` | Base backoff in seconds, doubling each attempt. |
 | `reconnectMaxDelay` | `int` | `30` | Backoff cap in seconds. |
 | `reconnectTimeout` | `int` | `60` | Total wall-clock budget in seconds for the whole reconnect campaign; `0` = unbounded. |
-| `handshakeTimeout` | `int` | `10` | Seconds to receive and verify the `101` after each dial; `0` = unbounded. |
+| `handshakeTimeout` | `int` | `10` | Seconds to receive and verify the `101` after each dial; `0` = unbounded. The `101` head is capped at 64 KiB whatever this allows. |
 | `closeTimeout` | `float` | `5.0` | Seconds a queued close frame may wait for a congested socket to drain before the transport is force-closed. `0` force-closes immediately when the frame cannot be written synchronously. |
 
 ### Methods
