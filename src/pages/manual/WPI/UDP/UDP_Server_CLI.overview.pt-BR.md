@@ -119,7 +119,7 @@ O mesmo value object define fronteiras imutáveis de proteção de peers para o 
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `host` | `string` | — | Endereço de bind, como `0.0.0.0` para todas as interfaces. |
+| `host` | `string` | — | Endereço de bind, como `0.0.0.0` para todas as interfaces. Um nome (`localhost`) é resolvido uma vez no start, e todos os workers fazem bind nesse mesmo endereço. |
 | `port` | `int` | — | Porta UDP de escuta. |
 | `workers` | `int` | — | Número de processos worker. |
 | `user` | `null\|string` | `null` | Usuário POSIX opcional para troca após o bind. |
@@ -276,6 +276,29 @@ está reservada nasce sem autoridade de I/O. Uma admissão gerenciada posterior 
 autoridade direta preexistente daquela chave antes de confirmar o ledger. A construção direta não
 cria a Lease de admissão gerenciada descrita acima; fora dessas fronteiras protegidas, sua limpeza
 e vida útil continuam separadas dos ledgers global e por IP do servidor.
+
+### Exclusividade da porta
+
+O servidor é dono da sua porta UDP: enquanto um worker a ocupa, nenhum socket de outra conta pode
+compartilhá-la, então nenhuma outra conta consegue ler os datagramas enviados a ela nem responder no lugar
+dele.
+
+- `start()` recusa uma porta que outro socket já ocupa — de outra conta, de outro projeto da mesma conta,
+  ou de um processo esquecido — e encerra com status 1:
+  "Could not bind to 0.0.0.0:9999 exclusively: Address already in use. Another socket — possibly another
+  account's — holds this UDP port." Iniciar o mesmo projeto de novo mantém a mensagem própria,
+  "Another instance is already running on port 9999."
+- Enquanto um worker ocupa a porta, um bind de qualquer outra conta é recusado. Os workers dividem a porta
+  entre si com `SO_REUSEPORT`; um socket da **mesma** conta que também usa `SO_REUSEPORT` ainda consegue
+  entrar, porque o kernel confia na mesma conta — rode serviços diferentes com contas diferentes.
+- A porta fica livre por um instante quando todos os workers estão fora — num reload, ou quando todos
+  morreram de uma vez. Qualquer conta local pode fazer bind nela nesse momento: recebe todo datagrama
+  enviado à porta, e pode responder como o servidor, até soltá-la. O servidor registra isso no log e os
+  workers tentam de novo com o backoff de sempre (0,5 s dobrando até 5 s), voltando a servir quando ela
+  sai (um socket `SO_REUSEPORT` da mesma conta é aceito no grupo, como acima); um reload nunca derruba o
+  servidor por isso. Num host compartilhado, mantenha serviços em contas separadas.
+- O servidor precisa da extensão `sockets` (`php-sockets`) para fazer bind desse jeito; sem ela, `start()`
+  encerra com "UDP_Server_CLI needs ext-sockets to bind its port exclusively (install php-sockets)."
 
 ### Redução de privilégios
 

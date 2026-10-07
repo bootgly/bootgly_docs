@@ -119,7 +119,7 @@ The same value object defines immutable peer-protection boundaries for the confi
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `host` | `string` | — | Address to bind to, such as `0.0.0.0` for all interfaces. |
+| `host` | `string` | — | Address to bind to, such as `0.0.0.0` for all interfaces. A name (`localhost`) is resolved once at start, and every worker binds that same address. |
 | `port` | `int` | — | UDP port to listen on. |
 | `workers` | `int` | — | Number of worker processes. |
 | `user` | `null\|string` | `null` | Optional POSIX user to switch to after binding. |
@@ -270,6 +270,28 @@ while its exact peer key is reserved starts without I/O authority. A later manag
 revokes pre-existing direct authority for that key before it commits. Direct construction does not
 create the managed admission Lease described above; outside those guarded boundaries its cleanup
 and lifetime remain separate from the server's global and per-IP ledgers.
+
+### Port exclusivity
+
+The server owns its UDP port: while a worker holds it, no socket of another account can share it, so no
+other account can read the datagrams sent to it or answer in its place.
+
+- `start()` refuses a port another socket already holds — of another account, of another project of
+  the same account, or a leftover process — and exits with status 1:
+  "Could not bind to 0.0.0.0:9999 exclusively: Address already in use. Another socket — possibly another
+  account's — holds this UDP port." Starting the same project again keeps its own message,
+  "Another instance is already running on port 9999."
+- While a worker holds the port, a bind by any other account is refused. The workers share the port
+  among themselves with `SO_REUSEPORT`; a socket of the **same** account that also sets `SO_REUSEPORT`
+  can still join, as the kernel trusts the same account — run separate services under separate accounts.
+- The port is briefly free when every worker is down — during a reload, or when all workers died at
+  once. Any local account can bind it then: it receives every datagram sent to the port, and can answer
+  as the server, until it lets go. The server logs it and its workers retry with the usual backoff
+  (0.5 s doubling up to 5 s), serving again once it is gone (a same-account `SO_REUSEPORT` socket is
+  joined instead, as above); a reload never stops the server for it. On a shared host, keep services
+  under separate accounts.
+- The server needs the `sockets` extension (`php-sockets`) to bind this way; without it, `start()` exits
+  with "UDP_Server_CLI needs ext-sockets to bind its port exclusively (install php-sockets)."
 
 ### Privilege Dropping
 
