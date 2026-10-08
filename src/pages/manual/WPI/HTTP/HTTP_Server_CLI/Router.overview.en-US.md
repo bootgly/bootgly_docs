@@ -376,7 +376,12 @@ The store is **per worker** (in-process), holds up to 512 entries (oldest
 evicted first) and refreshes the `Date` header of stored responses once per
 second. There is no cross-worker sharing: each worker warms its own entry
 within one `TTL` window. The stored bytes of one worker are capped at 64 MiB
-(`HTTP_Server_CLI\Cache::$maxBytes`, set before the server starts).
+(`HTTP_Server_CLI\Cache::$maxBytes`, set before the server starts), and the
+entries also draw on the worker's [memory budget](/manual/WPI/HTTP/HTTP_Server_CLI/#memory-budget):
+at what the allocator spends to keep them, at most a quarter of it — 16 MiB by
+default, so 8 entries of about 1 MiB (each costs a whole 2 MiB chunk) or many
+more small ones. A store that does not fit evicts the oldest entries first; a
+response that still does not fit is served without being cached.
 
 ## Route Group Middlewares (intercept)
 

@@ -380,7 +380,13 @@ antiga é removida primeiro) e atualiza o header `Date` das respostas
 armazenadas uma vez por segundo. Não há compartilhamento entre workers: cada
 worker aquece a própria entrada dentro de uma janela de `TTL`. Os bytes
 armazenados de um worker são limitados a 64 MiB
-(`HTTP_Server_CLI\Cache::$maxBytes`, definido antes de o servidor iniciar).
+(`HTTP_Server_CLI\Cache::$maxBytes`, definido antes de o servidor iniciar), e as
+entradas também usam o [orçamento de memória](/manual/WPI/HTTP/HTTP_Server_CLI/#orçamento-de-memória)
+do worker: pelo que o alocador gasta para mantê-las, no máximo um quarto dele —
+16 MiB por padrão, então 8 entradas de cerca de 1 MiB (cada uma custa um chunk
+inteiro de 2 MiB) ou muitas mais, se pequenas. Um armazenamento que não cabe
+despeja primeiro as entradas mais antigas; uma resposta que ainda assim não cabe
+é servida sem ir para o cache.
 
 ## Middlewares de Grupo de Rotas (intercept)
 

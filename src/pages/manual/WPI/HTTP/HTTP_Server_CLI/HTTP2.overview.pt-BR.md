@@ -146,6 +146,13 @@ O decoder HTTP/2 aplica os limites da RFC 9113 por conexão, com padrões seguro
 - **Controle de fluxo** nas duas direções — respostas maiores que a janela do cliente
   ficam estacionadas e drenam conforme chega crédito de `WINDOW_UPDATE`; corpos de
   request respeitam o mesmo `Request\Configs(maxBodySize:)` do HTTP/1.1 (413 acima dele).
+- **Orçamento de memória do worker** — o corpo de cada stream é cobrado pelo que o alocador
+  gasta para mantê-lo (um corpo acima de cerca de 680 KiB é cobrado como um chunk inteiro de 2 MiB) na cota
+  de corpos do [orçamento de memória](/manual/WPI/HTTP/HTTP_Server_CLI/#orçamento-de-memória)
+  do worker, dividida com os corpos HTTP/1.1; um stream que não cabe é recusado com `413`
+  enquanto a conexão e os seus outros streams seguem. Caudas de resposta estacionadas são
+  cobradas do mesmo jeito, na cota de saída e nos 12 MiB que uma conexão pode segurar — uma cauda
+  que não cabe reseta o seu stream.
 - Requests malformados (nomes de header em maiúsculas, campos connection-specific,
   `content-length` divergente) são rejeitados por stream com `400`/`RST_STREAM` — um
   stream ruim nunca derruba a conexão.

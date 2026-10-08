@@ -295,6 +295,8 @@ Na camada de conexão, o Bootgly acompanha:
 - timers de expiração por ociosidade, semeados por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — trabalho deferred pendente conta como atividade
 - verificações opcionais de blacklist
 
+A saída que um peer ainda não leu fica em memória até o socket drenar, cobrada pelo que o alocador do PHP gasta para mantê-la (uma string acima de cerca de 680 KiB é cobrada como um chunk inteiro de 2 MiB), contra dois tetos: `TCP_Server_CLI::$maxPendingBytes` (12 MiB) por conexão e `TCP_Server_CLI::$maxWorkerPendingBytes` (64 MiB) por worker — o orçamento de memória do worker, no qual os servidores HTTP e WebSocket também cobram os seus corpos de requisição, mensagens inacabadas e cache de rotas. Uma escrita que não cabe derruba aquela conexão. Na partida, o orçamento do worker é reduzido para metade do `memory_limit`, com um aviso, quando é maior; `memory_limit = -1` o mantém.
+
 Veja `Connection` e `Packages` para os detalhes de nível mais baixo.
 
 ## Exemplo Completo

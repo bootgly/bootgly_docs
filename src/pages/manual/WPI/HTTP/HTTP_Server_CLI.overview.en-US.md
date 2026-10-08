@@ -107,7 +107,8 @@ $Server->configure(
    new ServerConfigs(
       host: '0.0.0.0',
       port: 8082,
-      workers: 4
+      workers: 4,
+      maxWorkerPendingBytes: 160 * 1024 * 1024 // 160 MiB — room for two 32 MB bodies at once (memory_limit ≥ 320M)
    ),
    new RequestConfigs(
       maxBodySize: 32 * 1024 * 1024  // 32 MB — accept larger non-multipart bodies
@@ -122,7 +123,7 @@ Three concerns, three classes:
 
 | Configs | Owns |
 |---|---|
-| `HTTP_Server_CLI\Configs` | The server itself: bind address, workers, TLS (manual or Auto-TLS), privilege dropping, HTTP/2, health endpoint, connection caps. |
+| `HTTP_Server_CLI\Configs` | The server itself: bind address, workers, TLS (manual or Auto-TLS), privilege dropping, HTTP/2, health endpoint, connection caps, worker memory budget. |
 | `Request\Configs` | Inbound limits: body, multipart and upload ceilings. |
 | `Response\Configs` | Outbound: named response resources and the deferred budget. |
 
@@ -175,7 +176,8 @@ $Server->configure(
       maxConnections: 10000,           // 10000 (default) — concurrent-connection ceiling per worker (0 = unlimited)
       maxConnectionsPerIP: 0,          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
       headroom: 32,                    // 32 (default) — selector entries kept for the worker's own dependency I/O (0 = disabled)
-      connectionIdleTimeout: 15        // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
+      connectionIdleTimeout: 15,       // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
+      maxWorkerPendingBytes: 64 * 1024 * 1024 // 64 MiB (default) — worker memory budget: bodies, route cache, pending output
    ),
    new RequestConfigs(
       maxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
@@ -244,6 +246,78 @@ reading further input, and the close happens only after the drain — bounded by
 worker's pending-output budget and the write stall deadline. On HTTP/2 the same
 ordering applies to the closing `GOAWAY` frame, so it always lands on a clean frame
 boundary.
+
+### Memory budget
+
+A worker keeps some bytes in memory between events: the request bodies it is still receiving,
+the responses the [route cache](/manual/WPI/HTTP/HTTP_Server_CLI/Router/) keeps for replay, and the
+output a slow client has not read yet. All of them draw on one budget per worker,
+`maxWorkerPendingBytes` (64 MiB by default), split in shares:
+
+| Share | Holds | At most |
+|---|---|---|
+| Bodies | unfinished request bodies (HTTP/1.1 and HTTP/2), the parsed HTTP/1.1 heads they keep, multipart text fields | half the budget |
+| Cache | route cache entries (`cache: ['TTL' => ...]`) | a quarter of the budget |
+| Output | pending output, partial request heads, HTTP/2 connection state and decoded heads | the rest — never less than a quarter |
+
+Bytes are charged at what PHP's allocator spends to keep them, not at their length: a string over
+about 680 KiB is charged a whole 2 MiB chunk (strings that size pack poorly once they grow), and a
+10 MB body costs 10 MB plus one page. That is what `memory_limit` counts, so the budget holds what
+the worker really spends.
+
+When a share is full, the server refuses instead of growing:
+
+- a request body that does not fit is answered `503 Service Unavailable` and the connection is
+  closed (HTTP/1.1); on HTTP/2 only that stream is refused, with `413`;
+- the route cache evicts its oldest entries first; a response that still does not fit is served
+  without being cached;
+- output that does not fit — or that passes the 12 MiB a single connection may hold
+  (`TCP_Server_CLI::$maxPendingBytes`, at the same footprint) — drops that connection; on HTTP/2
+  only that stream is reset.
+
+At start, the server checks the budget against `memory_limit`. A worker keeps at least half of
+`memory_limit` for the memory no budget sees — building responses, string copies, your
+application's own objects — so a budget above half of it is lowered, with a warning:
+
+```
+Worker memory budget (maxWorkerPendingBytes) lowered from 67108864 to 33554432 bytes to fit memory_limit 64M: ...
+```
+
+`memory_limit = -1` (no limit) keeps the budget as configured. The check runs once, in the master,
+before the workers fork: an `ini_set('memory_limit', ...)` made later, inside a worker, does not
+move it.
+
+What the defaults hold at once, with `memory_limit` at 128M or more:
+
+- 3 unfinished request bodies of 10 MB (the default `maxBodySize`; multipart file parts stream to disk
+  and do not count);
+- 8 cached responses of about 1 MB — or many more small ones;
+- 32 slow clients each holding 1–2 MB of unread output, when nothing else is held.
+
+To accept larger bodies, raise the budget and `memory_limit` together — `memory_limit` at least
+twice the budget. Two raw ceilings still apply on top: the unfinished bodies of one worker hold at
+most 64 MiB of raw bytes (`Decoders\Bodies::$maxWorkerBodySize`), and over HTTP/2 the bodies of one
+connection at most 10 MiB (`Decoder_HTTP2::$maxConnectionBodySize`); the start warning names the one
+a `maxBodySize` cannot fit. Set `memory_limit` in `php.ini`: a hot reload re-executes PHP without the command
+line's `-d` options.
+
+```php
+// php.ini: memory_limit = 320M
+$Server->configure(
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 4,
+      maxWorkerPendingBytes: 160 * 1024 * 1024 // bodies may hold 80 MiB: two 32 MB bodies at once
+   ),
+   new RequestConfigs(
+      maxBodySize: 32 * 1024 * 1024
+   )
+);
+```
+
+A `maxBodySize` body that could never fit the bodies share would be refused every time: the server
+logs a warning at start when that is the case.
 
 ### Idle connections
 
@@ -1100,6 +1174,7 @@ The server itself. Named arguments only — the constructor's first slot is the 
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: `0` means unlimited, because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
 | `headroom` | `null\|int` | `null` (= `32`) | Selector entries each worker keeps free for its own dependency I/O (deferred DB/KV waits, the embedded HTTP client) by shedding clients earlier: once a worker holds `1000 − headroom` connections, the next one is accepted and immediately closed, so the effective ceiling is the smaller of that and `maxConnections`. The listener takes one of these entries, so size it to at least the sum of the `pool.max` of the worker's resources plus one. `0` disables it; it is clamped so a worker always admits clients. Sets `TCP_Server_CLI::$headroom`. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
+| `maxWorkerPendingBytes` | `null\|int` | `null` (= `64 MiB`) | Worker memory budget: the bytes one worker may hold between events — unfinished request bodies (at most half), route cache entries (at most a quarter) and pending output — charged at their allocator footprint. Lowered to half of `memory_limit` at start, with a warning, when larger. Sets `TCP_Server_CLI::$maxWorkerPendingBytes`. See [Memory budget](#memory-budget). |
 
 ### `Request\Configs`
 

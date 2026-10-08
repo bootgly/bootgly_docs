@@ -217,18 +217,17 @@ dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais 
 deles; `0` o desativa. `maxWorkerPendingBytes` é o orçamento de memória do worker para os bytes
 retidos entre leituras (`null` mantém o padrão do transporte, 64 MiB). A saída pendente e as
 retenções de entrada — frames parciais e mensagens inacabadas — o compartilham, e a entrada usa no
-máximo metade, então a saída sempre tem folga. Uma retenção de entrada é cobrada pelo que o alocador
-do PHP gasta para mantê-la (uma string retida um pouco acima de 1 MiB custa um chunk inteiro de
-2 MiB), não pelo tamanho. Quando uma retenção de entrada não cabe, a sessão que mais retém é fechada
+máximo metade, então a saída sempre tem folga. Tudo o que fica retido — saída e entrada — é cobrado
+pelo que o alocador do PHP gasta para mantê-lo (uma string retida acima de cerca de 680 KiB é cobrada
+como um chunk inteiro de 2 MiB), não pelo tamanho. Quando uma retenção de entrada não cabe, a sessão que mais retém é fechada
 com `1009` enquanto retiver mais do que a sessão que pede passaria a reter depois desta leitura; senão,
 a que pede é fechada. Uma reserva de saída recusada derruba aquela conexão. O orçamento limita os bytes retidos entre leituras, não o tamanho da
 mensagem: um frame ou fragmento final que se completa em uma leitura e o payload inflado de uma
-mensagem comprimida não são cobrados — `maxFrameSize` e `maxMessageSize` os limitam. A saída pendente
-é cobrada pelo tamanho, e o PHP pode gastar até cerca do dobro para mantê-la; então mantenha o
-`memory_limit` acima de cerca de duas vezes o orçamento mais `maxMessageSize`, cerca de cinco vezes
-`maxFrameSize` (cópias da decodificação) e o heap da própria aplicação — nos padrões, cerca de 150 MiB
-mais a aplicação: aumente o `memory_limit` (256M) ou reduza o orçamento (32 MiB com 128M). Servidores
-alcançáveis diretamente (sem proxy na frente) também devem definir `maxConnectionsPerIP`. `Fallback` responde requisições HTTP simples
+mensagem comprimida não são cobrados — `maxFrameSize` e `maxMessageSize` os limitam. Na partida, o
+orçamento é reduzido para metade do `memory_limit`, com um aviso, quando é maior: a outra metade fica
+para o que o orçamento não vê — `maxMessageSize`, cerca de cinco vezes `maxFrameSize` (cópias da
+decodificação) e o heap da própria aplicação. `memory_limit = -1` mantém o orçamento como
+configurado. Servidores alcançáveis diretamente (sem proxy na frente) também devem definir `maxConnectionsPerIP`. `Fallback` responde requisições HTTP simples
 (sem upgrade) — por exemplo, servindo a página do cliente na mesma porta. `secure` é um array de
 contexto de stream TLS para `wss://`.
 

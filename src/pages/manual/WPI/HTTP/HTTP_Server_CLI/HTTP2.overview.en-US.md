@@ -144,6 +144,12 @@ The HTTP/2 decoder enforces RFC 9113 limits per connection, with safe defaults:
 - **Flow control** on both directions — responses larger than the peer's window are
   parked and drained as `WINDOW_UPDATE` credit arrives; request bodies are capped by
   the same `Request\Configs(maxBodySize:)` used for HTTP/1.1 (413 past it).
+- **Worker memory budget** — each stream body is charged at what the allocator spends to
+  keep it (a body over about 680 KiB is charged a whole 2 MiB chunk) to the bodies share of the
+  worker's [memory budget](/manual/WPI/HTTP/HTTP_Server_CLI/#memory-budget), shared with
+  HTTP/1.1 bodies; a stream that does not fit is refused with `413` while the connection and
+  its other streams carry on. Parked response tails are charged the same way, to the output
+  share and to the 12 MiB a connection may hold — a tail that does not fit resets its stream.
 - Malformed requests (uppercase header names, connection-specific fields, `content-length`
   mismatch) are rejected per stream with `400`/`RST_STREAM` — one bad stream never takes
   down the connection.

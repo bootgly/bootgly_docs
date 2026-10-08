@@ -295,6 +295,8 @@ At the connection layer, Bootgly tracks:
 - idle expiration timers, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — pending deferred work counts as activity
 - optional blacklist checks
 
+Output a peer has not read yet stays in memory until the socket drains, charged at what PHP's allocator spends to keep it (a string over about 680 KiB is charged a whole 2 MiB chunk), against two ceilings: `TCP_Server_CLI::$maxPendingBytes` (12 MiB) per connection and `TCP_Server_CLI::$maxWorkerPendingBytes` (64 MiB) per worker — the worker memory budget the HTTP and WebSocket servers also charge their request bodies, unfinished messages and route cache to. A write that does not fit drops that connection. At start the worker budget is lowered to half of `memory_limit`, with a warning, when it is larger; `memory_limit = -1` keeps it.
+
 See `Connection` and `Packages` for the lower-level details.
 
 ## Full Example

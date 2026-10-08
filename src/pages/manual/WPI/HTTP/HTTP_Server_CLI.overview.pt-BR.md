@@ -107,7 +107,8 @@ $Server->configure(
    new ServerConfigs(
       host: '0.0.0.0',
       port: 8082,
-      workers: 4
+      workers: 4,
+      maxWorkerPendingBytes: 160 * 1024 * 1024 // 160 MiB — espaço para dois corpos de 32 MB ao mesmo tempo (memory_limit ≥ 320M)
    ),
    new RequestConfigs(
       maxBodySize: 32 * 1024 * 1024  // 32 MB — aceita corpos não-multipart maiores
@@ -122,7 +123,7 @@ Três preocupações, três classes:
 
 | Configs | Cuida de |
 |---|---|
-| `HTTP_Server_CLI\Configs` | O servidor em si: endereço de bind, workers, TLS (manual ou Auto-TLS), rebaixamento de privilégios, HTTP/2, endpoint de health, tetos de conexão. |
+| `HTTP_Server_CLI\Configs` | O servidor em si: endereço de bind, workers, TLS (manual ou Auto-TLS), rebaixamento de privilégios, HTTP/2, endpoint de health, tetos de conexão, orçamento de memória do worker. |
 | `Request\Configs` | Limites de entrada: corpo, multipart e tetos de upload. |
 | `Response\Configs` | Saída: response resources nomeados e o orçamento do deferred. |
 
@@ -175,7 +176,8 @@ $Server->configure(
       maxConnections: 10000,           // 10000 (padrão) — teto de conexões simultâneas por worker (0 = ilimitado)
       maxConnectionsPerIP: 0,          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
       headroom: 32,                    // 32 (padrão) — entradas do selector reservadas para o I/O de dependências do próprio worker (0 = desativado)
-      connectionIdleTimeout: 15        // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
+      connectionIdleTimeout: 15,       // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
+      maxWorkerPendingBytes: 64 * 1024 * 1024 // 64 MiB (padrão) — orçamento de memória do worker: corpos, cache de rotas, saída pendente
    ),
    new RequestConfigs(
       maxFileSize: 500 * 1024 * 1024,         // 500 MB (padrão) — tamanho máximo por parte de arquivo
@@ -246,6 +248,78 @@ de se intercalar neles, a conexão para de ler input adicional, e o fechamento s
 acontece depois da drenagem — limitado pelo orçamento de saída pendente do worker e
 pelo deadline de stall de escrita. No HTTP/2 a mesma ordenação vale para o frame
 `GOAWAY` de encerramento, que sempre chega em uma fronteira limpa de frame.
+
+### Orçamento de memória
+
+Um worker mantém alguns bytes em memória entre eventos: os corpos de requisição que ainda está
+recebendo, as respostas que o [cache de rotas](/manual/WPI/HTTP/HTTP_Server_CLI/Router/) guarda para
+repetir e a saída que um cliente lento ainda não leu. Todos eles usam um único orçamento por worker,
+`maxWorkerPendingBytes` (64 MiB por padrão), dividido em cotas:
+
+| Cota | Guarda | No máximo |
+|---|---|---|
+| Corpos | corpos de requisição inacabados (HTTP/1.1 e HTTP/2), os cabeçalhos HTTP/1.1 parseados que eles guardam, campos de texto multipart | metade do orçamento |
+| Cache | entradas do cache de rotas (`cache: ['TTL' => ...]`) | um quarto do orçamento |
+| Saída | saída pendente, cabeçalhos de requisição parciais, estado de conexão HTTP/2 e cabeçalhos decodificados | o resto — nunca menos de um quarto |
+
+Os bytes são cobrados pelo que o alocador do PHP gasta para mantê-los, não pelo seu tamanho: uma
+string acima de cerca de 680 KiB é cobrada como um chunk inteiro de 2 MiB (strings desse tamanho se
+acomodam mal quando crescem), e um corpo de 10 MB custa 10 MB mais uma página. É isso que o `memory_limit` conta, então o orçamento segura o que o worker gasta de fato.
+
+Quando uma cota está cheia, o servidor recusa em vez de crescer:
+
+- um corpo de requisição que não cabe recebe `503 Service Unavailable` e a conexão é fechada
+  (HTTP/1.1); no HTTP/2 só aquele stream é recusado, com `413`;
+- o cache de rotas despeja primeiro as entradas mais antigas; uma resposta que ainda assim não cabe
+  é servida sem ir para o cache;
+- uma saída que não cabe — ou que passa dos 12 MiB que uma única conexão pode segurar
+  (`TCP_Server_CLI::$maxPendingBytes`, pelo mesmo footprint) — derruba aquela conexão; no HTTP/2 só
+  aquele stream é resetado.
+
+Na partida, o servidor confere o orçamento contra o `memory_limit`. Um worker reserva pelo menos
+metade do `memory_limit` para a memória que nenhum orçamento vê — montagem de respostas, cópias de
+strings, os objetos da sua própria aplicação —, então um orçamento acima dessa metade é reduzido,
+com um aviso:
+
+```
+Worker memory budget (maxWorkerPendingBytes) lowered from 67108864 to 33554432 bytes to fit memory_limit 64M: ...
+```
+
+`memory_limit = -1` (sem limite) mantém o orçamento como configurado. A conferência roda uma vez, no
+master, antes do fork dos workers: um `ini_set('memory_limit', ...)` feito depois, dentro de um
+worker, não o altera.
+
+O que os padrões seguram ao mesmo tempo, com `memory_limit` em 128M ou mais:
+
+- 3 corpos de requisição inacabados de 10 MB (o `maxBodySize` padrão; partes de arquivo multipart vão
+  para o disco e não contam);
+- 8 respostas em cache de cerca de 1 MB — ou muitas mais, se pequenas;
+- 32 clientes lentos segurando cada um 1–2 MB de saída não lida, quando nada mais está retido.
+
+Para aceitar corpos maiores, aumente o orçamento e o `memory_limit` juntos — o `memory_limit` em pelo
+menos o dobro do orçamento. Dois tetos brutos continuam valendo por cima: os corpos inacabados de um
+worker seguram no máximo 64 MiB de bytes raw (`Decoders\Bodies::$maxWorkerBodySize`) e, no HTTP/2,
+os corpos de uma conexão no máximo 10 MiB (`Decoder_HTTP2::$maxConnectionBodySize`); o aviso da
+partida nomeia aquele em que um `maxBodySize` não cabe. Defina o `memory_limit` no `php.ini`: um reload a quente re-executa o PHP
+sem as opções `-d` da linha de comando.
+
+```php
+// php.ini: memory_limit = 320M
+$Server->configure(
+   new ServerConfigs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 4,
+      maxWorkerPendingBytes: 160 * 1024 * 1024 // os corpos podem segurar 80 MiB: dois corpos de 32 MB ao mesmo tempo
+   ),
+   new RequestConfigs(
+      maxBodySize: 32 * 1024 * 1024
+   )
+);
+```
+
+Um corpo de `maxBodySize` que nunca caberia na cota de corpos seria recusado sempre: o servidor
+registra um aviso na partida quando é esse o caso.
 
 ### Conexões ociosas
 
@@ -1112,6 +1186,7 @@ O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor 
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: `0` significa ilimitado, porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
 | `headroom` | `null\|int` | `null` (= `32`) | Entradas do selector que cada worker mantém livres para o próprio I/O de dependências (esperas deferred de DB/KV, o cliente HTTP embarcado), descartando clientes mais cedo: quando um worker já segura `1000 − headroom` conexões, a próxima é aceita e imediatamente fechada, então o teto efetivo é o menor entre esse valor e `maxConnections`. O socket de escuta ocupa uma dessas entradas, então dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma. `0` o desativa; ele é limitado para que um worker sempre admita clientes. Define `TCP_Server_CLI::$headroom`. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
+| `maxWorkerPendingBytes` | `null\|int` | `null` (= `64 MiB`) | Orçamento de memória do worker: os bytes que um worker pode segurar entre eventos — corpos de requisição inacabados (no máximo metade), entradas do cache de rotas (no máximo um quarto) e saída pendente —, cobrados pelo footprint no alocador. Reduzido para metade do `memory_limit` na partida, com um aviso, quando maior. Define `TCP_Server_CLI::$maxWorkerPendingBytes`. Veja [Orçamento de memória](#orçamento-de-memória). |
 
 ### `Request\Configs`
 

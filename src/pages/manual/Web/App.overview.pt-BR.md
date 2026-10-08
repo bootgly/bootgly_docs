@@ -58,7 +58,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
 
 $App->configure(
    new Configs(port: 8080, workers: 1, health: null),  // health: null desliga o endpoint embutido
-   new RequestConfigs(maxBodySize: 32 * 1024 * 1024)
+   new RequestConfigs(maxBodySize: 12 * 1024 * 1024)  // 12 MB — dois corpos assim cabem ao mesmo tempo no orçamento de memória padrão do worker
 );
 ```
 
@@ -213,7 +213,7 @@ public function __construct (
 )
 ```
 
-Estende `HTTP_Server_CLI\Configs`: toda opção do servidor, com os defaults da plataforma Web preenchidos (`host`, `port` e `workers` têm fallback em vez de serem obrigatórios), mais os três concerns do shell. Apenas named arguments — o primeiro slot é o guard `Bootgly\ABI\Argument`, então uma chamada posicional levanta um `TypeError`. Lança `InvalidArgumentException` no `new` quando `secure` e `AutoTLS` são dados juntos, em uma entrada de `Middlewares` que não é um `Middleware`, ou em um valor de `Resources` que não é uma Closure indexada por nome.
+Estende `HTTP_Server_CLI\Configs`: toda opção do servidor exceto o orçamento de memória do worker (`maxWorkerPendingBytes` — defina `TCP_Server_CLI::$maxWorkerPendingBytes` antes do `start()` até o App repassá-lo), com os defaults da plataforma Web preenchidos (`host`, `port` e `workers` têm fallback em vez de serem obrigatórios), mais os três concerns do shell. Apenas named arguments — o primeiro slot é o guard `Bootgly\ABI\Argument`, então uma chamada posicional levanta um `TypeError`. Lança `InvalidArgumentException` no `new` quando `secure` e `AutoTLS` são dados juntos, em uma entrada de `Middlewares` que não é um `Middleware`, ou em um valor de `Resources` que não é uma Closure indexada por nome.
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |---|---|---|---|

@@ -214,18 +214,17 @@ the reserved entries and, with more than one worker, the broadcast relay another
 least the sum of the `pool.max` of the worker's resources plus one for each of them; `0` disables it.
 `maxWorkerPendingBytes` is the worker's memory budget for bytes held between reads (`null` keeps the
 transport default, 64 MiB). Pending output and inbound holds — partial frames and unfinished
-messages — share it, and inbound holds take at most half, so output always keeps room. An inbound
-hold is charged at what PHP's allocator spends to keep it (a held string just over 1 MiB costs a
-whole 2 MiB chunk), not at its length. When an inbound hold does not fit, the session holding the
+messages — share it, and inbound holds take at most half, so output always keeps room. Everything
+held — output and inbound — is charged at what PHP's allocator spends to keep it (a held string
+over about 680 KiB is charged a whole 2 MiB chunk), not at its length. When an inbound hold does not fit, the session holding the
 most inbound bytes is closed with `1009` while it holds more than the asking session would hold after
 this read; otherwise the asking session is. A refused output reservation drops that connection. The budget bounds bytes held between
 reads, not message size: a frame or final fragment that completes within one read and the inflated
 payload of a compressed message are not charged — `maxFrameSize` and `maxMessageSize` cap those.
-Pending output is charged at its length, and PHP can spend up to about twice that to keep it, so keep
-`memory_limit` above about twice the budget plus `maxMessageSize`, about five times `maxFrameSize`
-(decode copies) and the application's own heap — at the defaults about 150 MiB plus the application:
-raise `memory_limit` (256M) or lower the budget (32 MiB under 128M). Directly reachable servers (no
-proxy in front) should also set `maxConnectionsPerIP`.
+At start the budget is lowered to half of `memory_limit`, with a warning, when it is larger: the
+other half stays for what the budget does not see — `maxMessageSize`, about five times
+`maxFrameSize` (decode copies) and the application's own heap. `memory_limit = -1` keeps the budget
+as configured. Directly reachable servers (no proxy in front) should also set `maxConnectionsPerIP`.
 `Fallback` answers plain (non-upgrade) HTTP requests — e.g. serving the client page on the same
 port. `secure` is a TLS stream-context array for `wss://`.
 

@@ -58,7 +58,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
 
 $App->configure(
    new Configs(port: 8080, workers: 1, health: null),  // health: null switches the built-in endpoint off
-   new RequestConfigs(maxBodySize: 32 * 1024 * 1024)
+   new RequestConfigs(maxBodySize: 12 * 1024 * 1024)  // 12 MB — two such bodies at once fit the default worker memory budget
 );
 ```
 
@@ -213,7 +213,7 @@ public function __construct (
 )
 ```
 
-Extends `HTTP_Server_CLI\Configs`: every server option, with the Web platform defaults filled in (`host`, `port` and `workers` fall back instead of being required), plus the three shell concerns. Named arguments only — the first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`. Throws `InvalidArgumentException` at `new` when both `secure` and `AutoTLS` are given, on a `Middlewares` entry that is not a `Middleware`, or on a `Resources` value that is not a Closure keyed by name.
+Extends `HTTP_Server_CLI\Configs`: every server option but the worker memory budget (`maxWorkerPendingBytes` — set `TCP_Server_CLI::$maxWorkerPendingBytes` before `start()` until the App forwards it), with the Web platform defaults filled in (`host`, `port` and `workers` fall back instead of being required), plus the three shell concerns. Named arguments only — the first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`. Throws `InvalidArgumentException` at `new` when both `secure` and `AutoTLS` are given, on a `Middlewares` entry that is not a `Middleware`, or on a `Resources` value that is not a Closure keyed by name.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
