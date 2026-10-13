@@ -182,6 +182,7 @@ $Server->configure(
    new RequestConfigs(
       maxFileSize: 500 * 1024 * 1024,         // 500 MB (padrão) — tamanho máximo por parte de arquivo
       maxBodySize: 10 * 1024 * 1024,          // 10 MB (padrão) — corpo total não-multipart
+      maxHeaderFields: 100,                   // 100 (padrão) — máximo de linhas de header de uma requisição HTTP/1.x (acima → 431)
       maxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (padrão) — tamanho máximo por campo de texto
       maxMultipartHeaderSize: 8 * 1024,       // 8 KB (padrão) — tamanho máximo dos headers de uma parte
       maxMultipartFields: 1024,               // 1024 (padrão) — número máximo de campos de texto
@@ -239,8 +240,9 @@ $Server->configure(
 #### Rejeições de protocolo
 
 Uma requisição que o decoder não pode aceitar (head malformado, headers grandes
-demais, versão não suportada, `Host` negado, violações de framing chunked, …) é
-respondida com uma status line pura — `400`, `408`, `413`, `414`, `417`, `431`,
+demais, mais linhas de header que `maxHeaderFields`, um corpo JSON que não poderia ser
+decodificado dentro do orçamento de memória do worker, versão não suportada, `Host`
+negado, violações de framing chunked, …) é respondida com uma status line pura — `400`, `408`, `413`, `414`, `417`, `431`,
 `501`, `503` ou `505` — e a conexão é fechada. Os bytes do erro viajam pelo mesmo
 writer ordenado de qualquer outra resposta: se um corpo de resposta ainda está sendo
 descarregado para um cliente lento, o erro drena **atrás** dos bytes devidos em vez
@@ -258,7 +260,7 @@ repetir e a saída que um cliente lento ainda não leu. Todos eles usam um únic
 
 | Cota | Guarda | No máximo |
 |---|---|---|
-| Corpos | corpos de requisição inacabados (HTTP/1.1 e HTTP/2), os cabeçalhos HTTP/1.1 parseados que eles guardam, campos de texto multipart | metade do orçamento |
+| Corpos | corpos de requisição inacabados (HTTP/1.1 e HTTP/2), os cabeçalhos HTTP/1.1 parseados que eles guardam, campos de texto multipart, e a requisição que cada `defer()` estacionado guarda — o corpo, o cabeçalho (HTTP/1.x; o cabeçalho de um stream HTTP/2 fica com o stream) e o que é extraído dele (campos de formulário, cookies, variáveis de query, idiomas e credenciais — o que o trabalho deferred extrai é cobrado quando ele extrai) | metade do orçamento |
 | Cache | entradas do cache de rotas (`cache: ['TTL' => ...]`) | um quarto do orçamento |
 | Saída | saída pendente, cabeçalhos de requisição parciais, estado de conexão HTTP/2 e cabeçalhos decodificados | o resto — nunca menos de um quarto |
 
@@ -270,6 +272,19 @@ Quando uma cota está cheia, o servidor recusa em vez de crescer:
 
 - um corpo de requisição que não cabe recebe `503 Service Unavailable` e a conexão é fechada
   (HTTP/1.1); no HTTP/2 só aquele stream é recusado, com `413`;
+- um `defer()` cuja requisição não cabe lança `RuntimeException` antes de o trabalho começar, assim
+  como uma leitura de campos de formulário, cookies, variáveis de query, idiomas ou credenciais
+  dentro do trabalho deferred que não cabe; sem tratamento, a requisição recebe `500`;
+- um corpo JSON cuja estrutura decodificada não caberia na cota de corpos — arrays do PHP podem
+  gastar cinquenta vezes os bytes que decodificam — recebe `413 Request Entity Too Large` e a
+  conexão é fechada, antes de qualquer handler rodar (HTTP/2: só aquele stream). O limite é
+  calculado a partir do corpo sem decodificá-lo: o que está dentro de uma string não conta, um corpo
+  acima de uma estimativa rápida é precificado array a array, e um objeto com chaves numéricas é
+  precificado como o PHP cresce a sua tabela. Um corpo que não é um único documento JSON — NDJSON,
+  JSON concatenado ou comprimido — não é recusado: `$Request->fields` não decodifica nada dele, e a
+  rota o lê cru em `$Request->input`. Payloads JSON típicos de cerca de 1 MB — registros em lote,
+  linhas tabulares, objetos de API aninhados — cabem nos padrões; aumente `maxWorkerPendingBytes` e
+  `memory_limit` juntos para payloads maiores;
 - o cache de rotas despeja primeiro as entradas mais antigas; uma resposta que ainda assim não cabe
   é servida sem ir para o cache;
 - uma saída que não cabe — ou que passa dos 12 MiB que uma única conexão pode segurar
@@ -734,6 +749,17 @@ escrevem na SAPI também não chegam ao cliente. Use os objetos que todo handler
 vai para a saída padrão do worker — o seu terminal no modo foreground, lugar nenhum no modo
 daemon — e nunca para o cliente. Veja [Request](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/)
 e [Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/) para a API completa.
+
+Leia a requisição enquanto o seu handler roda. Depois que a resposta é escrita, o servidor descarta o
+cabeçalho que o `$Request` da conexão guardava — headers, cookies, URI, query e as credenciais
+decodificadas deles — para que uma conexão keep-alive ociosa não guarde nenhuma requisição na
+memória, além de um cabeçalho curto de campos padrão que ela pode reaproveitar numa próxima
+requisição idêntica. Uma leitura posterior desse objeto não é confiável: pode encontrá-los vazios, ou
+já descrevendo a próxima requisição. O trabalho deferred lê o
+seu próprio snapshot (veja [Respostas Assíncronas](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/));
+um stream SSE montado numa rota síncrona mantém o cabeçalho do seu `$Request` — headers, cookies,
+URI, query e credenciais — enquanto transmite (o corpo e os campos são liberados como os de qualquer
+outra requisição).
 
 ### `exit()` encerra o worker
 
@@ -1200,6 +1226,7 @@ Limites de entrada. Todo parâmetro é opcional; `null` mantém o padrão do fra
 |---|---|---|---|
 | `maxFileSize` | `null\|int` | `null` (= `500 MB`) | Tamanho máximo em bytes por parte de arquivo em requisições multipart. |
 | `maxBodySize` | `null\|int` | `null` (= `10 MB`) | Tamanho máximo total do corpo em bytes para requisições não-multipart. |
+| `maxHeaderFields` | `null\|int` | `null` (= `100`) | Número máximo de linhas de header de uma requisição HTTP/1.x; acima disso ela recebe `431 Request Header Fields Too Large` e a conexão é fechada. Cada campo parseado custa bem mais memória que os seus bytes. |
 | `maxMultipartFieldSize` | `null\|int` | `null` (= `1 MB`) | Tamanho máximo em bytes do valor de um campo de texto multipart. |
 | `maxMultipartHeaderSize` | `null\|int` | `null` (= `8 KB`) | Tamanho máximo em bytes do bloco de headers de uma parte multipart. |
 | `maxMultipartFields` | `null\|int` | `null` (= `1024`) | Número máximo de campos de texto aceitos em uma requisição multipart. |

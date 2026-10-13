@@ -182,6 +182,7 @@ $Server->configure(
    new RequestConfigs(
       maxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
       maxBodySize: 10 * 1024 * 1024,          // 10 MB (default) — max total non-multipart body
+      maxHeaderFields: 100,                   // 100 (default) — max header field lines of an HTTP/1.x request (more → 431)
       maxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (default) — max size per text field value
       maxMultipartHeaderSize: 8 * 1024,       // 8 KB (default) — max size of a single part's headers
       maxMultipartFields: 1024,               // 1024 (default) — max number of text fields
@@ -236,9 +237,10 @@ $Server->configure(
 
 #### Protocol rejections
 
-A request the decoder cannot accept (malformed head, oversized headers, unsupported
-version, denied `Host`, chunked-framing violations, …) is answered with a bare status
-line — `400`, `408`, `413`, `414`, `417`, `431`, `501`, `503` or `505` — and the
+A request the decoder cannot accept (malformed head, oversized headers, more header
+field lines than `maxHeaderFields`, a JSON body that could not be decoded within the worker
+memory budget, unsupported version, denied `Host`, chunked-framing
+violations, …) is answered with a bare status line — `400`, `408`, `413`, `414`, `417`, `431`, `501`, `503` or `505` — and the
 connection is closed. The error bytes travel through the same ordered writer as every
 other response: if a response body is still being flushed to a slow client, the error
 drains **behind** the owed bytes instead of splicing into them, the connection stops
@@ -256,7 +258,7 @@ output a slow client has not read yet. All of them draw on one budget per worker
 
 | Share | Holds | At most |
 |---|---|---|
-| Bodies | unfinished request bodies (HTTP/1.1 and HTTP/2), the parsed HTTP/1.1 heads they keep, multipart text fields | half the budget |
+| Bodies | unfinished request bodies (HTTP/1.1 and HTTP/2), the parsed HTTP/1.1 heads they keep, multipart text fields, and the request each parked `defer()` keeps — its body, its head (HTTP/1.x; an HTTP/2 stream's head is held with the stream) and what is parsed from it (form fields, cookies, query vars, languages and credentials — whatever the deferred work parses is charged when it parses it) | half the budget |
 | Cache | route cache entries (`cache: ['TTL' => ...]`) | a quarter of the budget |
 | Output | pending output, partial request heads, HTTP/2 connection state and decoded heads | the rest — never less than a quarter |
 
@@ -269,6 +271,18 @@ When a share is full, the server refuses instead of growing:
 
 - a request body that does not fit is answered `503 Service Unavailable` and the connection is
   closed (HTTP/1.1); on HTTP/2 only that stream is refused, with `413`;
+- a `defer()` whose request does not fit throws `RuntimeException` before the work starts, and so
+  does a read of form fields, cookies, query vars, languages or credentials inside the deferred work
+  that does not fit; left uncaught, the request is answered `500`;
+- a JSON body whose decoded structure could not fit the bodies share — PHP arrays can spend fifty
+  times the bytes they decode — is answered `413 Request Entity Too Large` and the connection
+  closed, before any handler runs (HTTP/2: that stream only). The bound is taken from the body
+  without decoding it: what is inside a string does not count, a body over a quick estimate is
+  priced array by array, and an object keyed by numbers is priced as PHP grows its table. A body
+  that is not one JSON document — NDJSON, concatenated or compressed JSON — is not refused:
+  `$Request->fields` decodes nothing from it, and the route reads it raw from `$Request->input`.
+  Typical JSON payloads of about 1 MB — bulk records, tabular rows, nested API objects — fit the
+  defaults; raise `maxWorkerPendingBytes` and `memory_limit` together for larger ones;
 - the route cache evicts its oldest entries first; a response that still does not fit is served
   without being cached;
 - output that does not fit — or that passes the 12 MiB a single connection may hold
@@ -732,6 +746,15 @@ receives:
 daemon mode — never to the client. See [Request](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/)
 and [Response](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/) for the full API.
 
+Read the request while your handler runs. Once the response is written, the server drops the head
+the connection's `$Request` held — its headers, cookies, URI, query and the credentials decoded from
+them — so an idle keep-alive connection keeps no request in memory, beyond a short head of standard
+fields it may reuse for an identical next request. A later read of that object is not reliable: it
+may find them empty, or already describing the next request. Deferred work reads its own snapshot instead
+(see [Deferred Responses](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/)); an SSE stream mounted
+in a synchronous route keeps its `$Request` head — headers, cookies, URI, query and credentials — for
+as long as it streams (its body and fields are released like any other request's).
+
 ### `exit()` ends the worker
 
 `exit()` and `die()` terminate the worker process itself. The client gets an empty reply, every
@@ -1188,6 +1211,7 @@ Inbound limits. Every parameter is optional; `null` keeps the framework default.
 |---|---|---|---|
 | `maxFileSize` | `null\|int` | `null` (= `500 MB`) | Maximum size in bytes per uploaded file part in multipart requests. |
 | `maxBodySize` | `null\|int` | `null` (= `10 MB`) | Maximum total body size in bytes for non-multipart requests. |
+| `maxHeaderFields` | `null\|int` | `null` (= `100`) | Maximum header field lines of an HTTP/1.x request; more is answered `431 Request Header Fields Too Large` and the connection closed. Each parsed field costs far more memory than its bytes. |
 | `maxMultipartFieldSize` | `null\|int` | `null` (= `1 MB`) | Maximum size in bytes of a single multipart text field value. |
 | `maxMultipartHeaderSize` | `null\|int` | `null` (= `8 KB`) | Maximum size in bytes of the header block of a single multipart part. |
 | `maxMultipartFields` | `null\|int` | `null` (= `1024`) | Maximum number of text fields accepted in a multipart request. |
