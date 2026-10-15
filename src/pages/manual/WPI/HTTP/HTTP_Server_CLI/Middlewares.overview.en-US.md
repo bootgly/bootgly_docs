@@ -64,7 +64,7 @@ When both group and route-level middlewares are present, they are **merged** —
 
 ## Error Boundaries and Deferred Work
 
-A middleware that wraps `$next()` in a `try`/`catch` is an error boundary for **synchronous** handlers only. A deferred response (`$Response->defer()`) runs its work after the pipeline has already returned — the handler returns at once and the work runs later, on a pooled Fiber — so a `Throwable` thrown inside that work never reaches the `catch` around `$next()`: the server answers it itself (`500 Internal Server Error`; `503 Service Unavailable` for a `Response\Timeout`).
+A middleware that wraps `$next()` in a `try`/`catch` is an error boundary for **synchronous** handlers only. A deferred response (`$Response->defer()`) runs its work after the pipeline has already returned — the handler returns at once and the work runs later, on a pooled Fiber — so a `Throwable` thrown inside that work never reaches the `catch` around `$next()`: the server answers it itself (`500 Internal Server Error`; `503 Service Unavailable` for a `Response\Timeout` or a `Decoders\Bodies\Refusal`).
 
 To answer those failures too, implement `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering` — a `Middleware` with one more method, `recover()`, which the server calls when deferred work throws:
 

@@ -258,9 +258,9 @@ output a slow client has not read yet. All of them draw on one budget per worker
 
 | Share | Holds | At most |
 |---|---|---|
-| Bodies | unfinished request bodies (HTTP/1.1 and HTTP/2), the parsed HTTP/1.1 heads they keep, multipart text fields, and the request each parked `defer()` keeps — its body, its head (HTTP/1.x; an HTTP/2 stream's head is held with the stream) and what is parsed from it (form fields, cookies, query vars, languages and credentials — whatever the deferred work parses is charged when it parses it) | half the budget |
+| Bodies | unfinished request bodies (HTTP/1.1 and HTTP/2), the parsed HTTP/1.1 heads they keep, multipart text fields, and the request each parked `defer()` keeps — about 36 KiB for the generation parked around it, its body, its head (HTTP/1.x; an HTTP/2 stream's head is held with the stream) and what is parsed from it (form fields, cookies, query vars, languages and credentials — whatever the deferred work parses is charged when it parses it) | half the budget |
 | Cache | route cache entries (`cache: ['TTL' => ...]`) | a quarter of the budget |
-| Output | pending output, partial request heads, HTTP/2 connection state and decoded heads | the rest — never less than a quarter |
+| Output | pending output, partial request heads, the requests an HTTP/1.1 client pipelines behind a parked `defer()` (up to one 64 KiB read per connection, charged as the whole read), HTTP/2 connection state and decoded heads | the rest — never less than a quarter |
 
 Bytes are charged at what PHP's allocator spends to keep them, not at their length: a string over
 about 680 KiB is charged a whole 2 MiB chunk (strings that size pack poorly once they grow), and a
@@ -271,9 +271,10 @@ When a share is full, the server refuses instead of growing:
 
 - a request body that does not fit is answered `503 Service Unavailable` and the connection is
   closed (HTTP/1.1); on HTTP/2 only that stream is refused, with `413`;
-- a `defer()` whose request does not fit throws `RuntimeException` before the work starts, and so
-  does a read of form fields, cookies, query vars, languages or credentials inside the deferred work
-  that does not fit; left uncaught, the request is answered `500`;
+- a `defer()` whose request does not fit throws `Decoders\Bodies\Refusal` before the work starts,
+  and so does a read of form fields, cookies, query vars, languages or credentials inside the
+  deferred work that does not fit; left uncaught, the request is answered `503 Service Unavailable`
+  and nothing is reported as an error;
 - a JSON body whose decoded structure could not fit the bodies share — PHP arrays can spend fifty
   times the bytes they decode — is answered `413 Request Entity Too Large` and the connection
   closed, before any handler runs (HTTP/2: that stream only). The bound is taken from the body
@@ -285,6 +286,8 @@ When a share is full, the server refuses instead of growing:
   defaults; raise `maxWorkerPendingBytes` and `memory_limit` together for larger ones;
 - the route cache evicts its oldest entries first; a response that still does not fit is served
   without being cached;
+- requests pipelined behind a parked `defer()` that do not fit — or that pass one 64 KiB read —
+  close their connection, which cancels the parked work;
 - output that does not fit — or that passes the 12 MiB a single connection may hold
   (`TCP_Server_CLI::$maxPendingBytes`, at the same footprint) — drops that connection; on HTTP/2
   only that stream is reset.
@@ -306,6 +309,7 @@ What the defaults hold at once, with `memory_limit` at 128M or more:
 - 3 unfinished request bodies of 10 MB (the default `maxBodySize`; multipart file parts stream to disk
   and do not count);
 - 8 cached responses of about 1 MB — or many more small ones;
+- about 850 parked `defer()` requests with small heads — fewer when the deferred work parses more;
 - 32 slow clients each holding 1–2 MB of unread output, when nothing else is held.
 
 To accept larger bodies, raise the budget and `memory_limit` together — `memory_limit` at least
@@ -850,7 +854,7 @@ share memory, superglobals are empty, `exit()` kills the worker. What differs:
 
 ## Deferred Response Lifecycle
 
-A deferred response (`$Response->defer()`) outlives the handler that created it: the client can vanish, the worker can shut down, and the connection can be reused for the next request while the deferred work is still parked. Three collaborating pieces make that safe.
+A deferred response (`$Response->defer()`) outlives the handler that created it: the client can vanish and the worker can shut down while the deferred work is still parked — and on HTTP/2 the connection keeps serving its other streams (on HTTP/1.1 the requests pipelined behind it wait for its answer). Three collaborating pieces make that safe.
 
 Deferred work that calls an upstream through a response resource (`$Response->Upstream->request()`, see [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/)) parks the same way: the dial, the TLS handshake and the response wait all suspend the Fiber on the worker reactor, so the worker keeps serving its other connections — and when the deferral settles, normally or because the client left, the resource releases every upstream connection it opened.
 

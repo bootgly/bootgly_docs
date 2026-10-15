@@ -201,8 +201,11 @@ O que um **throw** de listener faz depende do contrato declarado pelo evento:
 
 - Por padrão um evento é **de direção** (steering): um Throwable do listener propaga para
   o emissor, que pode tratá-lo como fluxo de controle — os eventos de request do WPI
-  funcionam assim (um listener pré-routing que lança recusa a request; um listener
-  pós-handling que lança é substituído por uma única resposta de erro delimitada).
+  funcionam assim (um listener pré-routing que lança recusa a request: ela recebe `500` e
+  o erro é reportado — `503`, sem relatório, para uma recusa do orçamento do worker —, os
+  uploads dela são apagados e a conexão dela é fechada (no HTTP/2, só o stream dela é
+  recusado), enquanto o worker continua atendendo as outras conexões; um listener pós-handling que
+  lança é substituído por uma única resposta de erro delimitada).
 - Um evento marcado com `Bootgly\ABI\Events\Emitter\Observing` é **apenas observado**:
   cada listener é isolado, então um Throwable nunca escapa do `emit()`, nunca cega
   listeners de prioridade menor e nunca aborta a entrega — ele é reportado via

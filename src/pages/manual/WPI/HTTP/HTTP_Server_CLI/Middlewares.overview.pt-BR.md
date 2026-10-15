@@ -64,7 +64,7 @@ Quando middlewares de grupo e de rota estão presentes, eles são **mesclados** 
 
 ## Fronteiras de Erro e Trabalho Deferred
 
-Um middleware que envolve `$next()` em `try`/`catch` é uma fronteira de erro só para handlers **síncronos**. Uma resposta deferred (`$Response->defer()`) executa seu trabalho depois que o pipeline já retornou — o handler retorna na hora e o trabalho roda depois, numa Fiber do pool — então um `Throwable` lançado dentro desse trabalho nunca chega ao `catch` em volta de `$next()`: o próprio servidor responde (`500 Internal Server Error`; `503 Service Unavailable` para um `Response\Timeout`).
+Um middleware que envolve `$next()` em `try`/`catch` é uma fronteira de erro só para handlers **síncronos**. Uma resposta deferred (`$Response->defer()`) executa seu trabalho depois que o pipeline já retornou — o handler retorna na hora e o trabalho roda depois, numa Fiber do pool — então um `Throwable` lançado dentro desse trabalho nunca chega ao `catch` em volta de `$next()`: o próprio servidor responde (`500 Internal Server Error`; `503 Service Unavailable` para um `Response\Timeout` ou um `Decoders\Bodies\Refusal`).
 
 Para responder também a essas falhas, implemente `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Recovering` — um `Middleware` com um método a mais, `recover()`, que o servidor chama quando o trabalho deferred lança:
 

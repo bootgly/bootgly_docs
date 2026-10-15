@@ -198,8 +198,11 @@ What a listener **throw** does depends on the event's declared contract:
 
 - By default an event is **steering**: a listener Throwable propagates to the emitter,
   which may treat it as control flow — the WPI request events work this way (a
-  pre-routing listener that throws refuses the request; a post-handling listener that
-  throws is replaced by one bounded error response).
+  pre-routing listener that throws refuses the request: it is answered `500` and the
+  error reported — `503`, unreported, for a worker budget refusal — its uploads deleted
+  and its connection closed (on HTTP/2, only its stream is refused), while the worker
+  keeps serving its other connections; a post-handling listener that throws is replaced by
+  one bounded error response).
 - An event marked `Bootgly\ABI\Events\Emitter\Observing` is **observed only**: each
   listener is isolated, so a Throwable never escapes `emit()`, never blinds
   lower-priority listeners and never aborts delivery — it is reported through

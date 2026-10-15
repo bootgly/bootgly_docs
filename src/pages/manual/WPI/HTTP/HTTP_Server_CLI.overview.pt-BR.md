@@ -260,9 +260,9 @@ repetir e a saída que um cliente lento ainda não leu. Todos eles usam um únic
 
 | Cota | Guarda | No máximo |
 |---|---|---|
-| Corpos | corpos de requisição inacabados (HTTP/1.1 e HTTP/2), os cabeçalhos HTTP/1.1 parseados que eles guardam, campos de texto multipart, e a requisição que cada `defer()` estacionado guarda — o corpo, o cabeçalho (HTTP/1.x; o cabeçalho de um stream HTTP/2 fica com o stream) e o que é extraído dele (campos de formulário, cookies, variáveis de query, idiomas e credenciais — o que o trabalho deferred extrai é cobrado quando ele extrai) | metade do orçamento |
+| Corpos | corpos de requisição inacabados (HTTP/1.1 e HTTP/2), os cabeçalhos HTTP/1.1 parseados que eles guardam, campos de texto multipart, e a requisição que cada `defer()` estacionado guarda — cerca de 36 KiB pela geração estacionada em volta dela, o corpo, o cabeçalho (HTTP/1.x; o cabeçalho de um stream HTTP/2 fica com o stream) e o que é extraído dele (campos de formulário, cookies, variáveis de query, idiomas e credenciais — o que o trabalho deferred extrai é cobrado quando ele extrai) | metade do orçamento |
 | Cache | entradas do cache de rotas (`cache: ['TTL' => ...]`) | um quarto do orçamento |
-| Saída | saída pendente, cabeçalhos de requisição parciais, estado de conexão HTTP/2 e cabeçalhos decodificados | o resto — nunca menos de um quarto |
+| Saída | saída pendente, cabeçalhos de requisição parciais, as requisições que um cliente HTTP/1.1 envia em pipeline atrás de um `defer()` estacionado (até uma leitura de 64 KiB por conexão, cobrada como a leitura inteira), estado de conexão HTTP/2 e cabeçalhos decodificados | o resto — nunca menos de um quarto |
 
 Os bytes são cobrados pelo que o alocador do PHP gasta para mantê-los, não pelo seu tamanho: uma
 string acima de cerca de 680 KiB é cobrada como um chunk inteiro de 2 MiB (strings desse tamanho se
@@ -272,9 +272,10 @@ Quando uma cota está cheia, o servidor recusa em vez de crescer:
 
 - um corpo de requisição que não cabe recebe `503 Service Unavailable` e a conexão é fechada
   (HTTP/1.1); no HTTP/2 só aquele stream é recusado, com `413`;
-- um `defer()` cuja requisição não cabe lança `RuntimeException` antes de o trabalho começar, assim
-  como uma leitura de campos de formulário, cookies, variáveis de query, idiomas ou credenciais
-  dentro do trabalho deferred que não cabe; sem tratamento, a requisição recebe `500`;
+- um `defer()` cuja requisição não cabe lança `Decoders\Bodies\Refusal` antes de o trabalho
+  começar, assim como uma leitura de campos de formulário, cookies, variáveis de query, idiomas ou
+  credenciais dentro do trabalho deferred que não cabe; sem tratamento, a requisição recebe
+  `503 Service Unavailable` e nada é reportado como erro;
 - um corpo JSON cuja estrutura decodificada não caberia na cota de corpos — arrays do PHP podem
   gastar cinquenta vezes os bytes que decodificam — recebe `413 Request Entity Too Large` e a
   conexão é fechada, antes de qualquer handler rodar (HTTP/2: só aquele stream). O limite é
@@ -287,6 +288,8 @@ Quando uma cota está cheia, o servidor recusa em vez de crescer:
   `memory_limit` juntos para payloads maiores;
 - o cache de rotas despeja primeiro as entradas mais antigas; uma resposta que ainda assim não cabe
   é servida sem ir para o cache;
+- requisições em pipeline atrás de um `defer()` estacionado que não cabem — ou que passam de uma
+  leitura de 64 KiB — fecham a conexão, o que cancela o trabalho estacionado;
 - uma saída que não cabe — ou que passa dos 12 MiB que uma única conexão pode segurar
   (`TCP_Server_CLI::$maxPendingBytes`, pelo mesmo footprint) — derruba aquela conexão; no HTTP/2 só
   aquele stream é resetado.
@@ -309,6 +312,8 @@ O que os padrões seguram ao mesmo tempo, com `memory_limit` em 128M ou mais:
 - 3 corpos de requisição inacabados de 10 MB (o `maxBodySize` padrão; partes de arquivo multipart vão
   para o disco e não contam);
 - 8 respostas em cache de cerca de 1 MB — ou muitas mais, se pequenas;
+- cerca de 850 requisições `defer()` estacionadas com cabeçalhos pequenos — menos quando o trabalho
+  deferred extrai mais;
 - 32 clientes lentos segurando cada um 1–2 MB de saída não lida, quando nada mais está retido.
 
 Para aceitar corpos maiores, aumente o orçamento e o `memory_limit` juntos — o `memory_limit` em pelo
@@ -859,7 +864,7 @@ compartilham memória, superglobais ficam vazias, `exit()` mata o worker. O que 
 
 ## Ciclo de vida da resposta deferred
 
-Uma resposta deferred (`$Response->defer()`) sobrevive ao handler que a criou: o cliente pode sumir, o worker pode desligar e a conexão pode ser reaproveitada para a próxima requisição enquanto o trabalho deferido ainda está estacionado. Três peças colaboram para que isso seja seguro.
+Uma resposta deferred (`$Response->defer()`) sobrevive ao handler que a criou: o cliente pode sumir e o worker pode desligar enquanto o trabalho deferido ainda está estacionado — e no HTTP/2 a conexão continua atendendo os seus outros streams (no HTTP/1.1 as requisições encadeadas atrás dele esperam a resposta dele). Três peças colaboram para que isso seja seguro.
 
 Trabalho deferido que chama um upstream por um response resource (`$Response->Upstream->request()`, veja [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/)) estaciona do mesmo jeito: o dial, o handshake TLS e a espera pela resposta suspendem a Fiber no reactor do worker, então o worker continua atendendo as outras conexões — e quando o deferral termina, normalmente ou porque o cliente foi embora, o resource libera todas as conexões upstream que abriu.
 
