@@ -87,8 +87,9 @@ resend button. Adjust to taste.
 
 ### Login, logout and remember-me
 
-`POST /login` verifies credentials with uniform timing (unknown e-mails burn a
-decoy argon2 hash), regenerates the session id and optionally issues a
+`POST /login` verifies credentials with uniform timing (an unknown e-mail costs
+one verify against a decoy of the current policy — the work of a wrong
+password), regenerates the session id and optionally issues a
 trusted-device cookie:
 
 ```php
@@ -240,9 +241,12 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 
 - **Session fixation** — `Session->regenerate()` runs on login, registration,
   remember revival and after password change/reset.
-- **Enumeration** — login failures and the forgot flow answer uniformly;
-  unknown identifiers burn a decoy argon2 hash so timing does not reveal
-  account existence.
+- **Enumeration** — login failures and the forgot flow answer uniformly; an
+  unknown identifier costs one verify against a decoy of the current policy,
+  the same work as a wrong password, so timing does not reveal account
+  existence. Accounts whose stored hash follows another algorithm or cost (a
+  legacy bcrypt hash) verify at that hash's own cost until their next
+  successful login upgrades it — until then their timing differs.
 - **Tokens at rest** — only the sha256 digest of the verifier/validator is
   persisted; the raw secret exists once, in the returned `Token->value`.
 - **Single use** — redeeming deletes the row atomically
@@ -356,8 +360,9 @@ PostgreSQL. Any other database failure raises a `RuntimeException`.
 public function verify (string $email, #[\SensitiveParameter] string $password): null|Identity
 ```
 
-Verifies credentials with uniform timing and rehash-on-verify: legacy hashes
-upgrade to the current argon2id policy transparently. Returns an `Identity`
+Verifies credentials with uniform timing and rehash-on-verify: an unknown
+identifier costs one verify against a decoy of the current policy, and legacy
+hashes upgrade to the current argon2id policy transparently. Returns an `Identity`
 with `email` and `verified` claims, or `null`. The rehash persistence is
 best-effort: an upgrade write that fails or lands on no row never fails the
 login, and is announced through the `Bootgly\ADI\Databases\SQL\Events::Failed`

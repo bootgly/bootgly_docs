@@ -87,8 +87,9 @@ com botão de reenvio. Ajuste como preferir.
 
 ### Login, logout e remember-me
 
-`POST /login` verifica as credenciais com timing uniforme (e-mails
-desconhecidos queimam um hash argon2 decoy), regenera o id de sessão e
+`POST /login` verifica as credenciais com timing uniforme (um e-mail
+desconhecido custa uma verificação contra um decoy da política atual — o
+trabalho de uma senha errada), regenera o id de sessão e
 opcionalmente emite um cookie de dispositivo confiável:
 
 ```php
@@ -244,8 +245,11 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
 - **Session fixation** — `Session->regenerate()` roda no login, no registro,
   no revival do remember e após troca/reset de senha.
 - **Enumeração** — falhas de login e o fluxo forgot respondem uniformemente;
-  identificadores desconhecidos queimam um hash argon2 decoy para o timing não
-  revelar existência de conta.
+  um identificador desconhecido custa uma verificação contra um decoy da
+  política atual, o mesmo trabalho de uma senha errada, para o timing não
+  revelar existência de conta. Contas cujo hash guardado segue outro algoritmo
+  ou custo (um hash bcrypt legado) verificam no custo desse hash até o próximo
+  login com sucesso atualizá-lo — até lá, o timing delas difere.
 - **Tokens em repouso** — só o digest sha256 do verifier/validator é
   persistido; o segredo raw existe uma vez, no `Token->value` retornado.
 - **Uso único** — o resgate deleta a linha atomicamente
@@ -364,8 +368,9 @@ do caller no PostgreSQL. Qualquer outra falha de banco lança uma
 public function verify (string $email, #[\SensitiveParameter] string $password): null|Identity
 ```
 
-Verifica credenciais com timing uniforme e rehash-on-verify: hashes legados
-migram para a política argon2id atual de forma transparente. Retorna uma
+Verifica credenciais com timing uniforme e rehash-on-verify: um identificador
+desconhecido custa uma verificação contra um decoy da política atual, e hashes
+legados migram para a política argon2id atual de forma transparente. Retorna uma
 `Identity` com claims `email` e `verified`, ou `null`. A persistência do rehash
 é best-effort: um write de upgrade que falha ou não atinge nenhuma linha nunca
 falha o login, e é anunciado pelo evento
