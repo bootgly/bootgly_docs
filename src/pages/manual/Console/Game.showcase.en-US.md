@@ -5,7 +5,7 @@ The terminal below runs the **real Console platform games** — PHP 8.4 compiled
 <d-block-terminal
   engine="bootgly-cli"
   title="Console Games — live"
-  commands="Snake:project Snake start|Pong:project Pong start|Invaders:project Invaders start"
+  commands="Snake:project Demo/Snake start|Pong:project Demo/Pong start|Invaders:project Demo/Invaders start"
   height="560"
 >
 Pick a game and press Run, then **click the terminal to focus it**. Enter starts, `q` quits.

@@ -133,10 +133,13 @@ if (existsSync(join(consoleRoot, 'autoboot.php'))) {
       continue
     }
 
+    // Projects nest at any depth (`Demo/Snake`): each signature file is one game
     for (const file of collect(join(consoleRoot, 'projects', entry.name))) {
       entries.set(relative(consoleRoot, file).replaceAll('\\', '/'), readFileSync(file))
+      if (file.endsWith('.Project.php')) {
+        games++
+      }
     }
-    games++
   }
 } else {
   console.warn(`[wasm:bundle] Console platform source not found at ${consoleRoot} — bundling without games.`)

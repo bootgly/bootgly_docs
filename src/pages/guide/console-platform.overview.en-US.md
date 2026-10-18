@@ -74,7 +74,7 @@ The platform ships three complete games as exportable projects — play them rig
 <d-block-terminal
   engine="bootgly-cli"
   title="Console Games — live"
-  commands="Snake:project Snake start|Pong:project Pong start|Invaders:project Invaders start"
+  commands="Snake:project Demo/Snake start|Pong:project Demo/Pong start|Invaders:project Demo/Invaders start"
   height="560"
 >
 Pick a game and press Run, then **click the terminal to focus it**. Enter starts, `q` quits. Snake: arrows steer, holding accelerates. Pong: hold ↑/↓, first to 5 wins. Invaders: ←/→ move, Space fires.
