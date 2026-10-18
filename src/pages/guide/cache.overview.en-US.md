@@ -148,7 +148,9 @@ nonce guarantee starts after legacy writers leave the fleet.
 > [!WARNING]
 > `Vault::lock()` is a host-local file lock, not a Redis/distributed multi-key transaction.
 > It serializes compound work inside one host only. Do not build a cross-host transaction by
-> composing several Vault keys under `lock()`.
+> composing several Vault keys under `lock()`. `JWT\Tokens` needs no cross-host lock: on one
+> linearizable store with `noeviction` (see the Authentication manual), its rotations stay safe
+> across hosts through the order of their writes around the atomic `take()`.
 
 ## Configuration
 

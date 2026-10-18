@@ -151,7 +151,9 @@ antigas que ainda gravam saem do conjunto.
 > `Vault::lock()` é um bloqueio de arquivo local ao host, não uma transação Redis distribuída
 > de múltiplas chaves.
 > Ele serializa trabalho composto somente dentro de um host. Não construa uma transação
-> entre hosts compondo várias chaves do Vault sob `lock()`.
+> entre hosts compondo várias chaves do Vault sob `lock()`. `JWT\Tokens` não precisa de bloqueio
+> entre hosts: num store linearizável com `noeviction` (veja o manual de Authentication), as rotações
+> dele continuam seguras entre hosts pela ordem das gravações em volta do `take()` atômico.
 
 ## Configuração
 

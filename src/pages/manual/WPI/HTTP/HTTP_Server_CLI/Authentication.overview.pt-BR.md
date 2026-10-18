@@ -258,7 +258,7 @@ Redirects são seguidos um hop por vez, e todo destino precisa continuar em HTTP
 
 `refresh()` nunca passa pelo piso. Construa o `Remote` uma vez — no escopo do arquivo de rotas, como acima — nunca por requisição: o piso vive na instância. `cooldown: 0` o desliga e faz um IdP com `no-store` custar uma busca por verificação — deixe isso para testes.
 
-`Vault` guarda seus registros no facade `Cache` do Bootgly. Por padrão usa o driver `file` (compartilhado entre workers no mesmo filesystem); passando um `Cache` com driver Redis, o JWKS, o estado de refresh tokens e as revogações são compartilhados entre hosts — injete um segredo HMAC compartilhado (≥ 32 bytes) para que todos os hosts consigam verificar os registros:
+`Vault` guarda seus registros no facade `Cache` do Bootgly. Por padrão usa o driver `file` (compartilhado entre workers no mesmo filesystem); passando um `Cache` com driver Redis, o JWKS, o estado de refresh tokens e as revogações são compartilhados entre hosts — e então é obrigatório um segredo HMAC compartilhado (≥ 32 bytes), para que todos os hosts consigam verificar os registros. Sem ele, cada host assinaria com um segredo próprio e leria os registros dos outros como miss (uma revogação não os alcançaria): um backend injetado que não seja `file`, `memory` ou `shared` sem `secret:` lança na construção. Ao migrar um deploy que rodava com segredo derivado, passe o conteúdo do arquivo `{path}{prefix}.secret` dele para manter os registros existentes:
 
 ```php
 use Bootgly\ABI\Resources\Cache;
@@ -271,6 +271,8 @@ $Vault = new Vault(
 ```
 
 Cada registro carrega um envelope HMAC-SHA256, então uma entrada alterada no backend de armazenamento falha na verificação e é lida como miss.
+
+`Vault::lock()` continua local ao host. A segurança na frota vem da ordem das gravações de `Tokens` em volta do `take()` atômico do store, num ÚNICO store linearizável — um único primário Redis, sem leitura em réplica, `noeviction`; um store `file` num diretório que vários hosts montam não é um store de frota. Mantenha os relógios dos hosts sincronizados (dentro de 60 segundos). Cada rotação deixa um tombstone que vive cerca de um tempo de vida do refresh, e com `noeviction` um store cheio recusa toda gravação em todos os hosts — limite a taxa do endpoint de refresh por subject e dimensione o `maxmemory` para as sessões ativas mais os refreshes que um tempo de vida acumula.
 
 ### Resolvers de chave customizados
 
@@ -399,7 +401,9 @@ elseif ($Rotated instanceof Token) {
 }
 ```
 
-`Tokens` guarda o estado de refresh por hash do token, consome o refresh antigo na rotação, mantém um tombstone com `subject`/claims para auditoria e retorna `Replay` quando um refresh já consumido é reutilizado. Replay revoga a família inteira e deve ser tratado como incidente.
+`Tokens` guarda o estado de refresh por hash do token, consome o refresh antigo na rotação, mantém um tombstone com `subject`/claims para auditoria e retorna `Replay` quando um refresh já consumido é reutilizado. Replay revoga a família inteira — até o token mais novo dela expirar — e deve ser tratado como incidente.
+
+`rotate()` tem quatro resultados: o `Token` sucessor; um `Replay`; `null` para um token desconhecido ou expirado, ou de uma família revogada; ou uma `RuntimeException` quando o store recusa uma gravação — o token apresentado então continua válido para um retry, a menos que o store já o tenha consumido. Duas rotações concorrentes de um mesmo token, num host ou em dois hosts que compartilham o store, resultam em no máximo um `Token`: o outro chamador recebe um `Replay` ou `null` e a família é revogada, então um cliente não deve enviar dois refreshes ao mesmo tempo. Um logout (`revoke()`) que disputa com um refresh retorna `true` e não deixa sucessor vivo.
 
 Use `Usage` quando os valores `jti` de access tokens precisam de revogação persistente ou proteção single-use contra replay:
 
@@ -601,3 +605,25 @@ public function refresh (): KeySet|Failures
 ```
 
 Consulta a origem agora, ignorando a validade e o piso de origem.
+
+### Bootgly\API\Security\JWT\Tokens
+
+```php
+public function rotate (string $refresh, int $ttl): null|Replay|Token
+```
+
+Consome `$refresh` e retorna o sucessor, válido por `$ttl` segundos. Retorna um `Replay` quando o token já foi consumido — a família é então revogada até o token mais novo dela expirar — e `null` quando o token é desconhecido, expirou (também quando expira durante esta rotação, dentro da diferença de relógio tolerada entre hosts) ou é de uma família revogada — nesse caso ele não é consumido, a menos que uma revogação chegue durante a rotação; então um retry é um `Replay`. De rotações concorrentes de um mesmo token, em um host ou numa frota que compartilha o store, no máximo uma recebe um `Token`; as outras recebem um `Replay` ou `null`, com a família revogada. Lança `InvalidArgumentException` para um `$ttl` abaixo de `1`, e `RuntimeException` quando o store recusa uma gravação ou o evict (`'JWT refresh token could not be consumed.'`): o token apresentado continua válido para um retry, a menos que o store já o tenha consumido.
+
+```php
+public function revoke (string $refresh): bool
+```
+
+Revoga a família de `$refresh` — um token ativo ou já consumido — até o token mais novo dela expirar. Retorna `false` só para um token desconhecido ou expirado; um logout que disputa com uma rotação do mesmo token retorna `true` e não deixa sucessor vivo. Lança `RuntimeException` quando o store recusa uma gravação: um retry com o mesmo token completa a revogação.
+
+### Bootgly\API\Security\JWT\Vault
+
+```php
+public function __construct (null|string|\Bootgly\ABI\Resources\Cache $storage = null, string $prefix = 'jwt_', null|string $secret = null)
+```
+
+Cria o store de JWT num diretório (o driver `file`) ou num `Cache` pronto cujo driver é atômico. `$secret` (≥ 32 bytes) assina cada registro; sem ele, cada host deriva o seu em `{path}{prefix}.secret` — permitido só para os drivers locais ao host `file`, `memory` e `shared`. Lança `InvalidArgumentException` para um prefixo vazio ou com separador de diretório, um segredo curto, um driver não atômico (APCu), ou um backend injetado que outros hosts alcançam (`redis`, um driver customizado) sem segredo.

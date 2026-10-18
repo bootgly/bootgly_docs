@@ -256,7 +256,7 @@ Redirects are followed one hop at a time, and every target must remain HTTPS unl
 
 `refresh()` is never floored. Build `Remote` once — at route-file scope, as above — never per request: the floor lives in the instance. `cooldown: 0` disables it and makes a `no-store` IdP cost one fetch per verification — keep it for tests.
 
-`Vault` stores its records on the Bootgly `Cache` facade. By default it uses the `file` driver (shared across workers on the same filesystem); passing a Redis-backed `Cache` shares JWKS, refresh-token state, and revocations across hosts — inject a shared HMAC secret (≥ 32 bytes) so every host can verify the records:
+`Vault` stores its records on the Bootgly `Cache` facade. By default it uses the `file` driver (shared across workers on the same filesystem); passing a Redis-backed `Cache` shares JWKS, refresh-token state, and revocations across hosts — and then requires a shared HMAC secret (≥ 32 bytes), so every host can verify the records. Without one, each host would sign with a secret of its own and read the others' records as misses (a revocation would not reach them): an injected backend other than `file`, `memory` or `shared` without `secret:` throws at construction. Moving a deployment that ran on a derived secret, pass the contents of its `{path}{prefix}.secret` file to keep the existing records:
 
 ```php
 use Bootgly\ABI\Resources\Cache;
@@ -269,6 +269,8 @@ $Vault = new Vault(
 ```
 
 Every record carries an HMAC-SHA256 envelope, so an entry altered in the storage backend fails verification and reads as a miss.
+
+`Vault::lock()` stays host-local. Fleet safety comes from the order of `Tokens`' writes around the store's atomic `take()` on ONE linearizable store — a single Redis primary, no replica reads, `noeviction`; a `file` store on a directory several hosts mount is not a fleet store. Keep host clocks synchronized (within 60 seconds). Each rotation leaves a tombstone that lives about one refresh lifetime, and under `noeviction` a full store refuses every write on every host — rate-limit the refresh endpoint per subject and size `maxmemory` for the active sessions plus the refreshes one lifetime holds.
 
 ### Custom key resolvers
 
@@ -397,7 +399,9 @@ elseif ($Rotated instanceof Token) {
 }
 ```
 
-`Tokens` stores refresh state under token hashes, consumes the old refresh token on rotation, leaves a tombstone with `subject`/claims for audit, and returns `Replay` if a consumed refresh token is reused. Replay revokes the whole family and should be treated as an incident.
+`Tokens` stores refresh state under token hashes, consumes the old refresh token on rotation, leaves a tombstone with `subject`/claims for audit, and returns `Replay` if a consumed refresh token is reused. Replay revokes the whole family — until its newest token would expire — and should be treated as an incident.
+
+`rotate()` has four outcomes: the successor `Token`; a `Replay`; `null` for an unknown or expired token or one of a revoked family; or a `RuntimeException` when the store refuses a write — the presented token then stays valid for a retry, unless the store had already consumed it. Two concurrent rotations of one token, on one host or on two hosts sharing the store, yield at most one `Token`: the other caller gets a `Replay` or `null` and the family is revoked, so a client must not send two refreshes at once. A logout (`revoke()`) racing a refresh returns `true` and leaves no successor alive.
 
 Use `Usage` when access-token `jti` values need persistent revocation or single-use replay protection:
 
@@ -594,3 +598,25 @@ public function refresh (): KeySet|Failures
 ```
 
 Asks the origin now, bypassing freshness and the origin floor.
+
+### Bootgly\API\Security\JWT\Tokens
+
+```php
+public function rotate (string $refresh, int $ttl): null|Replay|Token
+```
+
+Consumes `$refresh` and returns its successor, valid for `$ttl` seconds. Returns a `Replay` when the token was already consumed — the family is then revoked until its newest token would expire — and `null` when the token is unknown, expired (also when it expires during this rotation, within the clock skew tolerated between hosts) or of a revoked family — it is not consumed then, unless a revocation lands during the rotation, in which case a retry is a `Replay`. Of concurrent rotations of one token, on one host or across a fleet sharing the store, at most one gets a `Token`; the others get a `Replay` or `null`, with the family revoked. Throws `InvalidArgumentException` for a `$ttl` below `1`, and `RuntimeException` when the store refuses a write or the evict (`'JWT refresh token could not be consumed.'`): the presented token stays valid for a retry, unless the store had already consumed it.
+
+```php
+public function revoke (string $refresh): bool
+```
+
+Revokes the family of `$refresh` — an active or an already consumed token — until its newest token would expire. Returns `false` only for an unknown or expired token; a logout racing a rotation of the same token returns `true` and leaves no successor alive. Throws `RuntimeException` when the store refuses a write: a retry with the same token completes the revocation.
+
+### Bootgly\API\Security\JWT\Vault
+
+```php
+public function __construct (null|string|\Bootgly\ABI\Resources\Cache $storage = null, string $prefix = 'jwt_', null|string $secret = null)
+```
+
+Creates the JWT store on a directory (the `file` driver) or on a prepared `Cache` whose driver is atomic. `$secret` (≥ 32 bytes) signs every record; without one, each host derives its own in `{path}{prefix}.secret` — allowed only for the host-local `file`, `memory` and `shared` drivers. Throws `InvalidArgumentException` for an empty prefix or one with a directory separator, a short secret, a non-atomic driver (APCu), or an injected backend other hosts can reach (`redis`, a custom driver) without a secret.
