@@ -85,7 +85,7 @@ The wizard prepares the kit on first run — every platform submodule (`Console`
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
 - **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly projects import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
 
-Only projects declared with `exportable: true` in their `new Project(...)` signature are stocked as examples or copied by `--from=<source>`.
+Only projects declared with `exportable: true` — written as the literal `true` — in their `new Project(...)` signature are stocked as examples and offered by the wizard; `--from=<source>` copies the platform project you name.
 
 Non-interactively (CI, scripts, AI agents), everything comes from flags:
 
@@ -125,7 +125,7 @@ php bootgly projects import https://github.com/foo/project1 Project1
 The repository is cloned (system git) with its **full history**, validated against the signature, placed into `projects/Project1/` — `.git`, `origin` remote and all, so you keep committing and pushing from there — and registered in the allow-list. When the target name differs from the source's, the signature file is renamed to the new leaf and left **uncommitted** for you to review. Every rule the registry enforces is checked before the copy, so a refused import leaves nothing behind.
 
 > [!WARNING]
-> Imported projects run third-party code when started — the command asks for confirmation (skip with `--yes`).
+> Imported projects run third-party code when started (`start`, `restart`, a `startup` unit), on their `migrate`, `seed` and `schedule`, and when their tests or queues run — the command asks for confirmation (skip with `--yes`). `projects list` and `project <path> info` only read the signature. A repository whose `*.Project.php` is a symbolic link, or that carries a `bootgly` launcher or a symbolic link named `bootgly` (the global `bootgly` command would run it from inside the project), is refused. Since 1.0.10.
 
 ## The `projects` and `project` commands
 
@@ -195,7 +195,7 @@ php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 
 ### `projects list`
 
-Lists every registered project — one row each, with the interfaces the registry binds it to and the description its signature carries. The description is clipped to the terminal width, never wrapped:
+Lists every registered project — one row each, with the interfaces the registry binds it to and the description its signature carries. The description is clipped to the terminal width, never wrapped. The signature is read, never run: the description comes from a plain string literal in `return new Project(...)` (a computed value shows as `(dynamic)`), a signature that is missing, a symbolic link, larger than 256 KiB, does not parse or does not `return new Project(...)` is listed as `(invalid signature: <reason>)` while the rest of the listing prints, and control characters or Output markup in metadata are not rendered:
 
 ```bash :toolbar="true";
 php bootgly projects list
@@ -430,7 +430,7 @@ php bootgly project Demo/HTTP_Server_CLI status
 
 ### `project info`
 
-Displays detailed metadata about a project in a Fieldset:
+Displays detailed metadata about a project in a Fieldset — read from its signature without running it (the same literal and `(dynamic)` rules as `projects list`; an invalid signature adds a `Signature` row with the reason), with the interfaces the registry binds:
 
 ```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI info

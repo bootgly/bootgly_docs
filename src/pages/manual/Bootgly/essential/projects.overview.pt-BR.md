@@ -85,7 +85,7 @@ O wizard prepara o kit na primeira execução — todos os submodules de platafo
 - **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
 - **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly projects import`: o repositório é clonado, validado contra a assinatura `*.Project.php` e registrado.
 
-Apenas projetos declarados com `exportable: true` na assinatura `new Project(...)` são estocados como exemplos ou copiados por `--from=<origem>`.
+Apenas projetos declarados com `exportable: true` — escrito como o literal `true` — na assinatura `new Project(...)` são estocados como exemplos e oferecidos pelo wizard; `--from=<origem>` copia o projeto de plataforma que você nomear.
 
 Não-interativamente (CI, scripts, agentes de IA), tudo vem das flags:
 
@@ -126,7 +126,7 @@ php bootgly projects import https://github.com/foo/project1 Project1
 O repositório é clonado (git do sistema) com o **histórico completo**, validado contra a assinatura, colocado em `projects/Project1/` — `.git`, remote `origin` e tudo, então você continua commitando e dando push de lá — e registrado na allow-list. Quando o nome de destino difere do da origem, o arquivo de assinatura é renomeado para o novo leaf e deixado **sem commit** para você revisar. Toda regra que o registro impõe é verificada antes da cópia, então uma importação recusada não deixa nada para trás.
 
 > [!WARNING]
-> Projetos importados executam código de terceiros ao serem iniciados — o comando pede confirmação (pule com `--yes`).
+> Projetos importados executam código de terceiros ao serem iniciados (`start`, `restart`, uma unidade `startup`), no seu `migrate`, `seed` e `schedule`, e quando seus testes ou filas rodam — o comando pede confirmação (pule com `--yes`). `projects list` e `project <caminho> info` só leem a assinatura. Um repositório cujo `*.Project.php` é um link simbólico, ou que carrega um launcher `bootgly` ou um link simbólico chamado `bootgly` (o comando global `bootgly` o executaria de dentro do projeto), é recusado. Desde a 1.0.10.
 
 ## Os comandos `projects` e `project`
 
@@ -196,7 +196,7 @@ php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 
 ### `projects list`
 
-Lista todos os projetos registrados — uma linha para cada, com as interfaces que o registro vincula a ele e a descrição que a assinatura carrega. A descrição é cortada na largura do terminal, nunca quebrada em linhas:
+Lista todos os projetos registrados — uma linha para cada, com as interfaces que o registro vincula a ele e a descrição que a assinatura carrega. A descrição é cortada na largura do terminal, nunca quebrada em linhas. A assinatura é lida, nunca executada: a descrição vem de um literal de string simples em `return new Project(...)` (um valor calculado aparece como `(dynamic)`), uma assinatura ausente, que é um link simbólico, maior que 256 KiB, que não faz parse ou não faz `return new Project(...)` é listada como `(invalid signature: <motivo>)` enquanto o resto da listagem é impresso, e caracteres de controle ou markup de Output nos metadados não são renderizados:
 
 ```bash :toolbar="true";
 php bootgly projects list
@@ -432,7 +432,7 @@ php bootgly project Demo/HTTP_Server_CLI status
 
 ### `project info`
 
-Exibe metadados detalhados de um projeto em um Fieldset:
+Exibe metadados detalhados de um projeto em um Fieldset — lidos da assinatura sem executá-la (as mesmas regras de literal e `(dynamic)` do `projects list`; uma assinatura inválida acrescenta uma linha `Signature` com o motivo), com as interfaces que o registro vincula:
 
 ```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI info

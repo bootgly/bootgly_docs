@@ -233,7 +233,7 @@ php bootgly projects import https://github.com/foo/project1 Project1
 The project is cloned with its **full history**, validated and placed into `projects/Project1/` — `.git` and `origin` included, so you keep committing and pushing from there — then registered.
 
 > [!WARNING]
-> Imported projects run third-party code when started — the command asks for confirmation (skip with `--yes`).
+> Imported projects run third-party code when started (`start`, `restart`, a `startup` unit), on their `migrate`, `seed` and `schedule`, and when their tests or queues run — the command asks for confirmation (skip with `--yes`). `projects list` and `project <path> info` only read the signature. A repository whose `*.Project.php` is a symbolic link, or that carries a `bootgly` launcher or a symbolic link named `bootgly` (the global `bootgly` command would run it from inside the project), is refused. Since 1.0.10.
 
 ## Binding to privileged ports (80, 443)
 

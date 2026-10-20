@@ -233,7 +233,7 @@ php bootgly projects import https://github.com/foo/project1 Project1
 O projeto é clonado com o **histórico completo**, validado e colocado em `projects/Project1/` — `.git` e `origin` incluídos, então você continua commitando e dando push de lá — e registrado.
 
 > [!WARNING]
-> Projetos importados executam código de terceiros ao serem iniciados — o comando pede confirmação (pule com `--yes`).
+> Projetos importados executam código de terceiros ao serem iniciados (`start`, `restart`, uma unidade `startup`), no seu `migrate`, `seed` e `schedule`, e quando seus testes ou filas rodam — o comando pede confirmação (pule com `--yes`). `projects list` e `project <caminho> info` só leem a assinatura. Um repositório cujo `*.Project.php` é um link simbólico, ou que carrega um launcher `bootgly` ou um link simbólico chamado `bootgly` (o comando global `bootgly` o executaria de dentro do projeto), é recusado. Desde a 1.0.10.
 
 ## Vinculando a portas privilegiadas (80, 443)
 
