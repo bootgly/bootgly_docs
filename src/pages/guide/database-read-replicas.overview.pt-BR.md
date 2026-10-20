@@ -46,7 +46,9 @@ verificando — então repita `verify` na réplica para manter um opt-in explíc
 réplica que não declara nem `mode` nem `verify` herda os flags resolvidos do primário. Um `cafile`
 só é herdado por uma réplica que verifica; um que a própria réplica declara sob um modo sem
 verificação é recusado na config. Desde a 1.0.3 — antes, a réplica herdava os flags do primário
-fosse qual fosse o seu próprio modo.
+fosse qual fosse o seu próprio modo. Uma réplica PostgreSQL alcançada sob `prefer` que recusa TLS e
+pede uma senha cleartext ou MD5 (ou SCRAM abaixo de 4096 iterações) é recusada pelo próprio host e modo (loopback isento), e a leitura
+cai para o primário.
 
 `routing.sticky` é a janela best-effort de read-after-write em segundos. Depois de uma escrita,
 leituras dentro do mesmo escopo lógico ficam no primário até a janela expirar.

@@ -38,7 +38,7 @@ canônico selecionado estiver ausente, ele lança, por exemplo,
 | Modelo de execução | assíncrono (non-blocking) | assíncrono (non-blocking) | síncrono |
 | Pipelining no wire | sim | não (FIFO request-response) | — |
 | TLS | sim (modos `secure`) | sim (modos `secure`) | — |
-| Autenticação | cleartext, MD5, SCRAM-SHA-256 | `mysql_native_password`, `caching_sha2_password` (full auth via TLS ou chave RSA pinada) | — |
+| Autenticação | cleartext, MD5, SCRAM-SHA-256 (cleartext/MD5, ou SCRAM abaixo de 4096 iterações, exigem TLS ou `disable` num host que não é loopback sob `prefer`) | `mysql_native_password`, `caching_sha2_password` (full auth via TLS ou chave RSA pinada) | — |
 | Prepared statements | protocolo estendido + cache LRU | protocolo binário + cache LRU | `SQLite3Stmt` + cache LRU |
 | `RETURNING` | sim | não — `Result->inserted` no lugar | não — a extensão `sqlite3` executaria 2 vezes |
 | Chaves geradas | linhas do `RETURNING` | `Result->inserted` (pacote OK) | `Result->inserted` (`lastInsertRowID`) |

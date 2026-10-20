@@ -287,7 +287,8 @@ before, every mode but `disable` did. A `require` connection that pinned a `cafi
 Only `verify-ca` and `verify-full` verify the server certificate — the chain, and with
 `verify-full` its name too. `prefer` and `require` encrypt without verification, as libpq's and
 MySQL's `sslmode` do (`verify => true`, and `name`, opt them in); unverified TLS defeats passive
-eavesdropping only, so use a `verify-*` mode on any network you do not trust. With `cafile` absent,
+eavesdropping only — under `require` too, an active on-path attacker presenting any certificate
+receives `AUTH` — so use a `verify-*` mode on any network you do not trust. With `cafile` absent,
 OpenSSL's default trust store applies — the `openssl.cafile`/`openssl.capath` ini settings, or
 `SSL_CERT_FILE`/`SSL_CERT_DIR` when set — so pin `cafile` whenever the CA is private. A
 `cafile` is only read by a verifying handshake, so one under `prefer`/`require` without

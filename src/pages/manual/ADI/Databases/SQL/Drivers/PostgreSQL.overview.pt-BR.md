@@ -37,7 +37,16 @@ criptografam sem verificação a menos que `verify`/`name` a liguem, então os p
 alcançam um servidor com certificado self-signed já na primeira conexão. TLS sem verificação
 derrota só a escuta passiva — um atacante ativo no caminho responde o handshake com o próprio
 certificado e lê tudo, credenciais inclusive — então use `verify-ca`/`verify-full` (ou
-`verify => true`) em qualquer rede em que você não confia. Com `cafile` ausente,
+`verify => true`) em qualquer rede em que você não confia. Quando um servidor recusa o
+`SSLRequest` sob `prefer` e depois pede uma senha **cleartext** ou **MD5**, o driver não a envia —
+um atacante no caminho consegue forçar exatamente essa recusa — e falha a conexão com um erro que
+nomeia `secure.mode => 'disable'`, a forma declarada de autenticar em plaintext. SCRAM-SHA-256
+nunca envia a senha e segue — num piso de 4096 iterações (o padrão do PostgreSQL e o mínimo da RFC
+7677; uma contagem menor é recusada do mesmo jeito, já que sua prova seria tão quebrável offline
+quanto uma resposta MD5, e uma contagem repetida ou malformada falha a conexão) — e em qualquer
+sessão nunca acima de 10.000.000 de iterações, que travariam o worker; um host de loopback (`127.0.0.0/8`, `::1`, `localhost`) fica isento,
+já que ali não há atacante entre o cliente e o servidor; cada réplica de leitura é julgada pelo
+próprio host e modo. Desde a 1.0.10. Com `cafile` ausente,
 vale o trust store padrão do OpenSSL (`openssl.cafile`, `SSL_CERT_FILE`/`SSL_CERT_DIR`), então
 fixe `cafile` para uma CA privada; um `cafile` só é lido por um handshake que verifica, então
 um sob `prefer`/`require` sem `verify` é recusado na config, e um que não é um arquivo legível

@@ -38,7 +38,7 @@ canonical block is absent, it throws, for example,
 | Execution model | async (non-blocking) | async (non-blocking) | synchronous |
 | Wire pipelining | yes | no (request-response FIFO) | — |
 | TLS | yes (`secure` modes) | yes (`secure` modes) | — |
-| Authentication | cleartext, MD5, SCRAM-SHA-256 | `mysql_native_password`, `caching_sha2_password` (full auth via TLS or pinned RSA key) | — |
+| Authentication | cleartext, MD5, SCRAM-SHA-256 (cleartext/MD5, or SCRAM below 4096 iterations, need TLS or `disable` on a non-loopback host under `prefer`) | `mysql_native_password`, `caching_sha2_password` (full auth via TLS or pinned RSA key) | — |
 | Prepared statements | extended protocol + LRU cache | binary protocol + LRU cache | `SQLite3Stmt` + LRU cache |
 | `RETURNING` | yes | no — `Result->inserted` instead | no — the `sqlite3` extension would run it twice |
 | Generated keys | `RETURNING` rows | `Result->inserted` (OK packet) | `Result->inserted` (`lastInsertRowID`) |

@@ -294,7 +294,8 @@ agora precisa de `verify-ca`/`verify-full` (ou `verify => true`) para continuar 
 Só `verify-ca` e `verify-full` verificam o certificado do servidor — a cadeia, e com
 `verify-full` também o nome. `prefer` e `require` criptografam sem verificação, como o
 `sslmode` da libpq e do MySQL (`verify => true`, e `name`, ligam-na); TLS sem verificação derrota
-só a escuta passiva, então use um modo `verify-*` em qualquer rede em que você não confia. Com
+só a escuta passiva — também sob `require`, um atacante ativo no caminho que apresente qualquer
+certificado recebe o `AUTH` — então use um modo `verify-*` em qualquer rede em que você não confia. Com
 `cafile` ausente,
 vale o trust store padrão do OpenSSL — as diretivas ini `openssl.cafile`/`openssl.capath`, ou
 `SSL_CERT_FILE`/`SSL_CERT_DIR` quando definidas — então fixe `cafile` sempre que a CA for

@@ -38,6 +38,16 @@ with a self-signed certificate at the first connection. Unverified TLS defeats p
 eavesdropping only — an active on-path attacker can answer the handshake with its own certificate
 and read everything, credentials included — so use `verify-ca`/`verify-full` (or `verify => true`)
 on any network you do not trust.
+When a server refuses the `SSLRequest` under `prefer` and then asks for a **cleartext** or **MD5**
+password, the driver does not send it — an on-path attacker can force that very refusal — and fails
+the connection with an error naming `secure.mode => 'disable'`, the declared way to authenticate in
+plaintext. SCRAM-SHA-256 never sends the password and proceeds — at an iteration floor of 4096
+(PostgreSQL's default and RFC 7677's minimum; a cheaper count is refused the same way, as its proof
+would be as crackable offline as an MD5 response, and a repeated or malformed count fails the
+connection) — and on any session never above 10,000,000 iterations, which would stall the worker; a
+loopback host (`127.0.0.0/8`,
+`::1`, `localhost`) is exempt, as no attacker stands between the client and the server there; each
+read replica is judged by its own host and mode. Since 1.0.10.
 With `cafile` absent, OpenSSL's default trust store applies (`openssl.cafile`,
 `SSL_CERT_FILE`/`SSL_CERT_DIR`), so pin `cafile` for a private CA; a `cafile` is only read by
 a verifying handshake, so one under `prefer`/`require` without `verify` is refused at config
