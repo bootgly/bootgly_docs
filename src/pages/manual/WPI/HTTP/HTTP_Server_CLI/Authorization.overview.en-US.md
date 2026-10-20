@@ -163,7 +163,9 @@ $Identity = $RBAC->load($Identity);
 
 Use RBAC to enrich or check an identity before the HTTP route reaches a `Scope`, `Role` or
 `Policy` gate. This preserves Bootgly's layer direction: WPI may depend on API, while API
-may use ADI.
+may use ADI. To serve those checks from a cache, and keep a revoked permission from being
+served once `invalidate()` returns, see
+**[Caching permission lists](/guide/authorization/overview/)** in the Authorization guide.
 
 ## Demo and guide
 

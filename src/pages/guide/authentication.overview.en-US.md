@@ -311,7 +311,7 @@ drain all new workers before optionally removing the columns.
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.39)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users, RBAC (1.1-1.49)
 AI_AGENT=1 ./bootgly test 29   # WPI middlewares — Remember guard, Fallback redirect (11.2-11.3)
 
 # bootgly-web
@@ -364,9 +364,17 @@ Verifies credentials with uniform timing and rehash-on-verify: an unknown
 identifier costs one verify against a decoy of the current policy, and legacy
 hashes upgrade to the current argon2id policy transparently. Returns an `Identity`
 with `email` and `verified` claims, or `null`. The rehash persistence is
-best-effort: an upgrade write that fails or lands on no row never fails the
-login, and is announced through the `Bootgly\ADI\Databases\SQL\Events::Failed`
-event (zero cost unless a listener is attached).
+best-effort and compare-and-set on the hash just verified: a reset or password
+change committed during the login wins — the old password never comes back, that
+login returns `null` (as it does when the account is removed meanwhile) and
+nothing is announced; a concurrent login's upgrade of the same password leaves
+it standing, with the claims the account holds after it. An upgrade write the
+database rejects (a recorded error), or that lands on no row while the verified
+hash is still stored, never fails the login and is announced through the
+`Bootgly\ADI\Databases\SQL\Events::Failed` event (zero cost unless a listener
+is attached). An infrastructure failure with no recorded outcome propagates as a
+`RuntimeException` — and so does a failed re-read of the account after an upgrade
+that landed on no row (announced first), since a reset may have won.
 
 ```php
 public function check (string $user, #[\SensitiveParameter] string $password): bool
@@ -384,7 +392,8 @@ Looks up an account by identifier without credentials (reset-request flow).
 public function rotate (string $user, #[\SensitiveParameter] string $password): bool
 ```
 
-Replaces the stored hash. Callers MUST follow a successful rotation with
+Replaces the stored hash; a login verifying the old one at the same moment
+cannot write it back. Callers MUST follow a successful rotation with
 `Tokens->revoke()`, `Trust->revoke()` and session regeneration.
 
 ```php

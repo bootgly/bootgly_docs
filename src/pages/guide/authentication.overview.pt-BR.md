@@ -317,7 +317,7 @@ opcionalmente remover as colunas.
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users (1.1-1.39)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users, RBAC (1.1-1.49)
 AI_AGENT=1 ./bootgly test 29   # middlewares WPI — guard Remember, redirect do Fallback (11.2-11.3)
 
 # bootgly-web
@@ -372,9 +372,18 @@ Verifica credenciais com timing uniforme e rehash-on-verify: um identificador
 desconhecido custa uma verificação contra um decoy da política atual, e hashes
 legados migram para a política argon2id atual de forma transparente. Retorna uma
 `Identity` com claims `email` e `verified`, ou `null`. A persistência do rehash
-é best-effort: um write de upgrade que falha ou não atinge nenhuma linha nunca
-falha o login, e é anunciado pelo evento
+é best-effort e compare-and-set sobre o hash recém-verificado: um reset ou troca
+de senha gravado durante o login vence — a senha antiga nunca volta, esse login
+retorna `null` (como quando a conta é removida nesse meio-tempo) e nada é
+anunciado; o upgrade da mesma senha por um login concorrente o mantém de pé, com
+os claims que a conta tem depois dele. Um write de upgrade que o banco rejeita (um
+erro registrado), ou que não atinge nenhuma linha enquanto o hash verificado
+continua armazenado, nunca falha o login e é anunciado pelo evento
 `Bootgly\ADI\Databases\SQL\Events::Failed` (custo zero sem listener anexado).
+Uma falha de infraestrutura sem resultado registrado se propaga como
+`RuntimeException` — assim como uma releitura da conta que falha depois de um
+upgrade que não atingiu nenhuma linha (anunciada antes), já que um reset pode ter
+vencido.
 
 ```php
 public function check (string $user, #[\SensitiveParameter] string $password): bool
@@ -392,7 +401,8 @@ Busca uma conta pelo identificador sem credenciais (fluxo de pedido de reset).
 public function rotate (string $user, #[\SensitiveParameter] string $password): bool
 ```
 
-Substitui o hash armazenado. Quem chama DEVE seguir uma rotação bem-sucedida
+Substitui o hash armazenado; um login que verifica o antigo no mesmo instante
+não consegue regravá-lo. Quem chama DEVE seguir uma rotação bem-sucedida
 com `Tokens->revoke()`, `Trust->revoke()` e regeneração de sessão.
 
 ```php

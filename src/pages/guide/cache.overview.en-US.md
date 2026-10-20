@@ -77,6 +77,11 @@ $Report = $Cache->resolve('report:daily', TTL: 3600, compute: function () {
 });
 ```
 
+The store after the compute is unconditional: a `delete()` or `invalidate()` that lands while
+the compute runs is overwritten with what it computed. When an invalidation must win against
+a compute in flight — permission lists, for example — bind each value to a generation key read
+before the compute instead (`RBAC` does).
+
 ## Choose a driver
 
 | Driver | `driver` | Scope | Use it for |

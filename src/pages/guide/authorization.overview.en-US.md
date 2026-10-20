@@ -174,6 +174,67 @@ bootgly project Demo/HTTP_Server_CLI seed run authorization_rbac
 
 Run the migrate commands only after the project database is configured and reachable.
 
+### Caching permission lists
+
+Every `check()` and `load()` queries the four tables. Pass a `Cache` to keep one permission
+list per identity for `lifetime` seconds (300 by default):
+
+```php
+use Bootgly\ABI\Resources\Cache;
+use Bootgly\API\Security\Authorization\RBAC;
+
+$RBAC = new RBAC($Database, Cache: new Cache(['driver' => 'file']), lifetime: 300);
+```
+
+After a role or permission write **commits**, call `invalidate()` — with the identity whose
+grants changed, or with no argument when a role or permission itself changed:
+
+```php
+$Database->Pool->wait($Transaction->commit());   // the revoke is durable first
+$RBAC->invalidate($Identity);                     // this identity's lists
+$RBAC->invalidate();                              // every list of this resolver
+```
+
+Each cached list is bound to two generations — the resolver's and the identity's — read
+before the database, and `invalidate()` stores a fresh one (or drops the old one when the
+cache refuses the write — a full disk, Redis at maxmemory): a check that starts after
+`invalidate()` returns never serves a list computed before it, even when a check already in
+flight read the database before the write. A cache that fails a read or a write never fails
+the check: it answers from the database.
+Permission reads always go to the primary, so with read replicas configured, replica lag
+never decides a check nor what the cache keeps. A resolver over a `Transaction` reads the
+transaction's own view (its uncommitted writes, its snapshot) and never caches it.
+
+A cached check costs three cache reads (three round trips on Redis). The `memory` driver keeps
+lists per `Cache` object: in one worker, share one `Cache` between the code that writes grants
+and the code that checks them, and use `file`, `shared` or `redis` across workers. A private
+SQLite database keeps its lists in the process that holds it.
+
+Resolvers share cached lists — and invalidations — only within one **realm**, derived from the
+connection (driver, host, port, database, username; an SQLite file by its path alone, and a
+private SQLite database — `:memory:` or the empty name — by its SQL object) and the four table
+names: two applications or tenants on one cache never serve each other's permissions while
+their connections or tables differ. The realm names a connection as it is spelled, so the same
+spelling reaching two servers or files (one SQLite path in two containers, one host name in
+two networks) shares a realm — give each tenant its own Cache `prefix` or `realm:` then. When
+the code that writes grants reaches the database
+under a different spelling than the code that checks them (`localhost` vs `127.0.0.1`, an
+admin role vs the application role, a symlink to the SQLite file), its `invalidate()` returns
+`true` without reaching the readers — give both the same `realm:`:
+
+```php
+$RBAC = new RBAC($Database, Cache: $Cache, realm: 'shop-permissions');
+```
+
+*Upgrading from 1.0.9:* lists are stored under a new key layout; entries of the old one expire
+within `lifetime`, and `invalidate()` clears them meanwhile (until 1.1.0), so workers still on
+the old release during a rolling deploy see the invalidation too. The reverse does not hold:
+an `invalidate()` from a 1.0.9 worker does not reach upgraded readers, so upgrade the
+processes that write grants first, or expect up to `lifetime` of staleness during the deploy.
+Check that the writers and the readers of one permission set derive the same realm (or pass
+the same `realm:`) before upgrading — in 1.0.9 every invalidation reached every resolver on
+the cache. Permission reads now go to the primary even when read replicas are configured.
+
 ## Demo routes
 
 Enable the Authorization demo set in
@@ -211,7 +272,7 @@ It covers successful Scope, Role and Policy requests plus denial cases with vali
 Authorization tests are split by layer:
 
 ```bash
-AI_AGENT=1 bootgly test 19       # API/Security: policies, abilities and RBAC
+AI_AGENT=1 bootgly test 22       # API/Security: policies, abilities and RBAC
 AI_AGENT=1 bootgly test 26       # WPI middleware units
 AI_AGENT=1 bootgly test 28 166   # E2E Scope success
 AI_AGENT=1 bootgly test 28 167   # E2E Scope failure
@@ -227,3 +288,26 @@ new route flow combines Authentication and Authorization middleware. To run the 
 RBAC E2E against PostgreSQL, configure `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`,
 `DB_PASS` and set `BOOTGLY_RBAC_E2E=1`. Set `BOOTGLY_RBAC_E2E_RESET=1` only when
 the test may drop and recreate its isolated `rbac_e2e_*` tables.
+
+## Reference
+
+### Bootgly\API\Security\Authorization\RBAC
+
+```php
+public function __construct (SQLDatabase|Transaction $Database, string $roles = 'roles', string $permissions = 'permissions', string $rolePermissions = 'role_permissions', string $userRoles = 'user_roles', null|Cache $Cache = null, int $lifetime = 300, null|string $realm = null)
+```
+
+Creates the resolver. With a `Cache`, permission lists are cached for `$lifetime` seconds,
+bound to the resolver's and the identity's generations; `$realm` replaces the connection part
+of the realm (the four table names still apply). Over an SQL facade the permission reads go to
+the primary; over a `Transaction` they read its own view and are never cached. A database
+error denies (`check()` is `false`, `load()` leaves the identity untouched) and is never
+cached.
+
+```php
+public function invalidate (null|Identity $Identity = null): bool
+```
+
+Drops cached permission lists after a role or permission write commits: the identity's, or
+every list of the resolver's realm when called without one. Returns `false` when the cache
+could neither store a new generation nor drop the old one. A no-op without a cache.

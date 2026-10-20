@@ -150,11 +150,15 @@ if ($Verification->valid === false) {
 }
 
 if ($Verification->hash !== null) {
-   // valid, but the stored hash predates the current policy:
-   // persist the upgraded hash transparently
-   $Users->update($id, password: $Verification->hash);
+   // valid, but the stored hash predates the current policy: persist the
+   // upgraded hash — only over the hash just verified, so a reset committed
+   // meanwhile is never overwritten with the old password
+   // UPDATE users SET password = :new WHERE id = :id AND password = :stored
 }
 ```
+
+`Bootgly\API\Security\Users::verify()` does all of this for you — the decoy, the
+verify and the compare-and-set upgrade; write it by hand only for a store of your own.
 
 This is also the migration path from legacy storage: verification is format-agnostic, so
 a bcrypt `$2y$…` hash still verifies — and `inspect()` upgrades it to argon2id on the
@@ -165,13 +169,13 @@ user's next successful login. No batch migration, no forced resets.
 The crypto specs live in the `API/Security` suite:
 
 ```bash
-AI_AGENT=1 bootgly test 21        # full API/Security suite (JWT, Authorization, crypto)
-AI_AGENT=1 bootgly test 21 12     # Encrypter roundtrip
-AI_AGENT=1 bootgly test 21 13     # Encrypter tamper rejection
-AI_AGENT=1 bootgly test 21 14     # Encrypter AAD binding
-AI_AGENT=1 bootgly test 21 15     # Key guards, keyring and rotation
-AI_AGENT=1 bootgly test 21 16     # Password hashing
-AI_AGENT=1 bootgly test 21 17     # Password rehash policy and migration
+AI_AGENT=1 bootgly test 22        # full API/Security suite (JWT, Authorization, crypto)
+AI_AGENT=1 bootgly test 22 12     # Encrypter roundtrip
+AI_AGENT=1 bootgly test 22 13     # Encrypter tamper rejection
+AI_AGENT=1 bootgly test 22 14     # Encrypter AAD binding
+AI_AGENT=1 bootgly test 22 15     # Key guards, keyring and rotation
+AI_AGENT=1 bootgly test 22 16     # Password hashing
+AI_AGENT=1 bootgly test 22 17     # Password rehash policy and migration
 ```
 
 ## Reference

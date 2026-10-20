@@ -78,6 +78,11 @@ $Report = $Cache->resolve('report:daily', TTL: 3600, compute: function () {
 });
 ```
 
+A gravação depois do cálculo é incondicional: um `delete()` ou `invalidate()` que chega enquanto
+o cálculo roda é sobrescrito com o que ele calculou. Quando uma invalidação precisa vencer um
+cálculo em andamento — listas de permissões, por exemplo — prenda cada valor a uma chave de
+geração lida antes do cálculo (é o que o `RBAC` faz).
+
 ## Escolher um driver
 
 | Driver | `driver` | Escopo | Use para |

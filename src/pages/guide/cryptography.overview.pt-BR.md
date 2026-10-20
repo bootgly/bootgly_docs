@@ -155,11 +155,15 @@ if ($Verification->valid === false) {
 }
 
 if ($Verification->hash !== null) {
-   // válida, mas o hash armazenado é anterior à política atual:
-   // persista o hash atualizado de forma transparente
-   $Users->update($id, password: $Verification->hash);
+   // válida, mas o hash armazenado é anterior à política atual: persista o
+   // hash atualizado — só sobre o hash recém-verificado, para que um reset
+   // gravado nesse meio-tempo nunca seja sobrescrito com a senha antiga
+   // UPDATE users SET password = :new WHERE id = :id AND password = :stored
 }
 ```
+
+`Bootgly\API\Security\Users::verify()` faz tudo isso por você — o decoy, a verificação
+e o upgrade compare-and-set; escreva à mão só para um store próprio.
 
 Este também é o caminho de migração de armazenamento legado: a verificação é agnóstica de
 formato, então um hash bcrypt `$2y$…` ainda verifica — e `inspect()` o atualiza para
@@ -171,13 +175,13 @@ forçados.
 As specs de criptografia vivem na suite `API/Security`:
 
 ```bash
-AI_AGENT=1 bootgly test 21        # suite API/Security completa (JWT, Authorization, crypto)
-AI_AGENT=1 bootgly test 21 12     # roundtrip do Encrypter
-AI_AGENT=1 bootgly test 21 13     # rejeição de adulteração do Encrypter
-AI_AGENT=1 bootgly test 21 14     # vínculo de AAD do Encrypter
-AI_AGENT=1 bootgly test 21 15     # guards de Key, keyring e rotação
-AI_AGENT=1 bootgly test 21 16     # hashing de Password
-AI_AGENT=1 bootgly test 21 17     # política de rehash e migração do Password
+AI_AGENT=1 bootgly test 22        # suite API/Security completa (JWT, Authorization, crypto)
+AI_AGENT=1 bootgly test 22 12     # roundtrip do Encrypter
+AI_AGENT=1 bootgly test 22 13     # rejeição de adulteração do Encrypter
+AI_AGENT=1 bootgly test 22 14     # vínculo de AAD do Encrypter
+AI_AGENT=1 bootgly test 22 15     # guards de Key, keyring e rotação
+AI_AGENT=1 bootgly test 22 16     # hashing de Password
+AI_AGENT=1 bootgly test 22 17     # política de rehash e migração do Password
 ```
 
 ## Reference
