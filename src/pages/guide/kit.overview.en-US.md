@@ -245,6 +245,16 @@ repository advertises count: a tag from a fork or a mirror is never a release. A
 cannot be reached lets `list` show the releases already known locally, marked unverified; a move
 waits until the repository is reachable again.
 
+The releases remote must use `https://` or `file://` without credentials, SSH, or a local path:
+credentials in its URL, a remote helper (`ext::` runs a command) or a plaintext transport is
+refused with the `git remote set-url` that fixes it — credentials are judged on the URL the kit
+stores, so a token your own `insteadOf` rule adds is accepted — and a remote whose host part is
+ambiguous (`?` or `#` before the `@`, an scp-like `evil:x@github.com:…`) or that names a helper
+is never taken for the canonical repository. Every fetch runs under
+`GIT_ALLOW_PROTOCOL=file:https:ssh`, which beats the `protocol.<name>.allow` configuration; a
+`GIT_ALLOW_PROTOCOL` you export only narrows it.
+Since 1.0.10.
+
 ```php
 Bootgly\ABI\Data\SemVer::parse (string $version): null|SemVer
 ```
@@ -263,6 +273,37 @@ The git module the command is built on — with `SemVer`, the only dependency cr
 version-shaped tags newest first with their commits and `read()` an annotated tag's notes,
 `$VCS->Remotes` lists, finds and adds remotes, `$VCS->Submodules` inspects and updates the
 submodules the tree declares.
+
+```php
+Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int
+```
+
+Run one git command that talks to a remote under the network deadline (`Git::DEADLINE`) and the
+transport allow-list (`Git::PROTOCOLS`, `file:https:ssh`, set as `GIT_ALLOW_PROTOCOL` on the
+child — narrowed to the transports an inherited `GIT_ALLOW_PROTOCOL` also names). `fetch()` and `Tags->probe()` go through it; `Submodules->update()` deliberately does not,
+so git's own `protocol.file.allow=user` stays in force for submodules.
+
+```php
+Bootgly\ACI\VCS\Git->clone (string $URL, string $target, null|Closure $Callback = null): int
+```
+
+Clone a repository through `transfer()`, with option parsing ended before the URL, run from the
+working tree the `Git` instance was built on (a relative URL or target is read against it). The
+allow-list stops transports, not credentials: screen an untrusted URL first.
+
+```php
+Bootgly\ACI\VCS\Remotes::screen (string $URL): null|Bootgly\ACI\VCS\Remotes\Refusals
+```
+
+Screen a repository URL against the transports a fetch may use: `null` when it is admitted, or the
+reason it is refused — `Malformed`, `Helper`, `Plaintext`, `Unsupported` or `Credentials`.
+
+```php
+Bootgly\ACI\VCS\Remotes::redact (string $URL): string
+```
+
+The URL for display, without its credentials: any userinfo of a `scheme://` URL is dropped, except
+an SSH login without a password; scp-like addresses and paths come back unchanged.
 
 ## Next references
 

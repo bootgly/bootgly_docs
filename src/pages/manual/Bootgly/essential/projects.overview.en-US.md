@@ -83,7 +83,7 @@ The wizard prepares the kit on first run — every platform submodule (`Console`
 
 - **Using what is already imported** — the first mode creates nothing. A prepared kit already carries every exportable platform project, so standing pat and opening one of them is a first-class way to start; the option states how many the kit holds;
 - **From scratch** — a minimal `CLI` or `WPI` project generated from the framework stubs: it asks the project path, interface, port and metadata, shows a summary and confirms;
-- **Importing from a Git remote** — it asks the repository URL, the target path and the interface, then delegates to `bootgly projects import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
+- **Importing from a Git remote** — it asks the repository URL (checked at the prompt, see *Importing a project*), the target path and the interface, then delegates to `bootgly projects import`: the repository is cloned, validated against the `*.Project.php` signature and registered.
 
 Only projects declared with `exportable: true` — written as the literal `true` — in their `new Project(...)` signature are stocked as examples and offered by the wizard; `--from=<source>` copies the platform project you name.
 
@@ -123,6 +123,16 @@ php bootgly projects import https://github.com/foo/project1 Project1
 ```
 
 The repository is cloned (system git) with its **full history**, validated against the signature, placed into `projects/Project1/` — `.git`, `origin` remote and all, so you keep committing and pushing from there — and registered in the allow-list. When the target name differs from the source's, the signature file is renamed to the new leaf and left **uncommitted** for you to review. Every rule the registry enforces is checked before the copy, so a refused import leaves nothing behind.
+
+The URL is checked before anything is written or run. Accepted: `https://` without credentials, SSH (`git@host:owner/repo.git` or `ssh://git@host/owner/repo.git`), `file://` without credentials and a local path. Refused, each with its remedy:
+
+- **credentials in the URL** — `https://user:token@…`, a token as the user name, any user part in a `file://` URL, or an SSH address `user:password@host:path`: let git supply them through a credential helper (`git help credentials`) or use SSH;
+- **a remote helper** — `ext::` (runs a command), `fd::` or any `<name>::`: clone the repository yourself and import its local path;
+- **a plaintext transport** — `http://`, `git://`, `ftp://`: use `https://` or SSH;
+- **an unsupported transport** — any other scheme (`rsync://`, `ssh+git://` — write `ssh://` or `git+ssh://`);
+- **a malformed URL** — one that is empty, starts with a dash, carries a control character or surrounding blanks, has text before its `scheme://`, a third slash after it or a slash missing (`https:/…`), or has `?`, `#`, `\` or a blank in its host part.
+
+The clone runs without a shell and without terminal prompts (git asks no user name or password — use a credential helper or SSH), under the network deadline and `GIT_ALLOW_PROTOCOL=file:https:ssh`, so an `insteadOf` rewrite to another transport fails too. A `GIT_ALLOW_PROTOCOL` you already export narrows that list (only the transports both name), never widens it. The clone is staged in a private temporary directory (random name, mode `0700`) that is removed whether the import succeeds, is declined — Ctrl+C at the prompt included — or fails, and no output shows the URL's credentials. Since 1.0.10.
 
 > [!WARNING]
 > Imported projects run third-party code when started (`start`, `restart`, a `startup` unit), on their `migrate`, `seed` and `schedule`, and when their tests or queues run — the command asks for confirmation (skip with `--yes`). `projects list` and `project <path> info` only read the signature. A repository whose `*.Project.php` is a symbolic link, or that carries a `bootgly` launcher or a symbolic link named `bootgly` (the global `bootgly` command would run it from inside the project), is refused. Since 1.0.10.
@@ -187,7 +197,7 @@ php bootgly project <Name> boot
 
 ### `projects import`
 
-Imports a project from a git repository URL carrying the `*.Project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
+Imports a project from a git repository URL (`https://`, SSH, `file://` or a local path — see *Importing a project* for what is refused) carrying the `*.Project.php` signature. Without arguments, interactive terminals choose the import source first — the Platforms (a multi-selection showing how many exportable projects are available) or a Git remote (asks the URL):
 
 ```bash
 php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]

@@ -83,7 +83,7 @@ O wizard prepara o kit na primeira execução — todos os submodules de platafo
 
 - **Usar o que já foi importado** — o primeiro modo não cria nada. Um kit preparado já carrega todos os projetos exportáveis das plataformas, então ficar como está e abrir um deles é uma forma legítima de começar; a opção informa quantos o kit tem;
 - **Do zero (from scratch)** — um projeto `CLI` ou `WPI` mínimo gerado a partir dos stubs do framework: ele pergunta o caminho do projeto, interface, porta e metadados, mostra um resumo e confirma;
-- **Importando de um remoto Git** — ele pergunta a URL do repositório, o caminho de destino e a interface, e então delega ao `bootgly projects import`: o repositório é clonado, validado contra a assinatura `*.Project.php` e registrado.
+- **Importando de um remoto Git** — ele pergunta a URL do repositório (verificada no prompt, veja *Importando um projeto*), o caminho de destino e a interface, e então delega ao `bootgly projects import`: o repositório é clonado, validado contra a assinatura `*.Project.php` e registrado.
 
 Apenas projetos declarados com `exportable: true` — escrito como o literal `true` — na assinatura `new Project(...)` são estocados como exemplos e oferecidos pelo wizard; `--from=<origem>` copia o projeto de plataforma que você nomear.
 
@@ -124,6 +124,16 @@ php bootgly projects import https://github.com/foo/project1 Project1
 ```
 
 O repositório é clonado (git do sistema) com o **histórico completo**, validado contra a assinatura, colocado em `projects/Project1/` — `.git`, remote `origin` e tudo, então você continua commitando e dando push de lá — e registrado na allow-list. Quando o nome de destino difere do da origem, o arquivo de assinatura é renomeado para o novo leaf e deixado **sem commit** para você revisar. Toda regra que o registro impõe é verificada antes da cópia, então uma importação recusada não deixa nada para trás.
+
+A URL é verificada antes de qualquer coisa ser escrita ou executada. Aceitas: `https://` sem credenciais, SSH (`git@host:dono/repo.git` ou `ssh://git@host/dono/repo.git`), `file://` sem credenciais e um caminho local. Recusadas, cada uma com sua solução:
+
+- **credenciais na URL** — `https://usuario:token@…`, um token como nome de usuário, qualquer parte de usuário numa URL `file://`, ou um endereço SSH `usuario:senha@host:caminho`: deixe o git fornecê-las por um credential helper (`git help credentials`) ou use SSH;
+- **um remote helper** — `ext::` (executa um comando), `fd::` ou qualquer `<nome>::`: clone o repositório você mesmo e importe o caminho local;
+- **um transporte em texto puro** — `http://`, `git://`, `ftp://`: use `https://` ou SSH;
+- **um transporte não suportado** — qualquer outro esquema (`rsync://`, `ssh+git://` — escreva `ssh://` ou `git+ssh://`);
+- **uma URL malformada** — vazia, que começa com hífen, carrega um caractere de controle ou espaços nas pontas, tem texto antes do `esquema://`, uma terceira barra depois dele ou uma barra a menos (`https:/…`), ou tem `?`, `#`, `\` ou um espaço na parte do host.
+
+O clone roda sem shell e sem prompts no terminal (o git não pede usuário nem senha — use um credential helper ou SSH), sob o prazo de rede e `GIT_ALLOW_PROTOCOL=file:https:ssh`, então uma reescrita `insteadOf` para outro transporte também falha. Um `GIT_ALLOW_PROTOCOL` que você já exporta estreita essa lista (só os transportes que os dois nomeiam), nunca a amplia. O clone é preparado em um diretório temporário privado (nome aleatório, modo `0700`) que é removido quando a importação dá certo, é recusada — Ctrl+C no prompt incluído — ou falha, e nenhuma saída mostra as credenciais da URL. Desde a 1.0.10.
 
 > [!WARNING]
 > Projetos importados executam código de terceiros ao serem iniciados (`start`, `restart`, uma unidade `startup`), no seu `migrate`, `seed` e `schedule`, e quando seus testes ou filas rodam — o comando pede confirmação (pule com `--yes`). `projects list` e `project <caminho> info` só leem a assinatura. Um repositório cujo `*.Project.php` é um link simbólico, ou que carrega um launcher `bootgly` ou um link simbólico chamado `bootgly` (o comando global `bootgly` o executaria de dentro do projeto), é recusado. Desde a 1.0.10.
@@ -188,7 +198,7 @@ O `projects create` roda o mesmo hook para todo projeto from-scratch. Os exemplo
 
 ### `projects import`
 
-Importa um projeto de uma URL de repositório git que carregue a assinatura `*.Project.php`. Sem argumentos, terminais interativos escolhem antes a fonte da importação — as Plataformas (uma multi-seleção mostrando quantos projetos exportáveis estão disponíveis) ou um remoto Git (pergunta a URL):
+Importa um projeto de uma URL de repositório git (`https://`, SSH, `file://` ou um caminho local — veja *Importando um projeto* para o que é recusado) que carregue a assinatura `*.Project.php`. Sem argumentos, terminais interativos escolhem antes a fonte da importação — as Plataformas (uma multi-seleção mostrando quantos projetos exportáveis estão disponíveis) ou um remoto Git (pergunta a URL):
 
 ```bash
 php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]

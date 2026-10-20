@@ -249,6 +249,15 @@ esse repositório anuncia contam: uma tag de um fork ou de um mirror nunca é re
 pode ser alcançado deixa o `list` mostrar as releases já conhecidas localmente, marcadas como não
 verificadas; um movimento espera até o repositório estar alcançável de novo.
 
+O remote de releases deve usar `https://` ou `file://` sem credenciais, SSH ou um caminho local:
+credenciais na URL, um remote helper (`ext::` executa um comando) ou um transporte em texto puro
+é recusado com o `git remote set-url` que corrige — as credenciais são julgadas pela URL que o kit
+guarda, então um token que a sua própria regra `insteadOf` acrescenta é aceito — e um remote cuja
+parte do host é ambígua (`?` ou `#` antes do `@`, um scp `evil:x@github.com:…`) ou que nomeia um
+helper nunca é tomado pelo repositório canônico. Todo fetch roda sob
+`GIT_ALLOW_PROTOCOL=file:https:ssh`, que vence a configuração `protocol.<nome>.allow`; um
+`GIT_ALLOW_PROTOCOL` que você exporta só o estreita. Desde a 1.0.10.
+
 ```php
 Bootgly\ABI\Data\SemVer::parse (string $version): null|SemVer
 ```
@@ -267,6 +276,39 @@ ele: `$VCS->Git` roda um comando git por processo filho, sem shell (`execute()`,
 em forma de versão da mais nova para a mais antiga com seus commits e `read()` as notas de uma tag
 anotada, `$VCS->Remotes` lista, encontra e adiciona remotes, `$VCS->Submodules` inspeciona e
 atualiza os submódulos que a árvore declara.
+
+```php
+Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int
+```
+
+Roda um comando git que fala com um remote sob o prazo de rede (`Git::DEADLINE`) e a allow-list de
+transportes (`Git::PROTOCOLS`, `file:https:ssh`, definida como `GIT_ALLOW_PROTOCOL` no processo
+filho — estreitada aos transportes que um `GIT_ALLOW_PROTOCOL` herdado também nomeia). `fetch()` e `Tags->probe()` passam por ele; `Submodules->update()` de propósito não, para
+que o `protocol.file.allow=user` do próprio git continue valendo para submódulos.
+
+```php
+Bootgly\ACI\VCS\Git->clone (string $URL, string $target, null|Closure $Callback = null): int
+```
+
+Clona um repositório via `transfer()`, com a leitura de opções encerrada antes da URL, a partir da
+árvore de trabalho com que a instância de `Git` foi criada (uma URL ou destino relativo é lido a
+partir dela). A allow-list barra transportes, não credenciais: faça o screen de uma URL não
+confiável antes.
+
+```php
+Bootgly\ACI\VCS\Remotes::screen (string $URL): null|Bootgly\ACI\VCS\Remotes\Refusals
+```
+
+Avalia uma URL de repositório contra os transportes que um fetch pode usar: `null` quando é
+admitida, ou o motivo da recusa — `Malformed`, `Helper`, `Plaintext`, `Unsupported` ou
+`Credentials`.
+
+```php
+Bootgly\ACI\VCS\Remotes::redact (string $URL): string
+```
+
+A URL para exibição, sem as credenciais: qualquer userinfo de uma URL `esquema://` é descartado,
+exceto um login SSH sem senha; endereços no estilo scp e caminhos voltam inalterados.
 
 ## Próximas referências
 
