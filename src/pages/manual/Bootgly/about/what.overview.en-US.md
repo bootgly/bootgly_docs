@@ -25,7 +25,7 @@ Every item below is first-party code — the core has **zero third-party runtime
 
 - **PHP ≥ 8.4** — Opcache + JIT recommended (up to +50% performance);
 - **License** — MIT;
-- **Operating system** — Linux native; Windows and other systems via Docker.
+- **Operating system** — Linux native; macOS for development, on a case-sensitive volume (server support in progress); Windows via WSL2 or Docker.
 
 > [!NOTE]
 > Bootgly is **stable**: the `1.x` line follows [Semantic Versioning](https://semver.org/) — minor releases add capabilities, patch releases repair, and nothing documented breaks before `2.0.0`. Fixes land on the latest `1.x` minor; the full compatibility promise and the support window are in the [Versioning guide](/guide/versioning/overview/).

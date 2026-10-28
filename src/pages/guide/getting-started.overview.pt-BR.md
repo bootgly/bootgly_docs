@@ -15,6 +15,17 @@ O instalador:
 5. Opcionalmente instala a **CLI do Bootgly globalmente** (`php bootgly setup`) — assim todo comando funciona como `bootgly ...` em vez de `php bootgly ...`;
 6. Abre o **wizard de projetos** (`php bootgly projects create`).
 
+> [!WARNING]
+> **macOS: instale num volume case-sensitive.** O kit mantém o arquivo launcher `bootgly` ao lado da pasta de plataforma `Bootgly/` — dois nomes que só diferem em maiúsculas. O volume padrão do macOS (APFS) ignora maiúsculas e faz o checkout de apenas um deles, então `php bootgly` não consegue iniciar. Crie um volume case-sensitive uma vez e instale o kit dentro dele:
+>
+> ```bash
+> diskutil list                     # anote o seu "APFS Container" (disk3 no Apple Silicon, disk1 no Intel)
+> diskutil apfs addVolume disk3 'Case-sensitive APFS' Code
+> cd /Volumes/Code && curl -fsSL https://bootgly.com/install | bash
+> ```
+>
+> O volume compartilha o espaço livre do container, então não precisa de tamanho fixo. O Windows (fora do WSL2) tem a mesma limitação; use WSL2 ou Docker lá.
+
 > **Rodar de novo é seguro.** Se a instalação foi interrompida em qualquer etapa, execute o mesmo comando novamente: quando o diretório alvo já é um checkout do Bootgly Kit, o instalador **retoma** — imprime um checklist do que já foi feito, inicializa o que falta (submodules, resources) e reabre o wizard (pulando-o quando um projeto já está registrado). O wizard só oferece as plataformas ainda não configuradas.
 
 Um kit recém-clonado (`git clone`) contém apenas os arquivos do kit — todos os submodules de plataforma ficam **vazios** até serem instalados:

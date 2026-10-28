@@ -25,7 +25,7 @@ Cada item abaixo é código próprio — o núcleo tem **zero dependências de t
 
 - **PHP ≥ 8.4** — Opcache + JIT recomendados (até +50% de performance);
 - **Licença** — MIT;
-- **Sistema operacional** — Linux nativo; Windows e outros sistemas via Docker.
+- **Sistema operacional** — Linux nativo; macOS para desenvolvimento, num volume case-sensitive (suporte aos servidores em andamento); Windows via WSL2 ou Docker.
 
 > [!NOTE]
 > O Bootgly é **estável**: a linha `1.x` segue o [Versionamento Semântico](https://semver.org/) — releases minor adicionam capacidades, releases patch corrigem, e nada documentado quebra antes da `2.0.0`. As correções saem no minor `1.x` mais recente; a promessa de compatibilidade completa e a janela de suporte estão no [guia de Versionamento](/guide/versioning/overview/).
