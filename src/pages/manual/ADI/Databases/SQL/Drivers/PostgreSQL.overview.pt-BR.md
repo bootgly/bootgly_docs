@@ -142,10 +142,47 @@ startup da conexão; marca a operação como `cancelled`.
 abandon (Operation $Operation): void
 ```
 
-Reconcilia o wire quando o Pool finaliza uma operação de fora — um deadline vencido —
-enquanto o backend ainda está respondendo ao batch dela. O slot do pipeline é entregue a
-um stand-in destacado que absorve as mensagens restantes até o `ReadyForQuery` dele, então
-o driver mantém todo efeito de sessão que deve a si mesmo (cache de statements, evictions)
-enquanto a operação retomada pelo Pool nunca mais é lida, escrita ou resolvida. Quando não
-sobra irmã para bombear a resposta, a sessão é derrubada, e é isso que devolve o slot de
-conexão.
+Reconcilia o wire quando o Pool finaliza uma operação de fora — um deadline vencido, um cancel
+que nunca chegou ao servidor, um teardown de transação — enquanto o backend ainda está
+respondendo ao batch dela. Ele conta os leitores primeiro: uma irmã viva no pipeline (uma entrada
+terminada não é leitora), ou um batch ainda sendo escrito atrás dela. Com um, reconcilia como o
+`detach()`; sem nenhum, a sessão é derrubada, e é isso que devolve o slot de conexão.
+
+```php
+detach (Operation $Operation): void
+```
+
+Reconcilia o wire quando um chamador para de esperar por uma operação (`Pool::withdraw()`: uma
+resposta deferred cuja espera foi recusada ou interrompida, ou cujo Fiber da requisição foi
+destruído). Um batch em pipeline sempre termina em `Sync`, então o backend continua respondendo a
+ele: o slot do pipeline é entregue a um stand-in destacado que absorve as mensagens restantes até o
+`ReadyForQuery` dele, mantendo todo efeito de sessão que o driver deve a si mesmo (cache de
+statements, evictions) enquanto a operação retomada pelo Pool nunca mais é lida, escrita ou
+resolvida. Nenhum leitor é exigido. O `check()` ignora stand-ins, então a conexão volta para `idle`
+— a menos que outros chamadores ainda leiam ali — e a próxima operação entregue a ela entra na fila
+atrás deles e os drena; o `$detached` informa que a sessão ainda deve respostas a stand-ins.
+
+Só um batch que não pode ser reconciliado derruba a sessão: um ainda sendo escrito depois de um
+byte creditado, ou sobre TLS, que pode reter um record não creditado. Um batch em texto puro do
+qual nenhum byte foi escrito é retirado localmente, e a sessão dele é mantida.
+
+O `check()` também informa um batch que outro chamador ainda está descarregando, então o Pool
+nunca entrega uma conexão no meio da escrita de outro. E enquanto um batch enfileirado atrás de
+stand-ins ainda está sendo descarregado, o driver lê e absorve o que os stand-ins devem: um backend
+bloqueado escrevendo uma resposta que ninguém espera seguraria as duas pontas até o deadline. O que
+ele lê depois do último stand-in responde a esse batch, e é entregue a ele assim que o batch está
+inteiro no wire.
+
+```php
+reset (): bool
+```
+
+Escreve o reset de sessão — a simple Query `SELECT pg_advisory_unlock_all(); UNLISTEN *` — atrás de
+tudo o que a sessão ainda deve. O Pool o pede ao devolver uma sessão marcada a `idle`, onde
+ninguém mais deve trabalho nela. Bytes em pipeline esperam no buffer de recepção do servidor, então
+o backend o executa logo depois que o statement abandonado termina, mesmo que ninguém leia, e a
+resposta dele é absorvida como a de um stand-in (o `$detached` o conta). Um batch que segura o
+stream de escrita nunca é intercalado: o reset é recusado. Um reset ainda no fim da fila cobre um
+pedido repetido — nada foi escrito depois dele. Retorna `false` quando é recusado, quando o stream
+aceita menos que o reset inteiro, ou quando a sessão sumiu, e o Pool então corta a sessão. Variáveis
+de sessão (`SET`) não são resetadas.

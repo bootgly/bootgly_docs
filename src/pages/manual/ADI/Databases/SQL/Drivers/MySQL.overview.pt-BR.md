@@ -188,12 +188,43 @@ thread id do greeting; marca a operação como `cancelled`.
 abandon (Operation $Operation): void
 ```
 
-Reconcilia o wire quando o Pool finaliza uma operação de fora — um deadline vencido —
-enquanto o servidor ainda está respondendo a ela. Uma irmã enfileirada simplesmente sai da
-FIFO; a cabeça é entregue a um stand-in destacado que drena a resposta, de modo que a
-operação retomada pelo Pool nunca mais é lida, escrita ou resolvida. Quando nada pode ser
-reconciliado — o comando não está inteiro no wire, ou não sobrou irmã para bombear a
-resposta — a sessão é derrubada, e é isso que devolve o slot de conexão.
+Reconcilia o wire quando o Pool finaliza uma operação de fora — um deadline vencido, um
+cancel que nunca chegou ao servidor, um teardown de transação — enquanto o servidor ainda
+está respondendo a ela. Drenar exige um leitor, então a sessão só é mantida enquanto uma irmã viva
+está enfileirada atrás da cabeça para bombear a resposta (e uma irmã que sai da FIFO atrás de
+uma cabeça stand-in só a mantém enquanto outra irmã permanece atrás dessa cabeça). Sem
+nenhuma, a sessão é derrubada, e é isso que devolve o slot de conexão. Todos os outros casos
+reconciliam como o `detach()`.
+
+```php
+detach (Operation $Operation): void
+```
+
+Reconcilia o wire quando um chamador para de esperar por uma operação (`Pool::withdraw()`:
+uma resposta deferred cuja espera foi recusada ou interrompida, ou cujo Fiber da requisição
+foi destruído). Uma irmã enfileirada simplesmente sai da FIFO; a cabeça é entregue a um
+stand-in destacado que drena a resposta, de modo que a operação retomada pelo Pool nunca mais
+é lida, escrita ou resolvida. Nenhum leitor é exigido: o `check()` ignora uma cabeça
+stand-in, então a conexão volta para `idle` — a menos que outros chamadores ainda leiam
+ali — e a próxima operação entregue a ela entra na fila atrás do stand-in e o bombeia; o
+`$detached` informa que a sessão ainda deve a resposta do stand-in. Só um comando que
+nunca chegou inteiro ao wire derruba a sessão.
+
+```php
+reset (): bool
+```
+
+Escreve o reset de sessão `DO RELEASE_ALL_LOCKS()`, que libera todo lock nomeado (`GET_LOCK`) que a
+sessão segura. O Pool o pede ao devolver uma sessão marcada a `idle`, onde ninguém mais deve
+trabalho nela. O servidor o lê assim que termina a resposta em andamento, mesmo que ninguém leia, e
+o OK dele — ou o ERR de um servidor sem essa função — é absorvido como o de um stand-in antes de
+qualquer comando enfileirado ser escrito (o `$detached` o conta). Ele fica atrás de uma cabeça cujo
+comando está inteiro no wire e à frente de todo comando ainda não escrito. Um comando pela metade no
+wire nunca é intercalado: o reset é recusado. Um reset ainda devido cobre todo pedido posterior: só
+a cabeça escreve, e um comando enfileirado só vira a cabeça depois que o reset é drenado, então o
+que está enfileirado atrás dele nunca chegou ao servidor. Retorna `false` quando é recusado, quando
+o stream aceita menos que o reset inteiro, ou quando a sessão sumiu, e o Pool então corta a sessão.
+Variáveis de sessão (`SET`) não são resetadas.
 
 O protocolo MySQL é estritamente request-response: não há pipelining no wire. Operações
 co-localizadas entram em uma FIFO onde só a cabeça possui o socket — `check()` reporta o

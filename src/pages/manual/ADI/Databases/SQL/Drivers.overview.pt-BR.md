@@ -126,6 +126,21 @@ hidrata exatamente como o driver decodificou.
   o pool abre uma conexão nova. E quando a sessão morre com um batch escrito pela metade, esse
   batch falha com a mesma causa de todas as outras operações dela, em vez de esperar o próprio
   prazo vencer.
+- Um statement cujo chamador parou de esperar — o cliente desconectou, uma espera deferred foi
+  recusada ou interrompida — mantém a sessão quando o batch dele está inteiro no wire. O driver o
+  *destaca*: um stand-in absorve o resto da resposta, o `check()` deixa de contar a conexão como
+  ocupada por causa dele, e a próxima operação entregue a essa conexão entra na fila atrás do
+  stand-in e o drena antes da própria. A vaga é segurada pela sessão viva pelo tempo real de
+  execução do statement, não até o deadline. Um batch ainda sendo escrito é a exceção — os bytes
+  restantes nunca poderão ser atribuídos, então a sessão é derrubada — e também um statement
+  retirado numa conexão que uma transação reservou. A retirada também marca a sessão mantida
+  (`taint`): a liberação que a devolve a `idle`, quando ninguém mais deve trabalho nela, escreve
+  primeiro um reset (`reset()`) — advisory locks e `LISTEN` no PostgreSQL, locks nomeados no MySQL,
+  mas não as variáveis `SET` — e uma sessão que não consegue recebê-lo é derrubada. Uma sessão
+  marcada não recebe novo chamador co-localizado. Uma operação enfileirada atrás de um stand-in
+  espera por ele; se essa operação expirar, o que ela já enviou ainda pode rodar no servidor, então
+  o resultado dela é desconhecido. Veja
+  **[Operações retiradas](/manual/ADI/Database/overview/#operações-retiradas)**.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.
@@ -145,3 +160,78 @@ hidrata exatamente como o driver decodificou.
   diferenças de geração de SQL entre os engines.
 - **[Dialetos de Schema](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)** — geração
   de DDL, DDL transacional e advisory locks.
+
+### Contrato de driver e Pool para trabalho retirado
+
+Estes são os membros do `Driver` — e o método do `Pool` — usados para reconciliar o wire quando o
+Pool finaliza uma operação de fora. O SQLite herda os padrões do `Driver`, e o Redis herda o
+`detach()` e o `reset()` — o `abandon()` dele é próprio.
+
+```php
+detach (Operation $Operation): void
+```
+
+Reconcilia o wire de uma operação cujo chamador parou de esperar (`Pool::withdraw()`), mantendo
+sempre uma sessão drenável quando o batch está inteiro no wire: a resposta restante fica com um
+stand-in destacado, e nenhum leitor é exigido. Um batch cujos bytes restantes nunca poderão ser
+atribuídos — escrito pela metade — ainda derruba a sessão. O padrão delega ao `abandon()`; um
+driver cujo `abandon()` chama `detach()` precisa sobrescrevê-lo, ou os dois recursam.
+
+```php
+abandon (Operation $Operation): void
+```
+
+Reconcilia o wire quando o Pool finaliza uma operação de fora por qualquer outro motivo — um
+deadline vencido, um cancel que nunca chegou ao servidor, um teardown de transação, uma retirada
+numa conexão reservada por uma transação. Ele continua cortando a sessão quando ninguém sobra para
+ler a resposta: PostgreSQL, MySQL e Redis só a mantêm enquanto sobra um leitor vivo para bombear a
+resposta (uma entrada terminada não é leitora), e PostgreSQL e MySQL, fora isso, reconciliam
+exatamente como o `detach()`. O padrão não faz nada.
+
+```php
+reset (): bool
+```
+
+Reseta o que uma sessão mantida pode carregar depois que o chamador foi embora — um lock concedido
+depois que o chamador parou de esperar, uma subscrição. O Pool o pede ao devolver essa sessão a
+`idle`, quando ninguém mais deve trabalho nela (`check()`): o driver o escreve na hora, atrás de
+tudo o que a sessão ainda deve, então o servidor o executa logo depois que o trabalho abandonado
+termina, mesmo que ninguém leia, e a resposta dele é absorvida como a de um stand-in por quem ler a
+seguir. O PostgreSQL escreve `SELECT pg_advisory_unlock_all(); UNLISTEN *`; o MySQL escreve
+`DO RELEASE_ALL_LOCKS()`. Variáveis de sessão não são resetadas. Um reset ainda devido, sem nada
+escrito atrás dele, cobre um pedido repetido. Retorna `false` quando não pode ser escrito inteiro
+agora — um batch segura o stream de escrita, o stream aceita menos que o reset inteiro, a sessão
+sumiu — e o Pool então corta a sessão, que nenhum chamador mais compartilha. O padrão retorna
+`true`: um driver que não guarda esse estado não tem o que resetar.
+
+```php
+check (): bool
+```
+
+Se o driver ainda deve trabalho a um chamador, de modo que o Pool não deve entregar a conexão
+ainda: uma operação em voo que alguém espera ou — no PostgreSQL e no Redis — um batch que outro
+chamador ainda está descarregando. Stand-ins destacados não contam: a próxima operação entregue
+à conexão entra na fila atrás deles e os drena.
+
+```php
+public bool $detached { get; }
+```
+
+Se a sessão ainda deve respostas a stand-ins destacados — um reset de sessão pendente conta. O Pool
+só mantém o deadline de um statement retirado enquanto isto vale: depois que os stand-ins são
+drenados o servidor já respondeu, e um drop posterior da sessão não lhes deve vaga. É `false` por
+padrão, para drivers que nunca destacam.
+
+```php
+taint (Connection $Connection): void
+```
+
+Método do `Pool`. Marca uma sessão emprestada cujo dono ficou órfão — o `withdraw()` marca aquela em
+que um statement retirado que chegou ao servidor estava; uma transação adotada marca a reservada
+dela —, para que o estado de sessão dela seja resetado antes de a conexão ser entregue de novo. A
+próxima liberação que devolveria a conexão a `idle` — aquela depois da qual ninguém mais deve
+trabalho nela (`Driver::check()`) — faz o driver escrever o reset dela (`reset()`) atrás de tudo o
+que a sessão ainda deve, uma vez; uma sessão que não pode recebê-lo é cortada e derrubada. Até lá
+nenhum novo chamador é co-localizado ali: ele rodaria antes do reset. Pensado para uma conexão que o
+Pool emprestou, busy ou reservada: uma já idle só é resetada depois do próximo chamador dela. Uma
+conexão que o Pool não conta é ignorada, e uma derrubada perde a marca.

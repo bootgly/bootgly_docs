@@ -87,11 +87,19 @@ not nested. With a name, rolls back to that savepoint.
 
 Rolling back the outer transaction is the one call that runs even with a statement still
 outstanding — a teardown that refused would strand the pinned connection and leave the server
-session open inside the transaction. The outstanding statement is discarded: it fails with
-`SQL transaction statement was discarded by the rollback.` and its buffered command is dropped
-with it, so it can never reach the wire afterwards and run outside the transaction that was
-meant to contain it. A savepoint rollback is an ordinary statement and is refused like any
-other.
+session open inside the transaction. The outstanding statement is discarded: it is withdrawn
+through its pool, as a caller that stops waiting withdraws one (see
+[Withdrawn operations](/manual/ADI/Database/overview/#withdrawn-operations)), so it fails with
+`Database operation was withdrawn: its caller stopped waiting.` and its buffered command is
+dropped with it, so it can never reach the wire afterwards and run outside the transaction that
+was meant to contain it.
+
+A statement that had already reached the server is another matter: nobody is left to read its
+answer on the reserved connection, so the pool drops that session — the server rolls the
+transaction back as it closes, and the `ROLLBACK` composed right after fails with
+*"Database operation lost the connection it was pinned to."* — and the statement keeps its slot
+counted until its own deadline, because the server still runs it. A savepoint rollback is an
+ordinary statement and is refused like any other.
 
 ```php
 abort (): Operation

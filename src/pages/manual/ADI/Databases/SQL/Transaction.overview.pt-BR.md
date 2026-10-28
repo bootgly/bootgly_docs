@@ -89,10 +89,19 @@ não há. Com nome, volta para aquele savepoint.
 
 Desfazer a transação externa é a única chamada que roda mesmo com uma instrução pendente — um
 teardown que recusasse deixaria a conexão fixada presa e a sessão do servidor aberta dentro da
-transação. A instrução pendente é descartada: ela falha com
-`SQL transaction statement was discarded by the rollback.` e o comando que estava no buffer
+transação. A instrução pendente é descartada: ela é retirada pelo pool dela, do jeito que quem
+para de esperar retira uma (veja
+[Operações retiradas](/manual/ADI/Database/overview/#operações-retiradas)), então ela falha com
+`Database operation was withdrawn: its caller stopped waiting.` e o comando que estava no buffer
 vai junto, então ele nunca alcança o fio depois e nunca roda fora da transação que deveria
-contê-lo. Um rollback de savepoint é uma instrução comum e é recusado como qualquer outra.
+contê-lo.
+
+Uma instrução que já tinha chegado ao servidor é outra história: ninguém sobra para ler a resposta
+dela na conexão reservada, então o pool derruba essa sessão — o servidor faz rollback da transação
+quando ela fecha, e o `ROLLBACK` composto logo depois falha com
+*"Database operation lost the connection it was pinned to."* — e a instrução mantém a vaga contada
+até o próprio deadline, porque o servidor ainda a executa. Um rollback de savepoint é uma instrução
+comum e é recusado como qualquer outra.
 
 ```php
 abort (): Operation

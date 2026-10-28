@@ -152,10 +152,27 @@ Uma espera que não volta não deixa a conexão presa. Quando o selector a recus
 `defer()` a interrompe, ou o cliente desconecta e o Fiber da requisição é destruído, as operações
 que ela aguardava são retiradas localmente — veja `withdraw()` em
 [DBAL de banco](/manual/ADI/Database/overview/) — e o pool retoma a vaga delas em vez de deixar a
-conexão ocupada para sempre; um statement que o servidor já recebeu pode manter essa vaga contada
-até o próprio deadline. A recusa ou o `Timeout` continua chegando ao seu handler — a menos
-que a própria retirada falhe: a exceção dela propaga no lugar, com a original encadeada no fim da
-cadeia de `getPrevious()` dela.
+conexão ocupada para sempre. Um statement que o servidor já recebeu mantém a sessão: a conexão
+volta para o pool e a próxima operação nela drena o resto dessa resposta, então uma rajada de
+desconexões de clientes não trava o pool pelo timeout dos statements. Só quando uma sessão com
+trabalho no servidor precisa ser derrubada — um batch escrito pela metade, ou um statement retirado
+na conexão reservada de uma transação — a vaga dele continua contada até o deadline do próprio
+statement. A recusa ou o `Timeout` continua chegando ao seu handler — a menos que a própria
+retirada falhe: a exceção dela propaga no lugar, com a original encadeada no fim da cadeia de
+`getPrevious()` dela.
+
+Como essa sessão é mantida, ela é **resetada** antes de ser entregue de novo. A retirada a marca
+(`taint`), e a liberação que a devolve ao pool — quando nenhuma outra requisição ainda lê nela —
+escreve `SELECT pg_advisory_unlock_all(); UNLISTEN *` (PostgreSQL) ou `DO RELEASE_ALL_LOCKS()`
+(MySQL) atrás do que a sessão ainda deve, então advisory locks de sessão, locks `GET_LOCK` e
+registros `LISTEN` que um statement retirado pegou não sobrevivem ao cliente que desconectou. Se o
+reset não consegue ser escrito, a sessão é derrubada. O reset também encerra o que uma requisição
+que ainda compartilhava a sessão pegou no escopo de sessão fora de uma transação, então pegue esses
+locks dentro de `transact()`, cuja conexão é reservada. Variáveis de sessão **não** são resetadas:
+`SET` / `SET SESSION` continua na sessão do pool entregue às requisições seguintes, então prefira
+`SET LOCAL` ou restaure o valor explicitamente. Uma operação enfileirada atrás de um statement
+retirado espera por ele; se expirar, o que ela já enviou ainda pode rodar no servidor, então o
+resultado dela é desconhecido.
 
 ## Métodos do Database
 
@@ -234,17 +251,40 @@ sucesso ainda é descartada se a externa falhar.
 Uma transação é uma superfície **serial**: ela carrega uma operação por vez. Emita a próxima
 query depois de aguardar a anterior, e reserve o `drain()` para grupos criados no pool.
 
-Se o Fiber da requisição é destruído no meio da transação — o cliente foi embora — nenhum
-callback retorna e nada é lançado, então o `transact()` mais externo faz rollback da transação
-inteira localmente com `Transaction::abort()`: o `ROLLBACK` dele é retirado antes de chegar ao
-wire, a sessão é cortada, o servidor faz rollback e a reserva da conexão é liberada.
+Se o Fiber da requisição é destruído no meio da transação — o cliente foi embora, ou a requisição
+foi despejada — nenhum callback retorna e nada é lançado, então o `transact()` mais externo não
+corta a transação: ele a entrega a um adotante, um Fiber destacado agendado no reactor do worker
+do mesmo jeito que as respostas deferred. O adotante conduz até o fim o que a requisição deixou em
+voo na conexão fixada — o `BEGIN`, um statement, um savepoint ou o `COMMIT` final, com os
+resultados descartados — e então, se a transação ainda estiver aberta, executa o `ROLLBACK` de nível
+superior do `Transaction::abort()` na mesma sessão. A sessão sobrevive e mantém a vaga, e a reserva
+da conexão só é liberada quando esse teardown responde, então a conexão nunca é emprestada com a
+transação aberta — e a liberação que encerra a reserva é a que escreve o reset de sessão descrito
+acima, já que a adoção marca a sessão para ele. O mesmo vale quando o Fiber é destruído durante o
+`COMMIT` final ou durante o rollback de um trabalho que falhou, e quando o próprio unwinding do
+trabalho lança enquanto ele é destruído. A adoção é limitada pelo deadline de cada operação: uma
+expirada falha, o que a encerra — o pool derruba essa sessão e o servidor desfaz o que ela ainda
+segurava.
 
-O `COMMIT` final é a exceção. Quando a espera por ele não volta — um timeout do `defer()`, uma
-recusa do selector, ou o Fiber destruído enquanto espera — esse `COMMIT` é retirado e a sessão
-dele é cortada como qualquer outro teardown. Um `COMMIT` que nunca chegou ao servidor termina num
-rollback feito pelo servidor, mas um que já chegou pode ter sido commitado. O `transact()` só
-informa que falhou (o `Timeout` ou a recusa chega ao seu handler), então não repita a unidade de
-trabalho às cegas: verifique se as escritas dela foram gravadas, ou torne-a idempotente.
+Quando nada pode adotar a transação — sem reactor de worker (uso síncrono), um `BEGIN` que nunca
+chegou ao servidor, ou um adotante ou uma espera de readiness que o reactor recusa — vale o
+comportamento anterior: o que a requisição deixou em voo é retirado, depois o `ROLLBACK` do
+`Transaction::abort()` é retirado antes de chegar ao wire, a sessão é cortada, o servidor faz
+rollback e a reserva da conexão é liberada.
+
+Uma espera que volta com erro dentro do trabalho — uma recusa do selector, um timeout do `defer()` —
+não é adotada: ela retira o statement dela, o que corta a sessão reservada, e o erro dela chega ao
+trabalho como em qualquer outro lugar.
+
+O `COMMIT` final carrega um risco próprio. Quando a espera por ele não volta por causa de um timeout
+do `defer()` ou de uma recusa do selector, esse `COMMIT` é retirado e a sessão dele é cortada como
+qualquer outro teardown. Um `COMMIT` que nunca chegou ao servidor termina num rollback feito pelo
+servidor, mas um que já chegou pode ter sido commitado. O `transact()` só informa que falhou (o
+`Timeout` ou a recusa chega ao seu handler), então não repita a unidade de trabalho às cegas:
+verifique se as escritas dela foram gravadas, ou torne-a idempotente. Um Fiber destruído enquanto o
+`COMMIT` espera é adotado: o `COMMIT` é conduzido até a resposta dele na própria sessão, e ninguém
+lê se ele commitou — um cliente que repete a requisição depois de desconectar também deve tornar a
+unidade de trabalho idempotente.
 
 ## Registrar o resource KV
 

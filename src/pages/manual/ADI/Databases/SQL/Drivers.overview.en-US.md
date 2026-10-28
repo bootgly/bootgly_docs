@@ -124,6 +124,20 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   withdrawn, so the session is dropped and the pool opens a fresh connection. And when the
   session dies under a half-written batch, that batch fails with the same cause as every other
   operation on it, rather than waiting out its own deadline.
+- A statement whose caller stopped waiting — the client disconnected, a deferred wait was refused
+  or interrupted — keeps its session once its batch is whole on the wire. The driver *detaches*
+  it: a stand-in absorbs the rest of the answer, `check()` stops counting the connection as busy
+  for it, and the next operation handed that connection queues behind the stand-in and drains it
+  before its own. The slot is held by the live session for the statement's real runtime, not until
+  its deadline. A batch still being written is the exception — its remaining bytes can never be
+  attributed, so the session is dropped — and so is a statement withdrawn on a connection a
+  transaction reserved. The withdrawal also taints the kept session: the release that returns it
+  to `idle`, once nobody owes work on it, writes a reset first (`reset()`) — advisory locks and
+  `LISTEN` on PostgreSQL, named locks on MySQL, but not `SET` variables — and a session that cannot
+  take it is dropped. A tainted session takes no new co-located caller. An operation queued behind a
+  stand-in waits for it; if that operation times out, what it already sent may still run on the
+  server, so its outcome is unknown. See
+  **[Withdrawn operations](/manual/ADI/Database/overview/#withdrawn-operations)**.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
 - SQLite is synchronous: operations resolve immediately and never suspend. A `:memory:`
@@ -142,3 +156,78 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   generation differences between the engines.
 - **[Schema dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)** — DDL
   generation, transactional DDL and advisory locks.
+
+### Driver and Pool contract for withdrawn work
+
+These are the `Driver` members — and the `Pool` method — used to reconcile the wire when the Pool
+finishes an operation from the outside. SQLite inherits the `Driver` defaults, and Redis inherits
+`detach()` and `reset()` — its `abandon()` is its own.
+
+```php
+detach (Operation $Operation): void
+```
+
+Reconciles the wire for an operation whose caller stopped waiting (`Pool::withdraw()`), always
+keeping a drainable session when its batch is whole on the wire: the remaining answer is left to
+a detached stand-in, and no reader is required. A batch whose remaining bytes can never be
+attributed — half written — still drops the session. The default delegates to `abandon()`; a
+driver whose `abandon()` calls `detach()` must override it, or the two recurse.
+
+```php
+abandon (Operation $Operation): void
+```
+
+Reconciles the wire when the Pool finishes an operation from the outside for any other reason —
+an elapsed deadline, a cancel that never reached the server, a transaction teardown, a withdrawal
+on a connection reserved by a transaction. It keeps severing the session when nobody is left to
+read the answer: PostgreSQL, MySQL and Redis keep it only while a live reader is left to pump the
+answer (a finished entry is no reader), and PostgreSQL and MySQL otherwise reconcile exactly as
+`detach()` does. The default does nothing.
+
+```php
+reset (): bool
+```
+
+Resets what a kept session may carry once its caller is gone — a lock granted after the caller
+stopped waiting, a subscription. The Pool asks for it as it returns that session to `idle`, once
+nobody owes work on it (`check()`): the driver writes it at once, behind everything the session
+still owes, so the server runs it right after the abandoned work ends even if nobody reads, and its
+answer is absorbed like a stand-in's by whoever reads next. PostgreSQL writes
+`SELECT pg_advisory_unlock_all(); UNLISTEN *`; MySQL writes `DO RELEASE_ALL_LOCKS()`. Session
+variables are not reset. A reset still owed with nothing written behind it covers a repeated
+request. Returns `false` when it cannot be written whole now — a batch holds the write stream, the
+stream takes less than the whole reset, the session is gone — and the Pool then severs the session,
+which no caller shares any more. The default returns `true`: a driver that keeps no such state has
+nothing to reset.
+
+```php
+check (): bool
+```
+
+Whether the driver still owes work to a caller, so the Pool must not lend its connection yet: an
+in-flight operation somebody waits for or — on PostgreSQL and Redis — a batch another caller is
+still flushing. Detached stand-ins do not count: the next operation handed the connection queues
+behind them and drains them.
+
+```php
+public bool $detached { get; }
+```
+
+Whether the session still owes answers to detached stand-ins — a pending session reset counts. The
+Pool keeps a withdrawn statement's deadline only while this holds: once the stand-ins are drained
+the server has answered, and a later drop of the session owes them no slot. It is `false` by
+default, for drivers that never detach.
+
+```php
+taint (Connection $Connection): void
+```
+
+`Pool` method. Marks a lent session whose owner was orphaned — `withdraw()` marks the one a
+withdrawn statement that reached the server was on; an adopted transaction marks its reserved one —
+so its session state is reset before the connection is lent again. The next release that would
+return the connection to `idle` — the one after which nobody owes work on it (`Driver::check()`) —
+has the driver write its reset (`reset()`) behind everything the session still owes, once; a
+session that cannot take it is severed and dropped instead. Until then no new caller is co-located
+there: it would run before the reset. Meant for a connection the Pool has lent, busy or reserved:
+one already idle is reset only after its next caller. A connection the Pool does not count is
+ignored, and a dropped one loses its mark.

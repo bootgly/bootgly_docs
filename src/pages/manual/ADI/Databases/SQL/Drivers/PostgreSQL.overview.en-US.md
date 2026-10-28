@@ -142,10 +142,46 @@ connection startup; marks the operation `cancelled`.
 abandon (Operation $Operation): void
 ```
 
-Reconciles the wire when the Pool finishes an operation from the outside — an elapsed
-deadline — while the backend is still answering its batch. The pipeline slot is handed to
-a detached stand-in that absorbs the remaining messages up to its `ReadyForQuery`, so the
-driver keeps every session effect it owes itself (statement caching, evictions) while the
-operation the Pool took back is never read, written or resolved again. When no sibling is
-left to pump the answer, the session is dropped instead, which is what gives the
-connection slot back.
+Reconciles the wire when the Pool finishes an operation from the outside — an elapsed deadline, a
+cancel that never reached the server, a transaction teardown — while the backend is still
+answering its batch. It counts the readers first: a live sibling in the pipeline (a finished entry
+is no reader), or a batch still being written behind it. With one it reconciles as `detach()`
+does; with none the session is dropped instead, which is what gives the connection slot back.
+
+```php
+detach (Operation $Operation): void
+```
+
+Reconciles the wire when a caller stops waiting for an operation (`Pool::withdraw()`: a deferred
+response whose wait was refused or interrupted, or whose request Fiber was destroyed). A pipelined
+batch always ends in `Sync`, so the backend keeps answering it: the pipeline slot is handed to a
+detached stand-in that absorbs the remaining messages up to its `ReadyForQuery`, keeping every
+session effect the driver owes itself (statement caching, evictions) while the operation the Pool
+took back is never read, written or resolved again. No reader is required. `check()` ignores
+stand-ins, so the connection goes back to `idle` — unless other callers still read there — and the
+next operation handed to it queues behind them and drains them; `$detached` reports that the
+session still owes answers to stand-ins.
+
+Only a batch that cannot be reconciled drops the session: one still being written after a byte was
+credited, or over TLS, which may retain an uncredited record. A plaintext batch of which no byte
+was written is withdrawn locally instead, and its session is kept.
+
+`check()` also reports a batch another caller is still flushing, so the Pool never lends a
+connection in the middle of someone else's write. And while a batch queued behind stand-ins is still
+being flushed, the driver reads and absorbs what the stand-ins owe: a backend blocked writing an
+answer nobody waits for would otherwise hold both ends until the deadline. What it reads past the
+last stand-in answers that batch, and is delivered to it as soon as it is whole on the wire.
+
+```php
+reset (): bool
+```
+
+Writes the session reset — the simple Query `SELECT pg_advisory_unlock_all(); UNLISTEN *` — behind
+everything the session still owes. The Pool asks for it as it returns a tainted session to `idle`,
+where nobody else owes work on it. Pipelined bytes wait in the server's receive buffer, so the
+backend runs it right after the abandoned statement ends even if nobody reads, and its answer is
+absorbed like a stand-in's (`$detached` counts it). A batch holding the write stream is never
+interleaved: the reset is refused. One reset still ending the queue covers a repeated request —
+nothing was written after it. Returns `false` when it is refused, when the stream takes less than
+the whole reset, or when the session is gone, and the Pool then severs the session. Session
+variables (`SET`) are not reset.

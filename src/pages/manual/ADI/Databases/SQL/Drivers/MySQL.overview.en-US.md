@@ -187,11 +187,42 @@ abandon (Operation $Operation): void
 ```
 
 Reconciles the wire when the Pool finishes an operation from the outside — an elapsed
-deadline — while the server is still answering it. A queued sibling simply leaves the
-FIFO; the head is handed to a detached stand-in that drains the answer, so the operation
-the Pool took back is never read, written or resolved again. When nothing can be
-reconciled — the command is not whole on the wire, or no sibling is left to pump the
-answer — the session is dropped instead, which is what gives the connection slot back.
+deadline, a cancel that never reached the server, a transaction teardown — while the server
+is still answering it. Draining needs a reader, so the session is kept only while a live
+sibling is queued behind the head to pump the answer (and a sibling leaving the FIFO behind a
+stand-in head keeps it only while another sibling stays behind that head). With none, the
+session is dropped instead, which is what gives the connection slot back. Every other case
+reconciles as `detach()` does.
+
+```php
+detach (Operation $Operation): void
+```
+
+Reconciles the wire when a caller stops waiting for an operation (`Pool::withdraw()`: a
+deferred response whose wait was refused or interrupted, or whose request Fiber was
+destroyed). A queued sibling simply leaves the FIFO; the head is handed to a detached
+stand-in that drains the answer, so the operation the Pool took back is never read, written
+or resolved again. No reader is required: `check()` ignores a stand-in head, so the
+connection goes back to `idle` — unless other callers still read there — and the next
+operation handed to it queues behind the stand-in and pumps it; `$detached` reports that
+the session still owes the stand-in's answer. Only a command that never made it whole onto
+the wire drops the session.
+
+```php
+reset (): bool
+```
+
+Writes the session reset `DO RELEASE_ALL_LOCKS()`, which releases every named lock (`GET_LOCK`)
+the session holds. The Pool asks for it as it returns a tainted session to `idle`, where nobody else
+owes work on it. The server reads it once it finishes the response in progress, even if nobody
+reads, and its OK — or the ERR of a server without that function — is absorbed like a stand-in's
+before any queued command is written (`$detached` counts it). It sits behind a head whose command is
+whole on the wire and ahead of every command not written yet. A command half on the wire is never
+interleaved: the reset is refused. A reset still owed covers every later request: only the head
+writes, and a queued command becomes the head only once the reset is drained, so whatever is queued
+behind it never reached the server. Returns `false` when it is refused, when the stream takes less
+than the whole reset, or when the session is gone, and the Pool then severs the session. Session
+variables (`SET`) are not reset.
 
 The MySQL protocol is strictly request-response: there is no wire pipelining. Co-located
 operations queue in a FIFO where only the head owns the socket — `check()` reports the

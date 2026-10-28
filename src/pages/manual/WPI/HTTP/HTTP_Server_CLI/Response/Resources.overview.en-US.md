@@ -151,10 +151,26 @@ A wait that does not come back does not strand its connection. When the selector
 interrupts it, or the client disconnects and the request Fiber is destroyed, the operations it
 was waiting for are withdrawn locally — see `withdraw()` in
 [Database DBAL](/manual/ADI/Database/overview/) — and the pool takes their slot back instead of
-leaving the connection busy forever; a statement the server already received may keep that slot
-counted until its own deadline. The refusal or the `Timeout` still reaches your handler —
-unless the withdrawal itself fails: its exception then propagates instead, with the original
-chained at the end of its `getPrevious()` chain.
+leaving the connection busy forever. A statement the server already received keeps its session:
+the connection goes back to the pool and the next operation on it drains the rest of that answer,
+so a burst of client disconnects does not stall the pool for the statements' timeout. Only when a
+session with work on the server has to be dropped — a batch half written, or a statement withdrawn
+on a transaction's reserved connection — does its slot stay counted until the statement's own
+deadline. The refusal or the `Timeout` still reaches your handler — unless the withdrawal itself
+fails: its exception then propagates instead, with the original chained at the end of its
+`getPrevious()` chain.
+
+Because that session is kept, it is **reset** before it is lent again. The withdrawal taints it, and
+the release that returns it to the pool — once no other request still reads on it — writes
+`SELECT pg_advisory_unlock_all(); UNLISTEN *` (PostgreSQL) or `DO RELEASE_ALL_LOCKS()` (MySQL)
+behind what the session still owes, so session-level advisory locks, `GET_LOCK` locks and `LISTEN`
+registrations a withdrawn statement took do not outlive the client that disconnected. If the reset
+cannot be written, the session is dropped instead. The reset also ends what a request that still
+shared the session took at session level outside a transaction, so take such locks inside
+`transact()`, whose connection is reserved. Session variables are **not** reset: `SET` /
+`SET SESSION` stays on the pooled session handed to later requests, so prefer `SET LOCAL` or restore
+the value explicitly. An operation queued behind a withdrawn statement waits for it; if it times out,
+what it already sent may still run on the server, so its outcome is unknown.
 
 ## Database methods
 
@@ -233,17 +249,40 @@ discarded if the outer one fails.
 A transaction is a **serial** surface: it carries one operation at a time. Issue the next query
 after awaiting the previous one, and keep `drain()` for groups created on the pool.
 
-If the request Fiber is destroyed mid-transaction — the client left — no callback returns and
-nothing throws, so the outermost `transact()` rolls the whole transaction back locally with
-`Transaction::abort()`: its `ROLLBACK` is withdrawn before it reaches the wire, the session is
-severed, the server rolls back and the connection reservation is released.
+If the request Fiber is destroyed mid-transaction — the client left, or the request was evicted —
+no callback returns and nothing throws, so the outermost `transact()` does not sever the
+transaction: it hands it to an adopter, a detached Fiber scheduled on the worker reactor the way
+deferred responses are. The adopter drives to completion whatever the request left in flight on
+the pinned connection — its `BEGIN`, a statement, a savepoint or the final `COMMIT`, results
+discarded — and then, if the transaction is still open, runs the top-level `ROLLBACK` of
+`Transaction::abort()` on that same session. The session survives and keeps its slot, and the
+connection reservation is released only when that teardown answers, so the connection is never
+lent with the transaction open — and the release that ends the reservation is the one that writes
+the session reset described above, since the adoption marks the session for it. The same holds
+when the Fiber is destroyed during the final `COMMIT` or during the rollback of a failed work, and
+when the work's own unwinding throws while it is destroyed. The adoption is bounded by each
+operation's own deadline: an expired one fails, which ends it — the pool drops that session and the
+server rolls back what it still held.
 
-The final `COMMIT` is the exception. When the wait for it does not come back — a `defer()`
-timeout, a selector refusal, or the Fiber destroyed while it waits — that `COMMIT` is withdrawn
-and its session severed like any other teardown. A `COMMIT` that never reached the server ends in
-a server-side rollback, but one that already reached it may have committed. `transact()` only
-reports that it failed (the `Timeout` or the refusal reaches your handler), so do not retry the
-unit of work blindly: check whether its writes landed, or make it idempotent.
+When nothing can adopt the transaction — no worker reactor (synchronous usage), a `BEGIN` that never
+reached the server, or an adopter or a readiness wait the reactor refuses — the previous behaviour
+applies: what the request left in flight is withdrawn, then the `ROLLBACK` of
+`Transaction::abort()` is withdrawn before it reaches the wire, the session is severed, the server
+rolls back and the connection reservation is released.
+
+A wait that comes back with an error inside the work — a selector refusal, a `defer()` timeout — is
+not adopted: it withdraws its statement, which severs the reserved session, and its error reaches
+the work like anywhere else.
+
+The final `COMMIT` carries a risk of its own. When the wait for it does not come back because of a
+`defer()` timeout or a selector refusal, that `COMMIT` is withdrawn and its session severed like any
+other teardown. A `COMMIT` that never reached the server ends in a server-side rollback, but one
+that already reached it may have committed. `transact()` only reports that it
+failed (the `Timeout` or the refusal reaches your handler), so do not retry the unit of work
+blindly: check whether its writes landed, or make it idempotent. A Fiber destroyed while the
+`COMMIT` waits is adopted instead: the `COMMIT` is driven to its answer on its own session, and
+nobody reads whether it committed — a client that retries after its disconnect should make the unit
+of work idempotent too.
 
 ## Register the KV resource
 
