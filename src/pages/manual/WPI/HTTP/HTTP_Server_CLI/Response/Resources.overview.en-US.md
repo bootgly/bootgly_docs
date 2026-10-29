@@ -785,6 +785,50 @@ The embedded client — knob surface only. Every knob the constructor does not c
 `allowInsecureRedirect`, `Redirection` (pinned to the upstream origin by default),
 `crossOriginHeaders`, `enableHTTP2`, and the `timeout` family. Never send through it.
 
+## Resources kept past their deferred job
+
+Inside `defer()`, the `$Response` your work receives is a private clone of the worker's response,
+and the resources you read from it — `$Response->JSON`, `$Response->Database`, a project resource —
+are built for that clone. When the job ends, the clone is freed as soon as nothing else holds it.
+
+If your code keeps the clone itself, nothing changes: the resources reached through it keep answering
+on it exactly as before. Its exchange is over, so late sends land on it and are never written, and
+`defer()` or an SSE head on it is refused.
+
+If your code keeps only a resource, or the `Resources` registry, and not the clone, every call made
+after the clone is gone still completes, and every `Response` one of them answers with — a
+formatter's `send()`, a wait — is a **detached stand-in** instead:
+
+- a fresh one per call — nothing one call writes (body, headers, status) reaches another;
+- deferred and bound to no request and no connection, so it is never written anywhere — a handler or
+  a route that returns it leaves its request unanswered, as any deferred `Response` that no job
+  answers does;
+- never adopted as the worker's `Response`, which keeps its configured resources and Header presets;
+- a `Recovering` middleware that returns it declines — the next boundary out, or the server's own
+  error response, answers instead (see [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)).
+
+A late call never throws, so the mistake is silent. Read resources from the `$Response` the work
+receives, every time:
+
+```php
+// ❌ kept across requests: from the second request on, its send never reaches the request
+//    being answered, which goes out as an empty 200
+static $JSON = null;
+
+return $Response->defer(function (Response $Response) use (&$JSON): void {
+   $JSON ??= $Response->JSON;
+
+   $JSON->send(['status' => 'ok']);
+});
+```
+
+```php
+// ✅ read from the Response the work receives
+return $Response->defer(function (Response $Response): void {
+   $Response->JSON->send(['status' => 'ok']);
+});
+```
+
 ## Boundary
 
 Resources do not replace `Response`. Keep status codes, headers and body delivery on

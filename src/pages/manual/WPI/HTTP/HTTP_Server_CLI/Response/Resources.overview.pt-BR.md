@@ -793,6 +793,53 @@ aqui: `retryOn`, `retryDelay`, `retryMaxDelay`, `retryTimeout`, `retryJitter`,
 `allowInsecureRedirect`, `Redirection` (preso à origem do upstream por padrão),
 `crossOriginHeaders`, `enableHTTP2` e a família do `timeout`. Nunca envie por ele.
 
+## Resources mantidos além do job deferred
+
+Dentro do `defer()`, a `$Response` que o seu trabalho recebe é um clone privado da resposta do
+worker, e os resources que você lê dela — `$Response->JSON`, `$Response->Database`, um resource de
+projeto — são construídos para esse clone. Quando o job termina, o clone é liberado assim que nada
+mais o segura.
+
+Se o seu código mantém o próprio clone, nada muda: os resources alcançados por ele continuam
+respondendo nele exatamente como antes. A troca (exchange) dele acabou, então envios tardios caem
+nele e nunca são escritos, e um `defer()` ou um head de SSE nele é recusado.
+
+Se o seu código mantém só um resource, ou o registro `Resources`, e não o clone, toda chamada feita
+depois que o clone se foi ainda termina, e toda `Response` com que uma delas responde — o `send()`
+de um formatador, uma espera — é uma **substituta desacoplada** (detached stand-in):
+
+- uma nova a cada chamada — nada que uma chamada escreve (body, headers, status) alcança outra;
+- deferred e sem requisição nem conexão, então nunca é escrita em lugar nenhum — um handler ou uma
+  rota que a retorna deixa a requisição dele sem resposta, como faz qualquer `Response` deferred que
+  nenhum job responde;
+- nunca adotada como a `Response` do worker, que mantém seus resources configurados e os presets do
+  Header;
+- um middleware `Recovering` que a retorna recusa (decline) — a próxima fronteira para fora, ou a
+  resposta de erro do próprio servidor, responde no lugar (veja
+  [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)).
+
+Uma chamada tardia nunca lança exceção, então o erro é silencioso. Leia os resources da `$Response`
+que o trabalho recebe, toda vez:
+
+```php
+// ❌ mantido entre requisições: da segunda requisição em diante, o envio dele nunca alcança a
+//    requisição sendo respondida, que sai como um 200 vazio
+static $JSON = null;
+
+return $Response->defer(function (Response $Response) use (&$JSON): void {
+   $JSON ??= $Response->JSON;
+
+   $JSON->send(['status' => 'ok']);
+});
+```
+
+```php
+// ✅ lido da Response que o trabalho recebe
+return $Response->defer(function (Response $Response): void {
+   $Response->JSON->send(['status' => 'ok']);
+});
+```
+
 ## Fronteira
 
 Resources não substituem `Response`. Mantenha status codes, headers e entrega de body na
