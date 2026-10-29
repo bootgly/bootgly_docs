@@ -24,13 +24,13 @@ Bootgly attacks the three costs directly, with three deliberate design decisions
 
 ## Proof, not promises
 
-All figures below come from published, reproducible runs — measured 2026-07-04 on 24 logical CPUs (WSL2), PHP 8.4.22, 514 connections, TechEmpower-style routes:
+All figures below come from published, reproducible runs — HTTP rows measured 2026-10-29 on 24 logical CPUs (Fedora 44, kernel mitigations off), PHP 8.5.12, 514 connections, TechEmpower-style routes (Laravel + PHP-FPM from the 2026-07-04 session):
 
 | Scenario | Bootgly | Reference | Δ |
 |---|---|---|---|
-| HTTP plaintext | 1,030,930 req/s | Swoole — 964,908 req/s | +7.3% |
-| HTTP single DB query | 166,746 req/s | Swoole — 95,718 req/s | +93.8% |
-| HTTP plaintext | 1,030,930 req/s | Laravel + PHP-FPM — 6,959 req/s | ~148× |
+| HTTP plaintext | 1,100,393 req/s | Swoole — 1,086,952 req/s | +1.2% |
+| HTTP single DB query | 133,882 req/s | Swoole — 71,843 req/s | +86.4% |
+| HTTP plaintext | 1,100,393 req/s | Laravel + PHP-FPM — 6,959 req/s | ~158× |
 | WebSocket echo (32B) | 873,804 msg/s | Autobahn conformance: 462 passed / 0 failed | — |
 | CLI progress bar | ~7× | Laravel / Symfony progress bar | — |
 | Template engine (`foreach`) | ~9× | Laravel Blade | — |

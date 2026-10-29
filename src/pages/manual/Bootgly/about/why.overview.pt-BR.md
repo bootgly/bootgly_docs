@@ -24,13 +24,13 @@ O Bootgly ataca os três custos diretamente, com três decisões deliberadas de 
 
 ## Prova, não promessas
 
-Todos os números abaixo vêm de execuções publicadas e reproduzíveis — medidos em 2026-07-04 em 24 CPUs lógicas (WSL2), PHP 8.4.22, 514 conexões, rotas no estilo TechEmpower:
+Todos os números abaixo vêm de execuções publicadas e reproduzíveis — linhas HTTP medidas em 2026-10-29 em 24 CPUs lógicas (Fedora 44, mitigações do kernel desligadas), PHP 8.5.12, 514 conexões, rotas no estilo TechEmpower (Laravel + PHP-FPM da sessão de 2026-07-04):
 
 | Cenário | Bootgly | Referência | Δ |
 |---|---|---|---|
-| HTTP plaintext | 1.030.930 req/s | Swoole — 964.908 req/s | +7,3% |
-| HTTP query única no banco | 166.746 req/s | Swoole — 95.718 req/s | +93,8% |
-| HTTP plaintext | 1.030.930 req/s | Laravel + PHP-FPM — 6.959 req/s | ~148× |
+| HTTP plaintext | 1.100.393 req/s | Swoole — 1.086.952 req/s | +1,2% |
+| HTTP query única no banco | 133.882 req/s | Swoole — 71.843 req/s | +86,4% |
+| HTTP plaintext | 1.100.393 req/s | Laravel + PHP-FPM — 6.959 req/s | ~158× |
 | WebSocket echo (32B) | 873.804 msg/s | Conformidade Autobahn: 462 aprovados / 0 falhos | — |
 | Progress bar na CLI | ~7× | Progress bar do Laravel / Symfony | — |
 | Template engine (`foreach`) | ~9× | Laravel Blade | — |

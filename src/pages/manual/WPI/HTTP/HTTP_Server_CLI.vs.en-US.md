@@ -61,6 +61,56 @@ in pure PHP** — exactly what the **Performance** gap reflects (≈ 150× Larav
 
 ## Performance
 
+### Bootgly vs Swoole — 2026-10-29 (current)
+
+> [!NOTE]
+> **Methodology** — 24 logical CPUs (Ryzen 9 3900X, Fedora 44, kernel 7.2 with CPU mitigations
+> off), PHP 8.5.12, `tcp_client` runner, 514 connections, 10s per point after a 5s warmup,
+> server workers swept from 16 to 24; figures are the peak req/s at each server's best worker
+> count. PostgreSQL 16 runs on host networking — never behind Docker's `docker-proxy` — with
+> `DB_POOL_MAX=1` for both servers. Bootgly: `main` 42a1398f (1.1.0-dev). Swoole 6.2.0 runs the
+> upstream TechEmpower Swoole pattern (`PDOPool`, statement prepared on every request, exactly as
+> upstream), with the pool normalized to one connection per worker.
+
+| Route (req/s) | Bootgly | Swoole | Δ |
+|---|--:|--:|--:|
+| `/plaintext` | 1,049,381 @ 17 | 1,033,729 @ 23 | +1.5% |
+| `/json` | 1,064,358 @ 16 | 1,026,736 @ 16 | +3.7% |
+| `/db` (single query) | 133,882 @ 16 | 71,843 @ 24 | +86.4% |
+| `/query` (20×) | 24,002 @ 24 | 11,687 @ 24 | +105.4% |
+| `/fortunes` | 115,638 @ 17 | 77,152 @ 24 | +49.9% |
+| `/updates` (20×) | 5,277 @ 24 | 5,033 @ 24 | +4.8% |
+| `/cached-queries` | 538,849 @ 17 | 584,399 @ 18 | −7.8% |
+
+Bootgly leads the routes that wait on PostgreSQL by a wide margin (`/db`, `/query`,
+`/fortunes`); Swoole's database curves were still rising at 24 workers, the machine's CPU count.
+On `/plaintext`, `/json` and `/updates` the two servers sit within a few percent of each other —
+a tie at this client shape — and Swoole leads `/cached-queries`, the one route with no database
+round trip once its cache is primed.
+
+> [!IMPORTANT]
+> **`/plaintext` claim protocol (`GET /`, 2026-10-29).** Same machine and run, worker counts
+> 16-20, **three paired runs per point** (15 pairs; each run measures both servers back to back,
+> so machine drift cancels):
+>
+> | Server workers | Bootgly (median) | Swoole (median) | Paired median |
+> |---|--:|--:|--:|
+> | 16 | **1,100,393** | 1,073,934 | +2.5% |
+> | 17 | 1,069,254 | 1,072,373 | −0.2% |
+> | 18 | 1,068,199 | 1,080,261 | −0.8% |
+> | 19 | 1,096,348 | 1,071,922 | +1.4% |
+> | 20 | 1,094,057 | **1,086,952** | +0.7% |
+>
+> Peak vs peak — Bootgly **1,100,393 @ 16** vs Swoole **1,086,952 @ 20** = **+1.2%**; 10 of 15
+> pairs favour Bootgly and the paired median is +1.2% — a statistical tie with Swoole.
+
+### Multi-framework sweep — 2026-07-04 (historical)
+
+> [!NOTE]
+> Kept for Hyperf, ReactPHP, AMPHP and Laravel, which were not re-measured. It ran on a
+> different environment (WSL2, PHP 8.4.22, Bootgly v0.19.1-beta): do not compare its columns
+> with the table above.
+
 > [!NOTE]
 > **Methodology** — 24 logical CPUs (WSL2), PHP 8.4.22, 514 connections, 10s per point,
 > `DB_POOL_MAX=1` for **every** framework (symmetric database footprint). Each server's
