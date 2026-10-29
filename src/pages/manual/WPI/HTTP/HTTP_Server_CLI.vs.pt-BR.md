@@ -50,6 +50,12 @@ _Legenda: ✓ nativo · ➕ pacote oficial/companheiro · ✗ não fornecido_
 | Downloads de arquivo (range / streaming) | ✓ | ✓ | ✓ | ➕ | ➕ | ✓ |
 | Dispatch de fila | ✓ | ✗ | ✓ | ➕ | ➕ | ✓ |
 | Cliente HTTP | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| [Auto-TLS](/guide/auto-tls) (Let's Encrypt / ACME, renovação automática) | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+**Auto-TLS** — o servidor do Bootgly obtém o próprio certificado HTTPS no Let's Encrypt (ACME v2)
+e o renova sozinho, trocando-o sem reiniciar: sem certbot, sem cron, sem proxy reverso. Os outros
+recebem arquivos de certificado que você provisiona — via certbot, um proxy que termina o TLS
+(nginx, Caddy) ou um serviço de hospedagem.
 
 Os middlewares de segurança (CORS, CSRF, rate limiting, proxy confiável, secure headers) estão
 em **Segurança**; throughput em **Desempenho**.
