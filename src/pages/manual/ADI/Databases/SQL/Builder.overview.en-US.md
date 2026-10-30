@@ -37,7 +37,7 @@ To run it, pass the builder or the compiled query to the database:
 
 ```php
 $Operation = $Database->query($Builder);
-$Database->Pool->wait($Operation);
+$Database->await($Operation);
 
 $rows = $Operation->rows;
 ```
@@ -87,7 +87,7 @@ $Database->query($Builder->compile());
 ```
 
 All three return a SQL `Operation`. The operation stores the SQL text, parameters, affected
-row count, result columns and result rows. In scripts and tests, `Pool->wait()` drives the
+row count, result columns and result rows. In scripts and tests, `$Database->await()` drives the
 operation to completion. In HTTP code, use the response scheduler flow already used by your
 route.
 
@@ -103,27 +103,7 @@ rollback and savepoints.
 
 ## Reference
 
-### SQL facade
-
-```php
-table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder
-```
-Start a query builder for one table or derived source.
-
-```php
-query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
-```
-Create an async SQL operation from raw SQL, a builder or a compiled query.
-`$Scope` names the operation's read-after-write scope (by default the current Fiber, else the
-facade): after a write through a scope, reads through that scope stay on the primary for the
-sticky window. It only matters when replicas are configured; see
-**[Database read replicas](/guide/database-read-replicas/overview/#read-after-write-scope)**.
-
-```php
-begin (): Transaction
-```
-Start a transaction pinned to one pooled connection. See
-**[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)**.
+The SQL facade methods that start and run a builder — `table()`, `query()`, `begin()` — are in the **[SQL database](/manual/ADI/Databases/SQL/overview/#reference)** Reference.
 
 ### Builder lifecycle
 

@@ -17,7 +17,7 @@ enum Columns: string { case Id = 'id'; case UserId = 'user_id'; case Active = 'a
 $Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Transaction = $Database->begin();
-$Database->Pool->wait($Transaction->Operation);
+$Database->await($Transaction->Operation);
 
 $Deactivate = $Transaction
    ->table(Tables::Users)
@@ -25,8 +25,8 @@ $Deactivate = $Transaction
    ->set(Columns::Active, false)
    ->filter(Columns::Id, Operators::Equal, 7);
 
-$Database->Pool->wait($Transaction->query($Deactivate));
-$Database->Pool->wait($Transaction->commit());
+$Database->await($Transaction->query($Deactivate));
+$Database->await($Transaction->commit());
 ```
 
 Isso abre o `$Database` a partir do escopo de config `database` do projeto (veja
@@ -37,18 +37,24 @@ comando ou um script que roda dentro de um projeto. Numa rota HTTP, use o resour
 o callback lança uma exceção.
 
 `begin()` inicia imediatamente e guarda a operação `BEGIN` em `$Transaction->Operation`.
-Espere essa operação antes de enviar a primeira instrução. Depois, espere cada operação
-antes de enviar a próxima nessa transação.
+Aguarde essa operação antes de enviar a primeira instrução e depois aguarde cada operação antes
+de enviar a próxima: uma transação carrega uma operação por vez, e uma chamada enviada enquanto
+a anterior ainda roda é recusada (veja
+**[Recusas](/manual/ADI/Databases/SQL/Transaction/overview/#recusas)**).
 
 ## Commit ou rollback
 
-`Pool::wait()` lança uma `RuntimeException` cuja mensagem é `$Operation->error` quando a
-operação que ele espera falha (o `SQL::await()` faz o mesmo). Envolva o trabalho da aplicação
-e o commit em `try/catch` e encerre a transação com `abort()` no `catch`:
+O `$Database->await()` espera pelo pool da operação (veja
+**[Aguarde de forma síncrona](/manual/ADI/Database/Pool/overview/#aguarde-de-forma-síncrona)**) e
+lança uma `RuntimeException` cuja mensagem é `$Operation->error` quando a operação falha — uma
+chamada recusada inclusive. Envolva o trabalho da aplicação e o commit em `try/catch` e encerre a
+transação com `abort()` no `catch`:
 
 ```php
+use Throwable;
+
 $Transaction = $Database->begin();
-$Database->Pool->wait($Transaction->Operation);
+$Database->await($Transaction->Operation);
 
 try {
    $Create = $Transaction
@@ -56,17 +62,17 @@ try {
       ->insert()
       ->set(Columns::Active, true);
 
-   $Database->Pool->wait($Transaction->query($Create));
+   $Database->await($Transaction->query($Create));
 
-   $Database->Pool->wait($Transaction->commit());
+   $Database->await($Transaction->commit());
 }
 catch (Throwable $Throwable) {
    try {
-      $Database->Pool->wait($Transaction->abort());
+      $Database->await($Transaction->abort());
    }
    catch (Throwable) {
-      // Recusado: o COMMIT já encerrou a transação, ou a sessão caiu e o servidor
-      // desfez o trabalho. Mantenha o erro original.
+      // Refused: the COMMIT already ended the transaction, or the session is gone and the
+      // server rolled the work back. Keep the original error.
    }
 
    throw $Throwable;
@@ -76,18 +82,19 @@ catch (Throwable $Throwable) {
 Depois de `commit()`, de um `rollback()` externo ou de `abort()`, a profundidade da transação
 vira `0` e a conexão fixada volta para o pool. A receita faz o commit dentro do `try`, então o
 `catch` também encerra uma transação que o `commit()` não conseguiu fechar: um listener de
-`Commit` que lança (veja **[Eventos](/guide/events/overview/)**) ou uma instrução que o trabalho
-deixou em andamento, o que faz o `commit()` devolver uma operação recusada. Quando o próprio
-`COMMIT` falha (uma constraint deferida, por exemplo, que faz o PostgreSQL desfazer a transação
-inteira), o `commit()` já fechou a transação, então o `abort()` do `catch` é recusado e o erro
-relançado é o do próprio `COMMIT`.
+`Commit` que lança (veja **[Eventos](/manual/ADI/Databases/SQL/Transaction/overview/#eventos)**)
+ou uma instrução que o trabalho deixou em andamento, o que faz o `commit()` devolver uma operação
+recusada. Quando o próprio `COMMIT` falha (uma constraint deferida, por exemplo, que faz o
+PostgreSQL desfazer a transação inteira), o `commit()` já fechou a transação, então o `abort()` do
+`catch` é recusado e o erro relançado é o do próprio `COMMIT`.
 
 O `catch` usa `abort()`, e não `rollback()`: ele compõe o `ROLLBACK` de nível superior em
 qualquer profundidade, então também desfaz todos os níveis de savepoint que o trabalho abriu
 (um `rollback()` sem nome só encerra o mais recente), e não emite evento `Rollback` — um
-listener de `Rollback` não pode recusar esse teardown nem vê-lo.
+listener de `Rollback` não pode recusar esse teardown nem vê-lo (veja
+**[Abortar ou fazer rollback](/manual/ADI/Databases/SQL/Transaction/overview/#abortar-ou-fazer-rollback)**).
 
-## Builders, SQL cru e objetos Query
+## Builders, SQL raw e objetos Query
 
 `Transaction::table()` inicia um Query Builder com o mesmo dialeto do banco.
 `Transaction::query()` aceita as mesmas formas de query que `SQL::query()`:
@@ -95,10 +102,18 @@ listener de `Rollback` não pode recusar esse teardown nem vê-lo.
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Query;
 
-$Database->Pool->wait($Transaction->query('SELECT 1'));
-$Database->Pool->wait($Transaction->query(new Query('SELECT 2')));
-$Database->Pool->wait($Transaction->query($Transaction->table(Tables::Users)->select()));
+$Database->await($Transaction->query('SELECT 1'));
+$Database->await($Transaction->query(new Query('SELECT 2')));
+$Database->await($Transaction->query($Transaction->table(Tables::Users)->select()));
 ```
+
+As três rodam na conexão fixada da transação. A segunda é uma `Query` montada à mão, que conta
+como escrita a menos que seja criada com `reading: true`, então ela também marca o escopo de
+read-after-write — o que só importa quando há réplicas configuradas (veja
+**[Escopo de read-after-write](/manual/ADI/Databases/SQL/Transaction/overview/#escopo-de-read-after-write)**).
+Para entidades, `$Transaction->map()` dá um repositório ORM cujas instruções rodam dentro da
+transação (veja
+**[Repositórios dentro de uma transação](/manual/ADI/Databases/SQL/Transaction/overview/#repositórios-dentro-de-uma-transação)**).
 
 ## Savepoints
 
@@ -106,9 +121,9 @@ Savepoints são checkpoints aninhados dentro da transação aberta:
 
 ```php
 $Transaction = $Database->begin();
-$Database->Pool->wait($Transaction->Operation);
+$Database->await($Transaction->Operation);
 
-$Database->Pool->wait($Transaction->save('optional_profile'));
+$Database->await($Transaction->save('optional_profile'));
 
 try {
    $Profile = $Transaction
@@ -116,14 +131,14 @@ try {
       ->insert()
       ->set(Columns::UserId, 7);
 
-   $Database->Pool->wait($Transaction->query($Profile));
+   $Database->await($Transaction->query($Profile));
 }
 catch (Throwable) {
-   $Database->Pool->wait($Transaction->rollback('optional_profile'));
+   $Database->await($Transaction->rollback('optional_profile'));
 }
 
-$Database->Pool->wait($Transaction->release('optional_profile'));
-$Database->Pool->wait($Transaction->commit());
+$Database->await($Transaction->release('optional_profile'));
+$Database->await($Transaction->commit());
 ```
 
 `save()` cria um nome automático de savepoint. `save('name')` cria um savepoint nomeado.
@@ -160,8 +175,8 @@ transação externa.
 
 ## Referência
 
-- **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)** — API, estado e
-  comportamento de savepoints.
+- **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)** — API, recusas, eventos,
+  repositórios e comportamento de savepoints.
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** — monte as instruções
   executadas por uma transação.
 - **[Consultas de banco](/guide/database-queries/overview/)** — fluxo diário de leitura e

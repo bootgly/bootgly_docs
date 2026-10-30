@@ -66,9 +66,9 @@ Unplugged languages and bare fences render verbatim and dimmed; plain output nev
 
 ## Safety
 
-The source is treated as **untrusted text**: raw control bytes (including `ESC` and `BEL`) are stripped, so markdown can never inject cursor movements or stray styling into your terminal — and content never passes through the Template markup engine.
+The source is treated as **untrusted text**: every control character it carries — C0 (`ESC` and `BEL` included), DEL and C1 — is shown as a visible escape (`\u001b`, `\u0007`, `\u009b`) and a byte that is not UTF-8 as `?`, so markdown can never inject cursor movements or stray styling into your terminal — and content never passes through the Template markup engine. Three are normalized before that: a tab becomes spaces, a carriage return a line break, and a NUL byte is dropped.
 
-Every field carries that treatment, the fenced-code language included: the info string is echoed onto the opening fence line, so it is sanitized before it is painted and before it selects a highlighter. Only the control bytes go, so what a hostile document wrote as `ESC [ 2J` renders as the inert text `[2J` — visible, but no longer a command.
+Every field carries that treatment, the fenced-code language included: the info string is echoed onto the opening fence line, so it is escaped before it is painted and before it selects a highlighter. The rest of a sequence stays as text, so what a hostile document wrote as `ESC [ 2J` renders as the inert text `\u001b[2J` — visible, but no longer a command. Since 1.0.12 — before, C0 and DEL bytes were removed (`[2J`) and C1 ones were not.
 
 ## Notes
 

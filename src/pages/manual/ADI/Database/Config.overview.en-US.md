@@ -131,14 +131,16 @@ or `secure` that is not an array takes the default block. The exceptions are `se
 `secure.name`: a value there that is not a scalar throws (see [TLS](#tls)), and only `null` takes
 the default.
 
-`new SQL()` also takes the SQL keys, which `Bootgly\ADI\Databases\SQL\Config` adds:
+`new SQL()` also takes the SQL keys, which `Bootgly\ADI\Databases\SQL\Config` adds; how each one
+is read, and what a replica inherits, is in
+**[SQL config keys](/manual/ADI/Databases/SQL/overview/#config-keys)**:
 
 | Key | Default | Read by |
 |---|---|---|
-| `statements` | `256` | Every SQL driver: how many prepared statements each connection caches; `0` turns the cache off ([Pool notes](/manual/ADI/Databases/SQL/Drivers/overview/#pool-notes)) |
-| `migrations` | `'_bootgly_migrations'` | The migration runner: the table that records applied migrations ([Migrations](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)) |
-| `routing.sticky` | `5.0` | Read routing: how many seconds reads stay on the primary after a write ([Read-after-write scope](/guide/database-read-replicas/overview/#read-after-write-scope)) |
-| `replicas` | `[]` | Read routing: the read replicas, each opened as a pool of its own ([Configure replicas](/guide/database-read-replicas/overview/#configure-replicas)) |
+| `statements` | `256` | Every SQL driver: how many prepared statements each connection caches; `0` turns the cache off |
+| `migrations` | `'_bootgly_migrations'` | The migration runner: the table that records applied migrations |
+| `routing.sticky` | `5.0` | Read routing: how many seconds the reads of a scope stay on the primary after it writes |
+| `replicas` | `[]` | Read routing: the read replicas, each opened as a pool of its own |
 
 The KV facade (Redis) reads this same class, with the same defaults, so a KV array always sets
 `driver` to `'redis'` and its `port`; see
@@ -384,9 +386,10 @@ that resolves but fails names the endpoint instead, as in
 
 ## Reference
 
-`Bootgly\ADI\Databases\SQL\Config` extends this class with the SQL keys (see
-[Keys and defaults](#keys-and-defaults)); their defaults are its constants `DEFAULT_STATEMENTS`
-(`256`), `DEFAULT_MIGRATIONS` (`'_bootgly_migrations'`) and `DEFAULT_ROUTING_STICKY` (`5.0`).
+`Bootgly\ADI\Databases\SQL\Config` extends this class with the SQL keys; its constructor, its
+constants `DEFAULT_STATEMENTS`, `DEFAULT_MIGRATIONS` and `DEFAULT_ROUTING_STICKY`, and its
+properties are in the **[SQL database](/manual/ADI/Databases/SQL/overview/#sql-configuration)**
+Reference.
 
 ### Constructor
 

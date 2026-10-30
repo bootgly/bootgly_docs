@@ -342,6 +342,13 @@ When running interactively, the server exposes commands such as:
 
 These are useful for operating and observing the running server from the terminal.
 
+`connections` prints each worker's peers, numbered, as an allowlist of fields — `status`, `IP`,
+`port`, `expiration`, `started`, `used`, `writes`, `timers`, `input bytes`, `output bytes`,
+`consumed bytes`, `rejected`, `decoder` and `encoder` (`DEFAULT` or `CUSTOM`) and `decoded` (`NONE`
+or `PRESENT`) — and closes with `Connections diagnostic complete.` (after `No active peer.` when
+there is none). A datagram and a reply are represented by their lengths only, never by their bytes,
+and an error thrown inside the command is caught instead of ending the worker. Since 1.0.12.
+
 ## Notes for Consumers
 
 - `UDP_Server_CLI\Configs` does **not** expose SSL/TLS or DTLS options.

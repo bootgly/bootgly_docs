@@ -42,7 +42,7 @@ array:4 [
 ]
 ```
 
-Floats sempre mantêm a precisão (`1.0`, `0.30000000000000004`, `INF`); strings são single-quoted com caracteres de controle escapados visivelmente (`\n`, `\033`) — escape codes injetados nunca conseguem repintar seu terminal.
+Floats sempre mantêm a precisão (`1.0`, `0.30000000000000004`, `INF`); strings são single-quoted com todo caractere de controle — C0, DEL e C1 — escapado visivelmente, como os formatters de log o escrevem (`\n`, `\t`, `\u001b`, `\u007f`, `\u009b`), e um byte que não é UTF-8 aparece como `?` — escape codes injetados nunca conseguem repintar seu terminal. Aspas e barras invertidas ganham uma barra antes (`'it\'s'`, `'C:\\tmp'`), então um `\u001b` literal digitado numa string nunca se passa por um escapado. Nomes de propriedade, nomes de classe, nomes de case de enum e caminhos de closure recebem os mesmos escapes, e uma classe anônima aparece pelo seu tipo de debug — `class@anonymous`, ou `Base@anonymous` quando estende `Base`. Desde a 1.0.12 — antes, caracteres de controle apareciam como escapes C e octais (`\a`, `\v`, `\033`, `\177`).
 
 ## Dump de um objeto
 

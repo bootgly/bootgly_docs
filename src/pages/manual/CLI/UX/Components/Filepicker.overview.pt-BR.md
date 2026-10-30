@@ -55,6 +55,7 @@ echo "/etc/ssl/certs/server.pem" | php installer.php
 
 - Diretórios são varridos **lazy** — árvores gigantes não custam nada até um ramo ser aberto.
 - Diretórios ilegíveis (permissões) resolvem como ramos vazios em vez de abortar a sessão.
+- Os nomes aparecem como texto — o de cada entrada, o da raiz e o caminho no aviso de raiz inalcançável: um caractere de controle num nome vira um escape visível (`\u001b`), um byte que não é UTF-8 vira `?`, e um `@` que abriria markup é removido. O `pick()` continua retornando o caminho real. Desde a 1.0.12.
 - Os ícones vêm do Config `glyphs` (`directory`/`file`) — troque por outros emojis ou marcadores simples.
 - `viewport` (padrão 12) janela listagens longas com marcadores `↑/↓ N more`; `blink` faz o marcador de mira piscar.
 - Colar um caminho com Ctrl+V é um follow-up planejado (bracketed paste mode no Input do terminal).

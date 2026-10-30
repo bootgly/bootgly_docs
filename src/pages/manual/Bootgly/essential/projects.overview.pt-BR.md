@@ -135,6 +135,8 @@ A URL é verificada antes de qualquer coisa ser escrita ou executada. Aceitas: `
 
 O clone roda sem shell e sem prompts no terminal (o git não pede usuário nem senha — use um credential helper ou SSH), sob o prazo de rede e `GIT_ALLOW_PROTOCOL=file:https:ssh`, então uma reescrita `insteadOf` para outro transporte também falha. Um `GIT_ALLOW_PROTOCOL` que você já exporta estreita essa lista (só os transportes que os dois nomeiam), nunca a amplia. O clone é preparado em um diretório temporário privado (nome aleatório, modo `0700`) que é removido quando a importação dá certo, é recusada — Ctrl+C no prompt incluído — ou falha, e nenhuma saída mostra as credenciais da URL. Desde a 1.0.10.
 
+As linhas que o git imprime durante o clone aparecem como texto: um caractere de controle nelas — nas mensagens `remote:` de um remoto, num caminho, num nome de tag — vira um escape visível (`\u001b`, `\u009b`) em vez de chegar ao terminal, e um byte que não é UTF-8 vira `?`. Desde a 1.0.12.
+
 > [!WARNING]
 > Projetos importados executam código de terceiros ao serem iniciados (`start`, `restart`, uma unidade `startup`), no seu `migrate`, `seed` e `schedule`, e quando seus testes ou filas rodam — o comando pede confirmação (pule com `--yes`). `projects list` e `project <caminho> info` só leem a assinatura. Um repositório cujo `*.Project.php` é um link simbólico, ou que carrega um launcher `bootgly` ou um link simbólico chamado `bootgly` (o comando global `bootgly` o executaria de dentro do projeto), é recusado. Desde a 1.0.10.
 
@@ -186,6 +188,8 @@ O nome que você passa para o `create` é seu: um exemplo de **plataforma** que 
 
 Um valor de `--platform` não implementado também é recusado, em qualquer layout: antes ele era aceito e descartado num checkout do framework e num kit sem `.gitmodules`.
 
+Configurar uma plataforma inicializa o submodule dela — e, quando o kit a fixa num commit posterior a uma release, a traz de volta para essa release (`Console: pinned past a release — using v1.0.1.`) — pelo engine git do Bootgly: sem shell, mensagens do git em inglês, sem prompt de credenciais, sob o prazo de rede. As linhas que o git imprime aparecem como texto — um caractere de controle como um escape visível (`\u001b`, `\u009b`), um byte que não é UTF-8 como `?` — e o nome da release também. Desde a 1.0.12.
+
 ### `project boot`
 
 Boota um projeto — inicializa os recursos que um projeto seu carrega. Hoje isso é o controle de versão (um repositório git próprio, com a árvore atual como commit inicial); mais responsabilidades chegarão aqui conforme o ciclo de vida do projeto crescer:
@@ -206,7 +210,7 @@ php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 
 ### `projects list`
 
-Lista todos os projetos registrados — uma linha para cada, com as interfaces que o registro vincula a ele e a descrição que a assinatura carrega. A descrição é cortada na largura do terminal, nunca quebrada em linhas. A assinatura é lida, nunca executada: a descrição vem de um literal de string simples em `return new Project(...)` (um valor calculado aparece como `(dynamic)`), uma assinatura ausente, que é um link simbólico, maior que 256 KiB, que não faz parse ou não faz `return new Project(...)` é listada como `(invalid signature: <motivo>)` enquanto o resto da listagem é impresso, e caracteres de controle ou markup de Output nos metadados não são renderizados:
+Lista todos os projetos registrados — uma linha para cada, com as interfaces que o registro vincula a ele e a descrição que a assinatura carrega. A descrição é cortada na largura do terminal, nunca quebrada em linhas. A assinatura é lida, nunca executada: a descrição vem de um literal de string simples em `return new Project(...)` (um valor calculado aparece como `(dynamic)`), uma assinatura ausente, que é um link simbólico, maior que 256 KiB, que não faz parse ou não faz `return new Project(...)` é listada como `(invalid signature: <motivo>)` enquanto o resto da listagem é impresso. Os metadados aparecem como texto: um caractere de controle neles vira um escape visível (`\u001b`, `\u009b`) e um byte que não é UTF-8 vira `?`, marcas bidi e de largura zero são removidas, e markup de Output não é renderizado. Desde a 1.0.12 — antes, caracteres de controle eram removidos.
 
 ```bash :toolbar="true";
 php bootgly projects list
@@ -442,7 +446,7 @@ php bootgly project Demo/HTTP_Server_CLI status
 
 ### `project info`
 
-Exibe metadados detalhados de um projeto em um Fieldset — lidos da assinatura sem executá-la (as mesmas regras de literal e `(dynamic)` do `projects list`; uma assinatura inválida acrescenta uma linha `Signature` com o motivo), com as interfaces que o registro vincula:
+Exibe metadados detalhados de um projeto em um Fieldset — lidos da assinatura sem executá-la (as mesmas regras de literal, `(dynamic)` e escapes visíveis do `projects list`; uma assinatura inválida acrescenta uma linha `Signature` com o motivo), com as interfaces que o registro vincula:
 
 ```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI info

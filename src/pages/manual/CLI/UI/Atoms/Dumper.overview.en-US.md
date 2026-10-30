@@ -42,7 +42,7 @@ array:4 [
 ]
 ```
 
-Floats always keep their precision (`1.0`, `0.30000000000000004`, `INF`); strings are single-quoted with control characters escaped visibly (`\n`, `\033`) — injected escape codes can never repaint your terminal.
+Floats always keep their precision (`1.0`, `0.30000000000000004`, `INF`); strings are single-quoted with every control character — C0, DEL and C1 — escaped visibly, as the log formatters write it (`\n`, `\t`, `\u001b`, `\u007f`, `\u009b`), and a byte that is not UTF-8 shown as `?` — injected escape codes can never repaint your terminal. Quotes and backslashes get a backslash first (`'it\'s'`, `'C:\\tmp'`), so a literal `\u001b` typed in a string never passes for an escaped one. Property names, class names, enum case names and closure paths get the same escapes, and an anonymous class shows by its debug type — `class@anonymous`, or `Base@anonymous` when it extends `Base`. Since 1.0.12 — before, control characters showed as C and octal escapes (`\a`, `\v`, `\033`, `\177`).
 
 ## Dump an object
 

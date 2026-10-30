@@ -66,9 +66,9 @@ Linguagens sem plug e fences sem infoword renderizam verbatim e esmaecidas; saí
 
 ## Segurança
 
-O source é tratado como **texto não-confiável**: bytes de controle raw (incluindo `ESC` e `BEL`) são removidos, então markdown nunca injeta movimentos de cursor ou estilos perdidos no seu terminal — e o conteúdo nunca passa pelo engine de markup de Template.
+O source é tratado como **texto não-confiável**: todo caractere de controle que ele carrega — C0 (`ESC` e `BEL` incluídos), DEL e C1 — aparece como um escape visível (`\u001b`, `\u0007`, `\u009b`) e um byte que não é UTF-8 como `?`, então markdown nunca injeta movimentos de cursor ou estilos perdidos no seu terminal — e o conteúdo nunca passa pelo engine de markup de Template. Três são normalizados antes disso: um tab vira espaços, um carriage return uma quebra de linha, e um byte NUL é descartado.
 
-Todo campo recebe esse tratamento, inclusive a linguagem do bloco cercado: o info string é ecoado na linha de abertura da cerca, então é saneado antes de ser pintado e antes de escolher um highlighter. Só os bytes de controle saem, então o que um documento hostil escreveu como `ESC [ 2J` renderiza como o texto inerte `[2J` — visível, mas não mais um comando.
+Todo campo recebe esse tratamento, inclusive a linguagem do bloco cercado: o info string é ecoado na linha de abertura da cerca, então é escapado antes de ser pintado e antes de escolher um highlighter. O resto de uma sequência continua como texto, então o que um documento hostil escreveu como `ESC [ 2J` renderiza como o texto inerte `\u001b[2J` — visível, mas não mais um comando. Desde a 1.0.12 — antes, os bytes C0 e DEL eram removidos (`[2J`) e os C1 não.
 
 ## Notas
 

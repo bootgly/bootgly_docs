@@ -134,6 +134,8 @@ The URL is checked before anything is written or run. Accepted: `https://` witho
 
 The clone runs without a shell and without terminal prompts (git asks no user name or password — use a credential helper or SSH), under the network deadline and `GIT_ALLOW_PROTOCOL=file:https:ssh`, so an `insteadOf` rewrite to another transport fails too. A `GIT_ALLOW_PROTOCOL` you already export narrows that list (only the transports both name), never widens it. The clone is staged in a private temporary directory (random name, mode `0700`) that is removed whether the import succeeds, is declined — Ctrl+C at the prompt included — or fails, and no output shows the URL's credentials. Since 1.0.10.
 
+The lines git prints while cloning are shown as text: a control character in them — in a remote's `remote:` messages, a path, a tag name — appears as a visible escape (`\u001b`, `\u009b`) instead of reaching the terminal, and a byte that is not UTF-8 as `?`. Since 1.0.12.
+
 > [!WARNING]
 > Imported projects run third-party code when started (`start`, `restart`, a `startup` unit), on their `migrate`, `seed` and `schedule`, and when their tests or queues run — the command asks for confirmation (skip with `--yes`). `projects list` and `project <path> info` only read the signature. A repository whose `*.Project.php` is a symbolic link, or that carries a `bootgly` launcher or a symbolic link named `bootgly` (the global `bootgly` command would run it from inside the project), is refused. Since 1.0.10.
 
@@ -185,6 +187,8 @@ A name you pass to `create` is yours: a **platform** example that would take the
 
 An unimplemented `--platform` value is refused too, on every layout: it used to be accepted and dropped in a framework checkout and in a kit without `.gitmodules`.
 
+Setting a platform up initializes its submodule — and, when the kit pins it past a release, moves it back onto that release (`Console: pinned past a release — using v1.0.1.`) — through Bootgly's git engine: no shell, git's messages in English, no credential prompt, the network deadline. The lines git prints are shown as text — a control character as a visible escape (`\u001b`, `\u009b`), a byte that is not UTF-8 as `?` — and so is the release name. Since 1.0.12.
+
 ### `project boot`
 
 Boots a project — initializes the resources a project of your own carries. Today that is version control (a git repository of its own, with the current tree as the initial commit); more responsibilities will land here as the project lifecycle grows:
@@ -205,7 +209,7 @@ php bootgly projects import <url> [<Name>] [--interfaces=CLI|WPI] [--yes]
 
 ### `projects list`
 
-Lists every registered project — one row each, with the interfaces the registry binds it to and the description its signature carries. The description is clipped to the terminal width, never wrapped. The signature is read, never run: the description comes from a plain string literal in `return new Project(...)` (a computed value shows as `(dynamic)`), a signature that is missing, a symbolic link, larger than 256 KiB, does not parse or does not `return new Project(...)` is listed as `(invalid signature: <reason>)` while the rest of the listing prints, and control characters or Output markup in metadata are not rendered:
+Lists every registered project — one row each, with the interfaces the registry binds it to and the description its signature carries. The description is clipped to the terminal width, never wrapped. The signature is read, never run: the description comes from a plain string literal in `return new Project(...)` (a computed value shows as `(dynamic)`), a signature that is missing, a symbolic link, larger than 256 KiB, does not parse or does not `return new Project(...)` is listed as `(invalid signature: <reason>)` while the rest of the listing prints. Metadata is shown as text: a control character in it appears as a visible escape (`\u001b`, `\u009b`) and a byte that is not UTF-8 as `?`, bidi and zero-width marks are removed, and Output markup is not rendered. Since 1.0.12 — before, control characters were removed.
 
 ```bash :toolbar="true";
 php bootgly projects list
@@ -440,7 +444,7 @@ php bootgly project Demo/HTTP_Server_CLI status
 
 ### `project info`
 
-Displays detailed metadata about a project in a Fieldset — read from its signature without running it (the same literal and `(dynamic)` rules as `projects list`; an invalid signature adds a `Signature` row with the reason), with the interfaces the registry binds:
+Displays detailed metadata about a project in a Fieldset — read from its signature without running it (the same literal, `(dynamic)` and visible-escape rules as `projects list`; an invalid signature adds a `Signature` row with the reason), with the interfaces the registry binds:
 
 ```bash :toolbar="true";
 php bootgly project Demo/HTTP_Server_CLI info

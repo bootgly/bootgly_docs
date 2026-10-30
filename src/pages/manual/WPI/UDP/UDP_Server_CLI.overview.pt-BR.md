@@ -349,6 +349,14 @@ Ao rodar de forma interativa, o servidor expõe comandos como:
 
 Eles são úteis para operar e observar o servidor em execução pelo terminal.
 
+O `connections` imprime os peers de cada worker, numerados, como uma allowlist de campos —
+`status`, `IP`, `port`, `expiration`, `started`, `used`, `writes`, `timers`, `input bytes`,
+`output bytes`, `consumed bytes`, `rejected`, `decoder` e `encoder` (`DEFAULT` ou `CUSTOM`) e
+`decoded` (`NONE` ou `PRESENT`) — e termina com `Connections diagnostic complete.` (depois de
+`No active peer.` quando não há nenhum). Um datagrama e uma resposta são representados só pelos
+seus tamanhos, nunca pelos seus bytes, e um erro lançado dentro do comando é capturado em vez de
+encerrar o worker. Desde a 1.0.12.
+
 ## Notas para Consumidores
 
 - `UDP_Server_CLI\Configs` **não** expõe opções de SSL/TLS ou DTLS.

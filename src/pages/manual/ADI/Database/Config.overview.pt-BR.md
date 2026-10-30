@@ -131,14 +131,16 @@ banco travado). Um valor que não é escalar, como um array, cai no padrão sem 
 `secure.verify` e `secure.name`: ali, um valor que não é escalar lança erro (veja [TLS](#tls)), e
 só `null` assume o padrão.
 
-`new SQL()` também aceita as chaves SQL, que `Bootgly\ADI\Databases\SQL\Config` adiciona:
+`new SQL()` também aceita as chaves SQL, que `Bootgly\ADI\Databases\SQL\Config` adiciona; como cada
+uma é lida, e o que uma réplica herda, está em
+**[Chaves de config do SQL](/manual/ADI/Databases/SQL/overview/#chaves-de-config)**:
 
 | Chave | Padrão | Quem lê |
 |---|---|---|
-| `statements` | `256` | Todo driver SQL: quantos prepared statements cada conexão guarda em cache; `0` desliga o cache ([Notas sobre o Pool](/manual/ADI/Databases/SQL/Drivers/overview/#notas-sobre-o-pool)) |
-| `migrations` | `'_bootgly_migrations'` | O runner de migrations: a tabela que registra as migrations aplicadas ([Migrations](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)) |
-| `routing.sticky` | `5.0` | O roteamento de leituras: por quantos segundos as leituras ficam no primário depois de uma escrita ([Escopo de read-after-write](/guide/database-read-replicas/overview/#escopo-de-read-after-write)) |
-| `replicas` | `[]` | O roteamento de leituras: as réplicas de leitura, cada uma aberta como um pool próprio ([Configurar réplicas](/guide/database-read-replicas/overview/#configurar-réplicas)) |
+| `statements` | `256` | Todo driver SQL: quantos prepared statements cada conexão guarda em cache; `0` desliga o cache |
+| `migrations` | `'_bootgly_migrations'` | O runner de migrations: a tabela que registra as migrations aplicadas |
+| `routing.sticky` | `5.0` | O roteamento de leituras: por quantos segundos as leituras de um escopo ficam no primário depois que ele escreve |
+| `replicas` | `[]` | O roteamento de leituras: as réplicas de leitura, cada uma aberta como um pool próprio |
 
 A fachada KV (Redis) lê esta mesma classe, com os mesmos padrões, então um array do KV sempre
 define `driver` como `'redis'` e a própria `port`; veja
@@ -387,10 +389,9 @@ O `DatabaseConfig` acrescenta as próprias `InvalidArgumentException`s, listadas
 
 ## Referência
 
-`Bootgly\ADI\Databases\SQL\Config` estende esta classe com as chaves SQL (veja
-[Chaves e padrões](#chaves-e-padrões)); os padrões delas são as constantes `DEFAULT_STATEMENTS`
-(`256`), `DEFAULT_MIGRATIONS` (`'_bootgly_migrations'`) e `DEFAULT_ROUTING_STICKY` (`5.0`) da
-subclasse.
+`Bootgly\ADI\Databases\SQL\Config` estende esta classe com as chaves SQL; o construtor dela, as
+constantes `DEFAULT_STATEMENTS`, `DEFAULT_MIGRATIONS` e `DEFAULT_ROUTING_STICKY` e as propriedades
+dela estão na Referência de **[Banco SQL](/manual/ADI/Databases/SQL/overview/#configuração-sql)**.
 
 ### Construtor
 

@@ -55,6 +55,7 @@ echo "/etc/ssl/certs/server.pem" | php installer.php
 
 - Directories are scanned **lazily** — huge trees cost nothing until a branch is opened.
 - Unreadable directories (permissions) resolve as empty branches instead of aborting the session.
+- Names are shown as text — each entry's, the root's and the path in the unreachable-root warning: a control character in a name appears as a visible escape (`\u001b`), a byte that is not UTF-8 as `?`, and an `@` that would open markup is dropped. `pick()` still returns the real path. Since 1.0.12.
 - Icons come from the `glyphs` Config (`directory`/`file`) — swap for other emojis or plain markers.
 - `viewport` (default 12) windows long listings with `↑/↓ N more` markers; `blink` makes the aim marker blink.
 - Pasting a path with Ctrl+V is a planned follow-up (bracketed paste mode in the terminal Input).

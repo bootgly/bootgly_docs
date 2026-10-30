@@ -575,19 +575,55 @@ export default {
     }
   },
   '/ADI/Databases': {
-    config: null,
+    config: {
+      icon: 'category',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Database paradigm facades: SQL for relational databases and KV for Redis commands, where to open each one, and the Databases registry that creates a facade by name.',
+          'pt-BR': 'As fachadas de paradigma de banco: SQL para bancos relacionais e KV para comandos Redis, onde abrir cada uma e o registry Databases, que cria uma fachada pelo nome.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
     data: {
-      '*': {
+      'en-US': {
         title: 'Databases'
+      },
+      'pt-BR': {
+        title: 'Bancos de dados'
       }
     }
   },
 
   '/ADI/Databases/SQL': {
-    config: null,
+    config: {
+      icon: 'dataset',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'The SQL facade: open a database, its SQL config keys, run and await queries, read the outcome, read-after-write routing, builders, transactions and repositories, events and errors.',
+          'pt-BR': 'A fachada SQL: abrir um banco, as chaves de config SQL, executar e aguardar queries, ler o resultado, roteamento read-after-write, builders, transações e repositórios, eventos e erros.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.SQL'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
     data: {
-      '*': {
-        title: 'SQL'
+      'en-US': {
+        title: 'SQL database'
+      },
+      'pt-BR': {
+        title: 'Banco SQL'
       }
     }
   },
@@ -602,9 +638,7 @@ export default {
           'pt-BR': 'Wire drivers SQL nativos: PostgreSQL, MySQL/MariaDB e SQLite — seleção, capacidades e notas de pool.'
         }
       },
-      menu: {
-        subheader: '.ADI.Databases.SQL'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
@@ -704,8 +738,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Use SQL transactions and savepoints on one pinned pooled connection.',
-          'pt-BR': 'Use transações SQL e savepoints em uma conexão fixada do pool.'
+          'en-US': 'SQL transactions on one pinned pooled connection: commit, rollback and abort, savepoints, refusals, repositories inside a transaction, read-after-write marks and lifecycle events.',
+          'pt-BR': 'Transações SQL em uma conexão fixada do pool: commit, rollback e abort, savepoints, recusas, repositórios dentro de uma transação, marcas de read-after-write e eventos do ciclo de vida.'
         }
       },
       menu: {},

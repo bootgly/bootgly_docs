@@ -64,6 +64,8 @@ O retorno `false` confirma mesmo quando `$Node->selectable` é `false` — a dec
 Dê um `resolver` a um nó e seus filhos são construídos no **primeiro expand** — perfeito para varreduras de diretório e listagens remotas:
 
 ```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Templates\Template\Escaped;
 use Bootgly\CLI\UI\Components\Tree\Node;
 
 $Tree->add('vendor', value: 'vendor', resolver: static function (Node $Node): void {
@@ -72,13 +74,18 @@ $Tree->add('vendor', value: 'vendor', resolver: static function (Node $Node): vo
          continue;
       }
 
-      $Child = $Node->add($Entry->getFilename(), value: $Entry->getPathname());
+      // um nome de arquivo não é texto que você escreveu: mostre como texto, nunca como markup
+      $name = Escaped::scrub(Controls::escape(mb_scrub($Entry->getFilename(), 'UTF-8')));
+
+      $Child = $Node->add($name, value: $Entry->getPathname());
       $Child->glyph = $Entry->isDir() ? '📁' : '📄';
    }
 });
 ```
 
 Ramos não resolvidos renderizam dobrados (`▸`) — pressionar `→` roda o resolver exatamente uma vez e desdobra no lugar. Um resolver que lança exceção desfaz a trava, então o expand continua repetível. Um resolver que não adiciona nada converte o nó em folha.
+
+Um label é **texto de autoria do programa**: a árvore renderiza o markup de Template dele e escreve todo outro byte como está. Um nome que o seu programa não escreveu — um nome de arquivo, uma listagem remota — passa antes por `Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')))`, como acima: um byte que não é UTF-8 vira `?`, um caractere de controle um escape visível (`\u001b`), e um `@` que abriria markup é removido. O caminho real fica em `value`.
 
 Combinado com `action` e `glyph` por nó (qualquer string — emojis incluídos), este é o kit completo para um explorador de arquivos: diretórios lazy, `Enter` abrindo arquivos, ícones por tipo de entrada.
 
@@ -102,7 +109,7 @@ Cria o componente ligado ao `Input` do terminal (sessão interativa) e ao `Outpu
 public function add (string $label, mixed $value = null, null|Closure $resolver = null): Node
 ```
 
-Adiciona um nó raiz e o retorna. `label` aceita markup de Template; `value` é um payload livre do consumidor; `resolver` torna o nó lazy.
+Adiciona um nó raiz e o retorna. `label` aceita markup de Template e é texto de autoria do programa — todo outro byte é escrito como está, então passe um nome que o seu programa não escreveu por `Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')))` antes; `value` é um payload livre do consumidor; `resolver` torna o nó lazy.
 
 ```php
 public function render (int $mode = self::WRITE_OUTPUT): null|string
@@ -130,7 +137,7 @@ Config: `string $prompt` (linha de cabeçalho), `bool $guides` (guias de conexã
 public function add (string $label, mixed $value = null, null|Closure $resolver = null): Node
 ```
 
-Adiciona um nó filho, ligando seu `Parent` e `depth`, e o retorna.
+Adiciona um nó filho, ligando seu `Parent` e `depth`, e o retorna. `label` é texto de autoria do programa, como em `Tree->add()`.
 
 ```php
 public function expand (): self

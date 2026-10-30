@@ -37,7 +37,7 @@ Para executar, passe o builder ou a query compilada para o banco:
 
 ```php
 $Operation = $Database->query($Builder);
-$Database->Pool->wait($Operation);
+$Database->await($Operation);
 
 $rows = $Operation->rows;
 ```
@@ -87,7 +87,7 @@ $Database->query($Builder->compile());
 ```
 
 Todas retornam um `Operation` SQL. A operação guarda texto SQL, parâmetros, linhas afetadas,
-colunas do resultado e linhas do resultado. Em scripts e testes, `Pool->wait()` leva a
+colunas do resultado e linhas do resultado. Em scripts e testes, `$Database->await()` leva a
 operação até o fim. Em código HTTP, use o fluxo do scheduler da resposta já usado pela rota.
 
 ## Transações
@@ -102,27 +102,7 @@ rollback e savepoints.
 
 ## Referência
 
-### Fachada SQL
-
-```php
-table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder
-```
-Inicia um query builder para uma tabela ou fonte derivada.
-
-```php
-query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
-```
-Cria uma operação SQL assíncrona a partir de SQL cru, um builder ou uma query compilada.
-`$Scope` nomeia o escopo de read-after-write da operação (por padrão, o Fiber atual, senão a
-fachada): depois de uma escrita por um escopo, as leituras por esse escopo ficam no primário
-durante a janela sticky. Isso só importa quando há réplicas configuradas; veja
-**[Réplicas de leitura](/guide/database-read-replicas/overview/#escopo-de-read-after-write)**.
-
-```php
-begin (): Transaction
-```
-Inicia uma transação presa a uma conexão do pool. Veja
-**[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)**.
+Os métodos da fachada SQL que iniciam e executam um builder — `table()`, `query()`, `begin()` — estão na Referência de **[Banco SQL](/manual/ADI/Databases/SQL/overview/#referência)**.
 
 ### Ciclo do Builder
 

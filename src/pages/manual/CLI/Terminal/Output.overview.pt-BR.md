@@ -118,6 +118,21 @@ Os tokens escapados cobrem foregrounds, backgrounds e efeitos — nomes minúscu
 $Output->render('@!black:@#Cyan: O visual de linha mirada — ciano sobre o preenchimento preto esmaecido. @;');
 ```
 
+O `render()` é feito para texto que o seu programa escreveu: ele renderiza o markup e escreve todo outro byte como está, caracteres de controle incluídos — não é um sanitizador. Texto de fora — a resposta de um peer, um nome de arquivo, a mensagem de um remoto — passa antes por `Escaped::scrub(Controls::escape(mb_scrub($text, 'UTF-8')))`: um byte que não é UTF-8 vira `?`, um caractere de controle um escape visível, e um `@` que abriria markup é removido:
+
+```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Templates\Template\Escaped;
+
+$name = "report\e[2J.txt"; // um nome de arquivo, a resposta de um peer…
+
+$shown = Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')));
+$Output->render("@#green:Saved:@; {$shown}@.;");
+// Saved: report\u001b[2J.txt
+```
+
+O `pad()` segue o mesmo contrato. O `write()` é o caminho raw: não renderiza markup e não escapa nada. [Registre texto que você não escreveu](/guide/logging/overview/#registre-texto-que-você-não-escreveu) detalha as duas chamadas.
+
 ## Veja ao vivo
 
 O demo oficial de Output roda no [showcase ao vivo](/manual/CLI/Terminal/Output/showcase) — código real do framework em PHP 8.4 WebAssembly, no seu navegador, direto desta página.

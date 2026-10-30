@@ -117,6 +117,21 @@ The escaped tokens cover foregrounds, backgrounds and effects — lowercase name
 $Output->render('@!black:@#Cyan: An aimed row look — cyan over the dim black fill. @;');
 ```
 
+`render()` is meant for text your program wrote: it renders the markup and writes every other byte as it is, control characters included — it is not a sanitizer. Text from outside — a peer's reply, a file name, a remote's message — goes through `Escaped::scrub(Controls::escape(mb_scrub($text, 'UTF-8')))` first: a byte that is not UTF-8 becomes `?`, a control character a visible escape, and an `@` that would open markup is dropped:
+
+```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Templates\Template\Escaped;
+
+$name = "report\e[2J.txt"; // a file name, a peer's reply…
+
+$shown = Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')));
+$Output->render("@#green:Saved:@; {$shown}@.;");
+// Saved: report\u001b[2J.txt
+```
+
+`pad()` follows the same contract. `write()` is the raw path: it renders no markup and escapes nothing. [Log text you did not write](/guide/logging/overview/#log-text-you-did-not-write) details both calls.
+
 ## See it live
 
 The official Output demo runs in the [live showcase](/manual/CLI/Terminal/Output/showcase) — real framework code on PHP 8.4 WebAssembly, in your browser, straight from this page.

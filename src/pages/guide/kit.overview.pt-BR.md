@@ -92,6 +92,13 @@ bootgly kit upgrade 1.0.0
 Rodar de novo é um no-op explícito — "The kit is already on the newest release" — e sai com 0. Um
 kit alguns commits depois da release mais nova é *devolvido* a ela (o comando diz isso).
 
+Enquanto move, o comando imprime as notas da release (a mensagem da sua tag anotada) e as linhas
+que o git escreve — o checkout, os submódulos seguindo seus pins — como texto: um caractere de
+controle que um remoto escreveu, nas notas, num nome de tag ou num caminho de submódulo, aparece
+como um escape visível (`\u001b`, `\u009b`), um byte que não é UTF-8 como `?`, e markup de Output
+não é renderizado; com `--json` as notas vêm do mesmo jeito, em `notes`. O `-v` também imprime o
+fetch de tags com que `list`, `upgrade` e `downgrade` começam, do mesmo jeito. Desde a 1.0.12.
+
 ## Downgrade
 
 Algo quebrou depois de subir? Volte com um comando:
@@ -276,6 +283,20 @@ ele: `$VCS->Git` roda um comando git por processo filho, sem shell (`execute()`,
 em forma de versão da mais nova para a mais antiga com seus commits e `read()` as notas de uma tag
 anotada, `$VCS->Remotes` lista, encontra e adiciona remotes, `$VCS->Submodules` inspeciona e
 atualiza os submódulos que a árvore declara.
+
+```php
+Bootgly\ACI\VCS\Git->execute (array $arguments, null|Closure $Callback = null, array $variables = []): int
+```
+
+Roda um comando git na árvore de trabalho — um processo filho sem shell, mensagens do git em inglês
+(`LC_ALL=C`), sem prompt, stdin vindo de `/dev/null` — e retorna o status de saída (`126` quando o
+processo não pôde iniciar). `$variables` são definidas no processo filho, por cima do ambiente de
+quem chama. `$Callback` recebe cada linha conforme ela chega, sem a quebra, como texto para exibir:
+um byte que não é UTF-8 vira `?` e todo caractere de controle exceto o TAB um escape visível
+(`\u001b`), então a linha pode ir por `write()` a um terminal como está — o markup de Output dela não
+é neutralizado: passe-a por `Escaped::scrub()` antes de um `render()`. `$output` guarda os bytes raw
+(os últimos 64 KiB, `Git::TAIL`, quando um callback recebeu o stream), para parsing: exiba-o só
+através do `Controls::escape()`. Desde a 1.0.12 para o contrato do callback.
 
 ```php
 Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int

@@ -64,6 +64,8 @@ The `false` return confirms even when `$Node->selectable` is `false` — the exp
 Give a node a `resolver` and its children are built on the **first expand** — perfect for directory scans and remote listings:
 
 ```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Templates\Template\Escaped;
 use Bootgly\CLI\UI\Components\Tree\Node;
 
 $Tree->add('vendor', value: 'vendor', resolver: static function (Node $Node): void {
@@ -72,13 +74,18 @@ $Tree->add('vendor', value: 'vendor', resolver: static function (Node $Node): vo
          continue;
       }
 
-      $Child = $Node->add($Entry->getFilename(), value: $Entry->getPathname());
+      // a file name is not text you wrote: show it as text, never as markup
+      $name = Escaped::scrub(Controls::escape(mb_scrub($Entry->getFilename(), 'UTF-8')));
+
+      $Child = $Node->add($name, value: $Entry->getPathname());
       $Child->glyph = $Entry->isDir() ? '📁' : '📄';
    }
 });
 ```
 
 Unresolved branches render folded (`▸`) — pressing `→` runs the resolver exactly once and unfolds in place. A resolver that throws rolls the latch back, so the expand stays retryable. A resolver that adds nothing converts the node into a leaf.
+
+A label is **authored text**: the tree renders its Template markup and writes every other byte as it is. A name your program did not write — a file name, a remote listing — goes through `Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')))` first, as above: a byte that is not UTF-8 becomes `?`, a control character a visible escape (`\u001b`), and an `@` that would open markup is dropped. The real path stays in `value`.
 
 Combined with `action` and per-node `glyph` overrides (any string — emojis included), this is the complete toolkit for a file explorer: lazy directories, `Enter` opening files, icons per entry type.
 
@@ -102,7 +109,7 @@ Creates the component bound to the terminal `Input` (interactive session) and `O
 public function add (string $label, mixed $value = null, null|Closure $resolver = null): Node
 ```
 
-Adds a root node and returns it. `label` accepts Template markup; `value` is a free consumer payload; `resolver` makes the node lazy.
+Adds a root node and returns it. `label` accepts Template markup and is authored text — every other byte is written as it is, so pass a name your program did not write through `Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')))` first; `value` is a free consumer payload; `resolver` makes the node lazy.
 
 ```php
 public function render (int $mode = self::WRITE_OUTPUT): null|string
@@ -130,7 +137,7 @@ Config: `string $prompt` (header line), `bool $guides` (connector guides, defaul
 public function add (string $label, mixed $value = null, null|Closure $resolver = null): Node
 ```
 
-Adds a child node, wiring its `Parent` and `depth`, and returns it.
+Adds a child node, wiring its `Parent` and `depth`, and returns it. `label` is authored text, as in `Tree->add()`.
 
 ```php
 public function expand (): self

@@ -92,6 +92,13 @@ bootgly kit upgrade 1.0.0
 Running it again is an explicit no-op — "The kit is already on the newest release" — and exits 0.
 A kit a few commits past the newest release is *returned* onto it (the command says so).
 
+While it moves, the command prints the release's notes (its annotated tag's message) and the lines
+git writes — the checkout, the submodules following their pins — as text: a control character a
+remote wrote, in the notes, a tag name or a submodule path, appears as a visible escape (`\u001b`,
+`\u009b`), a byte that is not UTF-8 as `?`, and Output markup is not rendered; under `--json` the
+notes come the same way, as `notes`. `-v` also prints the tag fetch that `list`, `upgrade` and
+`downgrade` start with, the same way. Since 1.0.12.
+
 ## Downgrade
 
 Something broke after moving up? Go back in one command:
@@ -273,6 +280,20 @@ The git module the command is built on — with `SemVer`, the only dependency cr
 version-shaped tags newest first with their commits and `read()` an annotated tag's notes,
 `$VCS->Remotes` lists, finds and adds remotes, `$VCS->Submodules` inspects and updates the
 submodules the tree declares.
+
+```php
+Bootgly\ACI\VCS\Git->execute (array $arguments, null|Closure $Callback = null, array $variables = []): int
+```
+
+Run one git command in the working tree — one child process without a shell, git's messages in
+English (`LC_ALL=C`), no prompt, stdin from `/dev/null` — and return its exit status (`126` when the
+process could not start). `$variables` are set on the child, over the caller's environment.
+`$Callback` receives each line as it arrives, without its break, as text to show: a byte that is not
+UTF-8 becomes `?` and every control character but TAB a visible escape (`\u001b`), so the line is
+safe to `write()` to a terminal as is — its Output markup is not defused: `Escaped::scrub()` it
+before a `render()`. `$output` keeps the raw bytes (the last 64 KiB, `Git::TAIL`, when a callback
+streamed them), for parsing: display it only through `Controls::escape()`. Since 1.0.12 for the
+callback contract.
 
 ```php
 Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int
