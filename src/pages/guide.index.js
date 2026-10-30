@@ -791,8 +791,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Use the Bootgly DBAL inside HTTP Server CLI responses without exposing low-level async loops.',
-          'pt-BR': 'Use o DBAL do Bootgly dentro de respostas HTTP Server CLI sem expor loops async de baixo nível.'
+          'en-US': 'Configure the project database scope, then use the Bootgly DBAL from scripts and commands or through the HTTP Server CLI Database resource.',
+          'pt-BR': 'Configure o escopo de banco do projeto e use o DBAL do Bootgly em scripts e comandos ou pelo resource Database do HTTP Server CLI.'
         }
       },
       book: 'guide',

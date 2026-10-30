@@ -88,7 +88,11 @@ Por exemplo, `24` workers e `DB_POOL_MAX=4` podem abrir até `96` sessões Postg
 
 Comece baixo:
 
-- `DB_POOL_MAX=1` para uma operação ativa de banco por worker.
+- `DB_POOL_MAX=1` para uma sessão de banco por worker: operações concorrentes fazem pipeline
+  nela (PostgreSQL) ou entram na fila uma atrás da outra (MySQL), e uma transação espera por ela
+  e a mantém até o commit ou o rollback, então as outras queries do worker nesse pool também
+  esperam — inclusive uma query que a mesma rota envia fora da própria transação aberta, que
+  espera por um commit que a rota nunca alcança até o timeout da query fazê-la falhar.
 - `DB_POOL_MAX=2` quando as rotas frequentemente sobrepõem mais de uma query por worker.
 - `DB_POOL_MAX=4` para trabalho moderado e paralelo no banco.
 - Valores maiores só depois de medir ganho claro.

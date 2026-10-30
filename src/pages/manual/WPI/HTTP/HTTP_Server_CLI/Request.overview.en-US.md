@@ -220,7 +220,7 @@ record carries `error` = `UPLOAD_ERR_NO_FILE` (4) with empty `name`, `type` and
 `tmp_name`, and **no temp file is created** for it. Gate on
 `$file['error'] === UPLOAD_ERR_OK` before treating a record as an actual upload.
 
-### Persist an upload (`store`)
+### Persist an upload (store)
 
 `store()` moves a finished upload from its temp file into a [Storage](/guide/storage/overview/)
 disk — Local, S3, or any registered driver — streaming the bytes (constant memory) and

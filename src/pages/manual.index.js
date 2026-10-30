@@ -506,8 +506,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Understand the low-level DBAL core: config, connection, pool, operation, result and drivers.',
-          'pt-BR': 'Entenda o núcleo baixo nível do DBAL: config, conexão, pool, operação, resultado e drivers.'
+          'en-US': 'The transport-agnostic DBAL core: its layers, how an operation runs and fails, Operation states and Result fields.',
+          'pt-BR': 'O núcleo do DBAL, agnóstico de transporte: suas camadas, como uma operação roda e falha, os estados da Operation e os campos do Result.'
         }
       },
       menu: {},
@@ -517,10 +517,60 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Database DBAL'
+        title: 'DBAL core'
       },
       'pt-BR': {
-        title: 'DBAL de banco'
+        title: 'Núcleo do DBAL'
+      }
+    }
+  },
+  '/ADI/Database/Config': {
+    config: {
+      icon: 'settings',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Connection config for every database driver: keys and defaults, driver names, the operation timeout, pool size, TLS (secure) rules and the configuration errors.',
+          'pt-BR': 'Config de conexão de todo driver de banco: chaves e padrões, nomes de driver, o timeout das operações, o tamanho do pool, as regras de TLS (secure) e os erros de configuração.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Database configuration'
+      },
+      'pt-BR': {
+        title: 'Configuração do banco'
+      }
+    }
+  },
+  '/ADI/Database/Pool': {
+    config: {
+      icon: 'device_hub',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'The database connection pool: sizing and co-location, synchronous waits, deadlines, cancellation, withdrawn work and session reset, and replica health.',
+          'pt-BR': 'O pool de conexões do banco: dimensionamento e co-localização, esperas síncronas, prazos, cancelamento, trabalho retirado e reset de sessão, e saúde das réplicas.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Connection pool'
+      },
+      'pt-BR': {
+        title: 'Pool de conexões'
       }
     }
   },

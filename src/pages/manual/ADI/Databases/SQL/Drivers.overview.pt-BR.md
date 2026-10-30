@@ -146,7 +146,7 @@ hidrata exatamente como o driver decodificou.
   marcada não recebe novo chamador co-localizado. Uma operação enfileirada atrás de um stand-in
   espera por ele; se essa operação expirar, o que ela já enviou ainda pode rodar no servidor, então
   o resultado dela é desconhecido. Veja
-  **[Operações retiradas](/manual/ADI/Database/overview/#operações-retiradas)**.
+  **[Operações retiradas](/manual/ADI/Database/Pool/overview/#operações-retiradas)**.
 - MySQL não tem pipelining no wire: operações co-localizadas entram em uma FIFO onde só a
   cabeça possui o socket. O Pool continua correto — as irmãs bombeiam o stream de leitura
   compartilhado.

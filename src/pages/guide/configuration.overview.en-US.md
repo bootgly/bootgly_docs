@@ -129,7 +129,7 @@ echo $Database->Connections->MySQL->Host->get();   // db.internal
 
 `put()` is `putenv()` with the configured prefix and suffix applied, so the value becomes visible to `getenv()` — step 1 of the `bind()` resolution order above — and to every process spawned afterwards. Order matters: a node resolves its value once, while `<scope>.Config.php` runs, so a `put()` made after the scope loaded does not change what `get()` already returns. Use it for values a deployment step computes (a resolved host, a discovered port) before the application boots.
 
-## Local `.env` policy
+## Local .env policy
 
 Local `.env` variable names must match `[A-Z_][A-Z0-9_]*`. If a loaded `.env` or `.env.<BOOTGLY_ENV>` file contains an invalid key, the scope load fails and the scope is not registered.
 

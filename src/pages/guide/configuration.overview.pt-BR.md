@@ -129,7 +129,7 @@ echo $Database->Connections->MySQL->Host->get();   // db.internal
 
 `put()` é `putenv()` com o prefixo e o sufixo configurados aplicados, então o valor passa a ser visível para `getenv()` — o passo 1 da ordem de resolução do `bind()` acima — e para todo processo criado depois. A ordem importa: um nó resolve seu valor uma única vez, enquanto `<escopo>.Config.php` roda, então um `put()` feito depois de o escopo carregar não muda o que `get()` já retorna. Use-o para valores que uma etapa de deploy calcula (um host resolvido, uma porta descoberta) antes de a aplicação subir.
 
-## Política de `.env` local
+## Política de .env local
 
 Nomes de variáveis em `.env` local devem seguir `[A-Z_][A-Z0-9_]*`. Se um arquivo `.env` ou `.env.<BOOTGLY_ENV>` carregado contiver uma chave inválida, o carregamento do escopo falha e o escopo não é registrado.
 

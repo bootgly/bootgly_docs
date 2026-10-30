@@ -224,7 +224,7 @@ parser nativo do PHP faria: o registro carrega `error` = `UPLOAD_ERR_NO_FILE` (4
 Verifique `$file['error'] === UPLOAD_ERR_OK` antes de tratar um registro como um
 upload de verdade.
 
-### Persistir um upload (`store`)
+### Persistir um upload (store)
 
 `store()` move um upload finalizado do seu arquivo temporário para um disco do
 [Storage](/guide/storage/overview/) — Local, S3 ou qualquer driver registrado — transmitindo os

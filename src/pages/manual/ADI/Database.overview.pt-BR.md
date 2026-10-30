@@ -1,332 +1,424 @@
-# DBAL de banco
+# Núcleo do DBAL
 
-`Bootgly\ADI\Database` é o núcleo baixo nível do DBAL. Ele é agnóstico de transporte:
-mantém configuração, conexão, pools e operações pendentes, enquanto paradigmas concretos
-como `Bootgly\ADI\Databases\SQL` adicionam verbos como `query()`, `table()` e `begin()`.
+`Bootgly\ADI\Database` é o núcleo baixo nível da camada de banco do Bootgly. Ele é agnóstico de
+transporte: mantém a configuração da conexão, uma conexão, o pool e as operações pendentes, enquanto
+as fachadas de paradigma adicionam os verbos — `Bootgly\ADI\Databases\SQL` adiciona `query()`,
+`table()` e `begin()`, `Bootgly\ADI\Databases\KV` adiciona `command()`. `query()` e `command()` são
+assíncronos: cada um retorna na hora uma `Operation` pendente, e a operação é avançada até ter um
+`Result` ou um `error` (no SQLite, uma operação que consegue a conexão roda dentro de `query()` —
+veja [Execute uma operação](#execute-uma-operação)). `table()` retorna um `Builder` de query, e
+`begin()` uma `Transaction` cujo `BEGIN` é uma operação dessas (`$Transaction->Operation`).
 
 ## Camadas
 
-- `Database` - núcleo compartilhado para config, conexão e pool.
-- `Databases` - registry/factory de paradigmas como `sql`.
-- `Databases\SQL` - fachada SQL que normaliza SQL cru, builders e `Query` compilada para
-  operações SQL.
-- `Config` - host, porta, credenciais, timeout, TLS e pool.
-- `Connection` - stream não bloqueante e estado de protocolo.
-- `Pool` / `Pools` - pools reutilizáveis por driver com filas idle, busy e pending.
-- `Operation` / `Result` - trabalho pendente mais linhas, colunas, afetados, último id
-  gerado (`inserted`) e views de resultado.
-- `Driver` / `Drivers` - implementações de protocolo; PostgreSQL, MySQL/MariaDB e SQLite
-  são os drivers nativos.
+- `Database` — o núcleo abstrato que toda fachada estende: cria a configuração, a primeira conexão
+  e os pools, e retira operações que ninguém espera (`withdraw()`).
+- `Databases` — o registry e a factory de paradigmas. Só `sql` é registrado:
+  `create('sql', [...])` cria um `SQL`, e `create('kv')` lança
+  `Database paradigm is not registered: kv.` — crie a fachada key-value com `new KV([...])`.
+- `Databases\SQL` — a fachada SQL: normaliza SQL raw, builders e objetos `Query` compilados em
+  operações SQL, e roteia leituras para réplicas de leitura.
+- `Databases\KV` — a fachada key-value: um único verbo `command()`, atendido pelo driver Redis.
+- `Config` — host, porta, credenciais, timeout, TLS, pool e réplicas — veja
+  **[Configuração](/manual/ADI/Database/Config/overview/)**.
+- `Connection` — o stream não bloqueante e o estado de protocolo dele.
+- `Pool` / `Pools` — o pool de conexões por endpoint, com conexões `idle` e `busy` e uma fila
+  `pending`, e o registry dos pools de uma fachada — veja
+  **[Pool de conexões](/manual/ADI/Database/Pool/overview/)**.
+- `Operation` / `Result` — o trabalho pendente e, depois, suas linhas, colunas, tag de comando,
+  contagem de afetados e último id gerado (`inserted`) — veja [Operação](#operação) e
+  [Resultado](#resultado).
+- `Driver` / `Drivers` — implementações de protocolo de wire e o registry delas por paradigma:
+  PostgreSQL, MySQL/MariaDB e SQLite para SQL, Redis para KV.
 
-## Ciclo de uma operação
+## Execute uma operação
 
 ```php
-$Operation = $Database->query('SELECT $1::int AS value', [42]);
-$Database->Pool->wait($Operation);
+use RuntimeException;
 
-$rows = $Operation->Result?->rows ?? [];
+use Bootgly\ADI\Databases\SQL;
+
+$Database = new SQL([
+   'driver' => 'pgsql',
+   'host' => '127.0.0.1',
+   'port' => 5432,
+   'database' => 'app',
+   'username' => 'app',
+   'password' => 'secret',
+]);
+
+$Operation = $Database->query('SELECT $1::int AS value', [42]);
+$Operation->state->value; // operation.queued
+
+try {
+   $Database->await($Operation);
+
+   $Operation->Result->cell; // 42
+}
+catch (RuntimeException $Exception) {
+   echo "Query failed: {$Operation->error}\n";
+}
 ```
 
-`query()` cria uma `Operation` e atribui ao pool. O pool escolhe ou abre uma conexão, conecta
-o driver, deixa o driver preparar os bytes de protocolo e avança até a operação resolver com
-`Result` ou falhar com `error`.
+`query()` cria uma `Operation` e a atribui ao pool na hora. O pool escolhe uma conexão idle, abre
+uma nova enquanto tem espaço, deixa a operação dividir uma ocupada, ou a estaciona em `pending`; o
+driver vinculado à conexão prepara os bytes de protocolo, e nada é enviado ainda — a operação fica
+`Queued`. Cada `advance()` a move adiante — abertura da conexão, TLS, autenticação, escrita,
+leitura — até ela resolver com um `Result` ou falhar com um `error`. `await()` a avança até ela
+terminar, e lança uma `RuntimeException` com `$Operation->error` quando ela falha: veja
+[Aguarde de forma síncrona](/manual/ADI/Database/Pool/overview/#aguarde-de-forma-síncrona) para esse
+contrato e para os casos em que o pool se recusa a esperar. O SQLite é síncrono quando a operação
+consegue a conexão: o statement roda dentro de `query()`, que devolve a operação já terminada. Uma
+que não encontra conexão livre — a única conexão de um banco `:memory:` segurada por uma transação,
+por exemplo — é estacionada em `pending` como qualquer outra (veja
+[Dimensionamento do Pool](/manual/ADI/Databases/SQL/Drivers/SQLite/overview/#dimensionamento-do-pool)).
 
-Uma `Operation->code` de uma operação falha carrega a identidade de falha legível por máquina
-do driver — SQLSTATE do PostgreSQL, errno do MySQL ou o código de resultado estendido do
-SQLite — pareada com `error` e limpa em `retry()`. É `null` quando a falha não carrega
-nenhuma, como uma recusa do framework ou uma perda de transporte. Cada falha é anunciada uma
-vez através de `SQL\Events::Failed` — veja
-**[Events](/guide/events/overview/)**.
-
-Uma conexão que não pode ser aberta falha a operação com um `error` que nomeia o endpoint e a
-causa — `MySQL connection failed: 127.0.0.1:3306 refused the connection (ECONNREFUSED).`
-(os drivers PostgreSQL e Redis usam o mesmo texto). A causa é lida do socket quando a
-`ext-sockets` está carregada — recusada, inalcançável, resetada ou expirada; sem ela a mensagem
-lista essas quatro. Uma discagem apenas lenta — o primeiro SYN descartado e retransmitido — é
-aguardada, nunca relatada como recusada: o `timeout` limita a espera e, sem `timeout`, o limite
-do próprio kernel a encerra como `timed out (ETIMEDOUT)`.
-
-Um servidor MySQL ou PostgreSQL que aceita a conexão TCP e desliga antes de enviar um único byte
-também é nomeado: `MySQL connection failed: 127.0.0.1:3306 closed the connection before sending
-its greeting; the server may still be starting.` (o PostgreSQL diz `during SSL negotiation` ou
-`during startup`). É o que uma porta publicada do Docker faz enquanto o banco dentro do container
-ainda está inicializando: espere o servidor ficar pronto e inicie de novo. Um servidor que desliga
-depois de ter respondido mantém a mensagem simples de transporte (`socket closed`,
-`socket read failed`).
-
-Em rotas HTTP, prefira
-**[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** e
+Dentro de um projeto, abra o banco a partir do escopo de configuração `database` do projeto em vez
+de um array — `new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure())`,
+veja **[DBAL de banco](/guide/database-dbal/overview/)** — e, em rotas HTTP, prefira os
+**[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)** do WPI e
 `$Response->Database` em vez de chamar `Pool->wait()` ou `advance()` manualmente.
 
-## Comportamento do pool
+### Falhas
 
-O pool acompanha conexões `idle`, `busy`, `pending` e `created`. Ele se esgota quando não há
-conexão idle disponível e `created` mais as vagas ainda retidas por statements SQL retirados cuja
-sessão precisou ser derrubada (cada uma até o próprio deadline — veja
-[Operações retiradas](#operações-retiradas)) alcança o `max`. A partir daí uma nova operação se
-junta a uma conexão busy pronta que nenhuma transação segura e que não deve reset de sessão (veja
-[Operações retiradas](#operações-retiradas)); um `BEGIN`, ou uma operação sem uma conexão dessas
-para se juntar, aguarda em `pending`. Quando uma conexão é liberada, o pool promove operações
-pendentes.
+```php
+$Operation = $Database->query('SELECT * FROM missing_table');
 
-`created` é a contagem do próprio pool, e toda conexão que ele segura — idle, busy ou
-reservada por uma transação — é uma que ele conta. Uma conexão que o pool descartou continua
-descartada mesmo que um driver reconecte o mesmo objeto por conta própria: ela não é entregue
-de novo nem serve de alvo para pipelining, porque o trabalho nela nunca contaria contra o
-`max`. E uma operação que o pool estacionou sai da fila no instante em que termina, então nada
-pode promover e re-despachar trabalho que o chamador já cancelou.
+try {
+   $Database->await($Operation);
+}
+catch (RuntimeException $Exception) {
+   $Operation->state->value; // operation.failed
+   $Operation->Result;       // null
+   $Operation->code;         // 42P01
+}
+```
 
-Cancelar é uma decisão, não uma mensagem. A desistência é registrada no momento em que você a
-pede, antes de o driver ser consultado — então vale tanto se o driver envia o pedido, quanto se
-ele recusa porque o protocolo não tem por onde, quanto se recusa porque não suporta
-cancelamento, quanto se falha de vez na tentativa. Nenhum failover automático para um pool de
-réplica revive depois uma operação desistida. Isso é separado de o cancel ter chegado ou não ao
-servidor, que é o que decide se a conexão ainda tem resposta a reconciliar.
+Uma operação que falhou está `finished`, o estado dela é `Failed`, o `Result` continua `null` e
+`error` traz a mensagem. Uma operação SQL também carrega `code`: a identidade de falha legível por
+máquina do driver — SQLSTATE do PostgreSQL, errno do MySQL ou o código de resultado estendido do
+SQLite — pareada com `error` e limpa em `retry()`. É `null` quando a falha não carrega nenhuma, como
+uma recusa do framework ou uma perda de transporte, e operações key-value não têm `code`. Cada
+falha SQL é anunciada uma vez através de `SQL\Events::Failed` — veja
+**[Events](/guide/events/overview/)**.
 
-Se alguma coisa é de fato *enviada* depende de onde a operação está. Um pedido de cancel nomeia
-um backend, não um statement, então um pedido enviado para trabalho que não está rodando
-chegaria no que aquele backend estiver fazendo. Por isso uma operação que já terminou, e uma
-ainda composta mas nunca escrita, são retiradas localmente e nada vai para o fio. As duas
-diferem no que sobra para quem chamou: uma operação finda mantém seu estado e seu resultado,
-enquanto uma que nunca chegou ao servidor é falhada, já que o trabalho dela não aconteceu. Só
-uma operação de fato em voo gera um pedido.
+| Driver | `error` | `code` |
+| --- | --- | --- |
+| PostgreSQL | `relation "missing_table" does not exist` | `42P01` |
+| MySQL | `1146: Table 'app.missing_table' doesn't exist` | `1146` |
+| SQLite | `Unable to prepare statement: no such table: missing_table` | `1` |
 
-Se o socket local tiver sido fechado enquanto esse pedido sai, a operação falha na hora em vez
-de esperar uma resposta que não pode mais chegar, e a vaga dela volta para o pool. Um peer que
-some sem o socket local perceber não é detectável aqui — essa conexão é descoberta pela próxima
-operação que a usar.
+Uma conexão que não pode ser aberta falha a operação com um `error` que nomeia o endpoint e a causa
+— `MySQL connection failed: 127.0.0.1:3306 refused the connection (ECONNREFUSED).` (os drivers
+PostgreSQL e Redis usam o mesmo texto). A causa é lida do socket quando a `ext-sockets` está
+carregada; sem ela a mensagem lista as quatro de sempre:
 
-Essa fila pertence ao caminho assíncrono, onde algo mais segue avançando as operações que
-seguram as conexões. `Pool::wait()` — o que `SQL::await()` chama — é a API síncrona: enquanto
-ela bloqueia, nada avança aquelas operações, e só elas podem liberar um slot. Então um
-`await()` sobre pool saturado recusa a operação com
-`Database pool has no capacity for the operation.` e a tira de `pending`, em vez de esperar
-por uma capacidade que não pode chegar. Deixá-la enfileirada era pior que recusar: o chamador
-era informado de que sua escrita falhou e compensava com um rollback, e o `promote()` colocava
-o comando no wire mesmo assim quando a capacidade liberava — fora da transação, em autocommit.
+| Causa | Texto depois de `<Driver> connection failed: ` |
+| --- | --- |
+| Recusada | `<host>:<port> refused the connection (ECONNREFUSED).` |
+| Resetada | `<host>:<port> reset the connection (ECONNRESET).` |
+| Sem rota para o host | `<host>:<port> is unreachable: no route to host (EHOSTUNREACH).` |
+| Rede inalcançável | `<host>:<port> is unreachable: network is unreachable (ENETUNREACH).` |
+| Expirada | `the connection to <host>:<port> timed out (ETIMEDOUT).` |
+| Qualquer outro errno | `the connection to <host>:<port> failed (errno <n>).` |
+| Sem `ext-sockets` | `the connection to <host>:<port> failed: refused, unreachable, reset or timed out.` |
 
-Um sinal sem restart pode interromper o `stream_select()` usado pelo `wait()` síncrono. EINTR
-não altera a operação nem sua readiness, então o pool reconhece o errno da syscall mesmo quando
-a mensagem do sistema operacional está traduzida e repete a espera com a mesma operação. Outras
-falhas de select continuam propagando, e o timeout configurado da operação ainda pode expirá-la
-normalmente; uma espera interrompida não é convertida em resultado de banco.
+Uma discagem apenas lenta — o primeiro SYN descartado e retransmitido — é aguardada, nunca relatada
+como recusada: o `timeout` limita a espera e, sem `timeout`, o limite do próprio kernel a encerra
+como `timed out (ETIMEDOUT)`. Uma discagem que falha antes de começar, como um nome de host que não
+resolve, traz em vez disso o erro de stream do próprio PHP, então o texto varia conforme a
+plataforma — no Linux:
+`Database connection failed: php_network_getaddresses: getaddrinfo for db.invalid failed: Name or service not known`.
 
-Uma conexão volta para o pool só quando nada mais é devido no socket dela. Enquanto o driver
-ainda tem uma operação esperando resposta, a conexão continua `busy` — entregá-la daria as
-linhas de um chamador para outro. "Devido" significa uma operação que não terminou: uma que
-falhou ou expirou não deve nada ao chamador, mesmo que o driver mantenha o slot dela na FIFO
-mais um pouco para absorver a mensagem que a encerra. Backends nem sempre respondem em uma
-única leitura TCP, então uma query recusada com erro de sintaxe pode deixar uma entrada
-terminada parada ali; o pool não lê mais isso como trabalho em andamento, o que antes custava
-o slot permanentemente — e transações, que nunca compartilham conexão, eram então recusadas
-por falta de uma capacidade que existia.
+Um servidor MySQL ou PostgreSQL que aceita a conexão TCP e desliga antes de enviar um único byte
+também é nomeado:
+`MySQL connection failed: 127.0.0.1:3306 closed the connection before sending its greeting; the server may still be starting.`
+(o PostgreSQL diz `during SSL negotiation` ou `during startup`). É o que uma porta publicada do
+Docker faz enquanto o banco dentro do container ainda está inicializando: espere o servidor ficar
+pronto e inicie de novo. Um servidor que desliga depois de ter respondido mantém a mensagem simples
+de transporte (`socket closed`, `socket read failed`).
 
-Uma conexão volta para `idle` assim que o driver não deve trabalho vivo. O pool também guarda, por
-conexão, as operações que entregou a ela e que ainda não se resolveram — uma ainda composta, ou
-estacionada atrás da escrita de outro chamador, é invisível ao driver —, mas só pesa essa
-reivindicação quando uma operação exclusiva adquire conexão. Um `BEGIN` nunca recebe uma conexão
-idle que uma operação co-localizada ainda não descarregada reivindica: esse statement rodaria
-dentro da transação dele. Ele pega outra conexão idle, abre uma nova enquanto a capacidade permite,
-ou aguarda em `pending`. A reivindicação nunca segura uma conexão fora de `idle`, e só conta
-enquanto a operação dela não terminou, então uma operação que o chamador largou nunca prende uma
-conexão. Um stand-in destacado (veja [Operações retiradas](#operações-retiradas)) também não é
-trabalho vivo: ninguém o espera, então uma conexão cujo único trabalho pendente é um stand-in volta
-para `idle`.
+O pool acrescenta falhas próprias — falta de capacidade, prazos, cancelamento, retirada —
+listadas em [Erros do pool](/manual/ADI/Database/Pool/overview/#erros).
 
-Um socket que não consegue mais entregar é descartado em vez de retido, não importa o que o
-driver ainda tenha enfileirado nele: ele deve uma resposta que nunca poderá trazer, e tudo o
-que libera o slot acontece depois dessa checagem.
+## Operação
 
-Transações fixam uma conexão com `lock` e liberam com `unlock` depois de commit ou rollback.
-A reserva é liberada pela operação que carrega o `unlock`, mesmo quando o driver ainda tem um
-irmão co-localizado para terminar — a intenção vive naquela operação, então adiar a liberação
-a perderia junto com ela e deixaria a conexão reservada para sempre.
+`Bootgly\ADI\Database\Operation` é o trabalho pendente que toda fachada retorna.
 
-Um caso leva a conexão junto: um commit ou rollback que o pool retira *antes de ele chegar ao
-servidor*, seja porque você cancelou, seja porque o prazo dele venceu. Aquele statement não
-encerrou nada, e a essa altura ninguém mais consegue — a transação abriu mão da profundidade e
-da conexão no momento em que o statement foi composto. Passar essa conexão adiante rodaria o
-trabalho do próximo caller dentro de uma transação aberta que ele não pediu, e mantê-la
-reservada perderia a vaga para sempre com a sessão aberta do mesmo jeito. Então a conexão é
-derrubada: o servidor faz rollback da transação, que é o que um commit que nunca rodou
-significa, e a vaga volta para o pool.
+| Campo | Tipo | Significado |
+| --- | --- | --- |
+| `state` | `OperationStates` | Onde a operação está — veja [Estados da operação](#estados-da-operação). |
+| `finished` | `bool` | `true` depois que ela resolveu ou falhou. Somente leitura. |
+| `Result` | `null\|Result` | O desfecho; `null` até ela resolver, e em caso de falha. Somente leitura. |
+| `error` | `null\|string` | A mensagem de falha; `null` a menos que ela tenha falhado. Somente leitura. |
+| `parameters` | `array` | Os parâmetros vinculados. |
+| `timeout` | `float` | Os segundos que ela recebeu — o `timeout` do pool para o qual foi criada, mantido quando uma leitura de réplica que falhou é refeita no primário; `0.0` ou menos significa sem prazo. |
+| `deadline` | `float` | O timestamp de `microtime(true)` em que ela expira; `0.0` quando não tem prazo. Somente leitura. |
+| `Pool` | `null\|Pool` | O pool que é dono dela agora. |
+| `FallbackPool` | `null\|Pool` | Onde uma leitura que falhou é refeita: o pool primário, para uma leitura roteada a uma réplica. |
+| `Connection` | `null\|Connection` | A conexão que ela recebeu, ou à qual está presa dentro de uma transação. |
+| `cancelled` | `bool` | Um pedido de cancel chegou ao wire (`CancelRequest`, `KILL QUERY`). |
+| `revoked` | `bool` | Quem chamou desistiu dela — `cancel()` ou `withdraw()` — mesmo quando nada foi enviado; nenhum fallback a refaz. |
+| `fallback` | `bool` | Ela foi refeita no pool de fallback. |
+| `quarantine` | `bool` | Marcado pelo driver numa falha de conexão, que conta contra a saúde de um pool de réplica — veja [Saúde das réplicas](/manual/ADI/Database/Pool/overview/#saúde-das-réplicas). |
 
-Encerrar uma sessão também aposenta o driver que era dono dela. Um statement composto naquela
-sessão mas nunca escrito não está na fila do driver nem no buffer de escrita, então o teardown não
-consegue enxergá-lo e ele sobrevive à sessão segurando um driver cujo socket já morreu. Avançá-lo
-depois disso o faz falhar — `PostgreSQL connection was torn down before the query was sent.`, ou a
-mensagem equivalente do MySQL — e o comando que estava no buffer vai junto, em vez de ser escrito
-na conexão que o pool reconstruiu no meio tempo. Uma reserva remanescente daquela sessão fica
-inerte pelo mesmo motivo.
+Os demais campos pertencem ao pool e aos drivers: `Protocol` (o driver vinculado à operação),
+`Readiness` (o socket e a direção a esperar em seguida), `lock` / `unlock` (a reserva da conexão
+pela transação) e `Waker` (um hook de conclusão para quem aguarda estacionado).
 
-Uma operação presa a uma conexão que o pool não consegue mais fornecer — restart do servidor,
-reciclagem de load balancer, socket derrubado — falha na hora em vez de esperar em `pending`.
-Nenhuma capacidade satisfaz um pin, então enfileirá-la a manteria ali para sempre enquanto
-cada passe de promoção a reconsiderasse.
+Uma operação SQL (`Bootgly\ADI\Databases\SQL\Operation`) acrescenta `SQL` — o texto do statement —
+e `code`, mais `status`, `rows`, `columns` e `affected`, que o driver preenche enquanto lê e que
+coincidem com o `Result` quando a operação resolve; ela não tem `inserted`, que só o `Result`
+carrega. A propriedade estática `$slow` define o limite de query lenta em segundos (`0.0`, o
+padrão, desliga a verificação) — veja **[Events](/guide/events/overview/)**. `statement`,
+`portal`, `prepared`, `write`, `types` e `parameterTypes` são o estado de protocolo do driver. Uma
+operação key-value (`Bootgly\ADI\Databases\KV\Operation`) carrega `command` e `arguments`, e a
+resposta decodificada em `response`.
 
-Quando o `timeout` de uma operação vence, o pool a finaliza e pede ao driver dela para
-reconciliar o wire (`Driver::abandon()`) antes de liberar a conexão. O servidor em geral
-ainda está respondendo ao comando que recebeu: um driver que tem uma irmã co-localizada
-para ler o socket drena a resposta abandonada e mantém a conexão; sem ninguém para lê-la, a
-conexão é derrubada. Nos dois casos o slot volta para o pool, e a operação que expirou
-nunca é revivida pela própria resposta atrasada.
+### Estados da operação
 
-Um cancelamento que nunca chega ao servidor segue o mesmo caminho: `cancel()` é advisory,
-então quando o side channel não pode ser estabelecido a operação é finalizada localmente
-enquanto o servidor continua respondendo ao comando original, e o pool reconcilia esse wire
-antes de retomar a conexão.
+`Bootgly\ADI\Database\Operation\OperationStates` é um enum com valores string; os valores têm
+prefixo para que logs nunca os confundam com estados de conexão.
 
-### Operações retiradas
+| Caso | Valor | Significado |
+| --- | --- | --- |
+| `Pending` | `operation.pending` | Fora de uma conexão: recém-criada, estacionada na fila `pending` do pool, ou rearmada por `retry()`. |
+| `Queued` | `operation.queued` | Recebeu uma conexão; o comando está composto, mas nada foi escrito. |
+| `Connecting` | `operation.connecting` | Abrindo a conexão. |
+| `Startup` | `operation.startup` | Trocando o handshake inicial — a mensagem de startup do PostgreSQL, o greeting do MySQL. |
+| `SSLRequest` | `operation.ssl_request` | Pedindo TLS ao servidor. |
+| `SSLResponse` | `operation.ssl_response` | Esperando a resposta do PostgreSQL a esse pedido. |
+| `SSLHandshake` | `operation.ssl_handshake` | Executando o handshake TLS. |
+| `Authenticating` | `operation.authenticating` | Lendo as mensagens de autenticação do servidor. |
+| `Password` | `operation.password` | Enviando uma senha ou uma resposta de autenticação. |
+| `Querying` | `operation.querying` | Escrevendo o comando; um batch grande é escrito em partes. |
+| `Reading` | `operation.reading` | O batch está inteiro no wire; lendo a resposta. |
+| `Finished` | `operation.finished` | Resolvida com um `Result`. |
+| `Failed` | `operation.failed` | Falhou com um `error`. |
 
-Quando quem chamou simplesmente para de esperar — uma resposta deferred cuja espera foi recusada
-ou interrompida, ou cuja Fiber foi destruída — a contraparte local do `cancel()` é o
-`withdraw()`, e nada é enviado ao servidor. `Pool::withdraw()` falha uma operação não terminada
-com `Database operation was withdrawn: its caller stopped waiting.`, marca-a como `revoked` para
-que nenhum pool de fallback a re-despache, deixa o driver reconciliar o wire (`Driver::detach()`)
-e retoma a vaga; uma conexão ainda conectando ou autenticando é descartada. Uma operação que já
-terminou mantém seu resultado, é marcada como `revoked` e é apenas esquecida. Ele é síncrono e
-nunca suspende, então é seguro no `finally` de uma Fiber sendo destruída. `Database::withdraw()` —
-nas fachadas SQL e KV — recebe várias operações e as retira numa ordem segura (primeiro as
-estacionadas, depois as que ainda não estão lendo, por fim os leitores em pipeline), tenta todas e
-relança a primeira falha.
+## Resultado
 
-Uma retirada não interrompe um statement que o servidor já recebeu, e ela não custa mais a sessão.
-Quando o batch da operação está inteiro no wire (estado `Reading`), o driver mantém a sessão e
-**destaca** a operação (`Driver::detach()`): a resposta restante é absorvida por um stand-in que
-ninguém espera, a conexão volta para `idle` na hora — a menos que outros chamadores ainda leiam ali
-—, e a próxima operação que o pool entregar a ela entra na fila atrás do stand-in e drena essa
-resposta antes da própria. Uma conexão idle que ainda deve essas respostas só serve quando nenhuma
-conexão idle limpa está disponível, mas antes de uma nova ser aberta: ela já segura a vaga dela, e
-drená-la é o que a devolve ao serviço. A vaga é segurada pela sessão viva pelo tempo real de
-execução do statement, não até o deadline — então uma rajada de desconexões de clientes não trava
-mais o pool pelo `timeout` das operações (`30 s` por padrão), como travava antes.
+```php
+$Database->await($Database->query('CREATE TABLE items (id serial PRIMARY KEY, name text)'));
 
-O pool segura uma vaga além da sessão — contada contra o `max` até o deadline da própria operação
-retirada — só quando uma sessão com trabalho no servidor precisa ser derrubada. Isso vale para os
-drivers SQL (`Driver::LINGERING`): um servidor SQL em geral termina — ou desfaz com rollback — o que
-lhe foi pedido antes de perceber que o cliente saiu. Quatro casos terminam com a sessão derrubada:
+$Insert = $Database->await($Database->query("INSERT INTO items (name) VALUES ('a'), ('b')"));
+$Insert->Result->status;   // INSERT 0 2
+$Insert->Result->affected; // 2
 
-- um batch que o driver estava no meio de escrever (estado `Querying`): os bytes restantes nunca
-  poderão ser atribuídos. Um que nunca escreveu um byte — um batch PostgreSQL em texto puro, um
-  comando MySQL enfileirado atrás da cabeça — é apenas retirado localmente: a sessão é mantida e
-  nada é retido;
-- uma retirada numa conexão reservada por uma transação: ninguém entregaria essa conexão ao próximo
-  chamador para drenar um stand-in, então o pool a reconcilia com `Driver::abandon()`, que derruba
-  uma sessão sem ninguém para lê-la. O statement que um `rollback()` ou `abort()` de nível superior
-  ultrapassa é retirado desse mesmo jeito (veja
-  [Transações](/manual/ADI/Databases/SQL/Transaction/overview/)). Um `BEGIN` retirado depois de
-  chegar ao servidor derruba a sessão dele mesmo quando o driver conseguiria drená-la: o `BEGIN`
-  pode ter aberto uma transação que ninguém vai encerrar;
-- uma sessão cortada depois, antes de drenar os stand-ins que manteve — a operação enfileirada atrás
-  deles expirou sem ninguém para ler, um erro de I/O, um teardown de transação. O pool passa então a
-  contar a vaga até o deadline do próprio statement retirado, como se a sessão tivesse sido
-  derrubada na retirada;
-- um reset de sessão que não consegue ser escrito inteiro quando a sessão volta para `idle` (veja
-  abaixo): a sessão é cortada como uma que não pôde ser mantida — nenhum chamador a compartilha mais.
+$Select = $Database->await($Database->query('SELECT id, name FROM items ORDER BY id'));
+$Select->Result->columns;  // ['id', 'name']
+$Select->Result->count;    // 2
+$Select->Result->cell;     // 1
+```
 
-O resource de resposta HTTP nunca cai no segundo caso quando uma Fiber de requisição é destruída
-dentro de `transact()` — ele adota a transação (veja abaixo) —, mas uma espera recusada ou
-interrompida ali ainda cai.
+`Bootgly\ADI\Database\Operation\Result` guarda o que o servidor respondeu. Os campos são
+preenchidos pelo driver; quatro views leem as linhas por você.
 
-A contrapartida é que a vaga de uma sessão derrubada fica indisponível até esse deadline passar. Um
-statement que continua rodando segura a sessão mantida até terminar: a próxima operação entregue a
-essa conexão espera atrás dele, até o próprio deadline. Essa operação falha no deadline, mas o que
-ela enviou ainda pode rodar: o PostgreSQL faz pipeline, então um batch enfileirado atrás de um
-stand-in costuma já estar no wire quando expira, e o servidor o executa quando chega a ele. O
-resultado de uma operação que expirou é desconhecido — verifique se as escritas dela foram
-gravadas, ou torne a unidade de trabalho idempotente, antes de repeti-la. (O MySQL só escreve um
-comando enfileirado quando ele chega à cabeça, então um que nunca chegou lá não rodou em lugar
-algum.) Quando uma sessão é mantida, a própria conexão continua contando e nada extra fica retido.
-Um servidor key-value como o Redis descarta na hora o trabalho de um cliente desconectado
-(`Driver::LINGERING` é `false`), então um comando KV retirado nunca retém a vaga além da sessão
-derrubada.
+| Campo | Tipo | Significado |
+| --- | --- | --- |
+| `status` | `string` | A tag de comando. |
+| `rows` | `array<int,array<string,mixed>>` | Todas as linhas decodificadas, indexadas pelo nome da coluna. |
+| `columns` | `array<int,string>` | Os nomes das colunas, na ordem do resultado — mesmo quando nenhuma linha casou; `[]` para um statement que não retorna conjunto de resultados, como DDL ou um `INSERT` sem `RETURNING`. |
+| `affected` | `int` | As linhas que o statement alterou. |
+| `inserted` | `int\|string` | O id que o servidor gerou para um `INSERT`; `0` quando indisponível. |
+| `row` | `array<string,mixed>` | View: a primeira linha, ou `[]`. |
+| `cell` | `mixed` | View: a primeira célula da primeira linha, ou `null`. |
+| `count` | `int` | View: o número de linhas. |
+| `empty` | `bool` | View: se nenhuma linha foi retornada. |
 
-Essa contabilidade impede que uma rajada de desconexões de clientes inunde o banco com queries
-abandonadas: uma sessão mantida é uma sessão, e ela roda os statements um depois do outro. Para uma
-sessão derrubada, o teto de `pool.max` statements rodando no servidor só vale enquanto esses
-statements terminam dentro do próprio deadline, e só quando a operação tem um deadline. Uma operação
-com `timeout` `0` não tem nenhum, então uma retirada que derruba a sessão não retém vaga alguma. Um
-statement que continua rodando depois que o deadline passa — retirado ou expirado — deixa de ser
-contado, e aí o servidor pode executar mais de `pool.max` statements ao mesmo tempo. Combine o
-`timeout` do pool com um timeout de statement no servidor igual ou menor (o `statement_timeout` do
-PostgreSQL, por exemplo), para que o servidor interrompa o que o pool deixou de contar.
+Os drivers preenchem os mesmos campos de um jeito um pouco diferente:
 
-Manter a sessão tem uma consequência: um statement ainda pode pegar estado de escopo de sessão
-depois que o chamador saiu — um lock concedido tarde, uma subscrição — e uma sessão mantida o levaria
-ao próximo chamador. Por isso uma retirada cujo statement chegou ao servidor **marca**
-(`Pool::taint()`) a sessão que manteve, e a liberação que em seguida devolve essa sessão a `idle`
-escreve primeiro um **reset**, uma vez: PostgreSQL `SELECT pg_advisory_unlock_all(); UNLISTEN *`,
-MySQL `DO RELEASE_ALL_LOCKS()`. Essa é a liberação depois da qual ninguém deve trabalho na conexão
-(`Driver::check()`): a própria da retirada quando nenhum chamador vivo compartilha a sessão — o reset
-então sai na hora — ou então a do último dos chamadores que a compartilham, de modo que o reset nunca
-falha um deles e nunca encerra o que um deles ainda executa. O driver o escreve atrás de tudo o que a
-sessão ainda deve, então o servidor o executa logo depois que o statement abandonado termina, mesmo
-que ninguém leia, e a próxima operação na conexão absorve a resposta dele como a de um stand-in.
-Retiradas na mesma sessão antes de ela voltar a `idle` compartilham um só reset. Um servidor que
-rejeita o statement responde com um erro, que é absorvido e ignorado. Advisory locks de sessão do
-PostgreSQL (`pg_advisory_lock`), locks `GET_LOCK` do MySQL e registros `LISTEN` que um statement
-retirado pegou portanto não sobrevivem a um cliente desconectado.
-
-Uma sessão que deve um reset nunca é escolhida para co-localização — um chamador em pipeline ali
-rodaria antes do reset —, então num pool saturado as novas operações aguardam em `pending` e são
-promovidas quando a sessão volta a `idle`, atrás do reset dela. Se o reset não consegue ser escrito
-inteiro nessa liberação — um batch ainda segura o stream de escrita, o stream aceita menos que o
-reset inteiro, a sessão sumiu — a sessão é cortada: nenhum chamador vivo sobra nela, e valem as
-regras de vaga acima.
-
-O reset encerra estado de escopo de sessão de quem quer que o tenha criado. Um chamador ainda em
-pipeline na sessão quando ela foi marcada só mantém o que o próprio statement pega até receber a
-resposta: se esse statement pega um lock de sessão (`pg_advisory_lock`, `GET_LOCK`) ou um `LISTEN`
-fora de uma transação, o reset escrito quando os chamadores que compartilham a sessão terminam o
-libera. Pegue esses locks dentro de uma transação (`begin()`, ou `transact()` numa rota HTTP) — a
-conexão dela é reservada, então nenhum reset roda ali dentro — nas formas de escopo de transação
-(`pg_advisory_xact_lock`) quando o engine tem uma.
-
-O reset não toca as variáveis de sessão: `SET` / `SET SESSION` continua na sessão do pool entregue às
-requisições seguintes, então prefira `SET LOCAL` (ou restaure o valor explicitamente). Ele cobre só
-trabalho retirado e adotado — o estado que uma requisição deixa quando termina normalmente é dela
-para liberar (`pg_advisory_xact_lock` e `SET LOCAL` terminam com a transação).
-
-Um teardown de transação retirado — o `COMMIT` ou `ROLLBACK` de nível superior — sempre conta
-como nunca enviado, então a sessão dele é cortada em vez de confiar numa resposta que ninguém vai
-ler. O que isso deixa no servidor depende de até onde o teardown chegou. Um `ROLLBACK`, ou um
-`COMMIT` que nunca chegou ao servidor, termina num rollback feito pelo servidor quando a sessão é
-cortada. Um `COMMIT` que já chegou ao servidor (`Querying` ou `Reading`) pode ter sido commitado: o
-servidor em geral processa o statement que já leu antes de perceber a desconexão. Quem chamou só
-sabe que a operação falhou como retirada, então o resultado dela é desconhecido — verifique se as
-escritas dela foram gravadas, ou torne a unidade de trabalho idempotente, antes de repeti-la.
-`Transaction::abort()` compõe esse teardown para um chamador que não pode mais esperar: o
-`ROLLBACK` de nível superior em qualquer profundidade de savepoint, descartando o statement
-pendente e sem emitir eventos de transação. Uma transação também passa a ler como inativa assim
-que a sessão em que o `BEGIN` rodou deixa de existir — a conexão caiu, ou foi reconstruída para
-outro chamador —, então o próximo statement dela falha com `SQL transaction is not active.` em
-vez de rodar dentro da sessão de outra pessoa.
-
-O resource de resposta HTTP não retira a transação de uma Fiber de requisição destruída dentro de
-`transact()`: ele a adota, conduz o que estava em voo até o fim e faz rollback dela na própria
-sessão, então a sessão é mantida — e a marca (`Pool::taint()`), para que a liberação que encerra a
-reserva seja a que escreve o reset de sessão, antes de a conexão voltar a `idle`. Veja
-[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/).
+- `status` — o PostgreSQL retorna a tag do próprio servidor (`SELECT 2`, `INSERT 0 2`, `UPDATE 1`,
+  `CREATE TABLE`, `SHOW`). O MySQL e o SQLite montam uma nesse formato: `INSERT 0 <affected>`,
+  `UPDATE <affected>`, `DELETE <affected>` e `REPLACE <affected>` a partir da primeira palavra-chave
+  do statement, e a palavra-chave pura para todo o resto (`CREATE`). O MySQL reporta
+  `SELECT <rows>` para todo statement que retorna linhas (`SHOW TABLES` também); o SQLite só para
+  um que começa com `SELECT`, então um `WITH` ou `PRAGMA` reporta a palavra-chave pura mesmo quando
+  retorna linhas.
+- `affected` — o PostgreSQL o tira da tag, então um `SELECT` reporta as linhas que retornou; o
+  MySQL e o SQLite reportam `0` para um `SELECT`.
+- `inserted` — o PostgreSQL sempre reporta `0`: leia chaves geradas com `RETURNING`. O MySQL
+  reporta o primeiro id que um `INSERT` gerou (num `INSERT` de várias linhas, o da primeira), e o
+  SQLite o último row id. Um id além de `PHP_INT_MAX` — uma chave MySQL `BIGINT UNSIGNED` além de
+  2^63 — chega como string decimal exata, já que nenhum int do PHP é largo o bastante (veja
+  **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/#chaves-maiores-que-um-int-do-php)**).
+- Um resultado key-value carrega só `status`, com o nome do comando; a resposta em si é o
+  `response` da operação.
 
 ## Drivers nativos
 
 Três wire drivers nativos executam operações SQL — veja
 **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para a matriz de capacidades:
 
-- **PostgreSQL** — Protocol 3.0 com TLS, autenticação cleartext/MD5/SCRAM, extended query,
-  cache de prepared statements, pipelining e CancelRequest.
-- **MySQL/MariaDB** — handshake v10 com TLS, `mysql_native_password` e
-  `caching_sha2_password` (full auth via TLS ou chave RSA pinada), prepared statements binários e `KILL QUERY`.
+- **PostgreSQL** — Protocol 3.0 com TLS, autenticação cleartext/MD5/SCRAM, extended query, cache de
+  prepared statements, pipelining e CancelRequest.
+- **MySQL/MariaDB** — handshake v10 com TLS, `mysql_native_password` e `caching_sha2_password`
+  (full auth via TLS ou chave RSA pinada), prepared statements binários e `KILL QUERY`.
 - **SQLite** — driver síncrono sobre `ext-sqlite3` para bancos em arquivo e `:memory:`.
 
-Precisão de `numeric`/`decimal` é preservada como string em todos os drivers.
+Valores `numeric` do PostgreSQL e `DECIMAL` do MySQL voltam como strings, então a precisão deles é
+preservada. O SQLite não tem tipo decimal: uma coluna `DECIMAL` volta como um número do PHP,
+arredondado à precisão de um float quando não cabe num inteiro.
 
-## Views de resultado
+A fachada key-value roda sobre o driver nativo do Redis, que fala RESP sobre o mesmo pool não
+bloqueante.
 
-`Result` expõe dados diretos e views convenientes:
+## Referência
 
-- `rows` - todas as linhas decodificadas.
-- `row` - primeira linha ou array vazio.
-- `cell` - primeira célula da primeira linha ou `null`.
-- `count` - quantidade de linhas.
-- `empty` - se nenhuma linha foi retornada.
+### Database
+
+`Bootgly\ADI\Database` — o núcleo abstrato de `SQL` e `KV`.
+
+```php
+__construct (array|Config $config = [], string $drivers = Drivers::class)
+```
+
+Cria o núcleo a partir de um array de configuração nativo do ADI ou de uma `Config`, e em seguida a
+primeira `Connection`, os `Pools` e o `Pool` primário para `Config->driver`. `$drivers` é o
+registry `Drivers` do paradigma; cada fachada passa o seu.
+
+```php
+withdraw (Operation ...$Operations): void
+```
+
+Retira operações localmente porque quem as chamou parou de esperar — nada é enviado ao servidor
+(veja [Operações retiradas](/manual/ADI/Database/Pool/overview/#operações-retiradas)). As operações
+estacionadas vão primeiro, depois as que ainda não estão lendo, por fim os leitores em pipeline,
+cada uma pelo próprio pool. Todas são tentadas; a primeira falha é relançada depois que todas
+rodaram. Desde a 1.0.5.
+
+```php
+public Config $Config
+```
+
+A configuração da conexão.
+
+```php
+public Pool $Pool
+```
+
+O pool do endpoint configurado; réplicas de leitura têm os seus (`SQL->ReplicaPools`).
+
+```php
+public Pools $Pools
+```
+
+Os pools registrados por nome de driver.
+
+```php
+public Connection $Connection
+```
+
+A primeira conexão, que o pool primário abre primeiro.
+
+```php
+public string $drivers
+```
+
+A classe `Drivers` do paradigma (`class-string<Drivers>`).
+
+### Operation
+
+`Bootgly\ADI\Database\Operation`. As fachadas criam as operações; pools e drivers chamam os métodos
+abaixo.
+
+```php
+__construct (null|Connection $Connection, array $parameters = [], float $timeout = 0.0)
+```
+
+Cria uma operação pendente. Um `$timeout` positivo fixa o `deadline` dela agora; `0.0` não lhe dá
+nenhum.
+
+```php
+await (Readiness $Readiness): self
+```
+
+Registra o que a operação espera em seguida: um socket, uma direção e um deadline.
+
+```php
+resolve (Result $Result): self
+```
+
+Termina a operação com um `Result` (estado `Finished`) e acorda quem aguarda estacionado.
+
+```php
+fail (string $error): self
+```
+
+Termina a operação com um `error` (estado `Failed`) e acorda quem aguarda estacionado.
+
+```php
+retry (null|Connection $Connection = null): self
+```
+
+Rearma a operação para outra tentativa: de volta a `Pending` na `$Connection` (nenhuma por padrão),
+com um deadline novo a partir do próprio `timeout` e com `Pool`, driver, readiness, `Result`,
+`error`, `finished`, `cancelled` e `quarantine` zerados. Ela mantém `revoked` — outra tentativa não
+desfaz uma retirada — e `fallback`. Uma operação SQL também limpa `code` e o estado de protocolo que
+o driver preencheu.
+
+```php
+expire (): bool
+```
+
+Falha a operação com `Database operation timed out after <timeout> seconds.` quando o deadline já
+passou, e retorna `true`; retorna `false` quando ela terminou, não tem prazo ou ainda tem tempo.
+
+### Operações SQL
+
+`Bootgly\ADI\Databases\SQL\Operation` estende `Operation`.
+
+```php
+__construct (null|Connection $Connection, string $sql, array $parameters = [], float $timeout = 0.0)
+```
+
+Cria uma operação SQL pendente para `$sql`, guardado em `SQL`.
+
+```php
+fail (string $error, null|string $code = null): self
+```
+
+Falha a operação com um `error` e o `code` do driver, e então anuncia `Events::Failed` — uma vez,
+mesmo quando uma falha posterior substitui a mensagem.
+
+```php
+public static float $slow
+```
+
+Limite de query lenta em segundos: uma operação que resolve depois de pelo menos esse tempo emite
+`Events::Slow`. `0.0`, o padrão, desliga a verificação.
+
+### Result
+
+`Bootgly\ADI\Database\Operation\Result`.
+
+```php
+__construct (string $status = '', array $rows = [], array $columns = [], int $affected = 0, int|string $inserted = 0)
+```
+
+Cria um resultado. Os drivers o montam quando uma operação resolve; cada argumento corresponde ao
+campo de mesmo nome.
+
+```php
+public array $row { get; }
+```
+
+A primeira linha, ou `[]` quando não há nenhuma.
+
+```php
+public mixed $cell { get; }
+```
+
+A primeira célula da primeira linha, ou `null` quando não há nenhuma.
+
+```php
+public int $count { get; }
+```
+
+O número de linhas.
+
+```php
+public bool $empty { get; }
+```
+
+`true` quando nenhuma linha foi retornada.

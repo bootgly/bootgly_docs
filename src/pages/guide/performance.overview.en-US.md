@@ -86,7 +86,11 @@ For example, `24` workers and `DB_POOL_MAX=4` can open up to `96` PostgreSQL ses
 
 Start low:
 
-- `DB_POOL_MAX=1` for one active database operation per worker.
+- `DB_POOL_MAX=1` for one database session per worker: concurrent operations pipeline on it
+  (PostgreSQL) or queue behind each other (MySQL), and a transaction waits for it, then keeps it
+  until it commits or rolls back, so the worker's other queries on this pool wait too —
+  including a query the same route sends outside its open transaction, which waits for a commit
+  the route never reaches until the query's timeout fails it.
 - `DB_POOL_MAX=2` when routes often overlap more than one query per worker.
 - `DB_POOL_MAX=4` for moderate parallel database work.
 - Larger values only after measuring a clear gain.

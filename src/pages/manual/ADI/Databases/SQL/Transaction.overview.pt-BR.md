@@ -96,7 +96,7 @@ Desfazer a transação externa é a única chamada que roda mesmo com uma instru
 teardown que recusasse deixaria a conexão fixada presa e a sessão do servidor aberta dentro da
 transação. A instrução pendente é descartada: ela é retirada pelo pool dela, do jeito que quem
 para de esperar retira uma (veja
-[Operações retiradas](/manual/ADI/Database/overview/#operações-retiradas)), então ela falha com
+[Operações retiradas](/manual/ADI/Database/Pool/overview/#operações-retiradas)), então ela falha com
 `Database operation was withdrawn: its caller stopped waiting.` e o comando que estava no buffer
 vai junto, então ele nunca alcança o fio depois e nunca roda fora da transação que deveria
 contê-lo.

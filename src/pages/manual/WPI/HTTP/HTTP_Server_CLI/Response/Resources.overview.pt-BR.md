@@ -74,9 +74,21 @@ $HTTP_Server_CLI->configure(
 ```
 
 `Database::provide()` lê o escopo `database` (`configs/database/database.Config.php` e os arquivos
-`.env` locais), constrói uma conexão `SQL` pooled por worker e a encapsula. Lança exceção quando o
-escopo está desabilitado (`DB_ENABLED=false`) ou o contexto não é um `Response`. O resource é criado
-de forma lazy na primeira leitura de `$Response->Database` pela rota.
+`.env` locais), constrói uma conexão `SQL` pooled por worker e a encapsula. O resource é criado de
+forma lazy na primeira leitura de `$Response->Database` pela rota, então é nessa leitura que a
+factory lança. Um contexto que não é um `Response` lança
+`Database response resource expects a Response context.` Toda outra recusa é uma única
+`RuntimeException`,
+`Enable DB_ENABLED=true in the database config scope and set DB_HOST, DB_PORT, DB_NAME, DB_USER and DB_PASS as needed.`,
+seja qual for a causa: um nó `Enabled` que não contém o booleano `true` (`DB_ENABLED=false`, nenhum
+nó `Enabled` ou um vinculado sem `cast: Types::Boolean`, que deixa um `true` do ambiente como
+string) ou um escopo que não carregou (por exemplo, sem `database.Config.php`, com um arquivo que
+declara outro escopo ou com uma chave de `.env` fora da lista que `provide()` aceita). Erros
+lançados enquanto o escopo carrega mantêm a própria exceção: um valor que um `cast:` não consegue
+interpretar (um `DB_ENABLED=` vazio lança `Invalid boolean config value.`) ou uma chave
+`required: true` ausente. A lista de chaves aceitas, e de onde `DB_SERVER_PUBLIC_KEY` pode vir em
+vez de um arquivo `.env`, estão em
+**[Chaves que um `.env` pode definir](/guide/database-dbal/overview/#chaves-que-um-env-pode-definir)**.
 
 A factory propaga a validação de `DatabaseConfig`. O driver selecionado por `DB_CONNECTION` precisa
 ter seu bloco canônico (`Connections->PostgreSQL`, `Connections->MySQL` ou
@@ -151,7 +163,7 @@ Uma espera que não volta não deixa a conexão presa. Quando o selector a recus
 [Limites de conexão](/manual/WPI/HTTP/HTTP_Server_CLI/#limites-de-conexão)), um timeout do
 `defer()` a interrompe, ou o cliente desconecta e o Fiber da requisição é destruído, as operações
 que ela aguardava são retiradas localmente — veja `withdraw()` em
-[DBAL de banco](/manual/ADI/Database/overview/) — e o pool retoma a vaga delas em vez de deixar a
+[Operações retiradas](/manual/ADI/Database/Pool/overview/#operações-retiradas) — e o pool retoma a vaga delas em vez de deixar a
 conexão ocupada para sempre. Um statement que o servidor já recebeu mantém a sessão: a conexão
 volta para o pool e a próxima operação nela drena o resto dessa resposta, então uma rajada de
 desconexões de clientes não trava o pool pelo timeout dos statements. Só quando uma sessão com
@@ -181,8 +193,12 @@ provide (string $configs): Closure
 ```
 
 Factory estática. Lê o escopo `database` do diretório `configs/` do projeto informado e retorna um
-`Closure(object): Database` lazy para `Response\Configs(Resources:)`. Constrói uma `SQL` pooled por worker;
-lança exceção quando o escopo está desabilitado ou o contexto não é um `Response`.
+`Closure(object): Database` lazy para `Response\Configs(Resources:)`. Constrói uma `SQL` pooled por worker. O
+closure lança `RuntimeException` quando o contexto não é um `Response`, e a `RuntimeException`
+`Enable DB_ENABLED=true…` quando o escopo não carrega ou o `Enabled` dele não é o booleano `true`
+(veja [Registrar resources de projeto](#registrar-resources-de-projeto)); erros de configuração
+(`DatabaseConfig`, um `cast:` que falhou, uma chave `required: true` ausente) se propagam
+inalterados.
 
 ```php
 table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder

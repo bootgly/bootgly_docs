@@ -73,9 +73,20 @@ $HTTP_Server_CLI->configure(
 ```
 
 `Database::provide()` reads the `database` scope (`configs/database/database.Config.php` plus the
-local `.env` files), builds one pooled `SQL` connection per worker and wraps it. It throws when the
-scope is disabled (`DB_ENABLED=false`) or the context is not a `Response`. The resource is created
-lazily the first time the route reads `$Response->Database`.
+local `.env` files), builds one pooled `SQL` connection per worker and wraps it. The resource is
+created lazily the first time the route reads `$Response->Database`, so that read is where the
+factory throws. A context that is not a `Response` throws
+`Database response resource expects a Response context.` Every other refusal is one
+`RuntimeException`,
+`Enable DB_ENABLED=true in the database config scope and set DB_HOST, DB_PORT, DB_NAME, DB_USER and DB_PASS as needed.`,
+whatever the cause: an `Enabled` node that does not hold the boolean `true` (`DB_ENABLED=false`,
+no `Enabled` node, or one bound without `cast: Types::Boolean`, which leaves an environment
+`true` as a string), or a scope that did not load (for example, no `database.Config.php`, a file
+declaring another scope, or a `.env` key outside the list `provide()` accepts). Errors raised
+while the scope loads keep their own exception: a value a `cast:` cannot parse (an empty
+`DB_ENABLED=` throws `Invalid boolean config value.`) or a missing `required: true` key. The list
+of accepted keys, and where `DB_SERVER_PUBLIC_KEY` can come from instead of a `.env` file, are in
+**[Keys a `.env` file may set](/guide/database-dbal/overview/#keys-a-env-file-may-set)**.
 
 The factory propagates `DatabaseConfig` validation. The driver selected by `DB_CONNECTION` must
 have its canonical block (`Connections->PostgreSQL`, `Connections->MySQL` or
@@ -150,7 +161,7 @@ A wait that does not come back does not strand its connection. When the selector
 [Connection limits](/manual/WPI/HTTP/HTTP_Server_CLI/#connection-limits)), a `defer()` timeout
 interrupts it, or the client disconnects and the request Fiber is destroyed, the operations it
 was waiting for are withdrawn locally — see `withdraw()` in
-[Database DBAL](/manual/ADI/Database/overview/) — and the pool takes their slot back instead of
+[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations) — and the pool takes their slot back instead of
 leaving the connection busy forever. A statement the server already received keeps its session:
 the connection goes back to the pool and the next operation on it drains the rest of that answer,
 so a burst of client disconnects does not stall the pool for the statements' timeout. Only when a
@@ -179,8 +190,11 @@ provide (string $configs): Closure
 ```
 
 Static factory. Reads the `database` scope from the given project `configs/` directory and returns a
-lazy `Closure(object): Database` for `Response\Configs(Resources:)`. Builds one pooled `SQL` per worker; throws
-when the scope is disabled or the context is not a `Response`.
+lazy `Closure(object): Database` for `Response\Configs(Resources:)`. Builds one pooled `SQL` per worker. The
+closure throws `RuntimeException` when the context is not a `Response`, and the
+`Enable DB_ENABLED=true…` `RuntimeException` when the scope does not load or its `Enabled` is not
+the boolean `true` (see [Register project resources](#register-project-resources)); configuration
+errors (`DatabaseConfig`, a failed `cast:`, a missing `required: true` key) propagate unchanged.
 
 ```php
 table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder

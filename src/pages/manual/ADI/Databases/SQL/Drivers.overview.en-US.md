@@ -142,7 +142,7 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   take it is dropped. A tainted session takes no new co-located caller. An operation queued behind a
   stand-in waits for it; if that operation times out, what it already sent may still run on the
   server, so its outcome is unknown. See
-  **[Withdrawn operations](/manual/ADI/Database/overview/#withdrawn-operations)**.
+  **[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations)**.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
 - SQLite is synchronous: operations resolve immediately and never suspend. A `:memory:`

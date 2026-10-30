@@ -94,7 +94,7 @@ Rolling back the outer transaction is the one call that runs even with a stateme
 outstanding — a teardown that refused would strand the pinned connection and leave the server
 session open inside the transaction. The outstanding statement is discarded: it is withdrawn
 through its pool, as a caller that stops waiting withdraws one (see
-[Withdrawn operations](/manual/ADI/Database/overview/#withdrawn-operations)), so it fails with
+[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations)), so it fails with
 `Database operation was withdrawn: its caller stopped waiting.` and its buffered command is
 dropped with it, so it can never reach the wire afterwards and run outside the transaction that
 was meant to contain it.

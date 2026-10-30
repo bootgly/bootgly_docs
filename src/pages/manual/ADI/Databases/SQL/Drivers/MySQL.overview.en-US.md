@@ -54,7 +54,13 @@ $Database = new SQL([
 ]);
 ```
 
-In the Demo config the pin binds to the `DB_SERVER_PUBLIC_KEY` environment key. With TLS
+In the Demo config the pin binds to the `DB_SERVER_PUBLIC_KEY` environment key. For HTTP routes
+that use `Database::provide()`, that key cannot currently come from a `.env` file: it is not among
+the `.env` keys `provide()` accepts, so in `configs/database/.env` it makes the scope fail to load
+with the `Enable DB_ENABLED=true…` error. Set it in the process environment, write the key as the
+literal `default:` of `Secure->Key` in `database.Config.php`, or build the resource with a factory
+of your own (scripts and `bootgly project … migrate` / `seed` read it from `.env` fine; see
+**[Keys a `.env` file may set](/guide/database-dbal/overview/#keys-a-env-file-may-set)**). With TLS
 active (`secure.mode` ≠ `disable`) no pin is needed. Note that only the *full* path is
 affected: the everyday fast path works over plaintext with the regular scramble.
 

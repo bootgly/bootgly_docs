@@ -65,7 +65,7 @@ Esse é o ciclo inteiro: **conectar → migrar → semear → consultar**.
   reexecutáveis do projeto usando Query Builder e fakers determinísticos.
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** — o builder DML para
   `SELECT`, `INSERT`, `UPDATE` e `DELETE`.
-- **[Núcleo DBAL](/manual/ADI/Database/overview/)** — config, conexão, pool, operação,
+- **[Núcleo do DBAL](/manual/ADI/Database/overview/)** — config, conexão, pool, operação,
   resultado e lifecycle de driver em baixo nível.
 - **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)** — `begin`, `commit`,
   `rollback` e savepoints aninhados.

@@ -55,8 +55,15 @@ $Database = new SQL([
 ]);
 ```
 
-Na config do Demo o pin vincula à chave de ambiente `DB_SERVER_PUBLIC_KEY`. Com TLS ativo
-(`secure.mode` ≠ `disable`) nenhum pin é necessário. Note que só o caminho *full* é
+Na config do Demo o pin vincula à chave de ambiente `DB_SERVER_PUBLIC_KEY`. Em rotas HTTP que
+usam `Database::provide()`, essa chave não pode vir atualmente de um arquivo `.env`: ela não está
+entre as chaves de `.env` que `provide()` aceita, então em `configs/database/.env` ela faz o
+escopo falhar ao carregar com o erro `Enable DB_ENABLED=true…`. Defina-a no ambiente do processo,
+escreva a chave como o `default:` literal de `Secure->Key` no `database.Config.php` ou construa o
+resource com uma factory sua (scripts e `bootgly project … migrate` / `seed` a leem do `.env` sem
+problema; veja
+**[Chaves que um `.env` pode definir](/guide/database-dbal/overview/#chaves-que-um-env-pode-definir)**).
+Com TLS ativo (`secure.mode` ≠ `disable`) nenhum pin é necessário. Note que só o caminho *full* é
 afetado: o fast path do dia a dia funciona em plaintext com o scramble normal.
 
 O plugin `ed25519` do MariaDB não é suportado — a operação falha com mensagem clara.
