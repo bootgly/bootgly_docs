@@ -1,25 +1,29 @@
 # Consultas de banco
 
 Depois que suas migrations criam as tabelas, o fluxo diário é simples: monte uma query,
-rode contra o banco SQL configurado e leia o `Operation` resultante.
+rode contra o banco que o seu projeto configura em `configs/database` e leia o `Operation`
+resultante.
 
 Use o **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** quando a forma da
 query vem do código da aplicação. Use SQL cru só quando o builder não for o encaixe certo.
 
-Em rotas `HTTP_Server_CLI`, use o guia
-**[DBAL de banco](/guide/database-dbal/overview/)** para aguardar operações pelo resource de
-Response em vez de chamar `Pool->wait()` diretamente.
+Em rotas `HTTP_Server_CLI`, não monte o `SQL` você mesmo: use o
+**[Response Resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**
+`$Response->Database`, um por worker. O guia
+**[DBAL de banco](/guide/database-dbal/overview/)** mostra como aguardar operações por ele em
+vez de chamar `Pool->wait()` diretamente.
 
 ## O fluxo
 
 ```php
 use Bootgly\ADI\Databases\SQL;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\API\Environment\Configs\DatabaseConfig;
 
 enum Tables: string { case Users = 'users'; }
 enum Columns: string { case Id = 'id'; case Name = 'name'; case Active = 'active'; }
 
-$Database = new SQL;
+$Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Users = $Database
    ->table(Tables::Users)
@@ -31,6 +35,17 @@ $Database->Pool->wait($Operation);
 
 $rows = $Operation->rows;
 ```
+
+Isso monta o `SQL` a partir do escopo de config `database` do projeto, então roda dentro de um
+projeto (na função de boot, em um comando ou em um script) cujo `configs/database` define esse
+escopo; veja **[Configurar o banco](/guide/database-dbal/overview/#configurar-o-banco)**. Em
+um projeto sem diretório `configs/`, `BOOTGLY_PROJECT->Configs` é `null`. Fora de um projeto,
+passe as configurações de conexão como array, por exemplo
+`new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret'])`.
+Um `new SQL` sem argumentos nunca lê o config do projeto: ele usa os padrões locais embutidos
+(PostgreSQL em `127.0.0.1:5432`, banco `bootgly`, usuário `postgres`, senha vazia), e um array
+recorre a eles para toda chave que omitir, qualquer que seja o seu `driver`, então um array de
+MySQL precisa definir `port` e `username` também.
 
 `SQL::table()` inicia o builder com o dialeto do banco já selecionado. Passar o builder para
 `SQL::query()` compila SQL e parâmetros ordenados antes de atribuir a operação ao pool.
@@ -79,8 +94,14 @@ $Operation = $Database->query($Insert);
 $Database->Pool->wait($Operation);
 ```
 
-PostgreSQL e SQLite suportam `output()` via `RETURNING`. MySQL rejeita essa capacidade,
-então omita `output()` ali e leia valores gerados pelo fluxo específico que sua app usa.
+Só o PostgreSQL suporta `output()`, que compila para `RETURNING`; as colunas retornadas
+chegam em `$Operation->rows`. MySQL e SQLite o rejeitam (`output()` lança
+`InvalidArgumentException` com `SQL dialect does not support RETURNING output.`), então omita-o
+ali e leia a chave gerada em `$Operation->Result->inserted` depois de aguardar a operação; o
+PostgreSQL deixa esse campo em `0`. Veja
+**[Retornar output](/manual/ADI/Databases/SQL/Builder/Writing/overview/#retornar-output)**
+e
+**[Chaves geradas sem RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#chaves-geradas-sem-returning)**.
 
 ## Use transação quando escritas precisam ficar juntas
 

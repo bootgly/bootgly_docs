@@ -96,8 +96,9 @@ PostgreSQL:
 SELECT "id" FROM "users" WHERE "active" = $1 AND "id" IN (SELECT "id" FROM "users" WHERE "name" = $2)
 ```
 
-Parâmetros da subquery são mesclados depois dos parâmetros externos. Placeholders numerados
-de PostgreSQL e SQLite são rebased automaticamente; MySQL usa placeholders anônimos `?`.
+Os parâmetros da subquery entram onde a subquery aparece, então `$Query->parameters` segue os
+placeholders na ordem do texto SQL — aqui `[true, 'Ada']`. Placeholders numerados de PostgreSQL
+e SQLite são rebased automaticamente; MySQL usa placeholders anônimos `?`.
 
 ## Tabelas derivadas
 
@@ -131,8 +132,8 @@ $Recent = $Database
    ->filter(Columns::Active, Operators::Equal, true);
 
 $Query = $Database
-   ->define(new Identifier('recent'), $Recent)
    ->table(new Identifier('recent'))
+   ->define(new Identifier('recent'), $Recent)
    ->select(Columns::Id)
    ->filter(Columns::Name, Operators::Equal, 'Ada')
    ->compile();
@@ -144,7 +145,9 @@ PostgreSQL:
 WITH "recent" AS (SELECT "id", "name" FROM "users" WHERE "active" = $1) SELECT "id" FROM "recent" WHERE "name" = $2
 ```
 
-Passe `recursive: true` para emitir `WITH RECURSIVE`.
+`define()` pertence ao builder, não à fachada `SQL`, então encadeie-o depois de `table()`; a
+CTE continua sendo compilada antes da instrução principal. Passe `recursive: true` para emitir
+`WITH RECURSIVE`.
 
 ## Referência
 

@@ -73,6 +73,29 @@ The constraint is auto-named `<table>_<column>_<targetTable>_fk` (e.g.
 `users_team_id_teams_fk`), truncated to the engine identifier limit. Pass `name:` to
 override.
 
+### Adding an index
+
+Create an index with **[`$Schema->index()`](/manual/ADI/Databases/SQL/Schema/overview/)**,
+beside the table rather than inside its blueprint — in a migration, return it next to the
+`create()`:
+
+```php
+return new Migration(
+   Up: fn (Migrating $Schema) => [
+      $Schema->create('users', function (Blueprint $Table): void {
+         $Table->add('id', Types::BigInteger)->generate()->constrain(Keys::Primary);
+         $Table->add('email', Types::String)->limit(190);
+      }),
+      $Schema->index('users', 'email', unique: true), // users_email_unique
+   ],
+   Down: fn (Migrating $Schema) => $Schema->drop('users')
+);
+```
+
+For now, `$Table->index()` inside a `create()`/`alter()` closure has no effect: the index
+never reaches the DDL, and an `alter()` with only an index throws
+`ALTER TABLE requires at least one schema action.`
+
 ### Picking a column type
 
 | You want… | Use |
@@ -202,7 +225,8 @@ ALTER only — rename an existing column.
 ```php
 index (BackedEnum|Stringable|string|array $Columns, null|string $name = null, bool $unique = false): Index
 ```
-Define an index over one or more columns.
+Build the `Index` value that `$Schema->index()` compiles. **Inside a `create()`/`alter()`
+closure it currently has no effect** — see **[Adding an index](#adding-an-index)**.
 
 ```php
 reference (BackedEnum|Stringable|string $Column, BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Reference = 'id', null|string $name = null): Reference

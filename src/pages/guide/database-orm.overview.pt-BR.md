@@ -58,11 +58,13 @@ class Post
 
 Timestamps do PostgreSQL são hidratados como `DateTimeImmutable`. Tipe as propriedades da entidade assim e formate ao serializar para JSON.
 
+> **Gravando datas no PostgreSQL.** Por enquanto, os parâmetros do PostgreSQL aceitam só escalares e `null`, então o `save()` falha com `PostgreSQL parameter must be scalar or null.` enquanto uma coluna gravável guardar um `DateTimeImmutable`: mantenha colunas temporais somente leitura, como `created_at` acima, ou tipe a propriedade como `null|DateTimeImmutable|string` e atribua a ela uma string `format('Y-m-d H:i:s.uP')` antes de cada `save()`.
+
 ## Busque e hidrate
 
 `SQL::map()` cria um contexto de repository para uma classe de entidade. O repository compila SQL e retorna `Operation`; ele não bloqueia sozinho.
 
-Um repository criado diretamente por `SQL::map()` permanece em modo explícito/deferido para relações. Passe uma ponte `Awaiting`, use uma transaction, ou mapeie pelo Database Response Resource HTTP quando quiser eager ou lazy loading de relações.
+Um repository criado diretamente por `SQL::map()` não tem ponte de await, a menos que você passe `Awaiting:`, então por padrão permanece em modo explícito/deferido para relações: se a entidade tiver uma relação `lazy: true` que a selection não nomeia em `load()`, o `hydrate()` lança `ORM lazy loading requires an await bridge.` Um `save()` não nomeia relação nenhuma, então hidratá-lo lança o mesmo erro — em todo UPDATE, e em todo INSERT exceto o de chave gerada no MySQL ou no SQLite — depois que a escrita já rodou. Passe uma ponte `Awaiting`, use uma transaction, ou mapeie pelo Database Response Resource HTTP quando quiser eager ou lazy loading de relações.
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
@@ -104,7 +106,7 @@ return $Response->defer(function (Response $Response): void {
 
 ## Salve entidades
 
-`save()` insere quando a primary key gerada está `null`; caso contrário, atualiza. PostgreSQL e SQLite retornam colunas mapeadas com `RETURNING` quando o dialeto suporta.
+`save()` insere quando a primary key gerada está `null`; caso contrário, atualiza. Hidrate o save e continue com `$Mapped->entity ?? $User`: o PostgreSQL retorna a linha salva com `RETURNING`, enquanto MySQL e SQLite informam só o id gerado, que o `hydrate()` grava de volta no objeto que você passou (veja **[Chaves geradas sem RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#chaves-geradas-sem-returning)**). No MySQL e no SQLite só esse INSERT de chave gerada é hidratado como entidade: um UPDATE, ou um INSERT com chave atribuída pela aplicação, não retorna linha, então `$Mapped->entity` é `null` e o `?? $User` mantém o objeto que você salvou.
 
 ```php
 $User = new User;
@@ -114,7 +116,10 @@ $User->active = true;
 
 $Operation = $Database->await($Users->save($User));
 $Mapped = $Users->hydrate($Operation);
+$User = $Mapped->entity ?? $User;
 ```
+
+> **O PostgreSQL retorna uma nova instância.** Por enquanto, depois de um insert no PostgreSQL, `$Mapped->entity` é um objeto novo, e o que você passou ao `save()` continua com `id === null`: salvar esse objeto antigo de novo insere uma segunda linha. Continue com o `$User` que o exemplo acima mantém e salve esse para aplicar mudanças posteriores.
 
 ## Carregue relações
 
@@ -125,19 +130,25 @@ $Users = $Database->map(User::class);
 
 $MappedUsers = $Users->hydrate($Database->await($Users->fetch()));
 $Operations = $Users->load($MappedUsers->entities, ['Posts']);
-$Users->attach(
-   $MappedUsers->entities,
-   'Posts',
-   $Database->await($Operations['Posts'])
-);
+$Operation = $Operations['Posts'] ?? null;
+
+if ($Operation !== null) {
+   $Users->attach(
+      $MappedUsers->entities,
+      'Posts',
+      $Database->await($Operation)
+   );
+}
 ```
+
+O `load()` deixa uma relação fora do resultado quando não há nada para buscar (nenhuma entidade, ou nenhum pai com a chave local), então proteja a leitura em vez de indexar direto.
 
 `Selection::load()` registra operações de relação deferidas no resultado mapeado quando o repository não tem uma ponte de await. Aguarde cada operação e chame `attach()` uma vez por relação.
 
 ```php
 $MappedUsers = $Users->hydrate(
    $Database->await(
-      $Users->fetch($Users->select()->load('Posts', 'Profile'))
+      $Users->fetch($Users->select()->load('Posts'))
    )
 );
 
@@ -157,7 +168,7 @@ $Users = $Database->map(User::class, Awaiting: $Database);
 
 $MappedUsers = $Users->hydrate(
    $Database->await(
-      $Users->fetch($Users->select()->load('Posts', 'Profile'))
+      $Users->fetch($Users->select()->load('Posts'))
    )
 );
 ```

@@ -39,12 +39,14 @@ trouxe, e só elas. Uma projeção que omite uma coluna mapeada deixa a propried
 da classe, que se lê exatamente como um valor que você escolheu — gravá-lo de volta trocaria
 dado armazenado por um default plausível e reportaria sucesso. Hidrate uma projeção mais larga
 depois e as colunas que ela trouxe entram no conjunto. Uma coluna marcada `generated` com
-`null` nunca é gravada, do mesmo jeito que o `insert()` sempre pulou.
+`null` nunca é gravada, do mesmo jeito que um INSERT sempre a pulou.
 
 Uma entidade que você mesmo construiu não foi hidratada, então nada se sabe sobre ela: o
 `save()` grava toda coluna mapeada, que é o que você pediu. E uma entidade hidratada sem
 nenhuma coluna gravável é recusada com `ORM update has no column carrying a value to write.`
 em vez de compilar um `UPDATE` com `SET` vazio.
+
+> **Fique com a instância salva.** Por enquanto, hidratar o `save()` de uma entidade nova no PostgreSQL retorna uma nova instância em `$Mapped->entity`, montada a partir da linha do `RETURNING`, e o objeto que você passou continua com `id === null`; MySQL e SQLite gravam o id gerado de volta nesse mesmo objeto. No MySQL e no SQLite só esse INSERT de chave gerada é hidratado como entidade: um UPDATE, ou um INSERT com chave atribuída pela aplicação, não retorna linha, então `$Mapped->entity` é `null` — fique com o objeto que você salvou. `$User = $Mapped->entity ?? $User;` mantém o objeto certo em qualquer driver. No MySQL e no SQLite uma chave atribuída pela aplicação também fica sem rastreio depois desse INSERT: salvar o mesmo objeto de novo pelo repository o insere uma segunda vez e falha na chave duplicada, até que um `find()` por esse repository hidrate a linha.
 
 ## Selection
 
@@ -92,7 +94,7 @@ Quando uma selection usa `load()` sem uma ponte de await, aguarde cada operaçã
 ```php
 $Mapped = $Users->hydrate(
    $Database->await(
-      $Users->fetch($Users->select()->load('posts'))
+      $Users->fetch($Users->select()->load('Posts'))
    )
 );
 
@@ -108,14 +110,16 @@ $Users = $Database->map(User::class, Awaiting: $Database);
 
 $Mapped = $Users->hydrate(
    $Database->await(
-      $Users->fetch($Users->select()->load('posts'))
+      $Users->fetch($Users->select()->load('Posts'))
    )
 );
 ```
 
 O database response resource HTTP injeta a si mesmo como essa ponte, então repositories criados por `$Response->Database->map()` carregam relações pedidas em modo eager sem orquestração extra.
 
-Relações declaradas com `lazy: true` são instaladas como wrappers lazy durante a hidratação quando o repository tem uma ponte de await. Relações plurais usam `LazyCollection`; relações singulares usam `LazyReference`. O primeiro acesso carrega a relação uma vez para todas as entidades da janela de resultado mapeado.
+Relações declaradas com `lazy: true` são instaladas como wrappers lazy durante a hidratação, o que exige uma ponte de await. Relações plurais usam `LazyCollection`; relações singulares usam `LazyReference`. O primeiro acesso carrega a relação uma vez para todas as entidades da janela de resultado mapeado.
+
+> **Relações lazy precisam de ponte.** Uma entidade com uma relação `lazy: true` que a selection não nomeia em `load()` só pode ser hidratada por um repository com ponte de await; sem ela, o `hydrate()` lança `ORM lazy loading requires an await bridge.` Nomear a relação em `load()` a devolve como uma operação deferida em `loads`. Um `save()` não nomeia relação nenhuma, então hidratá-lo sem ponte lança o mesmo erro — em todo UPDATE, e em todo INSERT exceto o de chave gerada no MySQL ou no SQLite — depois que a escrita já rodou.
 
 ## Hooks
 

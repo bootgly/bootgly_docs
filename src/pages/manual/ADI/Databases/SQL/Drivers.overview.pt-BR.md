@@ -14,9 +14,15 @@ dialeto do Schema (DDL):
 use Bootgly\ADI\Databases\SQL;
 
 $PostgreSQL = new SQL(['driver' => 'pgsql']);
-$MySQL = new SQL(['driver' => 'mysql']);
+$MySQL = new SQL(['driver' => 'mysql', 'port' => 3306, 'username' => 'root']);
 $SQLite = new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 ```
+
+Toda chave de conexão que o array omitir cai num default local embutido, e esses defaults
+apontam para o PostgreSQL seja qual for o `driver`: host `127.0.0.1`, porta `5432`, banco
+`bootgly`, usuário `postgres` e senha vazia. Por isso a linha do MySQL define a própria `port`
+e o próprio `username`: `new SQL(['driver' => 'mysql'])` sozinho conectaria em `127.0.0.1:5432`
+como `postgres`.
 
 Em um projeto, vincule o driver pelo escopo de config `database` — `DB_CONNECTION`
 seleciona um bloco de conexão que já deve estar declarado:

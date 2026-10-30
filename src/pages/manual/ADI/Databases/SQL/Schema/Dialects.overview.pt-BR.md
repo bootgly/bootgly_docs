@@ -10,11 +10,12 @@ nisso — esta página é para quando importa.
 - **MySQL** — funciona, com pequenas diferenças (sem cast `USING`, sem toggle de
   nulidade por coluna no `alter`).
 - **SQLite** — ótimo para testes e dev local, mas `ALTER` é limitado: sem mudança de tipo,
-  sem mudança de default, sem drop-constraint, sem multi-action alter. Rename/drop de
-  coluna funcionam.
+  sem mudança de default, sem mudança de nulidade, sem drop-constraint, sem multi-action
+  alter. Rename/drop de coluna funcionam.
 
-Se você escrever uma migration que uma engine não consegue, ela **para com um erro claro** —
-nunca emite SQL quebrado.
+Se você escrever uma migration que uma engine não consegue, ela **para com um erro claro**
+(por exemplo `InvalidArgumentException: SQLite schema dialect lacks capability: AlterColumnNullability.`)
+— nunca emite SQL quebrado.
 
 ## Mesmo código, SQL diferente
 
@@ -38,12 +39,14 @@ SQLite:
 CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "email" TEXT NOT NULL UNIQUE)
 ```
 
-Mesma migration, três resultados corretos — é esse o ponto. Você só escolhe o driver:
+Mesma migration, três resultados corretos — é esse o ponto. Você só escolhe o driver (num
+projeto, pelo `DB_CONNECTION` do config `database`):
 
 ```php
-new SQL;                       // PostgreSQL
-new SQL(['driver' => 'mysql']);
-new SQL(['driver' => 'sqlite']);
+new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret']);
+// MySQL: defina também a porta e o usuário — os padrões são os do PostgreSQL (5432, postgres)
+new SQL(['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3306, 'database' => 'app', 'username' => 'app', 'password' => 'secret']);
+new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 ```
 
 ## O que cada engine consegue
@@ -53,7 +56,7 @@ new SQL(['driver' => 'sqlite']);
 | Mudar o tipo de uma coluna | ✅ | ✅ | ❌ |
 | Mudança de tipo com cast (`USING`) | ✅ | ❌ | ❌ |
 | Mudar o default de uma coluna | ✅ | ✅ | ❌ |
-| Alternar nulidade no `alter` | ✅ | ❌ | ✅ |
+| Alternar nulidade no `alter` | ✅ | ❌ | ❌ |
 | Remover uma constraint | ✅ | ✅ | ❌ |
 | Várias ações em um `alter` | ✅ | ✅ | ❌ |
 | Renomear uma coluna | ✅ | ✅ | ✅ |

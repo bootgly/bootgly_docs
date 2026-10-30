@@ -6,14 +6,27 @@ to day.
 
 ## What you actually need to know
 
-1. **Connect** — your project already has a SQL database (PostgreSQL by default). You open
-   it with one line:
+1. **Connect** — a project keeps its database settings in the `database` config scope
+   (`configs/database/database.Config.php`, PostgreSQL by default; the
+   **[Database DBAL](/guide/database-dbal/overview/)** guide shows how to write it). In an
+   `HTTP_Server_CLI` route, use the per-worker `$Response->Database` resource
+   (**[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**).
+   In the project's boot function, a command or a script that runs inside the project, open
+   it with:
 
    ```php
    use Bootgly\ADI\Databases\SQL;
+   use Bootgly\API\Environment\Configs\DatabaseConfig;
 
-   $Database = new SQL;
+   $Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
    ```
+
+   This line needs that scope: without a `configs/` directory, `BOOTGLY_PROJECT->Configs` is
+   `null`. Outside a project, pass the connection as an array:
+   `new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret'])`.
+   A bare `new SQL` reads no config at all: it uses the built-in local defaults (PostgreSQL
+   at `127.0.0.1:5432`, database `bootgly`, user `postgres`, empty password), which also
+   fill every key an array leaves out, whatever its `driver`.
 
 2. **Shape it with migrations** — you never write raw `CREATE TABLE` by hand. You create a
    migration, describe the table, and apply it:
@@ -69,8 +82,13 @@ That is the whole loop: **connect → migrate → seed → query**.
 ## Reference
 
 ADI (Abstract Data Interface) is the data layer of Bootgly's I2P architecture, in the
-one-way chain `ABI → ACI → ADI → API → CLI → WPI`. The single entrypoint is the `SQL`
-facade; it exposes query execution, transactions and two builders:
+one-way chain `ABI → ACI → ADI → API → CLI → WPI`. It ships two database facades: `SQL`
+(`Bootgly\ADI\Databases\SQL`) for relational databases and `KV`
+(`Bootgly\ADI\Databases\KV`) for key-value commands on Redis, which routes use through
+`$Response->KV`
+(**[Async Redis on the event loop](/guide/cache/overview/#async-redis-on-the-event-loop)**,
+**[Register the KV resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#register-the-kv-resource)**).
+The `SQL` facade exposes query execution, transactions and two builders:
 
 - `$Database->table(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
 - `$Database->query(...)` — execution entrypoint for raw SQL, a builder or a compiled

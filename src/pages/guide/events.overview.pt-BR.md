@@ -48,9 +48,13 @@ Operation::$slow = 0.5; // sinalize queries mais lentas que 500ms
 Emitter::$Instance->listen(Events::Slow, function (Emission $Emission) {
    [$Operation, $elapsed] = $Emission->payload;
 
-   error_log("query lenta ({$elapsed}s): {$Operation->query}");
+   error_log("query lenta ({$elapsed}s): {$Operation->SQL}");
 });
 ```
+
+`Slow` é anunciado depois de `Executed`, e só para instruções que têm sucesso: uma que falha
+ou estoura o timeout é anunciada como `Failed`. O tempo decorrido conta a partir da criação
+da operação, então inclui qualquer espera por uma conexão livre do pool.
 
 ## Eventos nativos
 
@@ -103,16 +107,37 @@ Bootgly\ABI\Event`). Payloads são posicionais, na ordem listada.
 
 | Evento | Quando | Payload |
 |---|---|---|
-| `Begin` | uma transação iniciou | `Transaction` |
-| `Commit` | uma transação commitou | `Transaction` |
-| `Rollback` | uma transação sofreu rollback | `Transaction` |
+| `Begin` | `$Transaction->begin()` foi chamado: ele reabre uma transação encerrada ou abre um savepoint aninhado (`$Database->begin()` não emite `Begin`) | `Transaction` |
+| `Commit` | `$Transaction->commit()` foi chamado, em qualquer profundidade (no nível de um savepoint, ele libera o savepoint) | `Transaction` |
+| `Rollback` | `$Transaction->rollback()` foi chamado, em qualquer profundidade — mesmo quando o savepoint nomeado não está disponível e a chamada é recusada | `Transaction` |
+
+Cada um é emitido depois das verificações da própria chamada e antes de ela compor sua
+instrução. Uma chamada que essas verificações recusam não emite nada: qualquer chamada feita
+enquanto a instrução anterior ainda está em voo (exceto o `rollback()` externo, que ultrapassa
+essa instrução), e um `commit()` ou `rollback()` numa transação que não está ativa. Um
+listener vê, sim, chamadas cuja instrução depois falha, e as duas recusas que vêm depois das
+verificações: um `rollback('name')` cujo savepoint não está disponível e um `begin()` que
+abriria um savepoint numa transação que não está ativa. `save()`, `release()` e `abort()` não
+emitem nada.
+
+Diferente dos eventos SQL acima, esses eventos mantêm o contrato de direção: um listener que
+lança faz `begin()`, `commit()` ou `rollback()` lançar antes de qualquer instrução ser
+composta, e uma transação aberta continua aberta na sua conexão reservada do pool —
+`abort()`, que não emite nada, ainda a encerra.
 
 `Bootgly\ADI\Databases\SQL\Schema\Migration\Events`:
 
 | Evento | Quando | Payload |
 |---|---|---|
-| `Up` | uma migration foi aplicada | `Migration`, `$batch` (int) |
-| `Down` | uma migration foi revertida | `Migration`, `$batch` (int) |
+| `Up` | uma migration está prestes a ser aplicada | `Migration`, `$batch` (int) |
+| `Down` | uma migration está prestes a ser revertida | `Migration`, `$batch` (int — atualmente sempre `0`) |
+
+> **Eventos de migration disparam antes de a migration rodar.** Por enquanto, `Up` e `Down`
+> são emitidos antes de as instruções da migration rodarem e fora de qualquer transação. Por
+> isso um listener também é notificado de uma migration que depois falha (e sofre rollback, no
+> PostgreSQL e no SQLite: o MySQL roda migrations sem transação), e um listener que lança
+> interrompe a execução antes da primeira instrução dessa migration. `Down` atualmente carrega
+> o batch `0`, e não o batch que está sendo revertido.
 
 ### API — Project
 

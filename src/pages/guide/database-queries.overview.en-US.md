@@ -1,25 +1,29 @@
 # Database queries
 
 After your migrations create the tables, the daily loop is simple: build a query, run it
-against the configured SQL database, then read the resulting `Operation`.
+against the database your project configures in `configs/database`, then read the resulting
+`Operation`.
 
 Use the **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** when query shape
 comes from application code. Use raw SQL only when the builder is not the right fit.
 
-In `HTTP_Server_CLI` routes, use the
-**[Database DBAL](/guide/database-dbal/overview/)** guide to await operations through the
-Response resource instead of calling `Pool->wait()` directly.
+In `HTTP_Server_CLI` routes, do not build `SQL` yourself: use the per-worker
+`$Response->Database`
+**[Response Resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**. The
+**[Database DBAL](/guide/database-dbal/overview/)** guide shows how to await operations
+through it instead of calling `Pool->wait()` directly.
 
 ## The flow
 
 ```php
 use Bootgly\ADI\Databases\SQL;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\API\Environment\Configs\DatabaseConfig;
 
 enum Tables: string { case Users = 'users'; }
 enum Columns: string { case Id = 'id'; case Name = 'name'; case Active = 'active'; }
 
-$Database = new SQL;
+$Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Users = $Database
    ->table(Tables::Users)
@@ -31,6 +35,17 @@ $Database->Pool->wait($Operation);
 
 $rows = $Operation->rows;
 ```
+
+This builds `SQL` from the project's `database` config scope, so it runs inside a project (its
+boot function, a command or a script) whose `configs/database` defines that scope; see
+**[Configure the database](/guide/database-dbal/overview/#configure-the-database)**. In a
+project without a `configs/` directory, `BOOTGLY_PROJECT->Configs` is `null`. Outside a
+project, pass the connection settings as an array, for example
+`new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret'])`.
+A bare `new SQL` never reads your project config: it uses the built-in local defaults
+(PostgreSQL at `127.0.0.1:5432`, database `bootgly`, user `postgres`, empty password), and an
+array falls back to them for every key it omits, whatever its `driver`, so a MySQL array must
+set `port` and `username` too.
 
 `SQL::table()` starts the builder with the database dialect already selected. Passing the
 builder to `SQL::query()` compiles it into SQL and ordered parameters before the operation
@@ -79,9 +94,14 @@ $Operation = $Database->query($Insert);
 $Database->Pool->wait($Operation);
 ```
 
-PostgreSQL and SQLite support `output()` through `RETURNING`. MySQL rejects that capability,
-so omit `output()` there and read generated values with the driver-specific flow your app
-uses.
+Only PostgreSQL supports `output()`, which compiles to `RETURNING`; the returned columns
+arrive in `$Operation->rows`. MySQL and SQLite reject it (`output()` throws
+`InvalidArgumentException` with `SQL dialect does not support RETURNING output.`), so omit it
+there and read the generated key from `$Operation->Result->inserted` after awaiting the
+operation; PostgreSQL leaves that field at `0`. See
+**[Returning output](/manual/ADI/Databases/SQL/Builder/Writing/overview/#returning-output)**
+and
+**[Generated keys without RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#generated-keys-without-returning)**.
 
 ## Use a transaction when writes must stay together
 

@@ -96,7 +96,8 @@ PostgreSQL:
 SELECT "id" FROM "users" WHERE "active" = $1 AND "id" IN (SELECT "id" FROM "users" WHERE "name" = $2)
 ```
 
-Subquery parameters are merged after the outer parameters. PostgreSQL and SQLite numbered
+Subquery parameters are inserted where the subquery appears, so `$Query->parameters` follows
+the placeholders in SQL text order — here `[true, 'Ada']`. PostgreSQL and SQLite numbered
 placeholders are rebased automatically; MySQL uses anonymous `?` placeholders.
 
 ## Derived tables
@@ -131,8 +132,8 @@ $Recent = $Database
    ->filter(Columns::Active, Operators::Equal, true);
 
 $Query = $Database
-   ->define(new Identifier('recent'), $Recent)
    ->table(new Identifier('recent'))
+   ->define(new Identifier('recent'), $Recent)
    ->select(Columns::Id)
    ->filter(Columns::Name, Operators::Equal, 'Ada')
    ->compile();
@@ -144,7 +145,8 @@ PostgreSQL:
 WITH "recent" AS (SELECT "id", "name" FROM "users" WHERE "active" = $1) SELECT "id" FROM "recent" WHERE "name" = $2
 ```
 
-Pass `recursive: true` to emit `WITH RECURSIVE`.
+`define()` belongs to the builder, not to the `SQL` facade, so chain it after `table()`; the
+CTE still compiles before the main statement. Pass `recursive: true` to emit `WITH RECURSIVE`.
 
 ## Reference
 

@@ -8,7 +8,11 @@ usando o **[Schema Builder](/manual/ADI/Databases/SQL/Schema/overview/)** nativo
 
 Migrations rodam contra o banco SQL configurado do projeto (PostgreSQL por padrão). As
 configurações de conexão vêm do config de ambiente do projeto (`DatabaseConfig`) — o mesmo
-usado em runtime. Não há setup extra além de um banco acessível.
+usado em runtime. O projeto precisa de um diretório `configs/` com um escopo de config
+`database` em `configs/database/database.Config.php` (veja
+**[DBAL de banco](/guide/database-dbal/overview/)**). Sem ele, toda ação do `migrate`
+exceto `create` para com `Project has no configs directory: …` ou
+`Project has no database config scope: …`.
 
 Os arquivos de migration ficam em `<projeto>/database/migrations/` e o lock do runner em
 `storage/locks/migrations/<projeto>.lock` (ambos criados sob demanda).
@@ -86,17 +90,22 @@ bootgly project <nome> migrate status
 ```
 
 Mostra `Applied`, `Local only` (pendentes), `DB only` (arquivo deletado mas ainda
-registrado) e a próxima migration a rodar.
+registrado) e a próxima migration a rodar. Por enquanto, toda ação do `migrate` exceto
+`create`, `status` incluso, roda `CREATE TABLE IF NOT EXISTS` para a tabela de histórico, e
+o PostgreSQL e o MySQL recusam essa instrução a um usuário sem permissão para criar tabelas
+mesmo quando a tabela já existe: o usuário do banco precisa dessa permissão até para checar
+o status.
 
 ## 6. Reverter
 
 ```bash
-bootgly project <nome> migrate down        # reverte a última aplicada
+bootgly project <nome> migrate down 1      # reverte a última aplicada
 bootgly project <nome> migrate down 3      # reverte as últimas 3
 ```
 
 `down` roda a closure `Down` de cada migration em ordem inversa. É obrigatório informar uma
-quantidade de passos positiva.
+quantidade de passos positiva: um `migrate down` sem número para com
+`Migration down requires a numeric step count.`
 
 ## 7. Sincronizar histórico sem rodar migrations
 

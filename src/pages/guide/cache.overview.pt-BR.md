@@ -8,9 +8,11 @@ tag. É o mesmo cache usado internamente pelo rate limiter multi-worker.
 > [!NOTE]
 > O cache vive na camada ABI, então todo driver é **bloqueante**. Dentro do worker assíncrono
 > do `HTTP_Server_CLI`, prefira `memory` (por worker, array puro — nunca toca uma syscall) ou
-> `shared`/`apcu` (sem rede) nos caminhos quentes e use o
-> **[driver Redis KV](#redis-assíncrono-no-event-loop)** não-bloqueante quando precisar de
-> Redis no event loop — uma chamada Redis bloqueante travaria o loop.
+> `shared`/`apcu` (sem rede) nos caminhos quentes. Quando uma rota precisar de Redis, use o
+> **[resource `$Response->KV`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#aguardar-trabalho-key-value)**
+> dentro de `$Response->defer()`; o resource estaciona o Fiber da resposta até o Redis
+> responder — uma chamada Redis bloqueante travaria o loop, e o `await()` da
+> [facade KV raw](#redis-assíncrono-no-event-loop) também.
 
 ## Gravar e ler
 
@@ -246,9 +248,10 @@ incrementos posteriores não estendem a janela. Ambos emitem `X-RateLimit-Limit`
 
 ## Redis assíncrono no event loop
 
-O driver Redis bloqueante acima travaria o worker HTTP assíncrono. Para Redis não-bloqueante no
-event loop, use a **facade KV** — ela fala RESP sobre o mesmo pool de conexões assíncrono do
-DBAL que o driver SQL usa, reaproveitando o codec `Bootgly\ABI\Data\RESP`:
+O driver Redis bloqueante acima travaria o worker HTTP assíncrono. A contraparte dele no pool
+assíncrono do DBAL é a **facade KV**: ela fala RESP sobre o mesmo pool de conexões que o driver
+SQL usa, reaproveitando o codec `Bootgly\ABI\Data\RESP`. `command()` só enfileira um comando e
+nunca bloqueia; `await()` bloqueia. Num script, chame-a diretamente:
 
 ```php
 use Bootgly\ADI\Databases\KV;
@@ -268,9 +271,16 @@ $Incr  = $KV->await($KV->command('INCRBY', ['hits', 5]));
 $count = $Incr->response;  // 5
 ```
 
-Em scripts CLI você pode `await()` diretamente pelo pool. Em rotas `HTTP_Server_CLI`, conduza a
-partir de `$Response->defer()` como qualquer outro recurso assíncrono, para que o código da rota
-nunca chame `advance()` manualmente.
+O `await()` da facade fica em loop no `stream_select()` até a resposta chegar e nunca suspende o
+Fiber que o chama, então cada chamada bloqueia por um round-trip completo — dentro de
+`$Response->defer()` também, onde trava todas as outras requisições do worker. Isso não é
+problema em scripts CLI, comandos de console e workers de fila. Em rotas `HTTP_Server_CLI`, não
+chame a facade diretamente:
+[registre o resource `KV` da resposta](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#registrar-o-resource-kv)
+e use `$Response->KV` dentro de `$Response->defer()` — `fetch()` para um comando, ou
+`command()` e `drain()` para fazer pipeline de vários. Esse resource estaciona o Fiber da
+resposta na prontidão (readiness) da conexão em vez de bloquear (veja
+[Aguardar trabalho key-value](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#aguardar-trabalho-key-value)).
 
 Desde a 1.0.0, o padrão `prefer` nunca faz downgrade para plaintext diante de um peer que
 fica em silêncio: um Redis plaintext não declarado — sem `'secure' => ['mode' => 'disable']` na

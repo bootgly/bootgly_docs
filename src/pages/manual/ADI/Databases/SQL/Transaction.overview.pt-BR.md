@@ -11,8 +11,9 @@ juntas.
 
 ```php
 use Bootgly\ADI\Databases\SQL;
+use Bootgly\API\Environment\Configs\DatabaseConfig;
 
-$Database = new SQL;
+$Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Transaction = $Database->begin();
 $Database->Pool->wait($Transaction->Operation);
@@ -57,10 +58,14 @@ também é recusada enquanto a mesma instrução seguir em voo.
 `Transaction` implementa a mesma superfície de query usada pela fachada SQL:
 
 ```php
-query (string|Builder|Query $query, array $parameters = []): Operation
+query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
 ```
 
 Roda SQL cru, um Query Builder ou uma `Query` compilada na conexão fixada.
+`$Scope` nomeia o escopo de read-after-write que uma escrita marca (por padrão, o Fiber atual,
+senão a fachada): leituras seguintes do `SQL::query()` por esse escopo ficam no primário durante
+a janela sticky. Isso só importa quando há réplicas configuradas; veja
+**[Réplicas de leitura](/guide/database-read-replicas/overview/#escopo-de-read-after-write)**.
 
 ```php
 table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder

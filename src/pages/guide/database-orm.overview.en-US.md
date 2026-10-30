@@ -58,11 +58,13 @@ class Post
 
 PostgreSQL timestamps are hydrated as `DateTimeImmutable`. Type entity properties accordingly and format them when serializing to JSON.
 
+> **Writing dates on PostgreSQL.** For now, PostgreSQL parameters accept only scalars and `null`, so `save()` fails with `PostgreSQL parameter must be scalar or null.` while a writable column holds a `DateTimeImmutable`: keep temporal columns read-only like `created_at` above, or type the property `null|DateTimeImmutable|string` and assign it a `format('Y-m-d H:i:s.uP')` string before each `save()`.
+
 ## Fetch and hydrate
 
 `SQL::map()` creates one repository context for an entity class. The repository compiles SQL and returns `Operation`; it does not block by itself.
 
-A repository created directly from `SQL::map()` stays in explicit/deferred relation mode. Pass an `Awaiting` bridge, use a transaction, or map through the HTTP Database Response Resource when you want eager or lazy relation loading.
+A repository created directly from `SQL::map()` has no await bridge unless you pass `Awaiting:`, so by default it stays in explicit/deferred relation mode: if the entity has a `lazy: true` relation that the selection does not name in `load()`, `hydrate()` throws `ORM lazy loading requires an await bridge.` A `save()` names no relation, so hydrating one throws the same error — on every UPDATE, and on every INSERT except a generated-key one on MySQL or SQLite — after the write has already run. Pass an `Awaiting` bridge, use a transaction, or map through the HTTP Database Response Resource when you want eager or lazy relation loading.
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
@@ -104,7 +106,7 @@ return $Response->defer(function (Response $Response): void {
 
 ## Save entities
 
-`save()` inserts when a generated primary key is `null`; otherwise it updates. PostgreSQL and SQLite return mapped columns through `RETURNING` when supported by the dialect.
+`save()` inserts when a generated primary key is `null`; otherwise it updates. Hydrate the save and continue with `$Mapped->entity ?? $User`: PostgreSQL returns the saved row through `RETURNING`, while MySQL and SQLite report only the generated id, which `hydrate()` writes back into the object you passed (see **[Generated keys without RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#generated-keys-without-returning)**). On MySQL and SQLite only that generated-key INSERT hydrates to an entity: an UPDATE, or an INSERT with an application-assigned key, returns no row, so `$Mapped->entity` is `null` and the `?? $User` keeps the object you saved.
 
 ```php
 $User = new User;
@@ -114,7 +116,10 @@ $User->active = true;
 
 $Operation = $Database->await($Users->save($User));
 $Mapped = $Users->hydrate($Operation);
+$User = $Mapped->entity ?? $User;
 ```
+
+> **PostgreSQL returns a new instance.** For now, after an insert on PostgreSQL, `$Mapped->entity` is a new object and the one you passed to `save()` keeps `id === null`: saving that old object again inserts a second row. Continue with the `$User` the example above keeps and save that one to apply later changes.
 
 ## Load relations
 
@@ -125,19 +130,25 @@ $Users = $Database->map(User::class);
 
 $MappedUsers = $Users->hydrate($Database->await($Users->fetch()));
 $Operations = $Users->load($MappedUsers->entities, ['Posts']);
-$Users->attach(
-   $MappedUsers->entities,
-   'Posts',
-   $Database->await($Operations['Posts'])
-);
+$Operation = $Operations['Posts'] ?? null;
+
+if ($Operation !== null) {
+   $Users->attach(
+      $MappedUsers->entities,
+      'Posts',
+      $Database->await($Operation)
+   );
+}
 ```
+
+`load()` leaves a relation out of its result when there is nothing to look up (no entities, or no parent carries the local key), so guard the lookup instead of indexing it directly.
 
 `Selection::load()` records deferred relation operations on the mapped result when the repository has no await bridge. Await each operation and call `attach()` once per relation.
 
 ```php
 $MappedUsers = $Users->hydrate(
    $Database->await(
-      $Users->fetch($Users->select()->load('Posts', 'Profile'))
+      $Users->fetch($Users->select()->load('Posts'))
    )
 );
 
@@ -157,7 +168,7 @@ $Users = $Database->map(User::class, Awaiting: $Database);
 
 $MappedUsers = $Users->hydrate(
    $Database->await(
-      $Users->fetch($Users->select()->load('Posts', 'Profile'))
+      $Users->fetch($Users->select()->load('Posts'))
    )
 );
 ```

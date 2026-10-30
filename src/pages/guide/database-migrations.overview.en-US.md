@@ -8,8 +8,12 @@ native **[Schema Builder](/manual/ADI/Databases/SQL/Schema/overview/)** and the
 
 Migrations run against the project's configured SQL database (PostgreSQL by default).
 Database connection settings come from the project's environment config
-(`DatabaseConfig`) — the same config the project uses at runtime. No extra setup is needed
-beyond a reachable database.
+(`DatabaseConfig`) — the same config the project uses at runtime. The project needs a
+`configs/` directory with a `database` config scope in
+`configs/database/database.Config.php` (see
+**[Database DBAL](/guide/database-dbal/overview/)**). Without it, every `migrate` action
+except `create` stops with `Project has no configs directory: …` or
+`Project has no database config scope: …`.
 
 Migration files live in `<project>/database/migrations/` and the runner lock in
 `storage/locks/migrations/<project>.lock` (both created on demand).
@@ -87,17 +91,20 @@ bootgly project <name> migrate status
 ```
 
 Shows `Applied`, `Local only` (pending), `DB only` (file deleted but still recorded), and
-the next migration to run.
+the next migration to run. Currently, every `migrate` action except `create`, `status`
+included, runs `CREATE TABLE IF NOT EXISTS` for the history table, and PostgreSQL and MySQL
+refuse that statement to a user without permission to create tables even when the table
+already exists: the database user needs that permission even for a status check.
 
 ## 6. Roll back
 
 ```bash
-bootgly project <name> migrate down        # revert the last applied migration
+bootgly project <name> migrate down 1      # revert the last applied migration
 bootgly project <name> migrate down 3      # revert the last 3
 ```
 
 `down` runs each migration's `Down` closure in reverse order. A positive step count is
-required.
+required: a bare `migrate down` stops with `Migration down requires a numeric step count.`
 
 ## 7. Sync history without running migrations
 

@@ -6,14 +6,27 @@ mexe no dia a dia.
 
 ## O que você precisa saber de verdade
 
-1. **Conectar** — seu projeto já tem um banco SQL (PostgreSQL por padrão). Você abre com
-   uma linha:
+1. **Conectar** — um projeto guarda as configurações do banco no escopo de config `database`
+   (`configs/database/database.Config.php`, PostgreSQL por padrão; o guia
+   **[DBAL de banco](/guide/database-dbal/overview/)** mostra como escrevê-lo). Em uma rota
+   `HTTP_Server_CLI`, use o resource por worker `$Response->Database`
+   (**[Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**).
+   Na função de boot do projeto, em um comando ou em um script que roda dentro do projeto,
+   abra o banco com:
 
    ```php
    use Bootgly\ADI\Databases\SQL;
+   use Bootgly\API\Environment\Configs\DatabaseConfig;
 
-   $Database = new SQL;
+   $Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
    ```
+
+   Essa linha precisa desse escopo: sem um diretório `configs/`, `BOOTGLY_PROJECT->Configs` é
+   `null`. Fora de um projeto, passe a conexão como array:
+   `new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret'])`.
+   Um `new SQL` sem argumentos não lê config nenhuma: ele usa os defaults locais embutidos
+   (PostgreSQL em `127.0.0.1:5432`, banco `bootgly`, usuário `postgres`, senha vazia), que
+   também preenchem toda chave que um array omitir, seja qual for o `driver`.
 
 2. **Moldar com migrations** — você nunca escreve `CREATE TABLE` na mão. Você cria uma
    migration, descreve a tabela e aplica:
@@ -70,8 +83,13 @@ Esse é o ciclo inteiro: **conectar → migrar → semear → consultar**.
 ## Referência
 
 ADI (Abstract Data Interface) é a camada de dados da arquitetura I2P do Bootgly, na cadeia
-unidirecional `ABI → ACI → ADI → API → CLI → WPI`. O ponto de entrada único é a fachada
-`SQL`; ela expõe execução de queries, transações e dois builders:
+unidirecional `ABI → ACI → ADI → API → CLI → WPI`. Ela traz duas fachadas de banco: `SQL`
+(`Bootgly\ADI\Databases\SQL`), para bancos relacionais, e `KV`
+(`Bootgly\ADI\Databases\KV`), para comandos key-value no Redis, que as rotas usam por
+`$Response->KV`
+(**[Redis assíncrono no event loop](/guide/cache/overview/#redis-assíncrono-no-event-loop)**,
+**[Registrar o resource KV](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#registrar-o-resource-kv)**).
+A fachada `SQL` expõe execução de queries, transações e dois builders:
 
 - `$Database->table(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
 - `$Database->query(...)` — ponto de execução para SQL cru, um builder ou uma `Query`

@@ -47,9 +47,13 @@ Operation::$slow = 0.5; // flag queries slower than 500ms
 Emitter::$Instance->listen(Events::Slow, function (Emission $Emission) {
    [$Operation, $elapsed] = $Emission->payload;
 
-   error_log("slow query ({$elapsed}s): {$Operation->query}");
+   error_log("slow query ({$elapsed}s): {$Operation->SQL}");
 });
 ```
+
+`Slow` is announced after `Executed`, and only for statements that succeed: one that fails
+or times out is announced as `Failed` instead. The elapsed time counts from the moment the
+operation was created, so it includes any wait for a free pooled connection.
 
 ## Built-in events
 
@@ -102,16 +106,36 @@ Payloads are positional, in the order listed.
 
 | Event | When | Payload |
 |---|---|---|
-| `Begin` | a transaction started | `Transaction` |
-| `Commit` | a transaction committed | `Transaction` |
-| `Rollback` | a transaction rolled back | `Transaction` |
+| `Begin` | `$Transaction->begin()` was called: it re-opens a closed transaction or opens a nested savepoint (`$Database->begin()` emits no `Begin`) | `Transaction` |
+| `Commit` | `$Transaction->commit()` was called, at any depth (at a savepoint level it releases the savepoint) | `Transaction` |
+| `Rollback` | `$Transaction->rollback()` was called, at any depth — even when the named savepoint is unavailable and the call is refused | `Transaction` |
+
+Each one is emitted after the call's own guards and before it composes its statement. A call
+those guards refuse emits nothing: any call made while the previous statement is still in
+flight (except the outer `rollback()`, which overtakes that statement), and a `commit()` or
+`rollback()` on a transaction that is not active. A listener does see calls whose statement
+then fails, and the two refusals that come after the guards: a `rollback('name')` whose
+savepoint is not available, and a `begin()` that would open a savepoint in a transaction that
+is not active. `save()`, `release()` and `abort()` emit nothing.
+
+Unlike the SQL events above, these events keep the steering contract: a listener that
+throws makes `begin()`, `commit()` or `rollback()` throw before any statement is composed,
+and an open transaction stays open on its reserved pooled connection — `abort()`, which
+emits nothing, still ends it.
 
 `Bootgly\ADI\Databases\SQL\Schema\Migration\Events`:
 
 | Event | When | Payload |
 |---|---|---|
-| `Up` | a migration was applied | `Migration`, `$batch` (int) |
-| `Down` | a migration was reverted | `Migration`, `$batch` (int) |
+| `Up` | a migration is about to be applied | `Migration`, `$batch` (int) |
+| `Down` | a migration is about to be reverted | `Migration`, `$batch` (int — currently always `0`) |
+
+> **Migration events fire before the migration runs.** For now, `Up` and `Down` are emitted
+> before the migration's statements run and outside any transaction. A listener is therefore
+> also notified for a migration that then fails (and is rolled back, on PostgreSQL and SQLite:
+> MySQL runs migrations without a transaction), and a listener that throws stops the run
+> before that migration's first statement. `Down` currently carries batch `0`, not the batch
+> being reverted.
 
 ### API — Project
 

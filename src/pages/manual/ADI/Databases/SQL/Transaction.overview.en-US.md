@@ -10,8 +10,9 @@ it through `SQL::begin()` when several statements must commit or roll back toget
 
 ```php
 use Bootgly\ADI\Databases\SQL;
+use Bootgly\API\Environment\Configs\DatabaseConfig;
 
-$Database = new SQL;
+$Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Transaction = $Database->begin();
 $Database->Pool->wait($Transaction->Operation);
@@ -55,10 +56,14 @@ call is refused too for as long as the same statement is still in flight.
 `Transaction` implements the same query surface used by the SQL facade:
 
 ```php
-query (string|Builder|Query $query, array $parameters = []): Operation
+query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
 ```
 
 Runs raw SQL, a Query Builder, or a compiled `Query` on the pinned connection.
+`$Scope` names the read-after-write scope a write marks (by default the current Fiber, else the
+facade): later `SQL::query()` reads through that scope stay on the primary for the sticky window.
+It only matters when replicas are configured; see
+**[Database read replicas](/guide/database-read-replicas/overview/#read-after-write-scope)**.
 
 ```php
 table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $Alias = null): Builder

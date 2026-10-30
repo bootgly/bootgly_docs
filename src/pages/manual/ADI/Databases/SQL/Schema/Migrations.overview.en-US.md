@@ -14,7 +14,7 @@ bootgly project <name> migrate create "Create Users Table"  # 1. make a file
 # edit the file (next section)
 bootgly project <name> migrate up                           # 2. apply pending
 bootgly project <name> migrate status                       # 3. see state
-bootgly project <name> migrate down                          # undo the last one
+bootgly project <name> migrate down 1                       # undo the last one
 ```
 
 ## The file you edit
@@ -62,14 +62,25 @@ Next         20260515120000_create_users_table
 
 - **Local only** = pending. `migrate up` applies them.
 - **DB only** = the database remembers a migration whose file was deleted. `migrate sync`
-  cleans the record (it does not run anything).
+  deletes those rows **and records every Local only file as applied**, without running
+  anything — so run `migrate up` first unless you mean to adopt the pending files. It shows
+  what it will add and delete, then asks `[y/N]`: only `y` (or `yes`) goes ahead — a run
+  without a terminal is cancelled unless its input answers `y`.
+
+> **Even `status` needs permission to create tables.** Currently, every `migrate` action
+> except `create` — `status` included — runs `CREATE TABLE IF NOT EXISTS` for the history
+> table, and PostgreSQL and MySQL refuse that statement to a database user without
+> permission to create tables, even when the history table already exists.
 
 ## Undoing
 
 ```bash
-bootgly project <name> migrate down      # revert the last applied migration
+bootgly project <name> migrate down 1    # revert the last applied migration
 bootgly project <name> migrate down 3    # revert the last 3
 ```
+
+The step count is required: a bare `migrate down` stops with
+`Migration down requires a numeric step count.`
 
 Each `migrate up` run tags its migrations with one **batch** number, so a botched deploy
 can be rolled back as a unit. If the database supports transactions, each migration applies

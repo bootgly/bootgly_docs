@@ -695,12 +695,14 @@ All built-in rules live in `Bootgly\ADI\Validators` — `Required`, `Boolean`, `
 
 ### Custom Rules
 
-Extend `Bootgly\ADI\Validators` and implement `validate()` (returns `true` if valid) and `format()` (returns the error message):
+Extend `Bootgly\ADI\Validators`, set the default error message in `$template` and implement `validate()` (returns `true` if valid):
 
 ```php
 use Bootgly\ADI\Validators;
 
 $InviteCode = new class extends Validators {
+   protected string $template = '{field} must match the demo invite code.';
+
    /**
     * @param array<string,mixed> $data  Full source array — useful for cross-field rules.
     */
@@ -708,15 +710,10 @@ $InviteCode = new class extends Validators {
    {
       return is_string($value) && $value === 'bootgly';
    }
-
-   public function format (string $field): string
-   {
-      return "{$field} must match the demo invite code.";
-   }
 };
 ```
 
-Set `$implicit = true` in your subclass when the rule must run even for missing/blank fields (the way `Required` does).
+Declare `public protected(set) bool $implicit = true;` in your subclass when the rule must run even for missing/blank fields (the way `Required` does). Like the built-in rules, it honors a `message` constructor argument and the translation catalogs; an override of `format()` would bypass both — see [Custom rules](/guide/validation/overview/#custom-rules) in the Validation guide.
 
 ### Validator Middleware
 
@@ -765,13 +762,11 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
 
 $Custom = new class extends Validators {
+   protected string $template = '{field} must match the demo invite code.';
+
    public function validate (string $field, mixed $value, array $data): bool
    {
       return is_string($value) && $value === 'bootgly';
-   }
-   public function format (string $field): string
-   {
-      return "{$field} must match the demo invite code.";
    }
 };
 
@@ -819,7 +814,7 @@ yield $Router->route('/validation/query', function (Request $Request, Response $
 yield $Router->route('/validation/files', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['files' => $Request->files]);
 }, POST, middlewares: [
-   new BodyParser,
+   new BodyParser(maxSize: 3 * 1024 * 1024),
    new Validator(rules: [
       'avatar' => [
          new Required,
@@ -840,6 +835,8 @@ yield $Router->route('/validation/custom', function (Request $Request, Response 
    ], Source: Sources::Fields),
 ]);
 ```
+
+In the upload route, `BodyParser` gets a `maxSize` above the `Size` limit, because the multipart body also carries the boundaries and part headers. With its default of 1 MiB, it would answer `413` to any upload over 1 MiB before `Size` could run — see [Middlewares → BodyParser](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#bodyparser).
 
 ## Reference
 

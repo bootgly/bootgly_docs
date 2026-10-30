@@ -11,11 +11,12 @@ instruções DML: `SELECT`, `INSERT`, `UPDATE` e `DELETE`.
 ```php
 use Bootgly\ADI\Databases\SQL;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\API\Environment\Configs\DatabaseConfig;
 
 enum Tables: string { case Users = 'users'; }
 enum Columns: string { case Id = 'id'; case Name = 'name'; case Active = 'active'; }
 
-$Database = new SQL;
+$Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Builder = $Database
    ->table(Tables::Users)
@@ -40,6 +41,16 @@ $Database->Pool->wait($Operation);
 
 $rows = $Operation->rows;
 ```
+
+> **Abrindo o banco.** A linha do `DatabaseConfig` lê o escopo de config `database` do
+> projeto, então roda na função de boot de um projeto, em um comando ou em um script dentro do
+> projeto (sem um diretório `configs/`, `BOOTGLY_PROJECT->Configs` é `null`). Em uma rota
+> `HTTP_Server_CLI`, use no lugar o resource por worker
+> **[`$Response->Database`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**.
+> Fora de um projeto, passe a conexão como array:
+> `new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret'])`.
+> Um `new SQL` sem argumentos não lê config nenhuma: ele usa os defaults locais embutidos
+> (PostgreSQL em `127.0.0.1:5432`, banco `bootgly`, usuário `postgres`).
 
 ## Nomes são tipados
 
@@ -99,9 +110,13 @@ table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $A
 Inicia um query builder para uma tabela ou fonte derivada.
 
 ```php
-query (string|Builder|Query $query, array $parameters = []): Operation
+query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
 ```
 Cria uma operação SQL assíncrona a partir de SQL cru, um builder ou uma query compilada.
+`$Scope` nomeia o escopo de read-after-write da operação (por padrão, o Fiber atual, senão a
+fachada): depois de uma escrita por um escopo, as leituras por esse escopo ficam no primário
+durante a janela sticky. Isso só importa quando há réplicas configuradas; veja
+**[Réplicas de leitura](/guide/database-read-replicas/overview/#escopo-de-read-after-write)**.
 
 ```php
 begin (): Transaction
@@ -127,9 +142,13 @@ fora do builder; o Runner de seeders o lê para mover sequências de identidade 
 ### Objetos de apoio
 
 ```php
-new Query(string $sql, array $parameters = [])
+new Query(string $sql, array $parameters = [], bool $reading = false)
 ```
-Texto SQL compilado mais parâmetros ordenados. `__toString()` retorna a string SQL.
+Texto SQL compilado mais parâmetros ordenados. `__toString()` retorna a string SQL. `$reading`
+decide o roteamento para **[réplicas de leitura](/guide/database-read-replicas/overview/)** e só
+importa quando há réplicas configuradas: `true` deixa o `SQL::query()` enviar a query para uma
+réplica, enquanto o padrão `false` a mantém no primário e a conta como escrita para o
+read-after-write.
 
 ```php
 new Identifier(string $name)

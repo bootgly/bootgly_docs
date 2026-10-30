@@ -10,10 +10,12 @@ this page is for when it matters.
 - **MySQL** — works, with minor differences (no `USING` cast, no per-column nullability
   toggle in `alter`).
 - **SQLite** — great for tests and local dev, but `ALTER` is limited: no type change, no
-  default change, no drop-constraint, no multi-action alter. Rename/drop column do work.
+  default change, no nullability change, no drop-constraint, no multi-action alter.
+  Rename/drop column do work.
 
-If you write a migration that an engine can't perform, it **stops with a clear error** —
-it never emits broken SQL.
+If you write a migration that an engine can't perform, it **stops with a clear error** (for
+example `InvalidArgumentException: SQLite schema dialect lacks capability: AlterColumnNullability.`)
+— it never emits broken SQL.
 
 ## Same code, different SQL
 
@@ -37,12 +39,14 @@ SQLite:
 CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "email" TEXT NOT NULL UNIQUE)
 ```
 
-Same migration, three correct results — that's the point. You only pick the driver:
+Same migration, three correct results — that's the point. You only pick the driver (in a
+project, through `DB_CONNECTION` in its `database` config):
 
 ```php
-new SQL;                       // PostgreSQL
-new SQL(['driver' => 'mysql']);
-new SQL(['driver' => 'sqlite']);
+new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret']);
+// MySQL: set its port and user too — the defaults are PostgreSQL's (5432, postgres)
+new SQL(['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3306, 'database' => 'app', 'username' => 'app', 'password' => 'secret']);
+new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 ```
 
 ## What each engine can do
@@ -52,7 +56,7 @@ new SQL(['driver' => 'sqlite']);
 | Change a column's type | ✅ | ✅ | ❌ |
 | Type change with a cast (`USING`) | ✅ | ❌ | ❌ |
 | Change a column's default | ✅ | ✅ | ❌ |
-| Toggle nullable in `alter` | ✅ | ❌ | ✅ |
+| Toggle nullable in `alter` | ✅ | ❌ | ❌ |
 | Drop a constraint | ✅ | ✅ | ❌ |
 | Several actions in one `alter` | ✅ | ✅ | ❌ |
 | Rename a column | ✅ | ✅ | ✅ |

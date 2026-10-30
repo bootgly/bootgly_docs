@@ -8,9 +8,11 @@ internally by the multi-worker rate limiter.
 > [!NOTE]
 > The cache lives in the ABI layer, so every driver is **blocking**. Inside the async
 > `HTTP_Server_CLI` worker, prefer `memory` (per-worker, pure array — never touches a syscall)
-> or `shared`/`apcu` (no network) for hot paths, and use the non-blocking
-> **[KV Redis driver](#async-redis-on-the-event-loop)** when you need Redis on the event
-> loop — a blocking Redis call would stall the loop.
+> or `shared`/`apcu` (no network) for hot paths. When a route needs Redis, use the
+> **[`$Response->KV` resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#await-key-value-work)**
+> inside `$Response->defer()`; the resource parks the response Fiber until Redis replies — a
+> blocking Redis call would stall the loop, and so would the `await()` of the
+> [raw KV facade](#async-redis-on-the-event-loop).
 
 ## Store and read
 
@@ -240,9 +242,10 @@ that window. Both algorithms emit `X-RateLimit-Limit`, `X-RateLimit-Remaining`, 
 
 ## Async Redis on the event loop
 
-The blocking Redis driver above would stall the async HTTP worker. For non-blocking Redis on
-the event loop, use the **KV facade** instead — it speaks RESP over the same async DBAL
-connection pool the SQL driver uses, reusing the `Bootgly\ABI\Data\RESP` codec:
+The blocking Redis driver above would stall the async HTTP worker. Its counterpart on the
+async DBAL pool is the **KV facade**: it speaks RESP over the same connection pool the SQL
+driver uses, reusing the `Bootgly\ABI\Data\RESP` codec. `command()` only queues a command and
+never blocks; `await()` does. In a script, call it directly:
 
 ```php
 use Bootgly\ADI\Databases\KV;
@@ -262,9 +265,15 @@ $Incr  = $KV->await($KV->command('INCRBY', ['hits', 5]));
 $count = $Incr->response;  // 5
 ```
 
-In CLI scripts you can `await()` directly through the pool. In `HTTP_Server_CLI` routes, drive
-it from `$Response->defer()` like any other async resource so route code never calls
-`advance()` manually.
+The facade's `await()` loops on `stream_select()` until the reply arrives and never suspends
+the calling Fiber, so each call blocks for a full round-trip — inside `$Response->defer()` too,
+where it stalls every other request on the worker. That is fine in CLI scripts, console
+commands and queue workers. In `HTTP_Server_CLI` routes, do not call the facade directly:
+[register the `KV` response resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#register-the-kv-resource)
+and use `$Response->KV` inside `$Response->defer()` — `fetch()` for one command, or
+`command()` and `drain()` to pipeline several. It parks the response Fiber on the connection's
+readiness instead of blocking (see
+[Await key-value work](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#await-key-value-work)).
 
 Since 1.0.0, the default `prefer` never downgrades to plaintext on a peer that stays
 silent: an undeclared plaintext Redis — one not configured with `'secure' => ['mode' =>

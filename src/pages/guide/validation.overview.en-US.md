@@ -104,18 +104,22 @@ Every rule accepts an optional `message` constructor argument that replaces its 
 
 ```php
 new Required('Name cannot be empty.');
-new Minimum(8, 'Password must be at least 8 characters.');
+new Regex('/\A.{8,}\z/su', 'Password must be at least 8 characters.');
 new URL(message: 'Give me a real URL.');
 ```
 
+For now, to bound the length of a text (a password, a name), use `Regex` with the `su` flags, as above — `u` counts Unicode codepoints (as `mb_strlen()` does), not bytes. `Minimum` and `Maximum` do not: see [Minimum](#minimum).
+
 ## Custom rules
 
-Extend `Bootgly\ADI\Validators` (the extension base for application rules) and implement `validate()` and `format()`:
+Extend `Bootgly\ADI\Validators` (the extension base for application rules), put the default message in `$template` and implement `validate()`:
 
 ```php
 use Bootgly\ADI\Validators;
 
 $InviteCode = new class extends Validators {
+   protected string $template = '{field} must match the demo invite code.';
+
    /**
     * @param array<string,mixed> $data  Full source array — useful for cross-field rules.
     */
@@ -123,15 +127,12 @@ $InviteCode = new class extends Validators {
    {
       return is_string($value) && $value === 'bootgly';
    }
-
-   public function format (string $field): string
-   {
-      return "{$field} must match the demo invite code.";
-   }
 };
 ```
 
-Set `$implicit = true` in your subclass when the rule must run even for missing/blank fields (the way `Required` does). `validate()` receives the full `$data` source, so cross-field rules (like `Confirmed`) need no extra wiring.
+The rule then behaves like the built-in ones: `{field}` becomes the field name, a `message` passed to its constructor replaces the template, and both are looked up in the `validation` translation catalogs ([Localized validation messages](/guide/i18n/overview/#localized-validation-messages)). An override of `format()` returns its own text instead — the `message` argument and the catalogs are ignored.
+
+Declare `public protected(set) bool $implicit = true;` in your subclass when the rule must run even for missing/blank fields (the way `Required` does). `validate()` receives the full `$data` source, so cross-field rules (like `Confirmed`) need no extra wiring.
 
 ## Validating HTTP requests
 
@@ -213,13 +214,19 @@ Returns `true` when the value is valid. Receives the full `$data` source for cro
 public function format (string $field): string
 ```
 
-Returns the error message — the custom `message` passed to the constructor, or the rule's default.
+Returns the error message — the `message` passed to the constructor, or the rule's `$template` when none was given — translated through the `validation` catalogs, with `{field}` and the rule's other tokens (such as `{limit}`) filled in.
 
 ```php
 public protected(set) bool $implicit = false;
 ```
 
 Implicit rules run even when the field is blank/missing (e.g. `Required`).
+
+```php
+protected string $template = '{field} is invalid.';
+```
+
+The default message, used when no `message` is passed to the constructor, and the key `format()` looks up in the `validation` catalogs. Every built-in rule declares its own; a custom rule redeclares it in its class body (see [Custom rules](#custom-rules)).
 
 ### Built-in rules
 
@@ -268,10 +275,12 @@ Accepts native `int` or strings matching `/\A[-+]?\d+\z/`. Default message: `"{f
 
 ```php
 new Minimum(18);
-new Minimum(8, 'Password must be at least 8 characters.');
 ```
 
 Lower-bound rule. Compares numeric values by value, non-numeric strings by `strlen` and arrays by `count`. Default message: `"{field} must be at least {limit}."`
+
+> [!WARNING]
+> **Not a text-length rule.** A string that looks like a number is compared by its value, so the password `'1234'` passes `Minimum(8)`; any other string is measured in bytes, not characters (`'é'` counts 2). For now, check the length of a text with `Regex` and the `su` flags (`u` counts Unicode codepoints, as `mb_strlen()` does; `s` lets `.` match line breaks): `new Regex('/\A.{8,}\z/su')` for at least 8 codepoints, `new Regex('/\A.{0,500}\z/su')` for at most 500. A codepoint is not always one visible character: an `é` typed as `e` plus a combining accent counts 2, and an emoji built from several codepoints counts each of them, so a maximum can reject a text that looks shorter.
 
 ---
 
@@ -279,10 +288,9 @@ Lower-bound rule. Compares numeric values by value, non-numeric strings by `strl
 
 ```php
 new Maximum(120);
-new Maximum(500, 'Bio cannot exceed 500 characters.');
 ```
 
-Upper-bound counterpart of `Minimum`, with the same dispatch. Default message: `"{field} must be at most {limit}."`
+Upper-bound counterpart of `Minimum`, with the same dispatch and the same text-length caveat (a bio of 300 `'é'` characters is 600 bytes and fails `Maximum(500)`). Default message: `"{field} must be at most {limit}."`
 
 ---
 

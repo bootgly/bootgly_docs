@@ -11,11 +11,12 @@ builds DML statements: `SELECT`, `INSERT`, `UPDATE` and `DELETE`.
 ```php
 use Bootgly\ADI\Databases\SQL;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\API\Environment\Configs\DatabaseConfig;
 
 enum Tables: string { case Users = 'users'; }
 enum Columns: string { case Id = 'id'; case Name = 'name'; case Active = 'active'; }
 
-$Database = new SQL;
+$Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
 $Builder = $Database
    ->table(Tables::Users)
@@ -40,6 +41,16 @@ $Database->Pool->wait($Operation);
 
 $rows = $Operation->rows;
 ```
+
+> **Opening the database.** The `DatabaseConfig` line reads the project's `database` config
+> scope, so it runs in a project's boot function, a command or a script inside the project
+> (without a `configs/` directory, `BOOTGLY_PROJECT->Configs` is `null`). In an
+> `HTTP_Server_CLI` route, use the per-worker
+> **[`$Response->Database`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**
+> resource instead. Outside a project, pass the connection as an array:
+> `new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret'])`.
+> A bare `new SQL` reads no config: it uses the built-in local defaults (PostgreSQL at
+> `127.0.0.1:5432`, database `bootgly`, user `postgres`).
 
 ## Names are typed
 
@@ -100,9 +111,13 @@ table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $A
 Start a query builder for one table or derived source.
 
 ```php
-query (string|Builder|Query $query, array $parameters = []): Operation
+query (string|Builder|Query $query, array $parameters = [], null|object $Scope = null): Operation
 ```
 Create an async SQL operation from raw SQL, a builder or a compiled query.
+`$Scope` names the operation's read-after-write scope (by default the current Fiber, else the
+facade): after a write through a scope, reads through that scope stay on the primary for the
+sticky window. It only matters when replicas are configured; see
+**[Database read replicas](/guide/database-read-replicas/overview/#read-after-write-scope)**.
 
 ```php
 begin (): Transaction
@@ -128,9 +143,12 @@ builder; the seed Runner reads it to move identity sequences on PostgreSQL.
 ### Supporting objects
 
 ```php
-new Query(string $sql, array $parameters = [])
+new Query(string $sql, array $parameters = [], bool $reading = false)
 ```
-Compiled SQL text plus ordered parameters. `__toString()` returns the SQL string.
+Compiled SQL text plus ordered parameters. `__toString()` returns the SQL string. `$reading`
+decides **[read replica](/guide/database-read-replicas/overview/)** routing and only matters
+when replicas are configured: `true` lets `SQL::query()` send the query to a replica, while the
+default `false` keeps it on the primary and counts it as a write for read-after-write.
 
 ```php
 new Identifier(string $name)

@@ -14,7 +14,7 @@ bootgly project <nome> migrate create "Create Users Table"  # 1. cria o arquivo
 # edite o arquivo (próxima seção)
 bootgly project <nome> migrate up                           # 2. aplica pendentes
 bootgly project <nome> migrate status                       # 3. vê o estado
-bootgly project <nome> migrate down                          # desfaz a última
+bootgly project <nome> migrate down 1                       # desfaz a última
 ```
 
 ## O arquivo que você edita
@@ -62,14 +62,25 @@ Next         20260515120000_create_users_table
 
 - **Local only** = pendentes. `migrate up` aplica.
 - **DB only** = o banco lembra de uma migration cujo arquivo foi deletado. `migrate sync`
-  limpa o registro (não roda nada).
+  apaga essas linhas **e registra todo arquivo Local only como aplicado**, sem rodar nada —
+  então rode `migrate up` antes, a menos que você queira adotar os arquivos pendentes. Ele
+  mostra o que vai adicionar e apagar e então pergunta `[y/N]`: só `y` (ou `yes`) segue —
+  uma execução sem terminal é cancelada, a menos que a entrada responda `y`.
+
+> **Até o `status` precisa de permissão para criar tabelas.** Por enquanto, toda ação do
+> `migrate` exceto `create` — `status` incluso — roda `CREATE TABLE IF NOT EXISTS` para a
+> tabela de histórico, e o PostgreSQL e o MySQL recusam essa instrução a um usuário do banco
+> sem permissão para criar tabelas, mesmo quando a tabela de histórico já existe.
 
 ## Desfazendo
 
 ```bash
-bootgly project <nome> migrate down      # reverte a última aplicada
+bootgly project <nome> migrate down 1    # reverte a última aplicada
 bootgly project <nome> migrate down 3    # reverte as últimas 3
 ```
+
+A quantidade de passos é obrigatória: um `migrate down` sem número para com
+`Migration down requires a numeric step count.`
 
 Cada `migrate up` marca suas migrations com um número de **batch**, então um deploy ruim
 pode ser revertido como um bloco. Se o banco suporta transações, cada migration aplica

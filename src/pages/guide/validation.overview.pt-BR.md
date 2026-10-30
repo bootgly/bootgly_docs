@@ -104,18 +104,22 @@ Toda regra aceita um argumento opcional `message` no construtor que substitui a 
 
 ```php
 new Required('Name cannot be empty.');
-new Minimum(8, 'Password must be at least 8 characters.');
+new Regex('/\A.{8,}\z/su', 'Password must be at least 8 characters.');
 new URL(message: 'Give me a real URL.');
 ```
 
+Por enquanto, para limitar o tamanho de um texto (uma senha, um nome), use `Regex` com as flags `su`, como acima — `u` conta codepoints Unicode (como o `mb_strlen()`), não bytes. `Minimum` e `Maximum` não contam: veja [Minimum](#minimum).
+
 ## Regras customizadas
 
-Estenda `Bootgly\ADI\Validators` (a base de extensão para regras da aplicação) e implemente `validate()` e `format()`:
+Estenda `Bootgly\ADI\Validators` (a base de extensão para regras da aplicação), coloque a mensagem padrão em `$template` e implemente `validate()`:
 
 ```php
 use Bootgly\ADI\Validators;
 
 $InviteCode = new class extends Validators {
+   protected string $template = '{field} must match the demo invite code.';
+
    /**
     * @param array<string,mixed> $data  Array source completo — útil para regras cross-field.
     */
@@ -123,15 +127,12 @@ $InviteCode = new class extends Validators {
    {
       return is_string($value) && $value === 'bootgly';
    }
-
-   public function format (string $field): string
-   {
-      return "{$field} must match the demo invite code.";
-   }
 };
 ```
 
-Defina `$implicit = true` na sua subclasse quando a regra precisar rodar mesmo para campos ausentes/em branco (como `Required` faz). `validate()` recebe o `$data` source completo, então regras cross-field (como `Confirmed`) não precisam de fiação extra.
+A regra passa a se comportar como as built-in: `{field}` vira o nome do campo, uma `message` passada ao seu construtor substitui o template, e ambos são buscados nos catálogos de tradução do domínio `validation` ([Mensagens de validação localizadas](/guide/i18n/overview/#mensagens-de-validação-localizadas)). Já um override de `format()` retorna o próprio texto, ignorando o argumento `message` e os catálogos.
+
+Declare `public protected(set) bool $implicit = true;` na sua subclasse quando a regra precisar rodar mesmo para campos ausentes/em branco (como `Required` faz). `validate()` recebe o `$data` source completo, então regras cross-field (como `Confirmed`) não precisam de fiação extra.
 
 ## Validando requisições HTTP
 
@@ -215,13 +216,19 @@ Retorna `true` quando o valor é válido. Recebe o `$data` source completo para 
 public function format (string $field): string
 ```
 
-Retorna a mensagem de erro — a `message` customizada passada ao construtor, ou o padrão da regra.
+Retorna a mensagem de erro — a `message` passada ao construtor, ou o `$template` da regra quando nenhuma foi passada — traduzida pelos catálogos do domínio `validation`, com `{field}` e os outros tokens da regra (como `{limit}`) preenchidos.
 
 ```php
 public protected(set) bool $implicit = false;
 ```
 
 Regras implícitas rodam mesmo quando o campo está em branco/ausente (ex.: `Required`).
+
+```php
+protected string $template = '{field} is invalid.';
+```
+
+A mensagem padrão, usada quando nenhuma `message` é passada ao construtor, e a key que `format()` busca nos catálogos do domínio `validation`. Toda regra built-in declara a sua; uma regra customizada a redeclara no corpo da classe (veja [Regras customizadas](#regras-customizadas)).
 
 ### Regras built-in
 
@@ -270,10 +277,12 @@ Aceita `int` nativo ou strings casando com `/\A[-+]?\d+\z/`. Mensagem padrão: `
 
 ```php
 new Minimum(18);
-new Minimum(8, 'Password must be at least 8 characters.');
 ```
 
 Regra de limite inferior. Compara valores numéricos por valor, strings não-numéricas por `strlen` e arrays por `count`. Mensagem padrão: `"{field} must be at least {limit}."`
+
+> [!WARNING]
+> **Não é uma regra de tamanho de texto.** Uma string que parece um número é comparada pelo seu valor, então a senha `'1234'` passa em `Minimum(8)`; qualquer outra string é medida em bytes, não em caracteres (`'é'` conta 2). Por enquanto, verifique o tamanho de um texto com `Regex` e as flags `su` (`u` conta codepoints Unicode, como o `mb_strlen()`; `s` faz o `.` casar com quebras de linha): `new Regex('/\A.{8,}\z/su')` para no mínimo 8 codepoints, `new Regex('/\A.{0,500}\z/su')` para no máximo 500. Um codepoint nem sempre é um caractere visível: um `é` digitado como `e` mais um acento combinante conta 2, e um emoji formado por vários codepoints conta cada um deles, então um máximo pode rejeitar um texto que parece mais curto.
 
 ---
 
@@ -281,10 +290,9 @@ Regra de limite inferior. Compara valores numéricos por valor, strings não-num
 
 ```php
 new Maximum(120);
-new Maximum(500, 'Bio cannot exceed 500 characters.');
 ```
 
-Contraparte de limite superior de `Minimum`, com o mesmo dispatch. Mensagem padrão: `"{field} must be at most {limit}."`
+Contraparte de limite superior de `Minimum`, com o mesmo dispatch e a mesma ressalva de tamanho de texto (uma bio de 300 caracteres `'é'` tem 600 bytes e falha em `Maximum(500)`). Mensagem padrão: `"{field} must be at most {limit}."`
 
 ---
 

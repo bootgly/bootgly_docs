@@ -49,7 +49,7 @@ $Schema->create('users', function (Blueprint $Table): void {
 ```
 
 `default` aceita um literal (`bool`/`int`/`float`/`string`), um `Stringable` ou uma
-`Expression` para SQL cru confiável. Durante a compilação de `create()`/`alter()`, literais
+`Expression` para SQL raw confiável. Durante a compilação de `create()`/`alter()`, literais
 float precisam ser finitos: `NAN`, `INF` e `-INF` lançam
 `InvalidArgumentException: Schema default float must be finite.` Outros tipos de valor
 inválidos lançam
@@ -73,6 +73,29 @@ $Table->reference('team_id', 'teams', 'id')
 A constraint é auto-nomeada `<tabela>_<coluna>_<tabelaAlvo>_fk` (ex.:
 `users_team_id_teams_fk`), truncada ao limite de identificador da engine. Passe `name:`
 para sobrescrever.
+
+### Adicionando um índice
+
+Crie um índice com **[`$Schema->index()`](/manual/ADI/Databases/SQL/Schema/overview/)**, ao
+lado da tabela e não dentro do blueprint dela — numa migration, retorne-o junto do
+`create()`:
+
+```php
+return new Migration(
+   Up: fn (Migrating $Schema) => [
+      $Schema->create('users', function (Blueprint $Table): void {
+         $Table->add('id', Types::BigInteger)->generate()->constrain(Keys::Primary);
+         $Table->add('email', Types::String)->limit(190);
+      }),
+      $Schema->index('users', 'email', unique: true), // users_email_unique
+   ],
+   Down: fn (Migrating $Schema) => $Schema->drop('users')
+);
+```
+
+Por enquanto, `$Table->index()` dentro de uma closure de `create()`/`alter()` não tem
+efeito: o índice nunca chega ao DDL, e um `alter()` só com um índice lança
+`ALTER TABLE requires at least one schema action.`
 
 ### Escolhendo o tipo da coluna
 
@@ -153,7 +176,7 @@ Sem o `generate()`, retipar uma coluna de identidade a derruba, e o insert segui
 de tipo sozinha, então declarar lá não custa nada e mantém a migration portável.
 
 Um `COMMENT` ou `COLLATE` que a coluna carregue não faz parte do blueprint, então não pode ser
-reescrito por aqui — reaplique com uma instrução crua depois da mudança.
+reescrito por aqui — reaplique com uma instrução raw depois da mudança.
 
 > Uma mudança de tipo precisa declarar que é uma: `limit()`, `size()`, `cast()` e `generate()`
 > declaram, enquanto atribuir `nullable` ou `default` sozinhos transformam o change em algo
@@ -203,7 +226,9 @@ Apenas ALTER — renomeia uma coluna existente.
 ```php
 index (BackedEnum|Stringable|string|array $Columns, null|string $name = null, bool $unique = false): Index
 ```
-Define um índice sobre uma ou mais colunas.
+Monta o valor `Index` que o `$Schema->index()` compila. **Dentro de uma closure de
+`create()`/`alter()` ele por enquanto não tem efeito** — veja
+**[Adicionando um índice](#adicionando-um-índice)**.
 
 ```php
 reference (BackedEnum|Stringable|string $Column, BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Reference = 'id', null|string $name = null): Reference
@@ -226,7 +251,7 @@ coluna nova:** `$Column->default = Defaults::None`. **Remover default existente 
 `InvalidArgumentException`. Durante a compilação de `create()`/`alter()`, literais float
 não finitos (`NAN`, `INF`, `-INF`) lançam
 `InvalidArgumentException: Schema default float must be finite.` `Expression` continua
-sendo a saída de escape para SQL cru confiável.
+sendo a saída de escape para SQL raw confiável.
 
 ### Column — métodos
 

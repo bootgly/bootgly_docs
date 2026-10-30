@@ -14,9 +14,14 @@ dialect at once:
 use Bootgly\ADI\Databases\SQL;
 
 $PostgreSQL = new SQL(['driver' => 'pgsql']);
-$MySQL = new SQL(['driver' => 'mysql']);
+$MySQL = new SQL(['driver' => 'mysql', 'port' => 3306, 'username' => 'root']);
 $SQLite = new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 ```
+
+Every connection key an array leaves out falls back to a built-in local default, and those
+target PostgreSQL whatever the `driver`: host `127.0.0.1`, port `5432`, database `bootgly`, user
+`postgres`, empty password. That is why the MySQL line sets its own `port` and `username`:
+`new SQL(['driver' => 'mysql'])` alone would dial `127.0.0.1:5432` as `postgres`.
 
 In a project, bind the driver through the `database` config scope — `DB_CONNECTION`
 selects a connection block that must already be declared:
