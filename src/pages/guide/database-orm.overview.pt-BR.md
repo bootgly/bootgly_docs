@@ -64,7 +64,7 @@ Timestamps do PostgreSQL são hidratados como `DateTimeImmutable`. Tipe as propr
 
 `SQL::map()` cria um contexto de repository para uma classe de entidade. O repository compila SQL e retorna `Operation`; ele não bloqueia sozinho.
 
-Um repository criado diretamente por `SQL::map()` não tem ponte de await, a menos que você passe `Awaiting:`, então por padrão permanece em modo explícito/deferido para relações: se a entidade tiver uma relação `lazy: true` que a selection não nomeia em `load()`, o `hydrate()` lança `ORM lazy loading requires an await bridge.` Um `save()` não nomeia relação nenhuma, então hidratá-lo lança o mesmo erro — em todo UPDATE, e em todo INSERT exceto o de chave gerada no MySQL ou no SQLite — depois que a escrita já rodou. Passe uma ponte `Awaiting`, use uma transaction, ou mapeie pelo Database Response Resource HTTP quando quiser eager ou lazy loading de relações.
+Um repository criado diretamente por `SQL::map()` não tem ponte de await, a menos que você passe `Awaiting:`, então por padrão permanece em modo explícito/deferido para relações: se a entidade tiver uma relação `lazy: true` que a selection não nomeia em `load()`, o `hydrate()` lança `ORM lazy loading requires an await bridge.` Hidratar um `save()` ou um `delete()` nunca exige ponte. Passe uma ponte `Awaiting`, use uma transaction, ou mapeie pelo Database Response Resource HTTP quando quiser eager ou lazy loading de relações.
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
@@ -106,7 +106,7 @@ return $Response->defer(function (Response $Response): void {
 
 ## Salve entidades
 
-`save()` insere quando a primary key gerada está `null`; caso contrário, atualiza. Hidrate o save e continue com `$Mapped->entity ?? $User`: o PostgreSQL retorna a linha salva com `RETURNING`, enquanto MySQL e SQLite informam só o id gerado, que o `hydrate()` grava de volta no objeto que você passou (veja **[Chaves geradas sem RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#chaves-geradas-sem-returning)**). No MySQL e no SQLite só esse INSERT de chave gerada é hidratado como entidade: um UPDATE, ou um INSERT com chave atribuída pela aplicação, não retorna linha, então `$Mapped->entity` é `null` e o `?? $User` mantém o objeto que você salvou.
+`save()` insere quando a primary key gerada está `null`; caso contrário, atualiza. Hidrate o save e continue com `$Mapped->entity ?? $User`: o `hydrate()` grava o id gerado de volta no objeto que você passou em qualquer driver — o PostgreSQL a partir da linha que o `RETURNING` devolve, MySQL e SQLite a partir do id informado (veja **[Chaves geradas sem RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#chaves-geradas-sem-returning)**). No MySQL e no SQLite só esse INSERT de chave gerada é hidratado como entidade: um UPDATE, ou um INSERT com chave atribuída pela aplicação, não retorna linha, então `$Mapped->entity` é `null` e o `?? $User` mantém o objeto que você salvou.
 
 ```php
 $User = new User;
@@ -119,7 +119,7 @@ $Mapped = $Users->hydrate($Operation);
 $User = $Mapped->entity ?? $User;
 ```
 
-> **O PostgreSQL retorna uma nova instância.** Por enquanto, depois de um insert no PostgreSQL, `$Mapped->entity` é um objeto novo, e o que você passou ao `save()` continua com `id === null`: salvar esse objeto antigo de novo insere uma segunda linha. Continue com o `$User` que o exemplo acima mantém e salve esse para aplicar mudanças posteriores.
+Salvar `$User` de novo atualiza a linha dele. Uma relação que você definiu nele antes do save mantém o valor.
 
 ## Carregue relações
 

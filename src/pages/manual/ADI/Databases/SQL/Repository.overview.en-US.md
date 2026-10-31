@@ -46,7 +46,7 @@ every mapped column, which is what you asked for. And a hydrated entity with no 
 column left is refused with `ORM update has no column carrying a value to write.` rather than
 compiling an `UPDATE` with an empty `SET`.
 
-> **Keep the saved instance.** For now, hydrating the `save()` of a new entity on PostgreSQL returns a new instance in `$Mapped->entity`, built from the `RETURNING` row, and the object you passed keeps `id === null`; MySQL and SQLite write the generated id back into that same object. On MySQL and SQLite only that generated-key INSERT hydrates to an entity: an UPDATE, or an INSERT with an application-assigned key, returns no row, so `$Mapped->entity` is `null` — keep the object you saved. `$User = $Mapped->entity ?? $User;` keeps the right object on every driver. On MySQL and SQLite an application-assigned key also stays untracked after that INSERT: saving the same object again through the repository inserts it a second time and fails on the duplicate key, until a `find()` through that repository hydrates the row.
+> **Keep the saved instance.** Hydrating the `save()` of a new entity writes the generated id back into the object you passed, on every driver: PostgreSQL fills it from the `RETURNING` row, MySQL and SQLite from `Result->inserted`. A relation already set on that object keeps its value; a lazy one left unset gets its wrapper when the repository has an await bridge. One exception: when a `readonly` property holds a value the `RETURNING` row contradicts (the database normalized it), the row hydrates into a new instance in `$Mapped->entity` and your object is left untouched. On MySQL and SQLite only that generated-key INSERT hydrates to an entity: an UPDATE, or an INSERT with an application-assigned key, returns no row, so `$Mapped->entity` is `null` — keep the object you saved. `$User = $Mapped->entity ?? $User;` keeps the right object on every driver. On MySQL and SQLite an application-assigned key also stays untracked after that INSERT: saving the same object again through the repository inserts it a second time and fails on the duplicate key, until a `find()` through that repository hydrates the row.
 
 ## Selection
 
@@ -119,7 +119,7 @@ The HTTP database response resource injects itself as that bridge, so repositori
 
 Relations declared with `lazy: true` are installed as lazy wrappers during hydration, which needs an await bridge. Plural relations use `LazyCollection`; singular relations use `LazyReference`. First access loads the relation once for every entity in the mapped-result window.
 
-> **Lazy relations need a bridge.** An entity with a `lazy: true` relation that the selection does not name in `load()` can only be hydrated by a repository with an await bridge; otherwise `hydrate()` throws `ORM lazy loading requires an await bridge.` Naming the relation in `load()` returns it as a deferred `loads` operation instead. A `save()` names no relation, so hydrating one without a bridge throws the same error — on every UPDATE, and on every INSERT except a generated-key one on MySQL or SQLite — after the write has already run.
+> **Lazy relations need a bridge.** An entity with a `lazy: true` relation that the selection does not name in `load()` can only be hydrated by a repository with an await bridge; otherwise `hydrate()` throws `ORM lazy loading requires an await bridge.` Naming the relation in `load()` returns it as a deferred `loads` operation instead. Hydrating a `save()` or a `delete()` never needs a bridge.
 
 ## Hooks
 
