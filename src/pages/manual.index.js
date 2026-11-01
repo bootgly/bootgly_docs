@@ -476,8 +476,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Access data in Bootgly: the SQL database, connection pooling, Query Builder, Schema Builder, Seeders and ORM Data Mapper.',
-          'pt-BR': 'Acesse dados no Bootgly: banco SQL, pool de conexões, Query Builder, Schema Builder, Seeders e ORM Data Mapper.'
+          'en-US': 'Access data in Bootgly: the SQL and KV (Redis) databases, connection pooling, Query Builder, Schema Builder, Seeders and ORM Data Mapper.',
+          'pt-BR': 'Acesse dados no Bootgly: bancos SQL e KV (Redis), pool de conexões, Query Builder, Schema Builder, Seeders e ORM Data Mapper.'
         }
       },
       menu: {
@@ -1241,6 +1241,66 @@ export default {
       },
       'pt-BR': {
         title: 'ORM Repository Hooks'
+      }
+    }
+  },
+  '/ADI/Databases/KV': {
+    config: {
+      icon: 'key',
+      status: 'done',
+      version: 'v0.17.0',
+      meta: {
+        description: {
+          'en-US': 'The KV facade: open a Redis database, run commands and read their replies, pipeline them, timeouts, cancel and withdraw, errors, the kv config scope adapter and the limits of a shared, pipelined pool.',
+          'pt-BR': 'A fachada KV: abrir um banco Redis, executar comandos e ler as respostas, enviá-los em pipeline, timeouts, cancelamento e retirada, erros, o adaptador do escopo de config kv e os limites de um pool compartilhado em pipeline.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.KV'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'KV database'
+      },
+      'pt-BR': {
+        title: 'Banco KV'
+      }
+    }
+  },
+  '/ADI/Databases/KV/Drivers': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Drivers'
+      }
+    }
+  },
+  '/ADI/Databases/KV/Drivers/Redis': {
+    config: {
+      icon: 'memory',
+      status: 'done',
+      version: 'v0.17.0',
+      meta: {
+        description: {
+          'en-US': 'Native Redis driver of the KV facade: non-blocking TCP dial, AUTH/SELECT preamble, implicit TLS and when prefer falls back to plaintext, RESP3 push frames, pipelining and cancellation.',
+          'pt-BR': 'Driver Redis nativo da fachada KV: discagem TCP não bloqueante, preâmbulo AUTH/SELECT, TLS implícito e quando o prefer cai para plaintext, push frames do RESP3, pipelining e cancelamento.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Redis'
+      },
+      'pt-BR': {
+        title: 'Redis'
       }
     }
   },
@@ -2653,8 +2713,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View and Database.',
-          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View e Database.'
+          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View, Database, KV and HTTP.',
+          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View, Database, KV e HTTP.'
         }
       },
       menu: {},

@@ -788,8 +788,10 @@ Bootgly is pure PHP: it cannot turn PHP's blocking functions into non-blocking o
 back. Use the clients that park on the event loop instead:
 
 - **SQL** — the [ADI Database](/guide/database-dbal/overview/) PostgreSQL and MySQL drivers.
-- **Redis** — the KV driver described in [Cache](/guide/cache/overview/) (the Cache `redis`
-  driver itself is blocking).
+- **Redis** — `$Response->KV`, the [KV](/manual/ADI/Databases/KV/overview/) facade's Redis
+  driver awaited through [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#await-key-value-work)
+  (the [Cache](/guide/cache/overview/) `redis` driver is blocking, and so is the KV facade's own
+  `await()`).
 - **HTTP** — the upstream client in [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/).
 
 Spread CPU-heavy work across workers, or move it to a [queue](/guide/queues/overview/).

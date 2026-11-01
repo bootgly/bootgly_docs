@@ -145,7 +145,7 @@ opens. How each one is read, and what a replica inherits, is in
 
 The KV facade (Redis) reads this same class, with the same defaults, so a KV array always sets
 `driver` to `'redis'` and its `port`; see
-**[Async Redis on the event loop](/guide/cache/overview/#async-redis-on-the-event-loop)**.
+**[Open a KV database](/manual/ADI/Databases/KV/overview/#open-a-kv-database)**.
 
 To see what a config resolved to — after environment overrides, for example — read it back from the
 facade:
@@ -320,9 +320,9 @@ certificate chain) and `name` (the certificate's name against `peer`):
 checking who answers, which defeats passive eavesdropping only: on a network you do not trust, use
 `verify-ca`, `verify-full` or `'verify' => true`. What counts as a refusal under `prefer`, and what
 each driver does after one, is on the
-**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#authentication-and-tls)** and
-**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#tls)** driver pages and, for Redis, in
-**[Async Redis on the event loop](/guide/cache/overview/#async-redis-on-the-event-loop)**.
+**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#authentication-and-tls)**,
+**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#tls)** and
+**[Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/#tls)** driver pages.
 
 > [!NOTE]
 > Since 1.0.3, `prefer` and `require` no longer verify the certificate by default. Before, every mode

@@ -145,7 +145,7 @@ Como cada uma é lida, e o que uma réplica herda, está em
 
 A fachada KV (Redis) lê esta mesma classe, com os mesmos padrões, então um array do KV sempre
 define `driver` como `'redis'` e a própria `port`; veja
-**[Redis assíncrono no event loop](/guide/cache/overview/#redis-assíncrono-no-event-loop)**.
+**[Abra um banco KV](/manual/ADI/Databases/KV/overview/#abra-um-banco-kv)**.
 
 Para ver no que uma config resultou — depois de sobrescritas do ambiente, por exemplo —, leia-a de
 volta na fachada:
@@ -323,9 +323,9 @@ verificações: `'verify' => true` adiciona a verificação da cadeia — e a do
 criptografam sem verificar quem responde, o que derrota só a escuta passiva: numa rede em que você
 não confia, use `verify-ca`, `verify-full` ou `'verify' => true`. O que conta como recusa sob
 `prefer`, e o que cada driver faz depois de uma, está nas páginas dos drivers
-**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#autenticação-e-tls)** e
-**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#tls)** e, para o Redis, em
-**[Redis assíncrono no event loop](/guide/cache/overview/#redis-assíncrono-no-event-loop)**.
+**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#autenticação-e-tls)**,
+**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#tls)** e
+**[Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/#tls)**.
 
 > [!NOTE]
 > Desde a 1.0.3, `prefer` e `require` não verificam mais o certificado por padrão. Antes, todo modo

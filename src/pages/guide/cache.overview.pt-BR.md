@@ -248,120 +248,32 @@ incrementos posteriores não estendem a janela. Ambos emitem `X-RateLimit-Limit`
 
 ## Redis assíncrono no event loop
 
-O driver Redis bloqueante acima travaria o worker HTTP assíncrono. A contraparte dele no pool
-assíncrono do DBAL é a **facade KV**: ela fala RESP sobre o mesmo pool de conexões que o driver
-SQL usa, reaproveitando o codec `Bootgly\ABI\Data\RESP`. `command()` só enfileira um comando e
-nunca bloqueia; `await()` bloqueia. Num script, chame-a diretamente:
+O Bootgly chega ao Redis de três formas, e o driver do Cache acima é uma delas:
 
-```php
-use Bootgly\ADI\Databases\KV;
+| | Driver `redis` do Cache | Fachada KV | Driver `redis` das Filas |
+|---|---|---|---|
+| Classe | `Bootgly\ABI\Resources\Cache` | `Bootgly\ADI\Databases\KV` | `Bootgly\ACI\Queues` |
+| O que faz | Guarda valores PHP com TTLs, tags e contadores atômicos | Envia os comandos Redis que você escreve, em pipeline | Roda jobs em segundo plano, com retentativas, atrasos e um dead-letter store |
+| Como espera | Bloqueia o processo a cada chamada | O driver dela só bloqueia para resolver um nome de host, e o `await()` dela até a resposta; numa rota, o `$Response->KV` estaciona a requisição em vez disso | Bloqueia o processo do worker |
+| Chaves de conexão | Próprias: porta `6379`, `timeout` `5.0`, `secure` `true` ou `false` | As chaves do banco: porta `5432`, `timeout` `30.0`, `secure.mode` `'prefer'` por padrão | Próprias: porta `6379`, `timeout` `5.0`, `secure` `true` ou `false` |
 
-$KV = new KV([
-   'driver' => 'redis',
-   'host' => '127.0.0.1',
-   'port' => 6379,
-   'secure' => ['mode' => 'disable'], // um Redis plaintext é declarado, nunca inferido
-]);
-
-$KV->await($KV->command('SET', ['user:42', 'value']));
-$Get   = $KV->await($KV->command('GET', ['user:42']));
-$value = $Get->response;   // resposta RESP: string | int | array | null
-
-$Incr  = $KV->await($KV->command('INCRBY', ['hits', 5]));
-$count = $Incr->response;  // 5
-```
-
-O `await()` da facade fica em loop no `stream_select()` até a resposta chegar e nunca suspende o
-Fiber que o chama, então cada chamada bloqueia por um round-trip completo — dentro de
-`$Response->defer()` também, onde trava todas as outras requisições do worker. Isso não é
-problema em scripts CLI, comandos de console e workers de fila. Em rotas `HTTP_Server_CLI`, não
-chame a facade diretamente:
-[registre o resource `KV` da resposta](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#registrar-o-resource-kv)
-e use `$Response->KV` dentro de `$Response->defer()` — `fetch()` para um comando, ou
-`command()` e `drain()` para fazer pipeline de vários. Esse resource estaciona o Fiber da
-resposta na prontidão (readiness) da conexão em vez de bloquear (veja
+Numa rota `HTTP_Server_CLI`, chegue ao Redis pelo resource de resposta da fachada KV:
+[registre o resource `KV`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#registrar-o-resource-kv)
+e use o `$Response->KV` dentro de `$Response->defer()` — `fetch()` para um comando, `command()` e
+`drain()` para fazer pipeline de vários. Ele estaciona o Fiber da resposta na prontidão (readiness)
+da conexão até o Redis responder (veja
 [Aguardar trabalho key-value](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#aguardar-trabalho-key-value)).
+O `await()` da própria fachada fica em loop no `stream_select()` e nunca suspende o Fiber que o
+chama — dentro de `defer()` também, onde trava todas as requisições do worker —, então chame-o
+diretamente só em scripts CLI, comandos de console e workers de fila.
 
-Desde a 1.0.0, o padrão `prefer` nunca faz downgrade para plaintext diante de um peer que
-fica em silêncio: um Redis plaintext não declarado — sem `'secure' => ['mode' => 'disable']` na
-config — agora custa o budget de handshake (1 s, ou metade do `timeout`) a cada nova conexão e
-falha toda operação até ser declarado, onde as releases anteriores caíam silenciosamente em
-plaintext. É uma mudança incompatível (breaking) para deployments que dependiam dessa queda.
-
-Desde a 1.0.3, `prefer` e `require` não verificam mais o certificado do servidor por padrão —
-antes, todo modo exceto `disable` verificava. Uma conexão `require` que fixava um `cafile`
-agora precisa de `verify-ca`/`verify-full` (ou `verify => true`) para continuar verificando.
-
-> [!NOTE]
-> O driver assíncrono faz pipeline de comandos em cada conexão do pool. `AUTH`/`SELECT` são
-> enviados uma vez como preâmbulo; `SELECT` só dispara para um índice `database` numérico.
-> Redis usa TLS implícito: `prefer` tenta TLS primeiro e só reconecta em plaintext quando o
-> peer o recusa **explicitamente**, enquanto `require`, `verify-ca` e `verify-full` nunca
-> enviam RESP — inclusive `AUTH` — antes de um handshake bem-sucedido. `disable` é plaintext
-> explícito — e o único modo que alcança um Redis plaintext, que nunca responde a um
-> ClientHello (veja o aviso abaixo).
-
-Só `verify-ca` e `verify-full` verificam o certificado do servidor — a cadeia, e com
-`verify-full` também o nome. `prefer` e `require` criptografam sem verificação, como o
-`sslmode` da libpq e do MySQL (`verify => true`, e `name`, ligam-na); TLS sem verificação derrota
-só a escuta passiva — também sob `require`, um atacante ativo no caminho que apresente qualquer
-certificado recebe o `AUTH` — então use um modo `verify-*` em qualquer rede em que você não confia. Com
-`cafile` ausente,
-vale o trust store padrão do OpenSSL — as diretivas ini `openssl.cafile`/`openssl.capath`, ou
-`SSL_CERT_FILE`/`SSL_CERT_DIR` quando definidas — então fixe `cafile` sempre que a CA for
-privada. Um `cafile` só é lido por um handshake que verifica, então um sob `prefer`/`require`
-sem `verify` é recusado na config. Um `cafile` que não pode ser
-lido falha a conexão antes de o socket existir, e um que pode ser lido mas não contém certificado
-válido (ou um `openssl.cafile` que não contém) falha o handshake antes de qualquer ClientHello
-ser enviado, com o diagnóstico do OpenSSL nomeando o arquivo — seja o que for que
-`error_reporting()` mascare. Nenhum dos dois cai no store padrão, nem em plaintext.
-
-Use um modo strict em deployment remoto. `verify-full` valida a cadeia do certificado e o
-nome do peer; `cafile` seleciona um bundle de CA privado e `peer` sobrescreve a identidade
-esperada:
-
-```php
-$KV = new KV([
-   'driver' => 'redis',
-   'host' => 'redis.internal',
-   'port' => 6380,
-   'password' => getenv('KV_PASS') ?: '',
-   'database' => '2',
-   'secure' => [
-      'mode' => 'verify-full',
-      'peer' => 'redis.internal',
-      'cafile' => '/run/secrets/redis-ca.pem',
-   ],
-]);
-```
-
-> [!WARNING]
-> `prefer` garante uma coisa: só faz downgrade para plaintext diante de uma **recusa
-> explícita** — o peer resetou ou fechou a conexão durante o handshake TLS (RST ou FIN — no
-> ClientHello ou depois de um ServerHello parcial, tanto faz) ou respondeu com bytes que não
-> são TLS. **Silêncio não é recusa.** Um peer que não respondeu dentro do budget de
-> handshake (1 s, ou metade do `timeout`) falha a operação com `Redis TLS handshake timed out:
-> the peer did not answer the TLS handshake within 1s — set secure.mode => 'disable' for a
-> plaintext Redis`, porque um servidor TLS cujo ServerHello atrasa — uma retransmissão, um
-> terminador TLS sobrecarregado — é indistinguível de um Redis plaintext, que guarda o
-> ClientHello no query buffer e nunca responde; fazer downgrade ali enviaria as credenciais em
-> plaintext a um servidor que fala TLS, numa conexão que o pool depois reutiliza. O budget é só
-> do `prefer`: `require`, `verify-ca` e `verify-full` esperam o ServerHello até o `timeout` da
-> operação — silêncio nunca faz downgrade ali, então um peer silencioso os falha com o erro
-> comum `Database operation timed out`, e um servidor TLS que responde tarde ainda conclui o
-> handshake. Por isso um Redis plaintext é **declarado**, com
-> `'secure' => ['mode' => 'disable']` (`KV_SSLMODE=disable` no resource `KV`), nunca
-> descoberto: com o padrão `prefer` ele falha no budget a cada nova conexão em vez de
-> responder. Plaintext declarado também não custa nada — nenhuma tentativa de handshake,
-> nenhum budget por conexão. `prefer` tampouco faz downgrade por certificado não
-> confiável, nome de peer divergente, alerta TLS ou erro local como um `cafile` que o OpenSSL
-> não consegue carregar: esses falham a operação. O que `prefer` **não** garante é criptografia
-> — um peer que recusa TLS, ou um atacante capaz de resetar a primeira conexão, recebe as
-> credenciais em plaintext na segunda; o driver Redis ligado à operação (`$Operation->Protocol`)
-> guarda a recusa que motivou o downgrade na propriedade `downgrade` — e esse registro é o único
-> rastro: nada é logado, porque a camada de banco de dados não tem logger, então um downgrade
-> que ninguém lê ali passa despercebido. Use `require`, `verify-ca` ou `verify-full` sempre que
-> plaintext não for aceitável.
+A fachada em si — abri-la, comandos e respostas, pipelining, prazos e cancelamento, o escopo de
+config `kv` — está documentada em **[Banco KV](/manual/ADI/Databases/KV/overview/)**, e o driver
+dela — autenticação, seleção do banco, TLS e quando o `prefer` cai para plaintext — em
+**[Driver Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/)**. As chaves de conexão dela são
+as do banco, com os padrões de um PostgreSQL local, então um array do KV sempre define `driver` e
+`port`, e declara um Redis plaintext com `'secure' => ['mode' => 'disable']`: o `prefer` padrão abre
+toda conexão com um handshake TLS que um Redis plaintext nunca responde.
 
 ## Segurança
 
@@ -482,4 +394,4 @@ ajuste.
 
 - **[Configuração](/guide/configuration/overview/)** - carregue configs por escopo e valores `.env`.
 - **[Performance](/guide/performance/overview/)** - ajuste workers, pools e concorrência.
-- **[Database DBAL](/guide/database-dbal/overview/)** - o pool assíncrono sobre o qual o driver Redis KV roda.
+- **[Banco KV](/manual/ADI/Databases/KV/overview/)** - envie comandos Redis pelo pool assíncrono do DBAL.

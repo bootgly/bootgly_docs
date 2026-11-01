@@ -86,7 +86,7 @@ one-way chain `ABI → ACI → ADI → API → CLI → WPI`. It ships two databa
 (`Bootgly\ADI\Databases\SQL`) for relational databases and `KV`
 (`Bootgly\ADI\Databases\KV`) for key-value commands on Redis, which routes use through
 `$Response->KV`
-(**[Async Redis on the event loop](/guide/cache/overview/#async-redis-on-the-event-loop)**,
+(**[KV database](/manual/ADI/Databases/KV/overview/)**,
 **[Register the KV resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#register-the-kv-resource)**).
 The `SQL` facade exposes query execution, transactions and two builders:
 

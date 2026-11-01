@@ -155,11 +155,14 @@ once the server accepts the kill. It is advisory: the operation still resolves, 
 its own connection, depending on how the server ends the statement. PostgreSQL fails it with
 `canceling statement due to user request` (SQLSTATE `57014`); a MySQL statement interrupted by
 `KILL QUERY` may also just return early — `SLEEP()` returns `1` — and then finishes normally.
-Here one `advance()` writes the statement because the connection is already open. On a connection
-still dialing or authenticating there is nothing on the server to stop yet: the operation is
-withdrawn locally, as described below, and the half-open connection is dropped. Redis has no
-cancellation: `cancel()` fails a command already sent with
-`Database driver does not support cancellation.` A SQLite operation that got the connection is
+Here one `advance()` writes the statement because the connection is already open. On a PostgreSQL
+or MySQL connection still dialing or authenticating there is nothing on the server to stop yet: the
+operation is withdrawn locally, as described below, and the half-open connection is dropped. Redis
+has no cancellation and keeps the driver defaults: `cancel()` fails any command past `Queued` — one
+still dialing or in its TLS handshake too — with `Database driver does not support cancellation.`,
+and a session is kept only while another command reads on it (see
+**[Cancellation](/manual/ADI/Databases/KV/Drivers/Redis/overview/#cancellation)** on the Redis
+driver page). A SQLite operation that got the connection is
 already finished when `query()` returns, so it leaves nothing to cancel; one parked in `pending` —
 behind a transaction that holds the connection — is failed locally like any parked operation.
 
@@ -175,8 +178,9 @@ Whether anything is *sent* depends on where the operation actually is. A cancel 
 backend, not a statement: one sent for anything but the statement that backend is executing stops
 that statement instead — another caller's, say — while the work you cancelled still runs. So the
 pool first asks the driver whether the server owes the operation an answer (`Driver::owe()`), and
-the driver sends a request only for the statement its session is executing. Any other operation
-ends one of three ways:
+the driver sends a request only for the statement its session is executing. On PostgreSQL and
+MySQL, whose drivers answer `owe()` from their own wire state, any other operation ends one of three
+ways:
 
 - **Already finished** — it keeps its state and its result, and nothing is sent. PostgreSQL first
   reads the answers that already arrived, up to 1 MiB, so a statement the server has answered but
@@ -248,9 +252,10 @@ its connection was still dialing, the operation would take that connection with 
 
 ### Kept sessions
 
-A withdrawal does not stop a statement the server already received, and it does not cost the
-session. When the operation's batch is whole on the wire (state `Reading`), the driver keeps the
-session and **detaches** the operation (`Driver::detach()`): the remaining answer is absorbed by a
+A withdrawal does not stop a statement the server already received, and on PostgreSQL and MySQL it
+does not cost the session either. When the operation's batch is whole on the wire (state
+`Reading`), their driver keeps the session and **detaches** the operation (`Driver::detach()`): the
+remaining answer is absorbed by a
 stand-in nobody waits for, the connection goes back to `idle` at once — unless other callers still
 read there — and the next operation the pool hands it queues behind the stand-in and drains that
 answer before its own. An idle connection that still owes such answers serves only when no clean
@@ -529,10 +534,10 @@ the operation's `error`, and `wait()` rethrows it as a `RuntimeException`.
 | `Database operation timed out after <timeout> seconds.` | The operation's deadline passed |
 | `Database operation lost the connection it was pinned to.` | A pinned operation's connection is gone |
 | `Database operation was withdrawn: its caller stopped waiting.` | `withdraw()` on an unfinished operation |
-| `Database operation was cancelled before reaching the server.` | `cancel()` on an operation not on the server yet: not written, queued or parked behind another, or on a connection still connecting |
+| `Database operation was cancelled before reaching the server.` | `cancel()` on an operation not on the server yet: not written, queued or parked behind another, or on a connection still connecting (Redis: only a command not advanced yet) |
 | `Database operation has no protocol to cancel.` | `cancel()` on an operation parked in `pending` |
 | `Database connection was lost while cancelling the operation.` | The cancel went out on a socket already closed |
-| `Database driver does not support cancellation.` | `cancel()` with a driver that has no cancellation (Redis) |
+| `Database driver does not support cancellation.` | `cancel()` with a driver that has no cancellation: Redis, on any command past `Queued` |
 
 `wait()` also throws two `RuntimeException`s of its own without failing the operation:
 `Database operation did not provide readiness.` and `Database operation readiness wait failed.`

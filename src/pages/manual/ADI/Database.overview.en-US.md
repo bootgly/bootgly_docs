@@ -257,8 +257,9 @@ PostgreSQL `numeric` and MySQL `DECIMAL` values come back as strings, so their p
 preserved. SQLite has no decimal type: a `DECIMAL` column reads back as a PHP number, rounded to a
 float's precision when it does not fit an integer.
 
-The key-value facade runs on the native Redis driver, which speaks RESP over the same
-non-blocking pool.
+The key-value facade, **[KV database](/manual/ADI/Databases/KV/overview/)**, runs on the native
+**[Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/)** driver, which speaks RESP over the
+same non-blocking pool.
 
 ## Reference
 

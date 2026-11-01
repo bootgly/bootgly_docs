@@ -38,7 +38,7 @@ transações, os builders de Query e de Schema e o ORM são `SQL`; comandos Redi
 | Verbos | `query()`, `table()`, `begin()`, `map()`, `structure()` | `command()` |
 | Conduzir uma operação | `await()`, `advance()`, `cancel()`, `withdraw()` | `await()`, `advance()`, `cancel()`, `withdraw()` |
 | Operação | `SQL\Operation`: `Result`, `error`, `code`, `SQL` | `KV\Operation`: `response`, `error`, `command`, `arguments` |
-| Cancelar uma operação em execução | `CancelRequest` do PostgreSQL, `KILL QUERY` do MySQL | Não: um comando já enviado falha com `Database driver does not support cancellation.` |
+| Cancelar uma operação em execução | `CancelRequest` do PostgreSQL, `KILL QUERY` do MySQL | Não: todo comando depois de `Queued` falha com `Database driver does not support cancellation.` |
 | Config | `SQL\Config`: as chaves compartilhadas mais `statements`, `migrations` e `routing` | `Database\Config`: as chaves compartilhadas |
 | Réplicas de leitura | `replicas`, cada uma com um pool próprio | Nenhuma: `replicas` é ignorado |
 | Eventos | `SQL\Events`: `Connected`, `Executed`, `Slow`, `Failed` | Nenhum |
@@ -116,8 +116,10 @@ Sem `secure`, o modo é `prefer`, e um Redis plaintext nunca responde ao handsha
 inicia: cada nova conexão espera o budget do handshake — um segundo, ou metade do `timeout`
 quando ela é menor — e falha com
 `Redis TLS handshake timed out: the peer did not answer the TLS handshake within 1s — set secure.mode => 'disable' for a plaintext Redis.`
-Redis sobre TLS, pipeline e o resource `$Response->KV` estão em
-**[Redis assíncrono no event loop](/guide/cache/overview/#redis-assíncrono-no-event-loop)**.
+A fachada em profundidade — pipeline, erros, timeouts, os limites dela — está em
+**[Banco KV](/manual/ADI/Databases/KV/overview/)**, o driver Redis e o TLS dele em
+**[Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/)**, e o resource de rota em
+**[Registrar o resource KV](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#registrar-o-resource-kv)**.
 
 `KV` não é o Cache. `Bootgly\ABI\Resources\Cache` é um cache key-value com TTLs e tags cujos drivers
 bloqueiam, incluindo o de Redis; `KV` envia comandos Redis pelo pool assíncrono (veja

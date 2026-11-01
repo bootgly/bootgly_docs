@@ -260,7 +260,8 @@ Valores `numeric` do PostgreSQL e `DECIMAL` do MySQL voltam como strings, então
 preservada. O SQLite não tem tipo decimal: uma coluna `DECIMAL` volta como um número do PHP,
 arredondado à precisão de um float quando não cabe num inteiro.
 
-A fachada key-value roda sobre o driver nativo do Redis, que fala RESP sobre o mesmo pool não
+A fachada key-value, **[Banco KV](/manual/ADI/Databases/KV/overview/)**, roda sobre o driver nativo
+**[Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/)**, que fala RESP sobre o mesmo pool não
 bloqueante.
 
 ## Referência

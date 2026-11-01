@@ -52,8 +52,9 @@ Register custom resources through the `Resources` field of `Response\Configs`. E
 A resource name may not collide with a publicly readable property of the response (`Request`, `Header`, `Body`, `Resources`, `code`, …): the property would win every read, so `define()`, `load()` and `mount()` refuse such a name with an `InvalidArgumentException` at registration time. Names of private or protected properties, and of the response's static settings, stay free.
 
 `Database` and `KV` ship a static `provide()` factory that encapsulates this wiring: it reads a
-config scope from the project `configs/` directory, builds one pooled connection per worker and
-wraps it. Pass the project `configs/` directory and register each resource in a single line:
+config scope from the project `configs/` directory, builds one database per worker — with the
+connection pool that scope sizes — and wraps it. Pass the path of the project `configs/` directory,
+with its trailing `/`, and register each resource in a single line:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
@@ -73,7 +74,8 @@ $HTTP_Server_CLI->configure(
 ```
 
 `Database::provide()` reads the `database` scope (`configs/database/database.Config.php` plus the
-local `.env` files), builds one pooled `SQL` connection per worker and wraps it. The resource is
+local `.env` files), builds one `SQL` database per worker — its pool holds up to `DB_POOL_MAX`
+connections, `8` when the scope binds no `Pool->Max` — and wraps it. The resource is
 created lazily the first time the route reads `$Response->Database`, so that read is where the
 factory throws. A context that is not a `Response` throws
 `Database response resource expects a Response context.` Every other refusal is one
@@ -82,7 +84,8 @@ factory throws. A context that is not a `Response` throws
 whatever the cause: an `Enabled` node that does not hold the boolean `true` (`DB_ENABLED=false`,
 no `Enabled` node, or one bound without `cast: Types::Boolean`, which leaves an environment
 `true` as a string), or a scope that did not load (for example, no `database.Config.php`, a file
-declaring another scope, or a `.env` key outside the list `provide()` accepts). Errors raised
+declaring another scope, a `.env` key outside the list `provide()` accepts, or a `configs` path
+without its trailing `/`). Errors raised
 while the scope loads keep their own exception: a value a `cast:` cannot parse (an empty
 `DB_ENABLED=` throws `Invalid boolean config value.`) or a missing `required: true` key. The list
 of accepted keys, and where `DB_SERVER_PUBLIC_KEY` can come from instead of a `.env` file, are in
@@ -190,7 +193,8 @@ provide (string $configs): Closure
 ```
 
 Static factory. Reads the `database` scope from the given project `configs/` directory and returns a
-lazy `Closure(object): Database` for `Response\Configs(Resources:)`. Builds one pooled `SQL` per worker. The
+lazy `Closure(object): Database` for `Response\Configs(Resources:)`. Builds one `SQL` database per worker,
+whose pool holds up to `DB_POOL_MAX` connections, `8` when the scope binds none. The
 closure throws `RuntimeException` when the context is not a `Response`, and the
 `Enable DB_ENABLED=true…` `RuntimeException` when the scope does not load or its `Enabled` is not
 the boolean `true` (see [Register project resources](#register-project-resources)); configuration
@@ -300,16 +304,10 @@ of work idempotent too.
 
 ## Register the KV resource
 
-`KV` adapts the async key-value database (`ADI/Databases/KV`, Redis) to the response
-scheduler the same way `Database` adapts SQL. `KV::provide()` reads the `kv` scope and builds one
-`KV` database per worker with a single pooled connection so pending commands pipeline on it:
-
-With one connection per worker there is no spare capacity to absorb a lost transport, so the
-driver drops the session rather than keeping it. A peer close — a `redis.conf timeout`, a
-restart, a failover, a proxy drop — fails the command in flight and every command pipelined
-behind it, marks them for pool health, and takes the connection out of the pool. The next
-command opens a fresh one. The failure is therefore transient: the commands in flight when the
-transport died are lost and must be retried by the caller, but the worker's KV keeps working.
+`KV` adapts the async key-value database to the response scheduler the same way `Database`
+adapts SQL. It wraps the `KV` facade of **[KV database](/manual/ADI/Databases/KV/overview/)**
+(Redis): commands, replies and limits are the facade's, while the resource parks the response Fiber
+where the facade's own `await()` would block the worker. Register it once, by name:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
@@ -326,13 +324,19 @@ $HTTP_Server_CLI->configure(
 );
 ```
 
+`KV::provide()` reads the `kv` scope and builds one `KV` database per worker. Its pool holds up to
+`KV_POOL_MAX` connections: `1` in the scope below, so the commands of every request the worker
+serves pipeline on one connection, and `8` when the scope binds no `Pool->Max`. A command takes an
+idle connection, or opens one while the pool is below that size, and is pipelined behind the
+commands of a busy connection only once the pool is full.
+
 Declare the `kv` scope in `configs/kv/kv.Config.php`. Each node binds an env key with a default, so
 the connection is configurable through the environment without touching code:
 
 ```php
+use Bootgly\ADI\Database\Config as ADIConfig;
 use Bootgly\API\Environment\Configs\Config;
 use Bootgly\API\Environment\Configs\Config\Types;
-use Bootgly\ADI\Database\Config as ADIConfig;
 
 return new Config(scope: 'kv')
    ->Enabled->bind(key: 'KV_ENABLED', default: true, cast: Types::Boolean)
@@ -353,32 +357,48 @@ return new Config(scope: 'kv')
       ->Max->bind(key: 'KV_POOL_MAX', default: 1, cast: Types::Integer);
 ```
 
-`KV::provide()` allow-lists all keys shown above. For a remote Redis deployment, set
-`KV_SSLMODE=verify-full` — it verifies the certificate chain and the peer name by itself;
-`KV_SSLVERIFY=true` is how `prefer`/`require` opt into verification — and provide
-`KV_SSLPEER`/`KV_SSLCAFILE` when using an internal CA (a `KV_SSLCAFILE` under an unverified
-mode is refused at config time). Strict modes (`require`, `verify-ca`, `verify-full`) complete
-TLS before `AUTH`, `SELECT` or an application command is created on the wire. `prefer` attempts
-TLS first and reconnects in plaintext only when the peer **explicitly** refuses it (resets or
-closes the connection during the TLS handshake, or answers non-TLS bytes) — never on a
-certificate failure when verification is on, and never on silence: a peer that has not answered within the handshake
-budget (1 s, or half `KV_TIMEOUT`) fails the command naming `disable`, because a plaintext Redis
-never answers a ClientHello and cannot be told from a TLS server that is merely late. The
-budget is `prefer`'s alone — the strict modes wait for the ServerHello until `KV_TIMEOUT`. A
-plaintext Redis is therefore declared with `KV_SSLMODE=disable` — the default of this config —
-rather than discovered, and pays no handshake budget at all. With `KV_SSLCAFILE` unset,
-OpenSSL's default trust store applies (`openssl.cafile`, `SSL_CERT_FILE`/`SSL_CERT_DIR`), so set
-it whenever the CA is private. Keep `KV_PASS` in the process environment or a runtime secret,
-never in a committed `.env`.
+`KV::provide()` allow-lists all keys shown above, and a node you leave out takes the database
+defaults — port `5432` and `prefer` among them (see
+**[Configure from the kv scope](/manual/ADI/Databases/KV/overview/#configure-from-the-kv-scope)**).
+For a remote Redis deployment, set `KV_SSLMODE=verify-full` — it verifies the certificate chain and
+the peer name by itself; `KV_SSLVERIFY=true` is how `prefer`/`require` opt into verification — and
+provide `KV_SSLPEER`/`KV_SSLCAFILE` when using an internal CA (a `KV_SSLCAFILE` under `prefer` or
+`require` without `KV_SSLVERIFY=true` is refused at config time; under `disable`, this sample's
+default, it is ignored and the connection stays plaintext, so set `KV_SSLMODE` with it). Strict
+modes (`require`, `verify-ca`, `verify-full`) complete TLS before `AUTH`, `SELECT` or an application
+command is created on the wire. `prefer` attempts TLS first and reconnects in plaintext only when
+the peer **explicitly** refuses it (resets or closes the connection during the TLS handshake, or
+answers non-TLS bytes) — never on a certificate failure when verification is on, and never on
+silence: a peer that has not answered within the handshake budget (1 s, or half `KV_TIMEOUT` when
+that is shorter) fails the command naming `disable`, because a plaintext Redis never answers a
+ClientHello and cannot be told from a TLS server that is merely late. The budget is `prefer`'s alone
+— the strict modes wait for the ServerHello until `KV_TIMEOUT`. A plaintext Redis is therefore
+declared with `KV_SSLMODE=disable` — the default of this config — rather than discovered, and pays
+no handshake budget at all. With `KV_SSLCAFILE` unset, OpenSSL's default trust store applies
+(`openssl.cafile`, `SSL_CERT_FILE`/`SSL_CERT_DIR`), so set it whenever the CA is private. Keep
+`KV_PASS` in the process environment or a runtime secret, never in a committed `.env`.
 
-`KV::provide()` throws when the scope is disabled (`KV_ENABLED=false`) or the context is not a
-`Response`. The resource is created lazily the first time the route reads `$Response->KV`.
+`KV::provide()` itself reads nothing: it returns the factory, and the resource is created lazily
+the first time the route reads `$Response->KV`, so that read is where the factory throws. A context
+that is not a `Response` throws `KV response resource expects a Response context.` Every other
+refusal is one `RuntimeException`,
+`Enable KV_ENABLED=true in the kv config scope and set KV_HOST and KV_PORT as needed.`, whatever the
+cause: an `Enabled` node that does not hold the boolean `true` (`KV_ENABLED=false`, no `Enabled`
+node, or one bound without `cast: Types::Boolean`, which leaves a `true` read from the environment
+or a `.env` file as a string), or a scope that did not load (for example, no `kv.Config.php`, a file
+declaring another scope, a `.env` key outside the list above, or a `configs` path without its
+trailing `/`). The check runs again on every request until it passes, so a disabled scope fails
+each request that reads `$Response->KV`. Errors raised while the scope loads or converts keep their
+own exception: an `InvalidArgumentException` for a value a `cast:` cannot parse (an empty
+`KV_ENABLED=` throws `Invalid boolean config value.`) or an unsupported driver (`KV_DRIVER=memcached`
+throws `Unsupported KV driver: memcached.`), and a `RuntimeException` for a missing
+`required: true` key (`Required config value is missing: KV_HOST`).
 
 ## Await key-value work
 
 `KV` parks the response Fiber on the Redis connection readiness instead of blocking the
 worker loop. The simplest path is `fetch()`, which issues one command, awaits it and returns
-the reply (throwing `RuntimeException` on a Redis error):
+the reply (throwing `RuntimeException` when the command fails):
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
@@ -396,8 +416,8 @@ return $Response->defer(function (Response $Response): void {
 ```
 
 Each `fetch()` is a full round-trip. To overlap several commands, issue them with `command()`
-— which flushes the write immediately so the next command pipelines on the same connection —
-and `drain()` the group in one pass:
+— on a ready connection it writes the command at once and returns, so the commands that follow
+overlap it — and `drain()` the group in one pass:
 
 ```php
 return $Response->defer(function (Response $Response): void {
@@ -420,48 +440,53 @@ return $Response->defer(function (Response $Response): void {
 });
 ```
 
-Pipelining 8 reads through `drain()` is ~2.4× faster than 8 sequential `fetch()` calls,
-because their round-trips overlap on the one connection instead of running one at a time.
+Against a local Redis, 8 reads through `drain()` took about a third of the time of 8 sequential
+`fetch()` calls, because their round-trips overlap instead of running one at a time.
 
-## KV methods
+Await inside `defer()` only. On the synchronous route path there is no Fiber to park, so each wait
+returns at once and `fetch()`, `await()` and `drain()` keep polling the connection until the reply
+arrives: with a 1-second `BLPOP` awaited there, another request to the same worker waited 0.9 s;
+with the same wait inside `defer()`, it was answered at once.
 
-```php
-provide (string $configs): Closure
-```
+A command that fails makes `fetch()` throw a `RuntimeException` with its `error`, whatever the
+cause: a Redis error reply (`ERR value is not an integer or out of range`), its deadline
+(`Database operation timed out after 30 seconds.` — `KV_TIMEOUT` bounds each command), a lost
+transport or a withdrawal. `command()`, `await()` and `drain()` do not throw for a failed command:
+read `$Operation->error`, as the loop above does. An error reply fails only its own command; the
+connection, and the commands pipelined with it, carry on.
 
-Static factory. Reads the `kv` scope from the given project `configs/` directory and returns a lazy
-`Closure(object): KV` for `Response\Configs(Resources:)`. Builds one pipelined connection per worker; throws
-when the scope is disabled or the context is not a `Response`.
+On a lost transport the driver always drops the session, whatever the pool size. A peer close — a
+`redis.conf` `timeout`, a restart, a failover, a proxy drop — fails the command in flight and every
+command pipelined behind it on that connection with `Redis socket closed.` — or
+`Redis socket write failed.` when a write notices the close first —, fails a command not written
+yet with `Redis connection was torn down before the command was sent.`, and takes the connection
+out of the pool; the next command opens a fresh one. The failure is therefore transient:
+the commands in flight when the transport died are lost and must be retried by the caller, but the
+worker's KV keeps working.
 
-```php
-fetch (string $command, array $arguments = []): mixed
-```
+Commands are not pinned to a connection: consecutive commands of one request can run on different
+connections of the pool, and on a single connection every request of the worker pipelines behind
+the others. A blocking command (`BLPOP`, `XREAD BLOCK`, `WAIT`) holds every command queued behind it
+until it returns — three 1-second `BLPOP`s took 3 s on one connection, 1 s with `Pool->Max` unbound.
+A command that changes its connection reaches whoever shares it: another request's `GET` sent
+between your `MULTI` and `EXEC` answers `QUEUED` and runs inside your transaction, and with more
+connections your `EXEC` can land on one that never saw the `MULTI` (`ERR EXEC without MULTI`); a
+`SELECT` switches the database of the commands behind it; a `SUBSCRIBE` leaves the connection
+subscribed — over RESP2, the default, it then refuses ordinary commands, so on the sample's single
+connection every later `GET` or `SET` of the worker fails — and one to several channels hands its
+extra confirmations to the commands behind it as replies. Never send `SUBSCRIBE`, `PSUBSCRIBE`,
+`SSUBSCRIBE` or `MONITOR` through the resource. Run an atomic multi-step update as one `EVAL`
+script, and see **[KV database](/manual/ADI/Databases/KV/overview/)** for the facade's limits.
 
-Creates one command, awaits it and returns the reply. Throws `RuntimeException` when Redis
-reports an error.
+## KV withdrawal and cleanup
 
-```php
-command (string $command, array $arguments = []): Operation
-```
-
-Creates and advances one command — the write is flushed immediately — but does **not** await
-it. Issue several, then pass them to `drain()` to overlap their round-trips.
-
-```php
-await (Operation $Operation): Operation
-drain (array $Operations): array
-```
-
-Await one operation, or a group of operations, on the connection readiness. `drain()`
-re-scans the group after each advance pass so pipelined FIFO replies resolve correctly.
-
-A wait that does not come back — refused by the selector, interrupted by a `defer()` timeout, or
-ended by the client disconnecting — withdraws what it was waiting for. On an exception only the
-awaited commands go, and the exception still reaches your handler, which can catch it and keep
-using the others (if the withdrawal itself fails, its exception propagates instead, with the
-original at the end of its `getPrevious()` chain). When the request Fiber is destroyed while
-parked in one of these waits, every unfinished command it issued through this resource is
-withdrawn too.
+When a wait of `fetch()`, `await()` or `drain()` does not come back — refused by the selector,
+interrupted by a `defer()` timeout, or ended by the client disconnecting — it withdraws what it was
+waiting for. On an exception only the awaited commands go, and the exception still reaches your
+handler, which can catch it and keep using the others (if the withdrawal itself fails, its
+exception propagates instead, with the original at the end of its `getPrevious()` chain). When the
+request Fiber is destroyed while parked in one of these waits, every unfinished command it issued
+through this resource is withdrawn too.
 
 Before withdrawing, the resource gives each command already waiting for its reply one
 non-blocking read: one whose reply has already arrived is finished by it, with that reply, and its
@@ -515,6 +540,93 @@ An instance you mount yourself — `$Response->mount()`, which calls `Resources:
 definition registered — is carried into every response clone and shared across contexts, so it is
 not cleaned when a job ends: its unfinished commands are withdrawn only by a wait that does not
 come back, or when the instance itself is destroyed.
+
+## KV methods
+
+```php
+provide (string $configs): Closure
+```
+
+Static factory. Reads nothing itself: it returns a lazy `Closure(object): KV` for
+`Response\Configs(Resources:)`, which builds one `KV` database per worker from the `kv` scope of the
+given project `configs/` directory — a path that ends with `/` — with a pool of up to `KV_POOL_MAX`
+connections, `8` when the scope binds none, and a new resource around it for each response. The
+closure throws `RuntimeException` when the context is not a `Response`, and the
+`Enable KV_ENABLED=true…` `RuntimeException` when the scope does not load or its `Enabled` is not
+the boolean `true` (see [Register the KV resource](#register-the-kv-resource)); errors raised while
+the scope loads or converts (a failed `cast:`, an unsupported `KV_DRIVER`, a missing
+`required: true` key) propagate unchanged.
+
+```php
+command (string $command, array $arguments = []): Operation
+```
+
+Creates one command and advances it once, without awaiting it. On a ready connection — an idle one,
+or, once the pool is full, a busy one it is pipelined on — that writes the command at once. One
+that opens its own connection is written when it is advanced again; one parked in `pending` — no
+connection can take it, such as a full pool whose connections are all still being opened — is
+written once something advances it: the release that promotes it, or its await. Issue several, then
+pass them to `drain()` to overlap their round-trips.
+
+```php
+fetch (string $command, array $arguments = []): mixed
+```
+
+Creates one command, awaits it and returns its decoded reply. Throws `RuntimeException` with the
+command's `error` when it fails, whatever the cause: a Redis error reply, its timeout, a lost
+transport or a withdrawal.
+
+```php
+await (Operation $Operation): Operation
+```
+
+Parks the response Fiber on the operation's readiness until it finishes, and returns it. A failed
+command does not throw: read `$Operation->error`. Throws `RuntimeException`
+(`KV response resource is not bound.`) when the instance was never attached to a response and has
+to wait.
+
+```php
+drain (array $Operations): array
+```
+
+Awaits a group of operations and returns it, keys kept, once every one has finished. Each pass
+advances every unfinished operation, then re-scans the whole group — pipelined replies arrive in
+order, so advancing a later command can finish earlier ones — and parks on the readiness of the
+first one still unfinished. Like `await()`, it does not throw for a failed command, and throws
+`KV response resource is not bound.` when the instance was never attached to a response and has to
+wait.
+
+```php
+__construct (KVDatabase $KV)
+```
+
+Wraps a `Bootgly\ADI\Databases\KV` facade (imported as `KVDatabase`). `provide()` calls it. An
+instance you build yourself can wait only once it is attached to a response — returned by a
+`Response\Configs(Resources:)` factory, or mounted with `$Response->mount()` (see
+[KV withdrawal and cleanup](#kv-withdrawal-and-cleanup) for how the two differ).
+
+```php
+public KVDatabase $KV
+```
+
+The wrapped facade — with `provide()`, the one per worker that every response shares. It is the way
+to the pool (`$Response->KV->KV->Pool`) and to what the resource does not expose. Do not call its
+`await()` in a route: it blocks the worker until the reply arrives.
+
+```php
+schedule (Closure $Wait): static
+```
+
+Binds the response wait bridge. The framework calls it when the resource is attached to a
+response.
+
+```php
+clean (): void
+```
+
+Hands back the commands this instance issued and left unfinished: one whose reply has already
+arrived is finished by one non-blocking read, the rest are withdrawn. The response calls it when a
+deferred job ends, and the instance when it is destroyed.
 
 ## Register the HTTP resource
 

@@ -795,8 +795,10 @@ O Bootgly é PHP puro: ele não consegue transformar as funções bloqueantes do
 bloqueantes por baixo dos panos. Use os clientes que estacionam no event loop:
 
 - **SQL** — os drivers PostgreSQL e MySQL do [ADI Database](/guide/database-dbal/overview/).
-- **Redis** — o driver KV descrito em [Cache](/guide/cache/overview/) (o driver `redis` do próprio
-  Cache é bloqueante).
+- **Redis** — o `$Response->KV`, o driver Redis da fachada [KV](/manual/ADI/Databases/KV/overview/)
+  aguardado pelos [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#aguardar-trabalho-key-value)
+  (o driver `redis` do [Cache](/guide/cache/overview/) é bloqueante, assim como o `await()` da
+  própria fachada KV).
 - **HTTP** — o cliente upstream em [Response Resources](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/).
 
 Distribua trabalho pesado de CPU entre os workers, ou mova-o para uma [fila](/guide/queues/overview/).

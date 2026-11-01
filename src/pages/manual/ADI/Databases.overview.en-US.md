@@ -37,7 +37,7 @@ and Schema builders and the ORM are `SQL`; Redis commands are `KV`.
 | Verbs | `query()`, `table()`, `begin()`, `map()`, `structure()` | `command()` |
 | Drive an operation | `await()`, `advance()`, `cancel()`, `withdraw()` | `await()`, `advance()`, `cancel()`, `withdraw()` |
 | Operation | `SQL\Operation`: `Result`, `error`, `code`, `SQL` | `KV\Operation`: `response`, `error`, `command`, `arguments` |
-| Cancel a running operation | PostgreSQL `CancelRequest`, MySQL `KILL QUERY` | No: a command already sent fails with `Database driver does not support cancellation.` |
+| Cancel a running operation | PostgreSQL `CancelRequest`, MySQL `KILL QUERY` | No: any command past `Queued` fails with `Database driver does not support cancellation.` |
 | Config | `SQL\Config`: the shared keys plus `statements`, `migrations` and `routing` | `Database\Config`: the shared keys |
 | Read replicas | `replicas`, each with a pool of its own | None: `replicas` is ignored |
 | Events | `SQL\Events`: `Connected`, `Executed`, `Slow`, `Failed` | None |
@@ -115,8 +115,10 @@ Without `secure`, the mode is `prefer`, and a plaintext Redis never answers the 
 starts: each new connection waits for the handshake budget — one second, or half the `timeout`
 when that is shorter — and fails with
 `Redis TLS handshake timed out: the peer did not answer the TLS handshake within 1s — set secure.mode => 'disable' for a plaintext Redis.`
-Redis over TLS, pipelining and the `$Response->KV` resource are covered in
-**[Async Redis on the event loop](/guide/cache/overview/#async-redis-on-the-event-loop)**.
+The facade in depth — pipelining, errors, timeouts, its limits — is on
+**[KV database](/manual/ADI/Databases/KV/overview/)**, the Redis driver and its TLS on
+**[Redis](/manual/ADI/Databases/KV/Drivers/Redis/overview/)**, and the route resource in
+**[Register the KV resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#register-the-kv-resource)**.
 
 `KV` is not the Cache. `Bootgly\ABI\Resources\Cache` is a key-value cache with TTLs and tags whose
 drivers block, its Redis driver included; `KV` sends Redis commands over the asynchronous pool

@@ -87,7 +87,7 @@ unidirecional `ABI → ACI → ADI → API → CLI → WPI`. Ela traz duas facha
 (`Bootgly\ADI\Databases\SQL`), para bancos relacionais, e `KV`
 (`Bootgly\ADI\Databases\KV`), para comandos key-value no Redis, que as rotas usam por
 `$Response->KV`
-(**[Redis assíncrono no event loop](/guide/cache/overview/#redis-assíncrono-no-event-loop)**,
+(**[Banco KV](/manual/ADI/Databases/KV/overview/)**,
 **[Registrar o resource KV](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#registrar-o-resource-kv)**).
 A fachada `SQL` expõe execução de queries, transações e dois builders:
 
