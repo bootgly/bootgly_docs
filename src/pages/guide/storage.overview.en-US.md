@@ -167,7 +167,9 @@ $Storage->open('scratch')->write('z.txt', stream('...'));   // in-process, no fi
 
 Each disk's driver is built once, lazily, on first access and jailed inside its own `root`:
 `../` traversal is normalized away and clamped, and a `realpath()` check rejects symlinks that
-would escape the root.
+would escape the root. On the local disk that check runs before anything is created, so a
+refused `write()`, `copy()`, `move()` or `make()` leaves no directory behind; symlinks that stay
+inside the root — a link to the root itself included — work like ordinary paths.
 
 ## Choose a driver
 
@@ -258,13 +260,17 @@ returns the default disk. The facade's own file methods (below) proxy to the def
 ### Driver contract
 
 Concrete drivers extend `Bootgly\ABI\Resources\Storage\Driver`. Every path is disk-relative
-and resolved against the driver's `root`. `$source`/`$sink` are PHP stream resources.
+and resolved against the driver's `root`. `$source`/`$sink` are PHP stream resources. On the
+local disk, a path containing a NUL byte is refused by every method: `false` (`[]` from
+`list()`) with the reason on `error`.
 
 ```php
 public function write (string $path, $source, array $options = []): bool
 ```
 
-Streams the readable resource `$source` into `$path`, creating parent directories as needed.
+Streams the readable resource `$source` into `$path`, creating parent directories as needed —
+on the local disk only inside the root: a parent that would resolve outside it is refused
+before anything is created.
 On S3 this is a single PUT for a small object and an automatic Multipart Upload (parallel
 parts) for a large one. `$options` are driver-specific — S3 reads `type` (Content-Type) and
 `meta` (a `x-amz-meta-*` map); Local/Memory ignore them. Returns `true` on success; on `false`
@@ -301,14 +307,17 @@ subdirectories; otherwise it returns immediate files only.
 public function copy (string $from, string $to): bool
 ```
 
-Copies a file within the disk, creating the target's parent directories. Returns `false` when
-the source is missing.
+Copies a file within the disk, creating the target's parent directories (inside the root, as
+`write()` does). Returns `false` when the source is missing or when the target's parent would
+resolve outside the root.
 
 ```php
 public function move (string $from, string $to): bool
 ```
 
-Moves (renames) a file within the disk. Returns `false` when the source is missing.
+Moves (renames) a file within the disk, creating the target's parent directories (inside the
+root, as `write()` does). Returns `false` when the source is missing or when the target's parent
+would resolve outside the root.
 
 ```php
 public function measure (string $path): int|false
@@ -327,7 +336,11 @@ the path is missing.
 public function make (string $path): bool
 ```
 
-Creates a directory recursively. Returns `true` when it exists afterwards.
+Creates a directory, and any missing parent, inside the disk root. Returns `true` when it
+exists there afterwards; `false` when it would resolve outside the root — an existing directory
+reached through an escaping symlink included — or cannot be created. On the local disk each call
+re-checks the tree and flushes PHP's realpath cache, so make a directory once at setup rather
+than on every request.
 
 ```php
 public function clear (string $path = ''): bool

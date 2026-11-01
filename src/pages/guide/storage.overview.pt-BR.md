@@ -173,7 +173,10 @@ $Storage->open('scratch')->write('z.txt', stream('...'));   // em processo, sem 
 
 O driver de cada disk é construído uma vez, sob demanda, no primeiro acesso e fica preso
 (jailed) dentro do seu próprio `root`: travessias como `../` são normalizadas e fixadas, e um
-check de `realpath()` rejeita symlinks que escapariam do root.
+check de `realpath()` rejeita symlinks que escapariam do root. No disk local esse check roda
+antes de qualquer criação, então um `write()`, `copy()`, `move()` ou `make()` recusado não deixa
+diretório para trás; symlinks que ficam dentro do root — inclusive um link para o próprio root
+— funcionam como caminhos comuns.
 
 ## Escolher um driver
 
@@ -266,13 +269,16 @@ ao disk padrão.
 
 Drivers concretos estendem `Bootgly\ABI\Resources\Storage\Driver`. Todo caminho é relativo ao
 disk e resolvido contra o `root` do driver. `$source`/`$sink` são resources de stream do PHP.
+No disk local, um caminho com um byte NUL é recusado por todo método: `false` (`[]` no
+`list()`) com o motivo em `error`.
 
 ```php
 public function write (string $path, $source, array $options = []): bool
 ```
 
 Transmite o resource legível `$source` para `$path`, criando diretórios pai conforme
-necessário. No S3 é um único PUT para objetos pequenos e um Multipart Upload automático
+necessário — no disk local, só dentro do root: um pai que resolveria para fora dele é recusado
+antes de qualquer criação. No S3 é um único PUT para objetos pequenos e um Multipart Upload automático
 (partes em paralelo) para objetos grandes. `$options` são específicas do driver — o S3 lê
 `type` (Content-Type) e `meta` (mapa `x-amz-meta-*`); Local/Memory ignoram. Retorna `true` em
 caso de sucesso; em `false`, o motivo fica no driver (`$Storage->open()->error`).
@@ -308,14 +314,17 @@ percorre subdiretórios; caso contrário, retorna apenas os arquivos imediatos.
 public function copy (string $from, string $to): bool
 ```
 
-Copia um arquivo dentro do disk, criando os diretórios pai do destino. Retorna `false` quando
-a origem está ausente.
+Copia um arquivo dentro do disk, criando os diretórios pai do destino (dentro do root, como o
+`write()`). Retorna `false` quando a origem está ausente ou quando o pai do destino resolveria
+para fora do root.
 
 ```php
 public function move (string $from, string $to): bool
 ```
 
-Move (renomeia) um arquivo dentro do disk. Retorna `false` quando a origem está ausente.
+Move (renomeia) um arquivo dentro do disk, criando os diretórios pai do destino (dentro do
+root, como o `write()`). Retorna `false` quando a origem está ausente ou quando o pai do destino
+resolveria para fora do root.
 
 ```php
 public function measure (string $path): int|false
@@ -334,7 +343,11 @@ quando o caminho está ausente.
 public function make (string $path): bool
 ```
 
-Cria um diretório recursivamente. Retorna `true` quando ele existe ao final.
+Cria um diretório, e qualquer pai ausente, dentro do root do disk. Retorna `true` quando ele
+existe ali ao final; `false` quando resolveria para fora do root — inclusive um diretório
+existente alcançado por um symlink que escapa — ou não pode ser criado. No disk local cada chamada
+reverifica a árvore e esvazia o cache de realpath do PHP, então crie um diretório uma vez no
+setup, não a cada request.
 
 ```php
 public function clear (string $path = ''): bool
