@@ -145,8 +145,9 @@ o `COMMIT` de uma transação em que uma instrução tinha falhado com um rollba
 transforma em `SQL transaction was rolled back by the server: a statement inside it had failed.`, e
 uma constraint deferida que falha no commit também faz o `COMMIT` falhar. Nos dois casos, um
 `rollback()` ou `abort()` em seguida é recusado com `SQL transaction is not active.`, e é por isso
-que a receita do guia protege o `abort()` no `catch` (no SQLite, mantenha as foreign keys imediatas
-por enquanto: veja **[Notas por engine](/guide/database-transactions/overview/#notas-por-engine)**).
+que a receita do guia protege o `abort()` no `catch`. No SQLite, um `COMMIT` recusado numa
+constraint deferida ou com `database is locked` é desfeito pelo driver, e o erro dele é a própria
+mensagem do engine (veja **[Notas por engine](/guide/database-transactions/overview/#notas-por-engine)**).
 
 O `rollback()` sem nome encerra o nível atual: a transação inteira em profundidade `1`, o savepoint
 atual acima dela. Com nome, ele volta para aquele savepoint e o mantém (veja

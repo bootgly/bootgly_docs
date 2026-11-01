@@ -171,10 +171,10 @@ committing the outer transaction.
 - **MySQL/MariaDB** — DDL statements (`CREATE`/`ALTER`/`DROP` ...) inside a transaction
   cause an **implicit commit**: keep schema changes out of transactional business flows.
 - **SQLite** — transactions and savepoints work on the synchronous driver exactly like on
-  the async ones; even DDL is transactional. For now, keep foreign keys immediate (the
-  default): when a `COMMIT` fails on a `DEFERRABLE INITIALLY DEFERRED` key, SQLite keeps the
-  transaction open, but Bootgly hands the connection back as if it had ended, so later
-  statements on that connection run inside the leftover transaction.
+  the async ones; even DDL is transactional. A `COMMIT` that fails — on a
+  `DEFERRABLE INITIALLY DEFERRED` key, or with `database is locked` — is rolled back before the
+  connection serves anyone else, as on the other engines; its error is the engine's own message
+  (`FOREIGN KEY constraint failed`, `database is locked`), so retry the whole transaction.
 - Savepoint identifiers are quoted by the active dialect (`"bootgly_0"` on
   PostgreSQL/SQLite, `` `bootgly_0` `` on MySQL).
 

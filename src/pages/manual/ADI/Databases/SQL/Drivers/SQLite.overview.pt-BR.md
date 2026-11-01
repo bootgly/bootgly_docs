@@ -80,7 +80,7 @@ Um array ou qualquer outro objeto — um `BackedEnum`, um `Stringable` — falha
 `SQLite cannot bind the parameter "status".`, nomeando a chave dele, ou a posição contada a partir
 de `0`; passe o `value` do enum no lugar. SQLite não tem tipo de coluna booleano — booleans voltam
 como inteiros `0`/`1`. O que cada tipo de coluna devolve está em
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 > [!WARNING]
 > Duas lacunas de vínculo hoje reportam sucesso. Um placeholder que os parâmetros omitem é gravado
@@ -146,14 +146,14 @@ $Database->await($Transaction->query('INSERT INTO fruits (name) VALUES (?1)', ['
 $Database->await($Transaction->commit());
 ```
 
-> [!WARNING]
-> Por enquanto, um `COMMIT` recusado com `database is locked` — outra conexão mantém um lock de
-> leitura, fora do WAL — ou numa foreign key `DEFERRABLE INITIALLY DEFERRED` deixa a transação
-> aberta na conexão dela, enquanto a `Transaction` a dá por encerrada (o `rollback()` é recusado
-> com `SQL transaction is not active.`). O pool entrega essa conexão de novo: o que roda ali depois
-> nunca é commitado, e um `begin()` ali falha com
-> `Unable to execute statement: cannot start a transaction within a transaction`. Sob WAL, leitores
-> nunca seguram um `COMMIT`.
+> [!NOTE]
+> Um `COMMIT` recusado com `database is locked` — outra conexão mantém um lock de leitura, fora do
+> WAL — ou numa foreign key `DEFERRABLE INITIALLY DEFERRED` é **desfeito** pelo driver. O SQLite
+> sozinho manteria a transação aberta para um segundo `COMMIT`, mas a `Transaction` já terminou (o
+> `rollback()` é recusado com `SQL transaction is not active.`), então o driver a encerra antes de a
+> conexão servir mais alguém. O erro é a própria mensagem do engine, que não diz isso: trate um
+> `commit()` que falhou como uma transação desfeita e repita a transação inteira, nunca só o
+> `COMMIT`. Sob WAL, leitores nunca seguram um `COMMIT`.
 
 ## Dimensionamento do Pool
 
@@ -168,8 +168,9 @@ Os dois não são o mesmo tipo de banco:
   escrita por um handle é invisível para o outro sem que nada dê erro;
 - um arquivo é um banco só, qualquer que seja o handle que o abra. Os handles disputam seu
   lock: uma escrita feita enquanto outro handle mantém uma transação de escrita espera até o
-  `timeout` e então falha com `Unable to execute statement: database is locked` (código `5`), que
-  é o SQLite pedindo para você tentar de novo. Um `timeout` `0` a falha na hora.
+  `timeout` e então falha com `Unable to execute statement: database is locked` (código `5`):
+  repita o statement — ou, para um `COMMIT` recusado, a transação inteira. Um `timeout` `0` a falha
+  na hora.
 
 Planeje uma consequência de um pool de uma conexão — enquanto uma transação mantém a
 conexão, todo outro `query()` naquela facade fica estacionado em `pending`, e aguardá-lo falha com
@@ -188,16 +189,6 @@ Sob WAL, uma transação lê de um snapshot tirado na primeira leitura dela. Se 
 commit depois disso, a primeira escrita da transação falha na hora — seja qual for o `timeout` —
 com a mesma mensagem `database is locked` e o código `517`: repetir o statement não adianta, então
 faça rollback e repita a transação inteira.
-
-> [!WARNING]
-> Por enquanto, um statement com parâmetros que falha com `database is locked` (código `5` ou
-> `517`) fica inacabado e mantém a conexão dele dentro de uma transação aberta. As leituras ali
-> mantêm o lock delas no arquivo, então um `COMMIT` em outra conexão espera o `timeout` dele inteiro
-> e falha com o mesmo erro; sob WAL elas continuam lendo os dados como estavam, então uma transação
-> repetida ali depois de um `517` falha com `517` de novo. E depois de uma escrita recusada com
-> código `5`, uma escrita ali pode reportar sucesso e nunca ser commitada: rodar de novo o SQL
-> recusado faz o rollback dela, e fechar a conexão também. Defina `statements` como `0` para evitar
-> tudo isso — um statement que falhou passa a ser descartado na hora.
 
 ## Cancelamento
 
@@ -242,9 +233,9 @@ concluir.
 Um statement que o engine rejeitou — violação de UNIQUE ou FOREIGN KEY — permanece no cache e é
 reusado. Só a operação que gerou o erro falha com ele; a operação seguinte sobre o mesmo SQL roda
 normalmente, com quaisquer parâmetros. Uma linha rejeitada, portanto, nunca custa a linha seguinte.
-Um statement recusado com `database is locked` também permanece no cache, mas por enquanto mantém a
-conexão dele dentro de uma transação aberta — veja
-[Dimensionamento do Pool](#dimensionamento-do-pool).
+Um statement recusado com `database is locked` também permanece no cache, resetado e pronto para
+rodar de novo: a recusa termina junto com o statement, e uma nova tentativa lê o banco como ele está
+agora.
 
 ```php
 advance (Operation $Operation): Operation

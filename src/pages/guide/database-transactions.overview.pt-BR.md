@@ -172,10 +172,10 @@ transação externa.
   causam **commit implícito**: mantenha mudanças de schema fora de fluxos de negócio
   transacionais.
 - **SQLite** — transações e savepoints funcionam no driver síncrono exatamente como nos
-  assíncronos; até DDL é transacional. Por enquanto, mantenha as foreign keys imediatas (o
-  padrão): quando um `COMMIT` falha numa chave `DEFERRABLE INITIALLY DEFERRED`, o SQLite mantém
-  a transação aberta, mas o Bootgly devolve a conexão como se ela tivesse terminado, e as
-  instruções seguintes nessa conexão rodam dentro da transação que sobrou.
+  assíncronos; até DDL é transacional. Um `COMMIT` que falha — numa chave
+  `DEFERRABLE INITIALLY DEFERRED`, ou com `database is locked` — é desfeito antes de a conexão
+  servir mais alguém, como nos outros engines; o erro dele é a própria mensagem do engine
+  (`FOREIGN KEY constraint failed`, `database is locked`), então repita a transação inteira.
 - Identificadores de savepoint são quotados pelo dialeto ativo (`"bootgly_0"` no
   PostgreSQL/SQLite, `` `bootgly_0` `` no MySQL).
 

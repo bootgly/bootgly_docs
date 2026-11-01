@@ -78,7 +78,7 @@ object — a `BackedEnum`, a `Stringable` — fails the operation with
 `SQLite cannot bind the parameter "status".`, naming its key, or its position counted from `0`; pass
 the enum's `value` instead. SQLite has no boolean column type — booleans come back as `0`/`1`
 integers. What each column type reads back as is on
-**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
+**[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 > [!WARNING]
 > Two binding gaps currently report success. A placeholder the parameters leave out is written as
@@ -143,14 +143,14 @@ $Database->await($Transaction->query('INSERT INTO fruits (name) VALUES (?1)', ['
 $Database->await($Transaction->commit());
 ```
 
-> [!WARNING]
-> For now, a `COMMIT` refused with `database is locked` — another connection holds a read lock,
-> outside WAL — or on a `DEFERRABLE INITIALLY DEFERRED` foreign key leaves the transaction open on
-> its connection, while the `Transaction` reports it ended (`rollback()` is refused with
-> `SQL transaction is not active.`). The pool lends that connection again: what runs there
-> afterwards is never committed, and a `begin()` there fails with
-> `Unable to execute statement: cannot start a transaction within a transaction`. Under WAL,
-> readers never hold up a `COMMIT`.
+> [!NOTE]
+> A `COMMIT` refused with `database is locked` — another connection holds a read lock, outside
+> WAL — or on a `DEFERRABLE INITIALLY DEFERRED` foreign key is **rolled back** by the driver.
+> SQLite alone would keep the transaction open for a second `COMMIT`, but the `Transaction` has
+> already ended (`rollback()` is refused with `SQL transaction is not active.`), so the driver ends
+> it before the connection serves anyone else. The error is the engine's own message, which does
+> not say so: treat a failed `commit()` as a rolled-back transaction and retry the whole
+> transaction, never just the `COMMIT`. Under WAL, readers never hold up a `COMMIT`.
 
 ## Pool sizing
 
@@ -165,8 +165,8 @@ The two are not the same kind of database:
   written through one is invisible to the other with nothing ever reporting an error;
 - a file is one database whichever handle opens it. The handles do contend for its lock: a
   write issued while another handle holds a write transaction waits up to `timeout` and then
-  fails with `Unable to execute statement: database is locked` (code `5`), which is SQLite
-  asking you to retry. `timeout` `0` fails it at once.
+  fails with `Unable to execute statement: database is locked` (code `5`): retry the statement
+  — or, for a refused `COMMIT`, the whole transaction. `timeout` `0` fails it at once.
 
 Plan for one consequence of a pool of one — while a transaction holds the connection, every
 other `query()` on that facade parks in `pending`, and awaiting it fails with
@@ -185,16 +185,6 @@ Under WAL, a transaction reads from a snapshot taken at its first read. If anoth
 commits after that, the transaction's first write fails at once — whatever the `timeout` — with the
 same `database is locked` message and code `517`: retrying the statement cannot help, so roll back
 and retry the whole transaction.
-
-> [!WARNING]
-> For now, a statement with parameters that fails with `database is locked` (code `5` or `517`)
-> stays unfinished and keeps its connection inside an open transaction. Reads there keep their lock
-> on the file, so a `COMMIT` on another connection waits out its `timeout` and fails with the same
-> error; under WAL they keep reading the data as it was instead, so a transaction retried there
-> after a `517` fails with `517` again. And after a write refused with code `5`, a write there can
-> report success and never be committed: running the refused SQL again rolls it back, and so does
-> closing the connection. Set `statements` to `0` to avoid all of this — a failed statement is then
-> discarded at once.
 
 ## Cancellation
 
@@ -239,8 +229,8 @@ command completes.
 A statement the engine rejected — a UNIQUE or FOREIGN KEY violation — stays in the cache and is
 reused. Only the operation that earned the error fails with it; the next operation on the same SQL
 runs normally, whatever its parameters. A rejected row therefore never costs the row after it. A
-statement refused with `database is locked` stays in the cache too, but for now it keeps its
-connection inside an open transaction — see [Pool sizing](#pool-sizing).
+statement refused with `database is locked` stays in the cache too, reset and ready to run again:
+the refusal ends with the statement, and a retry reads the database as it is now.
 
 ```php
 advance (Operation $Operation): Operation

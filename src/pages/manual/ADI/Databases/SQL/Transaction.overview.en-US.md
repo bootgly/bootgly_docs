@@ -143,8 +143,9 @@ the `COMMIT` of a transaction in which a statement had failed with a rollback, w
 into `SQL transaction was rolled back by the server: a statement inside it had failed.`, and a
 deferred constraint that fails at commit time fails the `COMMIT` too. Either way, a `rollback()` or
 `abort()` that follows is refused with `SQL transaction is not active.`, which is why the guide's
-recipe guards the `abort()` in its `catch` (on SQLite, keep foreign keys immediate for now: see
-**[Engine notes](/guide/database-transactions/overview/#engine-notes)**).
+recipe guards the `abort()` in its `catch`. On SQLite, a `COMMIT` refused on a deferred
+constraint or with `database is locked` is rolled back by the driver, and its error is the
+engine's own message (see **[Engine notes](/guide/database-transactions/overview/#engine-notes)**).
 
 `rollback()` without a name ends the current level: the whole transaction at depth `1`, the
 current savepoint above it. With a name, it rolls back to that savepoint and keeps it (see
