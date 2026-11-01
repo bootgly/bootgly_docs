@@ -46,10 +46,11 @@ mode — the same rule the primary follows: `prefer`/`require` unverified, `veri
 verifying — so restate `verify` on the replica to keep a primary's explicit opt-in. A replica that
 declares neither `mode` nor `verify` inherits the primary's resolved flags. A `cafile` is inherited
 only by a replica that verifies; one the replica declares itself under an unverified mode is
-refused at config time. Whatever its mode, a replica's `secure.peer` defaults to its own `host`,
-never to the primary's `peer`. Since 1.0.3 — before, a replica inherited the primary's flags whatever its
-own mode said. A PostgreSQL replica reached under `prefer` that refuses TLS and asks for a cleartext
-or MD5 password (or SCRAM below 4096 iterations) is refused on its own host and mode (loopback exempt), and the read falls back to
+refused at config time. Since 1.0.3, a replica's own `mode` decides its flags; before, a replica
+that declared `prefer` or `require` still took the primary's. Whatever its mode, a replica's
+`secure.peer` defaults to its own `host`, never to the primary's `peer`. A PostgreSQL replica
+reached under `prefer` that refuses TLS and asks for a cleartext or MD5 password (or SCRAM below
+4096 iterations) is refused on its own host and mode (loopback exempt), and the read falls back to
 the primary.
 
 `routing.sticky` is the best-effort read-after-write window in seconds (default `5.0`; `0` turns
@@ -140,7 +141,9 @@ Raw SQL uses a conservative classifier, which reads the statement's first keywor
 Past the first keyword, the classifier only looks for those write words in a `WITH` and for
 `ANALYZE` after `EXPLAIN`. A `SELECT` that calls a function that writes — PostgreSQL's
 `nextval()`, for example — therefore counts as a read, and for now so does a raw
-`SELECT ... FOR UPDATE`: lock through the builder's `lock()`, or inside a transaction.
+`SELECT ... FOR UPDATE`, which can reach a replica. Take row locks inside a transaction: it runs
+on one pinned primary connection, and its locks last until it commits or rolls back. Outside a
+transaction, a builder `lock()` reaches the primary, but its lock ends with the statement.
 
 A `Query` you build yourself is never classified like a raw string: its `reading` flag decides, and
 it defaults to `false`.

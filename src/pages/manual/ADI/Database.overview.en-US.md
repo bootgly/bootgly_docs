@@ -375,8 +375,11 @@ Creates a pending SQL operation for `$sql`, stored in `SQL`.
 fail (string $error, null|string $code = null): self
 ```
 
-Fails the operation with an `error` and the driver's `code`, then announces `Events::Failed` —
-once, even when a later failure replaces the message.
+Fails the operation with an `error` and the driver's `code`, then announces `Events::Failed` once
+per attempt: failing it again only replaces the message and the code, until `retry()` rearms it.
+The fallback of a failed replica read is such a retry, so its re-run on the primary announces
+`Events::Executed` or `Events::Failed` again — see
+**[SQL database events](/manual/ADI/Databases/SQL/overview/#events)**.
 
 ```php
 public static float $slow

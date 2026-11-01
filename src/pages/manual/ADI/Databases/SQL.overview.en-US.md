@@ -58,7 +58,9 @@ pools — one for the primary, one per read replica — so build one per process
 ## Config keys
 
 `SQL` reads every key of **[Database configuration](/manual/ADI/Database/Config/overview/#keys-and-defaults)**
-plus four of its own, which `Bootgly\ADI\Databases\SQL\Config` adds:
+plus the four below: `statements`, `routing.sticky` and `migrations`, which
+`Bootgly\ADI\Databases\SQL\Config` adds, and `replicas`, which the base `Config` parses but only
+`SQL` opens — `SQL\Config` gives each replica its `statements`.
 
 | Key | Default | What it sets |
 |---|---|---|
@@ -244,6 +246,9 @@ the order you created them.
 
 ### Run operations side by side
 
+Two statements that take 0.3 seconds each, on PostgreSQL — on MySQL, write `SLEEP(0.3)` where they
+call `pg_sleep(0.3)`:
+
 ```php
 $Report = $Database->query('SELECT pg_sleep(0.3), 1 AS report');
 $Audit = $Database->query('SELECT pg_sleep(0.3), 2 AS audit');
@@ -270,9 +275,11 @@ pause between passes instead of spinning.
 ### Cancel or withdraw
 
 `cancel()` asks the server to stop a running statement — PostgreSQL `CancelRequest`, MySQL
-`KILL QUERY` — and is advisory: the operation still resolves, fails or expires on its own. The
-inherited `withdraw()` gives operations up locally, when their caller stops waiting, and sends
-nothing. Both are described in
+`KILL QUERY` — and is advisory: the operation still resolves, fails or expires on its own. An
+operation that has not reached the server yet — just created, parked in `pending`, or still
+connecting — is failed locally at once instead, and nothing is sent; one already finished keeps its
+result. The inherited `withdraw()` gives operations up locally, when their caller stops waiting,
+and sends nothing. Both are described in
 **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)** and
 **[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations)**.
 
@@ -412,17 +419,26 @@ Emitter::$Instance->listen(Events::Failed, function (Emission $Emission): void {
 | `Connected` | A connection finished authenticating (PostgreSQL, MySQL), or SQLite opened its database | `Connection` |
 | `Executed` | An operation resolved — every statement, a transaction's `BEGIN`, `COMMIT` and savepoints included | `Operation` |
 | `Slow` | An operation resolved at least `Operation::$slow` seconds after it was created | `Operation`, `$elapsed` (float, seconds) |
-| `Failed` | An operation failed — announced once, even when a later failure replaces its `error` | `Operation` |
+| `Failed` | An operation failed — once per attempt: failing it again only replaces its `error` and `code`. A read that fails on a replica is re-run on the primary, which then announces `Executed` or a second `Failed` | `Operation` |
 
 - `Failed` covers every failure: the server's errors, which carry a `code`, and the framework's
   own — a deadline, a pool refusal, a withdrawal, a transaction refusal such as
   `SQL transaction operation is still active.` — whose `code` is `null`. Bootgly's `Users` security
   store also announces it for a password-hash upgrade that did not land: that operation resolved, so
   its `error` is `null`.
+- A read that fails on a replica announces `Failed`, and is then re-run once on the primary (see
+  [Read-after-write scope](#read-after-write-scope)), which announces again: `Executed` — the
+  caller sees a success — or `Failed` a second time for the same operation. A cancelled or
+  withdrawn read is not re-run. To count each operation once, skip the `Failed` that precedes a
+  re-run; in the listener, that is when
+  `$Operation->FallbackPool !== null && $Operation->fallback === false && $Operation->cancelled === false && $Operation->revoked === false`.
 - `Slow` is off until you set the static `Operation::$slow` (`Bootgly\ADI\Databases\SQL\Operation`),
-  in seconds; at `0.0`, the default, the check costs nothing. It follows `Executed`, only for an
-  operation that resolved, and its elapsed time counts from `query()`, so it includes any wait for a
-  free connection — see **[Catch slow queries](/guide/events/overview/#catch-slow-queries)**.
+  in seconds; at `0.0`, the default, the check costs nothing. Set it at boot, before the first
+  `query()`: an operation created while it was `0.0` has no start time, so one that resolves after
+  you set it currently announces `Slow` with its elapsed time counted from the Unix epoch. It
+  follows `Executed`, only for an operation that resolved, and its elapsed time counts from
+  `query()`, so it includes any wait for a free connection — see
+  **[Catch slow queries](/guide/events/overview/#catch-slow-queries)**.
 - `Connected` fires once per connection, the replicas' included; `$Connection->Config` names the
   endpoint.
 - These events implement `Bootgly\ABI\Events\Emitter\Observing`: the event bus isolates each
@@ -441,15 +457,18 @@ Emitter::$Instance->listen(Events::Failed, function (Emission $Emission): void {
 | `SQL builder dialect is not registered: mariadb` | `new SQL()` | `driver` is not a SQL driver name or a known dialect alias |
 | `SQL cannot be empty.` | `query()` | The statement is empty or blank |
 | `SQL update/delete requires at least one filter.` | `query()` | A builder that cannot compile — here, a `delete()` without a `filter()` |
-| `Database driver is not registered: postgres.` | `query()` | No SQL driver is registered under `driver` |
+| `Database driver is not registered: postgres.` | `query()`, `begin()` | No SQL driver is registered under `driver` |
+| `SQL derived table requires an alias.` | `table()` | A builder or a compiled query given as the source without an `$Alias` |
 | `ORM entity requires one Table attribute: Note` | `map()` | The entity class has no `#[Table]` attribute |
+| `Class "App\Missing" does not exist` | `map()` | The entity class does not exist — PHP's `ReflectionException` |
 | `duplicate key value violates unique constraint "users_pkey"` | `await()` | The server's error, kept in the operation's `error` |
 | `Database operation timed out after 30 seconds.` | `await()` | The operation's `timeout` elapsed |
 | `Database pool has no capacity for the operation.` | `await()` | The awaited operation is still parked in `pending` |
 
-`new SQL()`, `query()` and `map()` throw an `InvalidArgumentException`; `await()` throws a
-`RuntimeException` carrying the failed operation's `error`. The connection keys' own errors are in
-**[Database configuration](/manual/ADI/Database/Config/overview/#errors)**, the pool's in
+`new SQL()`, `query()`, `table()`, `begin()` and `map()` throw an `InvalidArgumentException` —
+except `map()` for a class that does not exist, which throws a `ReflectionException`; `await()`
+throws a `RuntimeException` carrying the failed operation's `error`. The connection keys' own
+errors are in **[Database configuration](/manual/ADI/Database/Config/overview/#errors)**, the pool's in
 **[Connection pool](/manual/ADI/Database/Pool/overview/#errors)**, and connection failures in
 **[Failures](/manual/ADI/Database/overview/#failures)**.
 
@@ -497,15 +516,17 @@ Advances the operation through the pool that owns it until it finishes, and retu
 advance (Operation $Operation): Operation
 ```
 
-Moves the operation one step through the pool that owns it and returns it, without waiting. It
-does not throw for a failed operation: read its `error`.
+Moves the operation through the pool that owns it as far as its socket allows — dial, TLS,
+authentication, write, read — and returns it, without waiting. It does not throw for a failed
+operation: read its `error`.
 
 ```php
 cancel (Operation $Operation): Operation
 ```
 
 Asks the server, through the pool that owns the operation, to stop it, and returns it; the
-operation still resolves, fails or expires on its own. See
+operation still resolves, fails or expires on its own. An operation that has not reached the server
+yet is failed locally at once, and nothing is sent. See
 **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)**.
 
 ```php
@@ -520,7 +541,7 @@ table (BackedEnum|Stringable|Builder|Query $Table, null|BackedEnum|Stringable $A
 ```
 
 Starts a Query Builder with the facade's dialect, on a table or on a derived source — a builder
-or a compiled query, which needs an `$Alias`.
+or a compiled query, which needs an `$Alias`; without one, it throws `InvalidArgumentException`.
 
 ```php
 structure (): Schema
@@ -533,7 +554,8 @@ begin (): Transaction
 ```
 
 Starts a transaction on the primary pool. Its `BEGIN` is assigned at once, in
-`$Transaction->Operation`.
+`$Transaction->Operation`. Throws `InvalidArgumentException` when no SQL driver is registered under
+`driver`.
 
 ```php
 map (string $Entity, null|object $Scope = null, null|Awaiting $Awaiting = null): Repository
@@ -542,7 +564,7 @@ map (string $Entity, null|object $Scope = null, null|Awaiting $Awaiting = null):
 Creates an ORM repository for the `$Entity` class, running its operations through the facade.
 `$Scope` is the read-after-write scope of those operations; `$Awaiting` is the await bridge eager
 and lazy relations need, none by default. Throws `InvalidArgumentException` when the class has no
-valid mapping.
+valid mapping, and `ReflectionException` when it does not exist.
 
 ```php
 withdraw (Operation ...$Operations): void

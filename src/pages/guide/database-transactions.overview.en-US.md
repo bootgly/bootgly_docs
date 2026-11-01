@@ -71,8 +71,8 @@ catch (Throwable $Throwable) {
       $Database->await($Transaction->abort());
    }
    catch (Throwable) {
-      // Refused: the COMMIT already ended the transaction, or the session is gone and the
-      // server rolled the work back. Keep the original error.
+      // Refused or failed: the COMMIT already ended the transaction, or the session
+      // is gone and the server rolled the work back. Keep the original error.
    }
 
    throw $Throwable;
@@ -80,13 +80,17 @@ catch (Throwable $Throwable) {
 ```
 
 After `commit()`, an outer `rollback()` or `abort()`, the transaction depth is `0` and the
-pinned connection is released back to the pool. The recipe commits inside the `try`, so the
-`catch` also ends a transaction that `commit()` could not close: a `Commit` listener that
-throws (see **[Events](/manual/ADI/Databases/SQL/Transaction/overview/#events)**) or a
-statement the work left in flight, which makes `commit()` return a refused operation. When the
-`COMMIT` itself fails — a deferred constraint, for example, which makes PostgreSQL roll the
-whole transaction back — `commit()` has already closed the transaction, so the `catch`'s
-`abort()` is refused and the `COMMIT`'s own error is the one rethrown.
+pinned connection goes back to the pool — or is dropped, when the teardown had to cut off a
+statement that had already reached the server, whose slot then stays counted until that
+statement's deadline (see
+**[Commit and rollback](/manual/ADI/Databases/SQL/Transaction/overview/#commit-and-rollback)**).
+The recipe commits inside the `try`, so the `catch` also ends a transaction that `commit()`
+could not close: a `Commit` listener that throws (see
+**[Events](/manual/ADI/Databases/SQL/Transaction/overview/#events)**) or a statement the work
+left in flight, which makes `commit()` return a refused operation. When the `COMMIT` itself
+fails — a deferred constraint, for example, which makes PostgreSQL roll the whole transaction
+back — `commit()` has already closed the transaction, so the `catch`'s `abort()` is refused and
+the `COMMIT`'s own error is the one rethrown.
 
 The `catch` uses `abort()`, not `rollback()`: it composes the top-level `ROLLBACK` at any
 depth, so it also unwinds every savepoint level the work opened (an unnamed `rollback()` only
@@ -120,6 +124,8 @@ transaction (see
 Savepoints are nested checkpoints inside the open transaction:
 
 ```php
+use Throwable;
+
 $Transaction = $Database->begin();
 $Database->await($Transaction->Operation);
 
@@ -156,9 +162,9 @@ committing the outer transaction.
 ## Engine notes
 
 - **PostgreSQL** — a statement that fails inside a transaction aborts the whole block. Every
-  later statement is refused, and the eventual `COMMIT` is answered as a rollback: the
-  transaction is discarded. Catching an error and carrying on therefore does not save the
-  work done before it, so `commit()` fails with
+  later statement fails on the server (SQLSTATE `25P02`), and the eventual `COMMIT` is
+  answered as a rollback: the transaction is discarded. Catching an error and carrying on
+  therefore does not save the work done before it, so `commit()` fails with
   `SQL transaction was rolled back by the server: a statement inside it had failed.` Use a
   savepoint around the statement you expect to fail, `rollback('name')` on it, then
   `release('name')`, as the savepoint recipe above does.

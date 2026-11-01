@@ -71,8 +71,8 @@ catch (Throwable $Throwable) {
       $Database->await($Transaction->abort());
    }
    catch (Throwable) {
-      // Refused: the COMMIT already ended the transaction, or the session is gone and the
-      // server rolled the work back. Keep the original error.
+      // Refused or failed: the COMMIT already ended the transaction, or the session
+      // is gone and the server rolled the work back. Keep the original error.
    }
 
    throw $Throwable;
@@ -80,13 +80,17 @@ catch (Throwable $Throwable) {
 ```
 
 Depois de `commit()`, de um `rollback()` externo ou de `abort()`, a profundidade da transação
-vira `0` e a conexão fixada volta para o pool. A receita faz o commit dentro do `try`, então o
-`catch` também encerra uma transação que o `commit()` não conseguiu fechar: um listener de
-`Commit` que lança (veja **[Eventos](/manual/ADI/Databases/SQL/Transaction/overview/#eventos)**)
-ou uma instrução que o trabalho deixou em andamento, o que faz o `commit()` devolver uma operação
-recusada. Quando o próprio `COMMIT` falha (uma constraint deferida, por exemplo, que faz o
-PostgreSQL desfazer a transação inteira), o `commit()` já fechou a transação, então o `abort()` do
-`catch` é recusado e o erro relançado é o do próprio `COMMIT`.
+vira `0` e a conexão fixada volta para o pool — ou é derrubada, quando o teardown precisou cortar
+uma instrução que já tinha chegado ao servidor, e a vaga dela continua contada até o deadline
+dessa instrução (veja
+**[Commit e rollback](/manual/ADI/Databases/SQL/Transaction/overview/#commit-e-rollback)**). A
+receita faz o commit dentro do `try`, então o `catch` também encerra uma transação que o
+`commit()` não conseguiu fechar: um listener de `Commit` que lança (veja
+**[Eventos](/manual/ADI/Databases/SQL/Transaction/overview/#eventos)**) ou uma instrução que o
+trabalho deixou em andamento, o que faz o `commit()` devolver uma operação recusada. Quando o
+próprio `COMMIT` falha (uma constraint deferida, por exemplo, que faz o PostgreSQL desfazer a
+transação inteira), o `commit()` já fechou a transação, então o `abort()` do `catch` é recusado e
+o erro relançado é o do próprio `COMMIT`.
 
 O `catch` usa `abort()`, e não `rollback()`: ele compõe o `ROLLBACK` de nível superior em
 qualquer profundidade, então também desfaz todos os níveis de savepoint que o trabalho abriu
@@ -120,6 +124,8 @@ transação (veja
 Savepoints são checkpoints aninhados dentro da transação aberta:
 
 ```php
+use Throwable;
+
 $Transaction = $Database->begin();
 $Database->await($Transaction->Operation);
 
@@ -156,9 +162,9 @@ transação externa.
 ## Notas por engine
 
 - **PostgreSQL** — um statement que falha dentro de uma transação aborta o bloco inteiro.
-  Todo statement seguinte é recusado, e o `COMMIT` final é respondido como rollback: a
-  transação é descartada. Capturar o erro e seguir em frente, portanto, não salva o trabalho
-  feito antes dele, e o `commit()` falha com
+  Todo statement seguinte falha no servidor (SQLSTATE `25P02`), e o `COMMIT` final é
+  respondido como rollback: a transação é descartada. Capturar o erro e seguir em frente,
+  portanto, não salva o trabalho feito antes dele, e o `commit()` falha com
   `SQL transaction was rolled back by the server: a statement inside it had failed.` Use um
   savepoint em volta do statement que você espera falhar, faça `rollback('name')` nele e
   depois `release('name')`, como a receita de savepoints acima faz.

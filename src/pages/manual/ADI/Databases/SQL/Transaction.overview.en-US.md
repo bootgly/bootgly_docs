@@ -169,10 +169,11 @@ an ordinary statement and is refused like any other.
 
 ### Abort or roll back
 
-`abort()` is the teardown without conditions. It composes the top-level `ROLLBACK` at any depth,
-which ends every savepoint with it, discards an outstanding statement as the outer `rollback()`
-does, and gives the pool reservation back. Its only refusal is `SQL transaction is not active.` An
-outer `rollback()` is a `Rollback` event followed by exactly that `abort()`.
+`abort()` is the teardown that neither depth nor a statement in flight can stop. It composes the
+top-level `ROLLBACK` at any depth, which ends every savepoint with it, discards an outstanding
+statement as the outer `rollback()` does, and gives the pool reservation back. Its only refusal is
+`SQL transaction is not active.`, and for now that refusal does not always mean the transaction is
+over (see below). An outer `rollback()` is a `Rollback` event followed by exactly that `abort()`.
 
 | | `rollback()` | `rollback('name')` | `abort()` |
 | --- | --- | --- | --- |
@@ -186,6 +187,18 @@ a caller that can no longer wait, such as a deferred response whose Fiber is bei
 a listener could not suspend. Use `rollback()` to undo one level, or to return to a savepoint and
 carry on.
 
+The one state `abort()` cannot end, for now, is a `BEGIN` still parked in `pending`, waiting for
+the pool to free a connection. Such a transaction reads as not active, so `abort()` and an outer
+`rollback()` are refused — and the refusal ends nothing. The `BEGIN` stays queued and runs once
+capacity frees, leaving a reserved connection idle inside a transaction the caller has already
+given up on. Await the `BEGIN` before tearing down: it then either runs, and `abort()` ends the
+transaction, or — on a saturated pool — fails at once with
+`Database pool has no capacity for the operation.` and leaves the queue. A caller that must not
+block withdraws it instead: while `$Transaction->Operation->state` is `OperationStates::Pending`,
+that operation is the parked `BEGIN`, and `$Database->withdraw($Transaction->Operation)` drops it
+without sending anything (see
+**[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations)**).
+
 ## Savepoints
 
 ```php
@@ -197,10 +210,13 @@ $Transaction->depth;                   // 2
 $Transaction->release('inner')->error; // SQL transaction savepoint is not available.
 ```
 
-`save()` creates a savepoint and adds a level to `depth`; without a name, Bootgly generates
-`bootgly_0`, `bootgly_1` and so on. `begin()` on an open transaction does the same, and `commit()`
-above depth `1` releases the current savepoint. `release()` releases the current savepoint, or a
-named one, and `rollback()` without a name rolls back the current savepoint and ends its level.
+`save()` creates a savepoint and adds a level to `depth`. Without a name, Bootgly names it
+`bootgly_<n>`, where `n` counts every savepoint this object has created, named ones included, and
+keeps counting when the object is reused: after `save('outer')` and `save('inner')`, a bare
+`save()` creates `bootgly_2`. Name the savepoint yourself when you need to target it. `begin()` on
+an open transaction does what `save()` does, and `commit()` above depth `1` releases the current
+savepoint. `release()` releases the current savepoint, or a named one, and `rollback()` without a
+name rolls back the current savepoint and ends its level.
 
 A **named** teardown reaches further than one level, because that is what the server does.
 `ROLLBACK TO SAVEPOINT x` destroys every savepoint established after `x` and keeps `x` itself;
@@ -232,7 +248,7 @@ keyword of the statement the call would have composed: `BEGIN`, `SAVEPOINT`, `RE
 | Message | Returned by | When |
 | --- | --- | --- |
 | `SQL transaction operation is still active.` | `begin()`, `query()`, `commit()`, `save()`, `release()`, and `rollback()` at a savepoint level or with a name | The previous statement has not finished |
-| `SQL transaction is not active.` | `query()`, `commit()`, `rollback()`, `abort()`, `save()`, and `begin()` while `depth` is `1` or more | A `COMMIT` or top-level `ROLLBACK` already closed the transaction, its `BEGIN` failed, or the session its `BEGIN` ran on is gone |
+| `SQL transaction is not active.` | `query()`, `commit()`, `rollback()`, `abort()`, `save()`, and `begin()` while `depth` is `1` or more | A `COMMIT` or top-level `ROLLBACK` already closed the transaction, its `BEGIN` failed, or the session its `BEGIN` ran on is gone. For now, `rollback()` and `abort()` also return it while the `BEGIN` is still parked in `pending`, and that refusal ends nothing: the `BEGIN` still runs once capacity frees (see [Abort or roll back](#abort-or-roll-back)) |
 | `SQL transaction savepoint is not active.` | `release()` | No savepoint is open, or the transaction is not active |
 | `SQL transaction savepoint is not available.` | `release('name')`, `rollback('name')` | The name is not open: never created, or destroyed by an earlier named teardown |
 
@@ -374,8 +390,8 @@ map (string $Entity, null|object $Scope = null, null|Awaiting $Awaiting = null):
 ```
 
 Creates an ORM repository for a mapped entity class whose statements run through this transaction.
-`$Awaiting` defaults to the transaction, so eager and lazy relations resolve during `hydrate()`;
-`$Scope` is the read-after-write scope its writes mark.
+`$Awaiting` defaults to the transaction, so eager relations resolve during `hydrate()` and lazy
+ones on first access; `$Scope` is the read-after-write scope its writes mark.
 
 ```php
 await (Operation $Operation): Operation
@@ -406,14 +422,15 @@ abort (): Operation
 
 Composes the top-level `ROLLBACK` at any depth: discards an outstanding statement, ends every
 savepoint and gives the pool reservation back. Emits no event, and is refused only when the
-transaction is not active. Since 1.0.5.
+transaction is not active — for now also while its `BEGIN` is still parked in `pending`, which the
+refusal leaves queued (see [Abort or roll back](#abort-or-roll-back)). Since 1.0.5.
 
 ```php
 save (null|string $name = null): Operation
 ```
 
-Creates a savepoint and adds a level to `depth`; without a name, it is `bootgly_0`, `bootgly_1` and
-so on. Emits no event.
+Creates a savepoint and adds a level to `depth`; without a name, it is `bootgly_<n>`, where `n`
+counts every savepoint this object has created, named ones included. Emits no event.
 
 ```php
 release (null|string $name = null): Operation

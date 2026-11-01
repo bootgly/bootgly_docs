@@ -131,8 +131,9 @@ banco travado). Um valor que não é escalar, como um array, cai no padrão sem 
 `secure.verify` e `secure.name`: ali, um valor que não é escalar lança erro (veja [TLS](#tls)), e
 só `null` assume o padrão.
 
-`new SQL()` também aceita as chaves SQL, que `Bootgly\ADI\Databases\SQL\Config` adiciona; como cada
-uma é lida, e o que uma réplica herda, está em
+`new SQL()` também aceita as chaves abaixo: `statements`, `migrations` e `routing.sticky`, que
+`Bootgly\ADI\Databases\SQL\Config` adiciona, e `replicas`, que esta classe lê, mas só o `SQL` abre.
+Como cada uma é lida, e o que uma réplica herda, está em
 **[Chaves de config do SQL](/manual/ADI/Databases/SQL/overview/#chaves-de-config)**:
 
 | Chave | Padrão | Quem lê |

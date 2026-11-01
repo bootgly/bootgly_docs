@@ -170,11 +170,12 @@ uma instrução comum e é recusado como qualquer outra.
 
 ### Abortar ou fazer rollback
 
-O `abort()` é o teardown sem condições. Ele compõe o `ROLLBACK` de nível superior em qualquer
-profundidade, o que encerra todos os savepoints junto, descarta uma instrução pendente como o
-`rollback()` externo faz e devolve a reserva do pool. A única recusa dele é
-`SQL transaction is not active.` Um `rollback()` externo é um evento `Rollback` seguido exatamente
-desse `abort()`.
+O `abort()` é o teardown que nem a profundidade nem uma instrução em voo conseguem impedir. Ele
+compõe o `ROLLBACK` de nível superior em qualquer profundidade, o que encerra todos os savepoints
+junto, descarta uma instrução pendente como o `rollback()` externo faz e devolve a reserva do pool.
+A única recusa dele é `SQL transaction is not active.`, e por enquanto essa recusa nem sempre quer
+dizer que a transação acabou (veja abaixo). Um `rollback()` externo é um evento `Rollback` seguido
+exatamente desse `abort()`.
 
 | | `rollback()` | `rollback('name')` | `abort()` |
 | --- | --- | --- | --- |
@@ -188,6 +189,18 @@ trabalho deixou aberto, e num caller que não pode mais esperar, como uma respos
 Fiber está sendo destruído, onde um listener não conseguiria suspender. Use `rollback()` para
 desfazer um nível, ou para voltar a um savepoint e seguir em frente.
 
+O único estado que o `abort()` não consegue encerrar, por enquanto, é um `BEGIN` ainda estacionado
+em `pending`, esperando o pool liberar uma conexão. Uma transação assim lê como inativa, então o
+`abort()` e um `rollback()` externo são recusados — e a recusa não encerra nada. O `BEGIN` continua
+na fila e roda quando a capacidade libera, deixando uma conexão reservada ociosa dentro de uma
+transação que o caller já abandonou. Aguarde o `BEGIN` antes do teardown: ele então ou roda, e o
+`abort()` encerra a transação, ou — num pool saturado — falha na hora com
+`Database pool has no capacity for the operation.` e sai da fila. Um caller que não pode bloquear o
+retira em vez disso: enquanto `$Transaction->Operation->state` é `OperationStates::Pending`, essa
+operação é o `BEGIN` estacionado, e `$Database->withdraw($Transaction->Operation)` o descarta sem
+enviar nada (veja
+**[Operações retiradas](/manual/ADI/Database/Pool/overview/#operações-retiradas)**).
+
 ## Savepoints
 
 ```php
@@ -199,10 +212,13 @@ $Transaction->depth;                   // 2
 $Transaction->release('inner')->error; // SQL transaction savepoint is not available.
 ```
 
-O `save()` cria um savepoint e soma um nível a `depth`; sem nome, o Bootgly gera `bootgly_0`,
-`bootgly_1` e assim por diante. O `begin()` numa transação aberta faz o mesmo, e o `commit()` acima
-da profundidade `1` libera o savepoint atual. O `release()` libera o savepoint atual, ou um nomeado,
-e o `rollback()` sem nome desfaz o savepoint atual e encerra o nível dele.
+O `save()` cria um savepoint e soma um nível a `depth`. Sem nome, o Bootgly o chama de
+`bootgly_<n>`, onde `n` conta todo savepoint que este objeto já criou, inclusive os nomeados, e
+continua contando quando o objeto é reusado: depois de `save('outer')` e `save('inner')`, um
+`save()` sem nome cria `bootgly_2`. Dê você mesmo o nome ao savepoint quando precisar mirar nele. O
+`begin()` numa transação aberta faz o que o `save()` faz, e o `commit()` acima da profundidade `1`
+libera o savepoint atual. O `release()` libera o savepoint atual, ou um nomeado, e o `rollback()`
+sem nome desfaz o savepoint atual e encerra o nível dele.
 
 Um teardown **nomeado** alcança mais de um nível, porque é isso que o servidor faz.
 `ROLLBACK TO SAVEPOINT x` destrói todo savepoint criado depois de `x` e mantém o próprio `x`;
@@ -234,7 +250,7 @@ instrução que a chamada teria composto: `BEGIN`, `SAVEPOINT`, `RELEASE SAVEPOI
 | Mensagem | Devolvida por | Quando |
 | --- | --- | --- |
 | `SQL transaction operation is still active.` | `begin()`, `query()`, `commit()`, `save()`, `release()`, e `rollback()` num nível de savepoint ou com nome | A instrução anterior ainda não terminou |
-| `SQL transaction is not active.` | `query()`, `commit()`, `rollback()`, `abort()`, `save()`, e `begin()` enquanto `depth` é `1` ou mais | Um `COMMIT` ou `ROLLBACK` de nível superior já fechou a transação, o `BEGIN` dela falhou, ou a sessão em que o `BEGIN` rodou deixou de existir |
+| `SQL transaction is not active.` | `query()`, `commit()`, `rollback()`, `abort()`, `save()`, e `begin()` enquanto `depth` é `1` ou mais | Um `COMMIT` ou `ROLLBACK` de nível superior já fechou a transação, o `BEGIN` dela falhou, ou a sessão em que o `BEGIN` rodou deixou de existir. Por enquanto, `rollback()` e `abort()` também a devolvem enquanto o `BEGIN` ainda está estacionado em `pending`, e essa recusa não encerra nada: o `BEGIN` ainda roda quando a capacidade libera (veja [Abortar ou fazer rollback](#abortar-ou-fazer-rollback)) |
 | `SQL transaction savepoint is not active.` | `release()` | Nenhum savepoint está aberto, ou a transação não está ativa |
 | `SQL transaction savepoint is not available.` | `release('name')`, `rollback('name')` | O nome não está aberto: nunca foi criado, ou um teardown nomeado anterior o destruiu |
 
@@ -378,8 +394,9 @@ map (string $Entity, null|object $Scope = null, null|Awaiting $Awaiting = null):
 ```
 
 Cria um repositório ORM para uma classe de entidade mapeada cujas instruções rodam por esta
-transação. `$Awaiting` tem a transação como padrão, então relações eager e lazy resolvem durante o
-`hydrate()`; `$Scope` é o escopo de read-after-write que as escritas dele marcam.
+transação. `$Awaiting` tem a transação como padrão, então relações eager resolvem durante o
+`hydrate()` e as lazy no primeiro acesso; `$Scope` é o escopo de read-after-write que as escritas
+dele marcam.
 
 ```php
 await (Operation $Operation): Operation
@@ -410,14 +427,16 @@ abort (): Operation
 
 Compõe o `ROLLBACK` de nível superior em qualquer profundidade: descarta uma instrução pendente,
 encerra todos os savepoints e devolve a reserva do pool. Não emite evento, e só é recusado quando a
-transação não está ativa. Desde a 1.0.5.
+transação não está ativa — por enquanto também enquanto o `BEGIN` dela ainda está estacionado em
+`pending`, que a recusa deixa na fila (veja [Abortar ou fazer rollback](#abortar-ou-fazer-rollback)).
+Desde a 1.0.5.
 
 ```php
 save (null|string $name = null): Operation
 ```
 
-Cria um savepoint e soma um nível a `depth`; sem nome, ele é `bootgly_0`, `bootgly_1` e assim por
-diante. Não emite evento.
+Cria um savepoint e soma um nível a `depth`; sem nome, ele é `bootgly_<n>`, onde `n` conta todo
+savepoint que este objeto já criou, inclusive os nomeados. Não emite evento.
 
 ```php
 release (null|string $name = null): Operation

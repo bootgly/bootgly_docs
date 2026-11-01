@@ -47,11 +47,12 @@ modo — a mesma regra do primário: `prefer`/`require` sem verificação, `veri
 verificando — então repita `verify` na réplica para manter um opt-in explícito do primário. Uma
 réplica que não declara nem `mode` nem `verify` herda os flags resolvidos do primário. Um `cafile`
 só é herdado por uma réplica que verifica; um que a própria réplica declara sob um modo sem
-verificação é recusado na config. Seja qual for o modo, o `secure.peer` de uma réplica tem como
-padrão o próprio `host`, nunca o `peer` do primário. Desde a 1.0.3 — antes, a réplica herdava os flags do primário
-fosse qual fosse o seu próprio modo. Uma réplica PostgreSQL alcançada sob `prefer` que recusa TLS e
-pede uma senha cleartext ou MD5 (ou SCRAM abaixo de 4096 iterações) é recusada pelo próprio host e modo (loopback isento), e a leitura
-cai para o primário.
+verificação é recusado na config. Desde a 1.0.3, o próprio `mode` da réplica decide os flags
+dela; antes, uma réplica que declarava `prefer` ou `require` ainda recebia os do primário. Seja
+qual for o modo, o `secure.peer` de uma réplica tem como padrão o próprio `host`, nunca o `peer`
+do primário. Uma réplica PostgreSQL alcançada sob `prefer` que recusa TLS e pede uma senha
+cleartext ou MD5 (ou SCRAM abaixo de 4096 iterações) é recusada pelo próprio host e modo (loopback
+isento), e a leitura cai para o primário.
 
 `routing.sticky` é a janela best-effort de read-after-write em segundos (padrão `5.0`; `0` a
 desliga). Depois de uma escrita, leituras dentro do mesmo escopo lógico ficam no primário até a
@@ -139,7 +140,9 @@ SQL raw usa um classificador conservador, que lê a primeira palavra-chave da in
 Depois da primeira palavra-chave, o classificador só procura essas palavras de escrita num `WITH`
 e `ANALYZE` depois de `EXPLAIN`. Um `SELECT` que chama uma função que escreve — o `nextval()` do
 PostgreSQL, por exemplo — conta portanto como leitura, e por enquanto um `SELECT ... FOR UPDATE`
-raw também: faça o lock pelo `lock()` do builder, ou dentro de uma transação.
+raw também, que pode chegar a uma réplica. Faça locks de linha dentro de uma transação: ela roda
+numa conexão fixada do primário, e os locks dela duram até o commit ou o rollback. Fora de uma
+transação, um `lock()` do builder chega ao primário, mas o lock dele termina junto com a instrução.
 
 Uma `Query` que você monta à mão nunca é classificada como uma string raw: o flag `reading` dela
 decide, e o padrão é `false`.

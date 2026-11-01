@@ -378,8 +378,11 @@ Cria uma operação SQL pendente para `$sql`, guardado em `SQL`.
 fail (string $error, null|string $code = null): self
 ```
 
-Falha a operação com um `error` e o `code` do driver, e então anuncia `Events::Failed` — uma vez,
-mesmo quando uma falha posterior substitui a mensagem.
+Falha a operação com um `error` e o `code` do driver, e então anuncia `Events::Failed` uma vez por
+tentativa: falhar de novo só substitui a mensagem e o código, até o `retry()` rearmá-la. O fallback
+de uma leitura que falhou numa réplica é um desses retries, então a repetição dela no primário
+anuncia `Events::Executed` ou `Events::Failed` de novo — veja
+**[Eventos do banco SQL](/manual/ADI/Databases/SQL/overview/#eventos)**.
 
 ```php
 public static float $slow

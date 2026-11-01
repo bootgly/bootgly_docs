@@ -13,7 +13,8 @@ Both extend the same asynchronous core, `Bootgly\ADI\Database`
 (**[Configuration](/manual/ADI/Database/Config/overview/)**), a connection pool
 (**[Connection pool](/manual/ADI/Database/Pool/overview/)**) and the operation life cycle; the
 facade adds the verbs of its paradigm. The verb that runs something — `query()` on `SQL`,
-`command()` on `KV` — returns a pending operation at once, and four calls drive it whatever the
+`command()` on `KV` — returns a pending operation at once; only on SQLite does an operation that
+gets the connection run inside `query()` instead. Four calls drive an operation whatever the
 paradigm: `await()` waits until it finishes and throws a `RuntimeException` carrying its `error`
 when it fails
 ([Await synchronously](/manual/ADI/Database/Pool/overview/#await-synchronously)), `advance()`
@@ -74,10 +75,11 @@ catch (RuntimeException $Exception) {
 ```
 
 `query()` takes raw SQL with its parameters, a Query Builder or a compiled `Query`, and returns a
-pending `SQL\Operation`; `await()` drives it to the end and returns it. A failed statement keeps
-the server's message in `error` and its code in `code` — `relation "users" does not exist` and
-`42P01` on PostgreSQL — and `await()` throws that message. The facade, its config keys, read
-replicas and events are on the **[SQL facade](/manual/ADI/Databases/SQL/overview/)** page;
+pending `SQL\Operation` (on SQLite, one that gets the connection has already run); `await()` drives
+it to the end and returns it. A failed statement keeps the server's message in `error` and its code
+in `code` — `relation "users" does not exist` and `42P01` on PostgreSQL — and `await()` throws that
+message. The facade, its config keys, read replicas and events are on the
+**[SQL facade](/manual/ADI/Databases/SQL/overview/)** page;
 **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)**,
 **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** and
 **[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** go deeper.

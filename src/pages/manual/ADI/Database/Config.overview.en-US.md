@@ -131,8 +131,9 @@ or `secure` that is not an array takes the default block. The exceptions are `se
 `secure.name`: a value there that is not a scalar throws (see [TLS](#tls)), and only `null` takes
 the default.
 
-`new SQL()` also takes the SQL keys, which `Bootgly\ADI\Databases\SQL\Config` adds; how each one
-is read, and what a replica inherits, is in
+`new SQL()` also takes the keys below: `statements`, `migrations` and `routing.sticky`, which
+`Bootgly\ADI\Databases\SQL\Config` adds, and `replicas`, which this class parses but only `SQL`
+opens. How each one is read, and what a replica inherits, is in
 **[SQL config keys](/manual/ADI/Databases/SQL/overview/#config-keys)**:
 
 | Key | Default | Read by |

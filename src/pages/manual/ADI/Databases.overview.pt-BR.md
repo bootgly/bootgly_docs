@@ -13,8 +13,9 @@ As duas estendem o mesmo núcleo assíncrono, `Bootgly\ADI\Database`
 conexão (**[Configuração](/manual/ADI/Database/Config/overview/)**), um pool de conexões
 (**[Pool de conexões](/manual/ADI/Database/Pool/overview/)**) e o ciclo de vida das operações; a
 fachada adiciona os verbos do seu paradigma. O verbo que executa algo — `query()` no `SQL`,
-`command()` no `KV` — retorna na hora uma operação pendente, e quatro chamadas a conduzem seja qual
-for o paradigma: `await()` espera até ela terminar e lança uma `RuntimeException` com o seu `error`
+`command()` no `KV` — retorna na hora uma operação pendente; só no SQLite uma operação que consegue
+a conexão roda dentro de `query()`. Quatro chamadas conduzem uma operação seja qual for o
+paradigma: `await()` espera até ela terminar e lança uma `RuntimeException` com o seu `error`
 quando ela falha
 ([Aguarde de forma síncrona](/manual/ADI/Database/Pool/overview/#aguarde-de-forma-síncrona)),
 `advance()` a move um passo sem esperar, `cancel()` pede ao servidor que a pare quando o driver
@@ -75,11 +76,11 @@ catch (RuntimeException $Exception) {
 ```
 
 `query()` recebe SQL raw com os seus parâmetros, um Query Builder ou uma `Query` compilada, e
-retorna uma `SQL\Operation` pendente; `await()` a conduz até o fim e a retorna. Um statement que
-falha guarda a mensagem do servidor em `error` e o seu código em `code` —
-`relation "users" does not exist` e `42P01` no PostgreSQL — e `await()` lança essa mensagem. A
-fachada, as suas chaves de config, as réplicas de leitura e os eventos estão na página da
-**[fachada SQL](/manual/ADI/Databases/SQL/overview/)**;
+retorna uma `SQL\Operation` pendente (no SQLite, uma que consegue a conexão já rodou); `await()` a
+conduz até o fim e a retorna. Um statement que falha guarda a mensagem do servidor em `error` e o
+seu código em `code` — `relation "users" does not exist` e `42P01` no PostgreSQL — e `await()`
+lança essa mensagem. A fachada, as suas chaves de config, as réplicas de leitura e os eventos estão
+na página da **[fachada SQL](/manual/ADI/Databases/SQL/overview/)**;
 **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)**,
 **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** e
 **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** vão mais fundo.
