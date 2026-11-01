@@ -276,10 +276,9 @@ column gives `1366: Incorrect integer value: 'abc' for column 'id' at row 1`.
   `'18446744073709551615'`.
 - `NAN`, `INF` and `-INF` cannot be stored: writing one to a `DOUBLE` column fails with
   `1264: Out of range value for column 'ratio' at row 1`.
-- A missing value fails with `1835: Malformed communication packet.`, but a surplus one is not
-  checked for now: the server reads its bytes in place of the values, so `SELECT ? AS a, ? AS b`
-  bound with `[1, 2, 3]` reports success and returns `65544` and `131072`. Pass exactly one value
-  per placeholder.
+- A wrong number of values fails before the statement runs: `SELECT ? AS a, ? AS b` bound with
+  `[1, 2, 3]` fails with `MySQL statement expects 2 parameters, 3 given.`, and bound with `[5]`
+  with `MySQL statement expects 2 parameters, 1 given.` Pass exactly one value per placeholder.
 
 The server derives each placeholder's type from the values bound to a prepared statement, and the
 driver reuses one prepared statement for every `query()` with the same SQL on a connection. Where
@@ -310,7 +309,7 @@ turns the number `42` into the text `'42'`, and a value that does not convert ke
   `INSERT INTO t (a, b) VALUES (:a, :b)` with `['a' => 'half']` stores `b` as `NULL`. PostgreSQL
   refuses the same mismatch with
   `bind message supplies 1 parameters, but prepared statement "bootgly_…" requires 2`, and MySQL
-  with `1835: Malformed communication packet.` A value with no placeholder fails: a third value for
+  with `MySQL statement expects 2 parameters, 1 given.` A value with no placeholder fails: a third value for
   two positional placeholders with `Unable to bind parameter number 3`, and a key with no matching
   name — `'c'` in that `INSERT` — with
   `SQLite cannot bind the parameter "c": the statement has no matching placeholder.`

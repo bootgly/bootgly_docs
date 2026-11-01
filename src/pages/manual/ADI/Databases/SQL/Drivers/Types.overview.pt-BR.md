@@ -282,10 +282,10 @@ em uma coluna `INT` dá `1366: Incorrect integer value: 'abc' for column 'id' at
   como `'18446744073709551615'`.
 - `NAN`, `INF` e `-INF` não podem ser guardados: escrever um deles em uma coluna `DOUBLE` falha com
   `1264: Out of range value for column 'ratio' at row 1`.
-- Um valor que falta falha com `1835: Malformed communication packet.`, mas um que sobra não é
-  conferido por enquanto: o servidor lê os bytes dele no lugar dos valores, então
-  `SELECT ? AS a, ? AS b` vinculado com `[1, 2, 3]` informa sucesso e retorna `65544` e `131072`.
-  Passe exatamente um valor por placeholder.
+- Um número errado de valores falha antes de a instrução rodar: `SELECT ? AS a, ? AS b`
+  vinculado com `[1, 2, 3]` falha com `MySQL statement expects 2 parameters, 3 given.`, e
+  vinculado com `[5]` com `MySQL statement expects 2 parameters, 1 given.` Passe exatamente um
+  valor por placeholder.
 
 O servidor deriva o tipo de cada placeholder dos valores vinculados a um prepared statement, e o
 driver reaproveita um prepared statement para todo `query()` com o mesmo SQL em uma conexão. Onde o
@@ -316,7 +316,7 @@ dele — `'abc'` continua texto em uma coluna `INTEGER`.
   enquanto: `INSERT INTO t (a, b) VALUES (:a, :b)` com `['a' => 'half']` guarda `b` como `NULL`. O
   PostgreSQL recusa a mesma divergência com
   `bind message supplies 1 parameters, but prepared statement "bootgly_…" requires 2`, e o MySQL
-  com `1835: Malformed communication packet.` Um valor sem placeholder falha: um terceiro valor para
+  com `MySQL statement expects 2 parameters, 1 given.` Um valor sem placeholder falha: um terceiro valor para
   dois placeholders posicionais com `Unable to bind parameter number 3`, e uma chave sem nome
   correspondente — `'c'` nesse `INSERT` — com
   `SQLite cannot bind the parameter "c": the statement has no matching placeholder.`

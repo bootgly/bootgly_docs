@@ -161,21 +161,18 @@ Each value is bound with the type its PHP type maps to:
 
 An array, or an object that is not a `DateTimeInterface` — a `Stringable` one included — fails the
 operation with `MySQL cannot bind the parameter at position 1.`, counting positions from `0`;
-`await()` throws it, and the connection stays usable. For now, one case leaves the connection stuck
-instead: a command composed while the `COM_STMT_PREPARE` of the same SQL is still in flight on its
-connection binds its values only once it reaches the head of the queue, and when they cannot be
-bound there, the operation fails but the connection keeps waiting for an answer that never comes —
-every operation handed it afterwards fails at its deadline.
+`await()` throws it, and the connection stays usable — also when the command was composed while
+the `COM_STMT_PREPARE` of the same SQL was still in flight, and binds its values only once it
+reaches the head of the queue.
 **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compares these bindings with
 PostgreSQL's and SQLite's.
 
-Pass exactly one value per placeholder. For now the driver checks neither a missing nor a surplus
-value, and the server reads the bytes it receives as the values it expects. A wrong count therefore
-fails the operation — with a server error such as `1835: Malformed communication packet.` — only
-when those bytes do not form valid values; otherwise the statement runs with the values they form
-and reports success: `SELECT ? AS first` bound with `[2, 1]` returns `131080`,
-`SELECT ? AS a, ? AS b` bound with one 768-byte string returns `'aaa'` as `a`, and an `INSERT`
-stores numbers nobody sent.
+Pass exactly one value per placeholder. The driver checks the count against the placeholders the
+server declared when it prepared the statement, and fails the operation before the statement runs,
+with no server error code (`code` is `null`): `SELECT ? AS a, ? AS b` bound with `[1, 2, 3]` fails
+with `MySQL statement expects 2 parameters, 3 given.`, and bound with `[5]` with
+`MySQL statement expects 2 parameters, 1 given.` Values for SQL with no placeholder fail the same
+way (`expects 0 parameters`). The statement stays cached: it is valid, only the call is wrong.
 
 ## Prepared statements
 

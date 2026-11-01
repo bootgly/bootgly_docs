@@ -162,21 +162,19 @@ Cada valor é ligado com o tipo para o qual o tipo PHP dele mapeia:
 
 Um array, ou um objeto que não é `DateTimeInterface` — inclusive um `Stringable` —, falha a operação
 com `MySQL cannot bind the parameter at position 1.`, contando as posições a partir de `0`; o
-`await()` a lança, e a conexão continua utilizável. Por enquanto, um caso deixa a conexão travada em
-vez disso: um comando composto enquanto o `COM_STMT_PREPARE` do mesmo SQL ainda está em voo na
-conexão dele só liga os valores quando chega à cabeça da fila, e quando eles não podem ser ligados
-ali, a operação falha mas a conexão continua esperando uma resposta que nunca vem — toda operação
-entregue a ela depois falha no prazo dela.
+`await()` a lança, e a conexão continua utilizável — também quando o comando foi composto enquanto
+o `COM_STMT_PREPARE` do mesmo SQL ainda estava em voo, e só liga os valores ao chegar à cabeça da
+fila.
 **[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compara esses binds com os do
 PostgreSQL e do SQLite.
 
-Passe exatamente um valor por placeholder. Por enquanto o driver não confere nem um valor que falta
-nem um que sobra, e o servidor lê os bytes que recebe como os valores que espera. Uma contagem
-errada, portanto, só falha a operação — com um erro do servidor como
-`1835: Malformed communication packet.` — quando esses bytes não formam valores válidos; senão o
-statement roda com os valores que eles formam e informa sucesso: `SELECT ? AS first` ligado com
-`[2, 1]` retorna `131080`, `SELECT ? AS a, ? AS b` ligado com uma única string de 768 bytes retorna
-`'aaa'` como `a`, e um `INSERT` grava números que ninguém enviou.
+Passe exatamente um valor por placeholder. O driver confere a contagem com os placeholders que o
+servidor declarou ao preparar o statement, e falha a operação antes de o statement rodar, sem
+código de erro do servidor (`code` é `null`): `SELECT ? AS a, ? AS b` ligado com `[1, 2, 3]` falha
+com `MySQL statement expects 2 parameters, 3 given.`, e ligado com `[5]` com
+`MySQL statement expects 2 parameters, 1 given.` Valores para um SQL sem placeholder falham do mesmo
+jeito (`expects 0 parameters`). O statement continua em cache: ele é válido, só a chamada está
+errada.
 
 ## Prepared statements
 
