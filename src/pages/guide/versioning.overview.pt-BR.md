@@ -52,9 +52,10 @@ está marcada `@internal`, pode mudar em qualquer release.
 
 ## Política de descontinuação
 
-- Uma API substituída é **descontinuada na minor que traz a substituta**: a doc diz isso, as
-  notas de release listam, e usá-la emite um aviso `E_USER_DEPRECATED` onde existe um gancho em
-  runtime.
+- Uma API substituída é **descontinuada na minor que traz a substituta**: o PHPDoc dela ganha
+  uma tag `@deprecated`, a doc diz isso e as notas de release listam. Usá-la não emite aviso em
+  runtime — sob o handler de erros do framework, um aviso `E_USER_DEPRECATED` é lançado como
+  `ErrorException`, o que quebraria toda aplicação que ainda a chama.
 - **Uma descontinuação nunca autoriza uma remoção na minor seguinte.** O jeito descontinuado
   continua funcionando, inalterado, até a próxima major.
 - A próxima major (`2.0.0`) remove o que foi descontinuado durante a `1.x` — nada que não tenha

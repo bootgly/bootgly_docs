@@ -241,25 +241,42 @@ O Bootgly endurece o carregamento de configs com várias regras:
 
 ## Referência
 
-A classe `Bootgly\API\Environment` é o lado "ambiente do processo" da configuração: ela lê e escreve o ambiente real que o `bind()` consulta primeiro. Toda chave é composta como `Environment::$prefix . $key . Environment::$suffix` — ambos são strings públicas estáticas, vazias por padrão — **exceto** em `del()`, que recebe a chave literalmente.
+A classe `Bootgly\API\Environment` é o lado "ambiente do processo" da configuração: ela lê e escreve o ambiente real que o `bind()` consulta primeiro. Toda chave que você passa — para `get()`, `put()` e `del()`, ou num arquivo que `load()` lê — é composta como `Environment::$prefix . $key . Environment::$suffix`; ambos são strings públicas estáticas, vazias por padrão. `list()` e `save()` trabalham com os nomes reais.
 
 ```php
-public static function load ($file): bool
+public static function load (string $file): bool
 ```
 
-Faz o parse de um arquivo no estilo INI e escreve cada par no ambiente do processo através de `put()` (então prefixo/sufixo se aplicam). Retorna `false` quando o arquivo não existe e `true` caso contrário — inclusive quando o arquivo existe mas não pode ser parseado. Tipado como `string` pelo PHPDoc. Este é o equivalente imperativo da leitura de `.env` por escopo descrita acima: diferente de um `.env` de escopo, o que `load()` lê **vira** estado global do processo.
+Faz o parse de um arquivo no estilo INI e entrega cada par a `put()`, então o prefixo e o sufixo se aplicam e uma variável já definida é sobrescrita — o arquivo vence o ambiente real, o contrário do `bind()`. Retorna `false`, sem aplicar nada, quando o arquivo não existe, não é um arquivo regular (um diretório, um FIFO), não pode ser lido ou parseado, contém um byte NUL ou traz uma chave de array (`CHAVE[]=`, `CHAVE[nome]=`), e também quando `Environment::$prefix` ou `Environment::$suffix` contém `=` ou um byte NUL, já que `put()` recusaria todo nome composto; caso contrário retorna `true`. Este é o equivalente imperativo da leitura de `.env` por escopo descrita acima: diferente de um `.env` de escopo, o que `load()` lê **vira** estado global do processo.
+
+> [!WARNING]
+> `load()` exporta todo nome que o arquivo traz — `PATH`, `LD_PRELOAD` e `PHP_INI_SCAN_DIR` como qualquer outro — e todo processo que a aplicação criar depois os herda: quem escreve o arquivo escolhe quais binários esses processos encontram, quais bibliotecas eles pré-carregam e quais diretivas de `php.ini` eles leem. Nunca carregue um arquivo que outra conta possa escrever. Para ler um arquivo `.env`, use `Configs`, o leitor canônico descrito acima: ele mantém os valores locais ao escopo, aceita só nomes `[A-Z_][A-Z0-9_]*`, respeita `allow()` e `lock()` e não exporta nada.
 
 ```php
 public static function save (string $file): bool
 ```
 
-Escreve o ambiente em `$file` como linhas `CHAVE=valor`, uma por variável, retornando `false` apenas quando a escrita falha. Ele despeja `list()` — o ambiente **inteiro** do processo, não só as chaves que o Bootgly escreveu — então trate a saída como material secreto e nunca a aponte para um caminho dentro de um diretório servido.
+Escreve o ambiente **inteiro** do processo — toda variável que `getenv()` retorna — em `$file`, uma linha `CHAVE=valor` por variável: a forma sem aspas que o `docker --env-file` e leitores parecidos esperam. Um valor que a linha sem aspas não levaria intacto através do `load()` é escrito entre aspas, como `CHAVE="valor"` — por exemplo um que contém `;`, começa ou termina com espaço ou tab, ou vem entre aspas duplas. Um leitor que toma as linhas literalmente, como o `docker --env-file`, mantém essas aspas como parte do valor. Cada linha é conferida — ela precisa ser lida de volta exatamente como o seu par — antes de qualquer coisa ser escrita.
+
+A escrita é atômica e privada: as linhas vão para um arquivo temporário de nome aleatório ao lado de `$file`, que recebe o modo `0600` antes do primeiro byte ser escrito — também num diretório cuja ACL padrão daria mais acesso — e então é sincronizado em disco e renomeado por cima de `$file`. O que estava em `$file` é substituído, nunca escrito através: um arquivo novo, pertencente a quem chama, toma o lugar dele, então o dono, o grupo, o modo, a ACL, o rótulo SELinux e os hard links do arquivo antigo não são mantidos (outro hard link para o arquivo antigo continua com o conteúdo antigo), e um link é substituído em vez de seguido, então o alvo dele nunca é tocado. Num diretório sticky como `/tmp`, só o dono de uma entrada, o dono do diretório ou o root podem substituir uma entrada: um link que outra conta plantou em `$file` faz `save()` retornar `false` e fica como estava, a menos que quem chama seja dono do diretório ou root — aí o próprio link é substituído.
+
+Retorna `false`, deixando `$file` intacto, quando:
+
+- `$file` não é um caminho local — um stream wrapper como `php://filter` ou `compress.zlib://`;
+- alguma variável não tem uma linha que seja lida de volta como o seu par — uma quebra de linha no valor (uma função de shell exportada, um certificado de várias linhas) ou um nome que o formato INI não comporta (`NULL`, `YES`, `A~B`). Por isso `save()` sempre retorna `false` no Windows 64 bits, onde todo processo traz `ProgramFiles(x86)`;
+- o arquivo temporário não pode ficar privado (`0600`);
+- a escrita falha — por exemplo porque o diretório de `$file` não aceita escrita, mesmo que o próprio `$file` aceite, ou porque `$file` é um ponto de montagem: um arquivo único montado via bind mount num container (`docker run -v ./app.env:/app/.env`, uma montagem `subPath` do Kubernetes) não pode ser substituído, então monte o diretório dele.
+
+Nomes que `getenv()` deixa de fora (veja `list()`) não são escritos. As linhas levam os nomes reais, então carregar o arquivo de volta com um prefixo ou sufixo configurado compõe cada nome de novo: com o prefixo `APP_`, `APP_TOKEN` volta como `APP_APP_TOKEN` e `PATH` como `APP_PATH`.
+
+> [!WARNING]
+> `save()` despeja o ambiente **inteiro** do processo, não só as chaves que o Bootgly escreveu — tokens e credenciais herdados inclusive. Trate o arquivo como material secreto e nunca o aponte para um caminho dentro de um diretório servido.
 
 ```php
 public static function list (): array
 ```
 
-Retorna todo o ambiente do processo como `array<string,string>`, exatamente o que `getenv()` retorna. As chaves vêm literais: o prefixo e o sufixo não são removidos.
+Retorna todo o ambiente do processo como `array<string,string>`, exatamente o que `getenv()` retorna. As chaves vêm literais: o prefixo e o sufixo não são removidos. `getenv()` deixa de fora todo nome que contém `.`, espaço ou `[` — uma variável assim continua definida, `get()` continua lendo-a e processos filhos continuam herdando-a, mas ela falta nesta lista e no arquivo que `save()` escreve.
 
 ```php
 public static function get (string $key, null|string|false $default = null): false|string
@@ -277,10 +294,10 @@ Testa o ambiente em execução contra uma das constantes da classe: `Environment
 public static function put (string $key, string|int $value): bool
 ```
 
-Escreve uma variável no ambiente real do processo via `putenv()`, retornando se a escrita teve sucesso. Um `int` é convertido para string, então `get()` sempre lê uma string de volta. O valor é visível para `getenv()`, para a resolução do `bind()` e para processos criados depois — ele **não** é escrito em nenhum arquivo `.env`, e não alcança processos que já estão rodando.
+Escreve uma variável no ambiente real do processo via `putenv()`, retornando se a escrita teve sucesso. Um `int` é convertido para string, então `get()` sempre lê uma string de volta. Retorna `false`, sem escrever nada, quando `$key` é vazia, o nome composto (prefixo, chave e sufixo) contém `=` ou um byte NUL, ou quando `$value` contém um byte NUL — do contrário `putenv()` agiria sobre outra variável ou cortaria o valor. O valor é visível para `getenv()`, para a resolução do `bind()` e para processos criados depois — ele **não** é escrito em nenhum arquivo `.env`, e não alcança processos que já estão rodando.
 
 ```php
 public static function del (string $key): bool
 ```
 
-Remove uma variável, retornando se a remoção teve sucesso. É o único método que **não** compõe o prefixo e o sufixo: passe o nome real e completo da variável — `Environment::del('BOOTGLY_DB_HOST')`, não `Environment::del('DB_HOST')`, quando há um prefixo configurado.
+Remove uma variável, compondo o prefixo e o sufixo como `get()` e `put()`: com `Environment::$prefix = 'BOOTGLY_'`, `Environment::del('DB_HOST')` remove `BOOTGLY_DB_HOST` e deixa um `DB_HOST` sem prefixo intocado. Retorna `true` quando a variável fica removida — também quando ela não estava definida — e `false`, sem remover nada, quando `$key` é vazia ou o nome composto contém `=` ou um byte NUL (`putenv()` agiria sobre outra variável: `del('NOME=valor')` *definiria* `NOME`).

@@ -241,25 +241,42 @@ Bootgly hardens config loading with several rules:
 
 ## Reference
 
-The `Bootgly\API\Environment` class is the process-environment side of configuration: it reads and writes the real environment `bind()` consults first. Every key is composed as `Environment::$prefix . $key . Environment::$suffix` — both are public static strings, empty by default — **except** in `del()`, which takes the key verbatim.
+The `Bootgly\API\Environment` class is the process-environment side of configuration: it reads and writes the real environment `bind()` consults first. Every key you pass — to `get()`, `put()` and `del()`, or in a file `load()` reads — is composed as `Environment::$prefix . $key . Environment::$suffix`; both are public static strings, empty by default. `list()` and `save()` work on the real names.
 
 ```php
-public static function load ($file): bool
+public static function load (string $file): bool
 ```
 
-Parses an INI-style file and writes every pair into the process environment through `put()` (so the prefix/suffix apply). Returns `false` when the file does not exist, `true` otherwise — including when the file exists but cannot be parsed. Typed as `string` by PHPDoc. This is the imperative counterpart of the per-scope `.env` reading described above: unlike a scope `.env`, what `load()` reads **does** become global process state.
+Parses an INI-style file and hands every pair to `put()`, so the prefix and suffix apply and a variable that is already set is overwritten — the file wins over the real environment, the opposite of `bind()`. Returns `false`, applying nothing, when the file is missing, is not a regular file (a directory, a FIFO), cannot be read or parsed, holds a NUL byte or holds an array key (`KEY[]=`, `KEY[name]=`), and also when `Environment::$prefix` or `Environment::$suffix` holds a `=` or a NUL byte, since `put()` would refuse every composed name; otherwise it returns `true`. This is the imperative counterpart of the per-scope `.env` reading described above: unlike a scope `.env`, what `load()` reads **does** become global process state.
+
+> [!WARNING]
+> `load()` exports every name the file holds — `PATH`, `LD_PRELOAD` and `PHP_INI_SCAN_DIR` like any other — and every process the application spawns afterwards inherits them: whoever writes the file chooses which binaries those processes find, which libraries they preload and which `php.ini` directives they read. Never load a file another account can write. To read a `.env` file, use `Configs`, the canonical reader described above: it keeps the values local to the scope, accepts only `[A-Z_][A-Z0-9_]*` names, honors `allow()` and `lock()`, and exports nothing.
 
 ```php
 public static function save (string $file): bool
 ```
 
-Writes the environment to `$file` as `KEY=value` lines, one per variable, returning `false` only when the write fails. It dumps `list()` — the **entire** process environment, not just the keys Bootgly wrote — so treat its output as secret material and never point it at a path inside a served directory.
+Writes the **entire** process environment — every variable `getenv()` returns — to `$file`, one `KEY=value` line per variable: the bare form `docker --env-file` and similar readers expect. A value the bare line would not carry intact through `load()` is written quoted instead, as `KEY="value"` — for example one that holds a `;`, starts or ends with a space or a tab, or is wrapped in double quotes. A reader that takes lines literally, such as `docker --env-file`, keeps those quotes as part of the value. Every line is checked to read back as exactly its pair before anything is written.
+
+The write is atomic and private: the lines go to a randomly named temporary file beside `$file`, which is set to `0600` before its first byte is written — also in a directory whose default ACL would grant more — then synced to disk and renamed over `$file`. Whatever was at `$file` is replaced, never written through: a new file owned by the caller takes its place, so the owner, group, mode, ACL, SELinux label and hard links of the old file do not carry over (another hard link to the old file keeps the old content), and a link is replaced instead of followed, so its target is never touched. In a sticky directory such as `/tmp`, only an entry's owner, the directory's owner or root may replace an entry: a link another account planted at `$file` makes `save()` return `false` and stays as it was, unless the caller owns the directory or is root — then the link itself is replaced.
+
+Returns `false`, leaving `$file` untouched, when:
+
+- `$file` is not a local path — a stream wrapper such as `php://filter` or `compress.zlib://`;
+- a variable has no line that reads back as its pair — a line break in its value (an exported shell function, a multi-line certificate) or a name the INI format cannot carry (`NULL`, `YES`, `A~B`). This makes `save()` always return `false` on 64-bit Windows, where every process holds `ProgramFiles(x86)`;
+- the temporary file cannot be made private (`0600`);
+- the write fails — for example because the directory of `$file` is not writable, even if `$file` itself is, or because `$file` is a mount point: a single file bind-mounted into a container (`docker run -v ./app.env:/app/.env`, a Kubernetes `subPath` mount) cannot be replaced, so mount its directory instead.
+
+Names `getenv()` leaves out (see `list()`) are not written. The lines carry the real names, so loading the file back with a prefix or suffix set composes each name again: with the prefix `APP_`, `APP_TOKEN` comes back as `APP_APP_TOKEN` and `PATH` as `APP_PATH`.
+
+> [!WARNING]
+> `save()` dumps the **entire** process environment, not just the keys Bootgly wrote — inherited tokens and credentials included. Treat the file as secret material and never point it at a path inside a served directory.
 
 ```php
 public static function list (): array
 ```
 
-Returns the whole process environment as `array<string,string>`, exactly what `getenv()` returns. Keys are verbatim: the prefix and suffix are not stripped.
+Returns the whole process environment as `array<string,string>`, exactly what `getenv()` returns. Keys are verbatim: the prefix and suffix are not stripped. `getenv()` leaves out every name that contains a `.`, a space or a `[` — such a variable is still set, `get()` still reads it and child processes still inherit it, but it is missing from this list and from the file `save()` writes.
 
 ```php
 public static function get (string $key, null|string|false $default = null): false|string
@@ -277,10 +294,10 @@ Tests the running environment against one of the class constants: `Environment::
 public static function put (string $key, string|int $value): bool
 ```
 
-Writes one variable into the real process environment via `putenv()`, returning whether the write succeeded. An `int` is stringified, so `get()` always reads a string back. The value is visible to `getenv()`, to `bind()` resolution and to processes spawned afterwards — it is **not** written to any `.env` file, and it does not reach processes that are already running.
+Writes one variable into the real process environment via `putenv()`, returning whether the write succeeded. An `int` is stringified, so `get()` always reads a string back. Returns `false`, writing nothing, when `$key` is empty, the composed name (prefix, key and suffix) holds a `=` or a NUL byte, or `$value` holds a NUL byte — `putenv()` would otherwise act on another variable or cut the value short. The value is visible to `getenv()`, to `bind()` resolution and to processes spawned afterwards — it is **not** written to any `.env` file, and it does not reach processes that are already running.
 
 ```php
 public static function del (string $key): bool
 ```
 
-Unsets one variable, returning whether the removal succeeded. It is the one method that does **not** compose the prefix and suffix: pass the full, real variable name — `Environment::del('BOOTGLY_DB_HOST')`, not `Environment::del('DB_HOST')`, when a prefix is configured.
+Unsets one variable, composing the prefix and suffix like `get()` and `put()`: with `Environment::$prefix = 'BOOTGLY_'`, `Environment::del('DB_HOST')` removes `BOOTGLY_DB_HOST` and leaves a plain `DB_HOST` alone. Returns `true` once the variable is unset — also when it was not set — and `false`, removing nothing, when `$key` is empty or the composed name holds a `=` or a NUL byte (`putenv()` would act on another variable: `del('NAME=value')` would *set* `NAME`).

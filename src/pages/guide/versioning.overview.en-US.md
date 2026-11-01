@@ -51,9 +51,10 @@ documented, or is marked `@internal`, it may change in any release.
 
 ## Deprecation policy
 
-- A replaced API is **deprecated in the minor that ships its replacement**: the docs say so,
-  the release notes list it, and using it emits an `E_USER_DEPRECATED` notice where a runtime
-  hook exists.
+- A replaced API is **deprecated in the minor that ships its replacement**: its PHPDoc gets a
+  `@deprecated` tag, the docs say so and the release notes list it. Using it raises no runtime
+  notice — under the framework's error handler an `E_USER_DEPRECATED` notice is thrown as an
+  `ErrorException`, which would break every application still calling it.
 - **A deprecation never authorizes a removal in the next minor.** The deprecated way keeps
   working, unchanged, until the next major.
 - The next major (`2.0.0`) removes what was deprecated during `1.x` — nothing that was not
