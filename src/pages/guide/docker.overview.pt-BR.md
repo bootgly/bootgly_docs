@@ -509,7 +509,7 @@ não consegue carregar porque exclui o `.git`:
 
 ```bash
 docker build \
-  $(php Bootgly/ACI/Tests/Benchmark/provenance.php . ../bootgly_benchmarks --docker-build-args) \
+  $(php @/__docker__/provenance.php . ../bootgly_benchmarks --docker-build-args) \
   -f Dockerfile --target framework -t bootgly:framework .
 ```
 
