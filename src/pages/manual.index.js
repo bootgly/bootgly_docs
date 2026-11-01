@@ -1038,7 +1038,7 @@ export default {
     config: null,
     data: {
       '*': {
-        title: 'ORM'
+        title: 'SQL ORM'
       }
     }
   },
