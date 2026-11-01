@@ -1,8 +1,43 @@
 # ORM pagination
 
-Repositories paginate in two modes. **Page mode** slices with `LIMIT`/`OFFSET` and always dispatches one pipelined `COUNT(*)` for the total. **Cursor mode** slices with a keyset predicate derived from an opaque token, never counts, and detects the next page by probing one row beyond the limit.
+Repositories paginate in two modes. **Page mode** slices with `LIMIT`/`OFFSET` and sends one `COUNT(*)` for the total. **Cursor mode** slices with a keyset predicate derived from an opaque token, never counts, and detects the next page by probing one row beyond the limit.
 
 Both modes append the primary key as the final `ORDER BY` tiebreak automatically, so page boundaries are stable even when the user ordering has duplicates.
+
+## Entity on this page
+
+```php
+use Bootgly\ADI\Databases\SQL\Model\Column;
+use Bootgly\ADI\Databases\SQL\Model\Key;
+use Bootgly\ADI\Databases\SQL\Model\Table;
+
+#[Table('users')]
+class User
+{
+   #[Key]
+   public null|int $id = null;
+
+   #[Column]
+   public string $name = '';
+
+   #[Column]
+   public bool $active = true;
+
+   #[Column(nullable: true)]
+   public null|string $city = null;
+}
+```
+
+The `users` table holds 23 rows, with the ids 1 to 23. How a repository reads and hydrates them is
+on **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)**, and the selections that
+restrict and order a page are on
+**[ORM selections](/manual/ADI/Databases/SQL/Repository/Selection/overview/)**.
+
+The ADI-layer examples use `$Database`, the SQL facade: in a project's boot function, command or
+script, `new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure())`;
+outside a project, `new SQL([...])` with the connection keys — see
+**[Open a database](/manual/ADI/Databases/SQL/overview/#open-a-database)**. The HTTP examples run
+inside an `HTTP_Server_CLI` route, through `$Response->Database`.
 
 ## Paginate an HTTP route
 
@@ -32,6 +67,10 @@ Content-Type: application/json
 Pass a `Selection` to restrict and order the paginated set — pagination clones it, so the same selection can be reused:
 
 ```php
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
+use Bootgly\ADI\Databases\SQL\Builder\Identifier;
+
 $Users = $Response->Database->map(User::class);
 
 $Page = $Response->Database->paginate(
@@ -49,15 +88,15 @@ return $Response->Negotiation->send($Page);
 A present `cursor` key selects keyset mode — an empty value starts the walk:
 
 ```http
-GET /users?cursor=&limit=50
+GET /users?cursor=&limit=10
 ```
 
 ```http
 HTTP/1.1 200 OK
-Link: </users?limit=50&cursor=WyJCb2IiLDdd>; rel="next"
+Link: </users?limit=10&cursor=WzEwXQ>; rel="next"
 Content-Type: application/json
 
-{"items":[...],"limit":50,"next":"WyJCb2IiLDdd"}
+{"items":[...],"limit":10,"next":"WzEwXQ"}
 ```
 
 Clients follow `next` (or the `Link` header) until it is `null`. Cursor mode emits no `X-Total-Count` and no `prev` relation — keysets walk forward.
@@ -67,6 +106,8 @@ Clients follow `next` (or the `Link` header) until it is `null`. Cursor mode emi
 Cursor tokens are client input and are validated strictly. A malformed token raises `InvalidArgumentException` before any query is dispatched:
 
 ```php
+use InvalidArgumentException;
+
 try {
    $Page = $Response->Database->paginate(User::class);
 }
@@ -105,72 +146,164 @@ $Mapped = $Users->hydrate($Database->await($Users->paginate(null, $First)));
 $Next = new Pagination(limit: 20, cursor: $First->next);
 ```
 
-In page mode the `COUNT(*)` must be finished when `hydrate()` runs: with an asynchronous driver the repository needs an await bridge (`Awaiting: $Database`, a transaction, or the HTTP database resource), otherwise `hydrate()` throws. Synchronous drivers (SQLite) never need one. On serial surfaces such as transactions — which reject a second operation while one is pending — the `COUNT(*)` dispatch is deferred automatically to hydration, so page pagination works inside `Transaction::map()` too.
+To walk every page, read `next` after each one and stop when it is `null` — `more` is then `false`:
+
+```php
+$Pagination = new Pagination(limit: 10, Mode: Modes::Cursor);
+$read = 0;
+
+while (true) {
+   $Mapped = $Users->hydrate($Database->await($Users->paginate(null, $Pagination)));
+   $read += $Mapped->count;
+
+   if ($Pagination->next === null) {
+      break;
+   }
+
+   $Pagination = new Pagination(limit: 10, cursor: $Pagination->next);
+}
+
+$read; // 23
+```
+
+Do not pass a `null` token back: `new Pagination(cursor: null)` has no cursor, so it starts a page-mode pagination of page 1.
+
+In page mode the `COUNT(*)` must be finished when `hydrate()` runs: with an asynchronous driver (PostgreSQL, MySQL) the repository needs an await bridge (`Awaiting: $Database`, a transaction, or the HTTP database resource), otherwise `hydrate()` throws `ORM pagination count requires an await bridge.` SQLite runs each statement inside the call and never needs one. On a pooled facade, `paginate()` sends the `COUNT(*)` right behind the items query, pipelined. A transaction is a serial surface — it refuses a second statement while one is running —, so there `paginate()` sends only the items query and `hydrate()` sends the `COUNT(*)` and awaits it through the transaction; on SQLite the items query has already run by then, so `paginate()` sends both. Page pagination works inside `Transaction::map()` either way.
+
+## Order a cursor walk
+
+A cursor page reads the rows that sort strictly after the last row of the previous page, comparing each order column with `>` — `<` when descending —, a comparison `NULL` never passes. So cursor mode needs order columns that never hold `NULL`, and `paginate()` refuses, before it sends anything, what it can tell may hold one:
+
+```php
+use InvalidArgumentException;
+
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Orders;
+use Bootgly\ADI\Databases\SQL\Builder\Identifier;
+
+try {
+   $Users->paginate(
+      $Users->select()->order(Orders::Asc, new Identifier('city')),
+      new Pagination(limit: 10, Mode: Modes::Cursor)
+   );
+}
+catch (InvalidArgumentException $Exception) {
+   $Exception->getMessage(); // ORM cursor pagination requires non-nullable order columns: city
+}
+```
+
+- An order column whose property is marked `#[Column(nullable: true)]`, as `city` is, throws `ORM cursor pagination requires non-nullable order columns: city`.
+- An order with `Nulls::First` or `Nulls::Last` throws `ORM cursor pagination does not support NULLS ordering.`
+
+`paginate()` judges a column by that flag alone. A `null|string` property without `nullable: true` passes, and a `NULL` in its column breaks the walk after the query ran: every page after the first compares the column with the last value served, a comparison `NULL` never passes, so only the first page can hold the rows holding `NULL`. Sorted first — descending on PostgreSQL, ascending on MySQL and SQLite — they are served there; sorted last, they drop out of the walk without an error, unless the first page already reaches them. A page that ends on one makes `hydrate()` throw `InvalidArgumentException`: `ORM pagination cursor requires scalar, non-null order values.` — the exception a malformed cursor raises, so a route answers it as one. Mark every column that can hold `NULL` with `nullable: true`, so the refusal comes before any query. Page mode orders by such columns without restriction.
 
 ## Caveats
 
-- Cursor mode requires non-nullable, plainly-ordered columns — `paginate()` rejects nullable order columns and `NULLS FIRST/LAST` ordering before any query is dispatched.
-- Cursor mode never emits `prev` links; walk forward only.
+- Cursor mode never emits `prev` links; walk forward only. `previous` stays `null`: the repository never sets it.
 - Cursor mode fetches `limit + 1` rows: the probe row resolves `more`/`next` and is trimmed before relations load.
+- The token is the base64url-encoded JSON of the last row's order values and key — `WzEwXQ` above is `[10]`, the key alone, and a walk ordered by `name` carries the name too, as `WyJCb2IiLDdd` carries `["Bob",7]`: opaque, not secret. Do not order a cursor walk by a column the client must not read.
+- `paginate()` replaces the selection's own `limit()` and `skip()` with the page's slice, runs its named scopes, and emits `Selecting` and `Selected` as `fetch()` does.
+- A page past the last one has no items, and `more` is `false`.
 - When both `cursor` and `page` are present in the request, `cursor` wins.
 - With read replicas, the items query and the `COUNT(*)` may hit different replicas; the total can lag the items marginally.
 - Entities serialize through content negotiation via public properties; keep lazy relation properties out of REST-facing entities.
 
 ## Reference
 
+`Selection::seek()`, which builds the keyset of a cursor page, and `Selection::count()`, which compiles the page total, are in the **[ORM selections](/manual/ADI/Databases/SQL/Repository/Selection/overview/#reference)** Reference.
+
+### Repository
+
 ```php
-public function paginate (null|Selection $Selection = null, null|Pagination $Pagination = null, null|object $Scope = null): Operation
+paginate (null|Selection $Selection = null, null|Pagination $Pagination = null, null|object $Scope = null): Operation
 ```
 
-`Bootgly\ADI\Databases\SQL\Repository` — dispatches the paginated items operation (plus one pipelined `COUNT(*)` in page mode) and returns the items operation. The given selection is cloned, never mutated. Pass the returned operation to `hydrate()` to resolve the outcome.
+`Bootgly\ADI\Databases\SQL\Repository` — reads one page of a copy of the selection, every row without one, and returns the items operation; without a `$Pagination`, page 1 of 10 rows. In page mode it also sends one `COUNT(*)` — pipelined on a pooled facade; on a serial surface whose items query is still running, `hydrate()` sends it instead. Throws `InvalidArgumentException` before any query for a malformed cursor, for a scope the repository has not registered (`ORM scope is not registered: <name>`) and for an int-backed enum identifier (`ORM selection enum identifiers must be string-backed.`), and, in cursor mode, for a `nullable` order column or a `Nulls` order. Pass the returned operation to `hydrate()` to resolve the outcome.
+
+### Pagination
+
+`Bootgly\ADI\Databases\SQL\Repository\Pagination`, the request and the outcome of one page.
+
+#### Methods
 
 ```php
-public function __construct (int $limit = 10, null|int $page = null, null|string $cursor = null, null|Modes $Mode = null)
+__construct (int $limit = 10, null|int $page = null, null|string $cursor = null, null|Modes $Mode = null)
 ```
 
-`Bootgly\ADI\Databases\SQL\Repository\Pagination` — the mode is inferred: a `cursor` selects `Modes::Cursor`, a `page` selects `Modes::Page`, neither defaults to `Modes::Page` unless `$Mode` says otherwise. Contradictory inputs (page + cursor, or an explicit mode against the inferred one) throw `InvalidArgumentException`.
+The mode is inferred: a `cursor` selects `Modes::Cursor`, a `page` selects `Modes::Page`, neither defaults to `Modes::Page` unless `$Mode` says otherwise. A `limit` or a `page` below 1, both a page and a cursor, or an explicit mode against the inferred one throw `InvalidArgumentException`.
 
 ```php
-public static function encode (array $values): string
+static encode (array $values): string
 ```
 
 Encodes ordered keyset values (order columns first, primary key last) into one opaque base64url token. Null or non-scalar values throw.
 
 ```php
-public function decode (int $arity): array
+decode (int $arity): array
 ```
 
 Decodes this pagination's cursor into keyset values, validating structure, arity and scalar types strictly. Any violation throws `InvalidArgumentException`.
 
 ```php
-public function resolve (null|int $total = null, null|int $pages = null, bool $more = false, null|string $next = null, null|string $previous = null): static
+resolve (null|int $total = null, null|int $pages = null, bool $more = false, null|string $next = null, null|string $previous = null): static
 ```
 
 Writes the pagination outcome (`total`, `pages`, `more`, `next`, `previous`). Called by the repository during `hydrate()`.
 
-```php
-public function seek (array $orders, array $values): static
-```
-
-`Bootgly\ADI\Databases\SQL\Repository\Selection` — restricts the selection to rows strictly after one keyset position. Orders and values are positional pairs (`['column' => ..., 'order' => Orders::...]` plus one value each); the last pair is the unique tiebreak. Column names must be resolved SQL columns — the repository resolves mapped properties before seeking.
+#### Properties
 
 ```php
-public function count (): Query
+public private(set) Modes $Mode
 ```
 
-`Bootgly\ADI\Databases\SQL\Repository\Selection` — compiles a `SELECT COUNT(*) AS "total"` query replaying only restriction predicates (filters and matches); order, limit, offset and locks are dropped.
+The mode, inferred by the constructor.
 
 ```php
-public function paginate (string|Repository $Entity, null|Selection $Selection = null): array
+public private(set) int $limit
 ```
 
-`Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database` — paginates one mapped entity through the request query parameters, emits `X-Total-Count` (page mode) and `Link` headers, and returns the negotiable body array. Accepts an entity class name or an already-mapped repository.
+The rows per page.
 
 ```php
-public function bind (Response $Response): static
+public private(set) null|int $page
 ```
 
-`Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database` — binds the response context; called automatically when the resource is mounted on a response.
+The page to read; `null` reads page 1 in page mode, and is always `null` in cursor mode.
+
+```php
+public private(set) null|string $cursor
+```
+
+The token of the page to read; `null` for the first page of a walk.
+
+```php
+public private(set) null|int $total = null
+```
+
+Page mode: the number of rows the selection matches, set by `hydrate()`.
+
+```php
+public private(set) null|int $pages = null
+```
+
+Page mode: the number of pages, the total divided by `limit` and rounded up.
+
+```php
+public private(set) bool $more = false
+```
+
+Whether a page follows this one.
+
+```php
+public private(set) null|string $next = null
+```
+
+Cursor mode: the token of the next page, `null` on the last one.
+
+```php
+public private(set) null|string $previous = null
+```
+
+Never set by the repository.
 
 ### Modes
 
@@ -178,5 +311,19 @@ public function bind (Response $Response): static
 
 | Case | Behavior |
 | ------ | ---------- |
-| `Page` | `LIMIT`/`OFFSET` slice + pipelined `COUNT(*)` total |
+| `Page` | `LIMIT`/`OFFSET` slice + `COUNT(*)` total, pipelined on a pooled facade and sent by `hydrate()` inside a transaction |
 | `Cursor` | Keyset predicate + `limit + 1` probe, no count |
+
+### HTTP resource
+
+```php
+paginate (string|Repository $Entity, null|Selection $Selection = null): array
+```
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database` — paginates one mapped entity through the request query parameters, emits `X-Total-Count` (page mode) and `Link` headers, and returns the negotiable body array. Accepts an entity class name or an already-mapped repository.
+
+```php
+bind (Response $Response): static
+```
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database` — binds the response context; called automatically when the resource is mounted on a response.

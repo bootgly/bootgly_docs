@@ -1049,8 +1049,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Compile ORM entity metadata from Table, Key, Column and Relation attributes.',
-          'pt-BR': 'Compile metadata de entidades ORM a partir dos attributes Table, Key, Column e Relation.'
+          'en-US': 'Map entity classes to tables: compiled and cached metadata, Model::reflect(), mapping rules and errors, property types and constructors, readonly and inherited properties, and dates per driver.',
+          'pt-BR': 'Mapeie classes de entidade para tabelas: metadata compilada e cacheada, Model::reflect(), regras e erros de mapeamento, tipos de propriedade e construtores, propriedades readonly e herdadas, e datas por driver.'
         }
       },
       menu: {
@@ -1076,8 +1076,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Define ORM entity metadata with Table, Key, Column and Relation attributes.',
-          'pt-BR': 'Defina metadata de entidades ORM com attributes Table, Key, Column e Relation.'
+          'en-US': 'Table, Key, Column and Relation attributes: generated and application-assigned keys, the insert, update, generated and nullable column flags, and relation kinds, keys, pivots, names and lazy wrappers.',
+          'pt-BR': 'Attributes Table, Key, Column e Relation: chaves geradas e atribuídas pela aplicação, as flags de coluna insert, update, generated e nullable, e tipos, chaves, pivots, nomes e wrappers lazy de relação.'
         }
       },
       menu: {},
@@ -1126,8 +1126,8 @@ export default {
       version: 'v0.22.0',
       meta: {
         description: {
-          'en-US': 'Paginate ORM repositories with page/cursor modes, pipelined totals and REST-ready bodies, headers and opaque keyset tokens.',
-          'pt-BR': 'Pagine repositories ORM com modos página/cursor, totais em pipeline e bodies REST, headers e tokens keyset opacos.'
+          'en-US': 'Paginate ORM repositories by page with a COUNT(*) total or by keyset cursor: REST bodies and headers in HTTP routes, cursor walks at the ADI layer and the order columns a cursor accepts.',
+          'pt-BR': 'Pagine repositórios ORM por página, com total COUNT(*), ou por cursor keyset: bodies e headers REST em rotas HTTP, caminhadas por cursor na camada ADI e as colunas de ordenação que um cursor aceita.'
         }
       },
       menu: {},
@@ -1151,8 +1151,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Load ORM relations through explicit deferred operations or eager auto-await for has-many, belongs-to and many-to-many data.',
-          'pt-BR': 'Carregue relações ORM com operações explícitas deferidas ou eager auto-await para has-many, belongs-to e many-to-many.'
+          'en-US': 'Load ORM relations as deferred operations, eagerly through an await bridge or lazily through LazyCollection/LazyReference wrappers, for has-one, has-many, belongs-to and many-to-many data; relation properties are never persisted.',
+          'pt-BR': 'Carregue relações ORM como operações deferidas, em modo eager por uma ponte de await ou em modo lazy pelos wrappers LazyCollection/LazyReference, para has-one, has-many, belongs-to e many-to-many; propriedades de relação nunca são persistidas.'
         }
       },
       menu: {},
@@ -1166,6 +1166,81 @@ export default {
       },
       'pt-BR': {
         title: 'ORM Repository Relations'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Selection': {
+    config: {
+      icon: 'filter_list',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Describe the rows an ORM repository reads: filters by property or column, OR, text matching, order, slices, row locks, relations to load and named scopes, with the call-order caveats.',
+          'pt-BR': 'Descreva as linhas que um repositório ORM lê: filtros por propriedade ou coluna, OR, busca textual, ordem, fatias, locks de linha, relações a carregar e escopos nomeados, com as ressalvas de ordem de chamada.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Selection'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Selection'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Hydration': {
+    config: {
+      icon: 'water_drop',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Turn finished operations into entities: the mapped result, how rows are cast into typed properties, the identity map and reset(), saved entities on every driver and the current limitations.',
+          'pt-BR': 'Transforme operações terminadas em entidades: o resultado mapeado, como linhas viram propriedades tipadas, o identity map e reset(), entidades salvas em cada driver e as limitações atuais.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Hydration'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Hydration'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Hooks': {
+    config: {
+      icon: 'webhook',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Listen to the eight ORM repository lifecycle hooks: the arguments each receives, which calls emit it, why Saved runs before the write lands, and how listeners steer or refuse the work.',
+          'pt-BR': 'Escute os oito hooks do ciclo de vida do repositório ORM: os argumentos de cada um, quais chamadas o emitem, por que Saved roda antes de a escrita acontecer, e como listeners conduzem ou recusam o trabalho.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Hooks'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Hooks'
       }
     }
   },
