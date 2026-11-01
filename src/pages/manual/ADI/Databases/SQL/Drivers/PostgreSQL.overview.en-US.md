@@ -283,10 +283,19 @@ catch (RuntimeException $Exception) {
 resolves, fails or expires on its own connection — here the server stops `pg_sleep()` with SQLSTATE
 `57014`.
 
-- Before the session has its `BackendKeyData` — the connection is still dialing or authenticating —
-  there is nothing to name, and the operation is failed locally with
-  `PostgreSQL cancellation requires BackendKeyData.` A single `advance()` on a cold pool only starts
-  the dial, so cancelling right after it ends that way.
+- The request names the session, not a statement, so it goes out only for the batch the backend is
+  executing: the first one in the pipeline it has not answered yet. Before choosing, `cancel()`
+  reads the answers that already arrived, up to 1 MiB, so a batch answered by then finishes with its
+  own result and nothing is sent.
+- A batch pipelined behind another one — another caller's, or a stand-in still draining a withdrawn
+  statement — cannot be stopped without stopping that one, and a batch partly written must be
+  written to its end, or the session dies with every caller on it. `cancel()` returns either one
+  untouched, `cancelled` still `false`; it runs to completion, and you still await it.
+- A batch not on the server yet — not written, parked behind another batch still being written, or
+  composed on a connection still dialing or authenticating — is withdrawn locally by the pool with
+  `Database operation was cancelled before reaching the server.`, and a connection still in its
+  startup is dropped. A single `advance()` on a cold pool only starts the dial, so a cancel right
+  after it withdraws the operation.
 - The side channel's connect blocks the worker, for at most `timeout` (see
   **[Timeout](/manual/ADI/Database/Config/overview/#timeout)**). When it cannot connect, the
   operation fails with `PostgreSQL cancel connection failed: Connection refused.` — the reason
@@ -300,10 +309,12 @@ a cancel that cannot be sent is on
 **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)**.
 
 > [!WARNING]
-> A `CancelRequest` names the session, not a statement. For now, `cancel()` on an operation pipelined
-> behind another caller's statement cancels that statement instead — it fails with
-> `canceling statement due to user request` — while the operation you cancelled runs to its end;
-> `cancelled` reads `true` all the same.
+> For now, the read that comes before the request stops at 1 MiB, so it never reads a streaming
+> result to its end, and it does not run at all while another batch is still being written. A batch
+> whose answer arrived but was not read by then still looks running: its `CancelRequest` stops the
+> batch the backend runs next — another caller's, which fails with
+> `canceling statement due to user request` — while the batch you cancelled completes with its rows,
+> and `cancelled` reads `true`.
 
 ## Limits
 
@@ -340,7 +351,7 @@ failures carry no `code`:
 | `PostgreSQL authentication method is not supported: 7.` | Kerberos, GSSAPI, SSPI or another method |
 | `PostgreSQL SASL server signature is invalid.` | The server's final SCRAM message does not prove it knows the password |
 | `PostgreSQL parameter must be scalar or null.` | A `DateTimeInterface`, array or object parameter |
-| `PostgreSQL cancellation requires BackendKeyData.` | `cancel()` before the session has its keys |
+| `PostgreSQL cancellation requires BackendKeyData.` | `cancel()` on a running statement of a session that never sent the driver its keys |
 | `PostgreSQL cancel connection failed: Connection refused.` | The cancel side channel could not connect |
 | `PostgreSQL cancel request write failed.` | The side channel took less than the whole `CancelRequest` |
 
@@ -373,14 +384,28 @@ Drives the connection state machine: connect, SSL negotiation, startup, authenti
 command write and backend message read.
 
 ```php
+owe (Operation $Operation): bool
+```
+
+Whether the server owes the operation an answer, which the Pool asks before it sends a cancel:
+`true` once its batch is whole on the wire — it is then in the pipeline — and for the batch holding
+the write stream once part of it is out, whose remainder must follow: after a credited byte, or from
+the start over TLS, where a record may already hold some. A batch not written yet or parked behind
+another writer, and a session still in its startup, are owed nothing: the Pool withdraws them
+locally.
+
+```php
 cancel (Operation $Operation): Operation
 ```
 
-Writes the advisory `CancelRequest` through a plaintext side channel and marks the operation
-`cancelled` once it is sent. Fails the operation with
-`PostgreSQL cancellation requires BackendKeyData.` before startup delivered the session's keys, and
-with `PostgreSQL cancel connection failed: <reason>.` or `PostgreSQL cancel request write failed.`
-when the side channel breaks.
+Writes the advisory `CancelRequest` through a plaintext side channel for the batch the backend is
+executing — the first in the pipeline it has not answered — and marks the operation `cancelled`
+once it is sent. Unless another batch is still being written, it first reads what already arrived,
+up to 1 MiB, so a batch answered by then finishes with its own result and nothing is sent. Any other
+batch — pipelined behind another, or still being written — is returned untouched, with `cancelled`
+`false`. Fails the operation with `PostgreSQL cancellation requires BackendKeyData.` when the
+session never sent the driver its keys, and with `PostgreSQL cancel connection failed: <reason>.` or
+`PostgreSQL cancel request write failed.` when the side channel breaks.
 
 ```php
 abandon (Operation $Operation): void
@@ -397,14 +422,15 @@ detach (Operation $Operation): void
 ```
 
 Reconciles the wire when a caller stops waiting for an operation (`Pool::withdraw()`: a deferred
-response whose wait was refused or interrupted, or whose request Fiber was destroyed). A pipelined
-batch always ends in `Sync`, so the backend keeps answering it: the pipeline slot is handed to a
-detached stand-in that absorbs the remaining messages up to its `ReadyForQuery`, keeping every
-session effect the driver owes itself (statement caching, evictions) while the operation the Pool
-took back is never read, written or resolved again. No reader is required. `check()` ignores
-stand-ins, so the connection goes back to `idle` — unless other callers still read there — and the
-next operation handed to it queues behind them and drains them; `$detached` reports that the
-session still owes answers to stand-ins.
+response whose wait was refused or interrupted, or whose request Fiber was destroyed), and when
+`Pool::cancel()` withdraws one the server owes nothing (`owe()`). A pipelined batch always ends in
+`Sync`, so the backend keeps answering it: the pipeline slot is handed to a detached stand-in that
+absorbs the remaining messages up to its `ReadyForQuery`, keeping every session effect the driver
+owes itself (statement caching, evictions) while the operation the Pool took back is never read,
+written or resolved again. No reader is required. `check()` ignores stand-ins, so the connection
+goes back to `idle` — unless other callers still read there — and the next operation handed to it
+queues behind them and drains them; `$detached` reports that the session still owes answers to
+stand-ins.
 
 Only a batch that cannot be reconciled drops the session: one still being written after a byte was
 credited, or over TLS, which may retain an uncredited record. A plaintext batch of which no byte

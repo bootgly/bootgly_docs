@@ -284,10 +284,19 @@ com o id de processo e a chave secreta que o servidor deu à sessão no startup 
 depois a fecha e marca `cancelled`. O pedido é advisory: a operação ainda resolve, falha ou expira
 na própria conexão — aqui o servidor para o `pg_sleep()` com o SQLSTATE `57014`.
 
-- Antes de a sessão ter o `BackendKeyData` — a conexão ainda está discando ou autenticando — não há
-  o que nomear, e a operação falha localmente com
-  `PostgreSQL cancellation requires BackendKeyData.` Um único `advance()` em um pool frio só começa
-  a discagem, então cancelar logo depois dele termina assim.
+- O pedido nomeia a sessão, não um statement, então só sai para o batch que o backend está
+  executando: o primeiro do pipeline que ele ainda não respondeu. Antes de escolher, o `cancel()` lê
+  as respostas que já chegaram, até 1 MiB, então um batch já respondido a essa altura termina com o
+  próprio resultado e nada é enviado.
+- Um batch em pipeline atrás de outro — de outro chamador, ou de um stand-in que ainda drena um
+  statement retirado — não pode ser parado sem parar aquele, e um batch escrito pela metade precisa
+  ser escrito até o fim, ou a sessão morre com todo chamador nela. O `cancel()` devolve qualquer um
+  dos dois intocado, `cancelled` ainda `false`; ele roda até o fim, e você ainda o aguarda.
+- Um batch que ainda não está no servidor — não escrito, estacionado atrás de outro batch ainda
+  sendo escrito, ou composto numa conexão ainda discando ou autenticando — é retirado localmente
+  pelo pool com `Database operation was cancelled before reaching the server.`, e uma conexão ainda
+  no startup é derrubada. Um único `advance()` em um pool frio só começa a discagem, então um cancel
+  logo depois dele retira a operação.
 - O connect do side channel bloqueia o worker, por no máximo `timeout` (veja
   **[Timeout](/manual/ADI/Database/Config/overview/#timeout)**). Quando ele não consegue conectar, a
   operação falha com `PostgreSQL cancel connection failed: Connection refused.` — o motivo varia —
@@ -301,10 +310,12 @@ cancel que não pode ser enviado está em
 **[Cancele um statement em execução](/manual/ADI/Database/Pool/overview/#cancele-um-statement-em-execução)**.
 
 > [!WARNING]
-> Um `CancelRequest` nomeia a sessão, não um statement. Por enquanto, o `cancel()` de uma operação
-> em pipeline atrás do statement de outro chamador cancela esse statement no lugar dela — ele falha
-> com `canceling statement due to user request` —, enquanto a operação que você cancelou roda até o
-> fim; o `cancelled` vale `true` do mesmo jeito.
+> Por enquanto, a leitura que vem antes do pedido para em 1 MiB, para nunca ler um resultado em
+> streaming até o fim, e nem roda enquanto outro batch ainda está sendo escrito. Um batch cuja
+> resposta chegou mas não foi lida até ali ainda parece estar rodando: o `CancelRequest` dele para o
+> batch que o backend roda em seguida — o de outro chamador, que falha com
+> `canceling statement due to user request` —, enquanto o batch que você cancelou termina com as
+> linhas dele, e o `cancelled` vale `true`.
 
 ## Limites
 
@@ -342,7 +353,7 @@ driver não têm `code`:
 | `PostgreSQL authentication method is not supported: 7.` | Kerberos, GSSAPI, SSPI ou outro método |
 | `PostgreSQL SASL server signature is invalid.` | A mensagem SCRAM final do servidor não prova que ele conhece a senha |
 | `PostgreSQL parameter must be scalar or null.` | Um parâmetro `DateTimeInterface`, array ou objeto |
-| `PostgreSQL cancellation requires BackendKeyData.` | `cancel()` antes de a sessão ter as chaves |
+| `PostgreSQL cancellation requires BackendKeyData.` | `cancel()` num statement em execução de uma sessão que nunca enviou as chaves ao driver |
 | `PostgreSQL cancel connection failed: Connection refused.` | O side channel do cancel não conseguiu conectar |
 | `PostgreSQL cancel request write failed.` | O side channel aceitou menos que o `CancelRequest` inteiro |
 
@@ -376,12 +387,27 @@ Conduz a máquina de estados da conexão: connect, negociação SSL, startup, au
 escrita do comando e leitura das mensagens do backend.
 
 ```php
+owe (Operation $Operation): bool
+```
+
+Se o servidor deve uma resposta à operação, o que o Pool pergunta antes de enviar um cancel:
+`true` assim que o batch dela está inteiro no wire — ele então está no pipeline — e para o batch que
+segura o stream de escrita assim que parte dele saiu, cujo restante precisa seguir: depois de um
+byte creditado, ou desde o início sobre TLS, em que um record já pode conter alguns. Um batch ainda
+não escrito ou estacionado atrás de outro escritor, e uma sessão ainda no startup, não têm nada a
+receber: o Pool os retira localmente.
+
+```php
 cancel (Operation $Operation): Operation
 ```
 
-Escreve o `CancelRequest` advisory por um side channel em plaintext e marca a operação como
-`cancelled` quando ele é enviado. Falha a operação com
-`PostgreSQL cancellation requires BackendKeyData.` antes de o startup entregar as chaves da sessão,
+Escreve o `CancelRequest` advisory por um side channel em plaintext para o batch que o backend está
+executando — o primeiro do pipeline que ele ainda não respondeu — e marca a operação como
+`cancelled` quando ele é enviado. A menos que outro batch ainda esteja sendo escrito, ele primeiro
+lê o que já chegou, até 1 MiB, então um batch já respondido a essa altura termina com o próprio
+resultado e nada é enviado. Qualquer outro batch — em pipeline atrás de outro, ou ainda sendo
+escrito — é devolvido intocado, com `cancelled` `false`. Falha a operação com
+`PostgreSQL cancellation requires BackendKeyData.` quando a sessão nunca enviou as chaves ao driver,
 e com `PostgreSQL cancel connection failed: <reason>.` ou `PostgreSQL cancel request write failed.`
 quando o side channel quebra.
 
@@ -401,8 +427,9 @@ detach (Operation $Operation): void
 
 Reconcilia o wire quando um chamador para de esperar por uma operação (`Pool::withdraw()`: uma
 resposta deferred cuja espera foi recusada ou interrompida, ou cujo Fiber da requisição foi
-destruído). Um batch em pipeline sempre termina em `Sync`, então o backend continua respondendo a
-ele: o slot do pipeline é entregue a um stand-in destacado que absorve as mensagens restantes até o
+destruído), e quando o `Pool::cancel()` retira uma à qual o servidor não deve nada (`owe()`). Um
+batch em pipeline sempre termina em `Sync`, então o backend continua respondendo a ele: o slot do
+pipeline é entregue a um stand-in destacado que absorve as mensagens restantes até o
 `ReadyForQuery` dele, mantendo todo efeito de sessão que o driver deve a si mesmo (cache de
 statements, evictions) enquanto a operação retomada pelo Pool nunca mais é lida, escrita ou
 resolvida. Nenhum leitor é exigido. O `check()` ignora stand-ins, então a conexão volta para `idle`

@@ -161,7 +161,11 @@ Each value is bound with the type its PHP type maps to:
 
 An array, or an object that is not a `DateTimeInterface` — a `Stringable` one included — fails the
 operation with `MySQL cannot bind the parameter at position 1.`, counting positions from `0`;
-`await()` throws it, and the connection stays usable.
+`await()` throws it, and the connection stays usable. For now, one case leaves the connection stuck
+instead: a command composed while the `COM_STMT_PREPARE` of the same SQL is still in flight on its
+connection binds its values only once it reaches the head of the queue, and when they cannot be
+bound there, the operation fails but the connection keeps waiting for an answer that never comes —
+every operation handed it afterwards fails at its deadline.
 **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compares these bindings with
 PostgreSQL's and SQLite's.
 
@@ -290,16 +294,25 @@ $Database->await($Running)->Result->row; // ['slept' => 1]
 ```
 
 `cancel()` opens a second connection to the same `host` and `port`, authenticates it as the same
-user, sends `KILL QUERY` with the thread id the server's greeting gave the session, then closes
-that connection and sets `cancelled`. The kill is advisory: the operation still resolves or fails on
-its own connection. A function can just return early — `SLEEP()` returns `1`, as above — and the
-operation finishes normally; a statement interrupted while it reads or computes rows fails instead,
-with `1317: Query execution was interrupted` (`code` `1317`).
+user, sends `KILL QUERY` with the thread id the server's greeting gave the session and reads the
+answer, then closes that connection; `cancelled` is set once the server accepts the kill. The kill
+is advisory: the operation still resolves or fails on its own connection. A function can just
+return early — `SLEEP()` returns `1`, as above — and the operation finishes normally; a statement
+interrupted while it reads or computes rows fails instead, with
+`1317: Query execution was interrupted` (`code` `1317`).
 
-- Before the greeting has arrived — the connection is still dialing — there is no thread id to
-  name, and the operation is failed locally with
-  `MySQL cancellation requires the greeting thread id.` A single `advance()` on a cold pool only
-  starts the dial, so cancelling right after it ends that way.
+- The kill goes out only for the command the session is executing: the head of the queue, whole on
+  the wire. Anything else is not on the server yet, and the pool withdraws it locally with
+  `Database operation was cancelled before reaching the server.`: a command queued behind another
+  one, which just leaves the queue; an operation still dialing or authenticating, which takes its
+  half-open connection with it; and a parameterized command while only its `COM_STMT_PREPARE` is
+  out. That one already reads `Reading`, since the driver writes its `COM_STMT_EXECUTE` only once
+  the prepare is answered, and it is never executed. A single `advance()` on a cold pool only
+  starts the dial, so a cancel right after it withdraws the operation.
+- A command still being written is left running: the rest of it must follow, or the session dies
+  with every command queued on it. So is a command whose kill the server refuses — with
+  `Unknown thread id`, say, from a server that no longer knows the session. Either way `cancel()`
+  returns the operation untouched, `cancelled` still `false`, and you still await it.
 - The side channel is one more session on the server while it lasts, so it counts against
   `max_connections`. Its connect, reads and writes block the worker, the connect for at most
   `timeout` (see **[Timeout](/manual/ADI/Database/Config/overview/#timeout)**). When it cannot
@@ -316,14 +329,9 @@ a cancel that cannot be sent is on
 **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)**.
 
 > [!WARNING]
-> `KILL QUERY` names the session, not a statement. For now, `cancel()` on an operation queued behind
-> another caller's command kills that command instead, and the operation you cancelled is written and
-> runs once it reaches the head. A cancel sent after the greeting but before the command was written —
-> while the session still authenticates — finds nothing running, and the statement then runs in
-> full. `cancelled` reads `true` in both cases. And a kill that lands while the server is still
-> sending a result's column definitions fails the operation with a driver error that starts with
-> `MySQL length-encoded string overruns the packet:` instead of `1317`, and drops the session along
-> with every command queued on it.
+> For now, a kill that lands while the server is still sending a result's column definitions fails
+> the operation with a driver error that starts with `MySQL length-encoded string overruns the packet:`
+> instead of `1317`, and drops the session along with every command queued on it.
 
 ## Limits
 
@@ -360,7 +368,7 @@ own failures carry no `code`:
 | `MySQL server RSA public key is invalid.` | The pinned `key` cannot be loaded |
 | `MySQL cannot bind the parameter at position 1.` | An array or object parameter |
 | `MySQL LOCAL INFILE requests are not supported.` | The server asked for a local file |
-| `MySQL cancellation requires the greeting thread id.` | `cancel()` before the greeting arrived |
+| `MySQL cancellation requires the greeting thread id.` | `cancel()` on a running command of a session whose greeting the driver never read |
 | `MySQL cancel connection failed: Connection refused.` | The cancel side channel could not connect |
 | `MySQL cancel requires fast authentication on the side channel.` | The side channel needs full authentication |
 | `MySQL cancel authentication rejected.` | The server refused the side channel's login |
@@ -392,13 +400,27 @@ Drives the connection state machine: greeting, capability negotiation, TLS, hand
 response, authentication continuations, command write and result-set read.
 
 ```php
+owe (Operation $Operation): bool
+```
+
+Whether the server owes the operation an answer, which the Pool asks before it sends a cancel. Only
+the head of the queue writes, so it is `true` for the head once its command is whole on the wire —
+for a parameterized command on a statement-cache miss, once its `COM_STMT_EXECUTE` is, not just the
+`COM_STMT_PREPARE` before it — and for a head partly written, whose remainder must follow. A command
+queued behind the head, and a session still in its handshake, are owed nothing: the Pool withdraws
+them locally.
+
+```php
 cancel (Operation $Operation): Operation
 ```
 
-Kills the in-flight command through a separate, plaintext session (`KILL QUERY`) and marks the
-operation `cancelled` once the kill is sent. Fails the operation with
-`MySQL cancellation requires the greeting thread id.` before the greeting arrived, and with one of
-the `MySQL cancel …` messages above when the side channel cannot connect or log in.
+Kills the command the session is executing — the head, whole on the wire (`owe()`) — through a
+separate, plaintext session (`KILL QUERY`), and marks the operation `cancelled` once the server
+answers the kill with OK. Any other operation, and one whose kill the server refuses, is returned
+untouched, with `cancelled` `false`. Fails the operation with
+`MySQL cancellation requires the greeting thread id.` when the driver never read the session's
+greeting, and with one of the `MySQL cancel …` messages above when the side channel cannot connect
+or log in.
 
 ```php
 abandon (Operation $Operation): void
@@ -418,8 +440,10 @@ detach (Operation $Operation): void
 
 Reconciles the wire when a caller stops waiting for an operation (`Pool::withdraw()`: a
 deferred response whose wait was refused or interrupted, or whose request Fiber was
-destroyed). A queued sibling simply leaves the FIFO; the head is handed to a detached
-stand-in that drains the answer, so the operation the Pool took back is never read, written
+destroyed), and when `Pool::cancel()` withdraws one the server owes nothing (`owe()`). A
+queued sibling simply leaves the FIFO; the head is handed to a detached stand-in that drains
+the answer — for a head with only its `COM_STMT_PREPARE` out, the prepare-OK, and its
+`COM_STMT_EXECUTE` is never written — so the operation the Pool took back is never read, written
 or resolved again. No reader is required: `check()` ignores a stand-in head, so the
 connection goes back to `idle` — unless other callers still read there — and the next
 operation handed to it queues behind the stand-in and pumps it; `$detached` reports that

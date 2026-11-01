@@ -157,7 +157,7 @@ listadas em [Erros do pool](/manual/ADI/Database/Pool/overview/#erros).
 | `Pool` | `null\|Pool` | O pool que é dono dela agora. |
 | `FallbackPool` | `null\|Pool` | Onde uma leitura que falhou é refeita: o pool primário, para uma leitura roteada a uma réplica. |
 | `Connection` | `null\|Connection` | A conexão que ela recebeu, ou à qual está presa dentro de uma transação. |
-| `cancelled` | `bool` | Um pedido de cancel chegou ao wire (`CancelRequest`, `KILL QUERY`). |
+| `cancelled` | `bool` | Um cancel foi enviado para a instrução que a sessão estava executando (`CancelRequest`; no MySQL, só depois que o servidor aceitou o `KILL QUERY`). Trabalho retirado antes de chegar ao servidor o mantém `false` — veja **[Cancele um statement em execução](/manual/ADI/Database/Pool/overview/#cancele-um-statement-em-execução)**. |
 | `revoked` | `bool` | Quem chamou desistiu dela — `cancel()` ou `withdraw()` — mesmo quando nada foi enviado; nenhum fallback a refaz. |
 | `fallback` | `bool` | Ela foi refeita no pool de fallback. |
 | `quarantine` | `bool` | Marcado pelo driver numa falha de conexão, que conta contra a saúde de um pool de réplica — veja [Saúde das réplicas](/manual/ADI/Database/Pool/overview/#saúde-das-réplicas). |

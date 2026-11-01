@@ -150,42 +150,59 @@ $Running->revoked;   // true
 ```
 
 `cancel()` asks the server to stop the statement through a side channel — PostgreSQL's
-`CancelRequest`, MySQL's `KILL QUERY` — and sets `cancelled` once that request reached the wire. It
-is advisory: the operation still resolves, fails or expires on its own connection, depending on
-how the server ends the statement. PostgreSQL fails it with
+`CancelRequest`, MySQL's `KILL QUERY` — and sets `cancelled` once that request is sent; on MySQL,
+once the server accepts the kill. It is advisory: the operation still resolves, fails or expires on
+its own connection, depending on how the server ends the statement. PostgreSQL fails it with
 `canceling statement due to user request` (SQLSTATE `57014`); a MySQL statement interrupted by
 `KILL QUERY` may also just return early — `SLEEP()` returns `1` — and then finishes normally.
 Here one `advance()` writes the statement because the connection is already open. On a connection
-still dialing there is no server session to name yet, and the cancel fails the operation locally:
-`PostgreSQL cancellation requires BackendKeyData.` or
-`MySQL cancellation requires the greeting thread id.` Redis has no cancellation: `cancel()` fails
-a command already sent with `Database driver does not support cancellation.` A SQLite operation that
-got the connection is already finished when `query()` returns, so it leaves nothing to cancel; one
-parked in `pending` — behind a transaction that holds the connection — is failed locally like any
-parked operation.
+still dialing or authenticating there is nothing on the server to stop yet: the operation is
+withdrawn locally, as described below, and the half-open connection is dropped. Redis has no
+cancellation: `cancel()` fails a command already sent with
+`Database driver does not support cancellation.` A SQLite operation that got the connection is
+already finished when `query()` returns, so it leaves nothing to cancel; one parked in `pending` —
+behind a transaction that holds the connection — is failed locally like any parked operation.
 
 Cancelling is a decision, not a message. The withdrawal is recorded the moment you ask for it —
 `revoked` is set before the driver is consulted at all — so it holds whether the driver sends the
-request, refuses because the protocol has nothing to send it on, refuses because it does not
-support cancellation, or fails outright while trying. The automatic fallback of a replica read to
-the primary pool will not revive a cancelled operation afterwards. That is separate from whether
-the cancel reached the server, which is what decides whether the connection still has an answer
-to reconcile.
+request, leaves the operation running, refuses because the protocol has nothing to send it on,
+refuses because it does not support cancellation, or fails outright while trying. The automatic
+fallback of a replica read to the primary pool will not revive a cancelled operation afterwards.
+That is separate from whether the cancel reached the server, which is what decides whether the
+connection still has an answer to reconcile.
 
 Whether anything is *sent* depends on where the operation actually is. A cancel request names a
-backend, not a statement, so one sent for work that is not running would reach whatever else that
-backend is doing. An operation that already finished, and one still composed but never written,
-are therefore withdrawn locally and nothing goes on the wire. The two differ in what the caller is
-left holding: a finished operation keeps its state and its result, while one that never reached
-the server is failed with `Database operation was cancelled before reaching the server.`, since
-its work did not happen. A parked operation has no driver yet and is failed with
-`Database operation has no protocol to cancel.` Only an operation genuinely in flight produces a
-request. For now there are exceptions, described in the warnings of the
-**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#cancellation)** and
-**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#cancellation)** drivers: cancelling an
-operation behind another statement on its connection — pipelined on PostgreSQL, queued on MySQL —
-sends a request that stops that statement instead, and cancelling a MySQL operation whose session
-is still authenticating sends one that finds nothing running.
+backend, not a statement: one sent for anything but the statement that backend is executing stops
+that statement instead — another caller's, say — while the work you cancelled still runs. So the
+pool first asks the driver whether the server owes the operation an answer (`Driver::owe()`), and
+the driver sends a request only for the statement its session is executing. Any other operation
+ends one of three ways:
+
+- **Already finished** — it keeps its state and its result, and nothing is sent. PostgreSQL first
+  reads the answers that already arrived, up to 1 MiB, so a statement the server has answered but
+  nobody has read yet finishes with its own result instead of being cancelled.
+- **Not on the server yet** — an operation composed but not written, a MySQL command queued behind
+  another one, a parameterized MySQL command while only its `COM_STMT_PREPARE` is on the wire, a
+  PostgreSQL batch parked behind a batch still being written, and an operation whose connection is
+  still dialing or authenticating. It is withdrawn locally: nothing goes on the wire, and it fails
+  with `Database operation was cancelled before reaching the server.`, since its work did not
+  happen. The session is kept — on a connection a transaction reserved too, so the transaction stays
+  open and its next statement runs — except during a handshake, where the half-open connection is
+  dropped.
+- **On the server, but not running** — a PostgreSQL batch pipelined behind another one, whether
+  another caller's or a stand-in still draining a withdrawn statement (see
+  [Kept sessions](#kept-sessions)), and a request partly written, whose remainder must follow or
+  the session dies with every caller on it. `cancel()` returns the operation as it was —
+  unfinished, `cancelled` still `false` — and it runs to completion, so a write it carries lands.
+  Await it, or withdraw it, like any unfinished operation: a request still being written is
+  finished only while you keep driving it.
+
+A MySQL kill the server refuses leaves the operation the same way: untouched, `cancelled` still
+`false`, resolving on its own connection. A parked operation has no driver yet and is failed with
+`Database operation has no protocol to cancel.` For now a request can still stop the wrong
+statement when PostgreSQL has answered the one you cancel but the answer has not been read — larger
+than 1 MiB, or arrived while another batch is still being written; see the warning of the
+**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#cancellation)** driver.
 
 If the local socket has been closed while that request goes out, the operation is failed straight
 away with `Database connection was lost while cancelling the operation.` rather than waiting for
@@ -512,7 +529,7 @@ the operation's `error`, and `wait()` rethrows it as a `RuntimeException`.
 | `Database operation timed out after <timeout> seconds.` | The operation's deadline passed |
 | `Database operation lost the connection it was pinned to.` | A pinned operation's connection is gone |
 | `Database operation was withdrawn: its caller stopped waiting.` | `withdraw()` on an unfinished operation |
-| `Database operation was cancelled before reaching the server.` | `cancel()` on an operation composed but never written |
+| `Database operation was cancelled before reaching the server.` | `cancel()` on an operation not on the server yet: not written, queued or parked behind another, or on a connection still connecting |
 | `Database operation has no protocol to cancel.` | `cancel()` on an operation parked in `pending` |
 | `Database connection was lost while cancelling the operation.` | The cancel went out on a socket already closed |
 | `Database driver does not support cancellation.` | `cancel()` with a driver that has no cancellation (Redis) |
@@ -573,10 +590,12 @@ waited on there. Facades call it from `await()`.
 cancel (Operation $Operation): Operation
 ```
 
-Sets `revoked`, then sends a cancel request through the driver only when the operation is actually
-in flight. A finished operation keeps its result, a parked or composed one fails locally, and a
-cancel that never reached the server, or that went out on a closed socket, is reconciled and its
-slot taken back. See [Cancel a running statement](#cancel-a-running-statement).
+Sets `revoked`, then sends a cancel request through the driver only for the statement its session
+is executing. A finished operation keeps its result; a parked one, and one the server owes no answer
+(`Driver::owe()`), fail locally; one the server has but is not running is returned untouched and
+runs to completion; and a cancel that never reached the server, or that went out on a closed
+socket, is reconciled and its slot taken back. See
+[Cancel a running statement](#cancel-a-running-statement).
 
 ```php
 withdraw (Operation $Operation): Operation

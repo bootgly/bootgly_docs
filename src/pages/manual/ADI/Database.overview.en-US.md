@@ -155,7 +155,7 @@ The pool adds its own failures — no capacity, deadlines, cancellation, withdra
 | `Pool` | `null\|Pool` | The pool that owns it now. |
 | `FallbackPool` | `null\|Pool` | Where a failed read is re-run: the primary pool, for a read routed to a replica. |
 | `Connection` | `null\|Connection` | The connection it was handed, or pinned to inside a transaction. |
-| `cancelled` | `bool` | A cancel request reached the wire (`CancelRequest`, `KILL QUERY`). |
+| `cancelled` | `bool` | A cancel was sent for the statement its session was running (`CancelRequest`; on MySQL, only once the server accepted the `KILL QUERY`). Work withdrawn before reaching the server keeps it `false` — see **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)**. |
 | `revoked` | `bool` | The caller gave it up — `cancel()` or `withdraw()` — even when nothing was sent; no fallback re-runs it. |
 | `fallback` | `bool` | It was re-run on its fallback pool. |
 | `quarantine` | `bool` | Set by the driver on a connection-level failure, which counts against a replica pool's health — see [Replica health](/manual/ADI/Database/Pool/overview/#replica-health). |

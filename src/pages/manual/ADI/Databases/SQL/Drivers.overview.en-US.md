@@ -360,10 +360,19 @@ finishes an operation from the outside. SQLite inherits the `Driver` defaults, a
 `detach()` and `reset()` — its `abandon()` is its own.
 
 ```php
+owe (Operation $Operation): bool
+```
+
+Answers whether the operation's request is committed on the wire. The Pool asks it before a
+`cancel()`: when it returns `false` (a command composed but not written, one waiting in the FIFO
+behind another caller's, a session still in its handshake) the operation is withdrawn locally and
+nothing is sent. The default counts every operation past `Queued` as sent.
+
+```php
 detach (Operation $Operation): void
 ```
 
-Reconciles the wire for an operation whose caller stopped waiting (`Pool::withdraw()`), always
+Reconciles the wire for an operation whose caller stopped waiting (`Pool::withdraw()`, or a `cancel()` the Pool withdraws locally because `owe()` said nothing was sent), always
 keeping a drainable session when its batch is whole on the wire: the remaining answer is left to
 a detached stand-in, and no reader is required. A batch whose remaining bytes can never be
 attributed — half written — still drops the session. The default delegates to `abandon()`; a

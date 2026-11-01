@@ -368,10 +368,19 @@ Pool finaliza uma operação de fora. O SQLite herda os padrões do `Driver`, e 
 `detach()` e o `reset()` — o `abandon()` dele é próprio.
 
 ```php
+owe (Operation $Operation): bool
+```
+
+Responde se o pedido da operação está comprometido no wire. O Pool pergunta antes de um
+`cancel()`: quando devolve `false` (um comando composto mas não escrito, um esperando no FIFO atrás
+do de outro chamador, uma sessão ainda no handshake) a operação é retirada localmente e nada é
+enviado. O padrão conta como enviada toda operação além de `Queued`.
+
+```php
 detach (Operation $Operation): void
 ```
 
-Reconcilia o wire de uma operação cujo chamador parou de esperar (`Pool::withdraw()`), mantendo
+Reconcilia o wire de uma operação cujo chamador parou de esperar (`Pool::withdraw()`, ou um `cancel()` que o Pool retira localmente porque `owe()` disse que nada foi enviado), mantendo
 sempre uma sessão drenável quando o batch está inteiro no wire: a resposta restante fica com um
 stand-in destacado, e nenhum leitor é exigido. Um batch cujos bytes restantes nunca poderão ser
 atribuídos — escrito pela metade — ainda derruba a sessão. O padrão delega ao `abandon()`; um

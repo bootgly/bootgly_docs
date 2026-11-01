@@ -300,7 +300,8 @@ if ($Database instanceof Document) {
   unfinished, it records what to wait on next with `$Operation->await()` and a `Readiness`, or the
   facade's `await()` throws `Database operation did not provide readiness.` The rest of `Driver` has
   defaults for a driver that keeps no wire state: `cancel()` fails the operation with
-  `Database driver does not support cancellation.`
+  `Database driver does not support cancellation.`, and `owe()` counts every operation past `Queued`
+  as sent, which is right for a driver whose requests leave in one step.
 - `register()` only makes the class reachable through `create()` and `resolve()` on that
   `Databases` instance; `new Document(['driver' => 'memory'])` works without it.
 

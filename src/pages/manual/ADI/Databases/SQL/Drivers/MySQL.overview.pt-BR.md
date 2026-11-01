@@ -162,7 +162,11 @@ Cada valor é ligado com o tipo para o qual o tipo PHP dele mapeia:
 
 Um array, ou um objeto que não é `DateTimeInterface` — inclusive um `Stringable` —, falha a operação
 com `MySQL cannot bind the parameter at position 1.`, contando as posições a partir de `0`; o
-`await()` a lança, e a conexão continua utilizável.
+`await()` a lança, e a conexão continua utilizável. Por enquanto, um caso deixa a conexão travada em
+vez disso: um comando composto enquanto o `COM_STMT_PREPARE` do mesmo SQL ainda está em voo na
+conexão dele só liga os valores quando chega à cabeça da fila, e quando eles não podem ser ligados
+ali, a operação falha mas a conexão continua esperando uma resposta que nunca vem — toda operação
+entregue a ela depois falha no prazo dela.
 **[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compara esses binds com os do
 PostgreSQL e do SQLite.
 
@@ -290,15 +294,25 @@ $Database->await($Running)->Result->row; // ['slept' => 1]
 ```
 
 O `cancel()` abre uma segunda conexão para o mesmo `host` e `port`, a autentica como o mesmo
-usuário, envia `KILL QUERY` com o thread id que o greeting do servidor deu à sessão, depois fecha
-essa conexão e marca `cancelled`. O kill é advisory: a operação ainda resolve ou falha na própria
-conexão. Uma função pode só retornar antes — o `SLEEP()` retorna `1`, como acima — e a operação
-termina normalmente; um statement interrompido enquanto lê ou calcula linhas falha, em vez disso,
-com `1317: Query execution was interrupted` (`code` `1317`).
+usuário, envia `KILL QUERY` com o thread id que o greeting do servidor deu à sessão e lê a resposta,
+depois fecha essa conexão; o `cancelled` é marcado assim que o servidor aceita o kill. O kill é
+advisory: a operação ainda resolve ou falha na própria conexão. Uma função pode só retornar antes —
+o `SLEEP()` retorna `1`, como acima — e a operação termina normalmente; um statement interrompido
+enquanto lê ou calcula linhas falha, em vez disso, com `1317: Query execution was interrupted`
+(`code` `1317`).
 
-- Antes de o greeting chegar — a conexão ainda está discando — não há thread id para nomear, e a
-  operação falha localmente com `MySQL cancellation requires the greeting thread id.` Um único
-  `advance()` em um pool frio só começa a discagem, então cancelar logo depois dele termina assim.
+- O kill só sai para o comando que a sessão está executando: a cabeça da fila, inteira no wire.
+  Qualquer outra coisa ainda não está no servidor, e o pool a retira localmente com
+  `Database operation was cancelled before reaching the server.`: um comando enfileirado atrás de
+  outro, que simplesmente sai da fila; uma operação ainda discando ou autenticando, que leva junto a
+  conexão semiaberta dela; e um comando parametrizado enquanto só o `COM_STMT_PREPARE` dele saiu.
+  Esse já aparece em `Reading`, porque o driver só escreve o `COM_STMT_EXECUTE` dele quando o
+  prepare é respondido, e nunca é executado. Um único `advance()` em um pool frio só começa a
+  discagem, então um cancel logo depois dele retira a operação.
+- Um comando ainda sendo escrito é deixado rodando: o resto dele precisa seguir, ou a sessão morre
+  com todo comando enfileirado nela. O mesmo vale para um comando cujo kill o servidor recusa — com
+  `Unknown thread id`, por exemplo, de um servidor que não conhece mais a sessão. Nos dois casos o
+  `cancel()` devolve a operação intocada, `cancelled` ainda `false`, e você ainda a aguarda.
 - O side channel é mais uma sessão no servidor enquanto dura, então conta contra o
   `max_connections`. O connect, as leituras e as escritas dele bloqueiam o worker, o connect por no
   máximo `timeout` (veja **[Timeout](/manual/ADI/Database/Config/overview/#timeout)**). Quando ele
@@ -315,14 +329,10 @@ cancel que não pode ser enviado está em
 **[Cancele um statement em execução](/manual/ADI/Database/Pool/overview/#cancele-um-statement-em-execução)**.
 
 > [!WARNING]
-> O `KILL QUERY` nomeia a sessão, não um statement. Por enquanto, o `cancel()` de uma operação
-> enfileirada atrás do comando de outro chamador mata esse comando no lugar dela, e a operação que
-> você cancelou é escrita e roda quando chega à cabeça. Um cancel enviado depois do greeting mas antes
-> de o comando ser escrito — enquanto a sessão ainda autentica — não encontra nada rodando, e o
-> statement então roda por inteiro. O `cancelled` vale `true` nos dois casos. E um kill que chega
-> enquanto o servidor ainda envia as definições de coluna de um resultado falha a operação com um
-> erro do driver que começa com `MySQL length-encoded string overruns the packet:` em vez de
-> `1317`, e derruba a sessão junto com todo comando enfileirado nela.
+> Por enquanto, um kill que chega enquanto o servidor ainda envia as definições de coluna de um
+> resultado falha a operação com um erro do driver que começa com
+> `MySQL length-encoded string overruns the packet:` em vez de `1317`, e derruba a sessão junto com
+> todo comando enfileirado nela.
 
 ## Limites
 
@@ -359,7 +369,7 @@ não têm `code`:
 | `MySQL server RSA public key is invalid.` | A `key` pinada não pode ser carregada |
 | `MySQL cannot bind the parameter at position 1.` | Um parâmetro array ou objeto |
 | `MySQL LOCAL INFILE requests are not supported.` | O servidor pediu um arquivo local |
-| `MySQL cancellation requires the greeting thread id.` | `cancel()` antes de o greeting chegar |
+| `MySQL cancellation requires the greeting thread id.` | `cancel()` num comando em execução de uma sessão cujo greeting o driver nunca leu |
 | `MySQL cancel connection failed: Connection refused.` | O side channel do cancel não conseguiu conectar |
 | `MySQL cancel requires fast authentication on the side channel.` | O side channel precisa de full authentication |
 | `MySQL cancel authentication rejected.` | O servidor recusou o login do side channel |
@@ -392,13 +402,27 @@ handshake response, continuações de autenticação, escrita do comando e leitu
 set.
 
 ```php
+owe (Operation $Operation): bool
+```
+
+Se o servidor deve uma resposta à operação, o que o Pool pergunta antes de enviar um cancel. Só a
+cabeça da fila escreve, então é `true` para a cabeça quando o comando dela está inteiro no wire —
+para um comando parametrizado em um miss do cache de statements, quando o `COM_STMT_EXECUTE` dele
+está, não só o `COM_STMT_PREPARE` que vem antes — e para uma cabeça escrita pela metade, cujo
+restante precisa seguir. Um comando enfileirado atrás da cabeça, e uma sessão ainda no handshake,
+não têm nada a receber: o Pool os retira localmente.
+
+```php
 cancel (Operation $Operation): Operation
 ```
 
-Mata o comando em andamento por uma sessão separada, em plaintext (`KILL QUERY`), e marca a
-operação como `cancelled` quando o kill é enviado. Falha a operação com
-`MySQL cancellation requires the greeting thread id.` antes de o greeting chegar, e com uma das
-mensagens `MySQL cancel …` acima quando o side channel não consegue conectar ou entrar.
+Mata o comando que a sessão está executando — a cabeça, inteira no wire (`owe()`) — por uma sessão
+separada, em plaintext (`KILL QUERY`), e marca a operação como `cancelled` quando o servidor
+responde ao kill com OK. Qualquer outra operação, e uma cujo kill o servidor recusa, é devolvida
+intocada, com `cancelled` `false`. Falha a operação com
+`MySQL cancellation requires the greeting thread id.` quando o driver nunca leu o greeting da
+sessão, e com uma das mensagens `MySQL cancel …` acima quando o side channel não consegue conectar
+ou entrar.
 
 ```php
 abandon (Operation $Operation): void
@@ -418,10 +442,12 @@ detach (Operation $Operation): void
 
 Reconcilia o wire quando um chamador para de esperar por uma operação (`Pool::withdraw()`:
 uma resposta deferred cuja espera foi recusada ou interrompida, ou cujo Fiber da requisição
-foi destruído). Uma irmã enfileirada simplesmente sai da FIFO; a cabeça é entregue a um
-stand-in destacado que drena a resposta, de modo que a operação retomada pelo Pool nunca mais
-é lida, escrita ou resolvida. Nenhum leitor é exigido: o `check()` ignora uma cabeça
-stand-in, então a conexão volta para `idle` — a menos que outros chamadores ainda leiam
+foi destruído), e quando o `Pool::cancel()` retira uma à qual o servidor não deve nada
+(`owe()`). Uma irmã enfileirada simplesmente sai da FIFO; a cabeça é entregue a um stand-in
+destacado que drena a resposta — para uma cabeça com só o `COM_STMT_PREPARE` fora, o
+prepare-OK, e o `COM_STMT_EXECUTE` dela nunca é escrito —, de modo que a operação retomada pelo
+Pool nunca mais é lida, escrita ou resolvida. Nenhum leitor é exigido: o `check()` ignora uma
+cabeça stand-in, então a conexão volta para `idle` — a menos que outros chamadores ainda leiam
 ali — e a próxima operação entregue a ela entra na fila atrás do stand-in e o bombeia; o
 `$detached` informa que a sessão ainda deve a resposta do stand-in. Só um comando que
 nunca chegou inteiro ao wire derruba a sessão.

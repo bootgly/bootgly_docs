@@ -302,7 +302,8 @@ if ($Database instanceof Document) {
   registra o que esperar em seguida com `$Operation->await()` e um `Readiness`, senão o `await()`
   da fachada lança `Database operation did not provide readiness.` O resto do `Driver` tem padrões
   para um driver que não guarda estado de wire: `cancel()` falha a operação com
-  `Database driver does not support cancellation.`
+  `Database driver does not support cancellation.`, e `owe()` conta como enviada toda operação além
+  de `Queued`, o certo para um driver cujos pedidos saem num passo só.
 - `register()` só torna a classe alcançável por `create()` e `resolve()` naquela instância de
   `Databases`; `new Document(['driver' => 'memory'])` funciona sem ele.
 
