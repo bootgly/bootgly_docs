@@ -10,8 +10,8 @@ comes from application code. Use raw SQL only when the builder is not the right 
 In `HTTP_Server_CLI` routes, do not build `SQL` yourself: use the per-worker
 `$Response->Database`
 **[Response Resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**. The
-**[Database DBAL](/guide/database-dbal/overview/)** guide shows how to await operations
-through it instead of calling `Pool->wait()` directly.
+**[Database DBAL](/guide/database-dbal/overview/)** guide shows how it waits for operations
+through the response instead of blocking the worker.
 
 ## The flow
 
@@ -31,9 +31,9 @@ $Users = $Database
    ->filter(Columns::Active, Operators::Equal, true);
 
 $Operation = $Database->query($Users);
-$Database->Pool->wait($Operation);
+$Database->await($Operation);
 
-$rows = $Operation->rows;
+$rows = $Operation->Result->rows;
 ```
 
 This builds `SQL` from the project's `database` config scope, so it runs inside a project (its
@@ -49,7 +49,9 @@ set `port` and `username` too.
 
 `SQL::table()` starts the builder with the database dialect already selected. Passing the
 builder to `SQL::query()` compiles it into SQL and ordered parameters before the operation
-is assigned to the pool.
+is assigned to the pool. `await()` drives the operation to its end and returns it; the rows are
+in `$Operation->Result->rows`, keyed by column name. Everything else a finished operation holds
+is in **[Read the outcome](/manual/ADI/Databases/SQL/overview/#read-the-outcome)**.
 
 ## Read rows
 
@@ -61,7 +63,7 @@ $Users = $Database
    ->limit(10);
 
 $Operation = $Database->query($Users);
-$Database->Pool->wait($Operation);
+$Database->await($Operation);
 ```
 
 Compiled for PostgreSQL:
@@ -76,7 +78,28 @@ Parameters:
 ['Ada']
 ```
 
-When read replicas are configured, read builders like this can route to a replica unless the
+Each `filter()` is joined to the one before it with `AND`. Write `->or` before a `filter()` to
+join it with `OR` instead:
+
+```php
+$Users = $Database
+   ->table(Tables::Users)
+   ->select(Columns::Id, Columns::Name)
+   ->filter(Columns::Name, Operators::Equal, 'Ada')
+   ->or
+   ->filter(Columns::Name, Operators::Equal, 'Grace');
+```
+
+Compiled for PostgreSQL:
+
+```sql
+SELECT "id", "name" FROM "users" WHERE "name" = $1 OR "name" = $2
+```
+
+`->or` applies to the next filter only. To group conditions, as in `A AND (B OR C)`, use `nest()`
+— see **[OR and AND](/manual/ADI/Databases/SQL/Builder/Reading/overview/#or-and-and)**.
+
+When read replicas are configured, read builders like these can route to a replica unless the
 current scope is sticky after a write. See
 **[Database read replicas](/guide/database-read-replicas/overview/)** for the routing rules.
 
@@ -91,17 +114,20 @@ $Insert = $Database
    ->output(Columns::Id);
 
 $Operation = $Database->query($Insert);
-$Database->Pool->wait($Operation);
+$Database->await($Operation);
 ```
 
 Only PostgreSQL supports `output()`, which compiles to `RETURNING`; the returned columns
-arrive in `$Operation->rows`. MySQL and SQLite reject it (`output()` throws
+arrive in `$Operation->Result->rows`. MySQL and SQLite reject it (`output()` throws
 `InvalidArgumentException` with `SQL dialect does not support RETURNING output.`), so omit it
 there and read the generated key from `$Operation->Result->inserted` after awaiting the
 operation; PostgreSQL leaves that field at `0`. See
 **[Returning output](/manual/ADI/Databases/SQL/Builder/Writing/overview/#returning-output)**
 and
 **[Generated keys without RETURNING](/manual/ADI/Databases/SQL/Drivers/overview/#generated-keys-without-returning)**.
+
+`update()` and `delete()` require at least one `filter()`. The builder stops global mutation
+queries before they can run: `query()` throws instead of sending them.
 
 ## Use a transaction when writes must stay together
 
@@ -110,28 +136,30 @@ When several statements must share one connection and commit or roll back as a u
 **[Database transactions](/guide/database-transactions/overview/)** for the full flow,
 rollback pattern and savepoints.
 
-`update()` and `delete()` require at least one `filter()`. The builder stops global mutation
-queries before they can run.
-
 ## Dynamic names and raw expressions
 
 Prefer backed enums for table and column names. When a name is only known at runtime, wrap
-it in `Identifier` so the dialect can quote it safely:
+it in `Identifier` so the dialect quotes it, segment by segment —
+`SELECT "users"."id" FROM "users"` on PostgreSQL:
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Identifier;
 
 $Users = $Database
-   ->table(new Identifier('public.users'))
-   ->select(new Identifier('id'));
+   ->table(new Identifier('users'))
+   ->select(new Identifier('users.id'));
 ```
+
+Quoting stops injection, not access: check a name that comes from a request against the names you
+allow first — see
+**[Dynamic identifiers](/manual/ADI/Databases/SQL/Builder/Composing/overview/#dynamic-identifiers)**.
 
 Use `Expression` only for trusted SQL fragments:
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Expression;
 
-$Now = new Expression('NOW()');
+$Now = new Expression('CURRENT_TIMESTAMP');
 
 $Query = $Database
    ->table(Tables::Users)
@@ -139,11 +167,44 @@ $Query = $Database
 ```
 
 `Expression` does not carry bindings. Values that come from users should go through
-`filter()` or `set()` so they become parameters.
+`filter()` or `set()` so they become parameters. Both wrappers, and the subqueries and CTEs
+you can build with them, are in
+**[Composing queries](/manual/ADI/Databases/SQL/Builder/Composing/overview/)**.
+
+## When a query throws
+
+A query can fail in two places. A builder that cannot become a valid statement throws
+`InvalidArgumentException` before anything is sent: a builder call throws at once for bad input,
+and `query()` throws for a statement it cannot compile, as below. A statement the database refuses
+fails the operation instead: `await()` throws `RuntimeException` with the server's message, and the
+driver's error code stays in `$Operation->code`.
+
+```php
+use InvalidArgumentException;
+use RuntimeException;
+
+try {
+   $Operation = $Database->query($Users);
+   $Database->await($Operation);
+}
+catch (InvalidArgumentException $Exception) {
+   echo "Invalid query: {$Exception->getMessage()}\n";
+}
+catch (RuntimeException $Exception) {
+   echo "Query failed ({$Operation->code}): {$Exception->getMessage()}\n";
+}
+```
+
+A `delete()` without a filter prints `Invalid query: SQL update/delete requires at least one filter.`;
+an insert of an id that already exists prints, on PostgreSQL,
+`Query failed (23505): duplicate key value violates unique constraint "users_pkey"`. Every
+builder error, and when it is thrown, is listed in
+**[Errors](/manual/ADI/Databases/SQL/Builder/overview/#errors)**; the failure fields of an
+operation are in **[Read the outcome](/manual/ADI/Databases/SQL/overview/#read-the-outcome)**.
 
 ## Next references
 
-- **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** - lifecycle, compile and execution.
+- **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** - entry points, compile and execution, modes and errors.
 - **[Database DBAL](/guide/database-dbal/overview/)** - async DBAL usage in HTTP responses.
 - **[Database ORM](/guide/database-orm/overview/)** - Data Mapper entities over SQL operations.
 - **[Database read replicas](/guide/database-read-replicas/overview/)** - route safe reads to replicas and keep writes on primary.
