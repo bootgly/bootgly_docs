@@ -145,7 +145,7 @@ or `SQL literal filters do not accept values.` The single-value operators take a
 driver cannot bind — an array, or an object it has no mapping for, such as a builder — fails only
 when the operation runs: `await()` throws `RuntimeException`
 (`PostgreSQL parameter must be scalar or null.` on PostgreSQL). What each driver binds is in
-**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**, and every operator and the SQL it
+**[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**, and every operator and the SQL it
 compiles to are in
 **[Auxiliary enums](/manual/ADI/Databases/SQL/Builder/Dialects/overview/#auxiliary-enums)**.
 

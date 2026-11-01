@@ -165,7 +165,7 @@ com `MySQL cannot bind the parameter at position 1.`, contando as posições a p
 `await()` a lança, e a conexão continua utilizável — também quando o comando foi composto enquanto
 o `COM_STMT_PREPARE` do mesmo SQL ainda estava em voo, e só liga os valores ao chegar à cabeça da
 fila.
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compara esses binds com os do
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compara esses binds com os do
 PostgreSQL e do SQLite.
 
 Passe exatamente um valor por placeholder. O driver confere a contagem com os placeholders que o
@@ -221,7 +221,7 @@ binário; nos dois, elas são convertidas pelo tipo da coluna:
 
 Um `BOOLEAN`, portanto, volta como `1` ou `0`, não como `true` ou `false`. Um `FLOAT`, que o MySQL
 guarda em precisão simples, lê `1.1` no protocolo de texto e `1.100000023841858` no binário.
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** põe essas conversões lado a lado com
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** põe essas conversões lado a lado com
 as do PostgreSQL e do SQLite.
 
 ## Chaves geradas

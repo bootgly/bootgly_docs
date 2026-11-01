@@ -202,7 +202,7 @@ Run it through `query()` on a PostgreSQL facade: with the bios `Databases and en
 Every dialect has a matching native wire driver, so the SQL a dialect generates runs end to end,
 with the same Pool, transactions and ORM on the three engines. See
 **[SQL Drivers](/manual/ADI/Databases/SQL/Drivers/overview/)** for driver selection and the
-capability matrix, and **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** for how
+capability matrix, and **[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** for how
 each driver binds the values you pass and decodes what comes back.
 
 ## Reference

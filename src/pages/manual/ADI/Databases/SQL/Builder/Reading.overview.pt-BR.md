@@ -145,7 +145,7 @@ ou `SQL literal filters do not accept values.` Os operadores de valor único ace
 então um que o driver não consegue vincular — um array, ou um objeto para o qual ele não tem
 mapeamento, como um builder — só falha quando a operação roda: o `await()` lança `RuntimeException`
 (`PostgreSQL parameter must be scalar or null.` no PostgreSQL). O que cada driver vincula está em
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**, e todos os operadores e o SQL
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**, e todos os operadores e o SQL
 para o qual compilam estão em
 **[Enums auxiliares](/manual/ADI/Databases/SQL/Builder/Dialects/overview/#enums-auxiliares)**.
 

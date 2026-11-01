@@ -7,7 +7,7 @@ per primary key, writes the key the database generated back into the entity you 
 the relations the selection named. Composing operations is on
 **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)**, relation loading on
 **[ORM relations](/manual/ADI/Databases/SQL/Repository/Relations/overview/)**, and what each driver
-returns for a column on **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
+returns for a column on **[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 The examples on this page share this entity and a `$Database` opened from the project's `database`
 config scope. In an `HTTP_Server_CLI` route, use `$Response->Database` instead, and outside a

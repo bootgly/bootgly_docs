@@ -48,7 +48,7 @@ Migrations and Seeders — is driver-agnostic: the same code runs on the three e
 differs is what comes back — [Result differences](#result-differences),
 [Errors and codes](#errors-and-codes) — and what a single statement may do ([Limits](#limits)).
 How each driver binds PHP values and decodes column types is on
-**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
+**[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 ## Generated keys without RETURNING
 
@@ -346,7 +346,7 @@ Load rows with multi-row `INSERT`s instead, in batches — see
   authentication plugins, binary protocol and `KILL QUERY`.
 - **[SQLite driver](/manual/ADI/Databases/SQL/Drivers/SQLite/overview/)** — zero-setup
   file and `:memory:` databases.
-- **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — parameter binding and
+- **[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — parameter binding and
   result types, driver by driver.
 - **[Query dialects](/manual/ADI/Databases/SQL/Builder/Dialects/overview/)** — SQL
   generation differences between the engines.

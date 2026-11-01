@@ -63,7 +63,7 @@ Parameters:
 
 Each `set()` adds one column, in call order; a second `set()` of the same column replaces its
 value and keeps its place. Values become parameters, bound by the driver: how booleans, decimals
-and dates map on each one is on **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**
+and dates map on each one is on **[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**
 — on PostgreSQL, format a `DateTimeInterface` first, since its driver refuses one for now.
 
 Run the builder like any other:

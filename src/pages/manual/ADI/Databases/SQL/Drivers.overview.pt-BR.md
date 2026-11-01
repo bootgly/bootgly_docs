@@ -49,7 +49,7 @@ Seeders — é agnóstico de driver: o mesmo código roda nos três engines. O q
 volta — [Diferenças no resultado](#diferenças-no-resultado), [Erros e códigos](#erros-e-códigos) —
 e o que uma única instrução pode fazer ([Limites](#limites)). Como cada driver vincula valores PHP
 e decodifica os tipos de coluna está em
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 ## Chaves geradas sem RETURNING
 
@@ -354,7 +354,7 @@ Carregue linhas com `INSERT`s de várias linhas, em lotes — veja
   plugins de autenticação, protocolo binário e `KILL QUERY`.
 - **[Driver SQLite](/manual/ADI/Databases/SQL/Drivers/SQLite/overview/)** — bancos em
   arquivo e `:memory:` sem setup.
-- **[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — vínculo de parâmetros e
+- **[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — vínculo de parâmetros e
   tipos de resultado, driver a driver.
 - **[Dialetos de Query](/manual/ADI/Databases/SQL/Builder/Dialects/overview/)** —
   diferenças de geração de SQL entre os engines.

@@ -204,7 +204,7 @@ só a segunda.
 Todo dialeto tem um wire driver nativo correspondente, então o SQL que um dialeto gera executa de
 ponta a ponta, com o mesmo Pool, transações e ORM nas três engines. Veja
 **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para seleção de driver e a matriz de
-capacidades, e **[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** para como cada
+capacidades, e **[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** para como cada
 driver vincula os valores que você passa e decodifica o que volta.
 
 ## Referência

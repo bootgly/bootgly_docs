@@ -749,10 +749,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Types'
+        title: 'Type mapping'
       },
       'pt-BR': {
-        title: 'Tipos'
+        title: 'Mapeamento de tipos'
       }
     }
   },

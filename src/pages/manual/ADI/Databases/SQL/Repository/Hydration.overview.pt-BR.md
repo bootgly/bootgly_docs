@@ -7,7 +7,7 @@ objeto por chave primária, grava de volta na entidade que você salvou a chave 
 carrega as relações que a seleção nomeou. Compor operações está em
 **[ORM Repository](/manual/ADI/Databases/SQL/Repository/overview/)**, o carregamento de relações em
 **[Relações ORM](/manual/ADI/Databases/SQL/Repository/Relations/overview/)**, e o que cada driver
-devolve para uma coluna em **[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
+devolve para uma coluna em **[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 Os exemplos desta página compartilham esta entidade e um `$Database` aberto a partir do escopo de
 config `database` do projeto. Numa rota do `HTTP_Server_CLI`, use `$Response->Database`, e fora de

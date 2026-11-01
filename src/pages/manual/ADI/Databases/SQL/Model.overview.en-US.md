@@ -174,7 +174,7 @@ driver refuses one as a `save()` parameter. Map the stored value, such as the `s
 document or of an enum's value, and convert it in your own code.
 
 What each driver returns for each column type is on
-**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/#results)**, and dates and times have
+**[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/#results)**, and dates and times have
 a section of their own below.
 
 ### Construction and defaults

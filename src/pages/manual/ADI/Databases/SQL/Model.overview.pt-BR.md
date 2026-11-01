@@ -177,7 +177,7 @@ em uma delas, e todo driver recusa uma delas como parâmetro do `save()`. Mapeie
 como a `string` de um documento JSON ou do valor de um enum, e converta-o no seu próprio código.
 
 O que cada driver devolve para cada tipo de coluna está em
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/#resultados)**, e datas e horas têm
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/#resultados)**, e datas e horas têm
 uma seção própria abaixo.
 
 ### Construção e valores padrão

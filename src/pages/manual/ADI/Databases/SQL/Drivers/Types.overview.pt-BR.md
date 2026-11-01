@@ -1,4 +1,4 @@
-# Tipos SQL
+# Mapeamento de tipos entre PHP e SQL
 
 O `query()` envia valores PHP como os parâmetros de uma instrução e devolve linhas de valores PHP,
 e cada driver SQL mapeia as duas direções do seu jeito: o PostgreSQL pelo OID de tipo de cada

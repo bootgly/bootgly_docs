@@ -1,4 +1,4 @@
-# SQL types
+# Type mapping between PHP and SQL
 
 `query()` sends PHP values as the parameters of a statement and hands back rows of PHP values, and
 each SQL driver maps both directions its own way: PostgreSQL by the type OID of each parameter and

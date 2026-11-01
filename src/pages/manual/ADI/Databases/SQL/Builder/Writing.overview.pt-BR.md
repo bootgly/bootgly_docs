@@ -64,7 +64,7 @@ Parâmetros:
 Cada `set()` adiciona uma coluna, na ordem das chamadas; um segundo `set()` da mesma coluna
 substitui o valor dela e mantém o lugar. Os valores viram parâmetros, vinculados pelo driver: como
 booleanos, decimais e datas mapeiam em cada um está em
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — no PostgreSQL, formate um
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — no PostgreSQL, formate um
 `DateTimeInterface` antes, já que o driver dele recusa um por ora.
 
 Rode o builder como qualquer outro:

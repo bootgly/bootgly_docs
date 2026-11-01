@@ -146,7 +146,7 @@ $Database->await($Database->query(
 Date and time columns still come back as `DateTimeImmutable` (see [Results](#results)), so a value
 read from one must be formatted before it is bound again. For the same reason, an ORM entity with a
 writable `DateTimeImmutable` column fails on `save()` with the same message for now. MySQL and SQLite
-bind a date as it is; **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compares the
+bind a date as it is; **[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compares the
 three drivers.
 
 ## Prepared statements
@@ -214,7 +214,7 @@ $Operation = $Database->await($Database->query(
 $Operation->Result->row; // ['score' => 0.0, 'score_text' => 'Infinity']
 ```
 
-**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** puts these casts side by side with
+**[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** puts these casts side by side with
 MySQL's and SQLite's.
 
 ## Generated keys

@@ -148,7 +148,7 @@ Colunas de data e hora continuam voltando como `DateTimeImmutable` (veja
 [Resultados](#resultados)), então um valor lido de uma delas precisa ser formatado antes de ser
 ligado de novo. Pelo mesmo motivo, uma entidade do ORM com uma coluna `DateTimeImmutable` gravável
 falha no `save()` com a mesma mensagem, por enquanto. MySQL e SQLite ligam uma data como ela é;
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compara os três drivers.
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compara os três drivers.
 
 ## Prepared statements
 
@@ -216,7 +216,7 @@ $Operation = $Database->await($Database->query(
 $Operation->Result->row; // ['score' => 0.0, 'score_text' => 'Infinity']
 ```
 
-**[Tipos SQL](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** põe essas conversões lado a lado
+**[Mapeamento de tipos](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** põe essas conversões lado a lado
 com as do MySQL e do SQLite.
 
 ## Chaves geradas

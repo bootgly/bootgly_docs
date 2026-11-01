@@ -164,7 +164,7 @@ operation with `MySQL cannot bind the parameter at position 1.`, counting positi
 `await()` throws it, and the connection stays usable — also when the command was composed while
 the `COM_STMT_PREPARE` of the same SQL was still in flight, and binds its values only once it
 reaches the head of the queue.
-**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compares these bindings with
+**[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** compares these bindings with
 PostgreSQL's and SQLite's.
 
 Pass exactly one value per placeholder. The driver checks the count against the placeholders the
@@ -219,7 +219,7 @@ protocol; both are cast by column type:
 
 A `BOOLEAN` therefore reads back as `1` or `0`, not as `true` or `false`. A `FLOAT`, which MySQL
 stores in single precision, reads `1.1` in the text protocol and `1.100000023841858` in the binary
-one. **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** puts these casts side by side
+one. **[Type mapping](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** puts these casts side by side
 with PostgreSQL's and SQLite's.
 
 ## Generated keys
