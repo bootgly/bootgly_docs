@@ -634,8 +634,8 @@ export default {
       version: 'v0.22.0',
       meta: {
         description: {
-          'en-US': 'Native SQL wire drivers: PostgreSQL, MySQL/MariaDB and SQLite — selection, capabilities and pool notes.',
-          'pt-BR': 'Wire drivers SQL nativos: PostgreSQL, MySQL/MariaDB e SQLite — seleção, capacidades e notas de pool.'
+          'en-US': 'Native SQL wire drivers: PostgreSQL, MySQL/MariaDB and SQLite — selection, capabilities, result differences, error codes, limits and pool notes.',
+          'pt-BR': 'Wire drivers SQL nativos: PostgreSQL, MySQL/MariaDB e SQLite — seleção, capacidades, diferenças no resultado, códigos de erro, limites e notas de pool.'
         }
       },
       menu: {},
@@ -713,6 +713,31 @@ export default {
           'pt-BR': 'Driver nativo SQLite sobre ext-sqlite3: bancos em arquivo e :memory: sem setup para testes e protótipos.'
         }
       },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'SQLite'
+      },
+      'pt-BR': {
+        title: 'SQLite'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/Types': {
+    config: {
+      icon: 'data_object',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'How PostgreSQL, MySQL and SQLite bind PHP parameters and return column types, side by side, and what to normalize in PHP for portable code.',
+          'pt-BR': 'Como PostgreSQL, MySQL e SQLite vinculam parâmetros PHP e devolvem tipos de coluna, lado a lado, e o que normalizar no PHP para código portável.'
+        }
+      },
       menu: {
         separators: {
           lineBottom: true
@@ -724,10 +749,10 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'SQLite'
+        title: 'Types'
       },
       'pt-BR': {
-        title: 'SQLite'
+        title: 'Tipos'
       }
     }
   },

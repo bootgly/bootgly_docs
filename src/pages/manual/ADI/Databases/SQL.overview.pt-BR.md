@@ -282,7 +282,9 @@ O `cancel()` pede ao servidor que pare um statement em execução — `CancelReq
 `KILL QUERY` no MySQL — e é advisory: a operação ainda resolve, falha ou expira por conta própria.
 Uma operação que ainda não chegou ao servidor — recém-criada, estacionada em `pending`, ou ainda
 conectando — falha localmente na hora, em vez disso, e nada é enviado; uma que já terminou mantém o
-resultado.
+resultado. Por enquanto, cancelar uma operação atrás de outro statement na conexão dela pode parar
+esse statement no lugar dela, e uma operação MySQL cuja sessão ainda autentica não falha
+localmente — o statement dela roda por inteiro.
 O `withdraw()` herdado abandona operações localmente, quando quem as chamou para de esperar, e não
 envia nada. Os dois estão descritos em
 **[Cancele um statement em execução](/manual/ADI/Database/Pool/overview/#cancele-um-statement-em-execução)**
@@ -535,7 +537,8 @@ cancel (Operation $Operation): Operation
 
 Pede ao servidor, pelo pool dono da operação, que a pare, e a retorna; a operação ainda resolve,
 falha ou expira por conta própria. Uma operação que ainda não chegou ao servidor falha localmente
-na hora, e nada é enviado. Veja
+na hora, e nada é enviado — por enquanto, com as exceções de
+[Cancele ou retire](#cancele-ou-retire). Veja
 **[Cancele um statement em execução](/manual/ADI/Database/Pool/overview/#cancele-um-statement-em-execução)**.
 
 ```php

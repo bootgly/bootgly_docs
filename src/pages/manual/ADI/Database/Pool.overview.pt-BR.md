@@ -181,6 +181,12 @@ quem chamou: uma operação finda mantém seu estado e seu resultado, enquanto u
 servidor é falhada com `Database operation was cancelled before reaching the server.`, já que o
 trabalho dela não aconteceu. Uma operação estacionada ainda não tem driver e é falhada com
 `Database operation has no protocol to cancel.` Só uma operação de fato em voo gera um pedido.
+Por enquanto há exceções, descritas nos avisos dos drivers
+**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#cancelamento)** e
+**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#cancelamento)**: cancelar uma operação
+atrás de outro statement na conexão dela — em pipeline no PostgreSQL, enfileirada no MySQL — envia
+um pedido que para esse statement no lugar dela, e cancelar uma operação MySQL cuja sessão ainda
+autentica envia um que não encontra nada rodando.
 
 Se o socket local tiver sido fechado enquanto esse pedido sai, a operação falha na hora com
 `Database connection was lost while cancelling the operation.` em vez de esperar uma resposta que

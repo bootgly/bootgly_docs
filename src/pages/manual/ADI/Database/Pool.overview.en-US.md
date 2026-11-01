@@ -180,7 +180,12 @@ left holding: a finished operation keeps its state and its result, while one tha
 the server is failed with `Database operation was cancelled before reaching the server.`, since
 its work did not happen. A parked operation has no driver yet and is failed with
 `Database operation has no protocol to cancel.` Only an operation genuinely in flight produces a
-request.
+request. For now there are exceptions, described in the warnings of the
+**[PostgreSQL](/manual/ADI/Databases/SQL/Drivers/PostgreSQL/overview/#cancellation)** and
+**[MySQL](/manual/ADI/Databases/SQL/Drivers/MySQL/overview/#cancellation)** drivers: cancelling an
+operation behind another statement on its connection — pipelined on PostgreSQL, queued on MySQL —
+sends a request that stops that statement instead, and cancelling a MySQL operation whose session
+is still authenticating sends one that finds nothing running.
 
 If the local socket has been closed while that request goes out, the operation is failed straight
 away with `Database connection was lost while cancelling the operation.` rather than waiting for

@@ -18,23 +18,13 @@ $MySQL = new SQL(['driver' => 'mysql', 'port' => 3306, 'username' => 'root']);
 $SQLite = new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 ```
 
-Every connection key an array leaves out falls back to a built-in local default, and those
-target PostgreSQL whatever the `driver`: host `127.0.0.1`, port `5432`, database `bootgly`, user
-`postgres`, empty password. That is why the MySQL line sets its own `port` and `username`:
-`new SQL(['driver' => 'mysql'])` alone would dial `127.0.0.1:5432` as `postgres`.
-
-In a project, bind the driver through the `database` config scope — `DB_CONNECTION`
-selects a connection block that must already be declared:
-
-```bash :toolbar="true";
-DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=root php bootgly kit boot
-```
-
-The config adapter maps `pgsql`/`postgres`/`postgresql` to `Connections->PostgreSQL`,
-`mysql`/`mariadb` to `Connections->MySQL`, and `sqlite`/`sqlite3` to
-`Connections->SQLite`. It does not synthesize a missing block from ADI defaults. If the selected
-canonical block is absent, it throws, for example,
-`Database config is missing the selected connection scope: Connections->MySQL.`
+A key the array leaves out takes a local PostgreSQL's default whatever the `driver`, which is why
+the MySQL line sets its own `port` and `username`: `new SQL(['driver' => 'mysql'])` alone would dial
+`127.0.0.1:5432` as `postgres`. The defaults, and the driver names an array accepts, are in
+**[Keys and defaults](/manual/ADI/Database/Config/overview/#keys-and-defaults)** and
+**[Driver names](/manual/ADI/Database/Config/overview/#driver-names)**. In a project, `DB_CONNECTION`
+selects the driver through the `database` config scope — see
+**[Choose a driver](/guide/database-dbal/overview/#choose-a-driver)**.
 
 ## Capability matrix
 
@@ -45,15 +35,20 @@ canonical block is absent, it throws, for example,
 | TLS | yes (`secure` modes) | yes (`secure` modes) | — |
 | Authentication | cleartext, MD5, SCRAM-SHA-256 (cleartext/MD5, or SCRAM below 4096 iterations, need TLS or `disable` on a non-loopback host under `prefer`) | `mysql_native_password`, `caching_sha2_password` (full auth via TLS or pinned RSA key) | — |
 | Prepared statements | extended protocol + LRU cache | binary protocol + LRU cache | `SQLite3Stmt` + LRU cache |
+| `DateTimeInterface` parameters | refused — format the value first | bound as `Y-m-d H:i:s.u` | bound as `Y-m-d H:i:s.u` |
 | `RETURNING` | yes | no — `Result->inserted` instead | no — the `sqlite3` extension would run it twice |
 | Generated keys | `RETURNING` rows | `Result->inserted` (OK packet) | `Result->inserted` (`lastInsertRowID`) |
-| Cancellation | `CancelRequest` side channel | `KILL QUERY` side channel | not supported |
+| Several statements in one string | without parameters, all run and their results merge | refused (`1064`) | the first one runs |
+| Cancellation | `CancelRequest` side channel | `KILL QUERY` side channel | none — a statement has finished when `query()` returns |
 | Transactional DDL | yes | no (implicit commits) | yes |
 | Advisory locks | `pg_advisory_lock` | `GET_LOCK` | — (file lock only) |
 
-Everything above the driver — connection Pool, Transactions, Query Builder, ORM
-Repository, Migrations and Seeders — is driver-agnostic and works identically on the
-three engines.
+Everything above the driver — connection Pool, Transactions, Query Builder, ORM Repository,
+Migrations and Seeders — is driver-agnostic: the same code runs on the three engines. What still
+differs is what comes back — [Result differences](#result-differences),
+[Errors and codes](#errors-and-codes) — and what a single statement may do ([Limits](#limits)).
+How each driver binds PHP values and decodes column types is on
+**[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)**.
 
 ## Generated keys without RETURNING
 
@@ -103,6 +98,200 @@ the declared property type, so any column whose value is past `PHP_INT_MAX` — 
 a `DECIMAL` — raises the same `RuntimeException` naming the property rather than saturating it.
 Declare the property `null|int|string` and it hydrates exactly, as the driver decoded it.
 
+## Result differences
+
+The same statement can come back with a different `status`, `affected` and `inserted` on each
+driver (the fields are described in **[Result](/manual/ADI/Database/overview/#result)**):
+PostgreSQL copies the server's command tag, MySQL reads the packet that ends the command, and
+SQLite asks its handle. With a `stock` table holding the rows `(1, 0)` and `(2, 5)`:
+
+```php
+$Update = $Database->await($Database->query('UPDATE stock SET qty = 0'));
+
+$Update->Result->status;   // PostgreSQL and SQLite: UPDATE 2 — MySQL: UPDATE 1
+$Update->Result->affected; // PostgreSQL and SQLite: 2 — MySQL: 1
+
+$Select = $Database->await($Database->query('SELECT id FROM stock'));
+
+$Select->Result->status;   // SELECT 2
+$Select->Result->affected; // PostgreSQL: 2 — MySQL and SQLite: 0
+```
+
+MySQL counts the rows an `UPDATE` changed, not the rows it matched: row 1 already held `0`. The
+same comparison for other statements:
+
+| Statement | PostgreSQL | MySQL | SQLite |
+| --- | --- | --- | --- |
+| `INSERT` of 3 rows that get ids 2, 3 and 4 | `INSERT 0 3`, inserted `0` | `INSERT 0 3`, inserted `2` | `INSERT 0 3`, inserted `4` |
+| Upsert that updates an existing row | `INSERT 0 1`, affected `1` | `INSERT 0 2`, affected `2`, inserted: that row's id | `INSERT 0 1`, affected `1` |
+| `REPLACE` that replaces an existing row | — | `REPLACE 2`, affected `2` | `REPLACE 1`, affected `1` |
+| `WITH` … `UPDATE` changing 2 rows | `UPDATE 2`, affected `2` | `WITH`, affected `2` | `WITH`, affected `0` |
+| `CREATE TABLE` | `CREATE TABLE` | `CREATE` | `CREATE` |
+
+- `status` — PostgreSQL returns the server's own tag. MySQL and SQLite build one in that format
+  from the statement's first word: `INSERT 0 <affected>`, `UPDATE <affected>`, `DELETE <affected>`,
+  `REPLACE <affected>`, and the bare keyword, in upper case, for anything else — or an empty string
+  when the statement starts with a comment. MySQL writes `SELECT <rows>` for every statement that
+  returns rows, `SHOW TABLES` and `CALL` included; SQLite only for one that starts with `SELECT`.
+- `affected` — PostgreSQL takes the tag's number, so a `SELECT` reports the rows it returned and
+  an `UPDATE` the rows it matched. MySQL counts changed rows: an `INSERT … ON DUPLICATE KEY UPDATE`
+  counts 1 for a row it inserts, 2 for a row it updates and 0 for one left as it was, and a
+  `REPLACE` that replaces a row counts its deletion too. SQLite counts the rows a statement
+  inserted, updated or deleted. MySQL and SQLite report `0` for a `SELECT`.
+- `inserted` — PostgreSQL always reports `0`: read generated keys with `RETURNING` (the Builder's
+  `output()`). MySQL reports the `AUTO_INCREMENT` value of the first row the statement inserted —
+  an explicit value counts —, the updated row's id after an upsert that updated it, and `0` when
+  no row was inserted or the table has no `AUTO_INCREMENT` column. SQLite reports the rowid of the
+  last row inserted, which is the key only in a table keyed by an `INTEGER PRIMARY KEY`.
+
+> [!WARNING]
+> On SQLite these fields currently depend on the statement's first word. `affected` is read only
+> for a statement that starts with `INSERT`, `UPDATE`, `DELETE` or `REPLACE`, and `inserted` only
+> for `INSERT` and `REPLACE`: a `WITH` … `UPDATE`, or a write behind a leading `--` or `/* */`
+> comment, applies its changes and reports `affected` `0` and `inserted` `0`. And after an `INSERT`
+> that inserts nothing — `INSERT OR IGNORE`, `ON CONFLICT DO NOTHING`, an `INSERT … SELECT` that
+> selects no row — or an upsert that updates instead, `inserted` repeats the rowid of the last row
+> the connection inserted, in any table. Read `inserted` after a plain `INSERT`, and fetch the row
+> of an upsert by its unique key. MySQL reports the right numbers in both cases; only its `status`
+> is the bare `WITH`, or empty, for a write that starts with `WITH` or with a comment.
+
+## Errors and codes
+
+A failed operation keeps the driver's failure code in `code`: a string, or `null` when the failure
+did not come from the database (see
+**[Read the outcome](/manual/ADI/Databases/SQL/overview/#read-the-outcome)**). The messages differ
+per driver, and MySQL's follow the server's language (`lc_messages`), so branch on `code`. A
+duplicate key, detected on any driver:
+
+```php
+use RuntimeException;
+
+enum Tables: string { case Users = 'users'; }
+enum Columns: string { case Email = 'email'; }
+
+$Insert = $Database->query(
+   $Database->table(Tables::Users)->insert()->set(Columns::Email, 'ada@example.com')
+);
+
+try {
+   $Database->await($Insert);
+}
+catch (RuntimeException $Exception) {
+   $duplicate = match ($Database->Config->driver) {
+      'pgsql' => $Insert->code === '23505',
+      'mysql' => $Insert->code === '1062',
+      'sqlite' => $Insert->code === '2067' || $Insert->code === '1555',
+   };
+
+   if ($duplicate === false) {
+      throw $Exception;
+   }
+
+   // The e-mail is taken: ask for another one.
+}
+```
+
+The Builder writes each driver's placeholders, so with `$Database` opened from the project's
+`database` scope (see **[Open a database](/manual/ADI/Databases/SQL/overview/#open-a-database)**)
+the block runs unchanged whatever `DB_CONNECTION` selects. SQLite splits a duplicate key in two
+codes: `2067` for a `UNIQUE` column, `1555` for the primary key.
+
+The usual failures, by driver:
+
+| Failure | PostgreSQL | MySQL | SQLite |
+| --- | --- | --- | --- |
+| Duplicate key | `23505` | `1062` | `2067`; `1555` on the primary key |
+| Foreign key: the parent row is missing | `23503` | `1452` | `787` |
+| Foreign key: the row is still referenced | `23503` | `1451` | `787` |
+| `NULL` in a `NOT NULL` column | `23502` | `1048` | `1299` |
+| `CHECK` constraint | `23514` | `3819` | `275` |
+| Unknown table | `42P01` | `1146` | `1` |
+| Syntax error | `42601` | `1064` | `1` |
+| Database file locked | — | — | `5`; `517` under WAL when a transaction's snapshot is stale |
+
+Each driver shapes `error` its own way:
+
+- PostgreSQL keeps the server's primary message —
+  `duplicate key value violates unique constraint "users_email_key"` — and drops the detail, the
+  hint and the error position that come with it. `code` is the SQLSTATE.
+- MySQL writes `<errno>: <message>` — `1062: Duplicate entry 'ada@example.com' for key 'users.email'`.
+  `code` is the errno; the SQLSTATE the server also sends is dropped.
+- SQLite passes on the `sqlite3` extension's message, prefixed by the step that failed:
+  `Unable to execute statement: UNIQUE constraint failed: users.email` while the statement ran,
+  `Unable to prepare statement: no such table: users` while it compiled — a statement reused from
+  the cache compiles again as it runs, so it reports the same error with the first prefix. `code`
+  is the extended result code, so every compile error — syntax, unknown table or column — shares
+  `1`.
+
+A failure raised by the driver or the pool instead of the database carries no `code`: a parameter
+the driver cannot bind (`PostgreSQL parameter must be scalar or null.`), SQLite's refused
+`RETURNING`, an elapsed deadline, a pool refusal (see
+**[Pool errors](/manual/ADI/Database/Pool/overview/#errors)**). On SQLite, a positional parameter
+past the statement's last placeholder is refused by the engine, not the driver, so it carries one:
+`Unable to bind parameter number 2`, code `25`.
+
+## Limits
+
+### One statement per query
+
+Send one statement per `query()`. A string that holds several, separated by `;`, is run in full,
+refused or cut short, depending on the driver:
+
+- PostgreSQL runs every statement of a string without parameters and answers with one `Result`:
+  the rows of all of them in one `rows` list, with the `columns`, `status` and `affected` of the
+  last one — three `INSERT`s report `INSERT 0 1` and `affected` `1` after writing three rows. With
+  parameters the server refuses the string:
+  `cannot insert multiple commands into a prepared statement` (`42601`).
+- MySQL refuses the whole string before running any of it, with or without parameters:
+  `1064: You have an error in your SQL syntax; …`.
+- SQLite runs the first statement and ignores the rest, without an error. Parameters bind to that
+  first statement only: one it has no placeholder for fails the operation before anything runs —
+  `Unable to bind parameter number 1` (code `25`) for a position,
+  `SQLite cannot bind the parameter "x": the statement has no matching placeholder.` for a name.
+
+On PostgreSQL:
+
+```php
+$Batch = $Database->await($Database->query('SELECT 1 AS a; SELECT 2 AS b'));
+
+$Batch->Result->columns; // ['b']
+$Batch->Result->rows;    // [['a' => 1], ['b' => 2]]
+```
+
+### Stored procedures
+
+On MySQL, `CALL` returns the first result set of the procedure and drains the others, so the
+session stays usable:
+
+```php
+$Database->await($Database->query('CREATE PROCEDURE totals () BEGIN SELECT 1 AS first; SELECT 2 AS second; END'));
+
+$Call = $Database->await($Database->query('CALL totals()'));
+
+$Call->Result->rows; // [['first' => 1]]
+```
+
+A procedure that returns no result set reports `status` `CALL` and the `affected` count of its last
+statement. Parameters bind as in any other statement: `CALL report(?)`. On PostgreSQL, `CALL`
+reports `status` `CALL` and returns the procedure's `INOUT` and `OUT` parameters as one row. SQLite
+has no stored procedures.
+
+### Bulk loading
+
+- MySQL refuses `LOAD DATA LOCAL INFILE`. The driver does not offer local files to the server, so
+  MySQL answers
+  `3948: Loading local data is disabled; this must be enabled on both the client and server sides`
+  even when the server's `local_infile` is on, and the session stays usable. A server that asks for
+  a local file anyway gets none: the driver closes the session and fails the statement with
+  `MySQL LOCAL INFILE requests are not supported.`
+- PostgreSQL has no `COPY` to or from the client. `COPY … TO STDOUT` reports `COPY <n>` and returns
+  no rows. `COPY … FROM STDIN` currently waits out its whole `timeout` and fails with
+  `Database operation timed out after 30 seconds.` (the default) — with `timeout` `0`, it never
+  returns.
+
+Load rows with multi-row `INSERT`s instead, in batches — see
+**[Insert many rows](/manual/ADI/Databases/SQL/Builder/Writing/overview/#insert-many-rows)**.
+
 ## Pool notes
 
 - Every pooled connection binds one driver instance — prepared-statement caches are
@@ -145,9 +334,9 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   **[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations)**.
 - MySQL has no wire pipelining: co-located operations queue in a FIFO where only the
   head owns the socket. The Pool stays correct — siblings pump the shared read stream.
-- SQLite is synchronous: operations resolve immediately and never suspend. A `:memory:`
-  database is private to the handle that opens it, so its pool is confined to one
-  connection — a `pool.max` above `1` is reduced to `1`. File databases keep their pool.
+- SQLite is synchronous: an operation that gets the connection runs inside `query()` and never
+  suspends. A `:memory:` database is private to the handle that opens it, so its pool is confined
+  to one connection — a `pool.max` above `1` is reduced to `1`. File databases keep their pool.
 
 ## Reference
 
@@ -157,6 +346,8 @@ Declare the property `null|int|string` and it hydrates exactly, as the driver de
   authentication plugins, binary protocol and `KILL QUERY`.
 - **[SQLite driver](/manual/ADI/Databases/SQL/Drivers/SQLite/overview/)** — zero-setup
   file and `:memory:` databases.
+- **[SQL types](/manual/ADI/Databases/SQL/Drivers/Types/overview/)** — parameter binding and
+  result types, driver by driver.
 - **[Query dialects](/manual/ADI/Databases/SQL/Builder/Dialects/overview/)** — SQL
   generation differences between the engines.
 - **[Schema dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)** — DDL

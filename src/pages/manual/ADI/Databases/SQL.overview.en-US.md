@@ -278,8 +278,10 @@ pause between passes instead of spinning.
 `KILL QUERY` — and is advisory: the operation still resolves, fails or expires on its own. An
 operation that has not reached the server yet — just created, parked in `pending`, or still
 connecting — is failed locally at once instead, and nothing is sent; one already finished keeps its
-result. The inherited `withdraw()` gives operations up locally, when their caller stops waiting,
-and sends nothing. Both are described in
+result. For now, cancelling an operation behind another statement on its connection can stop that
+statement instead, and a MySQL operation whose session is still authenticating is not failed
+locally — its statement runs in full. The inherited `withdraw()` gives operations up locally, when
+their caller stops waiting, and sends nothing. Both are described in
 **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)** and
 **[Withdrawn operations](/manual/ADI/Database/Pool/overview/#withdrawn-operations)**.
 
@@ -526,7 +528,8 @@ cancel (Operation $Operation): Operation
 
 Asks the server, through the pool that owns the operation, to stop it, and returns it; the
 operation still resolves, fails or expires on its own. An operation that has not reached the server
-yet is failed locally at once, and nothing is sent. See
+yet is failed locally at once, and nothing is sent — for now with the exceptions in
+[Cancel or withdraw](#cancel-or-withdraw). See
 **[Cancel a running statement](/manual/ADI/Database/Pool/overview/#cancel-a-running-statement)**.
 
 ```php
