@@ -128,7 +128,7 @@ O repositório é clonado (git do sistema) com o **histórico completo**, valida
 A URL é verificada antes de qualquer coisa ser escrita ou executada. Aceitas: `https://` sem credenciais, SSH (`git@host:dono/repo.git` ou `ssh://git@host/dono/repo.git`), `file://` sem credenciais e um caminho local. Recusadas, cada uma com sua solução:
 
 - **credenciais na URL** — `https://usuario:token@…`, um token como nome de usuário, qualquer parte de usuário numa URL `file://`, ou um endereço SSH `usuario:senha@host:caminho`: deixe o git fornecê-las por um credential helper (`git help credentials`) ou use SSH;
-- **um remote helper** — `ext::` (executa um comando), `fd::` ou qualquer `<nome>::`: clone o repositório você mesmo e importe o caminho local;
+- **um remote helper** — `ext::` (executa um comando), `fd::` ou qualquer `<name>::`: clone o repositório você mesmo e importe o caminho local;
 - **um transporte em texto puro** — `http://`, `git://`, `ftp://`: use `https://` ou SSH;
 - **um transporte não suportado** — qualquer outro esquema (`rsync://`, `ssh+git://` — escreva `ssh://` ou `git+ssh://`);
 - **uma URL malformada** — vazia, que começa com hífen, carrega um caractere de controle ou espaços nas pontas, tem texto antes do `esquema://`, uma terceira barra depois dele ou uma barra a menos (`https:/…`), ou tem `?`, `#`, `\` ou um espaço na parte do host.
@@ -159,6 +159,8 @@ graph LR
   project --> reload["reload"]
   project --> restart["restart"]
   project --> info["info"]
+  project --> migrate["migrate"]
+  project --> seed["seed"]
   project --> logs["logs"]
   project --> schedule["schedule"]
   project --> startup["startup"]
@@ -466,6 +468,124 @@ Exemplo de saída:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### `project migrate`
+
+Aplica, reverte e inspeciona as migrations de banco de um projeto — os arquivos em
+`database/migrations/` — no banco que o escopo de config `database` dele declara. Sem ação, mostra
+o status. O guia **[Migrations de banco](/guide/database-migrations/overview/)** percorre o fluxo,
+e **[Migrations](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)** explica os arquivos e o
+runner:
+
+```bash
+php bootgly project App migrate                               # status — the default action
+php bootgly project App migrate create "Create Users Table"   # write a new migration file
+php bootgly project App migrate up                            # apply every pending migration
+php bootgly project App migrate up 2                          # apply at most 2
+php bootgly project App migrate down 1                        # revert the last applied one
+php bootgly project App migrate sync                          # reconcile the history (asks first)
+```
+
+Toda ação exceto `create` carrega o arquivo do projeto — sem bootá-lo — e abre o banco a partir
+de `configs/database/database.Config.php` (veja
+**[Configurar o banco](/guide/database-dbal/overview/#configurar-o-banco)**). Sem esse escopo o
+comando para com `Project has no configs directory: <name>` ou
+`Project has no database config scope: <name>`. Os arquivos ficam no projeto; os locks, no
+storage do kit:
+
+```
+projects/App/
+├── App.Project.php
+├── configs/database/database.Config.php   ← migrate, seed run
+└── database/
+    ├── migrations/                        ← migrate
+    └── seeders/                           ← seed
+storage/locks/
+├── migrations/App.lock                    ← migrate up, down, sync
+└── seeders/App.lock                       ← seed run
+```
+
+O lock de um projeto aninhado leva o caminho dele com cada `/` escrita como `~`
+(`App~API.lock`). As ações:
+
+- `status` (padrão) — conta as migrations `Applied`, `Local only` (pendentes) e `DB only`
+  (registradas no histórico, arquivo sumido), e nomeia o próximo arquivo pendente (`Next`) e o
+  primeiro só no banco a remover (`Remove`). Hoje ele cria a tabela de histórico
+  `_bootgly_migrations` quando ela falta, fora do lock: precisa de um usuário de banco com
+  permissão para criar tabelas, e num banco PostgreSQL novo não pode se sobrepor a um
+  `migrate up`;
+- `up [N]` — aplica as migrations pendentes em ordem de nome de arquivo, como um novo batch; com
+  `N`, no máximo `N` delas. Imprime `Migrations applied: <count>`. Hoje o `N` é truncado para um
+  número inteiro (`2.5` aplica duas), e um valor que não é número (`2x`) ou que fica abaixo de 1
+  (`0`, `0.5`, ou um negativo, que a CLI lê como opção) aplica todas as migrations pendentes;
+- `down <N>` — reverte as últimas `N` migrations aplicadas, da mais nova para a mais antiga, e
+  imprime `Migrations reverted: <count>`. A contagem é obrigatória e truncada do mesmo jeito
+  (`1.9` reverte uma): sem um número — nenhum, `2x`, ou um negativo, lido como opção — o comando
+  para com `Migration down requires a numeric step count.`, e abaixo de 1 (`0`, `0.5`) com
+  `Migration down requires a positive step count.`;
+- `sync` — faz o histórico bater com os arquivos sem rodar nenhuma migration: apaga as linhas
+  cujo arquivo sumiu e registra todo arquivo pendente como aplicado. Antes imprime um
+  `Migration Sync Check` (`Add`, `Delete`, `Add first`, `Delete first`), depois pergunta
+  `Apply migration sync to _bootgly_migrations?` — hoje o prompt mostra a dica `[y/N]` duas
+  vezes. `y` ou `yes`, em maiúsculas ou minúsculas, aplica e imprime `Migration Sync Applied` com
+  as contagens `Added` e `Deleted`; `n`, `no`, Enter ou o fim da entrada cancelam com
+  `Migration sync cancelled.`; qualquer outra resposta pergunta de novo em um terminal e cancela
+  sem um. Um script responde pela entrada (`echo y | php bootgly project App migrate sync`). Sem
+  nada a reconciliar, imprime `Migration history is already synchronized.` e não pergunta nada.
+  Como o `status`, a verificação cria a tabela de histórico que falta, mesmo quando você recusa
+  depois;
+- `create <migration>` — escreve `database/migrations/<YmdHis>_<slug>.php`, com o slug feito a
+  partir de `<migration>`, criando o diretório, e imprime o caminho. Não precisa de banco. Sem um
+  nome, o comando imprime a ajuda e falha.
+
+O `--help` do próprio comando ainda não menciona o limite do `up` nem a ação padrão.
+
+`up`, `down` e `sync` pegam o arquivo de lock mais um lock advisory no PostgreSQL e no MySQL, e
+uma segunda execução falha na hora em vez de esperar (veja
+**[Locks](/manual/ADI/Databases/SQL/Schema/Migrations/overview/#locks)**). Um erro do runner —
+uma instrução que falha, um lock já ocupado — ou uma ação desconhecida
+(`Invalid migration action: <action>`) imprime a sua mensagem e sai com status 1. O que falha
+fora do runner não é capturado: uma config de banco inválida, ou um `create` que não consegue
+escrever o arquivo, imprime a exceção não capturada e sai com status 255.
+
+### `project seed`
+
+Roda os seeders de um projeto — os arquivos em `database/seeders/` — no banco que o escopo de
+config `database` dele declara. Sem ação, lista os seeders. O guia
+**[Seeders de banco](/guide/database-seeders/overview/)** percorre o fluxo, e
+**[Seeders](/manual/ADI/Databases/SQL/Seed/overview/)** explica os arquivos e o runner:
+
+```bash
+php bootgly project App seed                       # list — the default action
+php bootgly project App seed create "Demo Users"   # write database/seeders/demo_users.php
+php bootgly project App seed run                   # run every seeder, in filename order
+php bootgly project App seed run demo_users        # run one
+php bootgly project App seed run --dry-run         # print the SQL instead of running it
+```
+
+`list` e `create` trabalham só com os arquivos. `run`, com ou sem `--dry-run`, precisa do mesmo
+escopo `configs/database/` que o `migrate`, e para com as mesmas duas mensagens sem ele. As ações
+e a opção:
+
+- `list` (padrão) — uma `Seeder List` com o `Count` e uma linha `Seeder` por arquivo;
+- `run [seeder]` — roda todos os seeders em ordem de nome de arquivo, ou o nomeado, e imprime
+  `Seeders run: <count>`. No PostgreSQL e no SQLite as queries que cada seeder retorna rodam em
+  uma transação própria; o primeiro seeder que falha para a execução. Um nome desconhecido para
+  com `Seeder file not found: <seeder>.`;
+- `--dry-run` — com `run`, imprime um `Seeder Dry Run` com o SQL e os parâmetros que cada seeder
+  enviaria, e então `Dry run only; no seeder SQL was executed.` Não pega lock, mas ainda chama os
+  seeders, então uma instrução que um seeder executa por conta própria ainda roda;
+- `create <seeder>` — escreve `database/seeders/<slug>.php`, com o slug feito a partir de
+  `<seeder>`, criando o diretório, e imprime o caminho; um slug já usado para com
+  `Seeder already exists: <slug>.` Sem um nome, o comando imprime a ajuda e falha.
+
+O `--help` do próprio comando ainda não menciona a ação padrão.
+
+Uma execução real pega `storage/locks/seeders/<name>.lock` mais um lock advisory no PostgreSQL e
+no MySQL, e falha na hora — `Seeder lock is already active.` ou
+`Seeder advisory lock is already active.` — quando outra execução segura um deles (veja
+**[Locks](/manual/ADI/Databases/SQL/Schema/Migrations/overview/#locks)**). Qualquer erro imprime a
+sua mensagem e sai com status 1; uma ação desconhecida imprime `Invalid seeder action: <action>`.
+
 ## Ciclo de vida do projeto
 
 O ciclo de vida típico de um projeto segue este fluxo:
@@ -499,9 +619,8 @@ O Bootgly traz projetos de exemplo sob `projects/`:
 | `Demo/CLI` | CLI | Demo CLI interativo dos componentes de terminal |
 | `Demo/HTTP_Server_CLI` | WPI | Demo de servidor HTTP com rotas, ORM e observabilidade |
 | `Demo/HTTPS_Server_CLI` | WPI | Demo de servidor HTTPS |
-| `Demo/TCP_Server_CLI` | WPI | Servidor TCP cru com workers configuráveis |
+| `Demo/TCP_Server_CLI` | WPI | Servidor TCP raw com workers configuráveis |
 | `Demo/Queue-HTTP_Server_CLI` | WPI | Servidor HTTP que enfileira jobs em background |
 | `Benchmark/HTTP_Server_CLI` | WPI | Benchmark de servidor HTTP (routers simple/techempower/bootgly) |
-| `Benchmark/TCP_Server_CLI` | WPI | Benchmark de servidor TCP cru (HTTP ou echo) |
+| `Benchmark/TCP_Server_CLI` | WPI | Benchmark de servidor TCP raw (HTTP ou echo) |
 | `Benchmark/UDP_Server_CLI` | WPI | Benchmark de servidor UDP echo |
-```

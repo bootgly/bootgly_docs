@@ -6,16 +6,22 @@ this page is for when it matters.
 
 ## The short version
 
-- **PostgreSQL** — everything works. Use this if you can.
-- **MySQL** — works, with minor differences (no `USING` cast, no per-column nullability
-  toggle in `alter`).
-- **SQLite** — great for tests and local dev, but `ALTER` is limited: no type change, no
-  default change, no nullability change, no drop-constraint, no multi-action alter.
-  Rename/drop column do work.
+- **PostgreSQL** — lacks none of the capabilities below. A column rename goes in an `alter()` of
+  its own, and an index on a schema-qualified table needs a `name:` (see
+  **[Generated names](/manual/ADI/Databases/SQL/Schema/overview/#generated-names)**).
+- **MySQL** — works, with differences: no `USING` cast; nullability changes only together with a
+  type change, which restates the whole column (`MODIFY COLUMN`); foreign keys only in the
+  table-level form; `unindex()` and `unconstrain()` ignore `exists`.
+- **SQLite** — great for tests and local dev, but its `ALTER TABLE` is limited: one action per
+  `alter()`, no `change()` of any kind (type, default or nullability), no table-level
+  `reference()` in `alter()` — an inline one on a column you `add()` works —, no `unconstrain()`.
+  Adding, renaming and dropping columns work.
 
-If you write a migration that an engine can't perform, it **stops with a clear error** (for
-example `InvalidArgumentException: SQLite schema dialect lacks capability: AlterColumnNullability.`)
-— it never emits broken SQL.
+If you write a migration that an engine can't perform, compiling it **stops with a clear error**
+before anything is sent — for example
+`InvalidArgumentException: SQLite schema dialect lacks capability: AlterColumnNullability.` The
+builder does not check everything the server checks, though: a definition the server rejects — a
+default the column type cannot hold, a column SQLite cannot add — compiles, and fails when it runs.
 
 ## Same code, different SQL
 
@@ -39,10 +45,14 @@ SQLite:
 CREATE TABLE IF NOT EXISTS "users" ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "email" TEXT NOT NULL UNIQUE)
 ```
 
-Same migration, three correct results — that's the point. You only pick the driver (in a
-project, through `DB_CONNECTION` in its `database` config):
+Same migration, three correct results — that's the point. You only pick the driver: in a project,
+through `DB_CONNECTION` in its `database` config (see
+**[From the project config](/manual/ADI/Database/Config/overview/#from-the-project-config)**);
+outside one, in the connection array:
 
 ```php
+use Bootgly\ADI\Databases\SQL;
+
 new SQL(['driver' => 'pgsql', 'host' => '127.0.0.1', 'port' => 5432, 'database' => 'app', 'username' => 'app', 'password' => 'secret']);
 // MySQL: set its port and user too — the defaults are PostgreSQL's (5432, postgres)
 new SQL(['driver' => 'mysql', 'host' => '127.0.0.1', 'port' => 3306, 'database' => 'app', 'username' => 'app', 'password' => 'secret']);
@@ -51,19 +61,111 @@ new SQL(['driver' => 'sqlite', 'database' => ':memory:']);
 
 ## What each engine can do
 
-| Action | PostgreSQL | MySQL | SQLite |
-|--------|:---------:|:-----:|:------:|
-| Change a column's type | ✅ | ✅ | ❌ |
-| Type change with a cast (`USING`) | ✅ | ❌ | ❌ |
-| Change a column's default | ✅ | ✅ | ❌ |
-| Toggle nullable in `alter` | ✅ | ❌ | ❌ |
-| Drop a constraint | ✅ | ✅ | ❌ |
-| Several actions in one `alter` | ✅ | ✅ | ❌ |
-| Rename a column | ✅ | ✅ | ✅ |
-| Drop a column | ✅ | ✅ | ✅ |
+Each `Capabilities` case names one thing a dialect may lack. `$Schema->Dialect->check()` answers
+for the engine in use (see [Reference](#reference)):
 
-Prefer this table over assumptions; if you target multiple engines, stick to the rows that
-are ✅ everywhere.
+| Capability | Lets you | PostgreSQL | MySQL | SQLite |
+|------------|----------|:----------:|:-----:|:------:|
+| `AlterColumnType` | change a column's type | ✅ | ✅ restating the whole column | ❌ |
+| `AlterColumnUsing` | convert the values with `cast()` (`USING`) | ✅ | ❌ | ❌ |
+| `AlterColumnDefault` | set or drop a column's default | ✅ | ✅ | ❌ |
+| `AlterColumnNullability` | change only a column's nullability | ✅ | ❌ only inside a type change | ❌ |
+| `AddConstraint` | add a foreign key with the table-level `reference()` in `alter()` | ✅ | ✅ | ❌ |
+| `DropConstraint` | drop a constraint with `unconstrain()` | ✅ | ✅ foreign keys only | ❌ |
+| `MultiActionAlter` | put several actions in one `alter()` | ✅ except a rename | ✅ | ❌ |
+| `RenameColumn` | rename a column | ✅ in its own `alter()` | ✅ | ✅ |
+| `DropColumn` | drop a column | ✅ | ✅ | ✅ |
+
+An action the engine lacks throws
+`InvalidArgumentException: <Dialect> schema dialect lacks capability: <Capability>.` — `<Dialect>`
+is `MySQL` or `SQLite`, since PostgreSQL lacks none. PostgreSQL's rename rule has its own message
+(see **[Change a table](/manual/ADI/Databases/SQL/Schema/overview/#change-a-table)**), and so do the
+MySQL type-change rules (see
+**[On MySQL, a type change carries the whole column](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/#on-mysql-a-type-change-carries-the-whole-column)**).
+
+Prefer this table over assumptions; if you target multiple engines, stick to the rows that are ✅
+everywhere — add, rename and drop columns, one action per `alter()` — and declare indexes and
+foreign keys with the table.
+
+## Column types per engine
+
+| `Types` case | PostgreSQL | MySQL | SQLite |
+|--------------|------------|-------|--------|
+| `BigInteger` | `BIGINT` | `BIGINT` | `INTEGER` |
+| `Boolean` | `BOOLEAN` | `BOOLEAN` (stored as `tinyint(1)`) | `INTEGER` |
+| `Date` | `DATE` | `DATE` | `TEXT` |
+| `Decimal` | `NUMERIC(p, s)`, or `NUMERIC` without `size()` | `DECIMAL(p, s)`, or `DECIMAL` without `size()` | `NUMERIC` |
+| `Float` | `DOUBLE PRECISION` | `DOUBLE` | `REAL` |
+| `Integer` | `INTEGER` | `INT` | `INTEGER` |
+| `Json` | `JSON` | `JSON` | `TEXT` |
+| `JsonB` | `JSONB` | `JSON` | `TEXT` |
+| `String` | `VARCHAR(n)` | `VARCHAR(n)` | `TEXT` |
+| `Text` | `TEXT` | `LONGTEXT` | `TEXT` |
+| `Time` | `TIME` | `TIME` | `TEXT` |
+| `Timestamp` | `TIMESTAMP` | `TIMESTAMP` | `TEXT` |
+| `Timestamptz` | `TIMESTAMPTZ` | `TIMESTAMP` | `TEXT` |
+| `Uuid` | `UUID` | `CHAR(36)` | `TEXT` |
+
+- **`String`** takes its `n` from `limit()`, `255` without it. SQLite ignores the length: a longer
+  value is stored whole.
+- **`Decimal`** takes `p` and `s` from `size()`. Without them, PostgreSQL's `NUMERIC` holds any
+  number, but MySQL's `DECIMAL` is `DECIMAL(10,0)` — 12.75 is stored as 13. SQLite ignores the size
+  and stores a value with a fraction as a floating-point `REAL` (`0.1 + 0.2` reads back as
+  `0.30000000000000004`): keep money in integer cents there.
+- **`Timestamp` and `Timestamptz`** differ on PostgreSQL only. MySQL's `TIMESTAMP` converts a value
+  from the session time zone to UTC and back, and holds `1970-01-01 00:00:01` to
+  `2038-01-19 03:14:07` UTC — a value outside fails with `1292: Incorrect datetime value`.
+- **`Json` and `JsonB`** stay distinct on PostgreSQL; the other engines map both to their JSON type.
+- A column added without a type is `Types::Text`.
+
+## Dropping indexes and constraints
+
+| Call | PostgreSQL | MySQL | SQLite |
+|------|------------|-------|--------|
+| `drop('users')` | `DROP TABLE IF EXISTS "users"` | ``DROP TABLE IF EXISTS `users` `` | `DROP TABLE IF EXISTS "users"` |
+| `unindex('users', 'users_email_index')` | `DROP INDEX IF EXISTS "users_email_index"` | ``DROP INDEX `users_email_index` ON `users` `` | `DROP INDEX IF EXISTS "users_email_index"` |
+| `unconstrain('users', 'users_team_id_teams_fk')` | `ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_team_id_teams_fk"` | ``ALTER TABLE `users` DROP FOREIGN KEY `users_team_id_teams_fk` `` | throws (`DropConstraint`) |
+
+- `exists: false` takes `IF EXISTS` out of every statement that has it.
+- For now, MySQL ignores `exists` in `unindex()` and `unconstrain()`: dropping an index or a foreign
+  key that is already gone fails with `1091: Can't DROP '…'; check that column/key exists` — see
+  **[Drop and re-run](/manual/ADI/Databases/SQL/Schema/overview/#drop-and-re-run)**.
+- MySQL's `unconstrain()` drops foreign keys only. A `UNIQUE` constraint is an index there, which
+  `unindex()` drops; a `CHECK` needs a raw statement.
+- PostgreSQL qualifies the index with the schema of a schema-qualified table:
+  `unindex('audit.users', 'users_email_index')` compiles
+  `DROP INDEX IF EXISTS "audit"."users_email_index"`. SQLite does not use the table.
+
+## Adding columns on SQLite
+
+SQLite's `ALTER TABLE … ADD COLUMN` accepts less than a `CREATE TABLE`. A column you `add()` in
+`alter()`:
+
+- can be `NOT NULL` only with a default other than `NULL` — on a table with rows, SQLite answers
+  `Cannot add a NOT NULL column with default value NULL`;
+- cannot be the primary key (`Cannot add a PRIMARY KEY column`) or `UNIQUE`
+  (`Cannot add a UNIQUE column`);
+- cannot default to a non-constant expression such as `CURRENT_TIMESTAMP`:
+  `Cannot add a column with non-constant default`.
+
+`remove()` also refuses a column an index still uses (`error in index … after drop column`):
+`unindex()` it first. These shapes work on every engine:
+
+```php
+$Schema->alter('users', function (Blueprint $Table): void {
+   $Table->add('score', Types::Integer)->default = 0;               // NOT NULL, constant default
+});
+$Schema->alter('users', function (Blueprint $Table): void {
+   $Table->add('nickname', Types::String)->limit(40)->nullable = true;
+});
+$Schema->index('users', 'nickname', unique: true);                 // the UNIQUE part, as an index
+```
+
+> [!WARNING]
+> For now, adding a column that carries a `check()`, or that is `NOT NULL` without a default, fails
+> on SQLite even when the table is empty, with `duplicate column name: <column>` — and outside a
+> transaction the column has been added anyway. Inside a migration, SQLite's migration transaction
+> rolls it back. Give a `NOT NULL` column a default, and declare checks in the `create()`.
 
 ## Explicit keys and identity sequences
 
@@ -82,57 +184,149 @@ above an identity's own `MAXVALUE` fails with `setval: value … is out of bound
 column type's maximum leaves no ids for generated rows; and an insert into the same table while
 it runs can slip between its read and its move — seed while nothing else writes.
 
+## Transactional DDL and advisory locks
+
+| Engine | `transactions` (DDL in a transaction) | Advisory lock |
+|--------|---------------------------------------|---------------|
+| PostgreSQL | yes | `pg_try_advisory_lock` / `pg_advisory_unlock` |
+| MySQL/MariaDB | no — DDL causes implicit commits | `GET_LOCK('bootgly_<key>', 0)` / `RELEASE_LOCK` |
+| SQLite | yes | — (local file lock only) |
+
+Where `transactions` is true, the migration runner wraps each migration in a transaction, and the
+seed runner the queries each seeder returns. Both runners take the advisory lock beside their
+local file lock, without waiting: when another run holds either one, the run fails at once instead
+of queueing.
+
+An advisory lock belongs to the session that took it: a release sent from another session
+releases nothing — `pg_advisory_unlock` answers `false`, `RELEASE_LOCK` `0` — and the lock stays
+until its session ends. Which handle to give a runner, so that its release reaches that session,
+is in **[Locking](/manual/ADI/Databases/SQL/Schema/Migrations/overview/#locking)**.
+
+## Writing a dialect
+
+A schema dialect extends `Bootgly\ADI\Databases\SQL\Schema\Dialect`. It implements the seven
+compile methods and overrides `check()`, `lock()`/`unlock()`, `resync()` and `$transactions` where
+its engine differs. It reads the `Blueprint`, `Column`, `Change`, `Reference`, `Rename` and `Index`
+the builder fills — their properties are in the
+**[Defining tables](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/#reference)** Reference — and
+can use the protected helpers of the base class: `guard()` and `fail()` throw the capability error,
+`quote()` quotes an identifier through the Query Builder dialect, `escape()` writes a default
+literal and `refer()` writes a referential action.
+
+The registry behind `new Schema()` and `SQL::structure()` maps the three built-in Query Builder
+dialects to their schema dialects and refuses any other. A dialect of your own therefore reaches a
+Schema Builder only through `new Schema($Dialect)`; the migration and seed runners always use the
+built-in dialect of their database's driver.
+
 ## Reference
 
-Check support in code with `Capabilities` (namespace
-`Bootgly\ADI\Databases\SQL\Schema\Auxiliaries`):
+### Dialect
+
+`Bootgly\ADI\Databases\SQL\Schema\Dialect`, the abstract base of the `PostgreSQL`, `MySQL` and
+`SQLite` classes in `Bootgly\ADI\Databases\SQL\Schema\Dialects`. A Schema Builder holds one in
+`$Schema->Dialect`.
 
 ```php
-use Bootgly\ADI\Databases\SQL\Schema\Auxiliaries\Capabilities;
-
-$Schema->Dialect->check(Capabilities::AlterColumnUsing); // bool
-$Schema->Dialect->transactions;                          // bool — migrations run in a tx?
+__construct (QueryDialect $Dialect)
 ```
 
-Capability names map to the table above: `AlterColumnType`, `AlterColumnUsing`,
-`AlterColumnDefault`, `AlterColumnNullability`, `DropConstraint`, `MultiActionAlter`,
-`RenameColumn`, `DropColumn`, `AddConstraint`.
-
-Other engine-specific output:
+Creates the dialect around the Query Builder dialect of the same engine
+(`Bootgly\ADI\Databases\SQL\Builder\Dialect`), which quotes identifiers and marks parameters.
 
 ```php
-$pg->unindex('users', 'users_email_index'); // DROP INDEX IF EXISTS "users_email_index"
-$my->unindex('users', 'users_email_index'); // DROP INDEX `users_email_index` ON `users`
-$pg->rename('users', 'members');             // ALTER TABLE "users" RENAME TO "members"
-$my->rename('users', 'members');             // RENAME TABLE `users` TO `members`
-$pg->unindex('audit.users', 'users_email_index');
-// DROP INDEX IF EXISTS "audit"."users_email_index"  (schema-qualified)
+public QueryDialect $Dialect
 ```
+
+That Query Builder dialect.
+
+```php
+public bool $transactions = false
+```
+
+Whether the engine runs DDL inside a transaction, so the runners wrap each migration, and the
+queries each seeder returns, in one: `true` on PostgreSQL and SQLite, `false` on MySQL.
+
+```php
+check (Capabilities $Capability): bool
+```
+
+Whether the dialect can compile what `$Capability` names — see
+[What each engine can do](#what-each-engine-can-do). The base class answers `true` for every case.
+
+```php
+create (Blueprint $Blueprint, bool $exists = false): Query
+```
+
+Compiles `CREATE TABLE` from the blueprint's columns and foreign keys. `Schema::create()` calls it.
+
+```php
+alter (Blueprint $Blueprint): Query
+```
+
+Compiles `ALTER TABLE` from the blueprint's actions. `Schema::alter()` calls it.
+
+```php
+drop (BackedEnum|Stringable|string $Table, bool $exists = true): Query
+```
+
+Compiles `DROP TABLE`.
+
+```php
+rename (BackedEnum|Stringable|string $From, BackedEnum|Stringable|string $To): Query
+```
+
+Compiles a table rename.
+
+```php
+index (Index $Index): Query
+```
+
+Compiles `CREATE INDEX` for an `Index` value.
+
+```php
+unindex (BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Name, bool $exists = true): Query
+```
+
+Compiles `DROP INDEX` — see [Dropping indexes and constraints](#dropping-indexes-and-constraints).
+
+```php
+unconstrain (BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Name, bool $exists = true): Query
+```
+
+Compiles the drop of a constraint, or throws where the engine has none.
+
+```php
+lock (int $key): null|Query
+```
+
+Compiles the advisory lock for `$key`, which answers in a `locked` column — or returns `null` when
+the engine has none, as on SQLite.
+
+```php
+unlock (int $key): null|Query
+```
+
+Compiles the release of that lock, which answers in an `unlocked` column, or returns `null`.
 
 ```php
 resync (string $table, array $assignments): null|Query
 ```
 
-Compile the statement that moves identity sequences past the explicit integer keys one INSERT
+Compiles the statement that moves identity sequences past the explicit integer keys one INSERT
 wrote. It takes what the Builder compiled for that INSERT — the quoted table and
 `Builder::$assignments` — and the seed **[Runner](/manual/ADI/Databases/SQL/Seed/overview/)**
 calls it after every `Builder` INSERT a seeder returns. PostgreSQL returns a forward-only
-`setval()` statement: a sequence already past the keys when it runs is left untouched. MySQL and SQLite
-return `null`, since their auto-increment counters already move past explicit values.
+`setval()` statement, or `null` when the INSERT wrote no integer value; a sequence already past
+the keys when the statement runs is left untouched. MySQL and SQLite return `null`, since their
+auto-increment counters already move past explicit values.
 
-PostgreSQL keeps `Types::Json` and `Types::JsonB` distinct (`JSON` vs `JSONB`); other
-engines map both to their JSON type. The migration
-**[Runner](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)** uses the dialect
-advisory `lock()`/`unlock()` only on engines that support it.
+### Dialects
 
-## Transactional DDL and advisory locks
+```php
+fetch (QueryDialect $Dialect): Dialect
+```
 
-| Engine | `transactions` (DDL in a tx) | Advisory lock |
-|--------|------------------------------|---------------|
-| PostgreSQL | yes | `pg_try_advisory_lock` / `pg_advisory_unlock` |
-| MySQL/MariaDB | no — DDL causes implicit commits | `GET_LOCK` / `RELEASE_LOCK` |
-| SQLite | yes | — (local file lock only) |
-
-On engines without an advisory lock, migration/seeder coordination falls back to the local
-file lock. Run migrations with `pool.max = 1` so the advisory lock and its release land on
-the same session.
+`Bootgly\ADI\Databases\SQL\Schema\Dialects` returns a new schema dialect for a built-in Query
+Builder dialect — PostgreSQL, MySQL or SQLite — and throws
+`InvalidArgumentException: Schema Builder dialect is not registered.` for any other. `new Schema()`
+uses it.

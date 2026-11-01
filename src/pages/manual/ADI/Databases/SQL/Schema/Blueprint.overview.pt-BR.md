@@ -1,7 +1,8 @@
 # Definindo tabelas
 
-Dentro de `$Schema->create(...)` e `$Schema->alter(...)` você recebe um `$Table` para
-descrever suas colunas. Esta página é um livro de receitas: ache o que precisa, copie.
+Dentro de `$Schema->create(...)` e `$Schema->alter(...)` você recebe um `$Table` — um `Blueprint` —
+para descrever suas colunas, chaves e chaves estrangeiras. Esta página é um livro de receitas: ache
+o que precisa, copie.
 
 Toda coluna é `$Table->add('nome', Types::Algo)` mais modificadores opcionais.
 
@@ -10,10 +11,10 @@ Toda coluna é `$Table->add('nome', Types::Algo)` mais modificadores opcionais.
   statement, então vem **por último** (ou capture a coluna numa variável):
 
   ```php
-  $Table->add('active', Types::Boolean)->default = true;     // ok: atribuição por último
+  $Table->add('active', Types::Boolean)->default = true;     // ok: assignment last
   $Table->add('bio', Types::Text)->nullable = true;          // ok
 
-  $Email = $Table->add('email', Types::String)->limit(190);  // captura, depois atribui
+  $Email = $Table->add('email', Types::String)->limit(190);  // capture, then assign
   $Email->nullable = true;
   ```
 
@@ -26,76 +27,153 @@ use Bootgly\ADI\Databases\SQL\Builder\Expression;
 use Bootgly\ADI\Databases\SQL\Schema\Auxiliaries\Defaults;
 use Bootgly\ADI\Databases\SQL\Schema\Auxiliaries\Keys;
 use Bootgly\ADI\Databases\SQL\Schema\Auxiliaries\Types;
+use Bootgly\ADI\Databases\SQL\Schema\Blueprint;
 
 $Schema->create('users', function (Blueprint $Table): void {
-   // Chave primária auto-incremental
+   // Auto-incrementing primary key
    $Table->add('id', Types::BigInteger)->generate()->constrain(Keys::Primary);
 
-   // Texto com limite de tamanho, deve ser único
+   // Text with a length limit, must be unique
    $Table->add('email', Types::String)->limit(190)->constrain(Keys::Unique);
 
-   // Texto livre, opcional (permite NULL)
+   // Free text, optional (allows NULL)
    $Table->add('bio', Types::Text)->nullable = true;
 
-   // Booleano com default
+   // Boolean with a default
    $Table->add('active', Types::Boolean)->default = true;
 
-   // Dinheiro / decimal fixo: 10 dígitos, 2 após a vírgula, default 0
+   // Money / fixed decimal: 10 digits, 2 after the point, default 0
    $Table->add('balance', Types::Decimal)->size(10, 2)->default = 0;
 
-   // Timestamp com default "agora"
+   // Timestamp defaulting to "now"
    $Table->add('created_at', Types::Timestamp)->default = new Expression('CURRENT_TIMESTAMP');
 });
 ```
 
-`default` aceita um literal (`bool`/`int`/`float`/`string`), um `Stringable` ou uma
-`Expression` para SQL raw confiável. Durante a compilação de `create()`/`alter()`, literais
-float precisam ser finitos: `NAN`, `INF` e `-INF` lançam
-`InvalidArgumentException: Schema default float must be finite.` Outros tipos de valor
-inválidos lançam
-`InvalidArgumentException: Schema column default must be scalar, Stringable or Expression.`
+### Valores default
+
+O `default` aceita um literal (`bool`, `int`, `float`, `string` ou `null`), um `Stringable` ou
+uma `Expression`:
+
+```php
+$Table->add('status', Types::String)->limit(20)->default = 'draft';        // DEFAULT 'draft'
+$Table->add('settings', Types::Json)->default = new Expression("('{}')");  // DEFAULT ('{}')
+```
+
+- Uma string, ou o texto de um `Stringable`, é escrita como literal entre aspas, com o `'` dobrado.
+- Uma `Expression` é escrita como está: é SQL raw confiável, então nunca a monte com entrada de
+  usuário (veja **[Expressões confiáveis](/manual/ADI/Databases/SQL/Builder/Composing/overview/#expressões-confiáveis)**).
+  No MySQL, uma coluna `Text`, `Json` ou `JsonB` só aceita default assim, entre parênteses como
+  acima — um literal falha com
+  `1101: BLOB, TEXT, GEOMETRY or JSON column '…' can't have a default value`.
+- `->default = null` escreve `DEFAULT NULL`, então torne a coluna `nullable` também: o MySQL recusa
+  `NOT NULL DEFAULT NULL` (`1067: Invalid default value`), e no PostgreSQL e no SQLite todo insert
+  que deixa a coluna de fora falha.
+- `Defaults::None` desfaz um default que você atribuiu: nenhuma cláusula `DEFAULT` é escrita.
+- Qualquer outro valor lança na atribuição:
+  `InvalidArgumentException: Schema column default must be scalar, Stringable or Expression.` Um
+  float precisa ser finito: `NAN`, `INF` e `-INF` passam pela atribuição, e o `create()`/`alter()`
+  lança `InvalidArgumentException: Schema default float must be finite.`
+
+> [!WARNING]
+> Por enquanto, o MySQL lê uma barra invertida num default string como escape: um default
+> `'C:\temp'` é gravado com um tab no lugar do `\t`, e um default que termina em `\` quebra a
+> instrução (`1064`). O PostgreSQL e o SQLite gravam a barra como foi escrita.
+
+### Chaves primárias e ids gerados
+
+O `constrain(Keys::Primary)` faz da coluna a chave primária e o `constrain(Keys::Unique)` adiciona
+uma constraint `UNIQUE`. O `generate()` deixa a engine numerar as linhas:
+
+| Engine | `->generate()->constrain(Keys::Primary)` num `BigInteger` |
+|--------|------------------------------------------------------------|
+| PostgreSQL | `BIGINT GENERATED BY DEFAULT AS IDENTITY NOT NULL PRIMARY KEY` |
+| MySQL | `BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY` |
+| SQLite | `INTEGER PRIMARY KEY AUTOINCREMENT` |
+
+- Gere só colunas inteiras: o PostgreSQL recusa outros tipos
+  (`identity column type must be smallint, integer, or bigint`), o MySQL também (`1063`), e o
+  SQLite transforma uma chave primária gerada em `INTEGER`, seja qual for o tipo que você deu.
+- Uma coluna gerada não aceita default: o PostgreSQL responde `both default and identity specified`,
+  o MySQL `1067`, e o SQLite deixa o default de fora.
+- Um insert ainda pode dar o id ele mesmo. No PostgreSQL isso deixa a identidade para trás — veja
+  **[Chaves explícitas e sequências de identidade](/manual/ADI/Databases/SQL/Schema/Dialects/overview/#chaves-explícitas-e-sequências-de-identidade)**.
+- O `constrain()` marca esta coluna só: `Keys::Primary` em duas colunas gera duas cláusulas
+  `PRIMARY KEY`, e toda engine recusa a tabela. Uma chave primária composta precisa de uma
+  instrução raw.
+
+> [!WARNING]
+> Por enquanto, o SQLite ignora o `generate()` numa coluna que não é a chave primária: a coluna é
+> criada como um inteiro `NOT NULL` comum, sem nada que a preencha, então todo insert que a deixa de
+> fora falha com `NOT NULL constraint failed`. No SQLite, gere só a chave primária.
+
+### Checks
+
+```php
+$Table->add('age', Types::Integer)->check('age >= 0');  // "age" INTEGER NOT NULL CHECK (age >= 0)
+```
+
+O `check()` adiciona `CHECK (…)` à coluna; chame-o de novo para outro. A expressão é SQL raw
+escrito na instrução como está — seja string, seja `Expression` —, então nunca a monte com entrada
+de usuário. PostgreSQL, MySQL e SQLite a aplicam.
 
 ### Ligando a outra tabela (chave estrangeira)
 
-```php
-$Table->add('team_id', Types::BigInteger)->reference('teams', 'id');
-// team_id precisa bater com um id na tabela teams
-```
-
-Quer comportamento de delete/update? Use a forma de tabela e encadeie as regras:
+Declare uma chave estrangeira na tabela, com `$Table->reference()` — a coluna referenciada é `id`
+por padrão:
 
 ```php
-$Table->reference('team_id', 'teams', 'id')
-   ->delete(References::Cascade)    // deletar o team → deletar as linhas dele
-   ->update(References::Restrict);  // bloquear mudança de um id referenciado
+use Bootgly\ADI\Databases\SQL\Schema\Auxiliaries\References;
+
+$Schema->create('members', function (Blueprint $Table): void {
+   $Table->add('id', Types::BigInteger)->generate()->constrain(Keys::Primary);
+   $Table->add('team_id', Types::BigInteger)->nullable = true;
+
+   $Table->reference('team_id', 'teams')
+      ->delete(References::SetNull)    // delete the team → its members keep no team
+      ->update(References::Cascade);   // change the team's id → follow it
+});
+// … CONSTRAINT "members_team_id_teams_fk" FOREIGN KEY ("team_id") REFERENCES "teams" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 ```
 
-A constraint é auto-nomeada `<tabela>_<coluna>_<tabelaAlvo>_fk` (ex.:
-`users_team_id_teams_fk`), truncada ao limite de identificador da engine. Passe `name:`
-para sobrescrever.
+A constraint recebe o nome `<tabela>_<coluna>_<tabela referenciada>_fk` — encurtado depois de 63
+bytes, veja **[Nomes gerados](/manual/ADI/Databases/SQL/Schema/overview/#nomes-gerados)** —, a
+menos que você passe `name:`. No `create()` funciona em toda engine; no `alter()` compila
+`ADD CONSTRAINT` no PostgreSQL e no MySQL, e o SQLite o recusa
+(`InvalidArgumentException: SQLite schema dialect lacks capability: AddConstraint.`).
+
+O que acontece com as linhas que apontam para uma linha removida, ou para uma linha cuja chave muda:
+
+| Caso | SQL | A engine… |
+|------|-----|-----------|
+| `Cascade` | `CASCADE` | remove essas linhas também, ou as atualiza para a nova chave |
+| `SetNull` | `SET NULL` | põe `NULL` na coluna delas — declare-a `nullable` |
+| `SetDefault` | `SET DEFAULT` | põe na coluna delas o default, que precisa bater com uma linha existente, no PostgreSQL e no SQLite. O MySQL aceita a cláusula mas recusa a mudança, como com `NoAction` |
+| `Restrict` | `RESTRICT` | recusa a mudança |
+| `NoAction` | `NO ACTION` | recusa a mudança. Também é o que você tem sem regra nenhuma |
+
+Uma coluna também pode levar a sua chave estrangeira inline:
+
+```php
+$Table->add('team_id', Types::BigInteger)->reference('teams');  // "team_id" BIGINT NOT NULL REFERENCES "teams" ("id")
+```
+
+A forma inline não aceita regra de `delete()`/`update()`, e o `name:` dela não é escrito: a engine
+dá o nome à constraint por conta própria.
+
+> [!WARNING]
+> Por enquanto, a forma inline não cria chave estrangeira nenhuma no MySQL: o servidor lê o
+> `REFERENCES` dentro de uma definição de coluna e o ignora, então a coluna aceita qualquer valor.
+> Use `$Table->reference()` — em toda engine ele também aceita as regras e o nome.
 
 ### Adicionando um índice
 
-Crie um índice com **[`$Schema->index()`](/manual/ADI/Databases/SQL/Schema/overview/)**, ao
-lado da tabela e não dentro do blueprint dela — numa migration, retorne-o junto do
-`create()`:
+Crie um índice com `$Schema->index()`, ao lado da tabela e não dentro do blueprint dela — veja
+**[Criar uma tabela com seus índices](/manual/ADI/Databases/SQL/Schema/overview/#criar-uma-tabela-com-seus-índices)**.
 
-```php
-return new Migration(
-   Up: fn (Migrating $Schema) => [
-      $Schema->create('users', function (Blueprint $Table): void {
-         $Table->add('id', Types::BigInteger)->generate()->constrain(Keys::Primary);
-         $Table->add('email', Types::String)->limit(190);
-      }),
-      $Schema->index('users', 'email', unique: true), // users_email_unique
-   ],
-   Down: fn (Migrating $Schema) => $Schema->drop('users')
-);
-```
-
-Por enquanto, `$Table->index()` dentro de uma closure de `create()`/`alter()` não tem
-efeito: o índice nunca chega ao DDL, e um `alter()` só com um índice lança
-`ALTER TABLE requires at least one schema action.`
+Por enquanto, `$Table->index()` dentro de uma closure de `create()`/`alter()` não tem efeito: o
+índice nunca chega ao DDL, e um `alter()` só com um índice lança
+`InvalidArgumentException: ALTER TABLE requires at least one schema action.`
 
 ### Escolhendo o tipo da coluna
 
@@ -112,23 +190,30 @@ efeito: o índice nunca chega ao DDL, e um `alter()` só com um índice lança
 | Documento JSON | `Types::Json`, `Types::JsonB` |
 | UUID | `Types::Uuid` |
 
-Se você não passar um tipo, recebe `Types::Text`.
+Se você não passar um tipo, recebe `Types::Text`. Um `String` sem `limit()` é `VARCHAR(255)`. O SQL
+em que cada tipo compila, por engine, está em
+**[Tipos de coluna por engine](/manual/ADI/Databases/SQL/Schema/Dialects/overview/#tipos-de-coluna-por-engine)**.
+Dois deles se comportam diferente de uma engine para outra:
 
-`Types::Timestamp` é um valor de relógio de parede sem fuso (`TIMESTAMP` no PostgreSQL e no MySQL); `Types::Timestamptz` é um instante — `TIMESTAMPTZ` no PostgreSQL, o `TIMESTAMP` do MySQL (guardado em UTC, exibido no fuso da sessão) e `TEXT` no SQLite.
+- **Sempre dê um `size()` ao `Decimal`.** Sem ele, o `DECIMAL` do MySQL não guarda casas depois da
+  vírgula — 12.75 é gravado como 13. O SQLite ignora o tamanho e guarda uma fração como float, então
+  lá guarde dinheiro em centavos inteiros.
+- **Só o PostgreSQL distingue `Timestamp` de `Timestamptz`**: `TIMESTAMP` é uma data e hora sem
+  fuso, `TIMESTAMPTZ` um instante. O MySQL compila os dois como `TIMESTAMP`, que ele converte do
+  fuso da sessão para UTC e de volta, e que só vai de 1970 a 2038. O SQLite guarda os dois como
+  `TEXT`.
 
 ## Alterando uma tabela depois
 
-Num `alter`, `add()` adiciona colunas novas; `change()` edita uma **existente**. `change()`
-continua recebendo o tipo alvo, mas mudanças apenas de default/nullability não forçam uma
-cláusula de tipo. Defina `nullable`/`default` no objeto de mudança retornado; atribua
-`Defaults::None` para remover um default existente:
+Num `alter()`, o `add()` adiciona uma coluna nova, o `change()` edita uma que existe, o `remove()`
+remove uma e o `rename()` renomeia uma. No PostgreSQL:
 
 ```php
 $Schema->alter('users', function (Blueprint $Table): void {
-   $Table->add('phone', Types::String)->limit(20)->nullable = true; // nova coluna
+   $Table->add('phone', Types::String)->limit(20)->nullable = true; // new column
 
    $Email = $Table->change('email', Types::String)->limit(320);
-   $Email->nullable = false;                                          // SET NOT NULL
+   $Email->nullable = false;                                          // TYPE VARCHAR(320), SET NOT NULL
 
    $Active = $Table->change('active', Types::Boolean);
    $Active->nullable = true;                                          // DROP NOT NULL
@@ -136,39 +221,90 @@ $Schema->alter('users', function (Blueprint $Table): void {
 
    $Table->change('created_at', Types::Timestamp)->default = Defaults::None; // DROP DEFAULT
 
-   $Table->remove('legacy');                                          // remove coluna
+   $Table->remove('legacy');                                          // drop a column
 });
 
-// Um rename vai num alter() só dele — veja abaixo.
+// A rename goes in an alter() of its own.
 $Schema->alter('users', function (Blueprint $Table): void {
    $Table->rename('bio', 'profile');
 });
 ```
 
-**Um rename não divide um `alter()`.** O `ALTER TABLE` do PostgreSQL tem duas formas
-disjuntas — uma lista de ações separadas por vírgula, e um rename — então um rename ao lado de
-qualquer outra coisa, inclusive de outro rename, é erro de sintaxe, não instrução — então lá o
-Bootgly recusa esse blueprint em vez de compilá-lo. O MySQL aceita a combinação e a compila
-como escrita. Manter o rename num `alter()` só dele funciona em toda engine.
+```sql
+ALTER TABLE "users" ADD COLUMN "phone" VARCHAR(20), ALTER COLUMN "email" TYPE VARCHAR(320), ALTER COLUMN "email" SET NOT NULL, ALTER COLUMN "active" DROP NOT NULL, ALTER COLUMN "active" SET DEFAULT FALSE, ALTER COLUMN "created_at" DROP DEFAULT, DROP COLUMN "legacy"
+ALTER TABLE "users" RENAME COLUMN "bio" TO "profile"
+```
 
-> Algumas dessas dependem da engine do banco. O PostgreSQL faz todas; MySQL e SQLite têm
-> limites — veja **[Dialects](/manual/ADI/Databases/SQL/Schema/Dialects/overview/)**. Quando
-> uma engine não consegue uma ação, ela dá erro em vez de produzir SQL quebrado.
+**Um rename não compartilha um `alter()` no PostgreSQL.** O `ALTER TABLE` dele tem duas formas
+disjuntas — uma lista de ações separadas por vírgula, e um rename —, então um rename ao lado de
+qualquer outra coisa, inclusive de outro rename, é erro de sintaxe, não instrução, e o Bootgly
+recusa esse blueprint em vez de compilá-lo. O MySQL aceita a combinação e a compila como escrita.
+Manter o rename num `alter()` só dele funciona em toda engine.
 
-**No MySQL, mudar o tipo carrega a coluna inteira.** O `MODIFY COLUMN` reescreve toda a
-definição da coluna, e o que a instrução deixar de fora volta ao padrão em silêncio — o
-`NOT NULL`, o `DEFAULT`, o `AUTO_INCREMENT`, o `COMMENT`. Por isso um change que só nomeia um
-tipo é recusado em vez de compilado: declare no change tudo o que a coluna precisa manter.
+As engines diferem aqui: o MySQL recusa a mudança de `active` acima, porque não tem ação que mude
+só a nulidade, e o SQLite não tem `change()` nenhum, nem mais de uma ação por `alter()`. Uma ação
+que falta à engine lança quando a instrução compila, antes de qualquer coisa ser enviada — veja
+**[O que cada engine consegue](/manual/ADI/Databases/SQL/Schema/Dialects/overview/#o-que-cada-engine-consegue)**.
+Mas o builder não checa tudo o que o servidor checa: uma definição que o servidor rejeita, como um
+default que o tipo da coluna não comporta, compila e falha quando roda.
+
+### O que um change muda
+
+O `change()` sempre nomeia o tipo da coluna, mas se o tipo muda depende do que mais você faz com o
+`Change` que ele retorna:
+
+- Nada mais — `$Table->change('age', Types::BigInteger)` — muda o tipo:
+  `ALTER COLUMN "age" TYPE BIGINT` no PostgreSQL.
+- Atribua `nullable`, `default` ou `Defaults::None` e o change passa a tratar só desse atributo: o
+  tipo que você nomeou não é aplicado.
+- Chame também `limit()`, `size()`, `cast()` ou `generate()` — antes ou depois das atribuições — e
+  o tipo muda também.
+
+O `limit()` define o tamanho de um `String` e o `size()` a precisão e a escala de um `Decimal`; nos
+outros tipos os argumentos deles não são usados. Por enquanto, retipar um desses outros tipos
+enquanto você também muda a nulidade ou o default dele ainda exige uma das quatro chamadas — o
+`size()` num `Integer` que vira `BigInteger`, por exemplo, ou o `cast()` no PostgreSQL:
+
+```php
+$Age = $Table->change('age', Types::BigInteger)->size(20);  // size() keeps the type change
+$Age->nullable = false;
+$Age->default  = 0;
+// PostgreSQL: ALTER COLUMN "age" TYPE BIGINT, ALTER COLUMN "age" SET NOT NULL, ALTER COLUMN "age" SET DEFAULT 0
+// MySQL:      MODIFY COLUMN `age` BIGINT NOT NULL DEFAULT 0
+```
+
+O `cast()` é o `USING` do PostgreSQL — como transformar os valores antigos no tipo novo:
+
+```php
+$Table->change('legacy_id', Types::BigInteger)->cast(new Expression('legacy_id::bigint'));
+// ALTER COLUMN "legacy_id" TYPE BIGINT USING legacy_id::bigint
+```
+
+MySQL e SQLite recusam um cast (`schema dialect lacks capability: AlterColumnUsing.`).
+
+### No MySQL, mudar o tipo carrega a coluna inteira
+
+O `MODIFY COLUMN` reescreve toda a definição da coluna, e o que a instrução deixar de fora volta ao
+padrão em silêncio — o `NOT NULL`, o `DEFAULT`, o `AUTO_INCREMENT`, o `COMMENT`. Por isso um change
+que só nomeia um tipo é recusado em vez de compilado. Declare no change tudo o que a coluna precisa
+manter:
+
+- `nullable` — sempre: uma mudança de tipo sem ele é recusada;
+- `default` — de novo, se a coluna tiver um: um `MODIFY COLUMN` sem `DEFAULT` o remove;
+- `generate()` — para uma chave `AUTO_INCREMENT`.
+
+Num `alter()`, estes dois changes compilam para uma única instrução `ALTER TABLE`, com um
+`MODIFY COLUMN` cada:
 
 ```php
 $Change = $Table->change('email', Types::String)->limit(320);
 $Change->nullable = false;
 $Change->default  = '';
-// ALTER TABLE `users` MODIFY COLUMN `email` VARCHAR(320) NOT NULL DEFAULT ''
+// MODIFY COLUMN `email` VARCHAR(320) NOT NULL DEFAULT ''
 
-$Key = $Table->change('id', Types::BigInteger)->generate();  // mantém a identidade
+$Key = $Table->change('id', Types::BigInteger)->generate();  // keep the identity
 $Key->nullable = false;
-// ALTER TABLE `users` MODIFY COLUMN `id` BIGINT NOT NULL AUTO_INCREMENT
+// MODIFY COLUMN `id` BIGINT NOT NULL AUTO_INCREMENT
 ```
 
 Sem o `generate()`, retipar uma coluna de identidade a derruba, e o insert seguinte morre com
@@ -178,14 +314,33 @@ de tipo sozinha, então declarar lá não custa nada e mantém a migration port�
 Um `COMMENT` ou `COLLATE` que a coluna carregue não faz parte do blueprint, então não pode ser
 reescrito por aqui — reaplique com uma instrução raw depois da mudança.
 
-> Uma mudança de tipo precisa declarar que é uma: `limit()`, `size()`, `cast()` e `generate()`
-> declaram, enquanto atribuir `nullable` ou `default` sozinhos transformam o change em algo
-> só de metadados. O `limit()` molda `String` e o `size()` molda `Decimal`; nos outros tipos o
-> argumento é descartado, então neles o `generate()` é a única forma honesta de declarar.
+Um change que só define um default fica com uma instrução mais leve — `ALTER COLUMN … SET DEFAULT`
+ou `DROP DEFAULT` —, enquanto um que só define a nulidade é recusado, já que o MySQL não tem essa
+ação. Estes formatos são recusados antes de qualquer coisa ser enviada:
+
+| O change… | Recusado com |
+|-----------|--------------|
+| só nomeia um tipo | `MySQL cannot retype the column "<name>" on its own: MODIFY COLUMN restates the whole definition, …` |
+| define `nullable` sem mudar o tipo | `MySQL schema dialect lacks capability: AlterColumnNullability.` |
+| chama `cast()` | `MySQL schema dialect lacks capability: AlterColumnUsing.` |
+| muda o tipo de uma coluna `Text`, `Json` ou `JsonB` e lhe dá um default literal | `MySQL cannot give the column "<name>" a literal default: BLOB, TEXT and JSON columns take one only as an expression, as in DEFAULT (JSON_OBJECT()).` |
+| chama `generate()` e define um default | `MySQL cannot give the generated column "<name>" a default: an AUTO_INCREMENT column supplies its own values.` |
+| chama `generate()` com `nullable = true` | `MySQL cannot make the column "<name>" both AUTO_INCREMENT and nullable: a generated column is always NOT NULL.` |
+| chama `generate()` num tipo que não é `Integer`, `BigInteger` ou `Boolean` | `MySQL cannot make the column "<name>" AUTO_INCREMENT as a <Type>: only the integer types carry one.` |
+| define `nullable = false` e `default = null` | `MySQL cannot make the column "<name>" NOT NULL while it defaults to NULL.` |
+
+Cada um é uma `InvalidArgumentException`. Por enquanto, a checagem de `Text`, `Json` e `JsonB` só
+roda numa mudança de tipo: um change que só define um default —
+`$Table->change('bio', Types::Text)->default = 'hi'` — compila para `ALTER COLUMN … SET DEFAULT`,
+e o servidor o recusa com `1101`. Essas checagens também não cobrem o `add()`: as mesmas definições
+escritas com ele — no `create()` ou no `alter()` — compilam, e o servidor as rejeita quando rodam
+(`1067`, `1063`, `1101`). Um default que o tipo não comporta, como uma string numa coluna
+`Integer`, compila em todo caminho, inclusive no `change()`, e também falha no servidor.
 
 ## Dica: nomes tipados com enums
 
-Nomes aceitam string, mas também um backed enum — útil para evitar typos entre migrations:
+Nomes de tabela e de coluna aceitam string, mas também um backed enum — útil para evitar typos
+entre migrations:
 
 ```php
 enum Tables: string  { case Users = 'users'; }
@@ -199,123 +354,501 @@ $Schema->create(Tables::Users, function (Blueprint $Table): void {
 
 ## Referência
 
-### Métodos do Blueprint
+As classes abaixo ficam em `Bootgly\ADI\Databases\SQL\Schema` (`Blueprint`) e
+`Bootgly\ADI\Databases\SQL\Schema\Blueprint` (as demais). As propriedades públicas delas são o que
+um dialeto de schema lê para compilar; são somente leitura fora da classe, exceto `nullable` e
+`default`.
+
+### Blueprint
+
+```php
+__construct (BackedEnum|Stringable|string $Table)
+```
+
+Começa o blueprint de `$Table`. O `create()` e o `alter()` criam um para a closure deles.
+
+```php
+public private(set) string $table
+```
+
+O nome da tabela, como veio (o `value` de um backed enum, o texto de um `Stringable`).
+
+```php
+public private(set) array $columns = []
+```
+
+A `Column` de cada `add()`, na ordem das chamadas.
+
+```php
+public private(set) array $changes = []
+```
+
+O `Change` de cada `change()`, na ordem das chamadas.
+
+```php
+public private(set) array $drops = []
+```
+
+Os nomes passados ao `remove()`.
+
+```php
+public private(set) array $references = []
+```
+
+O `Reference` de cada `reference()` de tabela.
+
+```php
+public private(set) array $renames = []
+```
+
+O `Rename` de cada `rename()`.
 
 ```php
 add (BackedEnum|Stringable|string $Column, Types $Type = Types::Text): Column
 ```
-Define uma coluna nova; retorna a `Column` para modificar.
+
+Adiciona uma coluna — `ADD COLUMN` no `alter()` — e a retorna para modificar.
 
 ```php
 remove (BackedEnum|Stringable|string $Column): self
 ```
-Apenas ALTER — remove uma coluna existente.
+
+Só no `alter()` — remove uma coluna (`DROP COLUMN`). Retorna o blueprint.
 
 ```php
 change (BackedEnum|Stringable|string $Column, Types $Type): Change
 ```
-Apenas ALTER — altera uma coluna existente; retorna o `Change`. Um `change()` puro emite
-mudança de tipo; `limit()`, `size()` e `cast()` mantêm a ação de tipo ativa; atribuir
-apenas `nullable`, `default` ou `Defaults::None` altera só esse atributo.
+
+Só no `alter()` — altera uma coluna que existe, e retorna o `Change`. Veja
+[O que um change muda](#o-que-um-change-muda).
 
 ```php
 rename (BackedEnum|Stringable|string $From, BackedEnum|Stringable|string $To): self
 ```
-Apenas ALTER — renomeia uma coluna existente.
+
+Só no `alter()` — renomeia uma coluna (`RENAME COLUMN`). No PostgreSQL precisa ser a única ação do
+`alter()` dela. Retorna o blueprint.
 
 ```php
 index (BackedEnum|Stringable|string|array $Columns, null|string $name = null, bool $unique = false): Index
 ```
+
 Monta o valor `Index` que o `$Schema->index()` compila. **Dentro de uma closure de
 `create()`/`alter()` ele por enquanto não tem efeito** — veja
-**[Adicionando um índice](#adicionando-um-índice)**.
+[Adicionando um índice](#adicionando-um-índice).
 
 ```php
 reference (BackedEnum|Stringable|string $Column, BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Reference = 'id', null|string $name = null): Reference
 ```
-Adiciona uma chave estrangeira de tabela; retorna o `Reference` para `->delete()`/`->update()`.
 
-### Column — propriedades
+Adiciona uma chave estrangeira de tabela de `$Column` para `$Table`.`$Reference` e a retorna, para
+o `delete()`/`update()`. Sem `$name`, o nome é gerado.
 
-```php
-public bool $nullable = false;
-```
-`true` permite `NULL`; padrão `false` significa `NOT NULL`. Atribua (`$Column->nullable = true`).
+### Column
 
 ```php
-public null|bool|float|int|string|Stringable|Defaults $default;
+__construct (string $table, string $name, Types $Type)
 ```
-Propriedade com hook. **Definir:** `$Column->default = …`. **Limpar default pendente numa
-coluna nova:** `$Column->default = Defaults::None`. **Remover default existente em
-`change()`:** `$Change->default = Defaults::None`. Tipos de valor inválidos lançam
-`InvalidArgumentException`. Durante a compilação de `create()`/`alter()`, literais float
-não finitos (`NAN`, `INF`, `-INF`) lançam
-`InvalidArgumentException: Schema default float must be finite.` `Expression` continua
-sendo a saída de escape para SQL raw confiável.
 
-### Column — métodos
+Uma definição de coluna. O `add()` a cria.
+
+```php
+public private(set) string $table
+```
+
+A tabela a que ela pertence.
+
+```php
+public private(set) string $name
+```
+
+O nome da coluna.
+
+```php
+public private(set) Types $Type
+```
+
+O tipo portável em que ela compila.
+
+```php
+public bool $nullable
+```
+
+`false` até você atribuir `true`: a coluna é `NOT NULL` a menos que você atribua.
+
+```php
+public null|bool|float|int|string|Stringable|Defaults $default
+```
+
+O default — veja [Valores default](#valores-default). Lê-lo dá `null` quando nenhum foi definido.
+Atribuir `Defaults::None` remove o que você definiu. Qualquer outro tipo lança
+`InvalidArgumentException: Schema column default must be scalar, Stringable or Expression.`
+
+```php
+public private(set) bool $defaulted = false
+```
+
+Se há um default definido — `true` depois de uma atribuição, `null` incluído, `false` depois de
+`Defaults::None`.
+
+```php
+public private(set) bool $generated = false
+```
+
+Se o `generate()` foi chamado.
+
+```php
+public private(set) bool $primary = false
+```
+
+Se o `constrain(Keys::Primary)` foi chamado.
+
+```php
+public private(set) bool $unique = false
+```
+
+Se o `constrain(Keys::Unique)` foi chamado.
+
+```php
+public private(set) int $length = 255
+```
+
+O tamanho de `String` que o `limit()` define.
+
+```php
+public private(set) int $precision = 0
+```
+
+A precisão de `Decimal` que o `size()` define; `0` significa nenhuma.
+
+```php
+public private(set) int $scale = 0
+```
+
+A escala de `Decimal` que o `size()` define.
+
+```php
+public private(set) null|Reference $Reference = null
+```
+
+A chave estrangeira inline que o `reference()` define.
+
+```php
+public private(set) array $checks = []
+```
+
+As expressões de `check()`, strings ou `Expression`s, na ordem das chamadas.
 
 ```php
 limit (int $length): self
 ```
-Tamanho de string onde o dialeto suporta.
+
+Define o tamanho de uma coluna `String`: `VARCHAR($length)`. Os outros tipos, e o SQLite, não o
+usam.
 
 ```php
 size (int $precision, int $scale = 0): self
 ```
-Precisão/escala numérica.
+
+Define a precisão e a escala de uma coluna `Decimal`: `NUMERIC(p, s)` no PostgreSQL,
+`DECIMAL(p, s)` no MySQL. Os outros tipos, e o SQLite, não os usam.
 
 ```php
 generate (): self
 ```
-Identity / `AUTO_INCREMENT` / `AUTOINCREMENT`.
+
+Faz a engine gerar os valores — veja [Chaves primárias e ids gerados](#chaves-primárias-e-ids-gerados).
 
 ```php
 constrain (Keys $Key): self
 ```
-`Keys::Primary` ou `Keys::Unique`.
+
+`Keys::Primary` escreve `PRIMARY KEY` e `Keys::Unique` escreve `UNIQUE`; chame uma vez para cada
+chave de que a coluna precisa.
 
 ```php
 check (string|Expression $expression): self
 ```
-Adiciona uma expressão `CHECK`.
+
+Adiciona `CHECK ($expression)`, escrito como está.
 
 ```php
 reference (BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Column = 'id', null|string $name = null): self
 ```
-Chave estrangeira inline nesta coluna.
 
-### Change — membros extras (ALTER)
+Adiciona à coluna um `REFERENCES $Table ($Column)` inline. O `$name` não é escrito, e o MySQL
+ignora a cláusula — veja [Ligando a outra tabela](#ligando-a-outra-tabela-chave-estrangeira).
 
-`Change` compartilha `nullable`/`default` com `Column`, mas `nullable` é tri-state:
+### Change
+
+Um `Change` é o que o `Blueprint::change()` retorna: ele lê `nullable` e `default` como uma
+`Column`, mas o `nullable` tem um terceiro estado, `null`.
 
 ```php
-public null|bool $nullable = null;
+__construct (string $name, Types $Type)
 ```
-`null` = não muda, `true` = permite `NULL` (`DROP NOT NULL`), `false` = exige valor
-(`SET NOT NULL`).
+
+Uma mudança da coluna `$name` para `$Type`. O `change()` a cria.
+
+```php
+public private(set) string $name
+```
+
+A coluna que ela muda.
+
+```php
+public private(set) Types $Type
+```
+
+O tipo que ela nomeia.
+
+```php
+public null|bool $nullable
+```
+
+`null` deixa a nulidade como está, `true` permite `NULL` (`DROP NOT NULL`), `false` exige valor
+(`SET NOT NULL`). Atribuir `true` ou `false` faz o change manter o tipo da coluna, a menos que
+`limit()`, `size()`, `cast()` ou `generate()` também seja chamado, antes ou depois.
+
+```php
+public null|bool|float|int|string|Stringable|Defaults $default
+```
+
+O novo default (`SET DEFAULT`); `Defaults::None` remove o existente (`DROP DEFAULT`). Como o
+`nullable`, uma atribuição faz o change manter o tipo da coluna, a menos que uma das quatro chamadas
+também seja feita. Qualquer outro tipo lança
+`InvalidArgumentException: Schema change default must be scalar, Stringable or Expression.`
+
+```php
+public private(set) bool $defaulted = false
+```
+
+Se um novo default foi atribuído.
+
+```php
+public private(set) bool $dropped = false
+```
+
+Se `Defaults::None` foi atribuído.
+
+```php
+public private(set) bool $generated = false
+```
+
+Se o `generate()` foi chamado.
+
+```php
+public private(set) bool $typed = true
+```
+
+Se o change aplica o tipo — veja [O que um change muda](#o-que-um-change-muda).
+
+```php
+public private(set) null|string|Expression $expression = null
+```
+
+A expressão `USING` que o `cast()` define.
+
+```php
+public private(set) int $length = 255
+```
+
+O tamanho de `String` que o `limit()` define.
+
+```php
+public private(set) int $precision = 0
+```
+
+A precisão de `Decimal` que o `size()` define; `0` significa nenhuma.
+
+```php
+public private(set) int $scale = 0
+```
+
+A escala de `Decimal` que o `size()` define.
+
+```php
+limit (int $length): self
+```
+
+Define o tamanho de `String` e mantém a mudança de tipo.
+
+```php
+size (int $precision, int $scale = 0): self
+```
+
+Define a precisão e a escala de `Decimal` e mantém a mudança de tipo.
+
+```php
+generate (): self
+```
+
+Declara que a coluna gera os seus valores, e mantém a mudança de tipo. O MySQL reescreve o
+`AUTO_INCREMENT`; o PostgreSQL mantém a identidade de qualquer forma.
 
 ```php
 cast (string|Expression $expression): self
 ```
-Expressão `USING` do PostgreSQL para a conversão de tipo:
+
+Define a expressão `USING` do PostgreSQL, SQL raw escrito como está, e mantém a mudança de tipo.
+MySQL e SQLite a recusam.
+
+### Reference (chave estrangeira)
 
 ```php
-$Table->change('legacy_id', Types::BigInteger)->cast(new Expression('legacy_id::bigint'));
-// ALTER COLUMN "legacy_id" TYPE BIGINT USING legacy_id::bigint
+__construct (string $origin, string $source, string $table, string $column = 'id', null|string $name = null)
 ```
 
-Engines sem `Capabilities::AlterColumnUsing` (MySQL, SQLite) rejeitam o cast.
+Uma chave estrangeira de `$origin`.`$source` para `$table`.`$column`. O `Blueprint::reference()` e
+o `Column::reference()` a criam.
+
+```php
+public private(set) string $origin
+```
+
+A tabela que guarda a chave.
+
+```php
+public private(set) string $source
+```
+
+A coluna que guarda a chave.
+
+```php
+public private(set) string $table
+```
+
+A tabela referenciada.
+
+```php
+public private(set) string $column
+```
+
+A coluna referenciada.
+
+```php
+public private(set) string $name
+```
+
+O nome da constraint: o que foi passado, ou `<origin>_<source>_<table>_fk`, com os pontos trocados
+por `_` e encurtado depois de 63 bytes.
+
+```php
+public private(set) null|References $Delete = null
+```
+
+A regra de `ON DELETE`, se definida.
+
+```php
+public private(set) null|References $Update = null
+```
+
+A regra de `ON UPDATE`, se definida.
+
+```php
+delete (References $Reference): self
+```
+
+Define a regra de `ON DELETE`.
+
+```php
+update (References $Reference): self
+```
+
+Define a regra de `ON UPDATE`.
+
+### Index
+
+```php
+__construct (string $table, array $columns, null|string $name = null, bool $unique = false)
+```
+
+Um índice sobre `$columns`. O `Blueprint::index()` o cria, para o `$Schema->index()`.
+
+```php
+public private(set) string $table
+```
+
+A tabela indexada.
+
+```php
+public private(set) array $columns
+```
+
+As colunas indexadas, em ordem.
+
+```php
+public private(set) string $name
+```
+
+O nome do índice: o que foi passado, ou `<table>_<columns>_<index|unique>`, encurtado depois de 63
+bytes.
+
+```php
+public private(set) bool $unique
+```
+
+Se é um índice único.
+
+### Rename
+
+```php
+__construct (string $from, string $to)
+```
+
+O rename de uma coluna. O `Blueprint::rename()` o cria.
+
+```php
+public private(set) string $from
+```
+
+O nome atual da coluna.
+
+```php
+public private(set) string $to
+```
+
+O novo nome da coluna.
+
+### Identifier
+
+```php
+public const int LIMIT = 63
+```
+
+O maior nome gerado, em bytes.
+
+```php
+static limit (string $name): string
+```
+
+Retorna `$name` quando ele cabe em `LIMIT` bytes; senão, os seus primeiros 54 bytes, `_` e os 8
+primeiros dígitos hex do hash SHA-256 dele. O `Index` e o `Reference` passam os nomes gerados
+deles por aqui.
 
 ### Enums auxiliares
 
-Namespace `Bootgly\ADI\Databases\SQL\Schema\Auxiliaries`:
+Namespace `Bootgly\ADI\Databases\SQL\Schema\Auxiliaries`.
 
-| Enum | Casos |
-|------|-------|
-| `Types` | `BigInteger`, `Boolean`, `Date`, `Decimal`, `Float`, `Integer`, `Json`, `JsonB`, `String`, `Text`, `Time`, `Timestamp`, `Timestamptz`, `Uuid` |
-| `Keys` | `Primary`, `Unique` |
-| `References` | `Cascade`, `NoAction`, `Restrict`, `SetDefault`, `SetNull` |
-| `Defaults` | `None` |
-| `Directions` | `Up`, `Down` |
-| `Capabilities` | `AddConstraint`, `AlterColumnDefault`, `AlterColumnNullability`, `AlterColumnType`, `AlterColumnUsing`, `DropColumn`, `DropConstraint`, `MultiActionAlter`, `RenameColumn` |
+| Enum | Caso | Significa |
+|------|------|-----------|
+| `Types` | `BigInteger`, `Integer` | números inteiros, de 64 e 32 bits |
+| | `Boolean` | verdadeiro / falso |
+| | `Decimal` | decimal exato, moldado pelo `size()` |
+| | `Float` | ponto flutuante de precisão dupla |
+| | `String` | texto de até `limit()` caracteres |
+| | `Text` | texto de qualquer tamanho |
+| | `Date`, `Time` | uma data; uma hora do dia |
+| | `Timestamp` | uma data e hora sem fuso |
+| | `Timestamptz` | uma data e hora com fuso — um instante |
+| | `Json`, `JsonB` | um documento JSON; `JsonB` é a forma binária do PostgreSQL |
+| | `Uuid` | um UUID |
+| `Keys` | `Primary`, `Unique` | `PRIMARY KEY`, `UNIQUE` |
+| `References` | `Cascade`, `NoAction`, `Restrict`, `SetDefault`, `SetNull` | as regras de [Ligando a outra tabela](#ligando-a-outra-tabela-chave-estrangeira) |
+| `Defaults` | `None` | nenhum default: limpa um default, ou remove um num `change()` |
+| `Directions` | `Up`, `Down` | a direção em que o Runner de migrations aplica uma migration; nenhum método público o recebe |
+| `Capabilities` | `AddConstraint`, `AlterColumnDefault`, `AlterColumnNullability`, `AlterColumnType`, `AlterColumnUsing`, `DropColumn`, `DropConstraint`, `MultiActionAlter`, `RenameColumn` | o que um dialeto consegue compilar — veja **[O que cada engine consegue](/manual/ADI/Databases/SQL/Schema/Dialects/overview/#o-que-cada-engine-consegue)** |
+
+O SQL em que cada caso de `Types` compila, por engine, está em
+**[Tipos de coluna por engine](/manual/ADI/Databases/SQL/Schema/Dialects/overview/#tipos-de-coluna-por-engine)**.
+`Bootgly\ADI\Databases\SQL\Schema\Auxiliaries::ENUMS` lista as seis classes de enum.

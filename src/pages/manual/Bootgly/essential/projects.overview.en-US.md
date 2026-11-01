@@ -158,6 +158,8 @@ graph LR
   project --> reload["reload"]
   project --> restart["restart"]
   project --> info["info"]
+  project --> migrate["migrate"]
+  project --> seed["seed"]
   project --> logs["logs"]
   project --> schedule["schedule"]
   project --> startup["startup"]
@@ -463,6 +465,122 @@ Example output:
 │ Path           /path/to/projects/Demo/HTTP_Server_CLI             │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+### `project migrate`
+
+Applies, reverts and inspects a project's database migrations — the files in its
+`database/migrations/` — on the database its `database` config scope declares. Without an
+action it shows the status. The **[Database migrations](/guide/database-migrations/overview/)**
+guide walks the workflow, and **[Migrations](/manual/ADI/Databases/SQL/Schema/Migrations/overview/)**
+explains the files and the runner:
+
+```bash
+php bootgly project App migrate                               # status — the default action
+php bootgly project App migrate create "Create Users Table"   # write a new migration file
+php bootgly project App migrate up                            # apply every pending migration
+php bootgly project App migrate up 2                          # apply at most 2
+php bootgly project App migrate down 1                        # revert the last applied one
+php bootgly project App migrate sync                          # reconcile the history (asks first)
+```
+
+Every action but `create` loads the project file — without booting it — and opens the database
+from `configs/database/database.Config.php` (see
+**[Configure the database](/guide/database-dbal/overview/#configure-the-database)**). Without
+that scope the command stops with `Project has no configs directory: <name>` or
+`Project has no database config scope: <name>`. The files live in the project, the locks in the
+kit's storage:
+
+```
+projects/App/
+├── App.Project.php
+├── configs/database/database.Config.php   ← migrate, seed run
+└── database/
+    ├── migrations/                        ← migrate
+    └── seeders/                           ← seed
+storage/locks/
+├── migrations/App.lock                    ← migrate up, down, sync
+└── seeders/App.lock                       ← seed run
+```
+
+A nested project's lock takes its path with each `/` written as `~` (`App~API.lock`). The
+actions:
+
+- `status` (default) — counts the migrations `Applied`, `Local only` (pending) and `DB only`
+  (recorded in the history, file gone), and names the `Next` pending file and the first DB-only
+  one to `Remove`. Currently it creates the `_bootgly_migrations` history table when it is
+  missing, outside the lock: it needs a database user allowed to create tables, and on a fresh
+  PostgreSQL database it must not overlap a `migrate up`;
+- `up [N]` — applies the pending migrations in filename order, as one new batch; with `N`, at
+  most `N` of them. Prints `Migrations applied: <count>`. Currently `N` is cut to a whole number
+  (`2.5` applies two), and a value that is not a number (`2x`) or is below 1 (`0`, `0.5`, or a
+  negative one, which the CLI reads as an option) applies every pending migration;
+- `down <N>` — reverts the last `N` applied migrations, newest first, and prints
+  `Migrations reverted: <count>`. The count is required and cut the same way (`1.9` reverts one):
+  without a number — none, `2x`, or a negative one, read as an option — the command stops with
+  `Migration down requires a numeric step count.`, and below 1 (`0`, `0.5`) with
+  `Migration down requires a positive step count.`;
+- `sync` — makes the history match the files without running any migration: it deletes the
+  rows whose file is gone and records every pending file as applied. It first prints a
+  `Migration Sync Check` (`Add`, `Delete`, `Add first`, `Delete first`), then asks
+  `Apply migration sync to _bootgly_migrations?` — the prompt currently shows its `[y/N]` hint
+  twice. `y` or `yes`, in any letter case, applies it and prints `Migration Sync Applied` with the
+  `Added` and `Deleted` counts; `n`, `no`, Enter or the end of the input cancel it with
+  `Migration sync cancelled.`; any other answer asks again on a terminal and cancels without one.
+  A script answers through its input (`echo y | php bootgly project App migrate sync`). With
+  nothing to reconcile it prints `Migration history is already synchronized.` and asks nothing.
+  Like `status`, the check creates a missing history table, even when you then decline;
+- `create <migration>` — writes `database/migrations/<YmdHis>_<slug>.php`, the slug made from
+  `<migration>`, creating the directory, and prints its path. It needs no database. Without a
+  name the command prints its help and fails.
+
+The command's own `--help` does not mention the `up` limit or the default action yet.
+
+`up`, `down` and `sync` take the lock file plus an advisory lock on PostgreSQL and MySQL, and a
+second run fails at once instead of waiting (see
+**[Locking](/manual/ADI/Databases/SQL/Schema/Migrations/overview/#locking)**). A runner error —
+a failing statement, a lock already held — or an unknown action
+(`Invalid migration action: <action>`) prints its message and exits with status 1. What fails
+outside the runner is not caught: an invalid database config, or a `create` that cannot write its
+file, prints the uncaught exception and exits with status 255.
+
+### `project seed`
+
+Runs a project's seeders — the files in its `database/seeders/` — on the database its `database`
+config scope declares. Without an action it lists them. The
+**[Database seeders](/guide/database-seeders/overview/)** guide walks the workflow, and
+**[Seeders](/manual/ADI/Databases/SQL/Seed/overview/)** explains the files and the runner:
+
+```bash
+php bootgly project App seed                       # list — the default action
+php bootgly project App seed create "Demo Users"   # write database/seeders/demo_users.php
+php bootgly project App seed run                   # run every seeder, in filename order
+php bootgly project App seed run demo_users        # run one
+php bootgly project App seed run --dry-run         # print the SQL instead of running it
+```
+
+`list` and `create` work on the files alone. `run`, with or without `--dry-run`, needs the same
+`configs/database/` scope as `migrate`, and stops with the same two messages without it. The
+actions and the option:
+
+- `list` (default) — a `Seeder List` with the `Count` and one `Seeder` row per file;
+- `run [seeder]` — runs every seeder in filename order, or the one named, and prints
+  `Seeders run: <count>`. On PostgreSQL and SQLite the queries each seeder returns run in a
+  transaction of their own; the first seeder that fails stops the run. An unknown name stops with
+  `Seeder file not found: <seeder>.`;
+- `--dry-run` — with `run`, prints a `Seeder Dry Run` with the SQL and the parameters each seeder
+  would send, then `Dry run only; no seeder SQL was executed.` It takes no lock, but it still
+  calls the seeders, so a statement a seeder executes by itself still runs;
+- `create <seeder>` — writes `database/seeders/<slug>.php`, the slug made from `<seeder>`,
+  creating the directory, and prints its path; a slug already taken stops with
+  `Seeder already exists: <slug>.` Without a name the command prints its help and fails.
+
+The command's own `--help` does not mention the default action yet.
+
+A real run takes `storage/locks/seeders/<name>.lock` plus an advisory lock on PostgreSQL and
+MySQL, and fails at once — `Seeder lock is already active.` or
+`Seeder advisory lock is already active.` — when another run holds either (see
+**[Locking](/manual/ADI/Databases/SQL/Schema/Migrations/overview/#locking)**). Any error prints
+its message and exits with status 1; an unknown action prints `Invalid seeder action: <action>`.
 
 ## Project lifecycle
 
