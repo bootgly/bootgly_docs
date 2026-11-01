@@ -87,6 +87,8 @@ Ramos não resolvidos renderizam dobrados (`▸`) — pressionar `→` roda o re
 
 Um label é **texto de autoria do programa**: a árvore renderiza o markup de Template dele e escreve todo outro byte como está. Um nome que o seu programa não escreveu — um nome de arquivo, uma listagem remota — passa antes por `Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')))`, como acima: um byte que não é UTF-8 vira `?`, um caractere de controle um escape visível (`\u001b`), e um `@` que abriria markup é removido. O caminho real fica em `value`.
 
+Essa é a composição mínima: ela mostra um nome como texto, mas não mantém dois nomes distintos — o `@` removido mostra `deploy-@key.pem` como `deploy-key.pem`, um ESC escapado se lê como um nome com o texto `\u001b`, e marcas bidi e de largura zero passam como estão. Um seletor que precisa manter os nomes distintos, em que o usuário escolhe uma entrada pelo label, usa a forma sem perdas que o [Filepicker](/manual/CLI/UX/Components/Filepicker/overview) dá aos seus labels: uma barra invertida duplicada antes dos escapes, uma marca bidi ou de largura zero também mostrada como escape (`\u202e`), e um `@` que abriria ou fecharia markup mostrado como `\u0040` em vez de removido.
+
 Combinado com `action` e `glyph` por nó (qualquer string — emojis incluídos), este é o kit completo para um explorador de arquivos: diretórios lazy, `Enter` abrindo arquivos, ícones por tipo de entrada.
 
 ## Notas

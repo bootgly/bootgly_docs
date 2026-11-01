@@ -87,6 +87,8 @@ Unresolved branches render folded (`▸`) — pressing `→` runs the resolver e
 
 A label is **authored text**: the tree renders its Template markup and writes every other byte as it is. A name your program did not write — a file name, a remote listing — goes through `Escaped::scrub(Controls::escape(mb_scrub($name, 'UTF-8')))` first, as above: a byte that is not UTF-8 becomes `?`, a control character a visible escape (`\u001b`), and an `@` that would open markup is dropped. The real path stays in `value`.
 
+That is the minimal composition: it shows a name as text, but it does not keep two names apart — the dropped `@` shows `deploy-@key.pem` as `deploy-key.pem`, an escaped ESC reads like a name holding the text `\u001b`, and bidi and zero-width marks pass through as they are. A picker that must keep names apart, where the user chooses an entry by its label, uses the lossless form [Filepicker](/manual/CLI/UX/Components/Filepicker/overview) gives its labels: a backslash doubled before the escapes, a bidi or zero-width mark shown as an escape too (`\u202e`), and an `@` that would open or close markup shown as `\u0040` instead of dropped.
+
 Combined with `action` and per-node `glyph` overrides (any string — emojis included), this is the complete toolkit for a file explorer: lazy directories, `Enter` opening files, icons per entry type.
 
 ## Notes

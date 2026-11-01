@@ -134,7 +134,7 @@ The URL is checked before anything is written or run. Accepted: `https://` witho
 
 The clone runs without a shell and without terminal prompts (git asks no user name or password — use a credential helper or SSH), under the network deadline and `GIT_ALLOW_PROTOCOL=file:https:ssh`, so an `insteadOf` rewrite to another transport fails too. A `GIT_ALLOW_PROTOCOL` you already export narrows that list (only the transports both name), never widens it. The clone is staged in a private temporary directory (random name, mode `0700`) that is removed whether the import succeeds, is declined — Ctrl+C at the prompt included — or fails, and no output shows the URL's credentials. Since 1.0.10.
 
-The lines git prints while cloning are shown as text: a control character in them — in a remote's `remote:` messages, a path, a tag name — appears as a visible escape (`\u001b`, `\u009b`) instead of reaching the terminal, and a byte that is not UTF-8 as `?`. Since 1.0.12.
+The lines git prints while cloning are shown as text: a carriage return (git's progress repainting) is dropped, and every other control character but TAB — in a remote's `remote:` messages, a path, a tag name — appears as a visible escape (`\u001b`, `\u009b`) instead of reaching the terminal; a byte that is not UTF-8 appears as `?`. This holds for a UTF-8 terminal. Since 1.0.12.
 
 > [!WARNING]
 > Imported projects run third-party code when started (`start`, `restart`, a `startup` unit), on their `migrate`, `seed` and `schedule`, and when their tests or queues run — the command asks for confirmation (skip with `--yes`). `projects list` and `project <path> info` only read the signature. A repository whose `*.Project.php` is a symbolic link, or that carries a `bootgly` launcher or a symbolic link named `bootgly` (the global `bootgly` command would run it from inside the project), is refused. Since 1.0.10.
@@ -187,7 +187,7 @@ A name you pass to `create` is yours: a **platform** example that would take the
 
 An unimplemented `--platform` value is refused too, on every layout: it used to be accepted and dropped in a framework checkout and in a kit without `.gitmodules`.
 
-Setting a platform up initializes its submodule — and, when the kit pins it past a release, moves it back onto that release (`Console: pinned past a release — using v1.0.1.`) — through Bootgly's git engine: no shell, git's messages in English, no credential prompt, the network deadline. The lines git prints are shown as text — a control character as a visible escape (`\u001b`, `\u009b`), a byte that is not UTF-8 as `?` — and so is the release name. Since 1.0.12.
+Setting a platform up initializes its submodule — and, when the kit pins it past a release, moves it back onto that release (`Console: pinned past a release — using v1.0.1.`) — through Bootgly's git engine: no shell, git's messages in English, no credential prompt, the network deadline. The lines git prints are shown as text — a carriage return dropped, every other control character but TAB as a visible escape (`\u001b`, `\u009b`), a byte that is not UTF-8 as `?` — and so is the release name. Since 1.0.12.
 
 ### `project boot`
 

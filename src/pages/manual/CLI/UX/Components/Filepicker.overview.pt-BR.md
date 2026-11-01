@@ -55,7 +55,7 @@ echo "/etc/ssl/certs/server.pem" | php installer.php
 
 - Diretórios são varridos **lazy** — árvores gigantes não custam nada até um ramo ser aberto.
 - Diretórios ilegíveis (permissões) resolvem como ramos vazios em vez de abortar a sessão.
-- Os nomes aparecem como texto — o de cada entrada, o da raiz e o caminho no aviso de raiz inalcançável: um caractere de controle num nome vira um escape visível (`\u001b`), um byte que não é UTF-8 vira `?`, e um `@` que abriria markup é removido. O `pick()` continua retornando o caminho real. Desde a 1.0.12.
+- Os nomes aparecem como texto, e sem perdas — o de cada entrada, o da raiz e o caminho no aviso de raiz inalcançável: um caractere de controle vira um escape visível (`\u001b`), e também uma marca de largura zero ou bidi que esconderia ou reordenaria parte de um nome (um override da direita para a esquerda aparece como `\u202e`, então `invoice\u202efdp.php` nunca se lê como `invoicephp.pdf`); uma barra invertida é duplicada, então um nome com o texto `\u001b` (mostrado `\\u001b`) nunca se passa por um com um ESC; um `@` que abriria ou fecharia markup de Output aparece como `\u0040` (`deploy-@key.pem` aparece como `deploy-\u0040key.pem`, distinto de `deploy-key.pem`), enquanto um `@` simples, como em `user@example.com`, fica. Só um byte que não é UTF-8 é substituído, por `?`. O `pick()` continua retornando o caminho real. Desde a 1.0.12.
 - Os ícones vêm do Config `glyphs` (`directory`/`file`) — troque por outros emojis ou marcadores simples.
 - `viewport` (padrão 12) janela listagens longas com marcadores `↑/↓ N more`; `blink` faz o marcador de mira piscar.
 - Colar um caminho com Ctrl+V é um follow-up planejado (bracketed paste mode no Input do terminal).

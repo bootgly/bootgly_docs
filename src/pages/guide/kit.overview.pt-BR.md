@@ -93,11 +93,16 @@ Rodar de novo é um no-op explícito — "The kit is already on the newest relea
 kit alguns commits depois da release mais nova é *devolvido* a ela (o comando diz isso).
 
 Enquanto move, o comando imprime as notas da release (a mensagem da sua tag anotada) e as linhas
-que o git escreve — o checkout, os submódulos seguindo seus pins — como texto: um caractere de
-controle que um remoto escreveu, nas notas, num nome de tag ou num caminho de submódulo, aparece
-como um escape visível (`\u001b`, `\u009b`), um byte que não é UTF-8 como `?`, e markup de Output
-não é renderizado; com `--json` as notas vêm do mesmo jeito, em `notes`. O `-v` também imprime o
-fetch de tags com que `list`, `upgrade` e `downgrade` começam, do mesmo jeito. Desde a 1.0.12.
+que o git escreve — o checkout, os submódulos seguindo seus pins — como texto: markup de Output não
+é renderizado, um byte que não é UTF-8 aparece como `?`, e um caractere de controle que um remoto
+escreveu aparece como um escape visível (`\u001b`, `\u009b`). Nas notas, todo caractere de controle
+exceto a quebra de linha é escapado (um TAB aparece como `\t`). Nas linhas do git — um nome de tag,
+um caminho de submódulo, a mensagem de um remoto — um carriage return (o repaint de progresso do
+git) é descartado, e todo outro caractere de controle exceto o TAB vira um escape visível. Com
+`--json` as notas vêm do mesmo jeito, em `notes`. O `-v` também imprime o fetch de tags com que
+`list`, `upgrade` e `downgrade` começam, do mesmo jeito. Isso vale para um terminal UTF-8: um
+terminal fora do modo UTF-8 pode ler bytes de um texto UTF-8 válido como caracteres de controle.
+Desde a 1.0.12.
 
 ## Downgrade
 
@@ -292,11 +297,12 @@ Roda um comando git na árvore de trabalho — um processo filho sem shell, mens
 (`LC_ALL=C`), sem prompt, stdin vindo de `/dev/null` — e retorna o status de saída (`126` quando o
 processo não pôde iniciar). `$variables` são definidas no processo filho, por cima do ambiente de
 quem chama. `$Callback` recebe cada linha conforme ela chega, sem a quebra, como texto para exibir:
-um byte que não é UTF-8 vira `?` e todo caractere de controle exceto o TAB um escape visível
-(`\u001b`), então a linha pode ir por `write()` a um terminal como está — o markup de Output dela não
-é neutralizado: passe-a por `Escaped::scrub()` antes de um `render()`. `$output` guarda os bytes raw
-(os últimos 64 KiB, `Git::TAIL`, quando um callback recebeu o stream), para parsing: exiba-o só
-através do `Controls::escape()`. Desde a 1.0.12 para o contrato do callback.
+um byte que não é UTF-8 vira `?`, um carriage return (o repaint de progresso do git) é descartado, e
+todo outro caractere de controle exceto o TAB vira um escape visível (`\u001b`), então a linha pode
+ir por `write()` a um terminal UTF-8 como está — o markup de Output dela não é neutralizado: passe-a
+por `Escaped::scrub()` antes de um `render()`. `$output` guarda os bytes raw (os últimos 64 KiB,
+`Git::TAIL`, quando um callback recebeu o stream), para parsing: exiba-o só através de
+`Controls::escape(mb_scrub($Git->output, 'UTF-8'))`. Desde a 1.0.12 para o contrato do callback.
 
 ```php
 Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int
