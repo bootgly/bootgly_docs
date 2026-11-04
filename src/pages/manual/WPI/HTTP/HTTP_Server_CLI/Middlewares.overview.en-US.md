@@ -440,7 +440,7 @@ new RateLimit(
 
 ### BodyParser
 
-Validates and enforces maximum request body size. Returns `413 Content Too Large` when exceeded.
+Rejects a request whose body is larger than `maxSize` bytes. It checks the `Content-Length` header first, then the length of the body the request holds, and answers `413 Request Entity Too Large` with the body `Payload Too Large` — the handler never runs. It only measures: the server fills `$Request->fields` and `$Request->files` whether it runs or not.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
@@ -449,6 +449,8 @@ new BodyParser(
    maxSize: 1_048_576  // Maximum body size in bytes (default: 1 MB)
 );
 ```
+
+The default, `1_048_576` bytes, is 1 MiB. In front of a `Validator` on `Sources::Files`, it caps the whole multipart body, so give it a `maxSize` above the largest file the rules accept, plus room for the boundaries and part headers — see the upload route in [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/#end-to-end-example).
 
 **Phase:** Pre-processing — validates the body size before the handler processes it.
 
@@ -499,7 +501,7 @@ $masked = CSRF::mask($Request->Session->get('_csrf_token'));
 
 ### Validator
 
-Fail-closed request validation. Runs a set of rules against one Request source (`Fields`, `Queries`, `Headers`, `Cookies`, or `Files`) and short-circuits with a JSON error response if any rule fails — the route handler never runs.
+Fail-closed request validation. Runs a set of rules against one Request source (`Fields`, `Queries`, `Headers`, `Cookies`, or `Files`) and short-circuits with an error response if any rule fails — the route handler never runs.
 
 ```php
 use Bootgly\ADI\Validators\Email;
@@ -517,11 +519,19 @@ new Validator(
 );
 ```
 
-The default failure response is `422 Unprocessable Entity` with body `{"errors": {"email": ["email must be a valid email address."]}}`. Provide a `fallback` closure to render a custom error response while keeping the route fail-closed.
+A request that fails gets the status `code` — `422 Unprocessable Entity` by default — with `Content-Type: application/json` and the errors as compact JSON: one list of messages per failing field, in the order of the rules. For `email=invalid`, the body is:
 
-With `Sources::Headers`, rule keys match header names case-insensitively (RFC 9110) — a rule keyed `'X-API-Key'` binds to the header the client sent regardless of casing, and validation errors keep the key exactly as you wrote it. All other sources match keys case-sensitively.
+```json
+{"errors":{"email":["email must be a valid email address."]}}
+```
 
-See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples, and the [Validation guide](/guide/validation/overview/) for the full rule catalog and custom rules.
+Slashes are left unescaped, and non-ASCII characters are written as `\u` escapes (`é` as `\u00e9`). If the errors cannot be encoded — a message that is not valid UTF-8 — the body is `{"errors":[]}`. The constructor does not check `code`: one the server has no status for, such as `499`, makes every failing request throw `InvalidArgumentException` with `Invalid HTTP response status code: 499.`
+
+Provide a `fallback` closure to render a custom error response while keeping the route fail-closed: the middleware returns whatever the closure returns. `code` is not applied then — set the status in the closure, or the response keeps `200`.
+
+With `Sources::Headers`, rule keys match header names case-insensitively (RFC 9110) — a rule keyed `'X-API-Key'` binds to the header the client sent regardless of casing, and validation errors keep the key exactly as you wrote it. With `Sources::Cookies`, rules bind by cookie name, and a name sent on several `Cookie` lines takes the first line's value. All other sources match keys case-sensitively.
+
+See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples. The rules are ADI objects: every built-in rule is on [Validators](/manual/ADI/Validators/overview/), how a set of rules runs — blank values, implicit rules, messages — on [Validation](/manual/ADI/Validation/overview/), and how to write a rule of your own in [Write a custom rule](/manual/ADI/Validation/overview/#write-a-custom-rule).
 
 **Phase:** Pre-processing — validates input before the handler runs.
 
@@ -609,3 +619,56 @@ public function seal (Request $Request, Response $Response): void
 ```
 
 Decorates the `Response` a deferred generation is about to serialize, in place — the pass exists because the post-`$next()` half of the onion never ran against the deferred clone. `$Request` is the generation's captured Request snapshot; `$Response` is the Response actually chosen for the wire (the work's, an error boundary's or the Catcher's), with its final status, headers and body. It runs at settlement, before the deferred Session save point, walking the route's middleware snapshot innermost first and then the global `SAPI::$Middlewares` stack. `seal()` returns nothing: mutate the object. On the success path a throw skips the remaining seals and reaches the `Recovering` boundaries, and the answer they choose is sealed again — so `seal()` must be idempotent; on the errored path a throw is contained and reported. `Sealing` deliberately does **not** extend `Middleware`: a sealing middleware declares `implements Middleware, Sealing`, and keeping `process()` and `seal()` in parity is the author's job.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator
+
+```php
+public function __construct (array $rules, Sources $Source, int $code = 422, null|Closure $fallback = null)
+```
+
+Stores the four arguments and checks none of them. `$rules` maps each field to a `Condition` or a list of them (`array<string,Condition|array<int,Condition>>`). A rule of another shape is accepted here and refused by the `Validation` that `process()` builds on each request, so every request that reaches it throws `InvalidArgumentException` — the messages are in [Validation → Errors](/manual/ADI/Validation/overview/#errors).
+
+```php
+public function process (object $Request, object $Response, Closure $next): object
+```
+
+Runs a `Bootgly\ADI\Validation` of `$rules` over the request data `$Source` names. A valid request goes on through `$next($Request, $Response)`. An invalid one gets what `fallback` returns, when there is one, or else `$Response` with `code`, `Content-Type: application/json` and the JSON errors (see [Validator](#validator)).
+
+```php
+public private(set) array $rules
+```
+
+The rules, as given to the constructor.
+
+```php
+public private(set) Sources $Source
+```
+
+The request data the rules read.
+
+```php
+public private(set) int $code
+```
+
+The status of the failure response: `422` unless the constructor got another.
+
+```php
+public private(set) null|Closure $fallback
+```
+
+The `Closure(Request, Response, Validation): object` that answers an invalid request instead of the JSON errors, or `null`.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources
+
+```php
+enum Sources
+{
+   case Queries;
+   case Headers;
+   case Cookies;
+   case Fields;
+   case Files;
+}
+```
+
+The request data a `Validator` reads: `Queries` reads `$Request->queries`; `Headers` reads `$Request->headers`, matching rule keys case-insensitively; `Cookies` reads the cookies of every `Cookie` line merged by name, the first line winning; `Fields` reads `$Request->fields`; and `Files` reads `$Request->files`. Every source but `Headers` matches rule keys case-sensitively.

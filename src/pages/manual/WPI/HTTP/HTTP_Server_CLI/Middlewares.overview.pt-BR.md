@@ -441,7 +441,7 @@ new RateLimit(
 
 ### BodyParser
 
-Valida e aplica tamanho máximo do corpo da requisição. Retorna `413 Content Too Large` quando excedido.
+Recusa uma requisição cujo corpo passa de `maxSize` bytes. Ele confere primeiro o header `Content-Length`, depois o tamanho do corpo que a requisição tem, e responde `413 Request Entity Too Large` com o corpo `Payload Too Large` — o handler nunca executa. Ele só mede: o servidor preenche `$Request->fields` e `$Request->files` com ele ou sem ele.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
@@ -450,6 +450,8 @@ new BodyParser(
    maxSize: 1_048_576  // Tamanho máximo do corpo em bytes (padrão: 1 MB)
 );
 ```
+
+O padrão, `1_048_576` bytes, é 1 MiB. Na frente de um `Validator` com `Sources::Files`, ele limita o corpo multipart inteiro, então dê a ele um `maxSize` acima do maior arquivo que as regras aceitam, mais espaço para os boundaries e os headers das partes — veja a rota de upload em [Validação de Requisição](/manual/WPI/HTTP/HTTP_Server_CLI/Request/overview/#exemplo-end-to-end).
 
 **Fase:** Pré-processamento — valida o tamanho do corpo antes do handler processá-lo.
 
@@ -500,7 +502,7 @@ $masked = CSRF::mask($Request->Session->get('_csrf_token'));
 
 ### Validator
 
-Validação de requisição fail-closed. Executa um conjunto de regras contra uma fonte do Request (`Fields`, `Queries`, `Headers`, `Cookies` ou `Files`) e curto-circuita com uma resposta JSON de erro se alguma regra falhar — o handler da rota nunca executa.
+Validação de requisição fail-closed. Executa um conjunto de regras contra uma fonte do Request (`Fields`, `Queries`, `Headers`, `Cookies` ou `Files`) e curto-circuita com uma resposta de erro se alguma regra falhar — o handler da rota nunca executa.
 
 ```php
 use Bootgly\ADI\Validators\Email;
@@ -518,11 +520,19 @@ new Validator(
 );
 ```
 
-A resposta padrão de falha é `422 Unprocessable Entity` com corpo `{"errors": {"email": ["email must be a valid email address."]}}`. Forneça uma closure em `fallback` para renderizar uma resposta de erro customizada mantendo a rota fail-closed.
+Uma requisição que falha recebe o status `code` — `422 Unprocessable Entity` por padrão — com `Content-Type: application/json` e os erros em JSON compacto: uma lista de mensagens por campo que falhou, na ordem das regras. Para `email=invalid`, o corpo é:
 
-Com `Sources::Headers`, as chaves das regras casam com os nomes dos headers de forma case-insensitive (RFC 9110) — uma regra com a chave `'X-API-Key'` liga ao header enviado pelo cliente independentemente da capitalização, e os erros de validação mantêm a chave exatamente como você a escreveu. Todas as outras fontes casam as chaves de forma case-sensitive.
+```json
+{"errors":{"email":["email must be a valid email address."]}}
+```
 
-Consulte a seção [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#validação-de-requisição) para exemplos end-to-end, e o [guia de Validation](/guide/validation/overview/) para o catálogo completo de regras e regras customizadas.
+As barras ficam sem escape, e caracteres fora do ASCII são escritos como escapes `\u` (`é` como `\u00e9`). Se os erros não puderem ser codificados — uma mensagem que não é UTF-8 válido —, o corpo é `{"errors":[]}`. O construtor não confere `code`: um para o qual o servidor não tem status, como `499`, faz toda requisição que falha lançar `InvalidArgumentException` com `Invalid HTTP response status code: 499.`
+
+Forneça uma closure em `fallback` para renderizar uma resposta de erro customizada mantendo a rota fail-closed: o middleware devolve o que a closure devolver. O `code` não é aplicado nesse caso — defina o status na closure, ou a resposta fica com `200`.
+
+Com `Sources::Headers`, as chaves das regras casam com os nomes dos headers de forma case-insensitive (RFC 9110) — uma regra com a chave `'X-API-Key'` liga ao header enviado pelo cliente independentemente da capitalização, e os erros de validação mantêm a chave exatamente como você a escreveu. Com `Sources::Cookies`, as regras ligam pelo nome do cookie, e um nome enviado em várias linhas `Cookie` fica com o valor da primeira linha. Todas as outras fontes casam as chaves de forma case-sensitive.
+
+Consulte a seção [Validação de Requisição](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#validação-de-requisição) para exemplos end-to-end. As regras são objetos do ADI: toda regra built-in está em [Validadores](/manual/ADI/Validators/overview/), como um conjunto de regras é executado — valores em branco, regras implícitas, mensagens — em [Validação](/manual/ADI/Validation/overview/), e como escrever uma regra sua em [Escreva uma regra customizada](/manual/ADI/Validation/overview/#escreva-uma-regra-customizada).
 
 **Fase:** Pré-processamento — valida a entrada antes do handler executar.
 
@@ -611,3 +621,56 @@ public function seal (Request $Request, Response $Response): void
 ```
 
 Decora, no lugar, a `Response` que uma geração deferred está prestes a serializar — a passagem existe porque a metade pós-`$next()` do onion nunca rodou contra o clone deferred. `$Request` é o snapshot capturado do Request da geração; `$Response` é a Response realmente escolhida para o fio (a do trabalho, a de uma fronteira de erro ou a do Catcher), com status, headers e corpo finais. Ela roda na liquidação, antes do ponto de save da Session deferred, percorrendo o snapshot de middlewares da rota do mais interno para o mais externo e depois a pilha global `SAPI::$Middlewares`. `seal()` não retorna nada: mute o objeto. No caminho de sucesso um throw pula os seals restantes e alcança as fronteiras `Recovering`, e a resposta que elas escolhem é selada de novo — então `seal()` precisa ser idempotente; no caminho de erro um throw é contido e reportado. `Sealing` deliberadamente **não** estende `Middleware`: um middleware de sealing declara `implements Middleware, Sealing`, e manter `process()` e `seal()` em paridade é trabalho do autor.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator
+
+```php
+public function __construct (array $rules, Sources $Source, int $code = 422, null|Closure $fallback = null)
+```
+
+Guarda os quatro argumentos e não confere nenhum deles. `$rules` mapeia cada campo para uma `Condition` ou uma lista delas (`array<string,Condition|array<int,Condition>>`). Uma regra de outro formato é aceita aqui e recusada pela `Validation` que `process()` monta a cada requisição, então toda requisição que chega a ele lança `InvalidArgumentException` — as mensagens estão em [Validação → Erros](/manual/ADI/Validation/overview/#erros).
+
+```php
+public function process (object $Request, object $Response, Closure $next): object
+```
+
+Executa uma `Bootgly\ADI\Validation` de `$rules` sobre os dados da requisição que `$Source` nomeia. Uma requisição válida segue por `$next($Request, $Response)`. Uma inválida recebe o que `fallback` devolver, quando há um, ou então `$Response` com `code`, `Content-Type: application/json` e os erros em JSON (veja [Validator](#validator)).
+
+```php
+public private(set) array $rules
+```
+
+As regras, como foram dadas ao construtor.
+
+```php
+public private(set) Sources $Source
+```
+
+Os dados da requisição que as regras leem.
+
+```php
+public private(set) int $code
+```
+
+O status da resposta de falha: `422`, a menos que o construtor tenha recebido outro.
+
+```php
+public private(set) null|Closure $fallback
+```
+
+A `Closure(Request, Response, Validation): object` que responde a uma requisição inválida no lugar dos erros em JSON, ou `null`.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources
+
+```php
+enum Sources
+{
+   case Queries;
+   case Headers;
+   case Cookies;
+   case Fields;
+   case Files;
+}
+```
+
+Os dados da requisição que um `Validator` lê: `Queries` lê `$Request->queries`; `Headers` lê `$Request->headers`, casando as chaves das regras sem diferenciar maiúsculas de minúsculas; `Cookies` lê os cookies de todas as linhas `Cookie` juntados pelo nome, com a primeira linha vencendo; `Fields` lê `$Request->fields`; e `Files` lê `$Request->files`. Toda fonte, menos `Headers`, casa as chaves das regras diferenciando maiúsculas de minúsculas.

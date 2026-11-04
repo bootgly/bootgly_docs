@@ -67,6 +67,8 @@ if ($Validation->valid === false) {
 Proteja os dados antes de chegarem ao banco ou ao worker:
 
 ```php
+use RuntimeException;
+
 use Bootgly\ADI\Validation;
 use Bootgly\ADI\Validators\Date;
 use Bootgly\ADI\Validators\Email;
@@ -93,10 +95,12 @@ Um campo ausente, `null`, `''` ou `[]` é tratado como *em branco*. Campos em br
 
 ```php
 rules: [
-   'website' => [new URL], // só validado quando chega um valor não-branco
-   'email'   => [new Required, new Email], // Required rejeita o caso em branco
+   'website' => [new URL], // only validated when a non-blank value arrives
+   'email'   => [new Required, new Email], // Required rejects the blank case
 ]
 ```
+
+Os detalhes — o que é e o que não é em branco, e como uma regra sua se torna implícita — estão em **[Valores em branco e regras implícitas](/manual/ADI/Validation/overview/#valores-em-branco-e-regras-implícitas)**.
 
 ## Mensagens customizadas
 
@@ -108,7 +112,9 @@ new Regex('/\A.{8,}\z/su', 'Password must be at least 8 characters.');
 new URL(message: 'Give me a real URL.');
 ```
 
-Por enquanto, para limitar o tamanho de um texto (uma senha, um nome), use `Regex` com as flags `su`, como acima — `u` conta codepoints Unicode (como o `mb_strlen()`), não bytes. `Minimum` e `Maximum` não contam: veja [Minimum](#minimum).
+Uma mensagem que você passa é montada como a padrão: ela mantém os placeholders da regra e passa pelos catálogos de tradução — veja **[Mensagens](/manual/ADI/Validation/overview/#mensagens)**.
+
+Por enquanto, verifique o tamanho de um texto (uma senha, um nome) com `Regex` e as flags `su`, como acima: `Minimum` e `Maximum` não contam caracteres — veja [Números, tamanhos e contagens](/manual/ADI/Validators/overview/#números-tamanhos-e-contagens).
 
 ## Regras customizadas
 
@@ -121,7 +127,7 @@ $InviteCode = new class extends Validators {
    protected string $template = '{field} must match the demo invite code.';
 
    /**
-    * @param array<string,mixed> $data  Array source completo — útil para regras cross-field.
+    * @param array<string,mixed> $data  Full source array — useful for cross-field rules.
     */
    public function validate (string $field, mixed $value, array $data): bool
    {
@@ -130,9 +136,7 @@ $InviteCode = new class extends Validators {
 };
 ```
 
-A regra passa a se comportar como as built-in: `{field}` vira o nome do campo, uma `message` passada ao seu construtor substitui o template, e ambos são buscados nos catálogos de tradução do domínio `validation` ([Mensagens de validação localizadas](/guide/i18n/overview/#mensagens-de-validação-localizadas)). Já um override de `format()` retorna o próprio texto, ignorando o argumento `message` e os catálogos.
-
-Declare `public protected(set) bool $implicit = true;` na sua subclasse quando a regra precisar rodar mesmo para campos ausentes/em branco (como `Required` faz). `validate()` recebe o `$data` source completo, então regras cross-field (como `Confirmed`) não precisam de fiação extra.
+A regra passa a se comportar como as built-in: `{field}` vira o nome do campo, e uma `message` passada ao seu construtor substitui o template. Como fazê-la rodar em campos em branco, ler os outros campos da origem ou adicionar placeholders — e por que um override de `format()` perde o argumento `message` e os catálogos de tradução — está em **[Escreva uma regra customizada](/manual/ADI/Validation/overview/#escreva-uma-regra-customizada)**.
 
 ## Validando requisições HTTP
 
@@ -162,230 +166,14 @@ $Validation = new Validation($Request->files, [
 ```
 
 Um script PHP enviado como `avatar.png` com `Content-Type: image/png` falha em `MIME`; um PNG
-de verdade enviado como `text/plain` passa.
+de verdade enviado como `text/plain` passa. Guarde um upload aceito com
+[`store()`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#persistir-um-upload-store), em um disco que o
+servidor web não executa — nunca sob um caminho executável ou servido pela web.
 
-- **Só arquivos escritos pelo servidor são inspecionados.** A regra lê `tmp_name` apenas quando
-  ele é um arquivo regular diretamente dentro de `BOOTGLY_UPLOADS_DIR`, onde o servidor HTTP
-  grava os uploads. Um caminho em qualquer outro lugar, um symlink ou um diretório falha — um
-  registro montado à mão não consegue apontar a regra para `/etc/passwd`.
-- **Liste os tipos como a libmagic os nomeia** — `image/jpeg` (nunca `image/jpg`),
-  `application/pdf`, `text/plain`. A allowlist é case-insensitive e ignora parâmetros
-  (`; charset=…`).
-- **`fileinfo` é obrigatória.** Sem ela, `new MIME(…)` lança uma `RuntimeException` em vez de
-  montar uma regra que passaria ou falharia todo upload em silêncio.
-- **Identificar o formato não é varrer malware.** A inspeção nomeia o formato com que os bytes
-  começam: um poliglota (`GIF89a<?php …`) é identificado como `image/gif`, e um SVG
-  (`image/svg+xml`) pode carregar scripts. Nunca mantenha uploads sob um caminho executável ou
-  servido pela web — persista-os com
-  [`store()`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#persistir-um-upload-store) em um disco
-  que o servidor web não executa.
+O que cada regra de upload lê e como se comportam um input de arquivo vazio e uma lista `photos[]`
+estão em **[Uploads](/manual/ADI/Validators/overview/#uploads)**, e por que identificar o formato
+não é varrer malware está em **[MIME](/manual/ADI/Validators/overview/#mime)**.
 
-## Referência
+## Regras built-in
 
-### Validation
-
-```php
-public function __construct (array $source, array $rules)
-```
-
-Roda as regras contra a source imediatamente. `$rules` mapeia cada campo para uma `Condition` ou uma lista de objetos `Condition`; qualquer outra coisa lança `InvalidArgumentException`.
-
-```php
-public private(set) array $errors;
-```
-
-Mensagens de falha por campo: `array<string, array<int,string>>`. Vazio quando tudo passou.
-
-```php
-public bool $valid { get; }
-```
-
-`true` quando `$errors` está vazio.
-
-### Condition
-
-A base abstrata de toda regra (`Bootgly\ADI\Validation\Condition`). `Bootgly\ADI\Validators` a estende como base voltada à aplicação para regras customizadas.
-
-```php
-abstract public function validate (string $field, mixed $value, array $data): bool
-```
-
-Retorna `true` quando o valor é válido. Recebe o `$data` source completo para lógica cross-field.
-
-```php
-public function format (string $field): string
-```
-
-Retorna a mensagem de erro — a `message` passada ao construtor, ou o `$template` da regra quando nenhuma foi passada — traduzida pelos catálogos do domínio `validation`, com `{field}` e os outros tokens da regra (como `{limit}`) preenchidos.
-
-```php
-public protected(set) bool $implicit = false;
-```
-
-Regras implícitas rodam mesmo quando o campo está em branco/ausente (ex.: `Required`).
-
-```php
-protected string $template = '{field} is invalid.';
-```
-
-A mensagem padrão, usada quando nenhuma `message` é passada ao construtor, e a key que `format()` busca nos catálogos do domínio `validation`. Toda regra built-in declara a sua; uma regra customizada a redeclara no corpo da classe (veja [Regras customizadas](#regras-customizadas)).
-
-### Regras built-in
-
-Todas em `Bootgly\ADI\Validators`. Cada uma aceita um `string $message` opcional para substituir o padrão.
-
----
-
-#### Required
-
-```php
-new Required;
-new Required('Name cannot be empty.');
-```
-
-Rejeita `null`, strings vazias (após `trim`) e arrays vazios. Implícita — roda mesmo quando o campo está ausente. Mensagem padrão: `"{field} is required."`
-
-> [!NOTE]
-> Ao validar `$Request->files` (`Sources::Files`), um **input de arquivo vazio** ainda
-> produz um registro — um array não-vazio com `error` = `UPLOAD_ERR_NO_FILE` — então
-> `Required` sozinha passa nele. Combine com `Size` (ou `MIME`/`Extension`), que só
-> passam quando `error === 0`, para exigir um upload de verdade.
-
----
-
-#### Boolean
-
-```php
-new Boolean;
-```
-
-Aceita `bool`, os inteiros `0`/`1` e as strings `'0'`, `'1'`, `'true'`, `'false'` — nada mais (`'yes'`/`'on'` são rejeitados). Mensagem padrão: `"{field} must be a boolean."`
-
----
-
-#### Integer
-
-```php
-new Integer;
-```
-
-Aceita `int` nativo ou strings casando com `/\A[-+]?\d+\z/`. Mensagem padrão: `"{field} must be an integer."`
-
----
-
-#### Minimum
-
-```php
-new Minimum(18);
-```
-
-Regra de limite inferior. Compara valores numéricos por valor, strings não-numéricas por `strlen` e arrays por `count`. Mensagem padrão: `"{field} must be at least {limit}."`
-
-> [!WARNING]
-> **Não é uma regra de tamanho de texto.** Uma string que parece um número é comparada pelo seu valor, então a senha `'1234'` passa em `Minimum(8)`; qualquer outra string é medida em bytes, não em caracteres (`'é'` conta 2). Por enquanto, verifique o tamanho de um texto com `Regex` e as flags `su` (`u` conta codepoints Unicode, como o `mb_strlen()`; `s` faz o `.` casar com quebras de linha): `new Regex('/\A.{8,}\z/su')` para no mínimo 8 codepoints, `new Regex('/\A.{0,500}\z/su')` para no máximo 500. Um codepoint nem sempre é um caractere visível: um `é` digitado como `e` mais um acento combinante conta 2, e um emoji formado por vários codepoints conta cada um deles, então um máximo pode rejeitar um texto que parece mais curto.
-
----
-
-#### Maximum
-
-```php
-new Maximum(120);
-```
-
-Contraparte de limite superior de `Minimum`, com o mesmo dispatch e a mesma ressalva de tamanho de texto (uma bio de 300 caracteres `'é'` tem 600 bytes e falha em `Maximum(500)`). Mensagem padrão: `"{field} must be at most {limit}."`
-
----
-
-#### In
-
-```php
-new In(['active', 'archived']);
-new In([1, 2, 3], strict: false);
-```
-
-Aceita valores dentro da allowlist. Comparação estrita por padrão (`'3'` não casa com `3`); passe `strict: false` para comparação frouxa. Mensagem padrão: `"{field} must be one of the allowed values."`
-
----
-
-#### Email
-
-```php
-new Email;
-```
-
-Valida com o `filter_var($value, FILTER_VALIDATE_EMAIL)` do PHP. Mensagem padrão: `"{field} must be a valid email address."`
-
----
-
-#### URL
-
-```php
-new URL;
-```
-
-Valida com o `filter_var($value, FILTER_VALIDATE_URL)` do PHP. Mensagem padrão: `"{field} must be a valid URL."`
-
----
-
-#### Date
-
-```php
-new Date;                // qualquer data parseável por strtotime()
-new Date('Y-m-d');       // formato estrito
-```
-
-Sem formato, aceita qualquer string que o `strtotime()` consiga parsear. Com formato, parseia via `DateTimeImmutable::createFromFormat()` e faz o round-trip do resultado — overflows de calendário como `2026-02-30` são rejeitados. Mensagem padrão: `"{field} must be a valid date."` / `"{field} must be a valid date in the format {format}."`
-
----
-
-#### Confirmed
-
-```php
-new Confirmed;                    // casa com {field}_confirmation
-new Confirmed(field: 'PIN_check'); // casa com um campo de confirmação customizado
-```
-
-Igualdade cross-field: o valor deve ser estritamente igual ao campo de confirmação na mesma source (padrão `{field}_confirmation`). Mensagem padrão: `"{field} confirmation does not match."`
-
----
-
-#### Regex
-
-```php
-new Regex('/\A[a-z0-9_-]+\z/');
-new Regex('/\A[a-z0-9_]{3,}\z/', 'Username must be alphanumeric, 3+ chars.');
-```
-
-Casa o valor contra um padrão PCRE. Lança `InvalidArgumentException` na construção se o padrão for inválido. Mensagem padrão: `"{field} has an invalid format."`
-
----
-
-#### Size
-
-```php
-new Size(2 * 1024 * 1024); // 2 MB
-```
-
-Valida estruturas de upload (`['name', 'type', 'size', 'error', 'tmp_name']`). Passa quando `error === 0` e `size <= $limit` (bytes). Mensagem padrão: `"{field} must be at most {limit} bytes."`
-
----
-
-#### MIME
-
-```php
-new MIME('application/pdf');
-new MIME(['image/jpeg', 'image/png']);
-```
-
-Valida estruturas de upload pelo conteúdo: passa quando `error === 0`, `tmp_name` é um arquivo regular diretamente dentro de `BOOTGLY_UPLOADS_DIR` (nunca um symlink) e o tipo identificado nos seus bytes (`fileinfo`) está na allowlist — case-insensitive, parâmetros ignorados. O `type` do registro (o `Content-Type` declarado pelo cliente) nunca é lido. Lança `RuntimeException` na construção quando a extensão `fileinfo` não está disponível. Mensagem padrão: `"{field} must have an allowed MIME type."`
-
----
-
-#### Extension
-
-```php
-new Extension('zip');
-new Extension(['jpg', 'jpeg', 'png']);
-```
-
-Valida estruturas de upload contra uma allowlist de extensões de arquivo (case-insensitive; um `.` inicial é aceito e removido). Mensagem padrão: `"{field} must have an allowed extension."`
+`Bootgly\ADI\Validators` traz 14 regras: `Boolean`, `Confirmed`, `Date`, `Email`, `Extension`, `In`, `Integer`, `Maximum`, `MIME`, `Minimum`, `Regex`, `Required`, `Size` e `URL`. Os argumentos delas, os valores que cada uma aceita e rejeita, as mensagens padrão e as ressalvas estão em **[Validadores](/manual/ADI/Validators/overview/)**; o motor — `Validation`, a classe base `Condition` e como uma mensagem é montada — tem a Referência dele em **[Validação](/manual/ADI/Validation/overview/#referência)**. Toda mensagem é uma key dos catálogos de tradução do domínio `validation`: **[Mensagens de validação localizadas](/guide/i18n/overview/#mensagens-de-validação-localizadas)** mostra um catálogo `pt-BR` completo.

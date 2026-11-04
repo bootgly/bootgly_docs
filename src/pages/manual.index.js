@@ -1305,6 +1305,86 @@ export default {
     }
   },
 
+  '/ADI/Table': {
+    config: {
+      icon: 'table_rows',
+      status: 'done',
+      version: 'v0.1.3',
+      meta: {
+        description: {
+          'en-US': 'The Table dataset behind the CLI Table: header, body and footer rows, the array syntax to read and change them, sum, subtract, multiply, divide and find over a body column, and their current limits.',
+          'pt-BR': 'O dataset Table por trás da Table do CLI: linhas de cabeçalho, corpo e rodapé, a sintaxe de array para lê-las e alterá-las, sum, subtract, multiply, divide e find sobre uma coluna do corpo, e os seus limites atuais.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Table'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Table dataset'
+      },
+      'pt-BR': {
+        title: 'Dataset de tabela'
+      }
+    }
+  },
+  '/ADI/Validation': {
+    config: {
+      icon: 'fact_check',
+      status: 'done',
+      version: 'v0.23.0',
+      meta: {
+        description: {
+          'en-US': 'The validation engine: run rules against an array, read valid and errors, blank values and implicit rules, every rule runs and nothing is converted, how messages are built and translated, writing a custom rule, and the Condition contract.',
+          'pt-BR': 'O motor de validação: executar regras sobre um array, ler valid e errors, valores em branco e regras implícitas, toda regra roda e nada é convertido, como as mensagens são montadas e traduzidas, escrever uma regra customizada e o contrato Condition.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Validation'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Validation'
+      },
+      'pt-BR': {
+        title: 'Validação'
+      }
+    }
+  },
+  '/ADI/Validators': {
+    config: {
+      icon: 'checklist',
+      status: 'done',
+      version: 'v0.23.0',
+      meta: {
+        description: {
+          'en-US': 'The 14 built-in validation rules: what each one accepts and rejects, its arguments, default message and placeholders, the caveats of numbers, text lengths, dates, links and uploads, and the errors their constructors throw.',
+          'pt-BR': 'As 14 regras de validação built-in: o que cada uma aceita e rejeita, os argumentos, a mensagem padrão e os placeholders, as ressalvas de números, tamanhos de texto, datas, links e uploads, e os erros que os construtores lançam.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Validators'
+      },
+      'pt-BR': {
+        title: 'Validadores'
+      }
+    }
+  },
+
   // CLI
   '/CLI': {
     config: {

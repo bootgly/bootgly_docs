@@ -667,7 +667,7 @@ cd projects/Contacts && php ../../bootgly test
 
 - [Web API](/manual/Web/API/overview/) — `Routes`, `Action`, `Problem`, `Problems`, `Resource`.
 - [Web App](/manual/Web/App/overview/) — `App`, `Configs`, `Controller` (o shell API compartilha os controllers e configs do App).
-- [Validação](/guide/validation/overview/) — `Validation`, os validadores embutidos e regras customizadas.
+- [Validação](/guide/validation/overview/) e [Validadores](/manual/ADI/Validators/overview/) — `Validation`, regras customizadas e os validadores embutidos.
 - [Migrations de banco](/guide/database-migrations/overview/) e [seeders](/guide/database-seeders/overview/) — `Migration`, `Blueprint`, `Seeder` e os runners.
 - [ORM de banco](/guide/database-orm/overview/) — models, repositories e paginação.
 - [Projects](/manual/Bootgly/essential/projects/overview/) — flags de `projects create`, a assinatura do projeto e os namespaces do autoloader.

@@ -19,7 +19,7 @@ Através do objeto `$Table`, é possível acessar os métodos e propriedades des
 
 ## Configuração
 
-### bordas
+### Bordas
 
 É possível configurar as bordas da tabela através da propriedade `$borders`.
 Existem 15 partes diferentes de bordas da tabela, e essa é a configuração padrão — o preset `Table::DEFAULT_STYLE` que o construtor atribui:
@@ -70,8 +70,7 @@ $Table->borders['middle'] = '│ ';
 
 ### Data set
 
-Através da propriedade `$Data`, é possível definir os dados da tabela.
-Uma tabela tem 3 seções — `Header`, `Body` e `Footer` — e cada uma recebe uma **matriz de linhas** através do seu próprio método `set()`. Cada linha é, por sua vez, uma matriz de células:
+As linhas ficam na propriedade `$Data`, um dataset `Bootgly\ADI\Table` com 3 seções — `Header`, `Body` e `Footer`. Cada uma recebe uma **matriz de linhas** através do seu próprio método `set()`, e cada linha é, por sua vez, uma matriz de células:
 
 ```php
 $Table->Data->Header->set([
@@ -82,20 +81,20 @@ $Table->Data->Body->set([
   ['Product 1', 280],
   ['Product 2', 112],
   ['Product 3', 209],
-  ['@---;'],          // Isso é um separador de linha (row)
+  ['@---;'],          // This is a row separator
   ['Product 4', 276],
   ['Product 5', 93],
   ['Product 6', 297],
 ]);
 
-// Além do método set(), o objeto Data também calcula sobre o body — o sum() aqui
-// soma os valores da coluna 1 e o resultado vai direto para o rodapé da tabela
 $Table->Data->Footer->set([[
   'Total:', $Table->Data->sum(column: 1)
 ]]);
 ```
 
 Uma seção que você nunca definir simplesmente não é desenhada: uma tabela sem rodapé fecha logo depois do body, sem nenhuma borda perdida.
+
+O total do rodapé vem do dataset, não do renderizador: o `sum()` soma a coluna `1` do body. O dataset — alterar linhas e as operações sobre uma coluna do body — está documentado em **[Dataset de tabela](/manual/ADI/Table/overview/)**, incluindo [quando o total é `false`](/manual/ADI/Table/overview/#quando-o-total-é-false) em vez de um número, o que desenha uma célula vazia.
 
 ### Células
 
@@ -181,7 +180,7 @@ Config. As 15 partes da borda. Começa como `Table::DEFAULT_STYLE`; atribua um p
 public DataTable $Data
 ```
 
-Data. O `Bootgly\ADI\Table` que guarda as linhas — `Header`, `Body` e `Footer` —, além das operações sobre o body.
+Data. O `Bootgly\ADI\Table` que guarda as linhas — `Header`, `Body` e `Footer` — e calcula sobre o body. O construtor cria um vazio; um dataset montado em outro lugar pode ser atribuído no lugar dele. As suas seções, linhas e operações estão documentadas em **[Dataset de tabela](/manual/ADI/Table/overview/)**.
 
 ```php
 public private(set) Output $Output
@@ -316,19 +315,3 @@ public function render (): void
 ```
 
 Desenha a tabela seção por seção, pulando as vazias: a primeira seção abre com uma borda `top`, cada seção seguinte é precedida por uma borda `mid` e a última fecha com uma borda `bottom`. Uma tabela cujas seções estejam todas vazias não escreve absolutamente nada.
-
-### Data->Header / Body / Footer ->set()
-
-```php
-public function set (array $rows): void
-```
-
-Substitui as linhas da seção. Cada linha é uma matriz de células (`[['Products', 'Quantity']]` é uma linha de duas células). As seções são coleções `Bootgly\ADI\Table\Rows` — também são iteráveis e suportam acesso por array, então `$Table->Data->Body[] = ['Product 7', 42];` acrescenta uma linha.
-
-### Data->sum()
-
-```php
-public function sum (int $column): false|int|float
-```
-
-Soma os valores numéricos de uma coluna do body — o total do rodapé no exemplo acima. O `Bootgly\ADI\Table` oferece `subtract()`, `multiply()` e `divide()` com o mesmo argumento `column`, além de `find(int $column, mixed $value): bool` para procurar um valor no body.

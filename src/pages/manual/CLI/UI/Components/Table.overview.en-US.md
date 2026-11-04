@@ -70,8 +70,7 @@ $Table->borders['middle'] = '│ ';
 
 ### Data set
 
-Through the `$Data` property, it is possible to set the Table Data.
-A table has 3 sections — `Header`, `Body` and `Footer` — and each one receives an **array of rows** through its own `set()` method. Every row is itself an array of cells:
+The rows live in the `$Data` property, a `Bootgly\ADI\Table` dataset with 3 sections — `Header`, `Body` and `Footer`. Each one receives an **array of rows** through its own `set()` method, and every row is itself an array of cells:
 
 ```php
 $Table->Data->Header->set([
@@ -88,14 +87,14 @@ $Table->Data->Body->set([
   ['Product 6', 297],
 ]);
 
-// Besides the set() method, the Data object also computes over the body — sum() here
-// totals the values of column 1 and the result goes straight into the table footer
 $Table->Data->Footer->set([[
   'Total:', $Table->Data->sum(column: 1)
 ]]);
 ```
 
 A section you never set simply does not draw: a table without a footer closes right after the body, with no stray border.
+
+The footer total comes from the dataset, not from the renderer: `sum()` adds column `1` of the body. The dataset — changing rows and the operations over a body column — is documented on **[Table dataset](/manual/ADI/Table/overview/)**, including [when the total is `false`](/manual/ADI/Table/overview/#when-the-total-is-false) instead of a number, which draws an empty cell.
 
 ### Cells
 
@@ -181,7 +180,7 @@ Config. The 15 border parts. Starts as `Table::DEFAULT_STYLE`; assign a preset, 
 public DataTable $Data
 ```
 
-Data. The `Bootgly\ADI\Table` holding the rows — `Header`, `Body` and `Footer`, plus the operations over the body.
+Data. The `Bootgly\ADI\Table` holding the rows — `Header`, `Body` and `Footer` — and computing over the body. The constructor creates an empty one; a dataset built elsewhere can be assigned instead. Its sections, rows and operations are documented on **[Table dataset](/manual/ADI/Table/overview/)**.
 
 ```php
 public private(set) Output $Output
@@ -316,19 +315,3 @@ public function render (): void
 ```
 
 Draws the table section by section, skipping empty ones: the first section opens with a `top` border, each following one is preceded by a `mid` border, and the last section closes with a `bottom` border. A table whose sections are all empty writes nothing at all.
-
-### Data->Header / Body / Footer ->set()
-
-```php
-public function set (array $rows): void
-```
-
-Replaces the section's rows. Each row is an array of cells (`[['Products', 'Quantity']]` is one row of two cells). The sections are `Bootgly\ADI\Table\Rows` collections — they are also iterable and support array access, so `$Table->Data->Body[] = ['Product 7', 42];` appends a row.
-
-### Data->sum()
-
-```php
-public function sum (int $column): false|int|float
-```
-
-Totals the numeric values of one body column — the footer total in the example above. `Bootgly\ADI\Table` offers `subtract()`, `multiply()` and `divide()` with the same `column` argument, plus `find(int $column, mixed $value): bool` to look a value up in the body.

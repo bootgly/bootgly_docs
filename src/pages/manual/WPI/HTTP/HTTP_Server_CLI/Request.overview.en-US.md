@@ -190,7 +190,7 @@ $Request->files; // Array ( [file_name] => file_attributes )
 
 `type` is the part's `Content-Type` as the client sent it (surrounding spaces trimmed) — a hint, never proof:
 anything can claim `image/png`. To accept a file by what it really is, validate it with the
-[`MIME` rule](/guide/validation/overview/#validating-uploads), which sniffs the bytes.
+[`MIME` rule](/manual/ADI/Validators/overview/#mime), which sniffs the bytes.
 `tmp_name` lives in `BOOTGLY_UPLOADS_DIR` (`BOOTGLY_STORAGE_DIR . 'temp/files/downloaded/'`), a folder
 the server owns: persist an upload with `store()` before the request ends.
 
@@ -637,10 +637,10 @@ A value you assign wins. `php.ini` — `session.gc_maxlifetime`, `session.gc_pro
 
 ## Request Validation
 
-Bootgly ships a fluent validation system for verifying request data before your handler runs. It revolves around three pieces:
+Bootgly validates request data with composable rule objects before your handler runs. It revolves around three pieces:
 
-- [`Bootgly\ADI\Validation`](/guide/validation/overview/) — the standalone engine: runs a set of rules against an array of input data, accumulating errors per field. It lives in the ADI layer, so the same rules validate CLI input, jobs and seeders.
-- `Bootgly\ADI\Validators\*` — built-in rule classes (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
+- [`Bootgly\ADI\Validation`](/manual/ADI/Validation/overview/) — the standalone engine: runs a set of rules against an array of input data, accumulating errors per field. It lives in the ADI layer, so the same rules validate CLI input, jobs and seeders.
+- [`Bootgly\ADI\Validators\*`](/manual/ADI/Validators/overview/) — built-in rule classes (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
 - `Validator` middleware — applies validation to one Request source and fails fast (default `422 Unprocessable Entity`) if invalid. See [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
 ### Standalone Validation
@@ -667,31 +667,15 @@ $Validation->valid;  // true | false
 $Validation->errors; // ['email' => ['email must be a valid email address.'], ...]
 ```
 
-Errors are stored as `array<field, array<string>>` — a single field can accumulate multiple messages (one per failed rule). The full engine reference — optional/implicit semantics, custom messages and non-HTTP recipes — lives in the [Validation guide](/guide/validation/overview/).
+Errors are stored as `array<field, array<string>>` — a single field can accumulate multiple messages (one per failed rule). How the engine treats blank values, implicit rules and messages is on [Validation](/manual/ADI/Validation/overview/); the [Validation guide](/guide/validation/overview/) walks through it, with recipes outside HTTP.
 
 ### Available Sources
 
-The `Sources` enum identifies which Request property the `Validator` middleware reads:
-
-| Source | Request property | Description |
-|---|---|---|
-| `Sources::Fields` | `$Request->fields` | Parsed form fields / decoded body |
-| `Sources::Queries` | `$Request->queries` | Query-string parameters |
-| `Sources::Headers` | `$Request->headers` | HTTP request headers |
-| `Sources::Cookies` | `$Request->cookies` | Request cookies |
-| `Sources::Files` | `$Request->files` | Uploaded file structures |
-
-```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
-```
-
-Header field names are normalized to lowercase by the parser, but `Sources::Headers` rules match them case-insensitively (RFC 9110) — key your rules `'X-API-Key'` or `'x-api-key'`, both bind. Every other source matches rule keys case-sensitively.
-
-With `Sources::Cookies`, rules bind by cookie name; when the same name appears on multiple `Cookie` lines, the first line wins — matching `Cookies::get()`.
+The `Validator` middleware reads one request source, picked with the `Sources` enum: `Fields`, `Queries`, `Headers`, `Cookies` or `Files`. Which `Request` property each case reads, and how it matches rule keys, is in the [`Sources` Reference](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#bootglywpinodeshttp_server_cliroutermiddlewaresvalidatorsources) of Middlewares.
 
 ### Built-in Validators
 
-All built-in rules live in `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` and `Extension`. Each accepts an optional `string $message` constructor argument to override the default error message. The one-block-per-rule catalog (arguments, semantics and default messages) lives in the [Validation guide](/guide/validation/overview/).
+Each built-in rule's arguments, the values it accepts and rejects, and its default message are on [Validators](/manual/ADI/Validators/overview/). Every rule also takes an optional `message` as its last constructor argument, which replaces that default — see [Messages](/manual/ADI/Validation/overview/#messages).
 
 ### Custom Rules
 
@@ -703,9 +687,6 @@ use Bootgly\ADI\Validators;
 $InviteCode = new class extends Validators {
    protected string $template = '{field} must match the demo invite code.';
 
-   /**
-    * @param array<string,mixed> $data  Full source array — useful for cross-field rules.
-    */
    public function validate (string $field, mixed $value, array $data): bool
    {
       return is_string($value) && $value === 'bootgly';
@@ -713,7 +694,7 @@ $InviteCode = new class extends Validators {
 };
 ```
 
-Declare `public protected(set) bool $implicit = true;` in your subclass when the rule must run even for missing/blank fields (the way `Required` does). Like the built-in rules, it honors a `message` constructor argument and the translation catalogs; an override of `format()` would bypass both — see [Custom rules](/guide/validation/overview/#custom-rules) in the Validation guide.
+List it like a built-in rule — `'code' => [new Required, $InviteCode]`. How to give it placeholders, make it run on blank fields or read other fields — and why not to override `format()` — is in [Write a custom rule](/manual/ADI/Validation/overview/#write-a-custom-rule).
 
 ### Validator Middleware
 
@@ -736,7 +717,7 @@ yield $Router->route('/users', function (Request $Request, Response $Response) {
 ]);
 ```
 
-See [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator) for the full middleware reference (status code, fallback closure).
+See [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator) for the full middleware reference (status code, JSON errors, fallback closure).
 
 ### End-to-End Example
 

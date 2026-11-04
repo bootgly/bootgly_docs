@@ -52,6 +52,8 @@ $port = $Textbox->ask();
 
 The default goes through the Validator too: an empty answer assumes the default before the validation runs.
 
+An ADI validation rule fits this Closure as well: call the rule directly and return its message when it fails — see [Call a rule directly](/manual/ADI/Validation/overview/#call-a-rule-directly).
+
 ## Requiring an answer
 
 When `required` is `true` and there is no default, empty answers render an `An answer is required.` Failure Alert and the question is asked again:

@@ -52,6 +52,8 @@ $port = $Textbox->ask();
 
 O valor padrão também passa pelo Validator: uma resposta vazia assume o valor padrão antes de a validação rodar.
 
+Uma regra de validação da ADI também cabe nessa Closure: chame a regra diretamente e devolva a mensagem dela quando ela falhar — veja [Chame uma regra diretamente](/manual/ADI/Validation/overview/#chame-uma-regra-diretamente).
+
 ## Exigindo uma resposta
 
 Quando `required` é `true` e não há valor padrão, respostas vazias renderizam um Alert de Failure `An answer is required.` e a pergunta é feita novamente:

@@ -190,7 +190,7 @@ $Request->files; // Array ( [nome_do_arquivo] => atributos_do_arquivo )
 
 `type` é o `Content-Type` da part como o cliente o enviou (sem os espaços das pontas) — uma
 dica, nunca uma prova: qualquer coisa pode se declarar `image/png`. Para aceitar um arquivo pelo que ele
-realmente é, valide-o com a [regra `MIME`](/guide/validation/overview/#validando-uploads), que
+realmente é, valide-o com a [regra `MIME`](/manual/ADI/Validators/overview/#mime), que
 inspeciona os bytes. `tmp_name` fica em `BOOTGLY_UPLOADS_DIR` (`BOOTGLY_STORAGE_DIR .
 'temp/files/downloaded/'`), uma pasta que pertence ao servidor: persista o upload com `store()`
 antes de a requisição terminar.
@@ -641,10 +641,10 @@ Um valor que você atribui vence. O `php.ini` — `session.gc_maxlifetime`, `ses
 
 ## Validação de Requisição
 
-O Bootgly fornece um sistema de validação fluente para verificar dados da requisição antes do seu handler executar. Ele gira em torno de três peças:
+O Bootgly valida os dados da requisição com objetos de regra combináveis antes do seu handler executar. Ele gira em torno de três peças:
 
-- [`Bootgly\ADI\Validation`](/guide/validation/overview/) — a engine standalone: executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo. Ela vive na camada ADI, então as mesmas regras validam input de CLI, jobs e seeders.
-- `Bootgly\ADI\Validators\*` — classes de regra built-in (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
+- [`Bootgly\ADI\Validation`](/manual/ADI/Validation/overview/) — a engine standalone: executa um conjunto de regras contra um array de dados de entrada, acumulando erros por campo. Ela vive na camada ADI, então as mesmas regras validam input de CLI, jobs e seeders.
+- [`Bootgly\ADI\Validators\*`](/manual/ADI/Validators/overview/) — classes de regra built-in (`Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME`, `Extension`).
 - Middleware `Validator` — aplica validação a uma fonte do Request e falha rapidamente (padrão `422 Unprocessable Entity`) se inválido. Veja [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator).
 
 ### Validação Standalone
@@ -671,31 +671,15 @@ $Validation->valid;  // true | false
 $Validation->errors; // ['email' => ['email must be a valid email address.'], ...]
 ```
 
-Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada). A referência completa da engine — semântica opcional/implícita, mensagens customizadas e receitas não-HTTP — vive no [guia de Validation](/guide/validation/overview/).
+Os erros são armazenados como `array<campo, array<string>>` — um único campo pode acumular múltiplas mensagens (uma por regra falhada). Como a engine trata valores em branco, regras implícitas e mensagens está em [Validação](/manual/ADI/Validation/overview/); o [guia de Validation](/guide/validation/overview/) percorre tudo isso, com receitas fora do HTTP.
 
 ### Fontes Disponíveis
 
-A enum `Sources` identifica qual propriedade do Request o middleware `Validator` lê:
-
-| Fonte | Propriedade do Request | Descrição |
-|---|---|---|
-| `Sources::Fields` | `$Request->fields` | Campos de formulário / corpo decodificado |
-| `Sources::Queries` | `$Request->queries` | Parâmetros da query string |
-| `Sources::Headers` | `$Request->headers` | Headers HTTP da requisição |
-| `Sources::Cookies` | `$Request->cookies` | Cookies da requisição |
-| `Sources::Files` | `$Request->files` | Estruturas de arquivos enviados |
-
-```php
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator\Sources;
-```
-
-Os nomes dos campos de header são normalizados para minúsculas pelo parser, mas as regras de `Sources::Headers` casam com eles de forma case-insensitive (RFC 9110) — declare suas regras como `'X-API-Key'` ou `'x-api-key'`, ambas ligam. Todas as outras fontes casam as chaves das regras de forma case-sensitive.
-
-Com `Sources::Cookies`, as regras ligam pelo nome do cookie; quando o mesmo nome aparece em múltiplas linhas `Cookie`, a primeira linha vence — espelhando `Cookies::get()`.
+O middleware `Validator` lê uma fonte da requisição, escolhida com a enum `Sources`: `Fields`, `Queries`, `Headers`, `Cookies` ou `Files`. Qual propriedade do `Request` cada caso lê, e como ele casa as chaves das regras, está na [Referência de `Sources`](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#bootglywpinodeshttp_server_cliroutermiddlewaresvalidatorsources) de Middlewares.
 
 ### Validadores Built-in
 
-Todas as regras built-in vivem em `Bootgly\ADI\Validators` — `Required`, `Boolean`, `Integer`, `Minimum`, `Maximum`, `In`, `Email`, `URL`, `Date`, `Confirmed`, `Regex`, `Size`, `MIME` e `Extension`. Cada uma aceita um argumento opcional `string $message` no construtor para sobrescrever a mensagem de erro padrão. O catálogo bloco-a-bloco (argumentos, semântica e mensagens padrão) vive no [guia de Validation](/guide/validation/overview/).
+Os argumentos de cada regra built-in, os valores que ela aceita e rejeita e a sua mensagem padrão estão em [Validadores](/manual/ADI/Validators/overview/). Toda regra também aceita uma `message` opcional como último argumento do construtor, que substitui esse padrão — veja [Mensagens](/manual/ADI/Validation/overview/#mensagens).
 
 ### Regras Customizadas
 
@@ -707,9 +691,6 @@ use Bootgly\ADI\Validators;
 $InviteCode = new class extends Validators {
    protected string $template = '{field} must match the demo invite code.';
 
-   /**
-    * @param array<string,mixed> $data  Array completo da fonte — útil para regras cross-field.
-    */
    public function validate (string $field, mixed $value, array $data): bool
    {
       return is_string($value) && $value === 'bootgly';
@@ -717,7 +698,7 @@ $InviteCode = new class extends Validators {
 };
 ```
 
-Declare `public protected(set) bool $implicit = true;` na sua subclasse quando a regra precisar executar mesmo para campos ausentes/vazios (como `Required` faz). Como as regras built-in, ela respeita um argumento `message` no construtor e os catálogos de tradução; um override de `format()` ignoraria ambos — veja [Regras customizadas](/guide/validation/overview/#regras-customizadas) no guia de Validation.
+Liste-a como uma regra built-in — `'code' => [new Required, $InviteCode]`. Como dar placeholders a ela, fazê-la rodar em campos em branco ou ler outros campos — e por que não sobrescrever `format()` — está em [Escreva uma regra customizada](/manual/ADI/Validation/overview/#escreva-uma-regra-customizada).
 
 ### Middleware Validator
 
@@ -740,7 +721,7 @@ yield $Router->route('/users', function (Request $Request, Response $Response) {
 ]);
 ```
 
-Veja [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator) para a referência completa do middleware (status code, fallback closure).
+Veja [Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/#validator) para a referência completa do middleware (status code, erros em JSON, fallback closure).
 
 ### Exemplo End-to-End
 

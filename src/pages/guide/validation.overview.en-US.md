@@ -67,6 +67,8 @@ if ($Validation->valid === false) {
 Guard data before it reaches the database or the worker:
 
 ```php
+use RuntimeException;
+
 use Bootgly\ADI\Validation;
 use Bootgly\ADI\Validators\Date;
 use Bootgly\ADI\Validators\Email;
@@ -98,6 +100,8 @@ rules: [
 ]
 ```
 
+The details — what is and is not blank, and how a rule of your own becomes implicit — are in **[Blank values and implicit rules](/manual/ADI/Validation/overview/#blank-values-and-implicit-rules)**.
+
 ## Custom messages
 
 Every rule accepts an optional `message` constructor argument that replaces its default:
@@ -108,7 +112,9 @@ new Regex('/\A.{8,}\z/su', 'Password must be at least 8 characters.');
 new URL(message: 'Give me a real URL.');
 ```
 
-For now, to bound the length of a text (a password, a name), use `Regex` with the `su` flags, as above — `u` counts Unicode codepoints (as `mb_strlen()` does), not bytes. `Minimum` and `Maximum` do not: see [Minimum](#minimum).
+A message you pass is built like the default one: it keeps the rule's placeholders and goes through the translation catalogs — see **[Messages](/manual/ADI/Validation/overview/#messages)**.
+
+For now, check the length of a text (a password, a name) with `Regex` and the `su` flags, as above: `Minimum` and `Maximum` do not count characters — see [Numbers, lengths and counts](/manual/ADI/Validators/overview/#numbers-lengths-and-counts).
 
 ## Custom rules
 
@@ -130,9 +136,7 @@ $InviteCode = new class extends Validators {
 };
 ```
 
-The rule then behaves like the built-in ones: `{field}` becomes the field name, a `message` passed to its constructor replaces the template, and both are looked up in the `validation` translation catalogs ([Localized validation messages](/guide/i18n/overview/#localized-validation-messages)). An override of `format()` returns its own text instead — the `message` argument and the catalogs are ignored.
-
-Declare `public protected(set) bool $implicit = true;` in your subclass when the rule must run even for missing/blank fields (the way `Required` does). `validate()` receives the full `$data` source, so cross-field rules (like `Confirmed`) need no extra wiring.
+The rule then behaves like the built-in ones: `{field}` becomes the field name, and a `message` passed to its constructor replaces the template. How to make it run on blank fields, read the other fields of the source or add placeholders — and why an override of `format()` loses the `message` argument and the translation catalogs — is in **[Write a custom rule](/manual/ADI/Validation/overview/#write-a-custom-rule)**.
 
 ## Validating HTTP requests
 
@@ -162,228 +166,14 @@ $Validation = new Validation($Request->files, [
 ```
 
 A PHP script sent as `avatar.png` with `Content-Type: image/png` fails `MIME`; a real PNG sent
-as `text/plain` passes.
+as `text/plain` passes. Keep an accepted upload with
+[`store()`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#persist-an-upload-store), on a disk the web
+server does not execute — never under an executable or web-served path.
 
-- **Only files the server wrote are inspected.** The rule reads `tmp_name` only when it is a
-  regular file directly inside `BOOTGLY_UPLOADS_DIR`, where the HTTP server streams uploads. A
-  path anywhere else, a symlink or a directory fails — a hand-built record cannot point the
-  rule at `/etc/passwd`.
-- **List types as libmagic names them** — `image/jpeg` (never `image/jpg`), `application/pdf`,
-  `text/plain`. The allowlist is case-insensitive and ignores parameters (`; charset=…`).
-- **`fileinfo` is required.** Without it, `new MIME(…)` throws a `RuntimeException` instead of
-  building a rule that would pass or fail every upload silently.
-- **A sniff is not a malware scan.** It names the format the bytes start with: a polyglot
-  (`GIF89a<?php …`) sniffs as `image/gif`, and an SVG (`image/svg+xml`) can carry scripts. Never
-  keep uploads under an executable or web-served path — persist them with
-  [`store()`](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#persist-an-upload-store) to a disk the
-  web server does not execute.
+What each upload rule reads and how an empty file input and a `photos[]` list behave are on
+**[Uploads](/manual/ADI/Validators/overview/#uploads)**, and why a sniff is not a malware scan is
+under **[MIME](/manual/ADI/Validators/overview/#mime)**.
 
-## Reference
+## Built-in rules
 
-### Validation
-
-```php
-public function __construct (array $source, array $rules)
-```
-
-Runs the rules against the source immediately. `$rules` maps each field to a `Condition` or a list of `Condition` objects; anything else throws `InvalidArgumentException`.
-
-```php
-public private(set) array $errors;
-```
-
-Failure messages per field: `array<string, array<int,string>>`. Empty when everything passed.
-
-```php
-public bool $valid { get; }
-```
-
-`true` when `$errors` is empty.
-
-### Condition
-
-The abstract base of every rule (`Bootgly\ADI\Validation\Condition`). `Bootgly\ADI\Validators` extends it as the application-facing base for custom rules.
-
-```php
-abstract public function validate (string $field, mixed $value, array $data): bool
-```
-
-Returns `true` when the value is valid. Receives the full `$data` source for cross-field logic.
-
-```php
-public function format (string $field): string
-```
-
-Returns the error message — the `message` passed to the constructor, or the rule's `$template` when none was given — translated through the `validation` catalogs, with `{field}` and the rule's other tokens (such as `{limit}`) filled in.
-
-```php
-public protected(set) bool $implicit = false;
-```
-
-Implicit rules run even when the field is blank/missing (e.g. `Required`).
-
-```php
-protected string $template = '{field} is invalid.';
-```
-
-The default message, used when no `message` is passed to the constructor, and the key `format()` looks up in the `validation` catalogs. Every built-in rule declares its own; a custom rule redeclares it in its class body (see [Custom rules](#custom-rules)).
-
-### Built-in rules
-
-All in `Bootgly\ADI\Validators`. Each accepts an optional `string $message` to override the default.
-
----
-
-#### Required
-
-```php
-new Required;
-new Required('Name cannot be empty.');
-```
-
-Rejects `null`, empty strings (after `trim`) and empty arrays. Implicit — runs even when the field is missing. Default message: `"{field} is required."`
-
-> [!NOTE]
-> When validating `$Request->files` (`Sources::Files`), an **empty file input** still
-> produces a record — a non-empty array with `error` = `UPLOAD_ERR_NO_FILE` — so
-> `Required` alone passes on it. Pair it with `Size` (or `MIME`/`Extension`), which
-> only pass when `error === 0`, to require an actual upload.
-
----
-
-#### Boolean
-
-```php
-new Boolean;
-```
-
-Accepts `bool`, the integers `0`/`1` and the strings `'0'`, `'1'`, `'true'`, `'false'` — nothing else (`'yes'`/`'on'` are rejected). Default message: `"{field} must be a boolean."`
-
----
-
-#### Integer
-
-```php
-new Integer;
-```
-
-Accepts native `int` or strings matching `/\A[-+]?\d+\z/`. Default message: `"{field} must be an integer."`
-
----
-
-#### Minimum
-
-```php
-new Minimum(18);
-```
-
-Lower-bound rule. Compares numeric values by value, non-numeric strings by `strlen` and arrays by `count`. Default message: `"{field} must be at least {limit}."`
-
-> [!WARNING]
-> **Not a text-length rule.** A string that looks like a number is compared by its value, so the password `'1234'` passes `Minimum(8)`; any other string is measured in bytes, not characters (`'é'` counts 2). For now, check the length of a text with `Regex` and the `su` flags (`u` counts Unicode codepoints, as `mb_strlen()` does; `s` lets `.` match line breaks): `new Regex('/\A.{8,}\z/su')` for at least 8 codepoints, `new Regex('/\A.{0,500}\z/su')` for at most 500. A codepoint is not always one visible character: an `é` typed as `e` plus a combining accent counts 2, and an emoji built from several codepoints counts each of them, so a maximum can reject a text that looks shorter.
-
----
-
-#### Maximum
-
-```php
-new Maximum(120);
-```
-
-Upper-bound counterpart of `Minimum`, with the same dispatch and the same text-length caveat (a bio of 300 `'é'` characters is 600 bytes and fails `Maximum(500)`). Default message: `"{field} must be at most {limit}."`
-
----
-
-#### In
-
-```php
-new In(['active', 'archived']);
-new In([1, 2, 3], strict: false);
-```
-
-Accepts values inside the allowlist. Strict comparison by default (`'3'` does not match `3`); pass `strict: false` for loose comparison. Default message: `"{field} must be one of the allowed values."`
-
----
-
-#### Email
-
-```php
-new Email;
-```
-
-Validates with PHP's `filter_var($value, FILTER_VALIDATE_EMAIL)`. Default message: `"{field} must be a valid email address."`
-
----
-
-#### URL
-
-```php
-new URL;
-```
-
-Validates with PHP's `filter_var($value, FILTER_VALIDATE_URL)`. Default message: `"{field} must be a valid URL."`
-
----
-
-#### Date
-
-```php
-new Date;                // any strtotime()-parseable date
-new Date('Y-m-d');       // strict format
-```
-
-Without a format, accepts any string `strtotime()` can parse. With a format, parses via `DateTimeImmutable::createFromFormat()` and round-trips the result — calendar overflows like `2026-02-30` are rejected. Default message: `"{field} must be a valid date."` / `"{field} must be a valid date in the format {format}."`
-
----
-
-#### Confirmed
-
-```php
-new Confirmed;                    // matches {field}_confirmation
-new Confirmed(field: 'PIN_check'); // matches a custom confirming field
-```
-
-Cross-field equality: the value must strictly equal the confirming field in the same source (default `{field}_confirmation`). Default message: `"{field} confirmation does not match."`
-
----
-
-#### Regex
-
-```php
-new Regex('/\A[a-z0-9_-]+\z/');
-new Regex('/\A[a-z0-9_]{3,}\z/', 'Username must be alphanumeric, 3+ chars.');
-```
-
-Matches the value against a PCRE pattern. Throws `InvalidArgumentException` at construction time if the pattern is invalid. Default message: `"{field} has an invalid format."`
-
----
-
-#### Size
-
-```php
-new Size(2 * 1024 * 1024); // 2 MB
-```
-
-Validates upload structures (`['name', 'type', 'size', 'error', 'tmp_name']`). Passes when `error === 0` and `size <= $limit` (bytes). Default message: `"{field} must be at most {limit} bytes."`
-
----
-
-#### MIME
-
-```php
-new MIME('application/pdf');
-new MIME(['image/jpeg', 'image/png']);
-```
-
-Validates upload structures by their content: passes when `error === 0`, `tmp_name` is a regular file directly inside `BOOTGLY_UPLOADS_DIR` (never a symlink), and the type sniffed from its bytes (`fileinfo`) is in the allowlist — case-insensitive, parameters ignored. The record's `type` (the client-declared `Content-Type`) is never read. Throws `RuntimeException` at construction when the `fileinfo` extension is not available. Default message: `"{field} must have an allowed MIME type."`
-
----
-
-#### Extension
-
-```php
-new Extension('zip');
-new Extension(['jpg', 'jpeg', 'png']);
-```
-
-Validates upload structures against an allowlist of file extensions (case-insensitive; a leading `.` is accepted and stripped). Default message: `"{field} must have an allowed extension."`
+`Bootgly\ADI\Validators` ships 14 rules: `Boolean`, `Confirmed`, `Date`, `Email`, `Extension`, `In`, `Integer`, `Maximum`, `MIME`, `Minimum`, `Regex`, `Required`, `Size` and `URL`. Their arguments, the values each one accepts and rejects, their default messages and their caveats are on **[Validators](/manual/ADI/Validators/overview/)**; the engine — `Validation`, the `Condition` base class and how a message is built — has its Reference on **[Validation](/manual/ADI/Validation/overview/#reference)**. Every message is a key of the `validation` translation catalogs: **[Localized validation messages](/guide/i18n/overview/#localized-validation-messages)** shows a complete `pt-BR` catalog.
