@@ -125,7 +125,8 @@ O `Hydrated` roda depois que o banco respondeu, mas em toda hidratação: leitur
 Os hooks que rodam antes do trabalho podem mudá-lo ou interrompê-lo:
 
 - **`Selecting`** recebe a seleção prestes a compilar, depois dos escopos nomeados: um predicado que
-  o listener adiciona restringe a query — inclusive a do `find()`.
+  o listener adiciona restringe a query — inclusive a do `find()`. Ele forma um grupo próprio, ligado
+  com `AND` depois dos predicados de quem chama, então um `OR` de quem chama não o contorna.
 - **`Saving`** recebe a entidade antes que o repositório leia a chave dela e componha a instrução,
   então o que o listener muda é gravado. Para uma chave gerada, uma chave que ele define numa
   entidade nova transforma o `INSERT` num `UPDATE`.

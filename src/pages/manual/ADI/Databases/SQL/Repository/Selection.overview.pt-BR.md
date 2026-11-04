@@ -171,13 +171,12 @@ predicados na ordem das chamadas, sem parênteses, e o SQL avalia `AND` antes de
 **[OR e AND](/manual/ADI/Databases/SQL/Builder/Reading/overview/#or-e-and)**). O primeiro predicado
 não tem a que se ligar, então a junção dele é ignorada.
 
-> [!WARNING]
-> Por enquanto, os predicados que o próprio repositório acrescenta — os de um escopo nomeado, e o
-> keyset de cada página por cursor — entram depois dos seus com `AND`, sem parênteses. Depois de um
-> `OR` eles se ligam só ao último predicado: `A OR B` com um escopo que acrescenta `C` roda como
-> `A OR (B AND C)`, então as linhas que casam com `A` escapam do escopo, e uma caminhada por cursor
-> as serve de novo em toda página — quando elas enchem uma página inteira, repete essa página para
-> sempre. Mantenha `Junctions::Or` fora de seleções que nomeiam escopos ou que você pagina por cursor.
+Os predicados que o próprio repositório acrescenta — os de cada escopo nomeado, os de cada listener
+de `Selecting`, e o keyset de cada página por cursor — nunca se ligam aos seus. O `fetch()` e o
+`paginate()` põem os seus predicados entre parênteses como um grupo e ligam cada um dos deles depois,
+com `AND`, como um grupo próprio, então `A OR B` com um escopo que acrescenta `C` roda como
+`(A OR B) AND C`: um `OR` seu não escapa de um escopo, e uma caminhada por cursor sobre ele avança
+página a página. Uma seleção que não tem nenhum deles compila como você a escreveu.
 
 ## Busca textual
 
@@ -201,12 +200,8 @@ roda a busca full-text do engine. O que cada modo encontra em cada engine, e a p
 precisa ser uma string: qualquer outra coisa lança `SQL text match value must be a string.` a partir
 do `fetch()`.
 
-> [!WARNING]
-> Por enquanto, uma seleção escreve todo `match()` depois de todo `filter()`, seja qual for a ordem em
-> que você os chama. Só com `AND` isso não muda nada; com `Junctions::Or` o `OR` muda de lugar:
-> `->match(new Identifier('name'), 'A%')->filter(new Identifier('active'), Operators::Equal, false, Junctions::Or)`
-> compila para `WHERE "active" = $1 AND "name" LIKE $2`. Chame `filter()` antes de `match()`, e a
-> ordem compilada é a ordem em que você chamou.
+Os predicados de `filter()` e `match()` compilam na ordem em que você os chama, então um
+`Junctions::Or` num `match()` o liga ao predicado chamado logo antes dele.
 
 ## Ordenar linhas
 
@@ -331,10 +326,11 @@ array_column($Mapped->entities, 'name'); // ['Ada', 'Grace', 'Alan']
 
 O `scope()` nomeia um escopo que o repositório registrou com o próprio `scope()` (veja
 **[Escopos nomeados](/manual/ADI/Databases/SQL/Repository/overview/#escopos-nomeados)**). O `fetch()`
-e o `paginate()` rodam cada closure nomeada na seleção, na ordem em que foram nomeadas, depois dos
-predicados que você acrescentou; o `compile()` e o `count()` não as rodam. Um nome que o repositório
-não registrou lança `ORM scope is not registered: …` a partir do `fetch()` ou do `paginate()`, não do
-`scope()`.
+e o `paginate()` rodam cada closure nomeada na seleção, na ordem em que foram nomeadas; os predicados
+que cada uma acrescenta formam um grupo próprio, ligado com `AND` depois dos predicados que você
+acrescentou (veja **[Combinar predicados com OR](#combinar-predicados-com-or)**). O `compile()` e o
+`count()` não as rodam. Um nome que o repositório não registrou lança
+`ORM scope is not registered: …` a partir do `fetch()` ou do `paginate()`, não do `scope()`.
 
 ## Inspecionar e contar
 
@@ -409,8 +405,8 @@ coluna ou um case de enum string-backed. O valor é conferido quando a seleção
 match (BackedEnum|Stringable $Column, mixed $value, Matches $Match = Matches::Like, Junctions $Junction = Junctions::And): static
 ```
 
-Acrescenta um predicado de texto no modo `$Match`. Por enquanto ele é compilado depois de todo
-predicado de `filter()`.
+Acrescenta um predicado de texto no modo `$Match`, ligado ao predicado anterior — um filtro ou uma
+busca — por `$Junction`.
 
 ```php
 order (Orders $Order, BackedEnum|Stringable $Column, null|Nulls $Nulls = null): static
@@ -452,6 +448,16 @@ scope (string $name): static
 
 Acrescenta um escopo nomeado para o `fetch()` e o `paginate()` rodarem. Conferido por eles, contra os
 escopos que o repositório registrou.
+
+```php
+guard (Closure $Guard): static
+```
+
+Roda `$Guard` com a seleção e move os predicados que ele acrescenta — por `filter()` ou `match()` —
+para um grupo próprio, ligado com `AND` depois dos outros predicados como um todo. O repositório roda
+todo escopo nomeado e todo listener de `Selecting` por ele; chame-o para acrescentar um predicado que
+os `OR`s da própria seleção não podem contornar. Uma closure que não acrescenta nada não acrescenta
+grupo.
 
 ```php
 compile (): Query

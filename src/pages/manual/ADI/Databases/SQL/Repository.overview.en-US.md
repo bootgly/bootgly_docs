@@ -433,15 +433,15 @@ $Mapped->entity->name; // Grace Hopper
 `scope()` registers a named piece of selection on this repository, and the selection's `scope()`
 asks for it by name. The closure receives the selection and the repository applying it, so one
 closure — `$Latest` orders by whatever the entity's key is — can serve every repository. `fetch()`
-and `paginate()` run the named closures in the order named, after the predicates you wrote. A name
+and `paginate()` run the named closures in the order named, after the predicates you wrote — each
+as a group ANDed after yours, so an `OR` of yours cannot get around it. A name
 this repository has not registered makes them throw `InvalidArgumentException`:
 `ORM scope is not registered: active` — a second `map()` of `User` has none.
 
 `compile()` and `count()` on the selection do not run scopes, and for now `fetch()` runs them on the
 selection you pass: read
-**[Reuse a selection](/manual/ADI/Databases/SQL/Repository/Selection/overview/#reuse-a-selection)** and
-**[Combine predicates with OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combine-predicates-with-or)**
-before you fetch a scoped selection twice or add an `OR` to one.
+**[Reuse a selection](/manual/ADI/Databases/SQL/Repository/Selection/overview/#reuse-a-selection)**
+before you fetch a scoped selection twice.
 
 ## Lifecycle hooks
 

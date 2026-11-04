@@ -436,15 +436,15 @@ O `scope()` registra um pedaço nomeado de seleção neste repositório, e o `sc
 pelo nome. A closure recebe a seleção e o repositório que a aplica, então uma closure só — `$Latest`
 ordena pela chave da entidade, seja ela qual for — serve a todo repositório. O `fetch()` e o
 `paginate()` rodam as closures nomeadas na ordem em que foram nomeadas, depois dos predicados que
-você escreveu. Um nome que este repositório não registrou faz os dois lançarem
+você escreveu — cada uma como um grupo ligado com `AND` depois dos seus, então um `OR` seu não a
+contorna. Um nome que este repositório não registrou faz os dois lançarem
 `InvalidArgumentException`: `ORM scope is not registered: active` — um segundo `map()` de `User` não
 tem nenhum.
 
 O `compile()` e o `count()` da seleção não rodam escopos, e por enquanto o `fetch()` os roda na
 seleção que você passa: leia
-**[Reutilizar uma seleção](/manual/ADI/Databases/SQL/Repository/Selection/overview/#reutilizar-uma-seleção)** e
-**[Combinar predicados com OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combinar-predicados-com-or)**
-antes de buscar duas vezes uma seleção com escopos ou de acrescentar um `OR` a ela.
+**[Reutilizar uma seleção](/manual/ADI/Databases/SQL/Repository/Selection/overview/#reutilizar-uma-seleção)**
+antes de buscar duas vezes uma seleção com escopos.
 
 ## Hooks de ciclo de vida
 

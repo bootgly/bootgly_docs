@@ -170,13 +170,11 @@ call order without parentheses, and SQL evaluates `AND` before `OR` (see
 **[OR and AND](/manual/ADI/Databases/SQL/Builder/Reading/overview/#or-and-and)**). The first
 predicate has nothing to join, so its junction is ignored.
 
-> [!WARNING]
-> For now, the predicates the repository adds itself — a named scope's, and the keyset of each
-> cursor page — are joined after yours with `AND`, without parentheses. After an `OR` they bind to
-> the last predicate only: `A OR B` with a scope that adds `C` runs as `A OR (B AND C)`, so the rows
-> that match `A` skip the scope, and a cursor walk serves them again on every page — once they fill
-> a whole page, it repeats that page forever. Keep `Junctions::Or` out of selections that name scopes
-> or that you paginate by cursor.
+The predicates the repository adds itself — each named scope's, each `Selecting` listener's, and
+the keyset of each cursor page — never join yours. `fetch()` and `paginate()` put your predicates in
+parentheses as one group and AND each of theirs after it as a group of its own, so `A OR B` with a
+scope that adds `C` runs as `(A OR B) AND C`: an `OR` of yours cannot get around a scope, and a cursor
+walk over it advances page by page. A selection that has none of them compiles as you wrote it.
 
 ## Match text
 
@@ -198,12 +196,8 @@ full-text search. What each mode finds on each engine, and the setup `Text` need
 **[Text matching](/manual/ADI/Databases/SQL/Builder/Reading/overview/#text-matching)**. The value
 must be a string: anything else throws `SQL text match value must be a string.` from `fetch()`.
 
-> [!WARNING]
-> For now, a selection writes every `match()` after every `filter()`, whatever order you call them
-> in. With `AND` alone that changes nothing; with `Junctions::Or` it moves the `OR`:
-> `->match(new Identifier('name'), 'A%')->filter(new Identifier('active'), Operators::Equal, false, Junctions::Or)`
-> compiles to `WHERE "active" = $1 AND "name" LIKE $2`. Call `filter()` before `match()`, and the
-> order compiled is the order you called.
+`filter()` and `match()` predicates compile in the order you call them, so a `Junctions::Or` on a
+`match()` joins it to the predicate called just before it.
 
 ## Order rows
 
@@ -328,9 +322,11 @@ array_column($Mapped->entities, 'name'); // ['Ada', 'Grace', 'Alan']
 
 `scope()` names a scope the repository registered with its own `scope()` (see
 **[Named scopes](/manual/ADI/Databases/SQL/Repository/overview/#named-scopes)**). `fetch()` and
-`paginate()` run each named closure on the selection, in the order named, after the predicates you
-added; `compile()` and `count()` do not run them. A name the repository has not registered throws
-`ORM scope is not registered: …` from `fetch()` or `paginate()`, not from `scope()`.
+`paginate()` run each named closure on the selection, in the order named; the predicates each one
+adds form a group of their own, ANDed after the predicates you added (see
+**[Combine predicates with OR](#combine-predicates-with-or)**). `compile()` and `count()` do not run
+them. A name the repository has not registered throws `ORM scope is not registered: …` from
+`fetch()` or `paginate()`, not from `scope()`.
 
 ## Inspect and count
 
@@ -403,8 +399,8 @@ column or a string-backed enum case. The value is checked when the selection com
 match (BackedEnum|Stringable $Column, mixed $value, Matches $Match = Matches::Like, Junctions $Junction = Junctions::And): static
 ```
 
-Adds one text predicate in the `$Match` mode. For now it is compiled after every `filter()`
-predicate.
+Adds one text predicate in the `$Match` mode, joined to the previous predicate — a filter or a
+match — by `$Junction`.
 
 ```php
 order (Orders $Order, BackedEnum|Stringable $Column, null|Nulls $Nulls = null): static
@@ -446,6 +442,15 @@ scope (string $name): static
 
 Adds a named scope for `fetch()` and `paginate()` to run. Checked by them, against the scopes the
 repository registered.
+
+```php
+guard (Closure $Guard): static
+```
+
+Runs `$Guard` with the selection and moves the predicates it adds — through `filter()` or `match()`
+— into a group of their own, ANDed after the other predicates as a whole. The repository runs every
+named scope and every `Selecting` listener through it; call it to add a predicate that the
+selection's own `OR`s must not get around. A closure that adds nothing adds no group.
 
 ```php
 compile (): Query

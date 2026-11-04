@@ -124,7 +124,8 @@ $Users->hydrate($Operation);
 The hooks that run before the work can change it or stop it:
 
 - **`Selecting`** receives the selection about to compile, after named scopes: a predicate the
-  listener adds restricts the query — `find()` included.
+  listener adds restricts the query — `find()` included. It forms a group of its own, ANDed after
+  the caller's predicates, so a caller's `OR` cannot get around it.
 - **`Saving`** receives the entity before the repository reads its key and composes the statement,
   so what the listener changes is written. For a generated key, a key it sets on a new entity turns
   the `INSERT` into an `UPDATE`.
