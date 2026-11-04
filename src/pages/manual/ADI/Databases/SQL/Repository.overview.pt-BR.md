@@ -436,10 +436,14 @@ O `scope()` registra um pedaço nomeado de seleção neste repositório, e o `sc
 pelo nome. A closure recebe a seleção e o repositório que a aplica, então uma closure só — `$Latest`
 ordena pela chave da entidade, seja ela qual for — serve a todo repositório. O `fetch()` e o
 `paginate()` rodam as closures nomeadas na ordem em que foram nomeadas, depois dos predicados que
-você escreveu — cada uma como um grupo ligado com `AND` depois dos seus, então um `OR` seu não a
-contorna. Um nome que este repositório não registrou faz os dois lançarem
+você escreveu. Um nome que este repositório não registrou faz os dois lançarem
 `InvalidArgumentException`: `ORM scope is not registered: active` — um segundo `map()` de `User` não
 tem nenhum.
+
+Desde a 1.0.13, os predicados que um escopo acrescenta formam um grupo próprio, ligado com `AND`
+depois dos seus: um `OR` seu não contorna um escopo, e um `OR` que o escopo escreve liga só os
+predicados dele, então os predicados de um escopo só podem estreitar a seleção (veja
+**[Combinar predicados com OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combinar-predicados-com-or)**).
 
 O `compile()` e o `count()` da seleção não rodam escopos, e por enquanto o `fetch()` os roda na
 seleção que você passa: leia
@@ -562,7 +566,9 @@ scope (string $name, Closure $Scope): static
 ```
 
 Registra um escopo nomeado neste repositório, substituindo um de mesmo nome. O `fetch()` e o
-`paginate()` chamam `$Scope($Selection, $Repository)` para cada nome que a seleção traz.
+`paginate()` chamam `$Scope($Selection, $Repository)` para cada nome que a seleção traz, pelo
+`Selection::guard()`: os predicados que ele acrescenta formam um grupo ligado com `AND` depois dos da
+própria seleção.
 
 ```php
 load (object|array $Entities, array $relations = [], null|object $Scope = null): array

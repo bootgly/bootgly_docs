@@ -433,10 +433,14 @@ $Mapped->entity->name; // Grace Hopper
 `scope()` registers a named piece of selection on this repository, and the selection's `scope()`
 asks for it by name. The closure receives the selection and the repository applying it, so one
 closure — `$Latest` orders by whatever the entity's key is — can serve every repository. `fetch()`
-and `paginate()` run the named closures in the order named, after the predicates you wrote — each
-as a group ANDed after yours, so an `OR` of yours cannot get around it. A name
+and `paginate()` run the named closures in the order named, after the predicates you wrote. A name
 this repository has not registered makes them throw `InvalidArgumentException`:
 `ORM scope is not registered: active` — a second `map()` of `User` has none.
+
+Since 1.0.13, the predicates a scope adds form a group of their own, ANDed after yours: an `OR` of
+yours cannot get around a scope, and an `OR` the scope writes joins its own predicates only, so the
+predicates of a scope can only narrow the selection (see
+**[Combine predicates with OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combine-predicates-with-or)**).
 
 `compile()` and `count()` on the selection do not run scopes, and for now `fetch()` runs them on the
 selection you pass: read
@@ -558,7 +562,8 @@ scope (string $name, Closure $Scope): static
 ```
 
 Registers a named scope on this repository, replacing one of the same name. `fetch()` and
-`paginate()` call `$Scope($Selection, $Repository)` for each name the selection carries.
+`paginate()` call `$Scope($Selection, $Repository)` for each name the selection carries, through
+`Selection::guard()`: the predicates it adds form a group ANDed after the selection's own.
 
 ```php
 load (object|array $Entities, array $relations = [], null|object $Scope = null): array

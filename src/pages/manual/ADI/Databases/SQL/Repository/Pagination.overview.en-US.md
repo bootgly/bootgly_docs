@@ -83,6 +83,8 @@ $Page = $Response->Database->paginate(
 return $Response->Negotiation->send($Page);
 ```
 
+The selection may join its predicates with `Junctions::Or`: `paginate()` keeps them together — in parentheses when a scope, a listener or a cursor keyset adds a group — and what the selection's named scopes and the repository's `Selecting` listeners add — and the keyset of a cursor page — is ANDed after them, each as a group of its own. A scope therefore restricts every page and the `X-Total-Count`, and a cursor walk over an `OR` moves forward page by page (see **[Combine predicates with OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combine-predicates-with-or)**). Since 1.0.13.
+
 ## Walk with cursors
 
 A present `cursor` key selects keyset mode — an empty value starts the walk:
@@ -167,6 +169,35 @@ $read; // 23
 ```
 
 Do not pass a `null` token back: `new Pagination(cursor: null)` has no cursor, so it starts a page-mode pagination of page 1.
+
+A selection with an `OR` walks the same way:
+
+```php
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Junctions;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\ADI\Databases\SQL\Builder\Identifier;
+
+$Edges = $Users->select()
+   ->filter(new Identifier('id'), Operators::Less, 3)
+   ->filter(new Identifier('id'), Operators::Greater, 21, Junctions::Or);
+
+$First = new Pagination(limit: 2, Mode: Modes::Cursor);
+$Mapped = $Users->hydrate($Database->await($Users->paginate($Edges, $First)));
+array_column($Mapped->entities, 'id'); // [1, 2]
+
+$Second = new Pagination(limit: 2, cursor: $First->next);
+$Mapped = $Users->hydrate($Database->await($Users->paginate($Edges, $Second)));
+array_column($Mapped->entities, 'id'); // [22, 23]
+$Second->next;                         // null: the walk is over
+```
+
+On PostgreSQL, the second `paginate()` sends:
+
+```sql
+SELECT "id", "name", "active", "city" FROM "users" WHERE ("id" < $1 OR "id" > $2) AND (("id" > $3)) ORDER BY "id" ASC LIMIT 3
+```
+
+The `OR` stays in parentheses and the keyset of the page — the rows after id 2 — is ANDed after it; `LIMIT 3` is the page plus the probe row.
 
 In page mode the `COUNT(*)` must be finished when `hydrate()` runs: with an asynchronous driver (PostgreSQL, MySQL) the repository needs an await bridge (`Awaiting: $Database`, a transaction, or the HTTP database resource), otherwise `hydrate()` throws `ORM pagination count requires an await bridge.` SQLite runs each statement inside the call and never needs one. On a pooled facade, `paginate()` sends the `COUNT(*)` right behind the items query, pipelined. A transaction is a serial surface — it refuses a second statement while one is running —, so there `paginate()` sends only the items query and `hydrate()` sends the `COUNT(*)` and awaits it through the transaction; on SQLite the items query has already run by then, so `paginate()` sends both. Page pagination works inside `Transaction::map()` either way.
 

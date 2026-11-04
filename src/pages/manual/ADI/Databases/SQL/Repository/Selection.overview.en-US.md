@@ -171,10 +171,13 @@ call order without parentheses, and SQL evaluates `AND` before `OR` (see
 predicate has nothing to join, so its junction is ignored.
 
 The predicates the repository adds itself — each named scope's, each `Selecting` listener's, and
-the keyset of each cursor page — never join yours. `fetch()` and `paginate()` put your predicates in
-parentheses as one group and AND each of theirs after it as a group of its own, so `A OR B` with a
-scope that adds `C` runs as `(A OR B) AND C`: an `OR` of yours cannot get around a scope, and a cursor
-walk over it advances page by page. A selection that has none of them compiles as you wrote it.
+the keyset of each cursor page — never join yours. Each forms a group of its own, and the selection
+compiles your predicates as one group — in parentheses when they are more than one — then ANDs every group after it: `A OR B` with
+a scope that adds `C` runs as `(A OR B) AND C` (see **[Named scopes](#named-scopes)**). An `OR` of
+yours cannot get around a scope, a cursor walk over an `OR` moves forward page by page, and a scope
+or a listener's predicates can only narrow the selection: an `OR` it writes joins its own predicates
+only, and a single predicate it adds with `Junctions::Or` is ANDed all the same. A selection that has none of
+them compiles as you wrote it. Since 1.0.13.
 
 ## Match text
 
@@ -197,7 +200,7 @@ full-text search. What each mode finds on each engine, and the setup `Text` need
 must be a string: anything else throws `SQL text match value must be a string.` from `fetch()`.
 
 `filter()` and `match()` predicates compile in the order you call them, so a `Junctions::Or` on a
-`match()` joins it to the predicate called just before it.
+`match()` joins it to the predicate called just before it. Since 1.0.13.
 
 ## Order rows
 
@@ -328,6 +331,28 @@ adds form a group of their own, ANDed after the predicates you added (see
 them. A name the repository has not registered throws `ORM scope is not registered: …` from
 `fetch()` or `paginate()`, not from `scope()`.
 
+A scope also restricts a selection whose predicates are joined with `OR`:
+
+```php
+$Selection = $Users->select()
+   ->filter(new Identifier('name'), Operators::Equal, 'Linus')
+   ->filter(new Identifier('city'), Operators::Equal, 'London', Junctions::Or)
+   ->scope('active');
+
+$Mapped = $Users->hydrate($Database->await($Users->fetch($Selection)));
+
+array_column($Mapped->entities, 'name'); // ['Ada']
+```
+
+On PostgreSQL, `fetch()` sends:
+
+```sql
+SELECT "id", "name", "email", "active", "city" FROM "users" WHERE ("name" = $1 OR "city" = $2) AND "active" = $3
+```
+
+Linus matches the `OR`, but the scope's group is ANDed after both of your predicates, so the
+inactive Linus stays out.
+
 ## Inspect and count
 
 ```php
@@ -349,7 +374,7 @@ SELECT COUNT(*) AS "total" FROM "users" WHERE "active" = $1
 `compile()` returns the `Query` that `fetch()` would send — its `SQL` and `parameters`, in the
 repository's dialect — and changes nothing, so call it whenever you want to see the statement.
 `count()` compiles a count over the same predicates, without the order, the slice and the lock; run
-it through `$Database->query()`. Neither runs named scopes.
+it through `$Database->query()`. Neither runs named scopes or `Selecting` listeners.
 
 ## Reuse a selection
 
@@ -447,32 +472,43 @@ repository registered.
 guard (Closure $Guard): static
 ```
 
-Runs `$Guard` with the selection and moves the predicates it adds — through `filter()` or `match()`
-— into a group of their own, ANDed after the other predicates as a whole. The repository runs every
-named scope and every `Selecting` listener through it; call it to add a predicate that the
-selection's own `OR`s must not get around. A closure that adds nothing adds no group.
+Runs `$Guard` with the selection and moves the predicates it adds through `filter()` and `match()`
+into a group of their own; its other calls, such as `order()`, apply as usual. The selection compiles
+its other predicates — also those added after the call — as one group, in parentheses when they are
+more than one, and ANDs each
+group after it; a group of one predicate is ANDed whatever its junction. The repository runs every
+named scope and every `Selecting` listener through it, so they need no call of their own; call it
+yourself to add a restriction that the selection's `OR`s, present and future, cannot get around. A
+closure that adds nothing adds no group, and one that throws still leaves what it added grouped
+before the exception leaves `guard()`. Since 1.0.13.
 
 ```php
 compile (): Query
 ```
 
-Compiles the statement `fetch()` sends, without named scopes: every mapped column of the entity's
-table, the predicates, the order, the slice and the lock. Throws `InvalidArgumentException` for an
-int-backed enum identifier and for a value the builder refuses.
+Compiles the statement `fetch()` sends, without named scopes and `Selecting` listeners: every mapped
+column of the entity's table, the predicates, the order, the slice and the lock. With a group from
+`guard()` or `seek()`, the other predicates compile as one group — in parentheses when they are more
+than one — and each group is ANDed after
+them. Throws `InvalidArgumentException` for an int-backed enum identifier and for a value the
+builder refuses.
 
 ```php
 count (): Query
 ```
 
-Compiles `SELECT COUNT(*) AS "total"` over the predicates — filters, matches and keysets — without
-the order, the slice, the lock and the named scopes. Page pagination runs it for the total.
+Compiles `SELECT COUNT(*) AS "total"` over the predicates — filters, matches, `guard()` groups and
+keysets, grouped as `compile()` groups them — without the order, the slice and the lock. Like
+`compile()`, it runs no named scope and no `Selecting` listener; page pagination runs it for the
+total once they ran, so the total counts what they let through.
 
 ```php
 seek (array $orders, array $values): static
 ```
 
 Restricts the selection to the rows strictly after one keyset position — the predicate cursor
-pagination adds for each page. `$orders` lists `['column' => …, 'order' => Orders::…]` pairs of
+pagination adds for each page, a group of its own ANDed after the other predicates like a `guard()`
+group. `$orders` lists `['column' => …, 'order' => Orders::…]` pairs of
 resolved column names, the unique tiebreak last, and `$values` holds one value per pair. Throws
 `InvalidArgumentException` (`ORM keyset seek requires matching order columns and values.`) when the
 lists are empty or differ in length.

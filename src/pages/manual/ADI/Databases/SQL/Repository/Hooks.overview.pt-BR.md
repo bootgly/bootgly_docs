@@ -125,8 +125,10 @@ O `Hydrated` roda depois que o banco respondeu, mas em toda hidratação: leitur
 Os hooks que rodam antes do trabalho podem mudá-lo ou interrompê-lo:
 
 - **`Selecting`** recebe a seleção prestes a compilar, depois dos escopos nomeados: um predicado que
-  o listener adiciona restringe a query — inclusive a do `find()`. Ele forma um grupo próprio, ligado
-  com `AND` depois dos predicados de quem chama, então um `OR` de quem chama não o contorna.
+  o listener adiciona restringe a query — inclusive a do `find()`. Desde a 1.0.13, o que ele adiciona
+  forma um grupo próprio, ligado com `AND` depois dos predicados de quem chama, então um `OR` de quem
+  chama não o contorna (veja
+  **[Combinar predicados com OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combinar-predicados-com-or)**).
 - **`Saving`** recebe a entidade antes que o repositório leia a chave dela e componha a instrução,
   então o que o listener muda é gravado. Para uma chave gerada, uma chave que ele define numa
   entidade nova transforma o `INSERT` num `UPDATE`.
@@ -136,6 +138,7 @@ Os hooks que rodam antes do trabalho podem mudá-lo ou interrompê-lo:
 Um listener em `Selecting` mantém usuários inativos fora de toda seleção do repositório:
 
 ```php
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Junctions;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
 use Bootgly\ADI\Databases\SQL\Builder\Identifier;
 use Bootgly\ADI\Databases\SQL\Repository\Selection;
@@ -153,6 +156,12 @@ $Users->listen(Hooks::Selecting, function (Selection $Selection): void {
 
 $Users->hydrate($Database->await($Users->fetch()))->count;   // 1: Linus is filtered out
 $Users->hydrate($Database->await($Users->find(2)))->entity; // null: find() is restricted too
+
+$Either = $Users->select()
+   ->filter(new Identifier('name'), Operators::Equal, 'Linus')
+   ->filter(new Identifier('email'), Operators::Equal, 'ada@example.com', Junctions::Or);
+
+$Users->hydrate($Database->await($Users->fetch($Either)))->count; // 1: the OR does not bring Linus back
 ```
 
 ### Recuse lançando uma exceção
@@ -256,7 +265,9 @@ case Selecting;
 
 Emitido por `find()`, `fetch()` e `paginate()` depois que os escopos nomeados se aplicam, antes que a
 seleção compile. O listener recebe `(Selection $Selection)`: a seleção que o `fetch()` recebeu, a que
-o `find()` monta, ou a cópia sobre a qual o `paginate()` trabalha.
+o `find()` monta, ou a cópia sobre a qual o `paginate()` trabalha. Ele roda pelo
+`Selection::guard()`, então os predicados que acrescenta formam um grupo ligado com `AND` depois dos
+da própria seleção.
 
 ```php
 case Selected;

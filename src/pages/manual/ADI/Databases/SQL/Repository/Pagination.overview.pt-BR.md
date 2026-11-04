@@ -83,6 +83,8 @@ $Page = $Response->Database->paginate(
 return $Response->Negotiation->send($Page);
 ```
 
+A seleção pode ligar os predicados dela com `Junctions::Or`: o `paginate()` os mantém juntos — entre parênteses quando um escopo, um listener ou o keyset de um cursor acrescenta um grupo — e o que os escopos nomeados da seleção e os listeners de `Selecting` do repository acrescentam — e o keyset de uma página por cursor — é ligado com `AND` depois deles, cada um como um grupo próprio. Um escopo restringe, então, toda página e o `X-Total-Count`, e uma caminhada por cursor sobre um `OR` avança página a página (veja **[Combinar predicados com OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combinar-predicados-com-or)**). Desde a 1.0.13.
+
 ## Caminhar com cursores
 
 Uma chave `cursor` presente seleciona o modo keyset — um valor vazio inicia a caminhada:
@@ -167,6 +169,35 @@ $read; // 23
 ```
 
 Não passe um token `null` de volta: `new Pagination(cursor: null)` não tem cursor, então inicia uma paginação em modo página da página 1.
+
+Uma seleção com `OR` caminha do mesmo jeito:
+
+```php
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Junctions;
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\ADI\Databases\SQL\Builder\Identifier;
+
+$Edges = $Users->select()
+   ->filter(new Identifier('id'), Operators::Less, 3)
+   ->filter(new Identifier('id'), Operators::Greater, 21, Junctions::Or);
+
+$First = new Pagination(limit: 2, Mode: Modes::Cursor);
+$Mapped = $Users->hydrate($Database->await($Users->paginate($Edges, $First)));
+array_column($Mapped->entities, 'id'); // [1, 2]
+
+$Second = new Pagination(limit: 2, cursor: $First->next);
+$Mapped = $Users->hydrate($Database->await($Users->paginate($Edges, $Second)));
+array_column($Mapped->entities, 'id'); // [22, 23]
+$Second->next;                         // null: the walk is over
+```
+
+No PostgreSQL, o segundo `paginate()` envia:
+
+```sql
+SELECT "id", "name", "active", "city" FROM "users" WHERE ("id" < $1 OR "id" > $2) AND (("id" > $3)) ORDER BY "id" ASC LIMIT 3
+```
+
+O `OR` fica entre parênteses e o keyset da página — as linhas depois do id 2 — é ligado com `AND` depois dele; o `LIMIT 3` é a página mais a linha de sonda.
 
 No modo página o `COUNT(*)` precisa estar finalizado quando `hydrate()` roda: com um driver assíncrono (PostgreSQL, MySQL) o repository precisa de uma ponte de await (`Awaiting: $Database`, uma transação, ou o database resource do HTTP), caso contrário `hydrate()` lança `ORM pagination count requires an await bridge.` O SQLite roda cada instrução dentro da chamada e nunca precisa de uma. Numa fachada com pool, o `paginate()` envia o `COUNT(*)` logo atrás da query de itens, em pipeline. Uma transação é uma superfície serial — recusa uma segunda instrução enquanto uma está rodando —, então ali o `paginate()` envia só a query de itens e o `hydrate()` envia o `COUNT(*)` e o aguarda pela transação; no SQLite a query de itens já rodou a essa altura, então o `paginate()` envia as duas. A paginação por página funciona dentro de `Transaction::map()` de qualquer jeito.
 

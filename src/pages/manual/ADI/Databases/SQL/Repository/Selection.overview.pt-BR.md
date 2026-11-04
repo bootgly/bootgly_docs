@@ -172,11 +172,14 @@ predicados na ordem das chamadas, sem parênteses, e o SQL avalia `AND` antes de
 não tem a que se ligar, então a junção dele é ignorada.
 
 Os predicados que o próprio repositório acrescenta — os de cada escopo nomeado, os de cada listener
-de `Selecting`, e o keyset de cada página por cursor — nunca se ligam aos seus. O `fetch()` e o
-`paginate()` põem os seus predicados entre parênteses como um grupo e ligam cada um dos deles depois,
-com `AND`, como um grupo próprio, então `A OR B` com um escopo que acrescenta `C` roda como
-`(A OR B) AND C`: um `OR` seu não escapa de um escopo, e uma caminhada por cursor sobre ele avança
-página a página. Uma seleção que não tem nenhum deles compila como você a escreveu.
+de `Selecting`, e o keyset de cada página por cursor — nunca se ligam aos seus. Cada um forma um
+grupo próprio, e a seleção compila os seus predicados como um grupo — entre parênteses quando são mais de um — e depois liga
+cada grupo a ele com `AND`: `A OR B` com um escopo que acrescenta `C` roda como `(A OR B) AND C`
+(veja **[Escopos nomeados](#escopos-nomeados)**). Um `OR` seu não contorna um escopo, uma caminhada
+por cursor sobre um `OR` avança página a página, e os predicados de um escopo ou de um listener só
+podem estreitar a seleção: um `OR` que ele escreve liga só os predicados dele, e um único predicado que ele acrescenta
+com `Junctions::Or` é ligado com `AND` do mesmo jeito. Uma seleção que não tem nenhum deles compila
+como você a escreveu. Desde a 1.0.13.
 
 ## Busca textual
 
@@ -201,7 +204,7 @@ precisa ser uma string: qualquer outra coisa lança `SQL text match value must b
 do `fetch()`.
 
 Os predicados de `filter()` e `match()` compilam na ordem em que você os chama, então um
-`Junctions::Or` num `match()` o liga ao predicado chamado logo antes dele.
+`Junctions::Or` num `match()` o liga ao predicado chamado logo antes dele. Desde a 1.0.13.
 
 ## Ordenar linhas
 
@@ -332,6 +335,28 @@ acrescentou (veja **[Combinar predicados com OR](#combinar-predicados-com-or)**)
 `count()` não as rodam. Um nome que o repositório não registrou lança
 `ORM scope is not registered: …` a partir do `fetch()` ou do `paginate()`, não do `scope()`.
 
+Um escopo também restringe uma seleção cujos predicados se ligam com `OR`:
+
+```php
+$Selection = $Users->select()
+   ->filter(new Identifier('name'), Operators::Equal, 'Linus')
+   ->filter(new Identifier('city'), Operators::Equal, 'London', Junctions::Or)
+   ->scope('active');
+
+$Mapped = $Users->hydrate($Database->await($Users->fetch($Selection)));
+
+array_column($Mapped->entities, 'name'); // ['Ada']
+```
+
+No PostgreSQL, o `fetch()` envia:
+
+```sql
+SELECT "id", "name", "email", "active", "city" FROM "users" WHERE ("name" = $1 OR "city" = $2) AND "active" = $3
+```
+
+O Linus casa com o `OR`, mas o grupo do escopo é ligado com `AND` depois dos seus dois predicados,
+então o Linus, inativo, fica de fora.
+
 ## Inspecionar e contar
 
 ```php
@@ -353,7 +378,7 @@ SELECT COUNT(*) AS "total" FROM "users" WHERE "active" = $1
 O `compile()` retorna a `Query` que o `fetch()` enviaria — o `SQL` e os `parameters` dela, no dialeto
 do repositório — e não muda nada, então chame-o sempre que quiser ver a instrução. O `count()`
 compila uma contagem sobre os mesmos predicados, sem a ordem, a fatia e o lock; rode-a pelo
-`$Database->query()`. Nenhum dos dois roda escopos nomeados.
+`$Database->query()`. Nenhum dos dois roda escopos nomeados nem listeners de `Selecting`.
 
 ## Reutilizar uma seleção
 
@@ -453,33 +478,43 @@ escopos que o repositório registrou.
 guard (Closure $Guard): static
 ```
 
-Roda `$Guard` com a seleção e move os predicados que ele acrescenta — por `filter()` ou `match()` —
-para um grupo próprio, ligado com `AND` depois dos outros predicados como um todo. O repositório roda
-todo escopo nomeado e todo listener de `Selecting` por ele; chame-o para acrescentar um predicado que
-os `OR`s da própria seleção não podem contornar. Uma closure que não acrescenta nada não acrescenta
-grupo.
+Roda `$Guard` com a seleção e move os predicados que ele acrescenta por `filter()` e `match()` para
+um grupo próprio; as outras chamadas dele, como `order()`, valem como de costume. A seleção compila
+os outros predicados dela — também os acrescentados depois da chamada — como um grupo, entre
+parênteses quando são mais de um, e liga cada grupo a ele com `AND`; um grupo com um único predicado é ligado com `AND`, seja
+qual for a junção dele. O repositório roda todo escopo nomeado e todo listener de `Selecting` por ele,
+então eles não precisam de chamada própria; chame-o você mesmo para acrescentar uma restrição que os
+`OR`s da seleção, presentes e futuros, não contornam. Uma closure que não acrescenta nada não
+acrescenta grupo, e uma que lança ainda deixa agrupado o que acrescentou antes que a exceção saia do
+`guard()`. Desde a 1.0.13.
 
 ```php
 compile (): Query
 ```
 
-Compila a instrução que o `fetch()` envia, sem escopos nomeados: toda coluna mapeada da tabela da
-entidade, os predicados, a ordem, a fatia e o lock. Lança `InvalidArgumentException` para um
-identificador de enum int-backed e para um valor que o builder recusa.
+Compila a instrução que o `fetch()` envia, sem escopos nomeados nem listeners de `Selecting`: toda
+coluna mapeada da tabela da entidade, os predicados, a ordem, a fatia e o lock. Com um grupo do
+`guard()` ou do `seek()`, os outros predicados compilam como um grupo — entre parênteses quando são mais de um — e cada grupo
+é ligado com
+`AND` depois deles. Lança `InvalidArgumentException` para um identificador de enum int-backed e para
+um valor que o builder recusa.
 
 ```php
 count (): Query
 ```
 
-Compila `SELECT COUNT(*) AS "total"` sobre os predicados — filtros, matches e keysets — sem a ordem,
-a fatia, o lock e os escopos nomeados. A paginação por página o roda para o total.
+Compila `SELECT COUNT(*) AS "total"` sobre os predicados — filtros, matches, grupos do `guard()` e
+keysets, agrupados como o `compile()` os agrupa — sem a ordem, a fatia e o lock. Como o `compile()`,
+não roda escopo nomeado nem listener de `Selecting`; a paginação por página o roda para o total
+depois que eles rodaram, então o total conta o que eles deixam passar.
 
 ```php
 seek (array $orders, array $values): static
 ```
 
 Restringe a seleção às linhas estritamente depois de uma posição de keyset — o predicado que a
-paginação por cursor acrescenta a cada página. `$orders` lista pares
+paginação por cursor acrescenta a cada página, um grupo próprio ligado com `AND` depois dos outros
+predicados como um grupo do `guard()`. `$orders` lista pares
 `['column' => …, 'order' => Orders::…]` de nomes de coluna resolvidos, o desempate único por último,
 e `$values` guarda um valor por par. Lança `InvalidArgumentException`
 (`ORM keyset seek requires matching order columns and values.`) quando as listas estão vazias ou têm

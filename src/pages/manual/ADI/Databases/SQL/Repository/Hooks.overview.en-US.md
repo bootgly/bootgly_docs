@@ -124,8 +124,9 @@ $Users->hydrate($Operation);
 The hooks that run before the work can change it or stop it:
 
 - **`Selecting`** receives the selection about to compile, after named scopes: a predicate the
-  listener adds restricts the query — `find()` included. It forms a group of its own, ANDed after
-  the caller's predicates, so a caller's `OR` cannot get around it.
+  listener adds restricts the query — `find()` included. Since 1.0.13, what it adds forms a group of
+  its own, ANDed after the caller's predicates, so a caller's `OR` cannot get around it (see
+  **[Combine predicates with OR](/manual/ADI/Databases/SQL/Repository/Selection/overview/#combine-predicates-with-or)**).
 - **`Saving`** receives the entity before the repository reads its key and composes the statement,
   so what the listener changes is written. For a generated key, a key it sets on a new entity turns
   the `INSERT` into an `UPDATE`.
@@ -135,6 +136,7 @@ The hooks that run before the work can change it or stop it:
 A listener on `Selecting` keeps inactive users out of every selection of the repository:
 
 ```php
+use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Junctions;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
 use Bootgly\ADI\Databases\SQL\Builder\Identifier;
 use Bootgly\ADI\Databases\SQL\Repository\Selection;
@@ -152,6 +154,12 @@ $Users->listen(Hooks::Selecting, function (Selection $Selection): void {
 
 $Users->hydrate($Database->await($Users->fetch()))->count;   // 1: Linus is filtered out
 $Users->hydrate($Database->await($Users->find(2)))->entity; // null: find() is restricted too
+
+$Either = $Users->select()
+   ->filter(new Identifier('name'), Operators::Equal, 'Linus')
+   ->filter(new Identifier('email'), Operators::Equal, 'ada@example.com', Junctions::Or);
+
+$Users->hydrate($Database->await($Users->fetch($Either)))->count; // 1: the OR does not bring Linus back
 ```
 
 ### Refuse by throwing
@@ -253,7 +261,8 @@ case Selecting;
 
 Emitted by `find()`, `fetch()` and `paginate()` after named scopes apply, before the selection
 compiles. The listener receives `(Selection $Selection)`: the selection `fetch()` was given, the
-one `find()` builds, or the copy `paginate()` works on.
+one `find()` builds, or the copy `paginate()` works on. It runs through `Selection::guard()`, so the
+predicates it adds form a group ANDed after the selection's own.
 
 ```php
 case Selected;
