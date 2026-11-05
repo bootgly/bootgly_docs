@@ -247,6 +247,9 @@ A classe `Bootgly\API\Environment` é o lado "ambiente do processo" da configura
 public static function load (string $file): bool
 ```
 
+> [!IMPORTANT]
+> **Descontinuado desde a 1.1.0, removido na 2.0.0.** Leia arquivos `.env` pelo `Environment\Configs` (um `.env` de escopo: com escopo, validado, nunca exportado); quando um processo filho precisar de um valor no ambiente, exporte esse valor com `put()`.
+
 Faz o parse de um arquivo no estilo INI e entrega cada par a `put()`, então o prefixo e o sufixo se aplicam e uma variável já definida é sobrescrita — o arquivo vence o ambiente real, o contrário do `bind()`. Retorna `false`, sem aplicar nada, quando o arquivo não existe, não é um arquivo regular (um diretório, um FIFO), não pode ser lido ou parseado, contém um byte NUL ou traz uma chave de array (`CHAVE[]=`, `CHAVE[nome]=`), e também quando `Environment::$prefix` ou `Environment::$suffix` contém `=` ou um byte NUL, já que `put()` recusaria todo nome composto; caso contrário retorna `true`. Este é o equivalente imperativo da leitura de `.env` por escopo descrita acima: diferente de um `.env` de escopo, o que `load()` lê **vira** estado global do processo.
 
 > [!WARNING]
@@ -255,6 +258,9 @@ Faz o parse de um arquivo no estilo INI e entrega cada par a `put()`, então o p
 ```php
 public static function save (string $file): bool
 ```
+
+> [!IMPORTANT]
+> **Descontinuado desde a 1.1.0, removido na 2.0.0.** Persistir o ambiente inteiro do processo não é suportado: escreva os valores de que um deploy precisa num arquivo que a sua aplicação possui, com `0600`, e leia-os de volta por um `.env` de escopo.
 
 Escreve o ambiente **inteiro** do processo — toda variável que `getenv()` retorna — em `$file`, uma linha `CHAVE=valor` por variável: a forma sem aspas que o `docker --env-file` e leitores parecidos esperam. Um valor que a linha sem aspas não levaria intacto através do `load()` é escrito entre aspas, como `CHAVE="valor"` — por exemplo um que contém `;`, começa ou termina com espaço ou tab, ou vem entre aspas duplas. Um leitor que toma as linhas literalmente, como o `docker --env-file`, mantém essas aspas como parte do valor. Cada linha é conferida — ela precisa ser lida de volta exatamente como o seu par — antes de qualquer coisa ser escrita.
 
@@ -275,6 +281,9 @@ Nomes que `getenv()` deixa de fora (veja `list()`) não são escritos. As linhas
 ```php
 public static function list (): array
 ```
+
+> [!IMPORTANT]
+> **Descontinuado desde a 1.1.0, removido na 2.0.0.** Use `getenv()`, que retorna o mesmo array.
 
 Retorna todo o ambiente do processo como `array<string,string>`, exatamente o que `getenv()` retorna. As chaves vêm literais: o prefixo e o sufixo não são removidos. `getenv()` deixa de fora todo nome que contém `.`, espaço ou `[` — uma variável assim continua definida, `get()` continua lendo-a e processos filhos continuam herdando-a, mas ela falta nesta lista e no arquivo que `save()` escreve.
 

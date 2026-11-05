@@ -247,6 +247,9 @@ The `Bootgly\API\Environment` class is the process-environment side of configura
 public static function load (string $file): bool
 ```
 
+> [!IMPORTANT]
+> **Deprecated since 1.1.0, removed in 2.0.0.** Read `.env` files through `Environment\Configs` (a scope `.env`: scoped, validated, never exported); when a child process needs a value in its environment, export that one value with `put()`.
+
 Parses an INI-style file and hands every pair to `put()`, so the prefix and suffix apply and a variable that is already set is overwritten — the file wins over the real environment, the opposite of `bind()`. Returns `false`, applying nothing, when the file is missing, is not a regular file (a directory, a FIFO), cannot be read or parsed, holds a NUL byte or holds an array key (`KEY[]=`, `KEY[name]=`), and also when `Environment::$prefix` or `Environment::$suffix` holds a `=` or a NUL byte, since `put()` would refuse every composed name; otherwise it returns `true`. This is the imperative counterpart of the per-scope `.env` reading described above: unlike a scope `.env`, what `load()` reads **does** become global process state.
 
 > [!WARNING]
@@ -255,6 +258,9 @@ Parses an INI-style file and hands every pair to `put()`, so the prefix and suff
 ```php
 public static function save (string $file): bool
 ```
+
+> [!IMPORTANT]
+> **Deprecated since 1.1.0, removed in 2.0.0.** Persisting the whole process environment is not supported: write the values a deployment needs to a file your application owns, at `0600`, and read them back through a scope `.env`.
 
 Writes the **entire** process environment — every variable `getenv()` returns — to `$file`, one `KEY=value` line per variable: the bare form `docker --env-file` and similar readers expect. A value the bare line would not carry intact through `load()` is written quoted instead, as `KEY="value"` — for example one that holds a `;`, starts or ends with a space or a tab, or is wrapped in double quotes. A reader that takes lines literally, such as `docker --env-file`, keeps those quotes as part of the value. Every line is checked to read back as exactly its pair before anything is written.
 
@@ -275,6 +281,9 @@ Names `getenv()` leaves out (see `list()`) are not written. The lines carry the 
 ```php
 public static function list (): array
 ```
+
+> [!IMPORTANT]
+> **Deprecated since 1.1.0, removed in 2.0.0.** Use `getenv()`, which returns the same array.
 
 Returns the whole process environment as `array<string,string>`, exactly what `getenv()` returns. Keys are verbatim: the prefix and suffix are not stripped. `getenv()` leaves out every name that contains a `.`, a space or a `[` — such a variable is still set, `get()` still reads it and child processes still inherit it, but it is missing from this list and from the file `save()` writes.
 

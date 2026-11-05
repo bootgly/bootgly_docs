@@ -435,6 +435,38 @@ export default {
       }
     }
   },
+  '/ABI/Code/__String': {
+    config: null,
+    data: {
+      '*': {
+        title: '__String'
+      }
+    }
+  },
+  '/ABI/Code/__String/Bytes': {
+    config: {
+      icon: 'straighten',
+      status: 'new',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'Format byte counts as human-readable sizes and parse sizes such as "512M" or "1.5 GB" back into bytes.',
+          'pt-BR': 'Formate contagens de bytes como tamanhos legíveis e interprete tamanhos como "512M" ou "1.5 GB" de volta em bytes.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Code.__String'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Bytes'
+      }
+    }
+  },
   '/ABI/Data': {
     config: null,
     data: {
