@@ -158,13 +158,44 @@ Uma coluna também pode levar a sua chave estrangeira inline:
 $Table->add('team_id', Types::BigInteger)->reference('teams');  // "team_id" BIGINT NOT NULL REFERENCES "teams" ("id")
 ```
 
-A forma inline não aceita regra de `delete()`/`update()`, e o `name:` dela não é escrito: a engine
-dá o nome à constraint por conta própria.
+A forma inline não aceita regra de `delete()`/`update()`. O PostgreSQL e o SQLite a mantêm na
+coluna, e a engine dá o nome à constraint por conta própria — `members_team_id_fkey` no PostgreSQL.
+O MySQL ignora um `REFERENCES` dentro de uma definição de coluna, então lá o Bootgly compila a chave
+como uma constraint de tabela, depois das colunas no `create()` e logo depois do `ADD COLUMN` no
+`alter()`:
 
-> [!WARNING]
-> Por enquanto, a forma inline não cria chave estrangeira nenhuma no MySQL: o servidor lê o
-> `REFERENCES` dentro de uma definição de coluna e o ignora, então a coluna aceita qualquer valor.
-> Use `$Table->reference()` — em toda engine ele também aceita as regras e o nome.
+```sql
+CONSTRAINT `members_team_id_teams_fk` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)
+```
+
+O `name:` inline só é escrito no MySQL. Quando uma migration posterior puder ter de remover a chave,
+use `$Table->reference()`: em toda engine ele aceita as regras e escreve o nome.
+
+Declare cada chave estrangeira uma vez só, inline ou com `$Table->reference()`. Por enquanto, uma
+chave declarada dos dois jeitos vira duas constraints no PostgreSQL e no SQLite. O MySQL mantém uma
+só quando as duas apontam para a mesma coluna com o mesmo nome e a inline não acrescenta regra;
+qualquer outro par com o mesmo nome gerado falha com `1826: Duplicate foreign key constraint name '…'`.
+
+No MySQL a chave prende a sua coluna e o seu índice, e um `Down` pode ter de contornar isso:
+
+- O `remove()` da coluna falha com
+  `1828: Cannot drop column 'team_id': needed in a foreign key constraint 'members_team_id_teams_fk'`.
+  Chame `$Schema->unconstrain('members', 'members_team_id_teams_fk')` antes. O PostgreSQL remove a
+  chave junto com a coluna, e a chave inline dele tem outro nome, então lá esse `unconstrain()` não
+  encontra nada para remover.
+- O `unindex()` de um índice que começa pela coluna da chave falha com
+  `1553: Cannot drop index '…': needed in a foreign key constraint`: o MySQL garante a chave com esse
+  índice. Remova a chave antes, ou remova a tabela inteira.
+- A coluna precisa do tipo exato da coluna referenciada: um `Integer` apontando para um id
+  `BigInteger` falha com `3780: Referencing column 'team_id' and referenced column 'id' in foreign key
+  constraint '…' are incompatible.` O PostgreSQL aceita esse par.
+
+> [!NOTE]
+> Até o Bootgly 1.0.13, a forma inline não criava chave estrangeira nenhuma no MySQL. Um banco
+> migrado com essas versões continua sem as chaves; rodar as mesmas migrations num banco novo as
+> cria. Para acrescentá-las ao banco antigo, escreva uma migration nova com `$Table->reference()` e
+> um `name:` diferente do gerado — com o nome gerado, uma instalação nova, onde a chave inline já
+> existe, falha com `1826: Duplicate foreign key constraint name`.
 
 ### Adicionando um índice
 
@@ -576,8 +607,9 @@ Adiciona `CHECK ($expression)`, escrito como está.
 reference (BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Column = 'id', null|string $name = null): self
 ```
 
-Adiciona à coluna um `REFERENCES $Table ($Column)` inline. O `$name` não é escrito, e o MySQL
-ignora a cláusula — veja [Ligando a outra tabela](#ligando-a-outra-tabela-chave-estrangeira).
+Adiciona à coluna um `REFERENCES $Table ($Column)` inline. O MySQL o compila como uma constraint de
+tabela e é a única engine que escreve o `$name` — veja
+[Ligando a outra tabela](#ligando-a-outra-tabela-chave-estrangeira).
 
 ### Change
 

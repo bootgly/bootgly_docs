@@ -10,8 +10,8 @@ nisso — esta página é para quando importa.
   `alter()` só dele, e um índice numa tabela qualificada por schema precisa de um `name:` (veja
   **[Nomes gerados](/manual/ADI/Databases/SQL/Schema/overview/#nomes-gerados)**).
 - **MySQL** — funciona, com diferenças: sem cast `USING`; a nulidade só muda junto com uma mudança
-  de tipo, que reescreve a coluna inteira (`MODIFY COLUMN`); chaves estrangeiras só na forma de
-  tabela; o `unindex()` e o `unconstrain()` ignoram o `exists`.
+  de tipo, que reescreve a coluna inteira (`MODIFY COLUMN`); uma chave estrangeira inline vira uma
+  constraint de tabela com nome; o `unindex()` e o `unconstrain()` ignoram o `exists`.
 - **SQLite** — ótimo para testes e dev local, mas o `ALTER TABLE` dele é limitado: uma ação por
   `alter()`, nenhum `change()` (nem de tipo, nem de default, nem de nulidade), nenhum
   `reference()` de tabela no `alter()` — um inline, numa coluna que você adiciona com `add()`,
@@ -119,6 +119,21 @@ estrangeiras junto com a tabela.
 - **`Json` e `JsonB`** continuam distintos no PostgreSQL; as outras engines mapeiam os dois para o
   seu tipo JSON.
 - Uma coluna adicionada sem tipo é `Types::Text`.
+
+## Chaves estrangeiras por engine
+
+| Declaração | PostgreSQL | MySQL | SQLite |
+|------------|------------|-------|--------|
+| `add('team_id', Types::BigInteger)->reference('teams')` | `"team_id" BIGINT NOT NULL REFERENCES "teams" ("id")`, com o nome `members_team_id_fkey` dado pela engine | ``CONSTRAINT `members_team_id_teams_fk` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)``, depois das colunas | `"team_id" INTEGER NOT NULL REFERENCES "teams" ("id")`, sem nome |
+| `reference('team_id', 'teams')` | `CONSTRAINT "members_team_id_teams_fk" FOREIGN KEY ("team_id") REFERENCES "teams" ("id")` | ``CONSTRAINT `members_team_id_teams_fk` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)`` | `CONSTRAINT "members_team_id_teams_fk" FOREIGN KEY ("team_id") REFERENCES "teams" ("id")` |
+
+- No `alter()`, o MySQL põe logo depois do `ADD COLUMN` de uma referência inline um
+  `ADD CONSTRAINT` para a mesma chave. O SQLite aceita a forma inline ali, mas recusa a de tabela (`AddConstraint`).
+- O `name:` de um `reference()` inline só é escrito no MySQL. Use o `reference()` de tabela para uma
+  chave que uma migration posterior possa remover: o nome dela é o mesmo em toda engine.
+- No MySQL uma chave estrangeira impede o `remove()` da sua coluna (`1828`) e o `unindex()` do índice
+  que a garante (`1553`), e exige as duas colunas do mesmo tipo (`3780`) — veja
+  **[Ligando a outra tabela](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/#ligando-a-outra-tabela-chave-estrangeira)**.
 
 ## Removendo índices e constraints
 

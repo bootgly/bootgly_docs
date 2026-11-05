@@ -10,8 +10,8 @@ this page is for when it matters.
   its own, and an index on a schema-qualified table needs a `name:` (see
   **[Generated names](/manual/ADI/Databases/SQL/Schema/overview/#generated-names)**).
 - **MySQL** — works, with differences: no `USING` cast; nullability changes only together with a
-  type change, which restates the whole column (`MODIFY COLUMN`); foreign keys only in the
-  table-level form; `unindex()` and `unconstrain()` ignore `exists`.
+  type change, which restates the whole column (`MODIFY COLUMN`); an inline foreign key becomes a
+  named table-level constraint; `unindex()` and `unconstrain()` ignore `exists`.
 - **SQLite** — great for tests and local dev, but its `ALTER TABLE` is limited: one action per
   `alter()`, no `change()` of any kind (type, default or nullability), no table-level
   `reference()` in `alter()` — an inline one on a column you `add()` works —, no `unconstrain()`.
@@ -117,6 +117,21 @@ foreign keys with the table.
   `2038-01-19 03:14:07` UTC — a value outside fails with `1292: Incorrect datetime value`.
 - **`Json` and `JsonB`** stay distinct on PostgreSQL; the other engines map both to their JSON type.
 - A column added without a type is `Types::Text`.
+
+## Foreign keys per engine
+
+| Declaration | PostgreSQL | MySQL | SQLite |
+|-------------|------------|-------|--------|
+| `add('team_id', Types::BigInteger)->reference('teams')` | `"team_id" BIGINT NOT NULL REFERENCES "teams" ("id")`, named `members_team_id_fkey` by the engine | ``CONSTRAINT `members_team_id_teams_fk` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)``, after the columns | `"team_id" INTEGER NOT NULL REFERENCES "teams" ("id")`, unnamed |
+| `reference('team_id', 'teams')` | `CONSTRAINT "members_team_id_teams_fk" FOREIGN KEY ("team_id") REFERENCES "teams" ("id")` | ``CONSTRAINT `members_team_id_teams_fk` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)`` | `CONSTRAINT "members_team_id_teams_fk" FOREIGN KEY ("team_id") REFERENCES "teams" ("id")` |
+
+- In `alter()`, MySQL puts an `ADD CONSTRAINT` for the same key right after the `ADD COLUMN` of an
+  inline reference. SQLite takes the inline form there, but refuses the table-level one (`AddConstraint`).
+- The `name:` of an inline `reference()` is written on MySQL only. Use the table-level
+  `reference()` for a key a later migration may drop: its name is the same on every engine.
+- On MySQL a foreign key blocks `remove()` of its column (`1828`) and `unindex()` of the index
+  that enforces it (`1553`), and needs both columns of the same type (`3780`) — see
+  **[Linking to another table](/manual/ADI/Databases/SQL/Schema/Blueprint/overview/#linking-to-another-table-foreign-key)**.
 
 ## Dropping indexes and constraints
 

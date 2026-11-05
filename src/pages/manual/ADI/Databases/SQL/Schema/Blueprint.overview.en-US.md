@@ -155,13 +155,43 @@ A column can also carry its foreign key inline:
 $Table->add('team_id', Types::BigInteger)->reference('teams');  // "team_id" BIGINT NOT NULL REFERENCES "teams" ("id")
 ```
 
-The inline form takes no `delete()`/`update()` rule, and its `name:` is not written: the engine
-names the constraint itself.
+The inline form takes no `delete()`/`update()` rule. PostgreSQL and SQLite keep it on the column,
+and the engine names the constraint itself — `members_team_id_fkey` on PostgreSQL. MySQL ignores a
+`REFERENCES` inside a column definition, so there Bootgly compiles the key as a table-level
+constraint, after the columns in `create()` and right after the `ADD COLUMN` in `alter()`:
 
-> [!WARNING]
-> For now, the inline form creates no foreign key on MySQL: the server parses `REFERENCES` inside a
-> column definition and ignores it, so the column accepts any value. Use `$Table->reference()` — on
-> every engine it also takes the rules and the name.
+```sql
+CONSTRAINT `members_team_id_teams_fk` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)
+```
+
+The inline `name:` is written on MySQL only. When a later migration may have to drop the key, use
+`$Table->reference()`: on every engine it takes the rules and writes the name.
+
+Declare each foreign key once, inline or with `$Table->reference()`. For now, a key declared both
+ways becomes two constraints on PostgreSQL and SQLite. MySQL keeps one when both point at the same
+column under the same name and the inline one adds no rule; any other pair sharing the generated
+name fails with `1826: Duplicate foreign key constraint name '…'`.
+
+On MySQL the key holds its column and its index, which a `Down` may have to work around:
+
+- `remove()` of the column fails with
+  `1828: Cannot drop column 'team_id': needed in a foreign key constraint 'members_team_id_teams_fk'`.
+  Call `$Schema->unconstrain('members', 'members_team_id_teams_fk')` first. PostgreSQL drops the
+  key with the column, and its inline key has another name, so there that `unconstrain()` finds
+  nothing to drop.
+- `unindex()` of an index that starts with the key's column fails with
+  `1553: Cannot drop index '…': needed in a foreign key constraint`: MySQL enforces the key with that
+  index. Drop the key first, or drop the whole table.
+- The column needs the referenced column's exact type: an `Integer` pointing at a `BigInteger` id
+  fails with `3780: Referencing column 'team_id' and referenced column 'id' in foreign key
+  constraint '…' are incompatible.` PostgreSQL accepts that pair.
+
+> [!NOTE]
+> Up to Bootgly 1.0.13, the inline form created no foreign key on MySQL. A database migrated with
+> those versions still lacks the keys; running the same migrations again on a fresh database
+> creates them. To add them to the old database, write a new migration with `$Table->reference()`
+> and a `name:` different from the generated one — with the generated name, a fresh install, where
+> the inline key already exists, fails with `1826: Duplicate foreign key constraint name`.
 
 ### Adding an index
 
@@ -572,8 +602,9 @@ Adds `CHECK ($expression)`, written as is.
 reference (BackedEnum|Stringable|string $Table, BackedEnum|Stringable|string $Column = 'id', null|string $name = null): self
 ```
 
-Adds an inline `REFERENCES $Table ($Column)` to the column. `$name` is not written, and MySQL
-ignores the clause — see [Linking to another table](#linking-to-another-table-foreign-key).
+Adds an inline `REFERENCES $Table ($Column)` to the column. MySQL compiles it as a table-level
+constraint and is the only engine that writes `$name` — see
+[Linking to another table](#linking-to-another-table-foreign-key).
 
 ### Change
 
