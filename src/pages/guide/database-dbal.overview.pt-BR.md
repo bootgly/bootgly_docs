@@ -135,9 +135,9 @@ preenche uma conexão não declarada com os defaults de localhost ou banco da AD
 O Bootgly traz três drivers:
 
 ```bash
-DB_CONNECTION=pgsql   # PostgreSQL (padrão) — assíncrono, TLS, SCRAM, RETURNING
-DB_CONNECTION=mysql   # MySQL/MariaDB — assíncrono, TLS, caching_sha2, Result->inserted
-DB_CONNECTION=sqlite  # SQLite (ext-sqlite3) — síncrono, zero-setup, DB_NAME=:memory: ou caminho de arquivo
+DB_CONNECTION=pgsql   # PostgreSQL (default) — async, TLS, SCRAM, RETURNING
+DB_CONNECTION=mysql   # MySQL/MariaDB — async, TLS, caching_sha2, Result->inserted
+DB_CONNECTION=sqlite  # SQLite (ext-sqlite3) — synchronous, zero-setup, DB_NAME=:memory: or a file path
 ```
 
 Veja **[Drivers SQL](/manual/ADI/Databases/SQL/Drivers/overview/)** para a matriz de capacidades.
@@ -287,12 +287,12 @@ return new Project(
       );
 
       $HTTP_Server_CLI
-         // # Rotas — o ponto de entrada do request (pasta router/ via Router::load())
+         // # Routes — the request entry point (router/ folder via Router::load())
          ->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'))
-         // # Feedback de ciclo de vida — o banner de inicialização pertence ao
-         //   ServerAdvertised, o hook disparado no processo que possui o terminal
-         ->on(Events::ServerAdvertised, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server iniciado@;@.;'))
-         ->on(Events::ServerStopped, fn () => CLI->Terminal->Output->render('@#yellow:■ HTTP server parado@;@.;'));
+         // # Lifecycle feedback — the launch banner belongs on ServerAdvertised,
+         //   the hook that fires on the process owning the terminal
+         ->on(Events::ServerAdvertised, fn () => CLI->Terminal->Output->render('@#green:✓ HTTP server started@;@.;'))
+         ->on(Events::ServerStopped, fn () => CLI->Terminal->Output->render('@#yellow:■ HTTP server stopped@;@.;'));
 
       $HTTP_Server_CLI->start();
    }

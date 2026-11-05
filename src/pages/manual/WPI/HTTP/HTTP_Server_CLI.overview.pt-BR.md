@@ -29,6 +29,7 @@ No Bootgly, servidores são iniciados por Projetos — não por comandos do fram
 Um arquivo de projeto (ex: `HTTP_Server_CLI.Project.php`) retorna uma instância de `Project`:
 
 ```php
+// A simplified shape of projects/Demo/HTTP_Server_CLI/HTTP_Server_CLI.Project.php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
@@ -38,9 +39,9 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 
 return new Project(
    name: 'HTTP Server CLI',
-   description: 'Demonstração do servidor HTTP com roteamento e captura de 404',
+   description: 'HTTP server demo with routing and catch-all 404',
    version: '0.1.0',
-   author: 'Seu Nome',
+   author: 'Your Name',
    exportable: true,
 
    boot: function (array $arguments = [], array $options = []): void
@@ -108,13 +109,13 @@ $Server->configure(
       host: '0.0.0.0',
       port: 8082,
       workers: 4,
-      maxWorkerPendingBytes: 160 * 1024 * 1024 // 160 MiB — espaço para dois corpos de 32 MB ao mesmo tempo (memory_limit ≥ 320M)
+      maxWorkerPendingBytes: 160 * 1024 * 1024 // 160 MiB — room for two 32 MB bodies at once (memory_limit ≥ 320M)
    ),
    new RequestConfigs(
-      maxBodySize: 32 * 1024 * 1024  // 32 MB — aceita corpos não-multipart maiores
+      maxBodySize: 32 * 1024 * 1024  // 32 MB — accept larger non-multipart bodies
    ),
    new ResponseConfigs(
-      deferredTimeout: 2.5           // segundos — limita todo defer() estacionado
+      deferredTimeout: 2.5           // seconds — bound every parked defer()
    )
 );
 ```
@@ -168,30 +169,30 @@ $Server->configure(
       host: '0.0.0.0',
       port: 8082,
       workers: 4,
-      secure: null,                    // null — HTTP puro; um array (ou AutoTLS:) muda para https://
-      user: null,                      // null — sem rebaixamento de privilégios
+      secure: null,                    // null — plain HTTP; an array (or AutoTLS:) switches to https://
+      user: null,                      // null — no privilege dropping
       group: null,
-      enableHTTP2: true,               // true (padrão) — h2 via ALPN e h2c por prior knowledge
-      health: null,                    // null — o endpoint de health embutido é opcional
-      maxConnections: 10000,           // 10000 (padrão) — teto de conexões simultâneas por worker (0 = ilimitado)
-      maxConnectionsPerIP: 0,          // 0 (padrão, opcional) — teto de conexões simultâneas por IP
-      headroom: 32,                    // 32 (padrão) — entradas do selector reservadas para o I/O de dependências do próprio worker (0 = desativado)
-      connectionIdleTimeout: 15,       // 15 (padrão) — reaper de ociosidade em segundos; um defer() estacionado conta como atividade (0 = desativado)
-      maxWorkerPendingBytes: 64 * 1024 * 1024 // 64 MiB (padrão) — orçamento de memória do worker: corpos, cache de rotas, saída pendente
+      enableHTTP2: true,               // true (default) — h2 over ALPN and h2c prior knowledge
+      health: null,                    // null — the built-in health endpoint is opt-in
+      maxConnections: 10000,           // 10000 (default) — concurrent-connection ceiling per worker (0 = unlimited)
+      maxConnectionsPerIP: 0,          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
+      headroom: 32,                    // 32 (default) — selector entries kept for the worker's own dependency I/O (0 = disabled)
+      connectionIdleTimeout: 15,       // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
+      maxWorkerPendingBytes: 64 * 1024 * 1024 // 64 MiB (default) — worker memory budget: bodies, route cache, pending output
    ),
    new RequestConfigs(
-      maxFileSize: 500 * 1024 * 1024,         // 500 MB (padrão) — tamanho máximo por parte de arquivo
-      maxBodySize: 10 * 1024 * 1024,          // 10 MB (padrão) — corpo total não-multipart
-      maxHeaderFields: 100,                   // 100 (padrão) — máximo de linhas de header de uma requisição HTTP/1.x (acima → 431)
-      maxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (padrão) — tamanho máximo por campo de texto
-      maxMultipartHeaderSize: 8 * 1024,       // 8 KB (padrão) — tamanho máximo dos headers de uma parte
-      maxMultipartFields: 1024,               // 1024 (padrão) — número máximo de campos de texto
-      maxMultipartFiles: 1024,                // 1024 (padrão) — número máximo de partes de arquivo
-      downloadsMaxBytesOnDisk: 8 * 1024 * 1024 * 1024 // 8 GB (padrão) — teto agregado de uploads em disco
+      maxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
+      maxBodySize: 10 * 1024 * 1024,          // 10 MB (default) — max total non-multipart body
+      maxHeaderFields: 100,                   // 100 (default) — max header field lines of an HTTP/1.x request (more → 431)
+      maxMultipartFieldSize: 1 * 1024 * 1024, // 1 MB (default) — max size per text field value
+      maxMultipartHeaderSize: 8 * 1024,       // 8 KB (default) — max size of a single part's headers
+      maxMultipartFields: 1024,               // 1024 (default) — max number of text fields
+      maxMultipartFiles: 1024,                // 1024 (default) — max number of file parts
+      downloadsMaxBytesOnDisk: 8 * 1024 * 1024 * 1024 // 8 GB (default) — aggregate spooled-upload ceiling
    ),
    new ResponseConfigs(
-      Resources: null,                 // null (padrão) — nenhum response resource de projeto registrado
-      deferredTimeout: 0               // 0 (padrão, sem teto) — orçamento em segundos para um defer() estacionado; o timeout por chamada vence
+      Resources: null,                 // null (default) — no project response resources registered
+      deferredTimeout: 0               // 0 (default, unbounded) — budget in seconds for a parked defer(); the per-call timeout wins
    )
 );
 ```
@@ -224,15 +225,15 @@ então o padrão deixa 31 para as esperas de dependências: dimensione-o para pe
 limitado para que um worker sempre admita clientes.
 
 ```php
-// Worker direto para a internet: limita a concorrência total e por cliente.
+// Direct-to-internet worker: cap total and per-client concurrency.
 $Server->configure(
    new ServerConfigs(
       host: '0.0.0.0',
       port: 8080,
       workers: 8,
-      maxConnections: 900,      // por worker (o selector já para os clientes em 1000 − headroom)
-      maxConnectionsPerIP: 200, // por IP de origem (seguro apenas sem um proxy à frente)
-      headroom: 64              // por worker: o socket de escuta + até 63 conexões de pool de DB/KV/cliente HTTP
+      maxConnections: 900,      // per worker (the selector already stops clients at 1000 − headroom)
+      maxConnectionsPerIP: 200, // per source IP (only safe without a fronting proxy)
+      headroom: 64              // per worker: the listener + up to 63 pooled DB/KV/HTTP-client connections
    )
 );
 ```
@@ -283,7 +284,7 @@ Quando uma cota está cheia, o servidor recusa em vez de crescer:
   acima de uma estimativa rápida é precificado array a array, e um objeto com chaves numéricas é
   precificado como o PHP cresce a sua tabela. Um corpo que não é um único documento JSON — NDJSON,
   JSON concatenado ou comprimido — não é recusado: `$Request->fields` não decodifica nada dele, e a
-  rota o lê cru em `$Request->input`. Payloads JSON típicos de cerca de 1 MB — registros em lote,
+  rota o lê raw em `$Request->input`. Payloads JSON típicos de cerca de 1 MB — registros em lote,
   linhas tabulares, objetos de API aninhados — cabem nos padrões; aumente `maxWorkerPendingBytes` e
   `memory_limit` juntos para payloads maiores;
 - o cache de rotas despeja primeiro as entradas mais antigas; uma resposta que ainda assim não cabe
@@ -330,7 +331,7 @@ $Server->configure(
       host: '0.0.0.0',
       port: 8080,
       workers: 4,
-      maxWorkerPendingBytes: 160 * 1024 * 1024 // os corpos podem segurar 80 MiB: dois corpos de 32 MB ao mesmo tempo
+      maxWorkerPendingBytes: 160 * 1024 * 1024 // bodies may hold 80 MiB: two 32 MB bodies at once
    ),
    new RequestConfigs(
       maxBodySize: 32 * 1024 * 1024
@@ -390,8 +391,8 @@ $Server->configure(
       port: 443,
       workers: 4,
       secure: [
-         'local_cert'  => '/caminho/para/certificado.pem',
-         'local_pk'    => '/caminho/para/chave-privada.pem',
+         'local_cert'  => '/path/to/certificate.pem',
+         'local_pk'    => '/path/to/private-key.pem',
          'verify_peer' => false,
       ]
    )
@@ -518,15 +519,15 @@ Dentro da pasta:
 - **`router/routes/<Name>.routes.php`** — um route set: uma generator-closure `(Request, Response, Router): Generator` que faz `yield` das suas rotas.
 
 ```php :group="router-load"; :tab="router.index.php"; :breadcrumb="router > router.index.php";
-// Manifesto dos nomes dos route sets ativos
+// Manifest of active route set names
 return [
-   'Database',           // ativo
-   // 'Authentication',  // descomente para também carregar (sets são compostos na ordem)
+   'Database',           // active
+   // 'Authentication',  // uncomment to also load (sets are composed in order)
 ];
 ```
 
 ```php :group="router-load"; :tab="Database.php"; :breadcrumb="router > routes > Database.php";
-// Um route set (generator-closure)
+// A route set (generator-closure)
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
@@ -556,7 +557,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 $Server->on(
    Events::ServerAdvertised,
    function ($Server) {
-      CLI->Terminal->Output->render('@.;@#green:✓ Meu projeto iniciado@;@.;');
+      CLI->Terminal->Output->render('@.;@#green:✓ My project started@;@.;');
       $Server->advertise();
    }
 );
@@ -583,7 +584,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
 $Server->on(
    Events::ServerStarted,
    function ($Server) {
-      // Configuração no lado do master — timers, schedulers, registries...
+      // Master-side setup — timers, schedulers, registries...
    }
 );
 ```
@@ -600,7 +601,7 @@ $Server->on(
    Events::ServerStopped,
    function ($Server) {
       $Output = CLI->Terminal->Output;
-      $Output->render('@.;@#yellow:■ HTTP Server encerrado@;@.;');
+      $Output->render('@.;@#yellow:■ HTTP Server stopped@;@.;');
    }
 );
 ```
@@ -616,13 +617,13 @@ $Server
    ->on(Events::ServerAdvertised, function ($Server) {
       $Output = CLI->Terminal->Output;
 
-      $Output->render('@.;@#green:✓ HTTP Server iniciado@;@.;');
+      $Output->render('@.;@#green:✓ HTTP Server started@;@.;');
       $Server->advertise();
-      $Output->render('  @#green:● Pronto para conexões@;@..;');
+      $Output->render('  @#green:● Ready for connections@;@..;');
    })
    ->on(Events::ServerStopped, function ($Server) {
       $Output = CLI->Terminal->Output;
-      $Output->render('@.;@#yellow:■ HTTP Server encerrado@;@.;');
+      $Output->render('@.;@#yellow:■ HTTP Server stopped@;@.;');
    });
 ```
 
@@ -651,7 +652,7 @@ O servidor utiliza uma arquitetura **multi-processo** com `fork()`:
 - Opções de socket por worker: `backlog: 102400`, `SO_KEEPALIVE`, `TCP_NODELAY`.
 
 ```
-Processo Master
+Master Process
 ├── fork() → Worker 1: socket bind → event loop
 ├── fork() → Worker 2: socket bind → event loop
 ├── ...
@@ -685,7 +686,7 @@ zeradas quando uma requisição termina:
 
 ```php
 yield $Router->route('/count', function (Request $Request, Response $Response) {
-   static $count = 0; // vive enquanto o worker viver
+   static $count = 0; // lives as long as the worker
    $count++;
 
    return $Response(body: 'pid=' . getmypid() . " count={$count}");
@@ -725,7 +726,7 @@ use Bootgly\ABI\Resources\Cache;
 $Visits = new Cache(['driver' => 'shared', 'prefix' => 'visits:']);
 
 yield $Router->route('/visits', function (Request $Request, Response $Response) use ($Visits) {
-   return $Response(body: (string) $Visits->increment('home')); // 1, 2, 3... entre os workers
+   return $Response(body: (string) $Visits->increment('home')); // 1, 2, 3... across workers
 }, GET);
 ```
 
@@ -816,11 +817,11 @@ yield $Router->route('/hello', function (Request $Request, Response $Response) {
    $name = (string) ($Request->queries['name'] ?? '');
 
    return $Response->defer(function (Response $Response) use ($name): void {
-      $GLOBALS['name'] = $name; // ❌ uma global por worker, compartilhada por toda requisição
+      $GLOBALS['name'] = $name; // ❌ one global per worker, shared by every request
 
       $until = microtime(true) + 1;
       while (microtime(true) < $until) {
-         $Response->wait(); // outras requisições rodam aqui
+         $Response->wait(); // other requests run here
       }
 
       $Response->send("Hello, {$name}! (the global now says {$GLOBALS['name']})\n");
@@ -880,7 +881,7 @@ Um `Exchange` só é aberto quando algo observa a admissão da requisição — 
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Exchange;
 
 $Exchange->observe(static function (Exchange $Exchange, null|int $code): void {
-   // $code é o status code final — ou null quando o exchange foi cancelado.
+   // $code is the final status code — or null when the exchange was cancelled.
 });
 ```
 
@@ -917,9 +918,9 @@ O contrato base `Scheduler` também carrega `interrupt()` — o meio pelo qual u
 ```php
 use Bootgly\WPI\Endpoints\Servers\Ownership;
 
-Ownership::attach($Connection, $Owner);   // $Owner implementa Disconnecting
-Ownership::detach($Connection, $Owner);   // o trabalho dele terminou normalmente
-Ownership::close($Connection);            // notifica cada dono anexado exatamente uma vez
+Ownership::attach($Connection, $Owner);   // $Owner implements Disconnecting
+Ownership::detach($Connection, $Owner);   // its work completed normally
+Ownership::close($Connection);            // notify every attached owner exactly once
 ```
 
 - **Exatamente uma vez, sempre.** Anexar a um escopo *já fechado* notifica o dono imediatamente, e um segundo attach do mesmo dono não faz nada — inclusive um attach reentrante de dentro do próprio `disconnect()` dele.
@@ -946,12 +947,12 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Timeout;
 yield $Router->route('/report', function ($Request, Response $Response) {
    return $Response->defer(function (Response $Response): void {
       try {
-         // 'Upstream' é um HTTP response resource registrado em Response\Configs(Resources:)
+         // 'Upstream' is an HTTP response resource registered in Response\Configs(Resources:)
          $Upstream = $Response->Upstream->request('GET', '/report');
          $Response->JSON->send(['code' => $Upstream->code]);
       }
       catch (Timeout $Timeout) {
-         $Response(code: 504, body: "O upstream demorou mais que {$Timeout->timeout}s.");
+         $Response(code: 504, body: "The upstream took longer than {$Timeout->timeout}s.");
       }
    }, timeout: 2.5);
 }, GET);
@@ -1120,7 +1121,7 @@ retorna. O arquivo continua sendo transmitido, com ranges:
 yield $Router->route('/media/intro.mp4', function (Request $Request, Response $Response) {
    $Response->upload('storage/media/intro.mp4');
 
-   // ? Só uma resposta de corpo único (o arquivo inteiro ou um range) leva esses headers
+   // ? Only a single-body answer (the whole file or one range) carries these headers
    if ($Response->Header->get('Content-Disposition') !== '') {
       $Response->Header->set('Content-Type', 'video/mp4');
       $Response->Header->set('Content-Disposition', 'inline');
@@ -1199,7 +1200,7 @@ herda as constantes do pai aceitaria o Configs do pai e configuraria só o que o
 ### `HTTP_Server_CLI\Configs`
 
 ```php
-new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(/* somente argumentos nomeados */)
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs(/* named arguments only */)
 ```
 
 O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor é a guarda `Bootgly\ABI\Argument`, então uma chamada posicional lança um `TypeError`.
@@ -1224,7 +1225,7 @@ O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor 
 ### `Request\Configs`
 
 ```php
-new Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs(/* somente argumentos nomeados */)
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs(/* named arguments only */)
 ```
 
 Limites de entrada. Todo parâmetro é opcional; `null` mantém o padrão do framework.
@@ -1243,7 +1244,7 @@ Limites de entrada. Todo parâmetro é opcional; `null` mantém o padrão do fra
 ### `Response\Configs`
 
 ```php
-new Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs(/* somente argumentos nomeados */)
+new Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs(/* named arguments only */)
 ```
 
 Configuração de saída. Todo parâmetro é opcional; `null` mantém o padrão do framework.

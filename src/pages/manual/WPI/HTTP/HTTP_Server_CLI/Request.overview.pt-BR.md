@@ -79,7 +79,7 @@ $Request->queries; // Array ( [query] => abc [query2] => xyz )
 `Header`: A classe Header da Requisição.
 
 ```php
-$Request->Header->get('X-Requested-With'); // Obter valor do cabeçalho X-Requested-With
+$Request->Header->get('X-Requested-With'); // Get value of X-Requested-With Header
 ```
 
 `headers`: Cabeçalhos HTTP em Array.
@@ -135,7 +135,7 @@ $Request->Header->Cookies;
 `cookies`: Um array de cookies enviados com a requisição.
 
 ```php
-$Request->cookies; // Array ( [nome_do_cookie] => valor_do_cookie )
+$Request->cookies; // Array ( [cookie_name] => cookie_value )
 ```
 
 ## Corpo HTTP
@@ -151,7 +151,7 @@ $Request->Body;
 `input`: Os dados brutos do conteúdo de entrada da requisição.
 
 ```php
-$Request->input; // Dados brutos do conteúdo de entrada como string
+$Request->input; // Raw input content data as string
 ```
 
 Um corpo `multipart/form-data` é a única exceção: ele nunca chega ao `input`, que fica vazio
@@ -174,7 +174,7 @@ cujo tipo não lhe foi informado. Uma requisição sem corpo também resulta em 
 sequer acionar o parser.
 
 ```php
-$Request->fields; // Array ( [nome_do_campo] => valor_do_campo )
+$Request->fields; // Array ( [field_name] => field_value )
 ```
 
 ### Arquivos
@@ -185,7 +185,7 @@ de arquivo sanitizado), `type`, `size`, `error` (uma constante `UPLOAD_ERR_*`) e
 `tmp_name` (o arquivo temporário que o decoder de streaming escreveu em disco).
 
 ```php
-$Request->files; // Array ( [nome_do_arquivo] => atributos_do_arquivo )
+$Request->files; // Array ( [file_name] => file_attributes )
 ```
 
 `type` é o `Content-Type` da part como o cliente o enviou (sem os espaços das pontas) — uma
@@ -239,7 +239,7 @@ $Storage = new Storage([
 
 $Request->download();
 $path = $Request->store('avatar', 'users/1/avatar.png', $Storage->open('uploads'));
-// $path === 'users/1/avatar.png' em caso de sucesso, false caso contrário ($Disk->error tem o motivo)
+// $path === 'users/1/avatar.png' on success, false otherwise ($Disk->error has the reason)
 ```
 
 ```php
@@ -257,7 +257,7 @@ recuperá-lo e o motivo fica em `$Disk->error`.
 `raw`: Os dados brutos da requisição HTTP.
 
 ```php
-$Request->raw; // Dados da requisição HTTP como string
+$Request->raw; // HTTP request data as string
 ```
 
 `on`: A data na qual a requisição foi criada.
@@ -303,10 +303,10 @@ if ($Credentials instanceof Basic) {
    $username = $Credentials->username;
    $password = $Credentials->password;
 
-   // Verifique username e password...
+   // Verify username and password...
 }
 
-$token = $Request->token; // Token Bearer para Router\Middlewares\Authentication\Bearer/JWT
+$token = $Request->token; // Bearer token for Router\Middlewares\Authentication\Bearer/JWT
 ```
 
 ### Metadados gerados
@@ -358,14 +358,14 @@ Se o cabeçalho de requisição estiver vazio ou não puder ser analisado, o mé
 ### Exemplos de uso
 
 ```php
-// Suponha que um cliente faça uma requisição ao servidor
-// e o servidor receba o objeto de requisição
+// Assume a client makes a request to the server
+// and the server receives the request object
 
-// Negocia o idioma preferido do cliente
+// Negotiate the client's preferred language
 $preferred_languages = $Request->negotiate(Request::ACCEPTS_LANGUAGES);
 
-// Determina o melhor idioma a ser usado com base nos idiomas suportados pelo servidor
-$available_languages = ['en', 'fr', 'de']; // Suponha que esses são os idiomas suportados pelo servidor
+// Determine the best language to use based on server-supported languages
+$available_languages = ['en', 'fr', 'de']; // Assume these are the languages the server supports
 
 $selected_language = '';
 foreach ($preferred_languages as $language => $quality) {
@@ -375,14 +375,14 @@ foreach ($preferred_languages as $language => $quality) {
   }
 }
 
-// Define o idioma da resposta
+// Set the response language
 if ( ! empty($selected_language) ) {
-  // Define os cabeçalhos de resposta para indicar o idioma selecionado
+  // Set the response headers to indicate the selected language
   $Response->Header->set('Content-Language', $selected_language);
 }
 
-// Agora, o servidor pode gerar uma resposta no idioma selecionado
-// e enviá-la de volta ao cliente
+// Now, the server can generate a response in the selected language
+// and send it back to the client
 // ...
 ```
 
@@ -470,12 +470,12 @@ O método freshen é responsável por determinar se uma requisição do cliente 
 - A requisição deve ser do tipo `GET` ou `HEAD`. Outros tipos de requisição não são considerados frescos.
 - O cabeçalho `Cache-Control` não deve conter a diretiva `no-cache`, indicando que a resposta não deve ser servida a partir do cache.
 - O cabeçalho `If-None-Match` (ETag) é verificado em relação ao ETag da resposta armazenada em cache. Se os ETags coincidirem, a resposta em cache é considerada válida.
-- O cabeçalho `If-Modified-Since` é comparado com o cabeçalho `Last-Modified` da resposta em cache. Se a data de modificação da resposta for mais recente do que a data especificada no cabeçalho `If-Modified-Since`, a resposta em cache é considerada válida.
+- O cabeçalho `If-Modified-Since` é comparado com o cabeçalho `Last-Modified` da resposta em cache. Se a data de modificação da resposta não for mais recente do que a data especificada no cabeçalho `If-Modified-Since` (for igual ou anterior a ela), a resposta em cache é considerada válida.
 
 ### Exemplo com Last-Modified
 
 ```php
-// Suponha que a solicitação do cliente HTTP chegue assim...:
+// Suppose the HTTP client request arrives like this...:
 
 /*
 GET / HTTP/1.1
@@ -490,10 +490,10 @@ Accept: text/html
 $Response->Header->set('Last-Modified', 'Fri, 14 Jul 2023 08:00:00 GMT');
 
 if ($Request->fresh) {
-   return $Response(code: 304); // Da segunda resposta em diante o return é aqui
+   return $Response(code: 304); // From the second response on, the return is here
 }
 else {
-   return $Response(body: 'test')->send(); // Na primeira resposta o return é aqui
+   return $Response(body: 'test')->send(); // On the first response, the return is here
 }
 ```
 
@@ -530,13 +530,13 @@ Cada entrada é um **hostname em minúsculas sem porta**. O prefixo wildcard `*.
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 
-// ? Permitir apenas hosts conhecidos
+// ? Allow only known hosts
 Request::$allowedHosts = [
    'example.com',
-   '*.example.com',  // corresponde a api.example.com, app.example.com, etc.
+   '*.example.com',  // matches api.example.com, app.example.com, etc.
    'localhost',
 ];
-// @ Qualquer requisição com cabeçalho Host fora desta lista recebe 400 Bad Request
+// @ Any request with a Host header not in this list receives 400 Bad Request
 ```
 
 #### Suporte a IPv6
@@ -553,7 +553,7 @@ Request::$allowedHosts = [
 #### Desabilitando a validação
 
 ```php
-// : Resetar para o padrão — sem validação
+// : Reset to default — no enforcement
 Request::$allowedHosts = [];
 ```
 
@@ -576,9 +576,9 @@ O limite é aplicado antes de o conjunto ser interpretado — o cabeçalho é di
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
 
-// ? Restringir o limite em um servidor de arquivos estáticos
+// ? Tighten the limit on a static-file server
 Request::$maxRanges = 4;
-// @ `Range: bytes=0-9,20-29,40-49,60-69,80-89` (5 membros) agora recebe 416 Range Not Satisfiable
+// @ `Range: bytes=0-9,20-29,40-49,60-69,80-89` (5 members) now receives 416 Range Not Satisfiable
 ```
 
 #### Coalescência
@@ -586,7 +586,7 @@ Request::$maxRanges = 4;
 Dentro do limite, `Response::upload()` combina o conjunto aceito: ranges sobrepostos e adjacentes são fundidos em uma única parte, mantendo cada parte fundida na sua posição de requisição mais antiga. Ranges duplicados, portanto, não podem multiplicar o corpo da resposta.
 
 ```php
-// @ `Range: bytes=0-9,5-14,15-19` → uma parte: `Content-Range: bytes 0-19/<tamanho>`
+// @ `Range: bytes=0-9,5-14,15-19` → one part: `Content-Range: bytes 0-19/<size>`
 ```
 
 Quando a coalescência resulta em um único range, a resposta é um `206 Partial Content` simples com o cabeçalho `Content-Range`, em vez de um corpo `multipart/byteranges`.
@@ -596,7 +596,7 @@ Quando a coalescência resulta em um único range, a resposta é um `206 Partial
 Qualquer valor abaixo de `1` rejeita todo cabeçalho `Range` com `416`:
 
 ```php
-// : Recusar todas as requisições de range
+// : Refuse all range requests
 Request::$maxRanges = 0;
 ```
 
@@ -607,7 +607,7 @@ Request::$maxRanges = 0;
 `Session`: o objeto de sessão, inicializado sob demanda e persistido pelo handler configurado (baseado em cache, driver `file` por padrão).
 
 ```php
-$Request->Session; // Objeto Session
+$Request->Session; // Session object
 ```
 
 Leia e escreva nele pela API de instância — `get()`/`set()`, os bulk `put()`/`forget()`, `pull()`, `has()`/`check()`, `list()`, `flush()` e `regenerate()` logo após uma mudança de privilégio. Todas as assinaturas estão na [Referência](#referência) ao final desta página.
@@ -623,16 +623,16 @@ A política de sessão vive nos statics de `Session`. Declare-a no boot, antes d
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Session;
 
-Session::$name = 'SID';                // nome do cookie (padrão `PHPSID`)
-Session::$lifetime = 604800;           // segundos que um registro pode ficar ocioso antes de o GC purgá-lo
-Session::$cookieLifetime = 604800;     // Max-Age do cookie em segundos; 0 = cookie de sessão do navegador
+Session::$name = 'SID';                // cookie name (default `PHPSID`)
+Session::$lifetime = 604800;           // seconds a record may stay idle before GC purges it
+Session::$cookieLifetime = 604800;     // cookie Max-Age in seconds; 0 = browser-session cookie
 Session::$cookiePath = '/';
 Session::$domain = '';
-Session::$autoUpdateTimestamp = true;  // expiração deslizante: uma leitura renova o registro
-Session::$gcProbability = [1, 20000];  // chance de purga por request concluído
-Session::$secure = true;               // false só em desenvolvimento HTTP-only
+Session::$autoUpdateTimestamp = true;  // sliding expiration: a read refreshes the record
+Session::$gcProbability = [1, 20000];  // purge odds per finished request
+Session::$secure = true;               // false only for HTTP-only development
 Session::$httpOnly = true;
-Session::$sameSite = 'Lax';            // ou 'Strict'
+Session::$sameSite = 'Lax';            // or 'Strict'
 ```
 
 Um valor que você atribui vence. O `php.ini` — `session.gc_maxlifetime`, `session.gc_probability`/`session.gc_divisor` e os parâmetros do cookie — preenche só os statics que ainda estão no padrão declarado, então uma política escrita no boot nunca é substituída quando a primeira sessão inicializa; com um `php.ini` intocado isso faz o cookie ser de sessão do navegador e adota a chance de GC do PHP. `$secure`, `$httpOnly` e `$sameSite` nunca são lidos do `php.ini`. Um static atribuído depois da primeira sessão vale no próximo cookie ou purga.
@@ -755,7 +755,7 @@ $Custom = new class extends Validators {
    }
 };
 
-// Validação fail-closed do corpo
+// Fail-closed body validation
 yield $Router->route('/validation/middleware', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['created' => true, 'fields' => $Request->fields]);
 }, POST, middlewares: [
@@ -766,7 +766,7 @@ yield $Router->route('/validation/middleware', function (Request $Request, Respo
    ], Source: Sources::Fields),
 ]);
 
-// Resposta de falha customizada
+// Custom failure response
 yield $Router->route('/validation/fallback', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['created' => true]);
 }, POST, middlewares: [
@@ -785,7 +785,7 @@ yield $Router->route('/validation/fallback', function (Request $Request, Respons
    ),
 ]);
 
-// Validação de query
+// Query validation
 yield $Router->route('/validation/query', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['queries' => $Request->queries]);
 }, GET, middlewares: [
@@ -795,7 +795,7 @@ yield $Router->route('/validation/query', function (Request $Request, Response $
    ], Source: Sources::Queries),
 ]);
 
-// Validação de upload de arquivo
+// File upload validation
 yield $Router->route('/validation/files', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['files' => $Request->files]);
 }, POST, middlewares: [
@@ -810,7 +810,7 @@ yield $Router->route('/validation/files', function (Request $Request, Response $
    ], Source: Sources::Files),
 ]);
 
-// Regra customizada
+// Custom rule
 yield $Router->route('/validation/custom', function (Request $Request, Response $Response) {
    return $Response->JSON->send(['accepted' => true]);
 }, POST, middlewares: [

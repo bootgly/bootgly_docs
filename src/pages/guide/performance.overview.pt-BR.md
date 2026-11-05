@@ -28,7 +28,7 @@ Para famílias de rotas específicas, mantenha um router de benchmark dedicado e
 Throughput é limitado por concorrência e latência:
 
 ```text
-throughput máximo ~= requests concorrentes em voo / latência média
+maximum throughput ~= concurrent in-flight requests / average latency
 ```
 
 Se uma rota de banco tem cerca de `2ms` de latência média e o cliente mantém só `128` requests em voo, o teto prático fica perto de `64k req/s` antes de considerar CPU e overhead de scheduler. Aumentar conexões do cliente pode expor mais capacidade, mas também aumenta latência.
@@ -81,7 +81,7 @@ moldam a saída:
 No ADI Database, os limites de pool são por processo worker HTTP.
 
 ```text
-total possível de sessões PostgreSQL = server workers * DB_POOL_MAX
+total possible PostgreSQL sessions = server workers * DB_POOL_MAX
 ```
 
 Por exemplo, `24` workers e `DB_POOL_MAX=4` podem abrir até `96` sessões PostgreSQL.
@@ -154,7 +154,7 @@ $Router->route('/page', function (Request $Request, Response $Response): Respons
       '</assets/app.js>; rel=preload; as=script'
    ]);
 
-   // ...trabalho caro: queries, renderização...
+   // ...expensive work: queries, rendering...
 
    return $Response->send($HTML);
 }, GET);

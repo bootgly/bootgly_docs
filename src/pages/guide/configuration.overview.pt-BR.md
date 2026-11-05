@@ -118,7 +118,7 @@ Arquivos `.env` ficam locais ao loader — eles nunca modificam o ambiente do pr
 use Bootgly\API\Environment;
 use Bootgly\API\Environment\Configs;
 
-// @ Escreva antes do escopo carregar: o ambiente do processo vence o .env local do escopo
+// @ Write before the scope loads: the process environment beats the scope-local .env
 Environment::put('DB_HOST', 'db.internal');
 
 $Configs = new Configs(__DIR__ . '/configs/');

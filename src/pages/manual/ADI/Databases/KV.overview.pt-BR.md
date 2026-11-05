@@ -4,7 +4,8 @@
 verbo dela, `command()`, transforma o nome de um comando e os argumentos dele em uma
 `KV\Operation` pendente no pool de conexões da fachada; o `await()` conduz uma operação até o fim, e
 o `advance()` deixa vários comandos dividirem os mesmos round-trips. O Redis é o único driver da
-fachada: ele fala RESP sobre o mesmo pool não bloqueante que os drivers SQL usam.
+fachada: ele fala RESP sobre um pool próprio, do mesmo tipo
+não bloqueante que os drivers SQL usam.
 
 As chaves de conexão e os padrões delas estão em
 **[Configuração do banco](/manual/ADI/Database/Config/overview/)**, e o que o pool faz com uma

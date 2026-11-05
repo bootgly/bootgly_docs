@@ -10,13 +10,13 @@ Toda coluna é `$Table->add('nome', Types::Algo)` mais modificadores opcionais.
 - **`nullable` e `default` são propriedades** — você as *atribui*. Uma atribuição encerra o
   statement, então vem **por último** (ou capture a coluna numa variável):
 
-  ```php
-  $Table->add('active', Types::Boolean)->default = true;     // ok: assignment last
-  $Table->add('bio', Types::Text)->nullable = true;          // ok
+```php
+$Table->add('active', Types::Boolean)->default = true;     // ok: assignment last
+$Table->add('bio', Types::Text)->nullable = true;          // ok
 
-  $Email = $Table->add('email', Types::String)->limit(190);  // capture, then assign
-  $Email->nullable = true;
-  ```
+$Email = $Table->add('email', Types::String)->limit(190);  // capture, then assign
+$Email->nullable = true;
+```
 
 **Colunas são `NOT NULL` por padrão.** Use `->nullable = true` para permitir `NULL`.
 

@@ -9,13 +9,13 @@ Every column is `$Table->add('name', Types::Something)` plus optional modifiers.
 - **`nullable` and `default` are properties** — you *assign* them. An assignment ends the
   statement, so it comes **last** (or capture the column in a variable):
 
-  ```php
-  $Table->add('active', Types::Boolean)->default = true;     // ok: assignment last
-  $Table->add('bio', Types::Text)->nullable = true;          // ok
+```php
+$Table->add('active', Types::Boolean)->default = true;     // ok: assignment last
+$Table->add('bio', Types::Text)->nullable = true;          // ok
 
-  $Email = $Table->add('email', Types::String)->limit(190);  // capture, then assign
-  $Email->nullable = true;
-  ```
+$Email = $Table->add('email', Types::String)->limit(190);  // capture, then assign
+$Email->nullable = true;
+```
 
 **Columns are `NOT NULL` by default.** Set `->nullable = true` to allow `NULL`.
 

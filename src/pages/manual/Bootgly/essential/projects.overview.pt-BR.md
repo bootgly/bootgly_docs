@@ -10,10 +10,10 @@ Um projeto é um diretório dentro de `projects/` (em qualquer profundidade) con
 
 ```
 projects/
-├── Bootgly.projects.php          ← o registro (allow-list)
-├── Site/                         ← um projeto plano (um segmento de caminho)
+├── Bootgly.projects.php          ← the registry (allow-list)
+├── Site/                         ← a flat project (one path segment)
 │   └── Site.Project.php
-└── Demo/                         ← uma pasta de agrupamento (não é um projeto)
+└── Demo/                         ← a grouping folder (not a project itself)
     ├── HTTP_Server_CLI/
     │   └── HTTP_Server_CLI.Project.php
     └── TCP_Server_CLI/
@@ -38,7 +38,7 @@ return new Project(
 
    boot: function (array $arguments = [], array $options = []): void
    {
-      // Inicialize e execute sua aplicação aqui
+      // Initialize and run your application here
    }
 );
 ```
@@ -262,13 +262,13 @@ Sem nada rodando, imprime `No running instance found.` — e, quando existem arq
 Boota um projeto pelo seu caminho:
 
 ```bash
-# Executa um subprojeto pelo caminho
+# Run a subproject by its path
 php bootgly project Demo/HTTP_Server_CLI start
 
-# Executa em modo interativo
+# Run in interactive mode
 php bootgly project Demo/HTTP_Server_CLI start -i
 
-# Executa em modo monitor
+# Run in monitor mode
 php bootgly project Demo/HTTP_Server_CLI start -m
 ```
 
@@ -292,8 +292,8 @@ Opções disponíveis:
 Um projeto servidor pode rodar **múltiplas instâncias ao mesmo tempo** — uma por porta. A porta bound é o qualificador de instância, então inicie instâncias extras sobrescrevendo a variável de ambiente `PORT`:
 
 ```bash
-php bootgly project start Blog             # instância na porta padrão do projeto (8080)
-PORT=8081 php bootgly project start Blog   # segunda instância na 8081
+php bootgly project start Blog             # instance on the project's default port (8080)
+PORT=8081 php bootgly project start Blog   # second instance on 8081
 ```
 
 Iniciar uma segunda instância em uma porta já em uso pelo mesmo setup falha com um erro limpo — o servidor obtém um lock não-bloqueante nos arquivos de estado qualificados por porta antes de subir os workers.
@@ -309,7 +309,7 @@ php bootgly project Demo/HTTP_Server_CLI stop
 Isso para **todas as instâncias em execução** do projeto. Para parar uma única instância, passe o qualificador dela — a porta bound para servidores (ou o PID do master para projetos TUI):
 
 ```bash :toolbar="true";
-php bootgly project stop Blog 8081   # para apenas a instância na porta 8081
+php bootgly project stop Blog 8081   # stops only the instance on port 8081
 ```
 
 ### `project show`
@@ -356,8 +356,8 @@ instância qualificada por PID, então `show`/`stop`/`logs` o endereçam. Veja o
 **[guia do Scheduler](/guide/scheduler/overview/)**:
 
 ```bash :toolbar="true";
-php bootgly project App schedule run    # loop do worker alinhado ao minuto (SIGTERM para)
-php bootgly project App schedule list   # jobs registrados e a próxima execução
+php bootgly project App schedule run    # minute-aligned worker loop (SIGTERM stops it)
+php bootgly project App schedule list   # registered jobs and their next run
 ```
 
 ### Estado de processo (arquivos PID)
@@ -374,7 +374,7 @@ Envia um sinal de hot-reload (SIGUSR2) a todas as instâncias em execução de u
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI reload
-php bootgly project reload Blog 8081   # recarrega apenas a instância na porta 8081
+php bootgly project reload Blog 8081   # reloads only the instance on port 8081
 ```
 
 ### `project restart`
@@ -383,7 +383,7 @@ Para e então inicia o projeto novamente, preservando a porta da instância. Com
 
 ```bash
 php bootgly project Demo/HTTP_Server_CLI restart
-php bootgly project restart Blog 8081   # reinicia apenas a instância na porta 8081
+php bootgly project restart Blog 8081   # restarts only the instance on port 8081
 ```
 
 ### `project startup`

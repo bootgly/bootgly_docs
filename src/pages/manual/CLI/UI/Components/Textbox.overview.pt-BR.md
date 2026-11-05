@@ -79,7 +79,7 @@ $Textbox->attempts = 3;
 
 $name = $Textbox->ask();
 
-echo $Textbox->attempt; // rodadas consumidas
+echo $Textbox->attempt; // rounds consumed
 ```
 
 ## Mascarando entrada secreta
@@ -91,7 +91,7 @@ $Textbox->prompt = 'Password';
 $Textbox->required = true;
 $Textbox->mask = '•';
 
-$password = $Textbox->ask(); // digitar `hunter2` renderiza `•••••••`
+$password = $Textbox->ask(); // typing `hunter2` renders `•••••••`
 ```
 
 Uma entrada mascarada com `default` nunca o revela — o prompt renderiza a máscara repetida três vezes (`❯ API token [•••]: `), qualquer que seja o tamanho real, e uma resposta vazia ainda assume o valor padrão real.
@@ -104,7 +104,7 @@ Defina `options` para listá-las abaixo do input durante a edição. Digitar fil
 $Textbox->prompt = 'Editor';
 $Textbox->options = ['vim', 'nano', 'emacs', 'helix'];
 
-$editor = $Textbox->ask(); // texto livre vence — as opções apenas auxiliam
+$editor = $Textbox->ask(); // free text wins — the options only assist
 ```
 
 | Teclas | Ação |
@@ -131,7 +131,7 @@ $Textbox->options = [
 ];
 $Textbox->strict = true;
 
-$database = $Textbox->ask(); // mirar `SQLite` retorna 'db.sqlite'
+$database = $Textbox->ask(); // aiming `SQLite` returns 'db.sqlite'
 ```
 
 As opções são `array<int|string,string>`: uma chave string é o valor retornado, enquanto uma chave int (uma lista simples) retorna o próprio label. Respostas que não casam com nenhuma opção renderizam um Alert de Failure `Pick one of the options.` e a pergunta é feita novamente.
@@ -168,7 +168,7 @@ Como o source é dono da filtragem, ele pode ranquear, paginar ou consultar um b
 $confirmed = $Textbox->confirm('Create the project?', default: true);
 
 if ($confirmed === false) {
-   // abortado…
+   // aborted…
 }
 ```
 
@@ -179,8 +179,8 @@ if ($confirmed === false) {
 Em terminais interativos o input é sempre emoldurado: o `marker` é desenhado antes do prompt em todos os modos, e o `border` desenha uma régua acima e abaixo do input. O `hint` cavalga a régua de baixo, interrompendo-a como uma legenda, para ser lido logo abaixo daquilo que explica, e a lista de opções (um [Listbox](/manual/CLI/UI/Base/Listbox/overview)) cai abaixo dela:
 
 ```php
-$Textbox->marker = '@#Cyan:❯@; '; // padrão
-$Textbox->border = '─';           // padrão
+$Textbox->marker = '@#Cyan:❯@; '; // default
+$Textbox->border = '─';           // default
 $Textbox->hint = '(type to filter, ↑/↓ aim, Enter confirm)';
 ```
 

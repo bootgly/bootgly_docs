@@ -476,8 +476,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Access data in Bootgly: the SQL and KV (Redis) databases, connection pooling, Query Builder, Schema Builder, Seeders and ORM Data Mapper.',
-          'pt-BR': 'Acesse dados no Bootgly: bancos SQL e KV (Redis), pool de conexões, Query Builder, Schema Builder, Seeders e ORM Data Mapper.'
+          'en-US': 'Store and check data in Bootgly: the SQL and KV (Redis) databases, connection pooling, Query and Schema Builders, migrations, seeders and the ORM Data Mapper, the in-memory Table dataset, and Validation with its built-in rules.',
+          'pt-BR': 'Guarde e confira dados no Bootgly: bancos SQL e KV (Redis), pool de conexões, Query e Schema Builders, migrations, seeders e o ORM Data Mapper, o dataset Table em memória e a Validação com as suas regras built-in.'
         }
       },
       menu: {
@@ -506,8 +506,8 @@ export default {
       version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'The transport-agnostic DBAL core: its layers, how an operation runs and fails, Operation states and Result fields.',
-          'pt-BR': 'O núcleo do DBAL, agnóstico de transporte: suas camadas, como uma operação roda e falha, os estados da Operation e os campos do Result.'
+          'en-US': 'The transport-agnostic DBAL core both facades extend: connection config, the connection pool, how an operation runs and fails, Operation states and Result fields.',
+          'pt-BR': 'O núcleo do DBAL, agnóstico de transporte, que as duas fachadas estendem: config de conexão, o pool de conexões, como uma operação roda e falha, os estados da Operation e os campos do Result.'
         }
       },
       menu: {},
@@ -1588,7 +1588,7 @@ export default {
     config: {
       icon: 'short_text',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Drive single-line editing with a pure key/buffer engine — virtual cursor, masking and windowing.',
@@ -1736,7 +1736,7 @@ export default {
     config: {
       icon: 'web_asset',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Compute the visible slice of scrollable lists — slide a window to follow the aimed row.',
@@ -1948,7 +1948,7 @@ export default {
     config: {
       icon: 'animation',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Animate terminal text: typewriter, fade-in and a shimmering color wave.',
@@ -2117,7 +2117,7 @@ export default {
     config: {
       icon: 'bar_chart',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Plot gradient-colored sparklines, bars, meters and live braille graphs in the terminal.',
@@ -2245,7 +2245,7 @@ export default {
     config: {
       icon: 'swap_vert',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Buffer content into a fixed screen band with its own scrollbar and scrolling.',
@@ -2289,7 +2289,7 @@ export default {
     config: {
       icon: 'autorenew',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Animate an indeterminate activity indicator while your CLI code works.',
@@ -2331,7 +2331,7 @@ export default {
     config: {
       icon: 'edit_note',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Edit multiline text in the terminal — Enter breaks lines, Ctrl+D submits.',
@@ -2375,7 +2375,7 @@ export default {
     config: {
       icon: 'timeline',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Guide multi-step CLI flows with per-step state: pending, active, done or failed.',
@@ -2397,7 +2397,7 @@ export default {
     config: {
       icon: 'timer',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Run countdowns with wall-clock precision and a one-shot completion callback.',
@@ -2503,7 +2503,7 @@ export default {
     config: {
       icon: 'dynamic_form',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Ask a declarative list of fields sequentially, with revert and a summary + confirm loop.',
@@ -2525,7 +2525,7 @@ export default {
     config: {
       icon: 'terminal',
       status: 'done',
-      version: 'v0.20.0-beta',
+      version: 'v0.20.0',
       meta: {
         description: {
           'en-US': 'Fix the input line at the bottom while buffered content scrolls above — REPL-style.',
@@ -2727,7 +2727,7 @@ export default {
     config: {
       icon: 'bolt',
       status: 'done',
-      version: '0.19.0-beta',
+      version: 'v0.19.0',
       meta: {
         description: {
           'en-US': 'Serve HTTP/2 natively — h2 over TLS (ALPN) and cleartext prior knowledge, HPACK, multiplexing, flow control and rapid-reset protection, dependency-free.',
@@ -2995,7 +2995,7 @@ export default {
     config: {
       icon: 'sync_alt',
       status: 'done',
-      version: 'v0.19.0-beta',
+      version: 'v0.19.0',
       meta: {
         description: {
           'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
@@ -3019,7 +3019,7 @@ export default {
     config: {
       icon: 'forum',
       status: 'done',
-      version: 'v0.19.0-beta',
+      version: 'v0.19.0',
       meta: {
         description: {
           'en-US': 'Group WebSocket sessions into rooms and broadcast to every member across workers.',
@@ -3041,7 +3041,7 @@ export default {
     config: {
       icon: 'compress',
       status: 'done',
-      version: 'v0.19.0-beta',
+      version: 'v0.19.0',
       meta: {
         description: {
           'en-US': 'Negotiate permessage-deflate (RFC 7692) to compress WebSocket messages with built-in zlib.',
@@ -3066,7 +3066,7 @@ export default {
     config: {
       icon: 'shield',
       status: 'done',
-      version: 'v0.19.0-beta',
+      version: 'v0.19.0',
       meta: {
         description: {
           'en-US': 'Authenticate the WebSocket handshake by reusing the HTTP Server CLI auth guards.',
@@ -3092,7 +3092,7 @@ export default {
     config: {
       icon: 'cell_tower',
       status: 'done',
-      version: 'v0.19.0-beta',
+      version: 'v0.19.0',
       meta: {
         description: {
           'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',

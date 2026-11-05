@@ -466,7 +466,7 @@ The freshen() method is responsible for determining whether a client request is 
 - The request must be of type `GET` or `HEAD`. Other request types are not considered fresh.
 - The `Cache-Control` header should not contain the `no-cache` directive, indicating that the response should not be served from the cache.
 - The `If-None-Match` (ETag) header is checked against the ETag of the cached response. If the ETags match, the cached response is considered valid.
-- The `If-Modified-Since` header is compared with the `Last-Modified` header of the cached response. If the modification date of the response is more recent than the date specified in the `If-Modified-Since` header, the cached response is considered valid.
+- The `If-Modified-Since` header is compared with the `Last-Modified` header of the cached response. If the modification date of the response is not more recent than (equal to or older than) the date specified in the `If-Modified-Since` header, the cached response is considered valid.
 
 ### Example with Last-Modified
 
@@ -486,10 +486,10 @@ Accept: text/html
 $Response->Header->set('Last-Modified', 'Fri, 14 Jul 2023 08:00:00 GMT');
 
 if ($Request->fresh) {
-   return $Response(code: 304); // First onward is here
+   return $Response(code: 304); // From the second response on, the return is here
 }
 else {
-   return $Response(body: 'test')->send(); // First Response here
+   return $Response(body: 'test')->send(); // On the first response, the return is here
 }
 ```
 

@@ -17,9 +17,9 @@ use Bootgly\API\Workables\Server as SAPI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 
-SAPI::$Middlewares->prepend(new CORS);       // Adicionar no início
-SAPI::$Middlewares->append(new Compression); // Adicionar no final
-SAPI::$Middlewares->pipe(new CORS, new Compression); // Adicionar múltiplos de uma vez
+SAPI::$Middlewares->prepend(new CORS);       // Add to the beginning
+SAPI::$Middlewares->append(new Compression); // Add to the end
+SAPI::$Middlewares->pipe(new CORS, new Compression); // Add multiple at once
 ```
 
 ### Grupo de Rotas
@@ -33,7 +33,7 @@ $Router->intercept(
 );
 
 yield $Router->route('/api/:*', function ($Request, $Response) use ($Router) {
-   // Todas as rotas dentro deste grupo herdam CORS + RateLimit
+   // All routes inside this group inherit CORS + RateLimit
    yield $Router->route('/users', function ($Request, $Response) {
       return $Response->JSON->send(['users' => []]);
    }, GET);
@@ -144,7 +144,7 @@ class Policy implements Middleware, Sealing
    {
       $Result = $next($Request, $Response);
 
-      // @ Uma passagem serve aos dois ciclos: aqui no desenrolar, em seal() na liquidação
+      // @ One pass serves both cycles: here on the unwind, in seal() at settlement
       $this->seal($Request, $Result);
 
       return $Result;
@@ -152,7 +152,7 @@ class Policy implements Middleware, Sealing
 
    public function seal (Request $Request, Response $Response): void
    {
-      // ? Idempotente: set() substitui, então selar a mesma resposta duas vezes é inofensivo
+      // ? Idempotent: set() replaces, so sealing the same answer twice is harmless
       $Response->Header->set('X-Policy', 'strict');
 
       if ($Response->code >= 500) {
@@ -186,10 +186,10 @@ Uma linha de log por requisição, num canal próprio — o access log que o pr�
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\AccessLog;
 
 new AccessLog(
-   channel: 'HTTP.Server.CLI.access', // Canal de log → storage/logs/HTTP.Server.CLI.access.log (padrão)
-   header: 'X-Request-Id',            // Header da resposta de onde o id da requisição é lido; null = sem id (padrão: 'X-Request-Id')
-   query: false,                      // Manter a query string no alvo registrado (padrão: false)
-   Formatter: null                    // fn (array $entry): string — sua própria linha (padrão: a linha abaixo)
+   channel: 'HTTP.Server.CLI.access', // Log channel → storage/logs/HTTP.Server.CLI.access.log (default)
+   header: 'X-Request-Id',            // Response header the request id is read back from; null = no id (default: 'X-Request-Id')
+   query: false,                      // Keep the query string in the logged target (default: false)
+   Formatter: null                    // fn (array $entry): string — your own line (default: the line below)
 );
 ```
 
@@ -301,11 +301,11 @@ Gerencia a validação de Cross-Origin Resource Sharing e requisições prefligh
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
 
 new CORS(
-   origins: ['https://example.com'],      // Origens permitidas (padrão: [] — allowlist vazia; passe ['*'] para wildcard)
-   methods: ['GET', 'POST'],              // Métodos permitidos (padrão: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'])
-   headers: ['Content-Type'],             // Headers permitidos (padrão: ['Content-Type','Authorization'])
-   maxAge: 86400,                         // Cache do preflight em segundos (padrão: 86400)
-   credentials: false                     // Permitir credenciais (padrão: false)
+   origins: ['https://example.com'],      // Allowed origins (default: [] — empty allowlist; pass ['*'] for wildcard)
+   methods: ['GET', 'POST'],              // Allowed methods (default: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'])
+   headers: ['Content-Type'],             // Allowed headers (default: ['Content-Type','Authorization'])
+   maxAge: 86400,                         // Preflight cache in seconds (default: 86400)
+   credentials: false                     // Allow credentials (default: false)
 );
 ```
 
@@ -329,8 +329,8 @@ Comprime o corpo da resposta usando `gzip` ou `deflate` com base no header `Acce
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 
 new Compression(
-   level: 6,        // Nível de compressão 1-9 (padrão: 6)
-   minSize: 1024    // Tamanho mínimo do corpo em bytes para comprimir (padrão: 1024)
+   level: 6,        // Compression level 1-9 (default: 6)
+   minSize: 1024    // Minimum body size in bytes to compress (default: 1024)
 );
 ```
 
@@ -348,7 +348,7 @@ Gera e valida ETags para cache HTTP. Retorna `304 Not Modified` quando o header 
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
 
 new ETag(
-   weak: true  // Usar ETags fracos (padrão: true)
+   weak: true  // Use weak ETags (default: true)
 );
 ```
 
@@ -367,15 +367,15 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RateLimit\Algorithms;
 
 new RateLimit(
-   limit: 60,                        // Máximo de requisições por janela (padrão: 60)
-   window: 60,                       // Janela de tempo em segundos (padrão: 60)
-   trustForwarded: false,            // Usar o $Request->address resolvido pelo proxy (padrão: false)
-   ipv6Prefix: 64,                   // Agregar chaves IPv6 neste prefixo (padrão: /64)
-   globalLimit: 0,                   // Teto agregado entre workers opcional (padrão: 0 = desligado)
-   algorithm: Algorithms::Sliding,   // Algoritmo de contagem (padrão: Sliding; ou Fixed)
-   key: null,                        // Resolvedor de principal fn (Request): ?string (padrão: IP)
-   scope: 'public-api',              // Identidade estável da política por principal (padrão: linha derivada)
-   globalScope: null                 // Identidade da política agregada (padrão: scope)
+   limit: 60,                        // Maximum requests per window (default: 60)
+   window: 60,                       // Time window in seconds (default: 60)
+   trustForwarded: false,            // Key on the proxy-resolved $Request->address (default: false)
+   ipv6Prefix: 64,                   // Aggregate IPv6 keys to this prefix (default: /64)
+   globalLimit: 0,                   // Optional cross-worker aggregate ceiling (default: 0 = off)
+   algorithm: Algorithms::Sliding,   // Counting algorithm (default: Sliding; or Fixed)
+   key: null,                        // Custom principal resolver fn (Request): ?string (default: IP)
+   scope: 'public-api',              // Stable per-principal policy identity (default: derived source line)
+   globalScope: null                 // Aggregate policy identity (default: scope)
 );
 ```
 
@@ -416,7 +416,7 @@ Não empilhe instâncias de middleware com o mesmo `globalScope` no pipeline de 
 **Chave customizada.** `key` é um resolvedor `fn (object $Request): ?string`. Retorne uma string para limitar por algo diferente do IP — o proprietário de uma API key, um id de usuário autenticado, um tenant — ou `null` para recair na chave de IP padrão. Autentique e mapeie credenciais não confiáveis para um ID de principal estável e limitado; nunca retorne o valor bruto de um header. Aqui, `$APIKeys` representa um serviço de autenticação da aplicação cujo `resolve()` retorna esse ID ou `null`.
 
 ```php
-// Limitar pelo proprietário validado da API key em vez de IP:
+// Rate-limit by the validated API-key owner instead of IP:
 new RateLimit(
    limit: 1000,
    window: 3600,
@@ -447,7 +447,7 @@ Recusa uma requisição cujo corpo passa de `maxSize` bytes. Ele confere primeir
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\BodyParser;
 
 new BodyParser(
-   maxSize: 1_048_576  // Tamanho máximo do corpo em bytes (padrão: 1 MB)
+   maxSize: 1_048_576  // Maximum body size in bytes (default: 1 MB)
 );
 ```
 
@@ -465,12 +465,12 @@ Proteção CSRF baseada em token sincronizador. Gera um token por sessão, armaz
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CSRF;
 
 new CSRF(
-   sessionKey: '_csrf_token',     // Chave de sessão onde o token é armazenado (padrão: '_csrf_token')
-   headerName: 'X-CSRF-Token',    // Header da requisição que carrega o token (padrão: 'X-CSRF-Token')
-   formField: '_token',           // Campo de formulário que carrega o token (padrão: '_token')
-   checkOrigin: false,            // Validar o hostname de Origin/Referer contra Host (padrão: false)
-   allowedOrigins: [],            // Hostnames cross-origin confiáveis quando checkOrigin=true (padrão: [])
-   tokenBytes: 32                 // Bytes aleatórios; token é hex-encoded (padrão: 32 → token de 64 caracteres)
+   sessionKey: '_csrf_token',     // Session key for token storage (default: '_csrf_token')
+   headerName: 'X-CSRF-Token',    // Request header carrying the token (default: 'X-CSRF-Token')
+   formField: '_token',           // Form field carrying the token (default: '_token')
+   checkOrigin: false,            // Validate Origin/Referer hostname against Host (default: false)
+   allowedOrigins: [],            // Trusted cross-origin hostnames when checkOrigin=true (default: [])
+   tokenBytes: 32                 // Random bytes; token is hex-encoded (default: 32 → 64-char token)
 );
 ```
 
@@ -484,13 +484,13 @@ O token só é rotacionado quando você chama `$Request->Session->regenerate()` 
 **Renderize o token mascarado (proteção BREACH).** O token de sessão é um segredo estável; renderizá-lo raw em um corpo que também é comprimido (veja [Compression](#compression)) e reflete entrada do atacante o expõe a um oráculo de comprimento de compressão (BREACH). Renderize `CSRF::mask()` em vez do token raw — ele retorna um valor por resposta (`hex(nonce ‖ (token XOR nonce))`, diferente a cada chamada), de modo que não há segredo estável no corpo. A validação desmascara o token enviado automaticamente (e ainda aceita o token raw, então formulários existentes continuam funcionando).
 
 ```php
-// No seu view/template — emita um token mascarado, nunca o valor raw da sessão:
+// In your view/template — emit a masked token, never the raw session value:
 <input type="hidden" name="_token"
        value="<?= CSRF::mask($Request->Session->get('_csrf_token')) ?>">
 ```
 
 ```php
-// Equivalente para um cliente API/JS (ex.: uma meta tag que o front-end lê):
+// Equivalent for an API/JS client (e.g. a meta tag the front end reads):
 $masked = CSRF::mask($Request->Session->get('_csrf_token'));
 ```
 
@@ -515,8 +515,8 @@ new Validator(
       'email' => [new Required, new Email],
    ],
    Source: Sources::Fields,   // Fields | Queries | Headers | Cookies | Files
-   code: 422,                  // Status HTTP na falha de validação (padrão: 422)
-   fallback: null              // Closure opcional Closure(Request, Response, Validation): object
+   code: 422,                  // HTTP status on validation failure (default: 422)
+   fallback: null              // Optional Closure(Request, Response, Validation): object
 );
 ```
 
@@ -546,7 +546,7 @@ Gera ou propaga identificadores únicos de requisição para rastreamento distri
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\RequestId;
 
 new RequestId(
-   header: 'X-Request-Id'  // Nome do header para ler/escrever (padrão: 'X-Request-Id')
+   header: 'X-Request-Id'  // Header name to read/write (default: 'X-Request-Id')
 );
 ```
 
@@ -564,9 +564,9 @@ Adiciona headers de segurança para proteção contra vulnerabilidades web comun
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\SecureHeaders;
 
 new SecureHeaders(
-   contentSecurityPolicy: "default-src 'self'",  // Diretiva CSP (padrão: "default-src 'self'")
-   hsts: true,                                    // Habilitar HSTS (padrão: true)
-   hstsMaxAge: 31536000                           // Max-age do HSTS em segundos (padrão: 31536000)
+   contentSecurityPolicy: "default-src 'self'",  // CSP directive (default: "default-src 'self'")
+   hsts: true,                                    // Enable HSTS (default: true)
+   hstsMaxAge: 31536000                           // HSTS max-age in seconds (default: 31536000)
 );
 ```
 
@@ -582,7 +582,7 @@ Resolve o IP real do cliente a partir dos headers de proxy confiáveis (`X-Forwa
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
 
 new TrustedProxy(
-   // IPs e faixas CIDR de proxies confiáveis — defina-os explicitamente em produção
+   // Trusted proxy IPs and CIDR ranges — set these explicitly in production
    proxies: ['10.0.0.1', '173.245.48.0/20', '2400:cb00::/32']
 );
 ```

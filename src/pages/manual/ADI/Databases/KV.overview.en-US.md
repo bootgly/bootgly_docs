@@ -3,8 +3,8 @@
 `Bootgly\ADI\Databases\KV` is the facade an application sends Redis commands through. Its one verb,
 `command()`, turns a command name and its arguments into a pending `KV\Operation` on the facade's
 connection pool; `await()` drives an operation to its end, and `advance()` lets several commands
-share their round trips. Redis is the facade's only driver: it speaks RESP over the same
-non-blocking pool the SQL drivers use.
+share their round trips. Redis is the facade's only driver: it speaks RESP over a pool of its
+own, the same kind of non-blocking pool the SQL drivers use.
 
 The connection keys and their defaults are on
 **[Database configuration](/manual/ADI/Database/Config/overview/)**, and what the pool does with an

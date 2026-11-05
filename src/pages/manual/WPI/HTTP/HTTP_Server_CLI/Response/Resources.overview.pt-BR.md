@@ -30,8 +30,8 @@ return $Response->Plaintext->send('Hello, World!');
 ```
 
 ```php
-return $Response->View->render('boas-vindas', [
-   'title' => 'Página de Boas-Vindas',
+return $Response->View->render('welcome', [
+   'title' => 'Welcome Page',
 ]);
 ```
 
@@ -136,7 +136,7 @@ $HTTP_Server_CLI->configure(
 
 `Database` é um response resource async. Ele adapta `Readiness` do DBAL para
 `$Response->wait()` para que rotas aguardem SQL dentro de `defer()`. Prefira Query Builder
-para queries da aplicação; use SQL cru só quando o builder não for o encaixe certo.
+para queries da aplicação; use SQL raw só quando o builder não for o encaixe certo.
 
 ```php
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
@@ -253,7 +253,7 @@ falando pela transação**: enquanto o callback executa, `query()`, `fetch()`, `
 $Response->Database->transact(function ($Transaction, $Database) {
    $Database->query('INSERT INTO orders (total) VALUES ($1)', [99]);
 
-   // Lê a linha acima: mesma transação, mesma conexão.
+   // Reads the row above: same transaction, same connection.
    return $Database->fetch('SELECT sum(total) AS due FROM orders')->rows;
 });
 ```
@@ -790,7 +790,7 @@ para outro lugar — uma CDN, um host de arquivos —, troque a política na fac
 ```php
 'Upstream' => static function (object $Context): HTTP {
    $HTTP = new HTTP(host: 'api.example.com', secure: []);
-   // ! Mais um destino confiável, só sobre TLS
+   // ! One more trusted destination, over TLS only
    $HTTP->Client->Redirection = static fn (string $host, int $port, bool $secure): bool =>
       $secure && ($host === 'api.example.com' || $host === 'files.example.com');
 
@@ -951,8 +951,8 @@ Uma chamada tardia nunca lança exceção, então o erro é silencioso. Leia os 
 que o trabalho recebe, toda vez:
 
 ```php
-// ❌ mantido entre requisições: da segunda requisição em diante, o envio dele nunca alcança a
-//    requisição sendo respondida, que sai como um 200 vazio
+// ❌ kept across requests: from the second request on, its send never reaches the request
+//    being answered, which goes out as an empty 200
 static $JSON = null;
 
 return $Response->defer(function (Response $Response) use (&$JSON): void {
@@ -963,7 +963,7 @@ return $Response->defer(function (Response $Response) use (&$JSON): void {
 ```
 
 ```php
-// ✅ lido da Response que o trabalho recebe
+// ✅ read from the Response the work receives
 return $Response->defer(function (Response $Response): void {
    $Response->JSON->send(['status' => 'ok']);
 });

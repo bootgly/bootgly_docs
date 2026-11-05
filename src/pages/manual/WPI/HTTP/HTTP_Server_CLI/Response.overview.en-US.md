@@ -164,14 +164,14 @@ Two consequences are yours to plan for:
 
 - **Do not serve a file while it is being written.** Any change — an append, a rewrite, an atomic redeploy, even a `chmod` or `chown` that only moves the change time — aborts a transfer already in flight. `stat` cannot tell a harmless append from a substitution, so the check cannot make an exception for one. Snapshot the file first:
 
-  ```php
-  $Router->route('/logs/download', function ($Request, $Response) {
-     $snapshot = 'storage/snapshots/' . bin2hex(random_bytes(8)) . '.log';
-     copy(BOOTGLY_PROJECT->path . 'storage/logs/app.log', BOOTGLY_PROJECT->path . $snapshot);
+```php
+$Router->route('/logs/download', function ($Request, $Response) {
+   $snapshot = 'storage/snapshots/' . bin2hex(random_bytes(8)) . '.log';
+   copy(BOOTGLY_PROJECT->path . 'storage/logs/app.log', BOOTGLY_PROJECT->path . $snapshot);
 
-     return $Response->upload($snapshot);
-  });
-  ```
+   return $Response->upload($snapshot);
+});
+```
 
 - **Serve from a filesystem with stable inodes.** Mounts that regenerate `st_dev` / `st_ino` between two opens of the same path — some FUSE-backed remote filesystems, an overlay copy-up triggered mid-transfer — are indistinguishable from a substitution and will abort. Local filesystems (ext4, XFS, Btrfs, tmpfs) are fine.
 

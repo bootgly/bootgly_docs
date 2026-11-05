@@ -43,12 +43,12 @@ use Bootgly\ABI\Events\Emitter;
 use Bootgly\ADI\Databases\SQL\Events;
 use Bootgly\ADI\Databases\SQL\Operation;
 
-Operation::$slow = 0.5; // sinalize queries mais lentas que 500ms
+Operation::$slow = 0.5; // flag queries slower than 500ms
 
 Emitter::$Instance->listen(Events::Slow, function (Emission $Emission) {
    [$Operation, $elapsed] = $Emission->payload;
 
-   error_log("query lenta ({$elapsed}s): {$Operation->SQL}");
+   error_log("slow query ({$elapsed}s): {$Operation->SQL}");
 });
 ```
 
@@ -218,7 +218,7 @@ use Bootgly\ABI\Events\Emission;
 use Bootgly\ABI\Events\Emitter;
 
 Emitter::$Instance->listen(Events::Imported, function (Emission $Emission) {
-   $Emission->stop(); // listeners com prioridade menor não rodam
+   $Emission->stop(); // listeners with lower priority will not run
 }, priority: 10);
 ```
 

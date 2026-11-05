@@ -68,7 +68,7 @@ corpo da resposta.
 **Exemplo:**
 
 ```php
-return $Response->View->render('boas-vindas', ['title' => 'Página de Boas-Vindas']);
+return $Response->View->render('welcome', ['title' => 'Welcome Page']);
 ```
 
 ### Enviar conteúdo
@@ -164,14 +164,14 @@ Duas consequências ficam por sua conta:
 
 - **Não sirva um arquivo enquanto ele está sendo escrito.** Qualquer mudança — um append, uma reescrita, um redeploy atômico, até um `chmod` ou `chown` que só mexe na data de mudança — aborta uma transferência já em andamento. O `stat` não distingue um append inofensivo de uma substituição, então a checagem não tem como abrir exceção para um deles. Tire um snapshot antes:
 
-  ```php
-  $Router->route('/logs/download', function ($Request, $Response) {
-     $snapshot = 'storage/snapshots/' . bin2hex(random_bytes(8)) . '.log';
-     copy(BOOTGLY_PROJECT->path . 'storage/logs/app.log', BOOTGLY_PROJECT->path . $snapshot);
+```php
+$Router->route('/logs/download', function ($Request, $Response) {
+   $snapshot = 'storage/snapshots/' . bin2hex(random_bytes(8)) . '.log';
+   copy(BOOTGLY_PROJECT->path . 'storage/logs/app.log', BOOTGLY_PROJECT->path . $snapshot);
 
-     return $Response->upload($snapshot);
-  });
-  ```
+   return $Response->upload($snapshot);
+});
+```
 
 - **Sirva de um filesystem com inodes estáveis.** Montagens que regeneram `st_dev` / `st_ino` entre duas aberturas do mesmo caminho — alguns filesystems remotos via FUSE, um copy-up de overlay disparado no meio da transferência — são indistinguíveis de uma substituição e vão abortar. Filesystems locais (ext4, XFS, Btrfs, tmpfs) não têm esse problema.
 

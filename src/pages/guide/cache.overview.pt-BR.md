@@ -25,8 +25,8 @@ use Bootgly\ABI\Resources\Cache;
 $Cache = new Cache(['driver' => 'file']);
 
 $Cache->store('user:42', ['name' => 'Ada'], TTL: 300);
-$User = $Cache->fetch('user:42');   // ['name' => 'Ada'], ou null em miss/expiração
-$Cache->check('user:42');           // true enquanto presente e não expirado
+$User = $Cache->fetch('user:42');   // ['name' => 'Ada'], or null on miss/expiry
+$Cache->check('user:42');           // true while present and unexpired
 $Cache->delete('user:42');
 ```
 
@@ -43,9 +43,9 @@ sua expiração, inclusive a de não ter nenhuma:
 
 ```php
 $hits = $Cache->increment('hits:home');            // 1, 2, 3, ...
-$left = $Cache->increment("quota:$ip", TTL: 60);    // a janela abre na primeira chamada
+$left = $Cache->increment("quota:$ip", TTL: 60);    // window opens on first call
 $owed = $Cache->decrement("credits:$id", TTL: 86400);
-$secs = $Cache->remain("quota:$ip");                // segundos restantes (-1 = sem expiração, -2 = ausente)
+$secs = $Cache->remain("quota:$ip");                // seconds left (-1 = no expiry, -2 = missing)
 ```
 
 `decrement()` recebe o mesmo `TTL` e o aplica da mesma forma. Omitir o `TTL` aplica o padrão
@@ -65,9 +65,9 @@ Agrupe chaves com tags e descarte o grupo inteiro em uma chamada:
 $Cache->store('post:1', $a, tags: ['posts']);
 $Cache->store('post:2', $b, tags: ['posts']);
 
-$Cache->invalidate('posts');   // post:1 e post:2 somem
-$Cache->purge();               // remove entradas expiradas; retorna a quantidade removida
-$Cache->clear();               // esvazia o namespace deste cache
+$Cache->invalidate('posts');   // post:1 and post:2 are gone
+$Cache->purge();               // evict expired entries; returns the count removed
+$Cache->clear();               // empty this cache's namespace
 ```
 
 ## Obter-ou-computar
@@ -144,7 +144,7 @@ $Cache = new Cache([
 
 $Vault = new Vault(
    $Cache,
-   secret: getenv('JWT_VAULT_SECRET') ?: '' // mesmo segredo (>= 32 bytes) em todo host
+   secret: getenv('JWT_VAULT_SECRET') ?: '' // same secret (>= 32 bytes) on every host
 );
 ```
 
@@ -207,7 +207,7 @@ $RateLimit = new RateLimit(
    scope: 'public-api',
    Cache: $Cache
 );
-// Ou use um backend Redis comum para uma frota multi-host:
+// Or use one common Redis backend for a multi-host fleet:
 $Redis = new Cache(['driver' => 'redis', 'prefix' => 'ratelimit:']);
 $RateLimit = new RateLimit(
    limit: 60,

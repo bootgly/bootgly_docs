@@ -29,7 +29,7 @@ In Bootgly, servers are started by Projects — not by framework commands. Each 
 A project file (e.g. `HTTP_Server_CLI.Project.php`) returns a `Project` instance:
 
 ```php
-// HTTP_Server_CLI.Project.php in ./project/HTTP_Server_CLI
+// A simplified shape of projects/Demo/HTTP_Server_CLI/HTTP_Server_CLI.Project.php
 use Bootgly\API\Endpoints\Server\Modes;
 use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;

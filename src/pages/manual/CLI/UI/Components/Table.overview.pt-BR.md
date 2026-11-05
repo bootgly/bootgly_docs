@@ -143,9 +143,9 @@ foreach ($alignments as $index => $alignment) {
    $Table->Cells->align($alignment);
    $Table->render();
 
-   // ? Apaga só entre os frames: a última tabela permanece na tela
+   // ? Erase only between frames: the last table stays on screen
    if ($index < count($alignments) - 1) {
-      $Output->Cursor->up(13);   // as 13 linhas que a tabela acima escreveu
+      $Output->Cursor->up(13);   // the 13 lines the table above wrote
       $Output->Text->clear(down: true);
    }
 }

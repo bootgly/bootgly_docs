@@ -218,7 +218,7 @@ export default {
     config: {
       icon: 'key',
       status: 'done',
-      version: '0.24.0-beta',
+      version: 'v0.24.0',
       meta: {
         description: {
           'en-US': 'Encrypt values with AES-256-GCM key rotation and hash passwords with argon2id rehash-on-verify in Bootgly.',
@@ -245,7 +245,7 @@ export default {
     config: {
       icon: 'cached',
       status: 'done',
-      version: '0.17.0-beta',
+      version: 'v0.17.0',
       meta: {
         description: {
           'en-US': 'Cache values with File, APCu, Shared-memory or Redis drivers — TTL, tags, atomic counters and the multi-worker rate-limit backend.',
@@ -272,7 +272,7 @@ export default {
     config: {
       icon: 'folder',
       status: 'done',
-      version: '0.18.0-beta',
+      version: 'v0.18.0',
       meta: {
         description: {
           'en-US': 'Store files through a native facade — Local, Memory and S3 drivers, named disks, streaming write/read (S3 multipart) and path jailing.',
@@ -299,7 +299,7 @@ export default {
     config: {
       icon: 'code',
       status: 'done',
-      version: '0.21.0-beta',
+      version: 'v0.21.0',
       meta: {
         description: {
           'en-US': 'Write @-directive templates compiled to cached PHP — inheritance (@extends/@section/@yield), includes, components with slots, escaped output and template-line error reporting.',
@@ -326,7 +326,7 @@ export default {
     config: {
       icon: 'web',
       status: 'done',
-      version: '0.21.0-beta',
+      version: 'v0.21.0',
       meta: {
         description: {
           'en-US': 'Render project views on top of the template engine — default layouts, views/layouts and views/partials conventions, and JSON/XML/HTML content negotiation driven by the Accept header.',
@@ -353,7 +353,7 @@ export default {
     config: {
       icon: 'palette',
       status: 'done',
-      version: '0.21.0-beta',
+      version: 'v0.21.0',
       meta: {
         description: {
           'en-US': 'Theme terminal output by semantic key — builtin dark/light/mono themes, NO_COLOR support, a swappable Theme::$Current that drives the CLI @:…: color tokens, and custom theme registration.',
@@ -380,7 +380,7 @@ export default {
     config: {
       icon: 'language',
       status: 'done',
-      version: '0.24.0-beta',
+      version: 'v0.24.0',
       meta: {
         description: {
           'en-US': 'Translate messages with natural-source keys — PHP array catalogs per locale/domain, {token} placeholders, pipe plurals, Accept-Language negotiation, localized validation messages, @translate templates and error pages.',
@@ -407,7 +407,7 @@ export default {
     config: {
       icon: 'stream',
       status: 'done',
-      version: '0.24.0-beta',
+      version: 'v0.24.0',
       meta: {
         description: {
           'en-US': 'Push live events to browsers over plain HTTP with Server-Sent Events — the text/event-stream Response resource with heartbeat, retry and Last-Event-ID resume, on HTTP/1.1 and HTTP/2.',
@@ -434,7 +434,7 @@ export default {
     config: {
       icon: 'queue',
       status: 'done',
-      version: '0.17.0-beta',
+      version: 'v0.17.0',
       meta: {
         description: {
           'en-US': 'Enqueue background jobs and run workers — File or Redis drivers, retry/backoff, dead-letter, the queue worker command and lifecycle events.',
@@ -461,7 +461,7 @@ export default {
     config: {
       icon: 'schedule',
       status: 'done',
-      version: '0.17.0-beta',
+      version: 'v0.17.0',
       meta: {
         description: {
           'en-US': 'Schedule cron-style jobs with repeat(), overlap locks, missed-run recovery, a worker command and lifecycle events.',
@@ -514,7 +514,7 @@ export default {
     config: {
       icon: 'mail',
       status: 'done',
-      version: '0.21.0-beta',
+      version: 'v0.21.0',
       meta: {
         description: {
           'en-US': 'Send emails with the built-in, dependency-free Mail system — MIME Message builder with attachments/inline images/templates, SMTP over TLS with typed failures, and queued background delivery.',
@@ -541,7 +541,7 @@ export default {
     config: {
       icon: 'bug_report',
       status: 'done',
-      version: '0.23.0-beta',
+      version: 'v0.23.0',
       meta: {
         description: {
           'en-US': 'Environment-aware error handling — built-in Whoops-style debug page in development (HTML or JSON), clean pages and views/errors overrides in production, plus exception reporting to log channels, Observability metrics and custom reporters.',
@@ -568,7 +568,7 @@ export default {
     config: {
       icon: 'podcasts',
       status: 'done',
-      version: '0.17.0-beta',
+      version: 'v0.17.0',
       meta: {
         description: {
           'en-US': 'Listen to framework domain events — cache, SQL, HTTP, sessions, workers — on the zero-overhead ABI event bus.',
@@ -595,7 +595,7 @@ export default {
     config: {
       icon: 'receipt_long',
       status: 'done',
-      version: '0.18.0-beta',
+      version: 'v0.18.0',
       meta: {
         description: {
           'en-US': 'Structured logging — channels, handlers (file/stream/syslog), formatters, processors, filters, rotation, and a real-time filterable log viewer in Monitor mode.',
@@ -702,7 +702,7 @@ export default {
     config: {
       icon: 'insights',
       status: 'done',
-      version: '0.18.0-beta',
+      version: 'v0.18.0',
       meta: {
         description: {
           'en-US': 'Native metrics — counters, gauges, histograms, process & runtime health, JSON/Prometheus/OTLP exporters, and /health + /metrics endpoints (Prometheus scrape + OTLP push) with file-per-worker aggregation.',
@@ -869,8 +869,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Route safe SQL reads to replica pools while writes, locks and transactions stay on primary.',
-          'pt-BR': 'Roteie leituras SQL seguras para pools de réplica enquanto escritas, locks e transações ficam no primário.'
+          'en-US': 'Route safe SQL reads to replica pools while writes, transactions and builder lock() queries stay on primary.',
+          'pt-BR': 'Roteie leituras SQL seguras para pools de réplica enquanto escritas, transações e queries com lock() do builder ficam no primário.'
         }
       },
       book: 'guide',
