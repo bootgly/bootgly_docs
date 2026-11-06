@@ -387,6 +387,7 @@ new RateLimit(
    globalLimit: 0,                   // Optional cross-worker aggregate ceiling (default: 0 = off)
    algorithm: Algorithms::Sliding,   // Counting algorithm (default: Sliding; or Fixed)
    key: null,                        // Custom principal resolver fn (Request): ?string (default: IP)
+   clock: null,                      // Clock the windows are counted on (default: the system Clock)
    scope: 'public-api',              // Stable per-principal policy identity (default: derived source line)
    globalScope: null                 // Aggregate policy identity (default: scope)
 );
@@ -401,6 +402,8 @@ Defina `trustForwarded: true` **apenas** quando o servidor está atrás de um pr
 **Algoritmo.** `Algorithms::Sliding` (padrão) é uma janela deslizante ponderada: combina a janela atual e a anterior pela fração da janela anterior ainda em vista, de modo que um cliente não consegue enviar `2 × limit` estourando na virada de janela. `Algorithms::Fixed` é o contador clássico mais barato (uma chave, reinicia no TTL) caso você não precise do suavizamento de borda.
 
 **Escopo da política.** `scope` identifica a política lógica; `key` identifica o principal dentro dessa política. Quando `scope` é omitido, o Bootgly deriva uma identidade automática do arquivo e da linha normalizados que contêm a expressão `new RateLimit`. Assim, o mesmo local de construção compartilha contadores quando declarações lazy de rotas são construídas independentemente por workers diferentes, enquanto linhas distintas ficam isoladas. Use um escopo estável explícito em factories, subclasses, definições geradas, múltiplas políticas lógicas criadas na mesma linha física e rolling deployments críticos para segurança: reutilizar um local de construção compartilha uma política sem intenção, enquanto movê-lo altera a identidade automática e inicia uma cota nova. Valores explícitos de `scope` e `globalScope` devem conter entre 1 e 256 bytes e não podem ser vazios nem compostos apenas por espaços em branco. Um escopo de principal compartilhado ainda não mistura algoritmos ou janelas incompatíveis; essas semânticas permanecem particionadas.
+
+**Relógio.** As janelas são contadas em segundos inteiros lidos de `clock`, um [`Clock`](/manual/ABI/Clock/overview/) — o do sistema por padrão. O `Cache` padrão dos contadores lê o mesmo Clock, então em um teste um único `Bootgly\ACI\Tests\Doubles\Fake\Clock` dirige os dois: `new RateLimit(limit: 3, window: 60, clock: $Clock)`, e então `$Clock->advance(60)` abre a próxima janela. Uma closure que retorna um timestamp Unix ainda é aceita, mas está depreciada desde a 1.1.0 e é removida na 2.0.0.
 
 **Teto global.** `globalLimit` (padrão `0` = desligado) adiciona um contador agregado entre workers por `globalScope` e janela sobre o limite por principal. Quando `globalScope` é omitido, ele herda `scope`, portanto políticas independentes têm tetos agregados independentes por padrão. As requisições só são contadas globalmente depois de passarem na checagem por principal.
 

@@ -48,7 +48,13 @@ Public API:
 
 ### Fake\Clock
 
-`Fake\Clock` is a deterministic clock for time-sensitive tests. The current timestamp is stored in the `now` property.
+`Fake\Clock` is a deterministic clock for time-sensitive tests. It extends
+[`Bootgly\ABI\Clock`](/manual/ABI/Clock/overview/), so it goes anywhere a `Clock` is expected —
+but its readings only move when you move them:
+
+- `now` — wall time in float seconds, starting at the timestamp you give;
+- `time` — wall time in whole seconds (`(int) now`);
+- `tick` — monotonic time in nanoseconds, starting at `0`.
 
 ```php
 <?php
@@ -57,36 +63,60 @@ use Bootgly\ACI\Tests\Doubles\Fake\Clock;
 
 $Clock = new Clock(100);
 
-$Clock->now; // 100.0
+$Clock->now;  // 100.0
+$Clock->tick; // 0
 
 $Clock->advance(60);
-$Clock->now; // 160.0
+$Clock->now;  // 160.0
+$Clock->tick; // 60000000000
 
 $Clock->freeze(42.5);
-$Clock->now; // 42.5
+$Clock->now;  // 42.5
+$Clock->time; // 42
+$Clock->tick; // 60000000000 — a wall-clock step, the monotonic time stays
 
 $Clock->reset();
-$Clock->now; // 100.0
+$Clock->now;  // 100.0
+$Clock->tick; // 0
 ```
 
-When the SUT accepts a time provider, pass the Fake through a Closure:
+`advance()` moves the wall and monotonic readings together (seconds on one, nanoseconds on the
+other, rounded to the nearest nanosecond). A negative `advance()` moves the wall time back and,
+like `freeze()`, leaves the monotonic time where it is — monotonic time never goes back. A move
+that would carry the tick past the int range of nanoseconds (about 292 years) throws
+`OverflowException` and moves nothing.
+
+When the SUT takes a `Clock`, pass the Fake itself:
 
 ```php
 $RateLimit = new RateLimit(
    limit: 3,
    window: 60,
-   clock: fn (): float => $Clock->now
+   clock: $Clock
 );
+
+$Cache = new Cache(['driver' => 'memory', 'clock' => $Clock]);
+$Tokens->Clock = $Clock;
 ```
+
+> Before 1.1.0 the Fake was passed through a closure (`clock: fn (): float => $Clock->now`).
+> That still works — it reads the same — but is deprecated and removed in 2.0.0.
+
+The Fake extends the `Clock` class, so it implements `Doubling` directly instead of extending
+the `Fake` base class: it is registered in `Doubles` and reset like any other double, but
+`$Clock instanceof Fake` is `false`.
 
 Public API:
 
 | Member | Behavior |
 | ------ | -------- |
-| `now: float` | Current timestamp of the fake clock. |
-| `advance(int|float $seconds): void` | Advances the clock by seconds. |
-| `freeze(int|float $at): void` | Freezes the clock at an exact timestamp. |
-| `reset(): static` | Restores the initial timestamp and returns the Fake itself. |
+| `now: float` | Current wall timestamp of the fake clock, in seconds. |
+| `time: int` | Current wall timestamp in whole seconds (`(int) now`). |
+| `tick: int` | Current monotonic time, in nanoseconds (starts at `0`). |
+| `initial: float` | The timestamp `reset()` restores. |
+| `advance(int|float $seconds): void` | Advances the wall time by seconds and the monotonic time by as many nanoseconds (a negative amount moves only the wall time back); throws `OverflowException` past the int range of nanoseconds. |
+| `freeze(int|float $at): void` | Sets the wall time to an exact timestamp; the monotonic time does not move. |
+| `reset(): static` | Restores the initial timestamp and a zero tick, and returns the Fake itself. |
 
 ## Mock
 

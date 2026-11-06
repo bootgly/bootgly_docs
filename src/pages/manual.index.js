@@ -403,6 +403,30 @@ export default {
       }
     }
   },
+  '/ABI/Clock': {
+    config: {
+      icon: 'schedule',
+      status: 'new',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'Read wall and monotonic time through one injectable Clock, measure durations with Bootgly\\ABI\\Stopwatch, and hand time-sensitive code a fake clock in tests.',
+          'pt-BR': 'Leia a hora de parede e a monotônica por um único Clock injetável, meça durações com Bootgly\\ABI\\Stopwatch e entregue um relógio fake ao código sensível ao tempo nos testes.'
+        }
+      },
+      menu: {
+        subheader: '.ABI'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Clock'
+      }
+    }
+  },
   '/ABI/Code': {
     config: null,
     data: {

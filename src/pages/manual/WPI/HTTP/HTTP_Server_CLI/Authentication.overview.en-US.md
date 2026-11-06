@@ -278,6 +278,8 @@ Redirects are followed one hop at a time, and every target must remain HTTPS unl
 
 `refresh()` is never floored. Build `Remote` once — at route-file scope, as above — never per request: the floor lives in the instance. `cooldown: 0` disables it and makes a `no-store` IdP cost one fetch per verification — keep it for tests.
 
+The floor runs on the monotonic `$tick` of the resolver's [`Clock`](/manual/ABI/Clock/overview/), and a set's freshness on its wall `$time` — the system Clock unless one is passed as `Clock:`. A test walks a whole `cooldown` without sleeping: `new Remote($URI, $Fetcher, cooldown: 60, Clock: $Clock)` with a `Bootgly\ACI\Tests\Doubles\Fake\Clock`, then `$Clock->advance(60)`. A hop's network `timeout` always runs on the system clock.
+
 `Vault` stores its records on the Bootgly `Cache` facade. By default it uses the `file` driver (shared across workers on the same filesystem); passing a Redis-backed `Cache` shares JWKS, refresh-token state, and revocations across hosts — and then requires a shared HMAC secret (≥ 32 bytes), so every host can verify the records. Without one, each host would sign with a secret of its own and read the others' records as misses (a revocation would not reach them): an injected backend other than `file`, `memory` or `shared` without `secret:` throws at construction. Moving a deployment that ran on a derived secret, pass the contents of its `{path}{prefix}.secret` file to keep the existing records:
 
 ```php

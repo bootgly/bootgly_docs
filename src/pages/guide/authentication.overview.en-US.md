@@ -322,6 +322,21 @@ The E2E suite drives the real routes: registration → verification link from
 the mail sink → logout → login + remember → revival/rotation → tolerated
 duplicate → late theft replay → forgot/reset → CSRF negative → rate limit.
 
+In your own specs, drive token time with a clock instead of sleeping: `Tokens`, `Users` and
+`Trust` read their `$Clock` property (the system [`Clock`](/manual/ABI/Clock/overview/) by
+default), and `freeze()` still pins an exact timestamp over it until `resume()`:
+
+```php
+use Bootgly\ACI\Tests\Doubles\Fake\Clock;
+
+$Clock = new Clock(1_000_000);
+$Tokens->Clock = $Clock;
+
+$Token = $Tokens->mint('7', Purposes::Recovery, ttl: 3600); // expires at 1003600
+$Clock->advance(3600);
+$Tokens->redeem($Token->value, Purposes::Recovery);        // null — expired
+```
+
 ## Reference
 
 ### `Bootgly\API\Security\Users`
@@ -448,6 +463,13 @@ public function sweep (): int
 ```
 
 Drops expired tokens.
+
+```php
+public Clock $Clock
+```
+
+The `Bootgly\ABI\Clock` token time is read from (whole seconds), the system Clock until one is
+assigned. `Users` and `Trust` have the same property. Since 1.1.0.
 
 ### `Bootgly\API\Security\Tokens\Trust`
 

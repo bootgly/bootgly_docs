@@ -106,6 +106,25 @@ return [
 ];
 ```
 
+Os timestamps dos jobs — quando um job fica disponível, e quando um liberado volta a ser devido —
+são lidos da opção `clock`, um [`Clock`](/manual/ABI/Clock/overview/) (o do sistema por padrão). Em
+um teste, passe `Bootgly\ACI\Tests\Doubles\Fake\Clock` e mova o tempo à mão em vez de dormir:
+
+```php
+use Bootgly\ACI\Queues;
+use Bootgly\ACI\Tests\Doubles\Fake\Clock;
+
+$Clock = new Clock(1_000_000);
+$Queue = new Queues(['clock' => $Clock])->fetch('default');
+
+$Queue->release($Job, 50); // devido em 50 s
+$Clock->advance(50);
+$Queue->reserve();         // o job de novo
+```
+
+Uma closure em `clock` que retorna um timestamp Unix ainda funciona, mas está depreciada desde a
+1.1.0 e é removida na 2.0.0.
+
 `persistent => true` reaproveita um socket ao longo do processo, e só é honrado quando a sessão
 da conexão é a padrão do servidor — sem `database`, sem `password`, sem TLS. O PHP indexa o pool
 de streams persistentes só por `tcp://host:port`, então uma conexão que precisa de sessão própria

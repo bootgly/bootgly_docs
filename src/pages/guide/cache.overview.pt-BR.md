@@ -179,7 +179,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `timeout` | `5.0` | redis | Segundos de conexão/leitura |
 | `secure` | `false` | redis | Conexão TLS |
 | `classes` | `[]` | file, redis, shared, apcu | Classes que o cache pode reconstruir (veja [Segurança](#segurança)) |
-| `clock` | `null` | file, shared, memory | Override de relógio `Closure(): int` (testes) |
+| `clock` | `Clock` do sistema | file, shared, memory | O [`Clock`](/manual/ABI/Clock/overview/) de onde os TTLs são lidos (segundos inteiros) — passe `Fake\Clock` nos testes. APCu e Redis expiram as entradas no relógio do próprio servidor, então a opção não move os TTLs deles. Uma `Closure(): int` ainda funciona, mas está depreciada desde a 1.1.0 (removida na 2.0.0) |
 
 Os nomes das opções são os nomes das propriedades que elas preenchem, e só esses nomes são
 aceitos: uma chave desconhecida — `ttl` no lugar de `TTL`, um erro de digitação, uma opção de

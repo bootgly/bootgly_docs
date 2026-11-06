@@ -328,6 +328,21 @@ A suíte E2E dirige as rotas reais: registro → link de verificação do sink d
 e-mail → logout → login + remember → revival/rotação → duplicata tolerada →
 replay tardio de roubo → forgot/reset → negativo de CSRF → rate limit.
 
+Nas suas próprias specs, dirija a hora dos tokens com um relógio em vez de dormir: `Tokens`,
+`Users` e `Trust` leem a propriedade `$Clock` (o [`Clock`](/manual/ABI/Clock/overview/) do
+sistema por padrão), e `freeze()` ainda fixa um timestamp exato sobre ele até `resume()`:
+
+```php
+use Bootgly\ACI\Tests\Doubles\Fake\Clock;
+
+$Clock = new Clock(1_000_000);
+$Tokens->Clock = $Clock;
+
+$Token = $Tokens->mint('7', Purposes::Recovery, ttl: 3600); // expira em 1003600
+$Clock->advance(3600);
+$Tokens->redeem($Token->value, Purposes::Recovery);        // null — expirou
+```
+
 ## Reference
 
 ### `Bootgly\API\Security\Users`
@@ -458,6 +473,13 @@ public function sweep (): int
 ```
 
 Derruba tokens expirados.
+
+```php
+public Clock $Clock
+```
+
+O `Bootgly\ABI\Clock` de onde a hora dos tokens é lida (segundos inteiros), o Clock do sistema
+até que um seja atribuído. `Users` e `Trust` têm a mesma propriedade. Desde a 1.1.0.
 
 ### `Bootgly\API\Security\Tokens\Trust`
 

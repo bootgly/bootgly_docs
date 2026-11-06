@@ -280,6 +280,8 @@ Redirects são seguidos um hop por vez, e todo destino precisa continuar em HTTP
 
 `refresh()` nunca passa pelo piso. Construa o `Remote` uma vez — no escopo do arquivo de rotas, como acima — nunca por requisição: o piso vive na instância. `cooldown: 0` o desliga e faz um IdP com `no-store` custar uma busca por verificação — deixe isso para testes.
 
+O piso corre no `$tick` monotônico do [`Clock`](/manual/ABI/Clock/overview/) do resolvedor, e o frescor de um conjunto no seu `$time` de parede — o Clock do sistema, a menos que um seja passado como `Clock:`. Um teste percorre um `cooldown` inteiro sem dormir: `new Remote($URI, $Fetcher, cooldown: 60, Clock: $Clock)` com um `Bootgly\ACI\Tests\Doubles\Fake\Clock`, e então `$Clock->advance(60)`. O `timeout` de rede de um hop sempre corre no relógio do sistema.
+
 `Vault` guarda seus registros no facade `Cache` do Bootgly. Por padrão usa o driver `file` (compartilhado entre workers no mesmo filesystem); passando um `Cache` com driver Redis, o JWKS, o estado de refresh tokens e as revogações são compartilhados entre hosts — e então é obrigatório um segredo HMAC compartilhado (≥ 32 bytes), para que todos os hosts consigam verificar os registros. Sem ele, cada host assinaria com um segredo próprio e leria os registros dos outros como miss (uma revogação não os alcançaria): um backend injetado que não seja `file`, `memory` ou `shared` sem `secret:` lança na construção. Ao migrar um deploy que rodava com segredo derivado, passe o conteúdo do arquivo `{path}{prefix}.secret` dele para manter os registros existentes:
 
 ```php

@@ -48,7 +48,13 @@ API pública:
 
 ### Fake\Clock
 
-`Fake\Clock` é um relógio determinístico para testes sensíveis a tempo. O timestamp atual fica na propriedade `now`.
+`Fake\Clock` é um relógio determinístico para testes sensíveis a tempo. Ele estende
+[`Bootgly\ABI\Clock`](/manual/ABI/Clock/overview/), então vai em qualquer lugar que espera um
+`Clock` — mas suas leituras só se movem quando você as move:
+
+- `now` — hora de parede em segundos float, começando no timestamp informado;
+- `time` — hora de parede em segundos inteiros (`(int) now`);
+- `tick` — tempo monotônico em nanossegundos, começando em `0`.
 
 ```php
 <?php
@@ -57,36 +63,60 @@ use Bootgly\ACI\Tests\Doubles\Fake\Clock;
 
 $Clock = new Clock(100);
 
-$Clock->now; // 100.0
+$Clock->now;  // 100.0
+$Clock->tick; // 0
 
 $Clock->advance(60);
-$Clock->now; // 160.0
+$Clock->now;  // 160.0
+$Clock->tick; // 60000000000
 
 $Clock->freeze(42.5);
-$Clock->now; // 42.5
+$Clock->now;  // 42.5
+$Clock->time; // 42
+$Clock->tick; // 60000000000 — um salto do relógio de parede, o tempo monotônico fica
 
 $Clock->reset();
-$Clock->now; // 100.0
+$Clock->now;  // 100.0
+$Clock->tick; // 0
 ```
 
-Quando o SUT aceita um provider de tempo, passe o Fake por uma Closure:
+`advance()` move juntas as leituras de parede e monotônica (segundos em uma, nanossegundos na
+outra, arredondados para o nanossegundo mais próximo). Um `advance()` negativo volta a hora de
+parede e, como `freeze()`, deixa o tempo monotônico onde está — o tempo monotônico nunca volta. Um
+avanço que levaria o tick além da faixa de int em nanossegundos (cerca de 292 anos) lança
+`OverflowException` e não move nada.
+
+Quando o SUT recebe um `Clock`, passe o próprio Fake:
 
 ```php
 $RateLimit = new RateLimit(
    limit: 3,
    window: 60,
-   clock: fn (): float => $Clock->now
+   clock: $Clock
 );
+
+$Cache = new Cache(['driver' => 'memory', 'clock' => $Clock]);
+$Tokens->Clock = $Clock;
 ```
+
+> Antes da 1.1.0 o Fake era passado por uma closure (`clock: fn (): float => $Clock->now`).
+> Isso ainda funciona — lê o mesmo —, mas está depreciado e é removido na 2.0.0.
+
+O Fake estende a classe `Clock`, então implementa `Doubling` diretamente em vez de estender a
+classe base `Fake`: ele é registrado em `Doubles` e resetado como qualquer outro dublê, mas
+`$Clock instanceof Fake` é `false`.
 
 API pública:
 
 | Membro | Comportamento |
 | ------ | ------------- |
-| `now: float` | Timestamp atual do relógio fake. |
-| `advance(int|float $seconds): void` | Avança o relógio em segundos. |
-| `freeze(int|float $at): void` | Fixa o relógio em um timestamp exato. |
-| `reset(): static` | Restaura o timestamp inicial e retorna o próprio Fake. |
+| `now: float` | Timestamp de parede atual do relógio fake, em segundos. |
+| `time: int` | Timestamp de parede atual em segundos inteiros (`(int) now`). |
+| `tick: int` | Tempo monotônico atual, em nanossegundos (começa em `0`). |
+| `initial: float` | O timestamp que `reset()` restaura. |
+| `advance(int|float $seconds): void` | Avança a hora de parede em segundos e o tempo monotônico na mesma quantidade em nanossegundos (um valor negativo só volta a hora de parede); lança `OverflowException` além da faixa de int em nanossegundos. |
+| `freeze(int|float $at): void` | Fixa a hora de parede em um timestamp exato; o tempo monotônico não se move. |
+| `reset(): static` | Restaura o timestamp inicial e um tick zero, e retorna o próprio Fake. |
 
 ## Mock
 

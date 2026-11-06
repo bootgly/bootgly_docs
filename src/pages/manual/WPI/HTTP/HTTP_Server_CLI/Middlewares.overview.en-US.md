@@ -386,6 +386,7 @@ new RateLimit(
    globalLimit: 0,                   // Optional cross-worker aggregate ceiling (default: 0 = off)
    algorithm: Algorithms::Sliding,   // Counting algorithm (default: Sliding; or Fixed)
    key: null,                        // Custom principal resolver fn (Request): ?string (default: IP)
+   clock: null,                      // Clock the windows are counted on (default: the system Clock)
    scope: 'public-api',              // Stable per-principal policy identity (default: derived source line)
    globalScope: null                 // Aggregate policy identity (default: scope)
 );
@@ -400,6 +401,8 @@ Set `trustForwarded: true` **only** when the server sits behind a genuinely trus
 **Algorithm.** `Algorithms::Sliding` (default) is a weighted sliding window: it blends the current and previous windows by how much of the previous window is still in view, so a client cannot send `2 × limit` by bursting across a window boundary. `Algorithms::Fixed` is the cheaper classic counter (one key, resets on TTL) if you do not need boundary smoothing.
 
 **Policy scope.** `scope` identifies the logical policy; `key` identifies the principal inside that policy. When `scope` is omitted, Bootgly derives an automatic identity from the normalized source file and line containing the `new RateLimit` expression. The same construction site therefore shares counters when lazy route declarations are built independently by different workers, while different source lines are isolated. Use an explicit stable scope for factories, subclasses, generated definitions, multiple logical policies created on one physical line, and security-critical rolling deployments: reusing a construction site unintentionally shares a policy, while moving it changes the automatic identity and starts a fresh quota. Explicit `scope` and `globalScope` values must contain between 1 and 256 bytes and cannot be empty or whitespace-only. A shared principal scope still cannot mix incompatible algorithms or windows; those semantics remain partitioned.
+
+**Clock.** Windows are counted in whole seconds read from `clock`, a [`Clock`](/manual/ABI/Clock/overview/) — the system one by default. The default counter `Cache` reads the same Clock, so in a test one `Bootgly\ACI\Tests\Doubles\Fake\Clock` drives both: `new RateLimit(limit: 3, window: 60, clock: $Clock)`, then `$Clock->advance(60)` opens the next window. A closure returning a Unix timestamp is still accepted, but is deprecated since 1.1.0 and removed in 2.0.0.
 
 **Global ceiling.** `globalLimit` (default `0` = off) adds one cross-worker aggregate counter per `globalScope` and window on top of the per-principal limit. When `globalScope` is omitted, it inherits `scope`, so independent policies have independent aggregate ceilings by default. Requests are counted globally only after they pass the per-principal check.
 
