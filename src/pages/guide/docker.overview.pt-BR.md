@@ -168,7 +168,13 @@ Rode esse comando uma vez, dentro do container (`docker run --rm --entrypoint ch
 bootgly: /bootgly/storage/sessions`), e inicie de novo. A imagem do kit já traz
 `storage/sessions` pertencendo a `bootgly`; um volume de storage criado a partir de uma imagem
 mais antiga não tem esse diretório, e o servidor o cria na primeira inicialização como root.
-O `storage/cache` continua do root: comandos executados como root leem o que ele guarda.
+O `storage/cache` continua do root: comandos executados como root leem o que ele guarda. Os
+workers mantêm a própria árvore de cache — templates compilados e caches de arquivo padrão — em
+`storage/cache-<uid>` (`0700`), que o servidor cria e entrega a `bootgly` numa inicialização como
+root, com as mesmas regras (quando não consegue, avisa, e os workers usam um diretório temporário
+privado em vez de impedir a subida). Com um `storage/` criado por você no host, nem o root nem
+`bootgly` podem confiar na árvore, então os dois guardam seus caches num diretório `bootgly-<uid>/`
+privado no diretório temporário do container.
 
 O armazenamento de sessões também recusa um caminho cujos ancestrais outra conta poderia
 substituir — um diretório que não é do root nem de `bootgly`, ou gravável pelo grupo ou por

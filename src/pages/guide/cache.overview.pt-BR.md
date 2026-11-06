@@ -171,7 +171,7 @@ Passe um array (ou um `Cache\Config` pronto) ao construtor:
 | `driver` | `file` | todos | Driver ativo |
 | `prefix` | `''` | todos | Namespace prefixado em toda chave |
 | `TTL` | `0` | todos | TTL padrão (segundos; `0` = para sempre) |
-| `path` | `…/storage/cache` | file | Diretório base |
+| `path` | o diretório de cache próprio do processo — `…/storage/cache`, `…/storage/cache-<uid>` ou um diretório temporário privado (veja `Config::locate()`) | file | Diretório base |
 | `segment` | `0` | shared | Chave System V (`0` deriva uma) |
 | `size` | `16 MiB` | shared | Tamanho do segmento em bytes |
 | `host` / `port` | `127.0.0.1` / `6379` | redis | Endpoint do servidor |
@@ -373,6 +373,63 @@ mais.
   próprio socket.
 - **Semântica do resolve()** — hit/miss é decidido por um único `fetch()`, então um `null`
   armazenado é tratado como miss e recomputado. Não armazene valores `null` no cache.
+
+```php
+Bootgly\ABI\Resources\Cache\Config::locate (null|string $storage = null): string
+```
+
+Resolve o diretório de cache próprio deste processo — o `path` padrão do driver File e o
+diretório em que ficam os templates compilados. Um diretório só é usado quando é um diretório
+comum do usuário atual em que ninguém mais pode escrever, sob ancestrais que só o root ou esse
+usuário podem alterar; um ausente é criado só para o dono (`0700`) dentro de um pai próprio. Na
+ordem: `storage/cache`, `storage/cache-<uid>` (o que uma inicialização como root entrega aos
+workers rebaixados) e, por fim, um `bootgly-<uid>/<app>` privado (um por raiz de storage) no
+diretório temporário do sistema, ou em `/tmp` quando aquele não é confiável (uma árvore de
+storage em que o processo não pode confiar: o `storage/` de outro usuário ou gravável pelo grupo,
+um bind mount de um usuário do host). A raiz de storage é verificada como foi escrita, antes de
+ser resolvida: um componente no caminho que pertence a outra pessoa, ou um diretório em que
+outros podem escrever sem o sticky bit, mantém o processo fora dessa árvore. `$storage` é, por
+padrão, a raiz de storage carregada, localizada uma vez por usuário: um local na árvore de
+storage é mantido até `forget()` — sob um diretório compartilhado com sticky bit
+(`/tmp/app/storage`), só enquanto a entrada logo abaixo dele continua o mesmo diretório do mesmo
+dono —, um temporário é provado de novo a cada chamada. Um `$storage` relativo é tomado do
+diretório de trabalho, e `/` mantém o seu próprio `/cache`; um componente dele que não existe — no
+caminho escrito ou para onde um dos seus links leva — também mantém o processo fora dessa árvore.
+O local é por processo e mantido enquanto ele atende: um processo só se muda quando encontra a sua
+árvore de cache sumida ou não confiável — uma compilação de template depois que o seu diretório
+`templates/` sumiu, uma escrita do File depois que o diretório de cache sumiu — e os outros workers
+mantêm a árvore antiga até lá. Reinicie os workers depois de mudar as permissões de `storage/`. Lança
+`RuntimeException`, nomeando os diretórios tentados, quando nem um diretório temporário é
+confiável.
+
+```php
+Bootgly\ABI\Resources\Cache\Config::forget (): void
+```
+
+Descarta o diretório de cache localizado do usuário atual, para que o próximo `locate()` o
+resolva de novo — para o código que encontrou o diretório sumido (um cache apagado à mão enquanto
+o servidor atende). O cache de templates o chama quando a sua árvore sumiu e não pode ser refeita, ou agora pode ser
+alterada por outro usuário; o driver File o chama na sua próxima escrita quando o diretório sumiu
+(as leituras erram até lá).
+
+```php
+Bootgly\ABI\Resources\Cache\Config->located: bool
+```
+
+Se o `path` deste `Config` é o padrão localizado (nenhum `path` informado) em vez de um informado —
+somente leitura.
+
+```php
+Bootgly\ABI\Resources\Cache\Config::trust (string $directory, int $EUID, bool $sticky = false): bool
+```
+
+Se o usuário `$EUID` pode confiar em `$directory` — a regra que `locate()` aplica a cada
+candidato, e o cache de templates ao seu subdiretório `templates/`: um diretório comum (não um
+link) desse usuário em que o grupo e os outros não podem escrever, sob ancestrais que só o root ou
+esse usuário podem alterar (graváveis por grupo ou por todos apenas com o sticky bit). Todo
+ancestral é verificado primeiro; depois ele **cria** um diretório ausente só para o dono (`0700`)
+quando o pai é desse usuário — ou, com `$sticky` (o que `locate()` passa para o diretório
+temporário do sistema), um pai do root com sticky bit — e não cria nada nos outros casos.
 
 ## Benchmarking
 

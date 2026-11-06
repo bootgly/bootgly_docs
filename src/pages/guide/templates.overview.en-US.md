@@ -175,7 +175,11 @@ Everything between `@!:` and `@!;` passes through byte-for-byte.
 
 ## Compilation cache
 
-Compiled templates live in `storage/cache/templates/`:
+Compiled templates live in `storage/cache/templates/` — or, for a process that cannot trust
+`storage/cache` (the demoted workers of a root launch), in its own
+`storage/cache-<uid>/templates/`, and in a private `bootgly-<uid>/<app>/templates/` in the system
+temporary directory when the storage tree itself belongs to another user or is group-writable.
+No identity ever runs a compiled file another one could write:
 
 - **File templates** are keyed by source path — editing the file overwrites the same cache
   entry, and a newer source mtime triggers recompilation.
@@ -183,6 +187,17 @@ Compiled templates live in `storage/cache/templates/`:
 - Keys are salted with the Bootgly version, so framework upgrades never reuse caches compiled
   by an older directive set.
 - Writes are atomic (temp file + rename) — a crashed compile never leaves a partial cache.
+- A compiled file is owner-only (`0600`); one that is not a regular file of the current user, or
+  that its group or others could write, is compiled again instead of being included.
+- A `templates/` directory that is not a plain directory of the current user, or that its group
+  or others can write, is never adopted (a process that already proved it keeps it until it
+  restarts): the render throws `TemplateException: Untrusted template
+  cache directory …` — `chmod 700` it (or give it back to its user). `<app>` is the first 16 hex
+  digits of the SHA-256 of the resolved storage root, one private directory per application.
+- `templates/` is checked once per process and user. One removed while serving (a cache cleared
+  by hand) is checked again and recreated owner-only — in a newly located cache directory when
+  its whole tree went away and cannot be made again, or can now be changed by another user. A tree
+  of its own that it cannot write throws `TemplateException: Unwritable template cache directory …`.
 
 ## Error handling
 

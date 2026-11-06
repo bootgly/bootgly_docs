@@ -168,7 +168,7 @@ Pass an array (or a prepared `Cache\Config`) to the constructor:
 | `driver` | `file` | all | Active driver |
 | `prefix` | `''` | all | Namespace prepended to every key |
 | `TTL` | `0` | all | Default TTL (seconds; `0` = forever) |
-| `path` | `…/storage/cache` | file | Base directory |
+| `path` | this process's own cache directory — `…/storage/cache`, `…/storage/cache-<uid>` or a private temp directory (see `Config::locate()`) | file | Base directory |
 | `segment` | `0` | shared | System V key (`0` derives one) |
 | `size` | `16 MiB` | shared | Segment size in bytes |
 | `host` / `port` | `127.0.0.1` / `6379` | redis | Server endpoint |
@@ -361,6 +361,62 @@ reads cost about 9-13 % more.
   for both still works; it simply opens its own socket.
 - **resolve() semantics** — hit/miss is decided by a single `fetch()`, so a stored `null`
   is treated as a miss and recomputed. Do not cache `null` values.
+
+```php
+Bootgly\ABI\Resources\Cache\Config::locate (null|string $storage = null): string
+```
+
+Resolves this process's own cache directory — the default `path` of the File driver and the
+directory compiled templates live under. A directory is used only when it is a plain directory
+of the current user that nobody else may write, under ancestors only root or that user can
+change; a missing one is created owner-only (`0700`) inside a parent of its own. In order:
+`storage/cache`, `storage/cache-<uid>` (what a root launch hands to the demoted workers), then a
+private `bootgly-<uid>/<app>` (one per storage root) in the system temporary directory, or in
+`/tmp` when that one cannot be trusted (a storage tree the process cannot trust: another user's
+or group-writable `storage/`, a host-owned bind mount). The storage root is checked as written
+before it is resolved: a component on the way that belongs to someone else, or a directory
+others may write without the sticky bit, keeps the process out of that tree. `$storage`
+defaults to the booted storage root, located once per user: a location in the storage tree is
+kept until `forget()` — under a sticky shared directory (`/tmp/app/storage`), only while the
+entry just below it is still the same directory of the same owner —, a temporary one is proven
+again on every call. A relative `$storage` is taken from the working directory, and `/` keeps its
+own `/cache`; a component of it that does not exist — on the written path or where one of its
+links leads — also keeps the process out of that tree. The location is per process and kept while
+it serves: a process moves only when it finds its cache tree gone or untrusted — a template
+compile after its `templates/` directory went away, a File write after the cache directory went
+away — and the other workers keep the old tree until then. Restart the workers after changing
+the permissions of `storage/`. Throws
+`RuntimeException`, naming the directories tried, when not even a temporary directory can be
+trusted.
+
+```php
+Bootgly\ABI\Resources\Cache\Config::forget (): void
+```
+
+Drops the current user's located cache directory, so the next `locate()` resolves it again — for
+code that found the directory gone (a cache cleared by hand while serving). The template cache
+calls it when its tree went away and cannot be made again, or can now be changed by another
+user; the File driver calls it on its next write when the directory is gone (reads miss until
+then).
+
+```php
+Bootgly\ABI\Resources\Cache\Config->located: bool
+```
+
+Whether this `Config`'s `path` is the located default (no `path` given) rather than a given one —
+read-only.
+
+```php
+Bootgly\ABI\Resources\Cache\Config::trust (string $directory, int $EUID, bool $sticky = false): bool
+```
+
+Whether user `$EUID` can trust `$directory` — the rule `locate()` applies to each candidate, and
+the template cache to its `templates/` subdirectory: a plain directory (not a link) of that user
+that its group and others cannot write, under ancestors only root or that user can change
+(group/world-writable ones only with the sticky bit). Every ancestor is checked first; then it
+**creates** a missing directory owner-only (`0700`) when its parent is that user's own — or,
+with `$sticky` (what `locate()` passes for the system temporary directory), a sticky one of
+root's — and creates nothing otherwise.
 
 ## Benchmarking
 

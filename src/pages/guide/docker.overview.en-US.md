@@ -165,7 +165,12 @@ Run that command once, inside the container (`docker run --rm --entrypoint chown
 bootgly: /bootgly/storage/sessions`), and start again. The kit image ships `storage/sessions`
 already owned by `bootgly`; a storage volume created from an older image has none, and the
 server creates it on its first root launch. `storage/cache` stays root's: root-run commands
-read what it holds.
+read what it holds. The workers keep their own cache tree instead — compiled templates and
+default file caches — in `storage/cache-<uid>` (`0700`), which the server creates and hands to
+`bootgly` on a root launch under the same rules (when it cannot, it says so and the workers
+cache in a private temporary directory instead of refusing to start). With a `storage/` you
+created on the host, neither root nor `bootgly` can trust the tree, so both keep their caches
+in a private `bootgly-<uid>/` directory of the container's temporary directory.
 
 The session store also refuses a path whose ancestors another account could replace — a
 directory owned by neither root nor `bootgly`, or writable by its group or by everyone. A

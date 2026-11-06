@@ -177,7 +177,11 @@ Tudo entre `@!:` e `@!;` passa byte a byte.
 
 ## Cache de compilação
 
-Templates compilados vivem em `storage/cache/templates/`:
+Templates compilados vivem em `storage/cache/templates/` — ou, para um processo que não pode
+confiar em `storage/cache` (os workers rebaixados de uma inicialização como root), em
+`storage/cache-<uid>/templates/`, a sua própria, e num `bootgly-<uid>/<app>/templates/` privado no
+diretório temporário do sistema quando a própria árvore de storage é de outro usuário ou gravável
+pelo grupo. Nenhuma identidade executa um arquivo compilado que outra poderia escrever:
 
 - **Templates de arquivo** são chaveados pelo caminho do fonte — editar o arquivo sobrescreve a
   mesma entrada de cache, e um mtime mais novo dispara a recompilação.
@@ -186,6 +190,18 @@ Templates compilados vivem em `storage/cache/templates/`:
   compilados por um conjunto de diretivas antigo.
 - Escritas são atômicas (arquivo temporário + rename) — uma compilação interrompida nunca deixa
   cache parcial.
+- Um arquivo compilado é só do dono (`0600`); um que não é arquivo comum do usuário atual, ou que
+  o grupo ou outros poderiam escrever, é compilado de novo em vez de ser incluído.
+- Um diretório `templates/` que não é um diretório comum do usuário atual, ou que o grupo ou outros
+  podem escrever, nunca é adotado (um processo que já o provou o mantém até reiniciar): o render
+  lança `TemplateException: Untrusted template cache
+  directory …` — aplique `chmod 700` (ou devolva-o ao seu usuário). `<app>` são os 16 primeiros
+  dígitos hexadecimais do SHA-256 da raiz de storage resolvida, um diretório privado por aplicação.
+- `templates/` é verificado uma vez por processo e usuário. Um removido enquanto o servidor atende
+  (um cache apagado à mão) é verificado de novo e recriado só para o dono — num diretório de cache
+  localizado de novo quando a árvore inteira sumiu e não pode ser refeita, ou agora pode ser alterada
+  por outro usuário. Uma árvore própria em que ele não pode escrever lança
+  `TemplateException: Unwritable template cache directory …`.
 
 ## Tratamento de erros
 
