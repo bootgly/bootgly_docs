@@ -1021,7 +1021,7 @@ projects/Blog/
 ```php
 use Web\App\Statics;
 
-yield $Router->route('/statics/:file*', new Statics, GET);
+yield $Router->route('/statics/:file*', new Statics, [GET, HEAD]);
 ```
 
 As páginas os referenciam pela URL:
@@ -1041,17 +1041,19 @@ Cache-Control: public, max-age=3600
 Content-Length: 4400
 ```
 
-O `Statics` mapeia 25 extensões comuns — CSS, JavaScript, JSON e source maps, HTML, SVG e os
-formatos usuais de imagem, fonte, vídeo, PDF e WebAssembly. Uma extensão desconhecida é enviada
-como `application/octet-stream`. Um caminho que sai da pasta `statics/` (`../`, codificado ou não)
-ou que aponta para um arquivo inexistente responde `404`.
+O `Statics` mapeia 26 extensões comuns — CSS, JavaScript, JSON e source maps, HTML, SVG, o web
+manifest e os formatos usuais de imagem, fonte, vídeo, PDF e WebAssembly. Uma extensão
+desconhecida é enviada como `application/octet-stream`. Um caminho que sai da pasta `statics/`
+(`../`, codificado ou não) ou que aponta para um arquivo inexistente responde `404`, assim como
+dotfiles (`.env`, `.git/config`) e fontes PHP, mesmo quando existem na pasta — só o `.well-known/`
+(RFC 8615) é servido, para arquivos como o `security.txt`.
 
 O construtor recebe a pasta, o parâmetro da rota e o valor de `Cache-Control`. Para nomes de
 arquivo com fingerprint (`app.3f9a1c.css`), que nunca mudam, deixe os navegadores guardá-los por
 um ano:
 
 ```php
-yield $Router->route('/statics/:file*', new Statics(cache: 'public, max-age=31536000, immutable'), GET);
+yield $Router->route('/statics/:file*', new Statics(cache: 'public, max-age=31536000, immutable'), [GET, HEAD]);
 ```
 
 ### Revalide e comprima
@@ -1065,7 +1067,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
 use Web\App\Statics;
 
-yield $Router->route('/statics/:file*', new Statics, GET, middlewares: [new ETag, new Compression]);
+yield $Router->route('/statics/:file*', new Statics, [GET, HEAD], middlewares: [new ETag, new Compression]);
 ```
 
 A primeira requisição recebe o corpo em gzip e uma tag; um navegador que devolve a tag recebe um

@@ -1007,7 +1007,7 @@ projects/Blog/
 ```php
 use Web\App\Statics;
 
-yield $Router->route('/statics/:file*', new Statics, GET);
+yield $Router->route('/statics/:file*', new Statics, [GET, HEAD]);
 ```
 
 Pages reference them by URL:
@@ -1027,16 +1027,18 @@ Cache-Control: public, max-age=3600
 Content-Length: 4400
 ```
 
-`Statics` maps 25 common extensions — CSS, JavaScript, JSON and source maps, HTML, SVG and the
-usual image, font, video, PDF and WebAssembly formats. An unknown extension is sent as
-`application/octet-stream`. A path that leaves the `statics/` folder (`../`, encoded or not) or
-names a missing file answers `404`.
+`Statics` maps 26 common extensions — CSS, JavaScript, JSON and source maps, HTML, SVG, the web
+manifest and the usual image, font, video, PDF and WebAssembly formats. An unknown extension is
+sent as `application/octet-stream`. A path that leaves the `statics/` folder (`../`, encoded or
+not) or names a missing file answers `404`, and so do dotfiles (`.env`, `.git/config`) and PHP
+sources, even when they exist in the folder — only `.well-known/` (RFC 8615) is served, for files
+such as `security.txt`.
 
 The constructor takes the folder, the route parameter and the `Cache-Control` value. For
 fingerprinted file names (`app.3f9a1c.css`) that never change, let browsers keep them for a year:
 
 ```php
-yield $Router->route('/statics/:file*', new Statics(cache: 'public, max-age=31536000, immutable'), GET);
+yield $Router->route('/statics/:file*', new Statics(cache: 'public, max-age=31536000, immutable'), [GET, HEAD]);
 ```
 
 ### Revalidate and compress
@@ -1050,7 +1052,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Compression;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
 use Web\App\Statics;
 
-yield $Router->route('/statics/:file*', new Statics, GET, middlewares: [new ETag, new Compression]);
+yield $Router->route('/statics/:file*', new Statics, [GET, HEAD], middlewares: [new ETag, new Compression]);
 ```
 
 The first request gets the gzipped body and a tag; a browser that sends the tag back gets an

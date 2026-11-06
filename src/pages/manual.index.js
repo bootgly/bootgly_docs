@@ -3383,8 +3383,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics and view conventions.',
-          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics e convenções de views.'
+          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics, single-page apps and view conventions.',
+          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics, single-page apps e convenções de views.'
         }
       },
       menu: {},
