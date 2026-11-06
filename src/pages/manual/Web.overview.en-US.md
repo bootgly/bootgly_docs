@@ -28,12 +28,25 @@ php bootgly projects create --platform=web
 
 ## How it boots
 
-The kit boots the optional platforms **before** the Bootgly platform, so Web projects find the platform autoloader already registered. `Web/autoboot.php` defines the platform constants (`WEB_ROOT_DIR`, `WEB_WORKING_DIR`, `WEB_VERSION`), registers the `Web\` autoloader and boots the platform singleton:
+The kit boots the optional platforms **before** the Bootgly platform, so Web projects find the platform autoloader already registered. `Web/autoboot.php` defines the platform constants (`WEB_ROOT_DIR`, `WEB_WORKING_DIR`, `WEB_VERSION`) and registers the `Web\` autoloader — with no Bootgly dependency, since Bootgly is not loaded yet. The platform root, the `Web` class, implements `Bootgly\API\Platform`, so it can only exist once Bootgly's own autoloader does: `Bootgly::autoboot()` creates it right after, before routing any command, defines the global `Web` constant and boots it:
 
 ```php
-const Web = new Web;
+// inside Bootgly::autoboot(), for each installed platform
+define('Web', new Web);   // class Web implements Bootgly\API\Platform
 Web->autoboot();
 ```
+
+When `Web/autoboot.php` runs after Bootgly instead — Composer loads a dependency's `files` before the package's own, so `vendor/autoload.php` alone (static analysis, a script) boots Bootgly first — the file mounts the root itself, through the same step:
+
+```php
+if (defined('Bootgly') === true) {
+   Bootgly::mount('Web');
+}
+```
+
+That order is too late for commands: Bootgly routes the command while it boots, before the platform's `autoboot.php` runs. A launcher that runs commands includes the platform's `autoboot.php` before Bootgly, as the platform and kit launchers do. A Bootgly older than 1.1 has no `mount()`, so the platform refuses it with a `LogicException`.
+
+A platform whose `autoboot.php` did not run (not installed) is skipped, a `Web` constant that already exists is left alone (a platform release older than 1.1.0 still creates its own root; that allowance goes in 2.0.0), and a root class that cannot be loaded or does not implement `Bootgly\API\Platform` stops the boot with an `Exception` that names it.
 
 The platform is a **class library** over `Bootgly\WPI`: there are no process-wide workables — each app boots per project, through its `.Project.php` signature.
 
@@ -100,4 +113,4 @@ The platform ships **exportable projects** under `Web/projects/` — the wizard'
 public function autoboot (): void
 ```
 
-Boots the Web platform singleton (the global `Web` constant). Guarded: booting twice throws an `Exception`. The platform itself registers no workables — apps boot per project.
+Boots the Web platform singleton (the global `Web` constant) — the one method of the `Bootgly\API\Platform` contract, called by `Bootgly::autoboot()`. Guarded: booting twice throws an `Exception`. The platform itself registers no workables — apps boot per project.

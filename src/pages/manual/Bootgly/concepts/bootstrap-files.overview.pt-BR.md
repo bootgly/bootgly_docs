@@ -10,7 +10,7 @@ O Bootgly possui três tipos de arquivos de bootstrap — e uma única convenç�
 
 Um processo Bootgly inicia por um único lançador: `bootgly`. A interface CLI, a plataforma Console e a plataforma Web (servida pelo próprio servidor HTTP CLI do Bootgly) começam todas ali, e sua primeira ação é dar `require` no `autoboot.php` da raiz. Não existe lançador SAPI web — inicializar sob um SAPI não-CLI (Apache, Nginx + FPM) é recusado com uma exceção explícita.
 
-O `autoboot.php` da raiz define as constantes `BOOTGLY_*`, registra o autoloader e inicializa as seis camadas na ordem de dependência (`ABI → ACI → ADI → API → CLI → WPI`). Ele executa uma vez por processo — uma guarda de idempotência torna qualquer `require` posterior um no-op.
+O `autoboot.php` da raiz define as constantes `BOOTGLY_*`, registra o autoloader e inicializa as seis camadas na ordem de dependência (`ABI → ACI → ADI → API → CLI → WPI`). Antes de o CLI rotear o comando, ele monta as raízes das plataformas cujo `autoboot.php` já rodou (`Console`, `Web`): o `autoboot.php` de cada plataforma — incluído pelo lançador antes do Bootgly, sem dependência do Bootgly — só define as suas constantes e o seu autoloader, então o Bootgly cria a raiz, define a constante global e a inicializa (`Bootgly::mount()`, veja as páginas [Console](/manual/Console) e [Web](/manual/Web)). Ele executa uma vez por processo — uma guarda de idempotência torna qualquer `require` posterior um no-op.
 
 ## Bootstrap de entrada de diretório (`autoboot.php`)
 

@@ -41,12 +41,25 @@ $booted =
    (@include __DIR__ . '/Bootgly/autoboot.php');
 ```
 
-O `Console/autoboot.php` define as constantes da plataforma (`CONSOLE_ROOT_DIR`, `CONSOLE_WORKING_DIR`, `CONSOLE_VERSION`), registra o autoloader `Console\` e boota o singleton da plataforma:
+O `Console/autoboot.php` define as constantes da plataforma (`CONSOLE_ROOT_DIR`, `CONSOLE_WORKING_DIR`, `CONSOLE_VERSION`) e registra o autoloader `Console\` — sem dependência do Bootgly, que ainda não foi carregado. A raiz da plataforma, a classe `Console`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Console` e a boota:
 
 ```php
-const Console = new Console;
+// dentro do Bootgly::autoboot(), para cada plataforma instalada
+define('Console', new Console);   // class Console implements Bootgly\API\Platform
 Console->autoboot();
 ```
+
+Quando o `Console/autoboot.php` roda depois do Bootgly — o Composer carrega os `files` de uma dependência antes dos do próprio pacote, então o `vendor/autoload.php` sozinho (análise estática, um script) sobe o Bootgly primeiro —, o próprio arquivo monta a raiz, pelo mesmo passo:
+
+```php
+if (defined('Bootgly') === true) {
+   Bootgly::mount('Console');
+}
+```
+
+Essa ordem é tarde demais para comandos: o Bootgly roteia o comando enquanto sobe, antes de o `autoboot.php` da plataforma rodar. Um lançador que roda comandos inclui o `autoboot.php` da plataforma antes do Bootgly, como fazem os lançadores das plataformas e do kit. Um Bootgly anterior à 1.1 não tem `mount()`, então a plataforma o recusa com uma `LogicException`.
+
+Uma plataforma cujo `autoboot.php` não rodou (não instalada) é pulada, uma constante `Console` que já existe é deixada como está (uma release da plataforma anterior à 1.1.0 ainda cria a própria raiz; essa tolerância sai na 2.0.0), e uma classe raiz que não pode ser carregada ou não implementa `Bootgly\API\Platform` interrompe o boot com uma `Exception` que a nomeia.
 
 A plataforma é uma **biblioteca de classes** sobre `Bootgly\CLI`: não há workables de processo — cada app boota por projeto, através da sua assinatura `.Project.php`.
 
@@ -98,4 +111,4 @@ A plataforma traz **projetos exportáveis** em `Console/projects/` — o picker 
 public function autoboot (): void
 ```
 
-Boota o singleton da plataforma Console (a constante global `Console`). Protegido: bootar duas vezes lança uma `Exception`. A plataforma em si não registra workables — apps bootam por projeto.
+Boota o singleton da plataforma Console (a constante global `Console`) — o único método do contrato `Bootgly\API\Platform`, chamado pelo `Bootgly::autoboot()`. Protegido: bootar duas vezes lança uma `Exception`. A plataforma em si não registra workables — apps bootam por projeto.

@@ -28,12 +28,25 @@ php bootgly projects create --platform=web
 
 ## Como ela inicializa
 
-O kit inicializa as plataformas opcionais **antes** da plataforma Bootgly, então projetos Web encontram o autoloader da plataforma já registrado. O `Web/autoboot.php` define as constantes da plataforma (`WEB_ROOT_DIR`, `WEB_WORKING_DIR`, `WEB_VERSION`), registra o autoloader `Web\` e inicializa o singleton da plataforma:
+O kit inicializa as plataformas opcionais **antes** da plataforma Bootgly, então projetos Web encontram o autoloader da plataforma já registrado. O `Web/autoboot.php` define as constantes da plataforma (`WEB_ROOT_DIR`, `WEB_WORKING_DIR`, `WEB_VERSION`) e registra o autoloader `Web\` — sem dependência do Bootgly, que ainda não foi carregado. A raiz da plataforma, a classe `Web`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Web` e a inicializa:
 
 ```php
-const Web = new Web;
+// dentro do Bootgly::autoboot(), para cada plataforma instalada
+define('Web', new Web);   // class Web implements Bootgly\API\Platform
 Web->autoboot();
 ```
+
+Quando o `Web/autoboot.php` roda depois do Bootgly — o Composer carrega os `files` de uma dependência antes dos do próprio pacote, então o `vendor/autoload.php` sozinho (análise estática, um script) sobe o Bootgly primeiro —, o próprio arquivo monta a raiz, pelo mesmo passo:
+
+```php
+if (defined('Bootgly') === true) {
+   Bootgly::mount('Web');
+}
+```
+
+Essa ordem é tarde demais para comandos: o Bootgly roteia o comando enquanto sobe, antes de o `autoboot.php` da plataforma rodar. Um lançador que roda comandos inclui o `autoboot.php` da plataforma antes do Bootgly, como fazem os lançadores das plataformas e do kit. Um Bootgly anterior à 1.1 não tem `mount()`, então a plataforma o recusa com uma `LogicException`.
+
+Uma plataforma cujo `autoboot.php` não rodou (não instalada) é pulada, uma constante `Web` que já existe é deixada como está (uma release da plataforma anterior à 1.1.0 ainda cria a própria raiz; essa tolerância sai na 2.0.0), e uma classe raiz que não pode ser carregada ou não implementa `Bootgly\API\Platform` interrompe o boot com uma `Exception` que a nomeia.
 
 A plataforma é uma **biblioteca de classes** sobre `Bootgly\WPI`: não há workables por processo — cada app inicializa por projeto, através da sua assinatura `.Project.php`.
 
@@ -100,4 +113,4 @@ A plataforma inclui **projetos exportáveis** em `Web/projects/` — o picker *I
 public function autoboot (): void
 ```
 
-Inicializa o singleton da plataforma Web (a constante global `Web`). Protegido: inicializar duas vezes lança uma `Exception`. A plataforma em si não registra workables — apps inicializam por projeto.
+Inicializa o singleton da plataforma Web (a constante global `Web`) — o único método do contrato `Bootgly\API\Platform`, chamado pelo `Bootgly::autoboot()`. Protegido: inicializar duas vezes lança uma `Exception`. A plataforma em si não registra workables — apps inicializam por projeto.

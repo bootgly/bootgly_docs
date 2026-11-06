@@ -10,7 +10,7 @@ Bootgly has three kinds of bootstrap files — and one naming convention that te
 
 A Bootgly process starts through one launcher: `bootgly`. The CLI interface, the Console platform and the Web platform (served by Bootgly's own CLI HTTP server) all begin there, and its first act is to require the root `autoboot.php`. There is no web-SAPI launcher — booting under a non-CLI SAPI (Apache, Nginx + FPM) is refused with an explicit exception.
 
-The root `autoboot.php` defines the `BOOTGLY_*` constants, registers the autoloader and boots the six layers in dependency order (`ABI → ACI → ADI → API → CLI → WPI`). It runs once per process — an idempotency guard makes any later `require` a no-op.
+The root `autoboot.php` defines the `BOOTGLY_*` constants, registers the autoloader and boots the six layers in dependency order (`ABI → ACI → ADI → API → CLI → WPI`). Before CLI routes the command, it mounts the roots of the platforms whose `autoboot.php` already ran (`Console`, `Web`): each platform's own `autoboot.php` — included by the launcher before Bootgly, with no Bootgly dependency — only defines its constants and autoloader, so Bootgly creates its root, defines the global constant and boots it (`Bootgly::mount()`, see the [Console](/manual/Console) and [Web](/manual/Web) pages). It runs once per process — an idempotency guard makes any later `require` a no-op.
 
 ## Directory-entry bootstrap (`autoboot.php`)
 
