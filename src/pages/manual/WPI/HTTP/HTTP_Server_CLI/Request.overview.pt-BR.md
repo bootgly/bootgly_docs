@@ -606,6 +606,8 @@ Request::$maxRanges = 0;
 
 `Session`: o objeto de sessão, inicializado sob demanda e persistido pelo handler configurado (baseado em cache, driver `file` por padrão).
 
+Por padrão os registros ficam em `storage/sessions/cache`, ao lado da chave de sessão (`storage/sessions/.cache.key`). Os dois diretórios são criados só para o dono (`0700`), e nenhum deles pode ser um link, gravável pelo grupo ou por todos, ou pertencer a outro usuário — seja a chave gerenciada ou um `secret` explícito —, então um processo que não é dono deles (o root, sobre o diretório que uma inicialização como root entregou ao usuário de runtime dos workers) recusa o armazenamento em vez de ler ou escrever por ele. Versões anteriores guardavam os registros em `storage/cache`: uma atualização começa com o armazenamento vazio, então cada visitante entra de novo uma vez, e as entradas `session:` antigas que ficam em `storage/cache` podem ser apagadas. Para manter os registros em outro lugar, informe um `path` próprio ao handler.
+
 ```php
 $Request->Session; // Session object
 ```

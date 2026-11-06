@@ -150,6 +150,35 @@ registro de projetos — é entregue a você quando o comando termina, então se
 `git` mexem nele sem `sudo`. O `storage/` é do runtime: o que os servidores escrevem nele
 continua pertencendo ao root e à conta `bootgly`.
 
+Os workers de um servidor HTTP escrevem a chave e os registros de sessão em
+`storage/sessions` como `bootgly`. Numa inicialização como root, o servidor cria esse
+diretório quando ele falta e o entrega à conta `bootgly`, só para o dono (`0700`). Um que já
+existe e não é um diretório comum de `bootgly` em que só o dono pode escrever — deixado por
+uma execução antiga como root, criado por você, um link ou gravável pelo grupo ou por todos —
+nunca é cedido: o servidor se
+recusa a iniciar e diz qual é e como corrigir:
+
+```
+Server not started: storage/sessions is not bootgly's and was left as found: make it bootgly's
+yourself. The workers run as bootgly and write there: `chown -R bootgly: /bootgly/storage/sessions`
+before starting.
+```
+
+Rode esse comando uma vez, dentro do container (`docker run --rm --entrypoint chown … -R
+bootgly: /bootgly/storage/sessions`), e inicie de novo. A imagem do kit já traz
+`storage/sessions` pertencendo a `bootgly`; um volume de storage criado a partir de uma imagem
+mais antiga não tem esse diretório, e o servidor o cria na primeira inicialização como root.
+O `storage/cache` continua do root: comandos executados como root leem o que ele guarda.
+
+O armazenamento de sessões também recusa um caminho cujos ancestrais outra conta poderia
+substituir — um diretório que não é do root nem de `bootgly`, ou gravável pelo grupo ou por
+todos. Um `storage/` criado por você no host pertence à sua conta do host, então numa
+inicialização como root o servidor sobe, mas avisa que todo acesso à sessão vai falhar. Se o
+seu projeto HTTP usa sessões, entregue o diretório montado ao root dentro do container
+(`docker run --rm --entrypoint chown … root: /bootgly/storage`) — e retire qualquer permissão
+de escrita do grupo ou de todos (`chmod go-w`) — ou deixe o Docker manter o volume (sem bind
+mount). O aviso indica o ancestral e o único comando que o resolve.
+
 Depois que o wizard rodar, isso lista seus projetos e os exemplos importados.
 
 Duas consequências que vale dizer sem rodeios:

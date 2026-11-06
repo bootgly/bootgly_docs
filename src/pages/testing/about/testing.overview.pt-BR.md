@@ -99,6 +99,10 @@ return new Suite(
 );
 ```
 
+### Uma suite conduzida pelo próprio `autoBoot`
+
+O `autoBoot` também aceita uma closure: a suite então conduz o próprio ciclo de vida — as suites E2E ao vivo sobem um servidor e conduzem os casos por ele. Seja quem for que conduza os casos, uma suite que lista casos e termina com **nenhum deles executado ou registrado** reprova a execução com `The autoBoot of "<suite>" returned without running or recording any of its cases.` Um caso pulado de propósito (`$Suite->skip(...)`) conta como registrado; um caso apenas marcado como "not reached" não conta. Um harness que nunca alcançou o servidor jamais passa como uma suite verde vazia.
+
 ## Casos de teste
 
 Os arquivos de caso de teste possuem duas estruturas principais: uma para a API Básica e outra para a API Avançada.

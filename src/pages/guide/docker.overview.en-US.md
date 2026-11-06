@@ -148,6 +148,34 @@ project registry — is handed to you when the command finishes, so your editor 
 can touch it without `sudo`. `storage/` is the runtime's: what the servers write there stays
 owned by root and by the `bootgly` account.
 
+The workers of an HTTP server write the session key and records under `storage/sessions` as
+`bootgly`. On a root launch, the server creates that directory when it is missing and hands
+it to `bootgly`, owner-only (`0700`). One that already exists and is not a plain directory of
+`bootgly`'s that only its owner can write — left by an older run as root, created by you, a
+link, or group- or world-writable — is never given away: the server refuses to start and says which one and how
+to fix it:
+
+```
+Server not started: storage/sessions is not bootgly's and was left as found: make it bootgly's
+yourself. The workers run as bootgly and write there: `chown -R bootgly: /bootgly/storage/sessions`
+before starting.
+```
+
+Run that command once, inside the container (`docker run --rm --entrypoint chown … -R
+bootgly: /bootgly/storage/sessions`), and start again. The kit image ships `storage/sessions`
+already owned by `bootgly`; a storage volume created from an older image has none, and the
+server creates it on its first root launch. `storage/cache` stays root's: root-run commands
+read what it holds.
+
+The session store also refuses a path whose ancestors another account could replace — a
+directory owned by neither root nor `bootgly`, or writable by its group or by everyone. A
+`storage/` you created on the host belongs to your host account, so on a root launch the
+server starts but warns that every session access will fail. If your HTTP project uses
+sessions, give the mounted directory to root inside the container (`docker run --rm
+--entrypoint chown … root: /bootgly/storage`) — and drop any group/world write bit
+(`chmod go-w`) — or let Docker keep the volume (no bind mount). The warning names the
+ancestor and the one command that clears it.
+
 Once the wizard has run, that lists your projects and the stocked examples.
 
 Two consequences worth stating plainly:

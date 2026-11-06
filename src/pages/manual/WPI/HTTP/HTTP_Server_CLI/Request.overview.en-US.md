@@ -602,6 +602,8 @@ Request::$maxRanges = 0;
 
 `Session`: the session object, lazy-initialized and persisted through the configured handler (cache-backed, `file` driver by default).
 
+By default the records live under `storage/sessions/cache`, beside the session key (`storage/sessions/.cache.key`). Both directories are created owner-only (`0700`), and neither may be a link, group- or world-writable, or owned by another user — whether the key is managed or an explicit `secret` — so a process that does not own them (root, over the directory a root launch handed to the workers' runtime user) refuses the store instead of reading or writing through it. Earlier releases kept the records in `storage/cache`: an upgrade starts from an empty store, so every visitor signs in again once, and the old `session:` entries left in `storage/cache` can be deleted. To keep the records elsewhere, give the handler its own `path`.
+
 ```php
 $Request->Session; // Session object
 ```

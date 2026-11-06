@@ -196,6 +196,20 @@ $Server->configure(
 
 O Bootgly resolve o UID/GID de destino, inicializa grupos suplementares e então aplica `setgid()` / `setuid()` nessa ordem.
 
+Os workers rodam como esse usuário desde a primeira requisição, então o que eles escrevem no diretório de storage já precisa ser deles. Antes do fork, uma inicialização como root com `user` prepara os diretórios de storage que os workers do nó escrevem — no `HTTP_Server_CLI`, `storage/sessions` (a chave e os registros de sessão, só para o dono):
+
+| Encontrado | O que acontece |
+| --- | --- |
+| Ausente | Criado com o modo do nó (`0700` para `sessions/`) e entregue ao `user`. |
+| Já é do `user`, sem permissão de escrita para grupo ou outros além desse modo | Usado como está — nunca recebe chown de novo. |
+| Um diretório de outro dono | O servidor não inicia: registra `Server not started: storage/<nome> is not <user>'s …` com o `chown -R` a rodar e sai com status 1. |
+| Do `user`, mas gravável pelo grupo ou por todos | O servidor não inicia e indica o `chmod` a rodar. |
+| Um link simbólico, ou algo que não é diretório | O servidor não inicia: o diretório de um worker nunca é um destino escolhido por outra pessoa. |
+
+O `storage/cache` não é entregue: código executado como root — um comando de CLI, o runner de testes — lê o que ele guarda. Um ancestral de um diretório de worker que outra conta poderia substituir — um link, que não é do root nem do `user`, ou gravável pelo grupo ou por todos sem o sticky bit — é informado num aviso com o ancestral, a causa e o remédio (o armazenamento de sessões padrão recusa esse caminho), mas não impede o servidor de subir.
+
+O master se rebaixa logo após o fork; cada worker se rebaixa assim que seu listener está pronto. O master espera até conseguir sinalizar todos os workers (até 5 segundos) antes de o `start()` seguir, então um comando ou um stop enviado logo após o servidor subir chega a todos os workers.
+
 ## Handler de Dados
 
 `TCP_Server_CLI` expõe um único método público para registrar o handler:

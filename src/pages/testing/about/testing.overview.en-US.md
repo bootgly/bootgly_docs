@@ -99,6 +99,10 @@ return new Suite(
 );
 ```
 
+### A suite driven by its own `autoBoot`
+
+`autoBoot` also takes a closure: the suite then runs its own lifecycle — the live E2E suites start a server and drive their cases through it. Whatever drives the cases, a suite that lists cases and ends with **none of them run or recorded** fails the run with `The autoBoot of "<suite>" returned without running or recording any of its cases.` A case it skips on purpose (`$Suite->skip(...)`) counts as recorded; a case only settled as "not reached" does not. A harness that never reached its server can never pass as an empty green suite.
+
 ## Test cases
 
 Test case files have two main structures: one for the Basic API and another for the Advanced API.

@@ -196,6 +196,20 @@ $Server->configure(
 
 Bootgly resolves the target UID/GID, initializes supplementary groups and then applies `setgid()` / `setuid()` in that order.
 
+The workers run as that user from their first request on, so what they write under the storage directory must already be theirs. Before forking, a root launch with a `user` prepares the storage directories the node's workers write — for `HTTP_Server_CLI`, `storage/sessions` (the session key and records, owner-only):
+
+| Found | What happens |
+| --- | --- |
+| Missing | Created with the node's mode (`0700` for `sessions/`) and handed to the `user`. |
+| Already the `user`'s, not group- or world-writable beyond that mode | Used as is — never chowned again. |
+| A directory of another owner | The server does not start: it logs `Server not started: storage/<name> is not <user>'s …` with the `chown -R` to run, and exits with status 1. |
+| The `user`'s, but group/world-writable | The server does not start, naming the `chmod` to run. |
+| A symbolic link, or not a directory | The server does not start: a worker's directory is never a target somebody chose. |
+
+`storage/cache` is not handed over: root-run code — a CLI command, the test runner — reads what it holds. An ancestor of a worker directory that another account could replace — a link, owned by neither root nor the `user`, or group/world-writable without the sticky bit — is reported in a warning naming the ancestor, the cause and its remedy (the default session store refuses such a path), but does not stop the server.
+
+The master demotes right after forking; each worker demotes once its listener is in place. The master waits until it can signal every worker (up to 5 seconds) before `start()` goes on, so a command or a stop sent right after the server starts reaches every worker.
+
 ## Data Handler
 
 `TCP_Server_CLI` exposes one public handler registration method:
