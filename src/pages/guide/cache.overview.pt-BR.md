@@ -354,7 +354,8 @@ mais.
 - **Drivers** — `Cache\Drivers\{Memory, File, APCu, Shared, Redis}`. Memory mantém as entradas
   em um array PHP por processo (sem serialização, sem locks; o mais rápido, mas não compartilhado
   entre workers e limpo ao encerrar o processo); File grava um arquivo por chave
-  com sharding por hash (temp + rename atômico, `flock` para contadores); Shared usa um segmento
+  com sharding por hash (temp + rename atômico por `File->replace()`, sem sincronizar com o
+  disco — um registro pode ser refeito —, `flock` para contadores); Shared usa um segmento
   System V + semáforo com um índice de chaves vivas para `clear`/`purge`; Redis mapeia o
   contrato para `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`. Um contador com
   `TTL` e `swap`/`evict`/`renew` rodam como um script `EVAL` cada, e o Redis confere cada

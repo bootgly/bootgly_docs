@@ -523,6 +523,46 @@ export default {
       }
     }
   },
+  '/ABI/IO': {
+    config: null,
+    data: {
+      '*': {
+        title: 'IO'
+      }
+    }
+  },
+  '/ABI/IO/FS': {
+    config: null,
+    data: {
+      '*': {
+        title: 'FS'
+      }
+    }
+  },
+  '/ABI/IO/FS/File': {
+    config: {
+      icon: 'description',
+      status: 'new',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'Replace a file atomically and durably, with its permissions set before the first byte, and serialize writers across processes with advisory locks.',
+          'pt-BR': 'Substitua um arquivo de forma atômica e durável, com as permissões definidas antes do primeiro byte, e serialize escritores entre processos com locks consultivos.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.IO.FS'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'File'
+      }
+    }
+  },
 
   // ADI
   '/ADI': {

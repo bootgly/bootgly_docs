@@ -160,6 +160,12 @@ O driver File varre o diretório de prontos a cada reserve (`O(N·log N)`), o qu
 backlogs modestos; prefira **Redis** quando uma fila acumula um backlog grande ou os workers
 estão em hosts diferentes.
 
+O driver File escreve cada job de forma atômica (um worker vê o job inteiro ou não o vê) mas não
+o sincroniza com o disco: uma queda de energia ou uma falha do kernel pode perder os jobs escritos
+logo antes dela — inclusive um job liberado ou recuperado logo antes, que pode voltar como um
+arquivo vazio que a fila pula. Prefira **Redis** (com persistência) quando todo job precisa
+sobreviver à máquina.
+
 ## Eventos de ciclo de vida
 
 A fila emite eventos de domínio pelo barramento de eventos da ABI (`Bootgly\ABI\Events\Emitter`).

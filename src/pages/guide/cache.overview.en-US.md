@@ -343,7 +343,8 @@ reads cost about 9-13 % more.
 - **Drivers** — `Cache\Drivers\{Memory, File, APCu, Shared, Redis}`. Memory holds entries in a
   per-process PHP array (no serialization, no locks; fastest, but not shared across workers and
   cleared on process exit); File stores one hash-sharded
-  file per key (atomic temp + rename, `flock` for counters); Shared uses a System V segment +
+  file per key (atomic temp + rename through `File->replace()`, not synced to the disk — a
+  record can be rebuilt —, `flock` for counters); Shared uses a System V segment +
   semaphore with a live-key index for `clear`/`purge`; Redis maps the contract to
   `SET`/`GET`/`INCRBY`/`EXPIRE`/`TTL`/`SADD`/`SMEMBERS`/`SCAN`. A counter with a `TTL` and
   `swap`/`evict`/`renew` run as one `EVAL` script each, and Redis checks every command inside

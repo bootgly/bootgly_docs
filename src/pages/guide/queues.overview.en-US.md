@@ -158,6 +158,11 @@ Queues::push($Job, 'emails');
 The File driver scans the ready directory per reserve (`O(N·log N)`), which is fine for modest
 backlogs; prefer **Redis** when a single queue holds a large backlog or workers span hosts.
 
+The File driver writes each job atomically (a worker sees a job whole or not at all) but does not
+sync it to the disk: a power loss or a kernel crash may lose the jobs written just before it — a
+job released or recovered just before it included, which may come back as an empty file the
+queue skips. Prefer **Redis** (with persistence) when every job must survive the machine.
+
 ## Lifecycle events
 
 The queue emits domain events through the ABI event bus (`Bootgly\ABI\Events\Emitter`).
