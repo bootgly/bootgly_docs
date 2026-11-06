@@ -1417,6 +1417,95 @@ export default {
     }
   },
 
+  // API
+  '/API': {
+    config: {
+      icon: 'api',
+      status: 'new',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'The application layer of Bootgly: projects, configuration, the environment, transport-independent security primitives and the RPC protocols — a JSON-RPC 2.0 dispatcher and an MCP server core.',
+          'pt-BR': 'A camada de aplicação do Bootgly: projetos, configuração, o ambiente, primitivas de segurança independentes de transporte e os protocolos RPC — um dispatcher JSON-RPC 2.0 e um núcleo de servidor MCP.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'api',
+          label: 'Bootgly API'
+        },
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Application Programming Interface'
+      }
+    }
+  },
+  '/API/RPC': {
+    config: null,
+    data: {
+      '*': {
+        title: 'RPC'
+      }
+    }
+  },
+  '/API/RPC/JSON': {
+    config: {
+      icon: 'swap_horiz',
+      status: 'new',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'A transport-independent JSON-RPC 2.0 dispatcher: methods by name, single requests, batches and notifications, designed errors with Fault, hidden internal errors with a Reporter, the batch limit and an HTTP route recipe.',
+          'pt-BR': 'Um dispatcher JSON-RPC 2.0 independente de transporte: métodos por nome, requisições únicas, batches e notificações, erros planejados com Fault, erros internos escondidos com um Reporter, o limite de batch e uma receita de rota HTTP.'
+        }
+      },
+      menu: {
+        subheader: '.API.RPC'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'JSON-RPC'
+      }
+    }
+  },
+  '/API/RPC/MCP': {
+    config: {
+      icon: 'smart_toy',
+      status: 'new',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'The Model Context Protocol server core over JSON-RPC: revision negotiation, tools, resources and prompts from your closures, the Initializer for the session, the empty-result rule, and what stays with the transport.',
+          'pt-BR': 'O núcleo de servidor do Model Context Protocol sobre JSON-RPC: negociação de revisão, tools, resources e prompts a partir das suas closures, o Initializer para a sessão, a regra do resultado vazio e o que fica com o transporte.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'MCP server'
+      },
+      'pt-BR': {
+        title: 'Servidor MCP'
+      }
+    }
+  },
+
   // CLI
   '/CLI': {
     config: {
