@@ -74,11 +74,31 @@ $Bearer = new Bearer(
    error: 'invalid_token',
    description: 'The access token is missing or invalid.',
    URI: 'https://docs.bootgly.com/manual/WPI/HTTP/HTTP_Server_CLI/Authentication',
-   scope: 'demo:read'
+   scope: 'demo:read',
+   metadata: 'https://api.example.com/.well-known/oauth-protected-resource'
 );
 ```
 
-Ao falhar, o guard emite um header `WWW-Authenticate` Bearer com atributos no estilo RFC 6750.
+Ao falhar, o guard emite um header `WWW-Authenticate` Bearer com atributos no estilo RFC 6750:
+
+```http
+WWW-Authenticate: Bearer realm="Bootgly API", error="invalid_token", error_description="The access token is missing or invalid.", error_uri="https://docs.bootgly.com/manual/WPI/HTTP/HTTP_Server_CLI/Authentication", scope="demo:read", resource_metadata="https://api.example.com/.well-known/oauth-protected-resource"
+```
+
+`metadata` é a URL de metadados do recurso protegido (RFC 9728). Ela é enviada como `resource_metadata="…"` depois dos outros atributos, para que clientes OAuth (entre eles clientes MCP) descubram qual servidor de autorização emite tokens para este recurso. Deixe-a vazia (o padrão) para omiti-la. Atributos vazios são sempre omitidos.
+
+Todo valor de atributo é escrito como quoted-string da RFC 9110: `"` e `\` são escapados com uma barra invertida, então `realm: 'Team "Ops" \ API'` vira `realm="Team \"Ops\" \\ API"`. Um valor com caractere de controle (CR, LF, NUL, HTAB, DEL…) nunca pode ser citado com segurança, então o construtor do `Bearer` (e do `JWT`) o recusa com `InvalidArgumentException` — um challenge mal configurado falha no boot, nunca durante a requisição.
+
+Os atributos da RFC 6750 são mais estreitos que uma quoted-string, e o construtor impõe seus conjuntos de caracteres (RFC 6750 §3), nomeando o parâmetro na mensagem da exceção:
+
+| Argumento | Atributo | Caracteres permitidos |
+|---|---|---|
+| `error` | `error` | ASCII imprimível e espaço, sem `"` e `\` (`%x20-21 / %x23-5B / %x5D-7E`) |
+| `description` | `error_description` | os mesmos de `error` |
+| `URI` | `error_uri` | uma URI-reference de ASCII imprimível sem espaço, `"` e `\` (`%x21 / %x23-5B / %x5D-7E`) |
+| `scope` | `scope` | scope-tokens (ASCII imprimível sem espaço, `"` e `\`) separados por um espaço |
+
+Assim, `description: 'The "token" expired'` ou `scope: 'files:read  files:write'` (dois espaços) lançam `InvalidArgumentException`, enquanto `realm` e `metadata` mantêm a regra de quoted-string acima (aspas, barras invertidas e bytes `0x80`–`0xFF` permitidos). Valores vazios são omitidos, nunca recusados.
 
 ## Middleware Authentication
 
@@ -550,6 +570,54 @@ yield $Router->route('/api/private', $Handler, GET, middlewares: [new Authentica
 
 Neste exemplo, o Bootgly tenta JWT primeiro e depois o Bearer opaco. Se ambos falharem, o guard JWT define o challenge porque é o primeiro guard.
 
+## Protegendo um endpoint MCP
+
+Um servidor MCP exposto via Streamable HTTP é um recurso protegido OAuth: uma chamada sem autenticação deve responder `401` com um challenge que aponta para os metadados do recurso, um token sem scope suficiente deve responder `403 insufficient_scope`, e clientes de navegador precisam conseguir ler os headers de sessão e de challenge. Os três middlewares cobrem isso juntos:
+
+```php
+use Bootgly\API\Security\Identity;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorizing;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization\Scope;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
+
+$Bearer = new Bearer(
+   Resolver: function (string $token): null|Identity {
+      // Look the access token up in your token store.
+      return $token === 'demo-mcp-token'
+         ? new Identity(id: 'mcp-client', scopes: ['mcp:read'])
+         : null;
+   },
+   realm: 'mcp',
+   metadata: 'https://mcp.example.com/.well-known/oauth-protected-resource'
+);
+
+yield $Router->route('/mcp', $Handler, [GET, POST, DELETE, OPTIONS], middlewares: [
+   new CORS(
+      origins: ['https://app.example.com'],
+      headers: ['Content-Type', 'Authorization', 'Mcp-Session-Id', 'Mcp-Protocol-Version'],
+      expose: ['Mcp-Session-Id', 'WWW-Authenticate']
+   ),
+   new Authentication(new Authenticating($Bearer)),
+   new Authorization(new Authorizing(
+      new Scope('mcp:tools', Bearer: $Bearer)
+   )),
+]);
+```
+
+O que cada requisição recebe:
+
+- Sem token ou com token desconhecido → `401 Unauthorized` com `WWW-Authenticate: Bearer realm="mcp", error="invalid_token", resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"`.
+- Um token cuja identidade não tem `mcp:tools` → `403 Forbidden` com `WWW-Authenticate: Bearer realm="mcp", error="insufficient_scope", scope="mcp:tools", resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"`, para que o cliente peça um token com esse scope.
+- Um preflight (`OPTIONS`) de `https://app.example.com` → `204` do `CORS`, antes de Authentication executar.
+
+Mantenha o `CORS` primeiro: assim as respostas `401`/`403` ainda carregam `Access-Control-Allow-Origin` e `Access-Control-Expose-Headers: Mcp-Session-Id, WWW-Authenticate`, que é o que permite ao JavaScript do navegador ler o challenge. Uma requisição de uma origem fora da allowlist recebe `403` do `CORS` sem nenhum dos dois headers.
+
+O guard `JWT` é um `Bearer`, então aceita o mesmo argumento `metadata:` e pode ser passado ao `Scope` do mesmo jeito. Veja a página [Authorization](/manual/WPI/HTTP/HTTP_Server_CLI/Authorization/) para o gate `Scope` e a página [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/) para o `CORS`.
+
 ## Projeto demo
 
 O repositório inclui exemplos funcionais em `projects/Demo/HTTP_Server_CLI`:
@@ -629,3 +697,49 @@ public function __construct (null|string|\Bootgly\ABI\Resources\Cache $storage =
 ```
 
 Cria o store de JWT num diretório (o driver `file`) ou num `Cache` pronto cujo driver é atômico. `$secret` (≥ 32 bytes) assina cada registro; sem ele, cada host deriva o seu em `{path}{prefix}.secret` — permitido só para os drivers locais ao host `file`, `memory` e `shared`. Lança `InvalidArgumentException` para um prefixo vazio ou com separador de diretório, um segredo curto, um driver não atômico (APCu), ou um backend injetado que outros hosts alcançam (`redis`, um driver customizado) sem segredo.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer
+
+```php
+public function __construct (Closure $Resolver, string $realm = 'Protected area', string $error = 'invalid_token', string $description = '', string $URI = '', string $scope = '', string $metadata = '')
+```
+
+Cria um guard Bearer opaco. `$Resolver` recebe `(string $token, Request $Request)` e retorna `false`/`null` para negar, `true` para expor o token como `$Request->identity`, ou qualquer outro valor para expor esse valor. Os demais argumentos preenchem o challenge `401`: `realm`, `error`, `error_description`, `error_uri`, `scope` e, por último, `resource_metadata`; valores vazios são omitidos. Todo valor é escrito como quoted-string da RFC 9110; um valor com caractere de controle lança `InvalidArgumentException`, assim como um `error`, `description`, `URI` ou `scope` fora do seu conjunto de caracteres da RFC 6750 §3 (veja a tabela acima). O guard `JWT` recebe os mesmos argumentos de challenge depois de `$Token` e `$Policies`.
+
+```php
+public private(set) string $metadata
+```
+
+A URL de metadados do recurso protegido (RFC 9728) enviada como `resource_metadata="…"` tanto no challenge `401` quanto no challenge `403` escrito por `forbid()`. Vazia (o padrão) a omite.
+
+```php
+public function forbid (object $Response, array $scopes): object
+```
+
+Escreve `403 Forbidden` e `WWW-Authenticate: Bearer realm="…", error="insufficient_scope", scope="…"` (RFC 6750 §3.1) em `$Response`, seguido de `resource_metadata="…"` quando `metadata` está definido. `$scopes` são os scopes que o recurso exige, enviados separados por espaço; os próprios `error`, `description`, `URI` e `scope` do guard não são usados aqui. Uma lista vazia omite o atributo `scope`. O gate `Scope` o chama quando recebe um `Bearer:`. Lança `InvalidArgumentException` quando um scope não é um scope-token da RFC 6750 (ASCII imprimível sem espaço, `"` e `\`; vazio também é recusado).
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating\Challenge
+
+```php
+public static function quote (string $value): string
+```
+
+Retorna `$value` como quoted-string da RFC 9110: entre aspas duplas, com `\` e `"` escapados por uma barra invertida; bytes `0x80`–`0xFF` passam inalterados. Lança `InvalidArgumentException` quando o valor contém caractere de controle (qualquer byte `0x00`–`0x1F`, HTAB incluído, ou `0x7F`). Os guards o usam em todo atributo de challenge.
+
+```php
+public static function announce (object $Response, string $challenge, int $code = 401): object
+```
+
+Escreve `$challenge` como header `WWW-Authenticate` e marca a resposta com `$code`: `401` (o padrão) para credencial ausente ou inválida, `403` para uma válida sem scope. Uma resposta sem objeto `Header`, mas invocável, é chamada como `$Response($code, ['WWW-Authenticate' => $challenge], 'Unauthorized'|'Forbidden')`. Lança `InvalidArgumentException` quando `$code` não é `401` nem `403`, antes de escrever qualquer coisa.
+
+```php
+public static function mark (object $Response, int $code = 401): object
+```
+
+Marca `$Response` com o status `$code` — pelo método `code()` ou pela propriedade `code` — e a retorna. `$code` é `401` (o padrão) para credencial ausente ou inválida, ou `403` para um challenge `insufficient_scope` (RFC 6750 §3.1). Lança `InvalidArgumentException` para qualquer outro status.
+
+```php
+public static function reject (object $Response, int $code = 401): object
+```
+
+Produz a resposta de falha simples, sem challenge: uma `$Response` invocável é chamada como `$Response($code, [], 'Unauthorized'|'Forbidden')`, qualquer outra é marcada como em `mark()`. `$code` é `401` (o padrão) ou `403`; qualquer outro status lança `InvalidArgumentException`.

@@ -58,15 +58,16 @@ pools — one for the primary, one per read replica — so build one per process
 ## Config keys
 
 `SQL` reads every key of **[Database configuration](/manual/ADI/Database/Config/overview/#keys-and-defaults)**
-plus the four below: `statements`, `routing.sticky` and `migrations`, which
+plus the five below: `statements`, `routing.sticky`, `migrations` and `parameters`, which
 `Bootgly\ADI\Databases\SQL\Config` adds, and `replicas`, which the base `Config` parses but only
-`SQL` opens — `SQL\Config` gives each replica its `statements`.
+`SQL` opens — `SQL\Config` gives each replica its `statements` and `parameters`.
 
 | Key | Default | What it sets |
 |---|---|---|
 | `statements` | `256` | How many prepared statements each connection caches |
 | `routing.sticky` | `5.0` | How many seconds the reads of a scope stay on the primary after it writes |
 | `migrations` | `'_bootgly_migrations'` | The table where the migration runner records applied migrations |
+| `parameters` | `[]` | The session parameters sent at connection start — PostgreSQL only ([Session parameters](#session-parameters)) |
 | `replicas` | `[]` | The read replicas, each opened as a pool of its own |
 
 ```php
@@ -115,6 +116,104 @@ As with the connection keys, a non-numeric string counts as `0` — which turns 
 `routing.sticky` off — and a value that is not a scalar, or a `routing` that is not an array, takes
 the default. On the facade, `$Database->SQLConfig` is this `SQL\Config`, and `$Database->Config` is
 the same object, typed as the base `Config`.
+
+### Session parameters
+
+`parameters` sets PostgreSQL run-time parameters for every session the pools open. The driver sends
+them in the startup message, so they are in force before the first query runs, and a `RESET`
+returns to them instead of the server's defaults:
+
+```php
+use Bootgly\ADI\Databases\SQL;
+
+$Database = new SQL([
+   // ... connection keys
+   'parameters' => [
+      'search_path' => 'app, public',
+      'statement_timeout' => 5000,
+      'application_name' => 'billing',
+   ],
+]);
+
+$Operation = $Database->await($Database->query('SHOW search_path'));
+$Operation->Result->cell; // 'app, public'
+```
+
+The map is checked when the config is built, and an entry that fails a check throws
+`InvalidArgumentException` naming its key:
+
+- A name is a run-time parameter identifier: letters, digits, `_` and `.`, starting with a letter
+  or `_`. Custom names such as `myapp.tenant` qualify. PostgreSQL reads names case-insensitively,
+  so two names that differ only in case are refused:
+  ``Database parameter `SEARCH_PATH` is given twice (as `search_path`): parameter names are case-insensitive.``
+- A value is a string, sent as written (an empty string included), or an integer, sent in decimal:
+  `5000` is stored and sent as `'5000'`. Floats and booleans are refused, since they have no single
+  text form: write `'0.5'` or `'on'` instead. A NUL byte in a value is refused too.
+- `user`, `database`, `options` and `replication` are reserved: the first two come from `username`
+  and `database`, and the other two would change what the session is. Names that start with
+  `_pq_.` are protocol extensions, not parameters. These checks ignore case.
+- The driver pins three settings in every startup message (`PINNED_PARAMETERS`):
+  `client_encoding` `UTF8`, `DateStyle` `ISO` and `standard_conforming_strings` `on`, the encoding,
+  date text and literal quoting it reads and writes. A startup setting wins over the server's, the
+  database's and the role's. `parameters` cannot name them (`FIXED_PARAMETERS`), in any letter case:
+  ``Database parameter `DateStyle` cannot be set: the driver fixes DateStyle to ISO, the date and time text its decoder reads.``
+- The other formats stay the server's, and `parameters` may set them: `bytea` decodes from either
+  `bytea_output` format, `hex` or `escape`; an interval returns as the server's text, in the
+  session's `IntervalStyle` (`1 day 02:00:00` by default, `P1DT2H` with `iso_8601`).
+- Floats decode from the server's text and read back exact on PostgreSQL 12 and later, unless the
+  server, a database or a role lowers `extra_float_digits` to 0 or less, which rounds them. Then
+  set `'extra_float_digits' => 3` in `parameters` on a direct connection (a pooler may refuse a
+  startup name it does not track), or set it on the role, as in
+  `ALTER ROLE app SET extra_float_digits = 3`. `3` also keeps them exact on an older server, whose
+  default rounds a `float8` to 15 digits. `parameters` admits `extra_float_digits` only as `1`, `2`
+  or `3`, written as a string or an integer, and refuses any other value:
+  ``Database parameter `extra_float_digits` must be 1, 2 or 3: floats decode from the server's text, and 0 or less rounds them.``
+- Behind a connection pooler, a parameter the pooler does not track can refuse the connection. The
+  pinned names are the ones PgBouncer tracks by default, so it accepts the startup message as is;
+  a name of your own, such as `search_path`, makes a stock PgBouncer close the connection with
+  `unsupported startup parameter`. From PgBouncer 1.20, its `track_extra_parameters` setting keeps a
+  value per client, but only for a parameter the server reports to the client (ParameterStatus),
+  such as `search_path` on recent servers, not `statement_timeout`. Its `ignore_startup_parameters`
+  setting accepts the name and silently drops the value, so a `statement_timeout` meant as a guard
+  is not enforced. For a value the server does not report, run `SET` after connecting, or set it on
+  the role or the database, as in `ALTER ROLE app SET statement_timeout = 5000`.
+- `application_name` is `Bootgly` unless the map names one; it is the name `pg_stat_activity`
+  shows for the session.
+- Which names and values the server accepts is the server's call: an unknown name fails the first
+  operation with the server's error, as in `unrecognized configuration parameter "no_such_setting"`.
+- A replica inherits the primary's map name by name: an entry of its own replaces the primary's
+  under the same name, in any letter case, and the rest is added. A replica cannot drop an
+  inherited name; give it the value the replica needs.
+- The whole startup message must fit PostgreSQL's 10000 bytes (`STARTUP_LIMIT`), counted with the
+  endpoint's `username` and `database`, the pinned settings and the default `application_name`; a
+  longer one is refused naming its size:
+  ``Database startup message is 10001 bytes, over PostgreSQL's 10000-byte limit: shorten `parameters`, `username` or `database`.``
+- MySQL and SQLite have no startup parameters. A non-empty map on an endpoint whose `driver` is not
+  `pgsql`, the primary or a replica (an inherited map included), is refused when the config is built,
+  before any connection opens:
+  ``Database `parameters` are PostgreSQL only: the mysql driver has no startup session parameters, so set the session after connecting instead.``
+  A `driver` that is no built-in driver name at all, such as the alias `postgres` on a replica that
+  inherits the primary's map, is named as such:
+  ``Database `parameters` need the pgsql driver: `postgres` is not a built-in driver name (pgsql, mysql or sqlite): session parameters reach only the built-in pgsql driver (replica 10.0.0.21).``
+  An empty map is the same as none.
+- In a project config, set them with `Parameters` nodes: see
+  **[How the scope becomes a connection](/guide/database-dbal/overview/#how-the-scope-becomes-a-connection)**.
+
+```php
+use Bootgly\ADI\Databases\SQL\Config;
+
+$Config = new Config([
+   // ... connection keys
+   'parameters' => ['search_path' => 'app'],
+   'replicas' => [
+      ['host' => '10.0.0.21'],
+      ['host' => '10.0.0.22', 'parameters' => ['default_transaction_read_only' => 'on']],
+   ],
+]);
+
+$Config->replicas[0]['parameters']; // ['search_path' => 'app']
+$Config->replicas[1]['parameters']; // ['search_path' => 'app', 'default_transaction_read_only' => 'on']
+```
 
 ## Run a query
 
@@ -625,9 +724,13 @@ Reference.
 __construct (array $config = [])
 ```
 
-Builds the connection config, then reads `migrations`, `statements` and `routing`, gives each
-replica its `statements`, and narrows the pool of a SQLite `:memory:` or empty-name database —
-primary or replica — to one connection.
+Builds the connection config, then reads `migrations`, `statements`, `routing` and `parameters`,
+gives each replica its `statements` and `parameters`, and narrows the pool of a SQLite `:memory:` or
+empty-name database — primary or replica — to one connection. Throws `InvalidArgumentException` for
+a `parameters` map, on the primary or on a replica, that fails the
+[Session parameters](#session-parameters) checks, including a map on a driver other than `pgsql`
+and a startup message over `STARTUP_LIMIT`, and for a NUL byte in `username` or `database`, which
+every SQL driver frames as a NUL-terminated string.
 
 ```php
 public const string DEFAULT_MIGRATIONS = '_bootgly_migrations';
@@ -648,6 +751,49 @@ public const float DEFAULT_ROUTING_STICKY = 5.0;
 The default `routing.sticky`, in seconds.
 
 ```php
+public const array RESERVED_PARAMETERS = [
+   'database',
+   'options',
+   'replication',
+   'user',
+];
+```
+
+The names `parameters` refuses, in any letter case: the startup message sends `user` and `database`
+from the connection config, and `options` and `replication` would change what the session is.
+
+```php
+public const array PINNED_PARAMETERS = [
+   'client_encoding' => 'UTF8',
+   'DateStyle' => 'ISO',
+   'standard_conforming_strings' => 'on',
+];
+```
+
+The settings the PostgreSQL driver sends in every startup message, in this order: the encoding,
+date text and literal quoting it reads and writes. Each is a name PgBouncer tracks by default.
+
+```php
+public const array FIXED_PARAMETERS = [
+   'client_encoding' => 'the encoding every value is read and written in',
+   'DateStyle' => 'the date and time text its decoder reads',
+   'standard_conforming_strings' => 'the literal quoting its Schema writes',
+];
+```
+
+The names `parameters` refuses, in any letter case, each with the reason its refusal gives: every
+pinned name. `extra_float_digits` is not among them: `parameters` admits it with the value `1`, `2`
+or `3` and refuses any other, since 0 or less rounds the float text.
+
+```php
+public const int STARTUP_LIMIT = 10000;
+```
+
+The largest PostgreSQL startup message, in bytes after its 4-byte length word: the server's
+`MAX_STARTUP_PACKET_LENGTH`. The server drops a longer message without an answer, so the config
+refuses an endpoint whose message would exceed it.
+
+```php
 public string $migrations
 ```
 
@@ -664,3 +810,11 @@ public array $routing
 ```
 
 `array{sticky: float}`: the read-after-write window, in seconds; `0.0` turns it off.
+
+```php
+public private(set) array $parameters
+```
+
+`array<string, string>`: the session parameters sent at connection start, in their given order and
+spelling, an integer value already in its decimal form. Read-only: only the constructor sets it, so
+every entry has passed the [Session parameters](#session-parameters) checks.

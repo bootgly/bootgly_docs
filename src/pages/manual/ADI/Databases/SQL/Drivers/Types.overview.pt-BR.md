@@ -348,7 +348,7 @@ dele:
 | Tipo | OID | PHP |
 |---|---|---|
 | `boolean` | `16` | `bool` |
-| `bytea` | `17` | `string` dos bytes raw, decodificados do hex do servidor |
+| `bytea` | `17` | `string` dos bytes raw, decodificados da saída `hex` ou `escape` do servidor |
 | `smallint`, `integer`, `bigint` | `21`, `23`, `20` | `int` |
 | `real`, `double precision` | `700`, `701` | `float` |
 | `date`, `time`, `timestamp`, `timestamptz`, `timetz` | `1082`, `1083`, `1114`, `1184`, `1266` | `DateTimeImmutable` |

@@ -99,6 +99,49 @@ new Scope(['posts:view', 'posts:update'], all: false);
 
 `all: true` é o padrão. Com `all: false`, qualquer scope configurado é suficiente.
 
+### Respondendo `insufficient_scope`
+
+Por padrão um `Scope` negado responde um `403 Forbidden` simples. Passe o guard `Bearer` (ou `JWT`) da rota como `Bearer:` e a negação também informa ao cliente quais scopes ele precisa, como descreve a RFC 6750 §3.1 — o sinal que um cliente OAuth ou MCP lê para pedir um token com mais scope:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization\Scope;
+
+$Bearer = new Bearer($Resolver, realm: 'Bootgly API');
+
+new Scope(['posts:view', 'posts:update'], Bearer: $Bearer);
+```
+
+Uma requisição cuja identidade não tem um dos scopes recebe então:
+
+```http
+HTTP/1.1 403 Forbidden
+WWW-Authenticate: Bearer realm="Bootgly API", error="insufficient_scope", scope="posts:view posts:update"
+```
+
+`scope` lista todos os scopes configurados, separados por espaço (também com `all: false`). Quando o Bearer tem uma URL `metadata:`, `resource_metadata="…"` vem em seguida. O body continua `Forbidden`, exatamente como sem Bearer. Um fallback customizado de `Authorization` é dono da sua resposta, então não recebe o challenge.
+
+Uma requisição sem identidade alguma — nenhuma autenticação rodou antes do gate, ou ela deixou `$Request->identity` como `null` — não é um cliente sem scope, e sim um não autenticado. Com um `Bearer:`, o `Scope` responde então exatamente o que a autenticação responderia: `401 Unauthorized` com o challenge do próprio Bearer.
+
+```php
+yield $Router->route('/reports', $Handler, GET, middlewares: [
+   new Authorization(new Authorizing(
+      new Scope('reports:read', Bearer: new Bearer($Resolver, realm: 'Bootgly API'))
+   )),
+]);
+```
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="Bootgly API", error="invalid_token"
+```
+
+Uma identidade que não é um objeto `Identity` (um valor opaco devolvido por um resolver de `Bearer`) é um cliente autenticado sem scopes, então continua recebendo o challenge `403 insufficient_scope`. Sem `Bearer:`, uma requisição sem identidade recebe o `403 Forbidden` simples, como antes.
+
+Como os scopes viajam separados por espaço dentro do challenge, cada um precisa ser um `scope-token` da RFC 6749 quando um `Bearer:` é passado — ASCII imprimível sem espaço, `"` ou `\`. Qualquer outra coisa lança `InvalidArgumentException` na criação do gate. Sem `Bearer:`, qualquer string não vazia continua aceita.
+
+Veja [Protegendo um endpoint MCP](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) na página Authentication para a rota completa com Bearer + Scope + CORS.
+
 ## Role gate
 
 `Role` verifica grants em `Identity->claims['role']` e `Identity->claims['roles']`.
@@ -174,3 +217,25 @@ As rotas demo executáveis ficam em
 
 Para o fluxo completo, incluindo migrations, seeders, tabelas RBAC e coleção Postman, veja
 **[Authorization guide](/guide/authorization/overview/)**.
+
+## Referência
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization\Scope
+
+```php
+public function __construct (string|array $scopes, bool $all = true, null|Bearer $Bearer = null)
+```
+
+Cria um gate de scope exato. `$scopes` é um scope ou uma lista deles; `$all` exige todos os scopes (`true`, o padrão) ou qualquer um deles (`false`). `$Bearer` transforma a negação em um challenge `insufficient_scope` (ou, para uma requisição sem identidade, no challenge `401` do Bearer). Lança `InvalidArgumentException` para scope ou lista vazios e — com um `$Bearer` — para um scope que não seja `scope-token` da RFC 6749.
+
+```php
+public private(set) null|Bearer $Bearer
+```
+
+O guard cujo challenge responde a negação, ou `null` (o padrão) para um `403 Forbidden` simples.
+
+```php
+public function deny (object $Response): object
+```
+
+Monta a negação: `403 Forbidden` com o body `Forbidden`, mais — quando `$Bearer` está definido — o challenge `WWW-Authenticate` escrito por `Bearer::forbid()` com os scopes configurados. Quando `$Bearer` está definido e a Request que a Response responde (`$Response->Request`) não tem identidade alguma, responde `Bearer::challenge()` no lugar: `401 Unauthorized` com o challenge do próprio Bearer. O gate não guarda estado por requisição: ele lê a identidade da própria Request da Response, então cada requisição recebe a sua resposta. O pipeline de middlewares HTTP roda de forma síncrona, então um `resolve()` não pode suspender. Um objeto parecido com uma resposta sem `Request` recebe o `403`.

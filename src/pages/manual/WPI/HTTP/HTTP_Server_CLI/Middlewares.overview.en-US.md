@@ -305,7 +305,8 @@ new CORS(
    methods: ['GET', 'POST'],              // Allowed methods (default: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'])
    headers: ['Content-Type'],             // Allowed headers (default: ['Content-Type','Authorization'])
    maxAge: 86400,                         // Preflight cache in seconds (default: 86400)
-   credentials: false                     // Allow credentials (default: false)
+   credentials: false,                    // Allow credentials (default: false)
+   expose: ['X-Request-Id']               // Response headers readable by scripts (default: [])
 );
 ```
 
@@ -315,6 +316,18 @@ new CORS(
 > match), `Vary: Origin` is emitted so a shared cache (CDN / reverse proxy) never serves one
 > origin's response to another. An allowlist with no request `Origin` emits no
 > `Access-Control-Allow-Origin` — it never falls back to `*`.
+
+`expose` lists the response headers a browser script may read besides the CORS-safelisted ones. It is sent as `Access-Control-Expose-Headers: A, B` on actual (non-preflight) responses to an allowed origin — never on a preflight, never on a rejected origin, and not on a no-`Origin` request under an allowlist. Each name must be an RFC 9110 token; anything else (a space, a comma-joined list, a control character, a non-string) throws `InvalidArgumentException`. Empty (the default) omits the header. An MCP endpoint, for example, exposes its session and challenge headers:
+
+```php
+new CORS(
+   origins: ['https://app.example.com'],
+   headers: ['Content-Type', 'Authorization', 'Mcp-Session-Id', 'Mcp-Protocol-Version'],
+   expose: ['Mcp-Session-Id', 'WWW-Authenticate']
+);
+```
+
+Register `CORS` before `Authentication`/`Authorization` so their `401`/`403` challenges keep these headers — see [Protecting an MCP endpoint](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/).
 
 **Phase:** Pre-processing — validates the origin and handles preflight before the handler runs.
 
@@ -619,6 +632,20 @@ public function seal (Request $Request, Response $Response): void
 ```
 
 Decorates the `Response` a deferred generation is about to serialize, in place — the pass exists because the post-`$next()` half of the onion never ran against the deferred clone. `$Request` is the generation's captured Request snapshot; `$Response` is the Response actually chosen for the wire (the work's, an error boundary's or the Catcher's), with its final status, headers and body. It runs at settlement, before the deferred Session save point, walking the route's middleware snapshot innermost first and then the global `SAPI::$Middlewares` stack. `seal()` returns nothing: mutate the object. On the success path a throw skips the remaining seals and reaches the `Recovering` boundaries, and the answer they choose is sealed again — so `seal()` must be idempotent; on the errored path a throw is contained and reported. `Sealing` deliberately does **not** extend `Middleware`: a sealing middleware declares `implements Middleware, Sealing`, and keeping `process()` and `seal()` in parity is the author's job.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS
+
+```php
+public function __construct (array $origins = [], array $methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], array $headers = ['Content-Type', 'Authorization'], int $maxAge = 86400, bool $credentials = false, array $expose = [])
+```
+
+Creates the CORS middleware. `$origins` is the allowlist (empty rejects every cross-origin request; `['*']` is the wildcard policy, which forces `$credentials` to `false`). `$methods`, `$headers` and `$maxAge` fill the `Access-Control-Allow-*` and `Access-Control-Max-Age` headers. `$expose` fills `Access-Control-Expose-Headers`. Throws `InvalidArgumentException` when an exposed name is not an RFC 9110 token.
+
+```php
+public private(set) array $expose
+```
+
+The exposed response header names, in configured order, joined with `, ` in `Access-Control-Expose-Headers` on actual responses to allowed origins.
 
 ### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator
 

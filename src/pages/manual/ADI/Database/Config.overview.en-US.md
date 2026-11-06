@@ -129,9 +129,15 @@ Each value is cast to its key's type, so `'3306'` becomes `3306` — and a non-n
 scalar, such as an array, falls back to the default without an error, and so does `null`; a `pool`
 or `secure` that is not an array takes the default block. The exceptions are `secure.verify` and
 `secure.name`: a value there that is not a scalar throws (see [TLS](#tls)), and only `null` takes
-the default.
+the default. A SQL config (`new SQL()`) also refuses a NUL byte in `username` or `database`, on the
+primary or on a replica, with ``Database `username` must not contain a NUL byte.``
+(``Database `database` must not contain a NUL byte.``): every SQL driver frames them as
+NUL-terminated strings, so the byte would end the value and turn the rest into fields the config
+never named. `username` and `database` stay writable, so the PostgreSQL encoder checks them again
+and refuses a NUL written after construction with
+`PostgreSQL startup username and database must not contain a NUL byte.` A KV config keeps the byte, since Redis sends length-prefixed strings.
 
-`new SQL()` also takes the keys below: `statements`, `migrations` and `routing.sticky`, which
+`new SQL()` also takes the keys below: `statements`, `migrations`, `routing.sticky` and `parameters`, which
 `Bootgly\ADI\Databases\SQL\Config` adds, and `replicas`, which this class parses but only `SQL`
 opens. How each one is read, and what a replica inherits, is in
 **[SQL config keys](/manual/ADI/Databases/SQL/overview/#config-keys)**:
@@ -141,6 +147,7 @@ opens. How each one is read, and what a replica inherits, is in
 | `statements` | `256` | Every SQL driver: how many prepared statements each connection caches; `0` turns the cache off |
 | `migrations` | `'_bootgly_migrations'` | The migration runner: the table that records applied migrations |
 | `routing.sticky` | `5.0` | Read routing: how many seconds the reads of a scope stay on the primary after it writes |
+| `parameters` | `[]` | PostgreSQL: the session parameters sent at connection start (`search_path`, `statement_timeout`, ...); a non-empty map on another driver throws at construction, and a connection pooler may refuse a name it does not track ([Session parameters](/manual/ADI/Databases/SQL/overview/#session-parameters)) |
 | `replicas` | `[]` | Read routing: the read replicas, each opened as a pool of its own |
 
 The KV facade (Redis) reads this same class, with the same defaults, so a KV array always sets
@@ -364,6 +371,8 @@ replica's block names it, as in
 | `Unsupported database TLS mode: verify_full.` | Construction; `DatabaseConfig::configure()` | `secure.mode` is not one of the five modes |
 | ``Database TLS `verify` must be a boolean.`` | Construction | `secure.verify` is not boolean-like |
 | ``Database TLS `name` must be a boolean.`` | Construction | `secure.name` is not boolean-like |
+| ``Database `username` must not contain a NUL byte.`` | `new SQL()`, `new SQL\Config()` | `username` contains a NUL byte |
+| ``Database `database` must not contain a NUL byte.`` | `new SQL()`, `new SQL\Config()` | `database` contains a NUL byte |
 | ``Database TLS cafile requires certificate verification: use mode `verify-ca` or `verify-full`, or set `verify` to true.`` | Construction | A `cafile` under `prefer` or `require` without `verify` |
 | `SQL builder dialect is not registered: mariadb` | `new SQL()` | `driver` is not a SQL driver name or a known dialect alias |
 | `Database driver is not registered: postgres.` | `query()`, or `command()` on KV | `driver` is a dialect alias, a replica's `driver` is not a registered name, or a KV array has no `driver` |
@@ -374,7 +383,7 @@ replica's block names it, as in
 
 Construction means `new Config()` and every facade that builds one from an array, such as
 `new SQL([...])` or `new KV([...])`; its errors are `InvalidArgumentException`s, and the `verify`,
-`name` and `cafile` ones name a replica as `(replica <host>)` before the final period. An
+`name`, `cafile` and NUL-byte ones name a replica as `(replica <host>)` before the final period. An
 operation's `error` is rethrown by `await()` as a `RuntimeException`. `Database connection failed:`
 carries PHP's own stream error, so its text varies; it is also what an IPv6 literal without
 brackets (write `[::1]`) or a Unix socket path produces, since connections are TCP only. A dial
@@ -382,13 +391,17 @@ that resolves but fails names the endpoint instead, as in
 `PostgreSQL connection failed: 127.0.0.1:5432 refused the connection (ECONNREFUSED).` (see
 **[DBAL core](/manual/ADI/Database/overview/)**).
 
+The `parameters` checks throw `InvalidArgumentException`s of their own, such as
+``Database parameter `user` is reserved: the startup message sends it from the connection config or refuses it.``;
+they are listed in **[Session parameters](/manual/ADI/Databases/SQL/overview/#session-parameters)**.
+
 `DatabaseConfig` adds its own `InvalidArgumentException`s, listed in the guide's
 **[When DatabaseConfig throws](/guide/database-dbal/overview/#when-databaseconfig-throws)**.
 
 ## Reference
 
 `Bootgly\ADI\Databases\SQL\Config` extends this class with the SQL keys; its constructor, its
-constants `DEFAULT_STATEMENTS`, `DEFAULT_MIGRATIONS` and `DEFAULT_ROUTING_STICKY`, and its
+constants `DEFAULT_STATEMENTS`, `DEFAULT_MIGRATIONS`, `DEFAULT_ROUTING_STICKY`, `RESERVED_PARAMETERS`, `PINNED_PARAMETERS`, `FIXED_PARAMETERS` and `STARTUP_LIMIT`, and its
 properties are in the **[SQL database](/manual/ADI/Databases/SQL/overview/#sql-configuration)**
 Reference.
 

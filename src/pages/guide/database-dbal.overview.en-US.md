@@ -89,6 +89,7 @@ return new Config(scope: 'database')
 | `Pool->Min` | `DB_POOL_MIN` | `pool.min` | `0` |
 | `Pool->Max` | `DB_POOL_MAX` | `pool.max` | `8` |
 | `Routing->Sticky` | `DB_ROUTING_STICKY` | `routing.sticky` | `5.0` |
+| `Parameters-><name>` | — | one entry of `parameters` (PostgreSQL only) | none |
 | `Replicas-><Name>` | `DB_REPLICA_<n>_*` | one entry of `replicas` | — |
 
 Every node below `Default` belongs to the selected block (`Connections->PostgreSQL->Host`,
@@ -103,11 +104,58 @@ Each child of `Replicas` with a non-empty `Host` becomes one replica and reads t
 from `Driver` to `Pool->Max` (not `Routing`); a child without a `Host` is skipped. A replica's
 `Driver` is passed on as written, without the alias mapping of
 **[Choose a driver](#choose-a-driver)**: when you set one, use the canonical `pgsql`, `mysql` or
-`sqlite`, since an alias such as `postgres` passes `configure()` and then fails the first read
-routed to that replica with `Database driver is not registered: postgres.` What a
+`sqlite`, since an alias such as `postgres` is no built-in driver name: when the primary sets
+`Parameters`, which the replica inherits, `configure()` throws
+``Database `parameters` need the pgsql driver: `postgres` is not a built-in driver name (pgsql, mysql or sqlite): session parameters reach only the built-in pgsql driver (replica <host>).``;
+otherwise it passes `configure()` and fails the first read routed to that replica with
+`Database driver is not registered: postgres.` A replica's
+`Parameters` replace the primary's by name and add its own. What a
 replica leaves unset comes from the primary, except `secure.peer`, which defaults to the
 replica's own host, and the TLS flags, which follow the replica's own `Secure->Mode` when it
 sets one. See **[Database read replicas](/guide/database-read-replicas/overview/)**.
+
+Each child of `Parameters` is one PostgreSQL session parameter, sent at connection start: the
+node name is the parameter name, as written, and its bound value the parameter value; a child
+that resolves to `null` is left out. Bind each one like any other node, from an env key or a
+default:
+
+```php
+use Bootgly\API\Environment\Configs\Config;
+use Bootgly\API\Environment\Configs\Config\Types;
+
+return new Config(scope: 'database')
+   ->Connections
+      ->PostgreSQL
+         ->Parameters
+            ->search_path->bind(key: 'DB_SEARCH_PATH', default: 'app, public')
+            ->statement_timeout->bind(key: 'DB_STATEMENT_TIMEOUT', default: 5000, cast: Types::Integer)
+            ->up()
+         ->Replicas
+            ->Replica1
+               ->Host->bind(key: 'DB_REPLICA_1_HOST', default: null)
+               ->Parameters
+                  ->default_transaction_read_only->bind(key: '', default: 'on');
+```
+
+`Parameters` takes children only: a value bound to `Parameters` itself makes `configure()` throw
+``Database `Parameters` config takes one child node per session parameter (Parameters->search_path), not a value of its own.``
+Each parameter is one node, so a dotted name is written in braces, `->{'auto_explain.log_min_duration'}`:
+a parameter node with children of its own, as `->auto_explain->log_min_duration`, makes it throw
+``Database `Parameters->auto_explain` holds child nodes: name a dotted session parameter as one node, Parameters->{'auto_explain.log_min_duration'}.``
+The map then passes the checks of
+**[Session parameters](/manual/ADI/Databases/SQL/overview/#session-parameters)**, so a
+`Parameters` node in a `MySQL` or `SQLite` block makes `configure()` throw too.
+
+Behind a connection pooler, the parameters reach the pooler first, and it may refuse a name it
+does not track: a stock PgBouncer closes the connection with `unsupported startup parameter` for
+`search_path`, `statement_timeout` or any other name outside its defaults. From PgBouncer 1.20, its
+`track_extra_parameters` setting keeps a value per client only for a parameter the server reports
+to the client (ParameterStatus), such as `search_path` on recent servers, not `statement_timeout`.
+Its `ignore_startup_parameters` setting accepts the name but silently drops the value, so a
+`statement_timeout` meant as a guard is not enforced. For a value the server does not report, run
+`SET` after connecting, or set it on the role or the database
+(`ALTER ROLE app SET statement_timeout = 5000`). The settings the driver pins at startup are the
+ones PgBouncer tracks by default, so a config without `Parameters` connects through it as is.
 
 `DatabaseConfig` reads no other node. `Enabled` is read only by `DatabaseResource::provide()` (see
 **[When `provide()` throws](#when-provide-throws)**), while `Charset`, `Migrations` and any node
@@ -239,6 +287,8 @@ $Database = new SQL(new DatabaseConfig($Scope)->configure());
 | `Database config is missing the selected connection scope: Connections-><Block>.` | The block that `Default` selects is not declared. |
 | `Database TLS mode config value must be scalar.` | A `Secure->Mode` (primary or replica) holds an array or an object. |
 | `Unsupported database TLS mode: <mode>.` | A `Secure->Mode` is not `disable`, `prefer`, `require`, `verify-ca` or `verify-full`. |
+| ``Database `Parameters` config takes one child node per session parameter (Parameters->search_path), not a value of its own.`` | A `Parameters` node (primary or replica) is bound to a value instead of holding one child per parameter. |
+| ``Database `Parameters-><name>` holds child nodes: name a dotted session parameter as one node, Parameters->{'<name>.<child>'}.`` | A parameter node (primary or replica) holds children of its own instead of a value. |
 
 `configure()` then hands the values to the `SQL` config, which applies its own TLS checks, for
 example

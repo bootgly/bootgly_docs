@@ -41,6 +41,7 @@ e os nomes de driver que um array aceita, estão em
 | Chaves geradas | linhas do `RETURNING` | `Result->inserted` (pacote OK) | `Result->inserted` (`lastInsertRowID`) |
 | Várias instruções numa string | sem parâmetros, todas rodam e os resultados se misturam | recusadas (`1064`) | só a primeira roda |
 | Cancelamento | side channel `CancelRequest` | side channel `KILL QUERY` | nenhum — um statement já terminou quando o `query()` retorna |
+| Parâmetros de sessão (`parameters`) | enviados na mensagem de startup | recusados — a config lança ao ser montada | recusados — a config lança ao ser montada |
 | DDL transacional | sim | não (commits implícitos) | sim |
 | Advisory locks | `pg_advisory_lock` | `GET_LOCK` | — (somente file lock) |
 

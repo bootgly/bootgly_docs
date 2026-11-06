@@ -40,6 +40,7 @@ selects the driver through the `database` config scope — see
 | Generated keys | `RETURNING` rows | `Result->inserted` (OK packet) | `Result->inserted` (`lastInsertRowID`) |
 | Several statements in one string | without parameters, all run and their results merge | refused (`1064`) | the first one runs |
 | Cancellation | `CancelRequest` side channel | `KILL QUERY` side channel | none — a statement has finished when `query()` returns |
+| Session parameters (`parameters`) | sent in the startup message | refused — the config throws when it is built | refused — the config throws when it is built |
 | Transactional DDL | yes | no (implicit commits) | yes |
 | Advisory locks | `pg_advisory_lock` | `GET_LOCK` | — (file lock only) |
 

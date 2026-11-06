@@ -35,7 +35,43 @@ config scope, and in an `HTTP_Server_CLI` route use `$Response->Database` — se
 pending `Operation`, and `await()` drives it to its end and returns it.
 
 Every session starts with `client_encoding` set to `UTF8` and `application_name` set to `Bootgly`,
-the name `pg_stat_activity` shows for it. Neither can be configured for now.
+the name `pg_stat_activity` shows for it. The startup message also pins `DateStyle` to `ISO`, the
+date text the driver decodes, and `standard_conforming_strings` to `on`, the literal quoting its
+Schema writes; these and `client_encoding` cannot be changed. The pinned names are the ones a
+connection pooler such as PgBouncer tracks by default, so it accepts the startup message as is. The
+rest stays the server's: `bytea` decodes from either `bytea_output` format, `hex` or `escape`; an
+interval returns in the session's `IntervalStyle`; and floats read back exact on PostgreSQL 12 and
+later, where the default `extra_float_digits` sends the shortest exact text, unless the server, a
+database or a role lowers `extra_float_digits` to 0 or less, which rounds them. Then, or on an
+older server, set `'extra_float_digits' => 3` in `parameters` on a direct connection (a pooler may
+refuse a startup name it does not track), or set it on the role
+(`ALTER ROLE app SET extra_float_digits = 3`); `parameters` admits it only as `1`, `2` or `3`. The
+`parameters` config key sends run-time parameters in the same startup message, `application_name`
+included:
+
+```php
+use Bootgly\ADI\Databases\SQL;
+
+$Database = new SQL([
+   // ... connection keys
+   'parameters' => [
+      'search_path' => 'app, public',
+      'application_name' => 'billing',
+   ],
+]);
+```
+
+The parameters are in force before the first query runs, on every connection of the pool. What
+`parameters` accepts, and what a replica inherits, is in
+**[Session parameters](/manual/ADI/Databases/SQL/overview/#session-parameters)**. Behind a
+connection pooler, a parameter the pooler does not track may be refused at connection start:
+a stock PgBouncer closes the connection with `unsupported startup parameter`. From PgBouncer 1.20,
+its `track_extra_parameters` setting keeps a value per client only for a parameter the server
+reports to the client (ParameterStatus), such as `search_path` on recent servers, not
+`statement_timeout`; its `ignore_startup_parameters` setting silently drops the value, so a
+`statement_timeout` meant as a guard is not enforced. For a value the server does not report, run
+`SET` after connecting, or set it on the role or database
+(`ALTER ROLE app SET statement_timeout = 5000`).
 
 ## Authentication and TLS
 
@@ -194,7 +230,7 @@ Rows come back as text and are cast by column type:
 - `boolean` → `bool`; `smallint`, `integer` and `bigint` → `int`; `real` and `double precision` →
   `float`;
 - `numeric` → `string`, so no digit is lost;
-- `bytea` → the raw bytes, as a `string`;
+- `bytea` → the raw bytes, as a `string`, from either `bytea_output` format (`hex` or `escape`);
 - `date`, `time`, `timetz`, `timestamp` and `timestamptz` → `DateTimeImmutable` — a `time` or
   `timetz` dated today; a value PHP cannot parse, such as `infinity`, stays a string;
 - any other type, such as `json`, `jsonb`, `uuid`, `interval`, `money` or an array → the server's

@@ -305,7 +305,8 @@ new CORS(
    methods: ['GET', 'POST'],              // Allowed methods (default: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'])
    headers: ['Content-Type'],             // Allowed headers (default: ['Content-Type','Authorization'])
    maxAge: 86400,                         // Preflight cache in seconds (default: 86400)
-   credentials: false                     // Allow credentials (default: false)
+   credentials: false,                    // Allow credentials (default: false)
+   expose: ['X-Request-Id']               // Response headers readable by scripts (default: [])
 );
 ```
 
@@ -316,6 +317,18 @@ new CORS(
 > compartilhado (CDN / proxy reverso) nunca sirva a resposta de uma origem para outra. Uma
 > allowlist sem `Origin` na requisição não emite `Access-Control-Allow-Origin` — nunca cai
 > para `*`.
+
+`expose` lista os headers de resposta que um script do navegador pode ler além dos CORS-safelisted. Ele é enviado como `Access-Control-Expose-Headers: A, B` em respostas reais (não preflight) para uma origem permitida — nunca em um preflight, nunca em uma origem rejeitada, e não em uma requisição sem `Origin` sob uma allowlist. Cada nome precisa ser um token da RFC 9110; qualquer outra coisa (um espaço, uma lista unida por vírgula, um caractere de controle, um valor não string) lança `InvalidArgumentException`. Vazio (o padrão) omite o header. Um endpoint MCP, por exemplo, expõe seus headers de sessão e de challenge:
+
+```php
+new CORS(
+   origins: ['https://app.example.com'],
+   headers: ['Content-Type', 'Authorization', 'Mcp-Session-Id', 'Mcp-Protocol-Version'],
+   expose: ['Mcp-Session-Id', 'WWW-Authenticate']
+);
+```
+
+Registre o `CORS` antes de `Authentication`/`Authorization` para que os challenges `401`/`403` deles mantenham esses headers — veja [Protegendo um endpoint MCP](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/).
 
 **Fase:** Pré-processamento — valida a origem e trata o preflight antes do handler executar.
 
@@ -621,6 +634,20 @@ public function seal (Request $Request, Response $Response): void
 ```
 
 Decora, no lugar, a `Response` que uma geração deferred está prestes a serializar — a passagem existe porque a metade pós-`$next()` do onion nunca rodou contra o clone deferred. `$Request` é o snapshot capturado do Request da geração; `$Response` é a Response realmente escolhida para o fio (a do trabalho, a de uma fronteira de erro ou a do Catcher), com status, headers e corpo finais. Ela roda na liquidação, antes do ponto de save da Session deferred, percorrendo o snapshot de middlewares da rota do mais interno para o mais externo e depois a pilha global `SAPI::$Middlewares`. `seal()` não retorna nada: mute o objeto. No caminho de sucesso um throw pula os seals restantes e alcança as fronteiras `Recovering`, e a resposta que elas escolhem é selada de novo — então `seal()` precisa ser idempotente; no caminho de erro um throw é contido e reportado. `Sealing` deliberadamente **não** estende `Middleware`: um middleware de sealing declara `implements Middleware, Sealing`, e manter `process()` e `seal()` em paridade é trabalho do autor.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS
+
+```php
+public function __construct (array $origins = [], array $methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], array $headers = ['Content-Type', 'Authorization'], int $maxAge = 86400, bool $credentials = false, array $expose = [])
+```
+
+Cria o middleware CORS. `$origins` é a allowlist (vazia rejeita toda requisição cross-origin; `['*']` é a política wildcard, que força `$credentials` para `false`). `$methods`, `$headers` e `$maxAge` preenchem os headers `Access-Control-Allow-*` e `Access-Control-Max-Age`. `$expose` preenche `Access-Control-Expose-Headers`. Lança `InvalidArgumentException` quando um nome exposto não é token da RFC 9110.
+
+```php
+public private(set) array $expose
+```
+
+Os nomes de headers de resposta expostos, na ordem configurada, unidos com `, ` em `Access-Control-Expose-Headers` em respostas reais para origens permitidas.
 
 ### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator
 
