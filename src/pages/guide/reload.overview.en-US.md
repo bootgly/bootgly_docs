@@ -90,3 +90,13 @@ Seconds each worker is given to finish its in-flight requests before the master 
 during a reload. Set higher for long-running requests; lower for a faster, more aggressive
 reload. Applies to the HTTP, WebSocket and raw TCP servers. (UDP is connectionless and has no
 drain phase.)
+
+The same drain retires a single worker when [worker recycling](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#worker-recycling)
+(`maxRequests`, `maxMemory`) replaces it, so `drainTimeout` bounds a recycle too — though its
+replacement is already serving by then: the master forks it as the recycle begins, and, on the HTTP
+and WebSocket servers, the old worker hands back its idle connections at once (raw TCP keeps each
+connection until its peer closes it). Nothing cuts that drain short: a slot drains one worker at a
+time, so a replacement that reaches its own limit meanwhile serves on until the old worker is gone. As
+for a reload, the master kills a recycling worker still draining `drainTimeout` + 5 s after its
+recycle began. A recycle only replaces that worker, forked from the running master: it never reloads
+code.

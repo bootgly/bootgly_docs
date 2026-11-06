@@ -13,6 +13,7 @@ The TCP Server CLI is the low-level TCP server foundation of the Bootgly PHP Fra
 | **Signals and control** | Pause, resume, reload, stop, inspect connections and view stats with POSIX signals and CLI commands. |
 | **SSL/TLS** | Accept encrypted connections through PHP stream context SSL options. |
 | **Worker recovery** | The master reforks a worker that dies from its own loop (never inside the `SIGCHLD` handler). A slot whose workers die before entering their event loop three times in a row (a boot that always fails) is reforked after 0.5 s, doubling up to 5 s, while a worker that served is always reforked at once. A waiting slot keeps its share of the listening socket, so about one in N new connections waits for its next attempt. A refused fork (a process limit reached) keeps the master and the slot and is retried every second. |
+| **Worker recycling** | A worker past `maxRequests` dispatches (each worker within ±`jitter`) or past `maxMemory` bytes is replaced at once — its replacement accepts on the same listener while it drains like a reload, one draining worker per slot (the slot's next recycle waits for it), killed past its deadline — logged as a recycle, never as a crash, never backed off. |
 | **Privilege dropping** | Bind as root when necessary, then demote to a less privileged POSIX user/group. |
 | **Connection stats** | Tracks reads, writes, bytes transferred, errors and active connection metadata. |
 
@@ -142,6 +143,9 @@ The transport lives in `TCP_Server_CLI\Configs`:
 | `secure` | `null\|array` | `null` | PHP stream context secure SSL/TLS options for TLS sockets. |
 | `user` | `null\|string` | `null` | POSIX user to switch to after binding the socket. |
 | `group` | `null\|string` | `null` | POSIX group to switch to after binding the socket. |
+| `maxRequests` | `int` | `0` (= off) | Dispatches after which a worker is recycled — for this server, accepted connections. See [Worker recycling](#worker-recycling). |
+| `jitter` | `float` | `0.1` | Spread of each worker's own limit around `maxRequests`, a fraction from `0` to `1` (`0.1` = ±10%). |
+| `maxMemory` | `int\|string` | `0` (= off) | Real memory (`memory_get_usage(true)`) past which a worker is recycled: bytes, or a size string such as `'512M'` (read by `Bytes::parse()`). It must stay below `memory_limit` — `start()` refuses one no worker can honor (see [Worker recycling](#worker-recycling)). |
 
 ```php
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
@@ -209,6 +213,120 @@ The workers run as that user from their first request on, so what they write und
 `storage/cache` is not handed over: root-run code — a CLI command, the test runner — reads what it holds. An ancestor of a worker directory that another account could replace — a link, owned by neither root nor the `user`, or group/world-writable without the sticky bit — is reported in a warning naming the ancestor, the cause and its remedy (the default session store refuses such a path; the workers' caches move to a private temporary directory), once per directory, but does not stop the server. For `cache-<uid>`, a link that belongs to root or the `user` is not itself reported: the cache resolves its storage root, so the warning checks where the link leads instead.
 
 The master demotes right after forking; each worker demotes once its listener is in place. The master waits until it can signal every worker (up to 5 seconds) before `start()` goes on, so a command or a stop sent right after the server starts reaches every worker.
+
+### Worker recycling
+
+A worker can be replaced on purpose, to bound what it accumulates over a long life — a leak, an
+ever-growing cache, a fragmented heap. Two triggers, both off by default:
+
+```php
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
+
+
+$Server->configure(
+	new Configs(
+		host: '0.0.0.0',
+		port: 8080,
+		workers: 4,
+		maxRequests: 5_000, // recycle a worker after about 5 000 connections...
+		jitter: 0.1,        // ...each worker at its own limit, within ±10% (the default)
+		maxMemory: '96M'    // ...or once its real memory passes 96 MiB
+	)
+);
+```
+
+`maxMemory` must stay below PHP's `memory_limit` (`128M` by default): past that limit a worker dies
+with a fatal error before it could recycle. Raise `memory_limit` to use a larger ceiling.
+
+**What counts is the node's dispatch.** This server counts every connection it accepts — raw TCP
+has no request boundary. The [HTTP server](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#worker-recycling)
+counts requests instead (each request a keep-alive connection carries), and the
+[WebSocket server](/manual/WPI/WS/WS_Server_CLI/overview/) counts connections. One counter lives in the
+transport; a node that counts something else calls `TCP_Server_CLI::count()` once per dispatch and
+declares it in `DISPATCH`.
+
+**Each worker draws its own limit** when it boots: the `maxRequests ± jitter` range is cut into one
+band per worker and each worker draws inside its own, so workers never recycle together; a
+replacement draws again. **`maxMemory`** is compared with `memory_get_usage(true)` at every dispatch —
+for this server, when a connection is accepted: a long-lived connection that grows the worker's memory
+triggers nothing until the next one arrives. `0` turns a trigger off; a negative value, a `jitter` outside `0`–`1` or a size that does not parse
+throws `InvalidArgumentException` when the Configs is built.
+
+When a trigger fires, **the old worker and its replacement overlap**: the worker tells the master at
+once, and the master forks the replacement on the slot's own pre-bound listener right away — the slot
+never goes without a worker accepting. The old worker meanwhile **drains like a reload drain**: it
+leaves the accept set, serves the connections it holds until they close (at most `drainTimeout`,
+30 s, when the rest are closed) and exits with status `TCP_Server_CLI::RECYCLE` (75). The master
+reaps it as the recycled worker it already replaced — no second fork:
+
+```text
+NOTICE: Worker (PID: 50609) recycling: 4877 connections reached its limit of 4877; draining...
+NOTICE: Worker #2 (PID: 50609) recycling, forking its replacement...
+NOTICE: Worker #2 recovered (new PID: 51400)
+NOTICE: Worker #2 (PID: 50609) recycled.
+```
+
+How soon the master hears the announcement depends on the mode: in Foreground and Daemon mode it
+wakes on it at once, in Monitor mode within its 30 ms turn, and in Interactive mode — whose prompt
+cannot wait on it — within 50 ms while recycling is on. A worker that exits before the master heard it
+(one with nothing left to drain, say) is reaped first and logged
+`Worker #2 (PID: 50609) recycled, reforking...` instead — a recycle all the same, reforked at once.
+Inside a node's startup barrier
+(the [HTTP server's Auto-TLS startup](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#worker-recycling)),
+the replacement waits for startup to complete.
+
+What the old worker hands back early belongs to the node: the [HTTP server](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#worker-recycling)
+closes its idle keep-alive connections at once and sends HTTP/2 a GOAWAY, the
+[WebSocket server](/manual/WPI/WS/WS_Server_CLI/overview/) closes its sessions with `1001 Going Away`.
+Raw TCP cannot tell an idle stream from one about to speak, so this server keeps every connection until
+its peer closes it or `drainTimeout` ends the drain — new connections reach the replacement meanwhile.
+
+**A recycle never multiplies the processes, nor cuts a drain short.** A slot drains one worker at a
+time: a replacement forked while its slot's previous worker still drains — a slow download, a stream, a
+client that keeps a connection open — that reaches its own limit meanwhile **holds its recycle**. It
+serves on, still accepting, past `maxRequests` (and past `maxMemory`: a ceiling can be exceeded for up to
+one drain), until the master tells it the old worker is gone; it then recycles at once, and says so. The
+old worker's in-flight work keeps its whole `drainTimeout`:
+
+```text
+NOTICE: Worker #2 (PID: 50609) recycled.
+NOTICE: Worker (PID: 51400) held its recycle while its slot's previous worker drained; recycling now.
+NOTICE: Worker (PID: 51400) recycling: 4919 connections reached its limit of 4919; draining...
+```
+
+The worker reads the master's go once a second. A retiree still draining `drainTimeout` + 5 s after its
+recycle began is killed, as a reload bounds its own drain — a handler that blocks (a sleep, a call
+without a timeout) keeps the retiree's own drain timer from ever firing — and that lets its slot's next
+worker recycle too. So a server never runs more than 2 × `workers` worker processes, and a client that
+pins a retiree only delays its slot's next recycle, by one drain at most:
+
+```text
+WARNING: Worker #2 (PID: 50609) killed, still draining past its deadline (drainTimeout + 5 s); its replacement serves the slot.
+```
+
+A retiree is still one of the server's processes: commands, `logs -f`, `stats` and `connections` reach
+it, `status` counts it (`+1 retiring`), `stop` — and `project stop`, should the master not answer — ends
+it, and the persisted state lists it under `retirees` until it is gone. A pause leaves it alone (it
+accepts nothing already), and a replacement forked while the server is paused boots paused, until
+`resume` — switching between the Monitor and Interactive consoles keeps the server paused.
+
+A recycle is never logged as a crash and never extends the crash backoff of its slot — it ends a
+crash streak, as any worker that served does. The proof is the announcement, not the exit status: a
+worker that exits with 75 without having announced a recycle (at boot, say) is a crash like any other,
+backed off if it keeps dying before serving. A recycle replaces one worker forked from the running
+master; code changes still need `reload`. A `Modes::Test` server never recycles, since its master
+never reforks.
+
+**A memory ceiling no worker can honor is refused.** `start()` exits with
+`Server not started: maxMemory (…) …` when `maxMemory` is not above the memory a worker starts with
+(every worker would recycle at its first dispatch, and every replacement after it), or not below
+`memory_limit` (PHP's fatal error would come first). A `reload` never takes a serving instance down for
+it — its old workers are drained already: the fresh master logs `Reloaded without a memory ceiling: …`
+and serves on with the ceiling off until the next start. A worker whose own boot — a `Worker::Boot`
+listener, say — takes it past `maxMemory` serves on with its memory ceiling off and logs an error
+saying so: never a fork per dispatch. And a worker whose announcement channel the master could not
+create (it ran out of descriptors) cannot announce a recycle, nor hear the master's go: it logs a
+warning and does not recycle, rather than drain with no replacement.
 
 ## Data Handler
 
@@ -282,7 +400,7 @@ Master process
 └── Worker #N → bind socket → event loop
 ```
 
-- The **master** process installs signals, stores process state, monitors workers and reforks a replacement if one crashes — backing off a slot whose workers keep dying at boot. A reload whose relay fork is refused is aborted, and the server keeps serving.
+- The **master** process installs signals, stores process state, monitors workers and reforks a replacement if one crashes — backing off a slot whose workers keep dying at boot — or recycles — forking the replacement as soon as the worker announces the recycle, while the old one drains (one retiree per slot: the slot's next recycle waits for it, and it is killed past its deadline) — logged as a recycle. A reload whose relay fork is refused is aborted, and the server keeps serving.
 - Each **worker** creates its own server socket with `SO_REUSEPORT`, then enters the shared `Select` event loop.
 - Accepted sockets are wrapped in connection objects that track remote peer info, timers, writes and connection status.
 

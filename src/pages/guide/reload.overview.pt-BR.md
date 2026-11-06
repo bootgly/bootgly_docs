@@ -93,3 +93,13 @@ Segundos que cada worker recebe para concluir suas requisições em andamento an
 encerrá-lo à força durante um reload. Aumente para requisições longas; diminua para um reload
 mais rápido e agressivo. Aplica-se aos servidores HTTP, WebSocket e TCP raw. (UDP é sem conexão
 e não tem fase de drain.)
+
+A mesma drenagem aposenta um único worker quando a [reciclagem de workers](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#reciclagem-de-workers)
+(`maxRequests`, `maxMemory`) o substitui, então o `drainTimeout` também limita uma reciclagem —
+embora o substituto já esteja servindo então: o master o cria por fork quando a reciclagem começa, e,
+nos servidores HTTP e WebSocket, o worker antigo devolve as suas conexões ociosas na hora (o TCP raw
+mantém cada conexão até o par fechá-la). Nada encurta essa drenagem: um slot drena um worker por vez,
+então um substituto que atinge o seu próprio limite nesse meio-tempo continua servindo até o worker
+antigo sair. Como num reload, o master encerra um worker em reciclagem que ainda drena
+`drainTimeout` + 5 s após o início da sua reciclagem. Uma reciclagem só substitui esse worker, criado
+por fork do master em execução: nunca recarrega código.

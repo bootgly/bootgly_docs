@@ -194,7 +194,10 @@ new WS_Server_CLI\Configs (
    null|int $maxConnectionsPerIP = null,
    null|int $headroom = null,
    null|int $maxWorkerPendingBytes = null,
-   null|Closure $Fallback = null
+   null|Closure $Fallback = null,
+   int $maxRequests = 0,
+   float $jitter = 0.1,
+   int|string $maxMemory = 0
 )
 ```
 
@@ -227,6 +230,19 @@ other half stays for what the budget does not see — `maxMessageSize`, about fi
 as configured. Directly reachable servers (no proxy in front) should also set `maxConnectionsPerIP`.
 `Fallback` answers plain (non-upgrade) HTTP requests — e.g. serving the client page on the same
 port. `secure` is a TLS stream-context array for `wss://`.
+`maxRequests`, `jitter` and `maxMemory` recycle a worker: past `maxRequests` accepted connections
+(each worker at its own limit within ±`jitter`, default `0.1`) or past `maxMemory` bytes of real
+memory (an `int`, or a size such as `'512M'`) — checked when a connection is accepted, so a
+long-lived session that grows the worker's memory triggers nothing until the next connection arrives —
+the worker is replaced at once: its replacement accepts on the same listener while the old worker
+drains. The old worker closes its open sessions with `1001 Going Away` right away (clients reconnect to
+the replacement) and leaves the slot's cross-worker broadcast mailbox to the replacement; a handshake
+still in progress is closed the same way once it completes, within a second. A slot keeps one draining
+worker at most: a replacement that reaches its own limit while the old worker still drains holds its
+recycle — it accepts on, past `maxRequests` and `maxMemory` for up to that drain — until the old one is
+gone; the master kills one still draining `drainTimeout` + 5 s after its recycle began. `maxMemory`
+must stay below `memory_limit`. `0` (the default) keeps each trigger off. See
+[Worker recycling](/manual/WPI/TCP/TCP_Server_CLI/overview/#worker-recycling).
 
 `host`, `port` and `workers` carry a `null` default only because the guard slot precedes them — PHP forbids a required parameter after an optional one. They are mandatory all the same: omitting one throws an `ArgumentCountError`.
 

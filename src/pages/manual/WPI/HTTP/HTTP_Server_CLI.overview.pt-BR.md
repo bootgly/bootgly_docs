@@ -8,6 +8,7 @@ O HTTP Server CLI é o servidor HTTP nativo do Bootgly PHP Framework. Ele é um 
 |---|---|
 | **Modos de Operação** | Daemon (background), Foreground, Interactive (REPL), Monitor (visualizador de logs ao vivo) e Test (automatizado) |
 | **Multi-Worker** | Workers via fork com `SO_REUSEPORT`; master reinicia workers automaticamente em caso de falha (um slot cujos boots continuam falhando espera até 5 s) |
+| **Reciclagem de Workers** | Um worker é substituído após `maxRequests` requisições (cada worker dentro de ±`jitter`) ou acima de `maxMemory` bytes — o substituto serve na hora enquanto ele drena, registrado como reciclagem, nunca como crash |
 | **PHP Fibers** | Respostas assíncronas adiadas via `$Response->defer()`, integradas ao event loop `stream_select` |
 | **Event-Driven** | Event loop baseado em `stream_select`; I/O non-blocking, zero CPU em idle |
 | **Roteamento** | Rotas estáticas e dinâmicas com restrições de parâmetros tipadas; cache de warmup único |
@@ -178,7 +179,10 @@ $Server->configure(
       maxConnectionsPerIP: 0,          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
       headroom: 32,                    // 32 (default) — selector entries kept for the worker's own dependency I/O (0 = disabled)
       connectionIdleTimeout: 15,       // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
-      maxWorkerPendingBytes: 64 * 1024 * 1024 // 64 MiB (default) — worker memory budget: bodies, route cache, pending output
+      maxWorkerPendingBytes: 64 * 1024 * 1024, // 64 MiB (default) — worker memory budget: bodies, route cache, pending output
+      maxRequests: 0,                  // 0 (default, off) — requests after which a worker is recycled
+      jitter: 0.1,                     // 0.1 (default) — each worker's own limit lies within ±10% of maxRequests
+      maxMemory: 0                     // 0 (default, off) — real memory (bytes, or a size like '512M') past which a worker is recycled
    ),
    new RequestConfigs(
       maxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
@@ -379,6 +383,122 @@ roda a cada `min(10, interval, heartbeat)` segundos e nunca mais devagar que a e
 conexão — então um `connectionIdleTimeout` curto só faz esse supervisor bater mais vezes.
 `connectionIdleTimeout: 0` desativa o reaper por completo — só faça isso atrás de um proxy que imponha
 o próprio timeout de ociosidade.
+
+### Reciclagem de workers
+
+Um worker vive enquanto o servidor viver, a menos que algo o substitua, e tudo o que ele acumula
+fica com ele (veja [Modelo de Processos](#modelo-de-processos)). Para limitar o que um worker de
+vida longa junta — um vazamento numa biblioteca, um cache sem descarte, um heap fragmentado —
+deixe o servidor substituir workers por conta própria:
+
+```php
+new ServerConfigs(
+   host: '0.0.0.0',
+   port: 8082,
+   workers: 4,
+   maxRequests: 10_000, // recicla um worker após cerca de 10 000 requisições...
+   jitter: 0.1,         // ...cada worker no seu próprio limite, dentro de ±10% (o padrão)
+   maxMemory: '96M'     // ...ou assim que sua memória real passar de 96 MiB
+)
+```
+
+O `maxMemory` precisa ficar abaixo do `memory_limit` do PHP (`128M` por padrão) — além dele um worker
+morre com um erro fatal antes de conseguir reciclar: aumente o `memory_limit` no `php.ini` (ou com
+`-d memory_limit=`) para usar um teto maior, como `'256M'` sob um `memory_limit` de `512M`.
+
+- **O que conta.** Cada requisição que o worker despacha para a sua aplicação: cada requisição que
+  uma conexão keep-alive carrega conta uma vez, e cada stream HTTP/2 também. Uma requisição
+  recusada antes do despacho (um corpo JSON acima do seu limite de decodificação, respondido `413`)
+  não conta.
+- **`jitter`** impede que os workers reciclem juntos. Cada worker sorteia o seu próprio limite ao
+  subir, dentro da sua própria faixa de `maxRequests ± jitter`: com 4 workers, `10_000` e `0.1`, o
+  primeiro sorteia entre 9 000 e 9 500, o segundo entre 9 500 e 10 000, e assim por diante. Um
+  substituto sorteia de novo dentro da sua faixa. É uma fração de `0` a `1`; `0` dá a todo worker
+  exatamente `maxRequests`.
+- **`maxMemory`** é comparado com `memory_get_usage(true)` — a memória que o worker tomou do
+  sistema — a cada requisição que ele despacha: a requisição que encontra o teto ultrapassado ainda
+  é respondida, e então o worker recicla. Um `int` de bytes, ou um tamanho em texto (`'512M'`,
+  `'1.5 GB'`) lido por `Bytes::parse()`. Um worker pode ficar acima dele por até uma drenagem do
+  worker anterior do seu slot (veja *Um worker drenando por slot* abaixo).
+- **`0` desliga um gatilho** — os dois vêm desligados. Um valor negativo, um `jitter` fora de
+  `0`–`1` ou um tamanho que não é interpretável lança `InvalidArgumentException` ao construir a
+  Configs.
+
+Quando um gatilho dispara, o worker responde essa requisição — em HTTP/1.x, com `Connection: close` —
+e avisa o master, que **cria o substituto por fork na hora**, no próprio socket de escuta
+pré-vinculado do slot: o worker antigo e o novo se sobrepõem, então o slot nunca fica sem um worker
+aceitando. O worker antigo então **drena como na drenagem de um [reload](/guide/reload/overview/)** —
+para de aceitar e termina o que está em andamento — mas não espera clientes ociosos:
+
+- uma **conexão HTTP/1 keep-alive ociosa** (entre duas requisições, nada pendente nela) é fechada na
+  hora, e cada uma das outras assim que o seu trabalho termina; uma requisição que chegar numa delas
+  enquanto isso é respondida com `Connection: close` — inclusive uma resposta deferred, um stream ou
+  uma resposta de erro;
+- uma **conexão HTTP/2** recebe um GOAWAY na hora: os seus streams abertos terminam, um stream que ela
+  abrir depois é recusado (`REFUSED_STREAM`, que os clientes repetem numa conexão nova) — nunca contado
+  no orçamento contra rapid reset, por mais que um cliente ocupado tenha enviado antes de ler o GOAWAY,
+  e nenhum GOAWAY posterior nomeia um stream mais alto — e ela é fechada quando não resta nenhum stream
+  nela;
+- uma **conexão que ainda não respondeu nenhuma requisição** é deixada em paz (o cliente pode estar
+  enviando a primeira): ela é servida, ou fechada com o worker.
+
+O que ainda espera é o trabalho em andamento: requisições sendo tratadas, respostas deferred, streams
+e uploads. O worker antigo sai quando não segura mais nenhuma conexão — verificado uma vez por
+segundo, e no máximo após `TCP_Server_CLI::$drainTimeout` (30 s), quando as conexões ainda abertas
+são fechadas:
+
+```text
+NOTICE: Worker (PID: 50609) recycling: 9731 requests reached its limit of 9731; draining...
+NOTICE: Worker #1 (PID: 50609) recycling, forking its replacement...
+NOTICE: Worker #1 recovered (new PID: 51400)
+NOTICE: Worker #1 (PID: 50609) recycled.
+```
+
+Uma reciclagem não é um crash: nunca é registrada como um, e encerra — nunca prolonga — a sequência
+de backoff de um slot cujos workers continuam morrendo no boot. Um worker que sai com o status 75 sem
+ter avisado uma reciclagem (no boot, por exemplo) é um crash do mesmo jeito. Uma reciclagem disparada
+pela memória diz `its memory passed maxMemory (268435456 bytes) after 4120 requests`.
+
+Vale saber:
+
+- **Nenhuma janela sem worker.** Conexões novas chegam ao substituto enquanto o worker antigo drena;
+  nenhuma espera a drenagem, nenhuma é descartada. Nos modos Foreground e Daemon o master cria o
+  substituto assim que o worker avisa a reciclagem; no modo Monitor, dentro do seu turno de 30 ms; no
+  modo Interactive — cujo prompt não consegue esperar pelo aviso — em até 50 ms enquanto a reciclagem
+  está ligada. Um worker que sai antes de o master ouvi-lo é registrado como `recycled, reforking` e
+  recriado na hora.
+- **Um worker drenando por slot, e um prazo.** Um slot drena um worker por vez, então nada encurta
+  uma drenagem: um download lento, um long poll ou um upload no worker antigo mantém todo o seu
+  `drainTimeout`. O substituto, se atingir o seu próprio limite nesse meio-tempo, **segura a sua
+  reciclagem**: continua respondendo — ainda aceitando, além de `maxRequests`, e além de `maxMemory`
+  por até essa drenagem — até o master avisar que o worker antigo saiu (ele lê esse aviso uma vez por
+  segundo), então recicla e registra
+  `held its recycle while its slot's previous worker drained; recycling now`. Um aposentado que ainda
+  drena `drainTimeout` + 5 s após o início da sua reciclagem (um handler que bloqueia) é encerrado
+  (`killed, still draining past its deadline`), o que também libera a próxima reciclagem do slot. O
+  servidor nunca roda mais que 2 × `workers` workers, e um cliente que prende um worker drenando só
+  atrasa a próxima reciclagem do seu slot, em no máximo uma drenagem.
+- **`maxMemory` precisa ser alcançável.** O `start()` se recusa a iniciar (`Server not started: …`,
+  saída 1) quando ele não está acima da memória com que um worker começa (todo worker reciclaria na
+  primeira requisição, e cada substituto depois dele) ou não está abaixo do `memory_limit` (o limite
+  fatal do PHP viria primeiro). Um `reload` nunca para uma instância em serviço por isso: o master novo
+  registra `Reloaded without a memory ceiling: …` e continua servindo com o teto desligado até o
+  próximo start. Um worker que o próprio boot leva além de `maxMemory` continua servindo com o seu
+  teto de memória desligado e registra um erro dizendo isso.
+- **Servidores pausados continuam pausados.** Um substituto criado enquanto o servidor está pausado
+  sobe pausado; o `resume` o retoma com os outros — alternar entre os consoles Monitor e Interactive
+  mantém o servidor pausado. Um worker drenando não aceita nada, então uma pausa o deixa em paz.
+- **Aposentados ainda são do servidor.** Os comandos, o `logs -f`, o `stats` e o `connections`
+  alcançam um worker que drena a sua reciclagem, o `status` o conta, e o `stop` o encerra.
+- **Inicialização com Auto-TLS.** Um worker que recicla enquanto o servidor ainda prova o seu
+  certificado para cada worker não é um worker perdido: o seu slot é recriado quando a
+  inicialização termina — dentro dessa barreira o substituto espera por ela. Um worker drenando ignora
+  uma troca de certificado posterior: ele já não aceita, e as suas conexões abertas mantêm o
+  certificado que negociaram.
+- **Reciclar não é recarregar.** Substitui um worker, criado por fork do master em execução; uma
+  mudança de código ainda pede o [`reload`](/guide/reload/overview/), que substitui o master e todos
+  os workers.
+- **O modo Test nunca recicla**: o seu master nunca recria um worker.
 
 ### SSL/TLS
 
@@ -648,6 +768,7 @@ O servidor utiliza uma arquitetura **multi-processo** com `fork()`:
 
 - O processo **master** gerencia o ciclo de vida: tratamento de sinais, recuperação de workers e coordenação.
 - Cada processo **worker** cria seu próprio socket de servidor usando `SO_REUSEPORT`, de forma que todos fazem bind independentemente na mesma porta. Isso evita contenção em um socket compartilhado.
+- Um worker acima de `maxRequests` ou `maxMemory` avisa o master, que cria o substituto por fork na hora enquanto o worker antigo drena e sai de propósito — registrado como reciclagem; um slot mantém no máximo um worker drenando (a sua próxima reciclagem espera por ele), e o master encerra um que ainda drena `drainTimeout` + 5 s depois (veja [Reciclagem de workers](#reciclagem-de-workers)).
 - Quando um worker morre inesperadamente, o master automaticamente cria um substituto no mesmo índice via tratamento do `SIGCHLD`. Um slot cujos workers morrem antes de entrar no loop de eventos três vezes seguidas é recriado após 0,5 s, dobrando até 5 s, e cerca de uma em cada N conexões novas espera essa tentativa; um fork recusado é tentado de novo a cada segundo, em vez de encerrar o master.
 - Opções de socket por worker: `backlog: 102400`, `SO_KEEPALIVE`, `TCP_NODELAY`.
 
@@ -698,9 +819,10 @@ Disso decorrem duas regras:
 - **Nunca guarde dados da requisição nelas.** Um valor colocado em uma static ou em uma global
   ainda está lá — com o conteúdo da requisição anterior — quando a próxima requisição chega.
 - **Mantenha caches em processo limitados.** Tudo o que só cresce (um cache em array sem
-  descarte, uma lista que recebe um item por requisição) cresce durante toda a vida do worker.
-  Ainda não existe reciclagem automática de workers (nenhuma opção de *max requests*); o
-  [`reload`](/guide/reload/overview/) reinicia todos os workers de forma graciosa.
+  descarte, uma lista que recebe um item por requisição) cresce durante toda a vida do worker —
+  a menos que a [reciclagem de workers](#reciclagem-de-workers) o substitua após `maxRequests`
+  requisições ou acima de `maxMemory` bytes. O [`reload`](/guide/reload/overview/) reinicia todos
+  os workers de forma graciosa.
 
 Use isso a seu favor para o que é caro de construir e seguro de compartilhar: configuração já
 interpretada, templates compilados, prepared statements, pools de conexão.
@@ -861,8 +983,8 @@ compartilham memória, superglobais ficam vazias, `exit()` mata o worker. O que 
   bloqueiam o worker. Use os clientes assíncronos nativos listados acima.
 - **`Swoole\Table` → Cache `shared`.** Estado entre workers no mesmo host é o driver `shared` do
   Cache; entre hosts, Redis ou o banco de dados.
-- **`max_request` → ainda não.** Workers não são reciclados automaticamente; acompanhe a memória
-  e use o `reload`.
+- **`max_request` → `maxRequests`.** Desligado por padrão; defina-o, com `jitter` e `maxMemory`,
+  na Configs do servidor — veja [Reciclagem de workers](#reciclagem-de-workers).
 - **`sendfile` → streaming.** Veja [Arquivos Estáticos](#arquivos-estáticos).
 
 ## Ciclo de vida da resposta deferred
@@ -1223,6 +1345,9 @@ O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor 
 | `headroom` | `null\|int` | `null` (= `32`) | Entradas do selector que cada worker mantém livres para o próprio I/O de dependências (esperas deferred de DB/KV, o cliente HTTP embarcado), descartando clientes mais cedo: quando um worker já segura `1000 − headroom` conexões, a próxima é aceita e imediatamente fechada, então o teto efetivo é o menor entre esse valor e `maxConnections`. O socket de escuta ocupa uma dessas entradas, então dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma. `0` o desativa; ele é limitado para que um worker sempre admita clientes. Define `TCP_Server_CLI::$headroom`. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
 | `maxWorkerPendingBytes` | `null\|int` | `null` (= `64 MiB`) | Orçamento de memória do worker: os bytes que um worker pode segurar entre eventos — corpos de requisição inacabados (no máximo metade), entradas do cache de rotas (no máximo um quarto) e saída pendente —, cobrados pelo footprint no alocador. Reduzido para metade do `memory_limit` na partida, com um aviso, quando maior. Define `TCP_Server_CLI::$maxWorkerPendingBytes`. Veja [Orçamento de memória](#orçamento-de-memória). |
+| `maxRequests` | `int` | `0` (= desligado) | Requisições após as quais um worker é reciclado — substituído na hora, enquanto drena como num reload. Cada requisição que uma conexão keep-alive carrega conta uma vez, e cada stream HTTP/2. Um substituto cujo antecessor no slot ainda drena segura a sua reciclagem até ele sair. Negativo lança `InvalidArgumentException`. Define `TCP_Server_CLI::$maxRequests`. Veja [Reciclagem de workers](#reciclagem-de-workers). |
+| `jitter` | `float` | `0.1` | Dispersão do limite próprio de cada worker em torno de `maxRequests`, como fração de `0` a `1` (`0.1` = ±10%): cada worker sorteia dentro da sua própria faixa, então os workers nunca reciclam juntos. Fora de `0`–`1` lança `InvalidArgumentException`. Define `TCP_Server_CLI::$jitter`. |
+| `maxMemory` | `int\|string` | `0` (= desligado) | Memória real (`memory_get_usage(true)`) acima da qual um worker é reciclado, verificada a cada requisição que ele despacha. Bytes, ou um tamanho em texto (`'512M'`, `'1.5 GB'`) lido por `Bootgly\ABI\Code\__String\Bytes::parse()`. Um valor negativo ou malformado lança `InvalidArgumentException`; o `start()` recusa um que não esteja acima da memória com que um worker começa ou abaixo do `memory_limit`, e um `reload` desliga um teto assim em vez disso. Um substituto cujo antecessor no slot ainda drena pode ficar acima dele até o antecessor sair. Define `TCP_Server_CLI::$maxMemory`. |
 
 ### `Request\Configs`
 

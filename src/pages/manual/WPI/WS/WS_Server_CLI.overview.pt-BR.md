@@ -195,7 +195,10 @@ new WS_Server_CLI\Configs (
    null|int $maxConnectionsPerIP = null,
    null|int $headroom = null,
    null|int $maxWorkerPendingBytes = null,
-   null|Closure $Fallback = null
+   null|Closure $Fallback = null,
+   int $maxRequests = 0,
+   float $jitter = 0.1,
+   int|string $maxMemory = 0
 )
 ```
 
@@ -230,6 +233,19 @@ decodificação) e o heap da própria aplicação. `memory_limit = -1` mantém o
 configurado. Servidores alcançáveis diretamente (sem proxy na frente) também devem definir `maxConnectionsPerIP`. `Fallback` responde requisições HTTP simples
 (sem upgrade) — por exemplo, servindo a página do cliente na mesma porta. `secure` é um array de
 contexto de stream TLS para `wss://`.
+`maxRequests`, `jitter` e `maxMemory` reciclam um worker: acima de `maxRequests` conexões aceitas
+(cada worker no seu próprio limite, dentro de ±`jitter`, padrão `0.1`) ou de `maxMemory` bytes de
+memória real (um `int`, ou um tamanho como `'512M'`) — verificada quando uma conexão é aceita, então
+uma sessão longa que faz a memória do worker crescer não dispara nada até a próxima conexão chegar —
+o worker é substituído na hora: o substituto aceita no mesmo socket de escuta enquanto o worker antigo
+drena. O worker antigo fecha as suas sessões abertas com `1001 Going Away` de imediato (os clientes se
+reconectam ao substituto) e deixa a caixa de broadcast entre workers do slot para o substituto; um
+handshake ainda em andamento é fechado do mesmo jeito quando termina, em até um segundo. Um slot mantém
+no máximo um worker drenando: um substituto que atinge o seu próprio limite enquanto o worker antigo
+ainda drena segura a sua reciclagem — continua aceitando, além de `maxRequests` e de `maxMemory` por até
+essa drenagem — até o antigo sair; o master encerra um que ainda drena `drainTimeout` + 5 s após o
+início da sua reciclagem. O `maxMemory` precisa ficar abaixo do `memory_limit`. `0` (o padrão) mantém
+cada gatilho desligado. Veja [Reciclagem de workers](/manual/WPI/TCP/TCP_Server_CLI/overview/#reciclagem-de-workers).
 
 `host`, `port` e `workers` têm default `null` apenas porque o guard slot vem antes deles — o PHP
 proíbe um parâmetro obrigatório depois de um opcional. Continuam obrigatórios: omitir qualquer um

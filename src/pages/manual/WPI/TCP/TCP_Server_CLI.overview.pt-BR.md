@@ -13,6 +13,7 @@ O TCP Server CLI é a base de servidor TCP de baixo nível do Bootgly PHP Framew
 | **Sinais e controle** | Pause, retome, recarregue, pare, inspecione conexões e veja estatísticas com sinais POSIX e comandos CLI. |
 | **SSL/TLS** | Aceita conexões criptografadas por meio de opções SSL em stream contexts do PHP. |
 | **Recuperação de workers** | O master recria um worker que morre a partir do próprio loop (nunca dentro do handler de `SIGCHLD`). Um slot cujos workers morrem antes de entrar no loop de eventos três vezes seguidas (um boot que sempre falha) é recriado após 0,5 s, dobrando até 5 s, enquanto um worker que já serviu é sempre recriado na hora. Um slot em espera mantém sua parte do socket de escuta, então cerca de uma em cada N conexões novas espera a próxima tentativa. Um fork recusado (um limite de processos atingido) mantém o master e o slot e é tentado de novo a cada segundo. |
+| **Reciclagem de workers** | Um worker acima de `maxRequests` despachos (cada worker dentro de ±`jitter`) ou de `maxMemory` bytes é substituído na hora — o substituto aceita no mesmo socket de escuta enquanto ele drena como num reload, um worker drenando por slot (a próxima reciclagem do slot espera por ele), encerrado após o seu prazo — registrado como reciclagem, nunca como crash, sem espera crescente. |
 | **Rebaixamento de privilégios** | Faça bind como root quando necessário e depois reduza para um usuário/grupo POSIX menos privilegiado. |
 | **Estatísticas de conexão** | Acompanha leituras, escritas, bytes transferidos, erros e metadados de conexões ativas. |
 
@@ -142,6 +143,9 @@ O transporte vive em `TCP_Server_CLI\Configs`:
 | `secure` | `null\|array` | `null` | Opções seguras SSL/TLS de stream context do PHP para sockets TLS. |
 | `user` | `null\|string` | `null` | Usuário POSIX para o qual o processo será rebaixado após o bind. |
 | `group` | `null\|string` | `null` | Grupo POSIX para o qual o processo será rebaixado após o bind. |
+| `maxRequests` | `int` | `0` (= desligado) | Despachos após os quais um worker é reciclado — neste servidor, conexões aceitas. Veja [Reciclagem de workers](#reciclagem-de-workers). |
+| `jitter` | `float` | `0.1` | Dispersão do limite próprio de cada worker em torno de `maxRequests`, uma fração de `0` a `1` (`0.1` = ±10%). |
+| `maxMemory` | `int\|string` | `0` (= desligado) | Memória real (`memory_get_usage(true)`) acima da qual um worker é reciclado: bytes, ou um tamanho em texto como `'512M'` (lido por `Bytes::parse()`). Precisa ficar abaixo do `memory_limit` — o `start()` recusa um que nenhum worker consegue respeitar (veja [Reciclagem de workers](#reciclagem-de-workers)). |
 
 ```php
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
@@ -209,6 +213,125 @@ Os workers rodam como esse usuário desde a primeira requisição, então o que 
 O `storage/cache` não é entregue: código executado como root — um comando de CLI, o runner de testes — lê o que ele guarda. Um ancestral de um diretório de worker que outra conta poderia substituir — um link, que não é do root nem do `user`, ou gravável pelo grupo ou por todos sem o sticky bit — é informado num aviso com o ancestral, a causa e o remédio (o armazenamento de sessões padrão recusa esse caminho; os caches dos workers vão para um diretório temporário privado), uma vez por diretório, mas não impede o servidor de subir. Para `cache-<uid>`, um link que pertence ao root ou ao `user` não é informado por si só: o cache resolve a sua raiz de storage, então o aviso verifica para onde o link leva.
 
 O master se rebaixa logo após o fork; cada worker se rebaixa assim que seu listener está pronto. O master espera até conseguir sinalizar todos os workers (até 5 segundos) antes de o `start()` seguir, então um comando ou um stop enviado logo após o servidor subir chega a todos os workers.
+
+### Reciclagem de workers
+
+Um worker pode ser substituído de propósito, para limitar o que ele acumula numa vida longa — um
+vazamento, um cache que só cresce, um heap fragmentado. Dois gatilhos, ambos desligados por padrão:
+
+```php
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
+
+
+$Server->configure(
+	new Configs(
+		host: '0.0.0.0',
+		port: 8080,
+		workers: 4,
+		maxRequests: 5_000, // recicla um worker após cerca de 5 000 conexões...
+		jitter: 0.1,        // ...cada worker no seu próprio limite, dentro de ±10% (o padrão)
+		maxMemory: '96M'    // ...ou quando sua memória real passar de 96 MiB
+	)
+);
+```
+
+O `maxMemory` precisa ficar abaixo do `memory_limit` do PHP (`128M` por padrão): além desse limite um
+worker morre com um erro fatal antes de conseguir reciclar. Aumente o `memory_limit` para usar um teto
+maior.
+
+**O que conta é o despacho do nó.** Este servidor conta cada conexão que aceita — TCP puro não tem
+fronteira de requisição. O [servidor HTTP](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#reciclagem-de-workers)
+conta requisições (cada requisição que uma conexão keep-alive carrega), e o
+[servidor WebSocket](/manual/WPI/WS/WS_Server_CLI/overview/) conta conexões. Um único contador vive no
+transporte; um nó que conta outra coisa chama `TCP_Server_CLI::count()` uma vez por despacho e o
+declara em `DISPATCH`.
+
+**Cada worker sorteia o seu próprio limite** ao subir: a faixa `maxRequests ± jitter` é dividida em
+uma banda por worker e cada worker sorteia dentro da sua, então os workers nunca reciclam juntos; um
+substituto sorteia de novo. **`maxMemory`** é comparado com `memory_get_usage(true)` a cada despacho —
+neste servidor, quando uma conexão é aceita: uma conexão longa que faz a memória do worker crescer não
+dispara nada até a próxima chegar. `0` desliga um gatilho; um valor negativo, um `jitter` fora de `0`–`1` ou um tamanho que não é
+interpretável lança `InvalidArgumentException` ao construir a Configs.
+
+Quando um gatilho dispara, **o worker antigo e o seu substituto se sobrepõem**: o worker avisa o master
+na hora, e o master cria o substituto por fork, no próprio socket de escuta pré-vinculado do slot, de
+imediato — o slot nunca fica sem um worker aceitando. Enquanto isso o worker antigo **drena como na
+drenagem de um reload**: sai do conjunto de accept, serve as conexões que segura até elas fecharem (no
+máximo `drainTimeout`, 30 s, quando as restantes são fechadas) e sai com o status
+`TCP_Server_CLI::RECYCLE` (75). O master o recolhe como o worker reciclado que já substituiu — sem um
+segundo fork:
+
+```text
+NOTICE: Worker (PID: 50609) recycling: 4877 connections reached its limit of 4877; draining...
+NOTICE: Worker #2 (PID: 50609) recycling, forking its replacement...
+NOTICE: Worker #2 recovered (new PID: 51400)
+NOTICE: Worker #2 (PID: 50609) recycled.
+```
+
+Quão cedo o master ouve o aviso depende do modo: nos modos Foreground e Daemon ele acorda com o aviso na
+hora, no modo Monitor dentro do seu turno de 30 ms, e no modo Interactive — cujo prompt não consegue
+esperar por ele — em até 50 ms enquanto a reciclagem está ligada. Um worker que sai antes de o master
+ouvi-lo (um sem nada para drenar, por exemplo) é recolhido primeiro e registrado como
+`Worker #2 (PID: 50609) recycled, reforking...` — uma reciclagem do mesmo jeito, recriada na hora. Dentro da
+barreira de inicialização de um nó (a [inicialização com Auto-TLS do servidor HTTP](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#reciclagem-de-workers)),
+o substituto espera a inicialização terminar.
+
+O que o worker antigo devolve antes depende do nó: o [servidor HTTP](/manual/WPI/HTTP/HTTP_Server_CLI/overview/#reciclagem-de-workers)
+fecha na hora as suas conexões keep-alive ociosas e manda um GOAWAY ao HTTP/2, o
+[servidor WebSocket](/manual/WPI/WS/WS_Server_CLI/overview/) fecha as suas sessões com `1001 Going Away`.
+TCP puro não distingue um fluxo ocioso de um prestes a falar, então este servidor mantém cada conexão
+até o par fechá-la ou o `drainTimeout` encerrar a drenagem — conexões novas chegam ao substituto
+enquanto isso.
+
+**Uma reciclagem nunca multiplica os processos, nem encurta uma drenagem.** Um slot drena um worker
+por vez: um substituto criado enquanto o worker anterior do seu slot ainda drena — um download lento, um
+stream, um cliente que mantém uma conexão aberta — e que atinge o seu próprio limite nesse meio-tempo
+**segura a sua reciclagem**. Ele continua servindo, ainda aceitando, além de `maxRequests` (e além de
+`maxMemory`: um teto pode ser ultrapassado por até uma drenagem), até o master avisar que o worker
+antigo saiu; então ele recicla na hora, e diz isso. O trabalho em andamento do worker antigo mantém todo
+o seu `drainTimeout`:
+
+```text
+NOTICE: Worker #2 (PID: 50609) recycled.
+NOTICE: Worker (PID: 51400) held its recycle while its slot's previous worker drained; recycling now.
+NOTICE: Worker (PID: 51400) recycling: 4919 connections reached its limit of 4919; draining...
+```
+
+O worker lê o aviso do master uma vez por segundo. Um aposentado que ainda drena `drainTimeout` + 5 s
+após o início da sua reciclagem é encerrado, como um reload limita a sua própria drenagem — um handler
+que bloqueia (um sleep, uma chamada sem timeout) impede que o próprio timer de drenagem do aposentado
+dispare — e isso também libera a próxima reciclagem do seu slot. Assim um servidor nunca roda mais que
+2 × `workers` processos de worker, e um cliente que prende um aposentado só atrasa a próxima reciclagem
+do seu slot, em no máximo uma drenagem:
+
+```text
+WARNING: Worker #2 (PID: 50609) killed, still draining past its deadline (drainTimeout + 5 s); its replacement serves the slot.
+```
+
+Um aposentado continua sendo um dos processos do servidor: os comandos, o `logs -f`, o `stats` e o
+`connections` o alcançam, o `status` o conta (`+1 retiring`), o `stop` — e o `project stop`, caso o
+master não responda — o encerra, e o estado persistido o lista em `retirees` até ele sair. Uma pausa o
+deixa em paz (ele já não aceita nada), e um substituto criado enquanto o servidor está pausado sobe
+pausado, até o `resume` — alternar entre os consoles Monitor e Interactive mantém o servidor pausado.
+
+Uma reciclagem nunca é registrada como crash e nunca prolonga a espera crescente do seu slot — ela
+encerra uma sequência de crashes, como qualquer worker que serviu. A prova é o aviso, não o status de
+saída: um worker que sai com 75 sem ter avisado uma reciclagem (no boot, por exemplo) é um crash como
+qualquer outro, com espera crescente se continuar morrendo antes de servir. Uma reciclagem substitui
+um worker criado por fork do master em execução; mudanças de código ainda pedem o `reload`. Um
+servidor em `Modes::Test` nunca recicla, já que o seu master nunca recria workers.
+
+**Um teto de memória que nenhum worker consegue respeitar é recusado.** O `start()` sai com
+`Server not started: maxMemory (…) …` quando `maxMemory` não está acima da memória com que um worker
+começa (todo worker reciclaria no primeiro despacho, e cada substituto depois dele), ou não está abaixo
+do `memory_limit` (o erro fatal do PHP viria primeiro). Um `reload` nunca derruba uma instância em
+serviço por isso — os seus workers antigos já foram drenados: o master novo registra
+`Reloaded without a memory ceiling: …` e continua servindo com o teto desligado até o próximo start. Um
+worker que o próprio boot — um listener de `Worker::Boot`, por exemplo — leva além de `maxMemory`
+continua servindo com o seu teto de memória desligado e registra um erro dizendo isso: nunca um fork
+por despacho. E um worker cujo canal de aviso o master não conseguiu criar (faltaram descritores) não
+consegue avisar uma reciclagem, nem ouvir o aviso do master: ele registra um aviso e não recicla, em vez
+de drenar sem substituto.
 
 ## Handler de Dados
 
@@ -282,7 +405,7 @@ Processo master
 └── Worker #N → bind do socket → event loop
 ```
 
-- O **master** instala sinais, salva o estado do processo, monitora workers e recria um substituto se algum cair — com espera crescente para um slot cujos workers continuam morrendo no boot. Um reload cujo fork do relay é recusado é abortado, e o servidor continua servindo.
+- O **master** instala sinais, salva o estado do processo, monitora workers e recria um substituto se algum cair — com espera crescente para um slot cujos workers continuam morrendo no boot — ou reciclar — criando o substituto assim que o worker avisa a reciclagem, enquanto o antigo drena (um aposentado por slot: a próxima reciclagem do slot espera por ele, e ele é encerrado após o seu prazo) — registrado como reciclagem. Um reload cujo fork do relay é recusado é abortado, e o servidor continua servindo.
 - Cada **worker** cria seu próprio socket de servidor com `SO_REUSEPORT` e entra no event loop compartilhado `Select`.
 - Os sockets aceitos são encapsulados em objetos de conexão que acompanham peer remoto, timers, escritas e status da conexão.
 

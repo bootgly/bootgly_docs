@@ -8,6 +8,7 @@ The HTTP Server CLI is the native HTTP server of the Bootgly PHP Framework. It i
 |---|---|
 | **Operation Modes** | Daemon (background), Foreground, Interactive (REPL), Monitor (live log viewer), and Test (automated) |
 | **Multi-Worker** | Fork-based workers with `SO_REUSEPORT`; master auto-reforks on unexpected worker death (a slot whose boots keep failing is backed off up to 5 s) |
+| **Worker Recycling** | A worker is replaced after `maxRequests` requests (each worker within ±`jitter`) or past `maxMemory` bytes — its replacement serves at once while it drains, logged as a recycle, never as a crash |
 | **PHP Fibers** | Deferred async responses via `$Response->defer()`, integrated in the `stream_select` event loop |
 | **Event-Driven** | `stream_select`-based event loop; non-blocking I/O, zero idle CPU usage |
 | **Routing** | Static and dynamic routes with typed parameter constraints; one-time warmup cache |
@@ -177,7 +178,10 @@ $Server->configure(
       maxConnectionsPerIP: 0,          // 0 (default, opt-in) — per-IP concurrent-connection ceiling
       headroom: 32,                    // 32 (default) — selector entries kept for the worker's own dependency I/O (0 = disabled)
       connectionIdleTimeout: 15,       // 15 (default) — idle reaper in seconds; a parked defer() counts as activity (0 = disabled)
-      maxWorkerPendingBytes: 64 * 1024 * 1024 // 64 MiB (default) — worker memory budget: bodies, route cache, pending output
+      maxWorkerPendingBytes: 64 * 1024 * 1024, // 64 MiB (default) — worker memory budget: bodies, route cache, pending output
+      maxRequests: 0,                  // 0 (default, off) — requests after which a worker is recycled
+      jitter: 0.1,                     // 0.1 (default) — each worker's own limit lies within ±10% of maxRequests
+      maxMemory: 0                     // 0 (default, off) — real memory (bytes, or a size like '512M') past which a worker is recycled
    ),
    new RequestConfigs(
       maxFileSize: 500 * 1024 * 1024,         // 500 MB (default) — max size per uploaded file part
@@ -372,6 +376,113 @@ Events stream instead **renews** the lease from its own supervisor, which runs e
 `min(10, interval, heartbeat)` seconds and never slower than the connection's own expiration — so a
 short `connectionIdleTimeout` only makes that supervisor tick more often. `connectionIdleTimeout: 0`
 disables the reaper entirely — only do that behind a proxy that enforces its own idle timeout.
+
+### Worker recycling
+
+A worker lives as long as the server unless something replaces it, and everything it accumulates
+stays with it (see [Process Model](#process-model)). To bound what a long-lived worker gathers — a
+leak in a library, a cache without eviction, a fragmented heap — let the server replace workers on
+its own:
+
+```php
+new ServerConfigs(
+   host: '0.0.0.0',
+   port: 8082,
+   workers: 4,
+   maxRequests: 10_000, // recycle a worker after about 10 000 requests...
+   jitter: 0.1,         // ...each worker at its own limit, within ±10% (the default)
+   maxMemory: '96M'     // ...or as soon as its real memory passes 96 MiB
+)
+```
+
+`maxMemory` must stay below PHP's `memory_limit` (`128M` by default) — past it a worker dies with a
+fatal error before it could recycle: raise `memory_limit` in `php.ini` (or with `-d memory_limit=`) to
+use a larger ceiling, such as `'256M'` under a `memory_limit` of `512M`.
+
+- **What counts.** Every request the worker dispatches to your application: each request a
+  keep-alive connection carries counts once, and so does each HTTP/2 stream. A request refused
+  before dispatch (a JSON body over its decode bound, answered `413`) does not.
+- **`jitter`** keeps workers from recycling together. Each worker draws its own limit when it boots,
+  inside its own band of `maxRequests ± jitter`: with 4 workers, `10_000` and `0.1`, the first draws
+  between 9 000 and 9 500, the second between 9 500 and 10 000, and so on. A replacement draws again
+  inside its band. A fraction from `0` to `1`; `0` gives every worker exactly `maxRequests`.
+- **`maxMemory`** is compared with `memory_get_usage(true)` — the memory the worker took from the
+  system — at every request it dispatches: the request that finds the ceiling passed is still
+  answered, then the worker recycles. An `int` of bytes, or a size string (`'512M'`, `'1.5 GB'`)
+  read by `Bytes::parse()`. A worker may stay past it for up to one drain of its slot's previous
+  worker (see *One draining worker per slot* below).
+- **`0` turns a trigger off** — both are off by default. A negative value, a `jitter` outside
+  `0`–`1` or a size that does not parse throws `InvalidArgumentException` when the Configs is built.
+
+When a trigger fires, the worker answers that request — over HTTP/1.x, with `Connection: close` —
+and tells the master, which **forks its replacement at once** on the slot's own pre-bound listener:
+the old worker and the new one overlap, so the slot never goes without a worker accepting. The old
+worker then **drains like a [reload](/guide/reload/overview/) drain** — it stops accepting and finishes
+what is in flight — but it does not wait for idle clients:
+
+- an **idle HTTP/1 keep-alive connection** (between two requests, nothing pending on it) is closed at
+  once, and every other one as soon as its work ends; a request that arrives on one meanwhile is
+  answered with `Connection: close` — a deferred response, a stream or an error response included;
+- an **HTTP/2 connection** gets a GOAWAY at once: its open streams finish, a stream it opens after is
+  refused (`REFUSED_STREAM`, which clients retry on a new connection) — never counted toward the
+  rapid-reset budget, however many a busy client sent before it read the GOAWAY, and no later GOAWAY
+  names a higher stream — and it is closed once no stream is left on it;
+- a **connection that never answered a request** is left alone (its client may be sending its first
+  one): it is served, or closed with the worker.
+
+What still waits is the work in flight: requests being handled, deferred responses, streams and
+uploads. The old worker exits once it holds no connection — checked once a second, and after
+`TCP_Server_CLI::$drainTimeout` (30 s) at most, when the connections still open are closed:
+
+```text
+NOTICE: Worker (PID: 50609) recycling: 9731 requests reached its limit of 9731; draining...
+NOTICE: Worker #1 (PID: 50609) recycling, forking its replacement...
+NOTICE: Worker #1 recovered (new PID: 51400)
+NOTICE: Worker #1 (PID: 50609) recycled.
+```
+
+A recycle is not a crash: it is never logged as one, and it ends — never extends — the backoff
+streak of a slot whose workers keep dying at boot. A worker that exits with status 75 without having
+announced a recycle (at boot, say) is a crash all the same. A recycle triggered by memory says
+`its memory passed maxMemory (268435456 bytes) after 4120 requests` instead.
+
+Worth knowing:
+
+- **No window without a worker.** New connections reach the replacement while the old worker drains;
+  none waits for the drain, none is dropped. In Foreground and Daemon mode the master forks the
+  replacement as soon as the worker announces its recycle; in Monitor mode within its 30 ms turn; in
+  Interactive mode — whose prompt cannot wait on the announcement — within 50 ms while recycling is
+  on. A worker that exits before the master heard it is logged `recycled, reforking` instead and
+  reforked at once.
+- **One draining worker per slot, and a deadline.** A slot drains one worker at a time, so nothing
+  cuts a drain short: a slow download, a long poll or an upload on the old worker keeps its whole
+  `drainTimeout`. Its replacement, if it reaches its own limit meanwhile, **holds its recycle**: it
+  answers on — still accepting, past `maxRequests`, and past `maxMemory` for up to that one drain —
+  until the master tells it the old worker is gone (it reads that go once a second), then recycles
+  and logs `held its recycle while its slot's previous worker drained; recycling now`. A retiree still
+  draining `drainTimeout` + 5 s after its recycle began (a handler that blocks) is killed
+  (`killed, still draining past its deadline`), which lets the slot's next recycle go too. The server
+  never runs more than 2 × `workers` workers, and a client that pins a draining worker only delays
+  its slot's next recycle, by one drain at most.
+- **`maxMemory` must be reachable.** `start()` refuses to start (`Server not started: …`, exit 1)
+  when it is not above the memory a worker starts with (every worker would recycle at its first
+  request, and every replacement after it) or not below `memory_limit` (PHP's fatal limit would come
+  first). A `reload` never stops a serving instance for it: its fresh master logs
+  `Reloaded without a memory ceiling: …` and serves on with the ceiling off until the next start. A
+  worker whose own boot takes it past `maxMemory` serves on with its memory ceiling off and logs an
+  error saying so.
+- **Paused servers stay paused.** A replacement forked while the server is paused boots paused;
+  `resume` resumes it with the others — switching between the Monitor and Interactive consoles keeps
+  the server paused. A draining worker accepts nothing, so a pause leaves it alone.
+- **Retirees are still the server's.** Commands, `logs -f`, `stats` and `connections` reach a worker
+  that is draining its recycle, `status` counts it, and `stop` ends it.
+- **Auto-TLS startup.** A worker that recycles while the server is still proving its certificate
+  to every worker is no lost worker: its slot is reforked once startup completes — inside that
+  barrier the replacement waits for it. A draining worker ignores a later certificate swap: it no
+  longer accepts, and its open connections keep the certificate they negotiated.
+- **Recycling is not a reload.** It replaces one worker, forked from the running master; a code
+  change still needs [`reload`](/guide/reload/overview/), which replaces the master and every worker.
+- **Test mode never recycles**: its master never reforks a worker.
 
 ### SSL/TLS
 
@@ -641,6 +752,7 @@ The server uses a **multi-process** architecture with `fork()`:
 
 - The **master** process manages the lifecycle: signal handling, worker recovery, and coordination.
 - Each **worker** process creates its own server socket using `SO_REUSEPORT`, so they all independently bind to the same port. This avoids contention on a shared socket.
+- A worker past `maxRequests` or `maxMemory` tells the master, which forks its replacement at once while the old worker drains and exits on purpose — logged as a recycle; a slot keeps one draining worker at most (its next recycle waits for it), and the master kills one still draining `drainTimeout` + 5 s later (see [Worker recycling](#worker-recycling)).
 - When a worker dies unexpectedly, the master automatically reforks a replacement at the same index via `SIGCHLD` handling. A slot whose workers die before entering their event loop three times in a row is reforked after 0.5 s, doubling up to 5 s, and about one in N new connections waits for that attempt; a refused fork is retried every second instead of ending the master.
 - Socket options per worker: `backlog: 102400`, `SO_KEEPALIVE`, `TCP_NODELAY`.
 
@@ -691,9 +803,9 @@ Two things follow from it:
 - **Never keep per-request data in them.** A value you put in a static or a global is still
   there — with the previous request's content — when the next request arrives.
 - **Keep in-process caches bounded.** Anything that only grows (an array cache without eviction,
-  a list you append to per request) grows for the whole life of the worker. There is no
-  automatic worker recycling (no *max requests* option) yet; [`reload`](/guide/reload/overview/)
-  restarts every worker gracefully.
+  a list you append to per request) grows for the whole life of the worker — unless
+  [worker recycling](#worker-recycling) replaces it after `maxRequests` requests or past
+  `maxMemory` bytes. [`reload`](/guide/reload/overview/) restarts every worker gracefully.
 
 Use this to your advantage for things that are expensive to build and safe to share: parsed
 configuration, compiled templates, prepared statements, connection pools.
@@ -850,8 +962,8 @@ share memory, superglobals are empty, `exit()` kills the worker. What differs:
   worker. Use the native async clients listed earlier.
 - **`Swoole\Table` → Cache `shared`.** Cross-worker state on one host is the `shared` Cache
   driver; across hosts, Redis or the database.
-- **`max_request` → not yet.** Workers are not recycled automatically; watch memory and use
-  `reload`.
+- **`max_request` → `maxRequests`.** Off by default; set it, with `jitter` and `maxMemory`, on the
+  server Configs — see [Worker recycling](#worker-recycling).
 - **`sendfile` → streamed.** See [Static Files](#static-files).
 
 ## Deferred Response Lifecycle
@@ -1206,6 +1318,9 @@ The server itself. Named arguments only — the constructor's first slot is the 
 | `headroom` | `null\|int` | `null` (= `32`) | Selector entries each worker keeps free for its own dependency I/O (deferred DB/KV waits, the embedded HTTP client) by shedding clients earlier: once a worker holds `1000 − headroom` connections, the next one is accepted and immediately closed, so the effective ceiling is the smaller of that and `maxConnections`. The listener takes one of these entries, so size it to at least the sum of the `pool.max` of the worker's resources plus one. `0` disables it; it is clamped so a worker always admits clients. Sets `TCP_Server_CLI::$headroom`. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
 | `maxWorkerPendingBytes` | `null\|int` | `null` (= `64 MiB`) | Worker memory budget: the bytes one worker may hold between events — unfinished request bodies (at most half), route cache entries (at most a quarter) and pending output — charged at their allocator footprint. Lowered to half of `memory_limit` at start, with a warning, when larger. Sets `TCP_Server_CLI::$maxWorkerPendingBytes`. See [Memory budget](#memory-budget). |
+| `maxRequests` | `int` | `0` (= off) | Requests after which a worker is recycled — replaced at once, while it drains like a reload. Each request a keep-alive connection carries counts once, and each HTTP/2 stream. A worker whose slot's previous worker still drains holds its recycle until that one is gone. Negative throws `InvalidArgumentException`. Sets `TCP_Server_CLI::$maxRequests`. See [Worker recycling](#worker-recycling). |
+| `jitter` | `float` | `0.1` | Spread of each worker's own limit around `maxRequests`, as a fraction from `0` to `1` (`0.1` = ±10%): every worker draws inside its own band, so workers never recycle together. Outside `0`–`1` throws `InvalidArgumentException`. Sets `TCP_Server_CLI::$jitter`. |
+| `maxMemory` | `int\|string` | `0` (= off) | Real memory (`memory_get_usage(true)`) past which a worker is recycled, checked at every request it dispatches. Bytes, or a size string (`'512M'`, `'1.5 GB'`) read by `Bootgly\ABI\Code\__String\Bytes::parse()`. A negative or malformed value throws `InvalidArgumentException`; `start()` refuses one not above the memory a worker starts with or not below `memory_limit`, and a `reload` turns such a ceiling off instead. A worker whose slot's previous worker still drains may stay past it until that one is gone. Sets `TCP_Server_CLI::$maxMemory`. |
 
 ### `Request\Configs`
 
