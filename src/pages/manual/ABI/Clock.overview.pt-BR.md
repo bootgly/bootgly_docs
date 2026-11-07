@@ -1,34 +1,34 @@
 # Clock
 
-`Clock` é a única forma de injetar a hora nos pontos de relógio do Bootgly. Ele coloca o relógio
-de parede e o relógio monotônico do sistema atrás de um único objeto, então o código que precisa
-da hora recebe um `Clock` em vez de chamar `time()`, `microtime()` ou `hrtime()` — e um teste
-entrega a ele um relógio que move à mão. `Stopwatch` mede tempo decorrido nele.
+`Clock` é a única forma de injetar o tempo nos pontos do Bootgly que dependem do relógio. Ele junta
+o wall clock e o relógio monotônico do sistema em um só objeto: o código que precisa saber a hora
+recebe um `Clock` em vez de chamar `time()`, `microtime()` ou `hrtime()` — e, no teste, você passa
+um relógio que você mesmo avança. O `Stopwatch` usa esse mesmo `Clock` para medir tempo decorrido.
 
-## Ler a hora
+## Lendo o tempo
 
 ```php
 use Bootgly\ABI\Clock;
 
 $Clock = new Clock;
 
-$Clock->now;  // 1793960035.897368 — hora de parede, segundos em float (microtime(true))
-$Clock->time; // 1793960035        — hora de parede, segundos inteiros (time())
+$Clock->now;  // 1793960035.897368 — wall clock, segundos em float (microtime(true))
+$Clock->time; // 1793960035        — wall clock, segundos inteiros (time())
 $Clock->tick; // 310700984429682   — tempo monotônico, nanossegundos (hrtime(true))
 ```
 
-Toda leitura consulta o sistema no momento em que é lida; nada fica em cache. Escolha a leitura
-pelo que ela mede:
+Cada leitura consulta o sistema na hora em que é feita; nada fica em cache. Escolha a leitura de
+acordo com o que você quer medir:
 
 | Leitura | Relógio | Unidade | Use para |
 |---|---|---|---|
-| `$now` | parede | segundos em float | timestamps com precisão abaixo do segundo |
-| `$time` | parede | segundos inteiros | expirações, datas guardadas ou comparadas com guardadas |
-| `$tick` | monotônico | nanossegundos inteiros | prazos, timeouts, durações |
+| `$now` | wall clock | segundos em float | timestamps com frações de segundo |
+| `$time` | wall clock | segundos inteiros (int) | expirações e datas que são salvas ou comparadas com datas salvas |
+| `$tick` | monotônico | nanossegundos inteiros (int) | deadlines, timeouts, durações |
 
-O relógio de parede é a data que o sistema mostra: ele salta quando alguém (ou o NTP) acerta o
-relógio do sistema. O relógio monotônico nunca volta e nunca salta — mas sua origem é
-arbitrária, então só a diferença entre dois ticks tem significado:
+O wall clock é a data e hora que o sistema mostra: ele pula quando alguém (ou o NTP) ajusta o
+relógio do sistema. O relógio monotônico nunca volta e nunca pula — mas o ponto de partida dele é
+arbitrário, então só a diferença entre dois ticks tem significado:
 
 ```php
 $deadline = $Clock->tick + 5 * 1_000_000_000; // daqui a 5 s, no relógio monotônico
@@ -38,9 +38,9 @@ while ($Clock->tick < $deadline) {
 }
 ```
 
-## Receba um Clock em vez do sistema
+## Receba um Clock em vez de ler o sistema
 
-Dê à classe que precisa da hora um `Clock`, com o do sistema por padrão:
+Faça a classe que precisa do tempo receber um `Clock` — e usar o relógio do sistema quando nenhum for passado:
 
 ```php
 use Bootgly\ABI\Clock;
@@ -62,29 +62,29 @@ final class Invitation
 }
 ```
 
-Em produção ela lê o sistema. Em um teste, passe o dublê
-`Bootgly\ACI\Tests\Doubles\Fake\Clock` — ele **é** um `Clock`, congelado até você movê-lo:
+Em produção, ela lê o relógio do sistema. No teste, passe o test double
+`Bootgly\ACI\Tests\Doubles\Fake\Clock` — ele **é** um `Clock`, só que parado até você avançá-lo:
 
 ```php
 use Bootgly\ACI\Tests\Doubles\Fake\Clock;
 
-$Clock = new Clock(1_000_000);          // parede em 1000000, tick em 0
+$Clock = new Clock(1_000_000);          // wall clock em 1000000, tick em 0
 $Invitation = new Invitation($Clock);
 
 $Invitation->expire(1_000_000, 60);     // false
-$Clock->advance(60);                    // parede +60 s, tick +60_000_000_000 ns
+$Clock->advance(60);                    // wall clock +60 s, tick +60_000_000_000 ns
 $Invitation->expire(1_000_000, 60);     // true
 ```
 
-`advance()` recusa um avanço que levaria o tick além da faixa de int em nanossegundos (cerca de
-292 anos): lança `OverflowException` e deixa o relógio como estava.
+O `advance()` recusa um avanço que faria o tick (contado em nanossegundos) passar do maior valor de
+um int (cerca de 292 anos): ele lança uma `OverflowException` e deixa o relógio do jeito que estava.
 
-Veja [Dublês](/testing/deep/doubles/overview/) para tudo o que o fake faz.
+Veja [Doubles](/testing/deep/doubles/overview/) para tudo o que o fake faz.
 
-## Medir tempo decorrido
+## Medindo tempo decorrido
 
-`Stopwatch` lê o tick monotônico, então mudar a data do sistema nunca estica nem encolhe
-uma medição:
+O `Stopwatch` lê o tick monotônico, então mudar a data do sistema nunca aumenta nem diminui uma
+medição:
 
 ```php
 use Bootgly\ABI\Stopwatch;
@@ -92,15 +92,16 @@ use Bootgly\ABI\Stopwatch;
 $Stopwatch = new Stopwatch;
 $Stopwatch->start();
 
-// ... o trabalho medido
+// ... o trabalho que está sendo medido
 
 $Stopwatch->stop();
 echo $Stopwatch->elapsed; // 12503311   (nanossegundos)
 echo $Stopwatch->seconds; // 0.012503311
 ```
 
-Funciona como um cronômetro de mão: `start()` depois de `stop()` retoma do que já mediu,
-`reset()` zera, e `$elapsed` pode ser lido enquanto ele corre (inclui a corrida atual):
+Ele funciona como um cronômetro de mão: `start()` depois de `stop()` continua a partir do que já
+foi medido, `reset()` zera tudo, e dá para ler `$elapsed` com ele ainda rodando (o valor já inclui
+a medição em andamento):
 
 ```php
 $Stopwatch->reset()->start();
@@ -108,12 +109,12 @@ foreach ($batches as $batch) {
    import($batch);
 
    if ($Stopwatch->seconds > 30.0) {
-      break; // passou do orçamento de tempo
+      break; // estourou o tempo disponível
    }
 }
 ```
 
-Passe um `Clock` para medir nele — com o fake, uma duração é exata:
+Passe um `Clock` para medir com ele — com o fake, a duração é exata:
 
 ```php
 use Bootgly\ABI\Stopwatch;
@@ -125,21 +126,21 @@ $Clock->advance(1.5);
 $Stopwatch->elapsed; // 1500000000
 ```
 
-Um cronômetro confia no tick do relógio que lê. O tick do sistema nunca volta, mas o `reset()`
-do fake leva o tick dele de volta a 0: um cronômetro rodando através desse reset lê um `$elapsed`
-negativo. Zere o cronômetro junto com o fake.
+O cronômetro usa o tick do relógio que lê, sem nenhuma verificação. O tick do sistema nunca volta, mas o `reset()`
+do fake leva o tick de volta a 0: um cronômetro que estava rodando quando esse reset aconteceu
+passa a mostrar um `$elapsed` negativo. Sempre que resetar o fake, resete o cronômetro junto.
 
 ## Clocks no framework
 
-As peças do framework que leem a hora recebem um `Clock`:
+As partes do framework que leem o tempo recebem um `Clock`:
 
-| Peça | Onde o Clock entra | Leitura |
+| Parte | Onde passar o Clock | Leitura |
 |---|---|---|
-| `Bootgly\ABI\Resources\Cache` | opção `'clock'` | `$time` (segundos de TTL) — drivers file, shared e memory; APCu e Redis expiram as entradas no relógio do próprio servidor, que nenhum Clock move |
-| `Bootgly\ACI\Queues` | opção `'clock'` | `$time` (timestamps de jobs) |
+| `Bootgly\ABI\Resources\Cache` | opção `'clock'` | `$time` (segundos do TTL) — drivers file, shared e memory; no APCu e no Redis a expiração das entradas segue o relógio do próprio servidor, que nenhum Clock consegue avançar |
+| `Bootgly\ACI\Queues` | opção `'clock'` | `$time` (timestamps dos jobs) |
 | Middleware `RateLimit` | argumento `clock:` | `$time` (segundos da janela) |
-| `Tokens`, `Users`, `Trust` | propriedade `$Clock` | `$time` (hora dos tokens; `freeze()` ainda vence) |
-| `JWT\Remote` | argumento `Clock:` | `$time` (frescor do conjunto), `$tick` (piso da origem) |
+| `Tokens`, `Users`, `Trust` | propriedade `$Clock` | `$time` (hora usada nos tokens; o `freeze()` continua tendo prioridade) |
+| `JWT\Remote` | argumento `Clock:` | `$time` (validade do conjunto de chaves em cache), `$tick` (intervalo mínimo entre consultas à origem do JWKS) |
 
 ```php
 use Bootgly\ABI\Resources\Cache;
@@ -153,30 +154,32 @@ $Clock->advance(60);
 $Cache->fetch('key'); // null — expirou
 ```
 
-O ponto de injeção é escrito de um jeito em cada peça: uma opção `'clock'` (Cache, Queues), um
-argumento `clock:` (`RateLimit`), um argumento `Clock:` (`JWT\Remote`) ou uma propriedade
-`$Clock` (`Tokens`, `Users`, `Trust`). Esses nomes ficam como estão na 1.x; a direção para a 2.0,
-quando a forma de closure sair, é uma grafia só — um `Clock` chamado `Clock` (um argumento ou
-opção `Clock:`).
+O ponto de injeção tem um nome diferente em cada parte: opção `'clock'` (Cache, Queues), argumento
+`clock:` (`RateLimit`), argumento `Clock:` (`JWT\Remote`) ou propriedade `$Clock` (`Tokens`,
+`Users`, `Trust`). Esses nomes não mudam durante a 1.x; o plano para a 2.0, quando a forma com
+closure deixar de existir, é ter um nome só — um `Clock` chamado `Clock` (argumento ou opção
+`Clock:`).
 
-`Tokens`, `Users` e `Trust` também mantêm `freeze()` e `resume()`. `freeze($timestamp)` fixa a
-hora dos tokens em um segundo Unix, seja o que for que `$Clock` leia; `resume()` volta a
-`$Clock->time`. Mova o tempo com um `Fake\Clock` em `$Clock`; congele quando um instante fixo é
-tudo o que uma verificação precisa.
+`Tokens`, `Users` e `Trust` também continuam com `freeze()` e `resume()`. O `freeze($timestamp)`
+fixa a hora dos tokens em um timestamp Unix, seja qual for o valor de `$Clock`;
+o `resume()` volta a usar `$Clock->time`. Para fazer o tempo passar, coloque um `Fake\Clock` em
+`$Clock`; use o `freeze()` quando a verificação só precisar de um instante fixo.
 
-> **Depreciado desde 1.1.0:** a opção `clock` de Cache e Queues e o argumento `clock:` do
+> **Deprecated desde a 1.1.0:** a opção `clock` de Cache e Queues e o argumento `clock:` do
 > `RateLimit` ainda aceitam uma closure que retorna um timestamp Unix
-> (`fn (): float => $Clock->now`). Ela é lida como `(int) $closure()` — exatamente como antes —
-> através de `Clock::adapt()`, e é removida na 2.0.0. Passe o próprio `Clock`. O `$tick` do
-> relógio adaptado segue a hora de parede da closure, então volta quando o valor dela volta: não
-> meça durações nele. Em `Queues\Config`, atribuir `$Clock` limpa o `$clock` depreciado.
+> (`fn (): float => $Clock->now`). O retorno dela é lido como `(int) $closure()` — exatamente como
+> antes — via `Clock::adapt()`, e esse suporte a closure será removido na 2.0.0. Passe o próprio `Clock`. O `$tick` do
+> relógio adaptado acompanha o wall clock da closure, então ele volta quando o valor da closure
+> volta: não meça durações com ele. Em `Queues\Config`, atribuir `$Clock` limpa o `$clock`
+> deprecated.
 
-## Ainda fora do Clock
+## Ainda sem Clock
 
-Alguns leitores ainda chamam o relógio do sistema diretamente e ficam para uma versão futura:
-`JWT\Tokens` (seu próprio ponto de timestamp do `freeze()`), `JWT\Usage`, `JWT\Validator`,
-`JWT\Vault`, o `Worker` de Queues (duração dos jobs) e a verificação de visibilidade do driver
-file de Queues (`recover()`). Um Clock entregue a Cache, Queues ou `JWT\Remote` não os move.
+Alguns pontos ainda leem o relógio do sistema diretamente e vão ser migrados em uma versão futura:
+`JWT\Tokens` (que tem seu próprio ponto de injeção de timestamp, o `freeze()`), `JWT\Usage`,
+`JWT\Validator`, `JWT\Vault`, o `Worker` de Queues (duração dos jobs) e a verificação de
+visibilidade do driver file de Queues (`recover()`). Um Clock passado para Cache, Queues ou
+`JWT\Remote` não afeta esses pontos.
 
 ## Referência
 
@@ -184,53 +187,53 @@ file de Queues (`recover()`). Um Clock entregue a Cache, Queues ou `JWT\Remote` 
 public float $now { get; }
 ```
 
-Hora de parede em segundos desde a época Unix, com microssegundos — `microtime(true)`, lida a
+Hora do wall clock em segundos desde a epoch Unix, com microssegundos — `microtime(true)`, lida a
 cada acesso.
 
 ```php
 public int $time { get; }
 ```
 
-Hora de parede em segundos inteiros desde a época Unix — `time()`, lida a cada acesso.
+Hora do wall clock em segundos inteiros desde a epoch Unix — `time()`, lida a cada acesso.
 
 ```php
 public int $tick { get; }
 ```
 
-Tempo monotônico em nanossegundos a partir de uma origem arbitrária — `hrtime(true)`, lido a
-cada acesso. Nunca diminui.
+Tempo monotônico em nanossegundos, contado a partir de uma origem arbitrária — `hrtime(true)`, lido
+a cada acesso. Nunca diminui.
 
 ```php
 public static function adapt (Closure $Closure): Clock
 ```
 
-Descontinuado desde a 1.1.0, removido na 2.0.0. Devolve um Clock lido de uma closure `clock` legada que retorna um timestamp Unix: `$time` é `(int) $Closure()`, `$now` o mesmo valor como float e `$tick` esse valor em nanossegundos. As opções `clock` de Cache, Queues e RateLimit o usam para as closures que ainda aceitam; passe um `Clock` no lugar.
+Deprecated desde a 1.1.0, removido na 2.0.0. Retorna um Clock que lê uma closure `clock` legada que retorna um timestamp Unix: `$time` é `(int) $Closure()`, `$now` é o mesmo valor como float e `$tick` é esse valor em nanossegundos. As opções `clock` de Cache, Queues e RateLimit usam esse método para as closures que ainda aceitam; passe um `Clock` no lugar.
 
 ```php
 public function Stopwatch::__construct (null|Clock $Clock = null)
 ```
 
-Cria um cronômetro parado em zero que lê `$Clock` (o `Clock` do sistema quando null).
+Cria um cronômetro parado e zerado que lê `$Clock` (o `Clock` do sistema quando for null).
 
 ```php
 public function Stopwatch::start (): static
 ```
 
-Inicia o cronômetro, ou o retoma depois de `stop()`, a partir do `$tick` atual do relógio.
-Iniciar um cronômetro que já corre não muda nada.
+Inicia o cronômetro, ou retoma a contagem após um `stop()`, a partir do `$tick` atual do relógio.
+Chamar `start()` com o cronômetro já rodando não muda nada.
 
 ```php
 public function Stopwatch::stop (): static
 ```
 
-Para o cronômetro, somando a corrida atual ao que ele mediu. Parar um cronômetro parado não
-muda nada.
+Interrompe o cronômetro e soma a medição em andamento ao total já medido. Chamar `stop()` com o
+cronômetro já parado não muda nada.
 
 ```php
 public function Stopwatch::reset (): static
 ```
 
-Para o cronômetro e zera o que ele mediu.
+Interrompe o cronômetro e zera o total medido.
 
 ```php
 public private(set) Clock $Stopwatch->Clock;
@@ -242,19 +245,20 @@ O relógio que o cronômetro lê.
 public private(set) null|int $Stopwatch->started;
 ```
 
-O `$tick` em que a corrida atual começou; `null` enquanto parado.
+O `$tick` em que a medição em andamento começou; `null` enquanto o cronômetro está parado.
 
 ```php
 public bool $Stopwatch->running { get; }
 ```
 
-Se o cronômetro está correndo.
+Indica se o cronômetro está rodando.
 
 ```php
 public int $Stopwatch->elapsed { get; }
 ```
 
-Nanossegundos decorridos: toda corrida parada mais, enquanto corre, a atual.
+Nanossegundos decorridos: a soma de todos os trechos já encerrados e, se estiver rodando, da
+medição em andamento.
 
 ```php
 public float $Stopwatch->seconds { get; }
