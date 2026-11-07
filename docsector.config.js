@@ -8,11 +8,15 @@ export default {
   branding: {
     logo: 'https://docs.bootgly.com/images/logo/bootgly-logo.webp',
     name: 'Bootgly',
-    version: 'v1.0.13',
+    version: 'v1.1.0',
     versions: [
       {
-        id: 'v1.0.13',
+        id: 'v1.1.0',
         current: true,
+        released: true
+      },
+      {
+        id: 'v1.0.13',
         released: true
       },
       {
