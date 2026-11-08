@@ -50,6 +50,75 @@ return new Config(scope: 'database')
 
 `bind()` returns the parent node, so the tree can be declared fluently. A node value is read with `get()`.
 
+## Declaring a schema
+
+A chain of `bind()` calls stops at the first problem: a missing password throws, you fix it, restart, and only then learn the port is not a number. To see every problem of a scope at once, declare the scope with a `Schema` and return what it builds:
+
+```php
+use Bootgly\ADI\Validators\In;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\API\Environment\Configs\Config\Types;
+use Bootgly\API\Environment\Configs\Schema;
+use Bootgly\API\Environment\Configs\Schema\Field;
+
+return new Schema(scope: 'database', Fields: [
+   'Default' => new Field(key: 'DB_CONNECTION', default: 'mysql', Rules: [
+      new In(['mysql', 'pgsql', 'sqlite']),
+   ]),
+   'Connections.MySQL.Host' => new Field(key: 'DB_HOST', default: 'localhost'),
+   'Connections.MySQL.Port' => new Field(key: 'DB_PORT', default: 3306, cast: Types::Integer, Rules: [
+      new Minimum(1),
+      new Maximum(65535),
+   ]),
+   'Connections.MySQL.Username' => new Field(key: 'DB_USER', default: 'root'),
+   'Connections.MySQL.Password' => new Field(key: 'DB_PASS', required: true),
+   'Connections.MySQL.Charset' => new Field(default: 'utf8mb4'),
+])->build();
+```
+
+Each key is a path of node names: `Connections.MySQL.Port` is the node you read as `$Database->Connections->MySQL->Port->get()`. A `Field` takes the same inputs as `bind()` — `key`, `default`, `cast`, `required` — and resolves the same way (process environment, then the scope `.env`, then the default), plus `Rules`: ADI validators run on the resolved, cast value. Rules see every resolved value of the scope, so a cross-field rule such as `Confirmed` can compare two fields. `build()` returns the scope's `Config` root, so the rest of the application reads it exactly as before.
+
+When anything is wrong, `build()` binds and checks every field first and then throws one `Schema\Failure` that lists all of them, in declaration order:
+
+```text
+Invalid config scope `database` (3 failures):
+- Default: Default must be one of the allowed values.
+- Connections.MySQL.Port: Invalid integer config value.
+- Connections.MySQL.Password: Required config value is missing: DB_PASS
+```
+
+Because the file runs when the scope loads, the failure surfaces from `Configs::load()` or the first `Configs::get()`, and the scope is not registered. Return the result of `build()`, not the `Schema` itself: a scope file that returns an unbuilt `Schema` makes the load throw a `RuntimeException` instead of silently skipping the validation. Load the scopes your application needs while it boots, so a broken deployment stops there instead of on the first request:
+
+```php
+use Bootgly\API\Environment\Configs;
+use Bootgly\API\Environment\Configs\Schema\Failure;
+
+$Configs = new Configs(__DIR__ . '/configs/');
+
+try {
+   $Configs->load('database');
+}
+catch (Failure $Failure) {
+   fwrite(STDERR, "{$Failure->getMessage()}\n");
+   exit(1);
+}
+```
+
+`$Failure->scope` names the scope and `$Failure->failures` holds the reasons keyed by path, for a log or a health check.
+
+The report never contains a configured value — not the rejected one, not the default — so it is safe to log even when the field holds a password or a token. The built-in validators name the field, never its value; keep the same rule in the message of a custom `Condition` you add to `Rules`. A rule that throws is reported as `A rule of this field could not run.` for its field, and its exception is dropped. The rule messages follow the `validation` translation catalogs of the active language, while the bind and cast reasons stay in English.
+
+A few declarations are refused when the `Schema` or a `Field` is constructed, because they are bugs in the file rather than in the deployment (they throw `InvalidArgumentException`):
+
+- a scope that is not a scope name (`[A-Za-z0-9_-]+`);
+- a node name that is not a PHP identifier (`My-SQL`, `1Host`, an empty segment) or that is a `Config` property (`scope`, `name`, `parent`, `value`, …), since object navigation could not read it;
+- a wildcard (`Connections.*`): every field binds one node;
+- a path that is the container of another (`Database` and `Database.Host`): a node holds a value or children, not both;
+- a `Field` whose key holds a control character or `=`, a required `Field` without a key (it could never resolve), or a rule that is not a `Condition`.
+
+`bind()` keeps working unchanged, and both styles produce the same tree: move a scope to a `Schema` when you want the aggregated report.
+
 ## Loading a scope
 
 ```php
@@ -234,6 +303,7 @@ Bootgly hardens config loading with several rules:
 - `lock()` can reserve sensitive keys for the real runtime environment.
 - Dot-notation is not supported by `Configs::get()`.
 - Required secrets can fail closed with `bind(required: true)`.
+- A `Schema` reports every invalid key of a scope at once, and its report never contains a configured value.
 - `.Config.php` files are trusted PHP code and must be reviewed like source code.
 
 > [!WARNING]
@@ -310,3 +380,28 @@ public static function del (string $key): bool
 ```
 
 Unsets one variable, composing the prefix and suffix like `get()` and `put()`: with `Environment::$prefix = 'BOOTGLY_'`, `Environment::del('DB_HOST')` removes `BOOTGLY_DB_HOST` and leaves a plain `DB_HOST` alone. Returns `true` once the variable is unset — also when it was not set — and `false`, removing nothing, when `$key` is empty or the composed name holds a `=` or a NUL byte (`putenv()` would act on another variable: `del('NAME=value')` would *set* `NAME`).
+
+
+```php
+new Schema (string $scope, array $Fields)
+```
+
+`Bootgly\API\Environment\Configs\Schema` declares one scope. `$Fields` maps node paths (`Host`, `Connections.MySQL.Port`) to `Field` objects; both are kept, in declaration order, as the read-only `scope` and `Fields` properties. Throws `InvalidArgumentException` for a scope that is not a scope name (`[A-Za-z0-9_-]+`), a key that is not a non-empty string, a value that is not a `Field`, a node name that is not a PHP identifier or is a `Config` property, a wildcard, or a path that is the container of another path.
+
+```php
+public function build (): Config
+```
+
+Binds every field into a new `Config` root of the scope — the same resolution, defaults, strict casts and required semantics as `bind()` — then runs each field's `Rules` with ADI `Validation` over every resolved value of the scope. Returns the root when everything passes. Otherwise throws one `Schema\Failure` with every failure: an absent or empty required value, a value its `cast` refuses, each rule that failed, and `A rule of this field could not run.` for a field whose rule threw (its exception is not kept). A field whose bind fails is reported once and its rules are not run. Each call builds a fresh tree.
+
+```php
+new Field (string $key = '', mixed $default = null, null|Types $cast = null, bool $required = false, array $Rules = [])
+```
+
+`Bootgly\API\Environment\Configs\Schema\Field` is one declared key. `key`, `default`, `cast` and `required` mean what they mean for `bind()`; `Rules` is a list of ADI `Condition` objects (validators such as `Minimum`, `In`, `Regex`) run on the resolved value. Optional blank values skip every rule except the implicit ones (`Required`), as in ADI `Validation`. All five inputs are read-only public properties. Throws `InvalidArgumentException` when the key holds a control character or `=`, when `required` is set without a key, or when a rule is not a `Condition`.
+
+```php
+final class Failure extends RuntimeException
+```
+
+`Bootgly\API\Environment\Configs\Schema\Failure` is the aggregated report. `scope` is the scope name and `failures` is `array<string,array<int,string>>`: the reasons keyed by node path, in declaration order. The message is ``Invalid config scope `<scope>` (<n> failures):`` (`failure` when there is one) followed by one `- <path>: <reason>` line per reason. Neither the message nor `failures` contains a configured value.

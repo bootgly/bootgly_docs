@@ -50,6 +50,75 @@ return new Config(scope: 'database')
 
 `bind()` retorna o nó pai, então a árvore pode ser declarada fluentemente. O valor de um nó é lido com `get()`.
 
+## Declarando um schema
+
+Uma cadeia de `bind()` para no primeiro problema: falta a senha, ela lança, você corrige, reinicia e só então descobre que a porta não é um número. Para ver todos os problemas de um escopo de uma vez, declare o escopo com um `Schema` e retorne o que ele constrói:
+
+```php
+use Bootgly\ADI\Validators\In;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\API\Environment\Configs\Config\Types;
+use Bootgly\API\Environment\Configs\Schema;
+use Bootgly\API\Environment\Configs\Schema\Field;
+
+return new Schema(scope: 'database', Fields: [
+   'Default' => new Field(key: 'DB_CONNECTION', default: 'mysql', Rules: [
+      new In(['mysql', 'pgsql', 'sqlite']),
+   ]),
+   'Connections.MySQL.Host' => new Field(key: 'DB_HOST', default: 'localhost'),
+   'Connections.MySQL.Port' => new Field(key: 'DB_PORT', default: 3306, cast: Types::Integer, Rules: [
+      new Minimum(1),
+      new Maximum(65535),
+   ]),
+   'Connections.MySQL.Username' => new Field(key: 'DB_USER', default: 'root'),
+   'Connections.MySQL.Password' => new Field(key: 'DB_PASS', required: true),
+   'Connections.MySQL.Charset' => new Field(default: 'utf8mb4'),
+])->build();
+```
+
+Cada chave é um caminho de nomes de nó: `Connections.MySQL.Port` é o nó que você lê com `$Database->Connections->MySQL->Port->get()`. Um `Field` recebe as mesmas entradas do `bind()` — `key`, `default`, `cast`, `required` — e resolve do mesmo jeito (ambiente do processo, depois o `.env` do escopo, depois o default), mais `Rules`: validadores do ADI aplicados ao valor já resolvido e convertido. As regras enxergam todos os valores resolvidos do escopo, então uma regra entre campos como `Confirmed` consegue comparar dois campos. `build()` retorna a raiz `Config` do escopo, então o resto da aplicação continua lendo exatamente como antes.
+
+Quando algo está errado, `build()` primeiro faz o bind e verifica todos os campos, e só então lança uma única `Schema\Failure` com todos eles, na ordem de declaração:
+
+```text
+Invalid config scope `database` (3 failures):
+- Default: Default must be one of the allowed values.
+- Connections.MySQL.Port: Invalid integer config value.
+- Connections.MySQL.Password: Required config value is missing: DB_PASS
+```
+
+Como o arquivo roda quando o escopo é carregado, a falha aparece em `Configs::load()` ou no primeiro `Configs::get()`, e o escopo não é registrado. Retorne o resultado de `build()`, não o próprio `Schema`: um arquivo de escopo que retorna um `Schema` sem `build()` faz o load lançar uma `RuntimeException` em vez de pular a validação em silêncio. Carregue os escopos de que a aplicação precisa durante o boot, para que um deploy quebrado pare ali, e não na primeira requisição:
+
+```php
+use Bootgly\API\Environment\Configs;
+use Bootgly\API\Environment\Configs\Schema\Failure;
+
+$Configs = new Configs(__DIR__ . '/configs/');
+
+try {
+   $Configs->load('database');
+}
+catch (Failure $Failure) {
+   fwrite(STDERR, "{$Failure->getMessage()}\n");
+   exit(1);
+}
+```
+
+`$Failure->scope` identifica o escopo e `$Failure->failures` guarda os motivos indexados pelo caminho, para um log ou um health check.
+
+O relatório nunca contém um valor configurado — nem o rejeitado, nem o default — então é seguro logá-lo mesmo quando o campo guarda uma senha ou um token. Os validadores embutidos citam o campo, nunca o valor; mantenha a mesma regra na mensagem de uma `Condition` própria que você colocar em `Rules`. Uma regra que lança exceção é reportada como `A rule of this field could not run.` no seu campo, e a exceção é descartada. As mensagens das regras seguem os catálogos de tradução `validation` do idioma ativo, enquanto os motivos de bind e cast ficam em inglês.
+
+Algumas declarações são recusadas já na construção do `Schema` ou de um `Field`, porque são bugs do arquivo e não do deploy (lançam `InvalidArgumentException`):
+
+- um escopo que não é um nome de escopo (`[A-Za-z0-9_-]+`);
+- um nome de nó que não é um identificador PHP (`My-SQL`, `1Host`, um segmento vazio) ou que é uma propriedade de `Config` (`scope`, `name`, `parent`, `value`, …), já que a navegação por objeto não conseguiria lê-lo;
+- um wildcard (`Connections.*`): cada campo faz o bind de um único nó;
+- um caminho que é o contêiner de outro (`Database` e `Database.Host`): um nó guarda um valor ou filhos, não os dois;
+- um `Field` cuja key tem um caractere de controle ou `=`, um `Field` obrigatório sem key (ele nunca resolveria), ou uma regra que não é uma `Condition`.
+
+O `bind()` continua funcionando sem mudança, e os dois estilos produzem a mesma árvore: migre um escopo para `Schema` quando quiser o relatório agregado.
+
 ## Carregando um escopo
 
 ```php
@@ -234,6 +303,7 @@ O Bootgly endurece o carregamento de configs com várias regras:
 - `lock()` pode reservar chaves sensíveis para o ambiente real de runtime.
 - Dot-notation não é suportada por `Configs::get()`.
 - Segredos obrigatórios podem falhar em modo fail-closed com `bind(required: true)`.
+- Um `Schema` reporta de uma vez todas as chaves inválidas de um escopo, e o relatório nunca contém um valor configurado.
 - Arquivos `.Config.php` são código PHP confiável e devem ser revisados como código-fonte.
 
 > [!WARNING]
@@ -310,3 +380,28 @@ public static function del (string $key): bool
 ```
 
 Remove uma variável, compondo o prefixo e o sufixo como `get()` e `put()`: com `Environment::$prefix = 'BOOTGLY_'`, `Environment::del('DB_HOST')` remove `BOOTGLY_DB_HOST` e deixa um `DB_HOST` sem prefixo intocado. Retorna `true` quando a variável fica removida — também quando ela não estava definida — e `false`, sem remover nada, quando `$key` é vazia ou o nome composto contém `=` ou um byte NUL (`putenv()` agiria sobre outra variável: `del('NOME=valor')` *definiria* `NOME`).
+
+
+```php
+new Schema (string $scope, array $Fields)
+```
+
+`Bootgly\API\Environment\Configs\Schema` declara um escopo. `$Fields` mapeia caminhos de nó (`Host`, `Connections.MySQL.Port`) para objetos `Field`; ambos ficam guardados, na ordem de declaração, nas propriedades somente-leitura `scope` e `Fields`. Lança `InvalidArgumentException` para um escopo que não é um nome de escopo (`[A-Za-z0-9_-]+`), uma chave que não é uma string não vazia, um valor que não é um `Field`, um nome de nó que não é identificador PHP ou que é uma propriedade de `Config`, um wildcard, ou um caminho que é o contêiner de outro caminho.
+
+```php
+public function build (): Config
+```
+
+Faz o bind de todos os campos numa nova raiz `Config` do escopo — mesma resolução, defaults, casts estritos e semântica de `required` do `bind()` — e depois aplica as `Rules` de cada campo com o `Validation` do ADI sobre todos os valores resolvidos do escopo. Retorna a raiz quando tudo passa. Caso contrário, lança uma única `Schema\Failure` com todas as falhas: um valor obrigatório ausente ou vazio, um valor que o `cast` recusa, cada regra que falhou, e `A rule of this field could not run.` para um campo cuja regra lançou exceção (a exceção não é guardada). Um campo cujo bind falha é reportado uma vez e suas regras não rodam. Cada chamada constrói uma árvore nova.
+
+```php
+new Field (string $key = '', mixed $default = null, null|Types $cast = null, bool $required = false, array $Rules = [])
+```
+
+`Bootgly\API\Environment\Configs\Schema\Field` é uma chave declarada. `key`, `default`, `cast` e `required` significam o mesmo que no `bind()`; `Rules` é uma lista de objetos `Condition` do ADI (validadores como `Minimum`, `In`, `Regex`) aplicados ao valor resolvido. Valores opcionais em branco pulam todas as regras exceto as implícitas (`Required`), como no `Validation` do ADI. As cinco entradas são propriedades públicas somente-leitura. Lança `InvalidArgumentException` quando a key tem um caractere de controle ou `=`, quando `required` é usado sem key, ou quando uma regra não é uma `Condition`.
+
+```php
+final class Failure extends RuntimeException
+```
+
+`Bootgly\API\Environment\Configs\Schema\Failure` é o relatório agregado. `scope` é o nome do escopo e `failures` é `array<string,array<int,string>>`: os motivos indexados pelo caminho do nó, na ordem de declaração. A mensagem é ``Invalid config scope `<scope>` (<n> failures):`` (`failure` quando há uma só) seguida de uma linha `- <path>: <reason>` por motivo. Nem a mensagem nem `failures` contêm um valor configurado.
