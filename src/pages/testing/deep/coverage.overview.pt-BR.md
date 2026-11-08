@@ -54,7 +54,7 @@ O driver `Native` é o backend sem extensão. Ele instrumenta arquivos PHP no ca
 php -d opcache.enable_cli=0 bootgly test 11 --coverage-driver=native --coverage-report=text
 ```
 
-O `Native` exige `opcache.enable_cli=0`, porque OPcache pode reaproveitar bytecode não instrumentado. Ele também mede apenas arquivos carregados depois do início da sessão de cobertura.
+O `Native` exige `opcache.enable_cli=0`, porque OPcache pode reaproveitar bytecode não instrumentado. Ele também mede apenas arquivos carregados depois do início da sessão de cobertura: um arquivo no escopo carregado antes (pelo bootstrap) fica fora do relatório, sem aviso. Com o OPcache ligado, ou um `--coverage-native-mode` desconhecido, o run para na hora com uma linha `[test] Coverage:` e código de saída 1.
 
 ### Diff de cobertura
 
@@ -73,9 +73,11 @@ Passe um range do git para `--coverage-diff` e o relatório mede **apenas as lin
 php bootgly test --coverage --coverage-diff=origin/main...HEAD
 ```
 
-O range é qualquer revisão que o `git diff` aceite: `origin/main...HEAD` (as mudanças de uma branch), `HEAD~3..HEAD` ou uma revisão só, como `main` (comparada com a árvore de trabalho: edições não commitadas em arquivos rastreados entram, arquivos novos não rastreados não). Ele é lido no repositório do diretório de trabalho; um range que começa com `-` é recusado. Só as linhas alteradas contam — configurações locais do git (`diff.relative`, contexto entre hunks, detecção de cópias, `GIT_DIFF_OPTS`, variáveis de pathspec e de localização do repositório como `GIT_DIR`) não ampliam, reduzem nem deslocam essas linhas, e um conteúdo que o git chamaria de binário (um byte NUL, um atributo `-diff`) continua sendo lido linha a linha; só arquivos PHP são lidos, então um range que adiciona assets continua pequeno. O coverage mede a árvore de trabalho em checkout, então o range precisa terminar nela — `origin/main...HEAD` num checkout de `HEAD`: um range cujo lado novo é outro commit (`main..feature` com `main` em checkout) aponta linhas e arquivos que o run não tem, e um arquivo PHP alterado que a árvore de trabalho não tem interrompe o run com um erro em vez de ser ignorado. Um range sobre um merge commit (`<merge>^!`) é recusado, porque o diff combinado dele deixa de fora arquivos que vieram limpos de um dos lados: use o range do primeiro pai, `<merge>^1..<merge>`.
+O range é qualquer revisão que o `git diff` aceite: `origin/main...HEAD` (as mudanças de uma branch), `HEAD~3..HEAD` ou uma revisão só, como `main` (comparada com a árvore de trabalho: edições não commitadas em arquivos rastreados entram, arquivos novos não rastreados não). Ele é lido no repositório do diretório de trabalho; um range que começa com `-` é recusado. Só as linhas alteradas contam — configurações locais do git (`diff.relative`, contexto entre hunks, detecção de cópias, `GIT_DIFF_OPTS`, variáveis de pathspec e de localização do repositório como `GIT_DIR`) não ampliam, reduzem nem deslocam essas linhas, e um conteúdo que o git chamaria de binário (um byte NUL, um atributo `-diff`) continua sendo lido linha a linha; só arquivos PHP (`.php` em qualquer caixa) são lidos, então um range que adiciona assets continua pequeno. O coverage mede a árvore de trabalho em checkout, então o range precisa terminar nela — `origin/main...HEAD` num checkout de `HEAD`: um range cujo lado novo é outro commit (`main..feature` com `main` em checkout) aponta linhas e arquivos que o run não tem, e um arquivo PHP alterado que a árvore de trabalho não tem interrompe o run com um erro em vez de ser ignorado. Um range sobre um merge commit (`<merge>^!`) é recusado, porque o diff combinado dele deixa de fora arquivos que vieram limpos de um dos lados: use o range do primeiro pai, `<merge>^1..<merge>`.
 
-Um arquivo PHP alterado que nenhum teste carregou é medido com zero hits em vez de sumir do relatório. Um arquivo alterado dentro de um diretório de recursos (`examples/`, `fixtures/`, `stubs/`, `templates/`, `tests/`) não é código a cobrir e não entra quando nenhum teste o carregou; scripts de teste nunca contam. Esses diretórios são lidos abaixo do diretório de trabalho, então um checkout que fica ele mesmo dentro de um diretório `tests/` mantém seus arquivos. Com o driver `Native`, um arquivo alterado no escopo que ele nunca instrumenta (um caminho sob `/tmp/`, `/vendor/` ou `/storage/`, e o próprio motor de coverage, `Bootgly/ACI/Tests/Coverage/`) é reportado como impossível de medir, e um gate reprova em vez de tratá-lo como inalterado.
+Uma linha alterada conta pela instrução a que pertence: uma instrução em várias linhas é executável em uma delas, então um argumento, um elemento de array, o corpo de um heredoc ou o `);` de fechamento alterado mede essa instrução, enquanto uma linha de comentário ou em branco não mede nada. Uma linha no corpo de uma estrutura de controle mede a instrução do corpo, nunca o cabeçalho (`if (…)`, `case …:`, `foreach (…):`), que roda quer o corpo rode ou não; uma instrução do corpo usa primeiro a sua própria linha executável, e uma escrita só na linha do cabeçalho não se distingue dele na cobertura por linha, então conta com os hits dessa linha — como um `if ($a) return;` de uma linha.
+
+Um arquivo PHP alterado que nenhum teste carregou é medido com zero hits em vez de sumir do relatório. Um arquivo alterado dentro de um diretório de recursos (`examples/`, `fixtures/`, `stubs/`, `templates/`, `tests/`) não é código a cobrir e não entra quando nenhum teste o carregou; scripts de teste nunca contam. Esses diretórios são lidos abaixo do diretório de trabalho, então um checkout que fica ele mesmo dentro de um diretório `tests/` mantém seus arquivos. Com o driver `Native`, um arquivo alterado no escopo que ele nunca instrumenta (um caminho sob `/tmp/`, `/vendor/` ou `/storage/`, e o próprio motor de coverage, o `Bootgly/ACI/Tests/Coverage/` do framework) é reportado como impossível de medir quando uma linha alterada contém código (uma edição só de comentário não contém), e um gate reprova em vez de tratá-lo como inalterado. O mesmo vale sem range: um arquivo que um teste carregou mas que o `Native` nunca instrumenta é listado como impossível de medir, e um gate reprova sobre ele — exceto o próprio motor de coverage, que o runner sempre carrega.
 
 ## Gate de cobertura
 
@@ -123,7 +125,7 @@ php bootgly test --coverage --coverage-path=Bootgly/ --coverage-floor=80 --cover
 
 - O caminho substitui os escopos das suítes no relatório (um índice de suíte continua escolhendo quais testes rodam).
 - Arquivos dentro de um diretório de recursos abaixo do caminho — `examples/`, `fixtures/`, `stubs/`, `templates/`, `tests/` (`Coverage::RESOURCES`) — ficam fora do conjunto não carregado; um arquivo de recurso que um teste carrega continua no relatório.
-- Com o driver `Native`, os arquivos que ele nunca instrumenta (veja acima) também ficam fora do conjunto não carregado: meça esses caminhos com Xdebug ou PCOV.
+- Com o driver `Native`, os arquivos que ele nunca instrumenta (veja acima) são listados como impossíveis de medir em vez de entrar com zero, e um gate reprova sobre eles: meça esses caminhos com Xdebug ou PCOV.
 - Um subdiretório que o run não consegue ler é ignorado; um caminho que não é um diretório legível reprova o run.
 - As linhas executáveis de um arquivo não carregado são estimadas pelo analisador estático do driver `Native` — compare limites medidos com o mesmo driver.
 
@@ -143,6 +145,60 @@ Sob um range, as duas regras valem para os statements alterados: `--coverage-cla
 - Um gate com `--coverage-driver=nothing` falha antes de qualquer suíte rodar.
 - `--coverage-floor` aceita um número de `0` a `100` com até quatro casas decimais; qualquer outra coisa para o run antes de começar.
 - Um arquivo alterado que o driver não consegue medir reprova o gate (veja acima).
+
+## Cobertura no CI
+
+Rode todas as suítes uma vez com o PCOV, aplique o gate ao resultado e guarde o relatório clover. Num pull request, o mesmo comando aplica o gate só às linhas que o pull request alterou. Um job do GitHub Actions para um Kit:
+
+```yaml
+coverage:
+  runs-on: ubuntu-24.04
+  steps:
+    - uses: actions/checkout@v5
+      with:
+        submodules: recursive   # Bootgly, Console e Web do Kit
+        fetch-depth: 0          # o range do pull request precisa da branch base
+        persist-credentials: false
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        coverage: pcov
+        ini-values: pcov.enabled=1, pcov.directory=${{ github.workspace }}
+    - name: Coverage gate
+      working-directory: projects   # todos os projetos registrados
+      env:
+        EVENT: ${{ github.event_name }}
+        BASE: ${{ github.base_ref }}
+      run: |
+        set -- --coverage --coverage-driver=pcov --coverage-path=. \
+           --coverage-floor=70 --coverage-report=clover:"$RUNNER_TEMP/coverage.xml"
+        if [ "$EVENT" = pull_request ]; then
+           set -- "$@" --coverage-diff="origin/$BASE...HEAD" --coverage-classes
+        fi
+        php ../bootgly test "$@"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-clover
+        path: ${{ runner.temp }}/coverage.xml
+```
+
+- Rode a partir de `projects/` (todos os projetos registrados) ou do diretório de um projeto: onde você está decide o escopo, e um run headless na raiz do Kit não tem escopo e para. Os caminhos passados a `--coverage-path` são relativos a esse diretório.
+- Informe o driver: um runner sem PCOV falha na hora em vez de não medir nada.
+- `pcov.enabled=1` liga a coleta, e `pcov.directory` faz o PCOV instrumentar o checkout inteiro.
+- O checkout de um pull request é o seu merge commit, então `origin/<base>...HEAD` termina na árvore medida.
+- O PCOV mede só o processo dos testes, a partir do momento em que o runner começa a coletar: código que roda em workers forkados do servidor ou em subprocessos, e linhas que rodam antes de a coleta começar (o boot), contam como não cobertos. Um pull request que só altera esse tipo de código reprova no gate, por mais testado que esteja.
+- Defina o limite mínimo a partir de um run medido, um pouco abaixo dele, e suba-o conforme os testes chegam — nunca o abaixe para deixar uma mudança passar.
+
+### O gate do próprio Bootgly
+
+O framework aplica o mesmo gate a si mesmo, medindo todo arquivo PHP em `Bootgly/`:
+
+- a cada push na `main`: no mínimo 65% dos statements cobertos;
+- a cada pull request: o mesmo limite mínimo sobre as linhas alteradas, e nenhuma classe alterada sem um statement coberto;
+- a cada release: o gate da árvore na tag, com o relatório clover anexado ao release do GitHub como `bootgly-<tag>-coverage.clover.xml`.
+
+Na árvore da 1.2.0, um run cobre cerca de 69,6% de 68.199 statements (66,5% de 71.325 na contagem mais conservadora). A regra "nenhuma classe zerada" ainda não vale para a árvore inteira: 67 arquivos de classe estavam zerados nesse baseline.
 
 ## API programática
 
@@ -234,7 +290,7 @@ Defina as duas antes do `stop()`: ele aplica os filtros, depois adiciona os arqu
 | `--coverage` | Ativa cobertura com o driver detectado automaticamente (Xdebug, depois PCOV; o run para quando nenhum consegue medir). |
 | `--coverage-driver=<name>` | Força um driver: `xdebug`, `pcov`, `native` ou `nothing`. |
 | `--coverage-native-mode=<mode>` | Modo do driver nativo: `strict` (padrão) ou `parity`. |
-| `--coverage-report=<format>[:<path>]` | Formato do relatório (`text`, `html`, `clover`); impresso na stdout sem caminho. |
+| `--coverage-report=<format>[:<path>]` | Formato do relatório (`text`, `html`, `clover`); impresso na stdout sem caminho. Um `--coverage-report` sem valor vale `text`; o formato ignora maiúsculas. Um formato desconhecido, ou um caminho de arquivo cujo diretório não existe, é recusado antes de qualquer suíte rodar; um stream como `php://stderr` é aceito; um relatório que não pode ser gravado reprova o run. |
 | `--coverage-diff[=<range>]` | Sem valor: linhas cobertas/não cobertas por arquivo no relatório `text`. Com um range do git: mede só as linhas que o range alterou. |
 | `--coverage-path=<dir>` | Mede todo arquivo PHP sob `dir`; arquivos que nenhum teste carregou contam como zero. |
 | `--coverage-floor=<percent>` | Falha quando os statements cobertos ficam abaixo de `percent` (`0`–`100`). |
@@ -252,25 +308,31 @@ Retorna o driver do Xdebug quando o modo coverage está ativo, senão o driver d
 public array $paths = [];
 ```
 
-Diretórios medidos por inteiro: arquivos PHP sob eles que o run nunca carregou entram no relatório com zero hits (arquivos dentro de um diretório de `RESOURCES` abaixo do caminho, os que os filtros `includes`/`targets` rejeitam e, com o `Native`, os que ele nunca instrumenta, ficam de fora). O `stop()` lança `LogicException` quando uma entrada não é um diretório legível.
+Diretórios medidos por inteiro: arquivos PHP sob eles que o run nunca carregou entram no relatório com zero hits (arquivos dentro de um diretório de `RESOURCES` abaixo do caminho, e os que os filtros `includes`/`targets` rejeitam ficam de fora; com o `Native`, os que ele nunca instrumenta vão para `$unmeasured`). O `stop()` lança `LogicException` quando uma entrada não é um diretório legível.
 
 ```php
 public null|array $changes = null;
 ```
 
-Linhas alteradas a medir, `[canonical_file => [line => true]]`, como `Changes::fetch()` as retorna. Quando definido, o `stop()` adiciona com zero hits cada arquivo PHP alterado que o run nunca carregou (quando os filtros o admitem e ele não está num diretório de `RESOURCES`), depois mantém só essas linhas e descarta todo arquivo sem nenhuma; `null` mede todas as linhas.
+Linhas alteradas a medir, `[canonical_file => [line => true]]`, como `Changes::fetch()` as retorna. Quando definido, o `stop()` adiciona com zero hits cada arquivo PHP alterado que o run nunca carregou (quando os filtros o admitem e ele não está num diretório de `RESOURCES`), depois mantém só as instruções que essas linhas tocam (uma linha alterada dentro de uma instrução em várias linhas conta como essa instrução; uma linha de comentário não conta) e descarta todo arquivo sem nenhuma; `null` mede todas as linhas.
 
 ```php
 public private(set) array $unmeasured = [];
 ```
 
-Arquivos PHP alterados no escopo que o driver não consegue medir (caminhos que o driver `Native` nunca instrumenta), preenchidos pelo `stop()` quando `$changes` está definido. O runner reprova um gate sobre eles.
+Arquivos PHP no escopo que o driver não consegue medir (caminhos que o driver `Native` nunca instrumenta) — arquivos que um teste carregou e arquivos sob `$paths`; quando `$changes` está definido, só os alterados cujas linhas alteradas contêm código. O motor de coverage nunca é listado por estar carregado. Preenchidos pelo `stop()`; o runner os lista e reprova um gate sobre eles.
 
 ```php
 public const array RESOURCES = ['examples' => true, 'fixtures' => true, 'stubs' => true, 'templates' => true, 'tests' => true];
 ```
 
 Nomes de diretórios de recursos — `examples`, `fixtures`, `stubs`, `templates`, `tests` — cujos arquivos PHP não carregados nunca entram no relatório.
+
+```php
+public const array REPORTS = ['clover' => Clover::class, 'html' => HTML::class, 'text' => Text::class];
+```
+
+Formatos de relatório que o `report()` renderiza, por nome; o `--coverage-report` aceita esses nomes.
 
 ### Coverage\Gate
 

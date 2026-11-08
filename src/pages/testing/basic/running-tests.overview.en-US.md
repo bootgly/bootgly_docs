@@ -165,7 +165,7 @@ The runner accepts coverage flags handled by `Bootgly\ACI\Tests\Coverage`:
 | `--coverage` | Enable coverage with the auto-detected driver (Xdebug, then PCOV); the run stops before any suite when neither can measure. |
 | `--coverage-driver=<name>` | Force a driver: `xdebug`, `pcov`, `native`, or `nothing`. |
 | `--coverage-native-mode=<mode>` | Native driver mode (default `strict`). |
-| `--coverage-report=<format>[:<path>]` | Report format (`text`, `html`, `clover`). When `path` is omitted the report is printed to stdout. |
+| `--coverage-report=<format>[:<path>]` | Report format (`text`, `html`, `clover`). When `path` is omitted the report is printed to stdout. A bare `--coverage-report` means `text`. An unknown format or a file path without a directory is refused before any suite runs; streams such as `php://stderr` are accepted. |
 | `--coverage-diff[=<range>]` | Bare: per-file covered/uncovered lines in the `text` report. With a git range (`origin/main...HEAD`): measure only the lines it changed. |
 | `--coverage-path=<dir>` | Measure every PHP source under `dir`; files no test loaded count at zero. |
 | `--coverage-floor=<percent>` | Fail the run when covered statements are below `percent`. |

@@ -54,7 +54,7 @@ The `Native` driver is the extension-free backend. It instruments PHP files as B
 php -d opcache.enable_cli=0 bootgly test 11 --coverage-driver=native --coverage-report=text
 ```
 
-`Native` requires `opcache.enable_cli=0`, because OPcache can reuse bytecode that was not instrumented. It also measures only files loaded after the coverage session starts.
+`Native` requires `opcache.enable_cli=0`, because OPcache can reuse bytecode that was not instrumented. It also measures only files loaded after the coverage session starts: an in-scope file loaded earlier (by the bootstrap) is absent from the report, with no message. With OPcache on, or an unknown `--coverage-native-mode`, the run stops at once with a `[test] Coverage:` line and exit code 1.
 
 ### Coverage diff
 
@@ -73,9 +73,11 @@ Give `--coverage-diff` a git range and the report measures **only the lines that
 php bootgly test --coverage --coverage-diff=origin/main...HEAD
 ```
 
-The range is anything `git diff` accepts as revisions: `origin/main...HEAD` (the changes of a branch), `HEAD~3..HEAD`, or a single revision such as `main` (compared with the working tree: uncommitted edits to tracked files are included, untracked new files are not). It is read in the working directory's repository; a range starting with `-` is refused. Only the changed lines count — local git settings (`diff.relative`, inter-hunk context, copy detection, `GIT_DIFF_OPTS`, pathspec and repository-location variables such as `GIT_DIR`) do not widen, narrow or move them, and content git would call binary (a NUL byte, a `-diff` attribute) is still read line by line; only PHP sources are read, so a range that adds assets stays small. Coverage measures the checked-out working tree, so the range must end at it — `origin/main...HEAD` on a checkout of `HEAD`: a range whose new side is another commit (`main..feature` while `main` is checked out) names lines and files the run does not hold, and a changed PHP file the work tree lacks stops the run with an error instead of being skipped. A range over a merge commit (`<merge>^!`) is refused, because its combined diff leaves out files taken cleanly from one side: use the first-parent range, `<merge>^1..<merge>`.
+The range is anything `git diff` accepts as revisions: `origin/main...HEAD` (the changes of a branch), `HEAD~3..HEAD`, or a single revision such as `main` (compared with the working tree: uncommitted edits to tracked files are included, untracked new files are not). It is read in the working directory's repository; a range starting with `-` is refused. Only the changed lines count — local git settings (`diff.relative`, inter-hunk context, copy detection, `GIT_DIFF_OPTS`, pathspec and repository-location variables such as `GIT_DIR`) do not widen, narrow or move them, and content git would call binary (a NUL byte, a `-diff` attribute) is still read line by line; only PHP sources (`.php` in any case) are read, so a range that adds assets stays small. Coverage measures the checked-out working tree, so the range must end at it — `origin/main...HEAD` on a checkout of `HEAD`: a range whose new side is another commit (`main..feature` while `main` is checked out) names lines and files the run does not hold, and a changed PHP file the work tree lacks stops the run with an error instead of being skipped. A range over a merge commit (`<merge>^!`) is refused, because its combined diff leaves out files taken cleanly from one side: use the first-parent range, `<merge>^1..<merge>`.
 
-A changed PHP source that no test loaded is measured at zero hits instead of disappearing from the report. A changed source inside a resource directory (`examples/`, `fixtures/`, `stubs/`, `templates/`, `tests/`) is not code to cover and does not join when no test loaded it; test scripts never count. These directories are read below the working directory, so a checkout that itself sits in a `tests/` directory keeps its sources. With the `Native` driver, a changed source in scope that it never instruments (a path under `/tmp/`, `/vendor/` or `/storage/`, and the coverage engine itself, `Bootgly/ACI/Tests/Coverage/`) is reported as unmeasurable, and a gate fails instead of reading it as unchanged.
+A changed line counts through the statement it belongs to: a statement over several lines is executable on one of them, so a changed argument, array element, heredoc body or closing `);` measures that statement, while a comment or blank line measures nothing. A line in a control body measures its body statement, never the header (`if (…)`, `case …:`, `foreach (…):`), which runs whether or not the body does; a body statement takes its own executable line first, and one written only on its header's line cannot be told apart from it by line coverage, so it counts with that line's hits — as a one-line `if ($a) return;` does.
+
+A changed PHP source that no test loaded is measured at zero hits instead of disappearing from the report. A changed source inside a resource directory (`examples/`, `fixtures/`, `stubs/`, `templates/`, `tests/`) is not code to cover and does not join when no test loaded it; test scripts never count. These directories are read below the working directory, so a checkout that itself sits in a `tests/` directory keeps its sources. With the `Native` driver, a changed source in scope that it never instruments (a path under `/tmp/`, `/vendor/` or `/storage/`, and the coverage engine itself, the framework's `Bootgly/ACI/Tests/Coverage/`) is reported as unmeasurable when a changed line holds code (a comment-only edit does not), and a gate fails instead of reading it as unchanged. The same holds without a range: a source a test loaded but `Native` never instruments is listed as unmeasurable, and a gate fails over it — except the coverage engine itself, which the runner always loads.
 
 ## Coverage gate
 
@@ -123,7 +125,7 @@ php bootgly test --coverage --coverage-path=Bootgly/ --coverage-floor=80 --cover
 
 - The path replaces the suite scopes of the report (any suite index still selects which tests run).
 - Sources inside a resource directory below the path — `examples/`, `fixtures/`, `stubs/`, `templates/`, `tests/` (`Coverage::RESOURCES`) — stay out of the unloaded set; a resource file a test loads is still reported.
-- Under the `Native` driver, sources it never instruments (see above) stay out of the unloaded set too: measure those paths with Xdebug or PCOV.
+- Under the `Native` driver, sources it never instruments (see above) are listed as unmeasurable instead of joining at zero, and a gate fails over them: measure those paths with Xdebug or PCOV.
 - A subdirectory the run cannot read is skipped; a path that is not a readable directory fails the run.
 - The executable lines of an unloaded file are estimated by the static analyzer of the `Native` driver — compare floors measured with the same driver.
 
@@ -143,6 +145,60 @@ Under a range, both rules apply to the changed statements: `--coverage-classes` 
 - A gate with `--coverage-driver=nothing` fails before any suite runs.
 - `--coverage-floor` takes a number from `0` to `100` with up to four decimals; anything else stops the run before it starts.
 - A changed source the driver cannot measure fails the gate (see above).
+
+## Coverage in CI
+
+Run every suite once under PCOV, gate the result and keep the clover report. On a pull request, the same command gates only the lines the pull request changed. A GitHub Actions job for a Kit:
+
+```yaml
+coverage:
+  runs-on: ubuntu-24.04
+  steps:
+    - uses: actions/checkout@v5
+      with:
+        submodules: recursive   # the Kit's Bootgly, Console and Web
+        fetch-depth: 0          # the pull request range needs its base branch
+        persist-credentials: false
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        coverage: pcov
+        ini-values: pcov.enabled=1, pcov.directory=${{ github.workspace }}
+    - name: Coverage gate
+      working-directory: projects   # every registered project
+      env:
+        EVENT: ${{ github.event_name }}
+        BASE: ${{ github.base_ref }}
+      run: |
+        set -- --coverage --coverage-driver=pcov --coverage-path=. \
+           --coverage-floor=70 --coverage-report=clover:"$RUNNER_TEMP/coverage.xml"
+        if [ "$EVENT" = pull_request ]; then
+           set -- "$@" --coverage-diff="origin/$BASE...HEAD" --coverage-classes
+        fi
+        php ../bootgly test "$@"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-clover
+        path: ${{ runner.temp }}/coverage.xml
+```
+
+- Run from `projects/` (every registered project) or from one project's directory: where you stand decides the scope, and a headless run from the Kit root has none and stops. Paths given to `--coverage-path` are relative to that directory.
+- Name the driver: a runner without PCOV then fails at once instead of measuring nothing.
+- `pcov.enabled=1` turns collection on, and `pcov.directory` makes PCOV instrument the whole checkout.
+- A pull request is checked out as its merge commit, so `origin/<base>...HEAD` ends at the measured tree.
+- PCOV measures the test process only, from the moment the runner starts collecting: code that runs in forked server workers or in sub-processes, and lines that run before collection starts (the boot), count as uncovered. A pull request that only changes such code fails its gate however it is tested.
+- Set the floor from a measured run, a little below it, and raise it as tests land — never lower it to let a change through.
+
+### Bootgly's own gate
+
+The framework gates itself the same way, measuring every PHP source in `Bootgly/`:
+
+- every push to `main`: at least 65% of the statements covered;
+- every pull request: the same floor over the lines it changed, and no changed class left without a covered statement;
+- every release: the tree gate on the tag, and its clover report attached to the GitHub release as `bootgly-<tag>-coverage.clover.xml`.
+
+On the 1.2.0 tree, one run covers about 69.6% of 68,199 statements (66.5% of 71,325 at the most conservative count). The "no class at zero" rule does not gate the whole tree yet: 67 class sources were at zero in that baseline.
 
 ## Programmatic API
 
@@ -234,7 +290,7 @@ Set both before `stop()`: it applies the filters, then adds the unloaded sources
 | `--coverage` | Enable coverage with the auto-detected driver (Xdebug, then PCOV; the run stops when neither can measure). |
 | `--coverage-driver=<name>` | Force a driver: `xdebug`, `pcov`, `native` or `nothing`. |
 | `--coverage-native-mode=<mode>` | Native driver mode: `strict` (default) or `parity`. |
-| `--coverage-report=<format>[:<path>]` | Report format (`text`, `html`, `clover`); printed to stdout without a path. |
+| `--coverage-report=<format>[:<path>]` | Report format (`text`, `html`, `clover`); printed to stdout without a path. A bare `--coverage-report` means `text`; the format is case-insensitive. An unknown format, or a file path whose directory does not exist, is refused before any suite runs; a stream such as `php://stderr` is accepted; a report that cannot be written fails the run. |
 | `--coverage-diff[=<range>]` | Bare: per-file covered/uncovered lines in the `text` report. With a git range: measure only the lines the range changed. |
 | `--coverage-path=<dir>` | Measure every PHP source under `dir`; files no test loaded count at zero. |
 | `--coverage-floor=<percent>` | Fail when covered statements are below `percent` (`0`–`100`). |
@@ -252,25 +308,31 @@ Returns the Xdebug driver when coverage mode is on, else the PCOV driver when th
 public array $paths = [];
 ```
 
-Directories measured in full: PHP sources under them that the run never loaded join the report at zero hits (sources inside a `RESOURCES` directory below the path, files the `includes`/`targets` filters reject and, under `Native`, sources it never instruments, stay out). `stop()` throws `LogicException` when an entry is not a readable directory.
+Directories measured in full: PHP sources under them that the run never loaded join the report at zero hits (sources inside a `RESOURCES` directory below the path, and files the `includes`/`targets` filters reject stay out; under `Native`, sources it never instruments go to `$unmeasured`). `stop()` throws `LogicException` when an entry is not a readable directory.
 
 ```php
 public null|array $changes = null;
 ```
 
-Changed lines to measure, `[canonical_file => [line => true]]`, as `Changes::fetch()` returns them. When set, `stop()` adds each changed PHP source the run never loaded at zero hits (when the filters admit it and it is not inside a `RESOURCES` directory), then keeps only these lines and drops every file without one; `null` measures every line.
+Changed lines to measure, `[canonical_file => [line => true]]`, as `Changes::fetch()` returns them. When set, `stop()` adds each changed PHP source the run never loaded at zero hits (when the filters admit it and it is not inside a `RESOURCES` directory), then keeps only the statements these lines touch (a changed row inside a statement over several lines counts as that statement; a comment row counts as none) and drops every file without one; `null` measures every line.
 
 ```php
 public private(set) array $unmeasured = [];
 ```
 
-Changed PHP sources in scope that the driver cannot measure (paths the `Native` driver never instruments), filled by `stop()` when `$changes` is set. The runner fails a gate over them.
+PHP sources in scope that the driver cannot measure (paths the `Native` driver never instruments) — sources a test loaded and sources under `$paths`; when `$changes` is set, only the changed ones whose changed lines hold code. The coverage engine is never listed for being loaded. Filled by `stop()`; the runner lists them and fails a gate over them.
 
 ```php
 public const array RESOURCES = ['examples' => true, 'fixtures' => true, 'stubs' => true, 'templates' => true, 'tests' => true];
 ```
 
 Resource directory names — `examples`, `fixtures`, `stubs`, `templates`, `tests` — whose unloaded PHP files never join the report.
+
+```php
+public const array REPORTS = ['clover' => Clover::class, 'html' => HTML::class, 'text' => Text::class];
+```
+
+Report formats `report()` renders, by name; `--coverage-report` accepts these names.
 
 ### Coverage\Gate
 
