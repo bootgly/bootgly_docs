@@ -145,6 +145,12 @@ Por enquanto, o teste de aparência arma mais duas armadilhas:
 Um array é contado, e isso inclui a lista de uploads que um campo `photos[]` envia: `Maximum(5)`
 limita quantos arquivos chegam (veja [Vários arquivos](#vários-arquivos)).
 
+Uma regra não converte nada: `Integer` aprova `'42'` e o campo continua com a string `'42'`. Os
+validadores respondem "este valor é aceitável?"; para transformá-lo num `int`, converta-o com os
+**[Casters](/manual/ADI/Casters/overview/)** — `Casters::Integer->cast('42', Modes::Strict)` é `42`.
+O caster estrito é mais restrito que a regra: ele recusa `'007'` e um número além de `PHP_INT_MAX`,
+que o `Integer` aprova.
+
 ## Datas
 
 `Date` aceita só uma string não vazia — um `DateTimeImmutable` ou um timestamp inteiro falha — e a

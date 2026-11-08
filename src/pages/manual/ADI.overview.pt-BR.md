@@ -92,6 +92,12 @@ operação até o `Result` dela.
 [Comece aqui](#comece-aqui) aponta para os fluxos comuns; as páginas abaixo trazem os detalhes de
 cada componente.
 
+### Casters
+
+- **[Casters](/manual/ADI/Casters/overview/)** — convertem um valor para `int`, `float`, `bool`,
+  `string` ou `DateTimeImmutable`, de forma estrita (entrada escrita por uma pessoa) ou loose
+  (valores que um driver produziu), e recusam o que o modo não converte sem ecoar o valor.
+
 ### Database
 
 O núcleo agnóstico de transporte que as duas fachadas de banco estendem.
@@ -197,8 +203,10 @@ O núcleo agnóstico de transporte que as duas fachadas de banco estendem.
 
 ADI (Abstract Data Interface) é a camada de dados da arquitetura I2P do Bootgly, na cadeia
 unidirecional `ABI → ACI → ADI → API → CLI → WPI`: ela se apoia só em ABI e ACI, e API, CLI e WPI se
-apoiam nela. Os seus cinco componentes raiz, em ordem de dependência (alfabética):
+apoiam nela. Os seus seis componentes raiz, em ordem de dependência (alfabética):
 
+- `Bootgly\ADI\Casters` — o vocabulário de conversão de escalares (um enum de tipos alvo) e os
+  seus `Casters\Modes` (`Strict`, `Loose`).
 - `Bootgly\ADI\Database` — o núcleo abstrato do DBAL: a config de conexão, a conexão, os pools, as
   operações e os resultados delas, e o contrato e o registry de drivers.
 - `Bootgly\ADI\Databases` — o registry de paradigmas, que cria uma fachada pelo nome (só `sql` está

@@ -143,7 +143,7 @@ type:
 
 | Property type | What it receives |
 |---|---|
-| `bool`, `int`, `float` or `string`, with or without `null\|` | A scalar value cast with PHP's `(bool)`, `(int)`, `(float)` or `(string)`; any other value as the driver decoded it |
+| `bool`, `int`, `float` or `string`, with or without `null\|` | A scalar value cast with PHP's `(bool)`, `(int)`, `(float)` or `(string)` — the loose mode of **[Casters](/manual/ADI/Casters/overview/)**; any other value as the driver decoded it |
 | A class — `DateTimeImmutable`, a value object | The value as the driver decoded it |
 | A union of two or more types, such as `int\|string` | The value as the driver decoded it |
 | `mixed`, `object`, or no type | The value as the driver decoded it |
@@ -152,13 +152,15 @@ The casts are what make one entity read the same on every driver: the `true` of 
 above is the `1` MySQL and SQLite return for a `BOOLEAN`, and a `float` property turns the
 `'19.90'` that PostgreSQL and MySQL return for a `DECIMAL` into `19.9`. They are PHP's casts, not a
 validation: a string of letters becomes `0` in an `int` property, and a float loses its fraction.
-The hydrator refuses two values instead:
+The hydrator refuses two kinds of value instead:
 
 - `null` for a property whose single type does not allow it:
   `ORM cannot assign null to non-nullable property: name` — the message names the property, not
   the class.
-- A string of digits beyond `PHP_INT_MAX` for an `int` property — MySQL returns one for a
-  `BIGINT UNSIGNED` past 2^63:
+- A number the `int` range cannot hold, for an `int` property — a string of digits beyond
+  `PHP_INT_MAX` (MySQL returns one for a `BIGINT UNSIGNED` past 2^63), a numeric string such as
+  `'1e30'`, or a float beyond the range, `INF` or `NAN`. PHP's `(int)` would saturate or wrap it into
+  a different number; the hydrator throws instead:
   `ORM cannot hydrate a value beyond PHP_INT_MAX into an int property: User::$id (18446744073709551615) — declare it as null|int|string.`
   Declare such a property `null|int|string`, which keeps the exact string (see
   **[Keys wider than a PHP int](/manual/ADI/Databases/SQL/Drivers/overview/#keys-wider-than-a-php-int)**).
@@ -277,8 +279,8 @@ operation's `error` when it failed; `ORM hydration requires a completed SQL resu
 result yet; `ORM lazy loading requires an await bridge.` when the entity declares a `lazy: true`
 relation the selection did not name and the repository has no bridge;
 `ORM pagination count requires an await bridge.` for a page count it cannot await; and the error of
-a row it cannot take — a missing column, `null` for a non-nullable property, a readonly conflict, an
-integer beyond `PHP_INT_MAX` (see [Rows into properties](#rows-into-properties)). Throws an
+a row it cannot take — a missing column, `null` for a non-nullable property, a readonly conflict, a
+number the `int` range cannot hold (see [Rows into properties](#rows-into-properties)). Throws an
 `InvalidArgumentException` for a relation name the selection loads that is not mapped, and for a
 cursor page that ends on a `NULL` order value. Emits `Hydrating` and `Hydrated` (see
 **[ORM hooks](/manual/ADI/Databases/SQL/Repository/Hooks/overview/)**).

@@ -145,6 +145,12 @@ For now, the shape test sets two more traps:
 An array is counted, and that includes the list of uploads a `photos[]` field sends: `Maximum(5)` caps
 how many files arrive (see [Several files](#several-files)).
 
+A rule converts nothing: `Integer` passes `'42'` and the field still holds the string `'42'`.
+Validators answer "is this value acceptable?"; to turn it into an `int`, cast it with
+**[Casters](/manual/ADI/Casters/overview/)** — `Casters::Integer->cast('42', Modes::Strict)` is `42`.
+The strict caster is narrower than the rule: it refuses `'007'` and a number past `PHP_INT_MAX`,
+which `Integer` passes.
+
 ## Dates
 
 `Date` accepts only a non-empty string — a `DateTimeImmutable` or an integer timestamp fails — and

@@ -595,6 +595,30 @@ export default {
       }
     }
   },
+  '/ADI/Casters': {
+    config: {
+      icon: 'swap_horiz',
+      status: 'done',
+      version: 'v1.2.0',
+      meta: {
+        description: {
+          'en-US': 'Convert one value to int, float, bool, string or DateTimeImmutable: the Strict mode for input a person wrote, the Loose mode for values a driver produced, what each type accepts, and refusals that never echo the value.',
+          'pt-BR': 'Converta um valor para int, float, bool, string ou DateTimeImmutable: o modo Strict para entrada escrita por uma pessoa, o modo Loose para valores que um driver produziu, o que cada tipo aceita, e recusas que nunca ecoam o valor.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Casters'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Casters'
+      }
+    }
+  },
   '/ADI/Database': {
     config: {
       icon: 'hub',
@@ -606,7 +630,9 @@ export default {
           'pt-BR': 'O núcleo do DBAL, agnóstico de transporte, que as duas fachadas estendem: config de conexão, o pool de conexões, como uma operação roda e falha, os estados da Operation e os campos do Result.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.ADI.Database'
+      },
       subpages: {
         showcase: false
       }

@@ -343,8 +343,9 @@ não confia, use `verify-ca`, `verify-full` ou `'verify' => true`. O que conta c
   escalar cai em `prefer`.
 - `verify` e `name` aceitam um booleano ou um escalar com cara de booleano: `1`/`0`,
   `'true'`/`'false'`, `'on'`/`'off'` e `'yes'`/`'no'`, em maiúsculas ou minúsculas, com os espaços
-  das pontas removidos. Qualquer outra coisa — uma string vazia ou em branco, `'maybe'`, `2`, um
-  array — lança ``Database TLS `verify` must be a boolean.``
+  das pontas removidos — o `Boolean` estrito dos **[Casters](/manual/ADI/Casters/overview/)**.
+  Qualquer outra coisa — uma string vazia ou em branco, `'maybe'`, `2`, um float como `1.0` (aceito
+  antes da 1.2.0), um array — lança ``Database TLS `verify` must be a boolean.``
   (``Database TLS `name` must be a boolean.`` para `name`), seja qual for o `mode`.
 - `peer` é o nome verificado contra o certificado quando `name` está ligado, e o nome enviado como
   SNI. Vazio, ele é o `host`. Nenhum SNI é enviado quando o `peer` é um endereço IP. Por enquanto,

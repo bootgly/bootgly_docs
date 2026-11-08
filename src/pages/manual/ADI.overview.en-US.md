@@ -90,6 +90,12 @@ builds a statement, `$Database->query(...)` turns it into an operation, and
 [Start here](#start-here) points to the common flows; the pages below hold the details of every
 component.
 
+### Casters
+
+- **[Casters](/manual/ADI/Casters/overview/)** — convert one value to `int`, `float`, `bool`,
+  `string` or `DateTimeImmutable`, strictly (input a person wrote) or loosely (values a driver
+  produced), and refuse what the mode cannot convert without echoing it.
+
 ### Database
 
 The transport-agnostic core both database facades extend.
@@ -188,8 +194,10 @@ The transport-agnostic core both database facades extend.
 
 ADI (Abstract Data Interface) is the data layer of Bootgly's I2P architecture, in the one-way chain
 `ABI → ACI → ADI → API → CLI → WPI`: it builds only on ABI and ACI, and the API, CLI and WPI build
-on it. Its five root components, in dependency (alphabetical) order:
+on it. Its six root components, in dependency (alphabetical) order:
 
+- `Bootgly\ADI\Casters` — the scalar casting vocabulary (an enum of target types) and its
+  `Casters\Modes` (`Strict`, `Loose`).
 - `Bootgly\ADI\Database` — the abstract DBAL core: the connection config, the connection, the
   pools, the operations and their results, and the driver contract and registry.
 - `Bootgly\ADI\Databases` — the paradigm registry, which creates a facade by name (only `sql` is

@@ -143,7 +143,7 @@ propriedade:
 
 | Tipo da propriedade | O que ela recebe |
 |---|---|
-| `bool`, `int`, `float` ou `string`, com ou sem `null\|` | Um valor escalar convertido com o `(bool)`, `(int)`, `(float)` ou `(string)` do PHP; qualquer outro valor como o driver o decodificou |
+| `bool`, `int`, `float` ou `string`, com ou sem `null\|` | Um valor escalar convertido com o `(bool)`, `(int)`, `(float)` ou `(string)` do PHP — o modo loose dos **[Casters](/manual/ADI/Casters/overview/)**; qualquer outro valor como o driver o decodificou |
 | Uma classe — `DateTimeImmutable`, um value object | O valor como o driver o decodificou |
 | Uma união de dois ou mais tipos, como `int\|string` | O valor como o driver o decodificou |
 | `mixed`, `object`, ou sem tipo | O valor como o driver o decodificou |
@@ -152,13 +152,15 @@ As conversões são o que faz uma entidade ser lida igual em todo driver: o `tru
 acima é o `1` que MySQL e SQLite devolvem para um `BOOLEAN`, e uma propriedade `float` transforma o
 `'19.90'` que PostgreSQL e MySQL devolvem para um `DECIMAL` em `19.9`. São os casts do PHP, não uma
 validação: uma string de letras vira `0` numa propriedade `int`, e um float perde a parte
-fracionária. O hidratador recusa dois valores em vez disso:
+fracionária. O hidratador recusa dois tipos de valor em vez disso:
 
 - `null` para uma propriedade cujo tipo único não o permite:
   `ORM cannot assign null to non-nullable property: name` — a mensagem nomeia a propriedade, não a
   classe.
-- Uma string de dígitos além de `PHP_INT_MAX` para uma propriedade `int` — o MySQL devolve uma para
-  um `BIGINT UNSIGNED` acima de 2^63:
+- Um número que o range de `int` não comporta, para uma propriedade `int` — uma string de dígitos
+  além de `PHP_INT_MAX` (o MySQL devolve uma para um `BIGINT UNSIGNED` acima de 2^63), uma string
+  numérica como `'1e30'`, ou um float fora do range, `INF` ou `NAN`. O `(int)` do PHP saturaria ou
+  daria a volta nele, virando outro número; o hidratador lança uma exceção em vez disso:
   `ORM cannot hydrate a value beyond PHP_INT_MAX into an int property: User::$id (18446744073709551615) — declare it as null|int|string.`
   Declare essa propriedade como `null|int|string`, que guarda a string exata (veja
   **[Chaves maiores que um int do PHP](/manual/ADI/Databases/SQL/Drivers/overview/#chaves-maiores-que-um-int-do-php)**).
@@ -280,7 +282,7 @@ ainda não tem resultado; `ORM lazy loading requires an await bridge.` quando a 
 relação `lazy: true` que a seleção não nomeou e o repositório não tem ponte;
 `ORM pagination count requires an await bridge.` para uma contagem de página que não consegue
 aguardar; e o erro de uma linha que ele não consegue receber — uma coluna ausente, `null` para uma
-propriedade não anulável, um conflito de readonly, um inteiro além de `PHP_INT_MAX` (veja
+propriedade não anulável, um conflito de readonly, um número que o range de `int` não comporta (veja
 [Linhas em propriedades](#linhas-em-propriedades)). Lança uma `InvalidArgumentException` para um nome
 de relação que a seleção carrega e que não está mapeado, e para uma página de cursor que termina num
 valor de ordenação `NULL`. Emite `Hydrating` e `Hydrated` (veja

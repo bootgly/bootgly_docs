@@ -339,8 +339,9 @@ each driver does after one, is on the
   `InvalidArgumentException` with `Unsupported database TLS mode: verify_full.`; a value that is not
   a scalar falls back to `prefer`.
 - `verify` and `name` take a boolean or a boolean-like scalar: `1`/`0`, `'true'`/`'false'`,
-  `'on'`/`'off'` and `'yes'`/`'no'`, in any case, with surrounding spaces trimmed. Anything else —
-  an empty or blank string, `'maybe'`, `2`, an array — throws
+  `'on'`/`'off'` and `'yes'`/`'no'`, in any case, with surrounding spaces trimmed — the strict
+  `Boolean` of **[Casters](/manual/ADI/Casters/overview/)**. Anything else — an empty or blank
+  string, `'maybe'`, `2`, a float such as `1.0` (accepted before 1.2.0), an array — throws
   ``Database TLS `verify` must be a boolean.`` (``Database TLS `name` must be a boolean.`` for
   `name`), whatever the `mode`.
 - `peer` is the name checked against the certificate when `name` is on, and the name sent as SNI.
