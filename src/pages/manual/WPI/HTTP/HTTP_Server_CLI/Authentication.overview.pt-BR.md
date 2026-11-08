@@ -63,6 +63,8 @@ Emite:
 WWW-Authenticate: Basic realm="Bootgly Protected Area"
 ```
 
+O realm é escrito como quoted-string da RFC 9110: `"` e `\` são escapados com uma barra invertida, então `realm: 'Team "Ops"'` vira `realm="Team \"Ops\""`. Uma tabulação horizontal é enviada como está; o guard `Basic` recusa um realm com qualquer outro caractere de controle (CR, LF, NUL, DEL…) com `InvalidArgumentException` ao ser configurado. Chamar `$Response->authenticate()` diretamente não verifica o realm: mantenha caracteres de controle fora dele — um realm com NUL ou DEL deixa o `401` sem o header `WWW-Authenticate`.
+
 ### Challenge Bearer
 
 ```php
@@ -79,10 +81,16 @@ $Bearer = new Bearer(
 );
 ```
 
-Ao falhar, o guard emite um header `WWW-Authenticate` Bearer com atributos no estilo RFC 6750:
+Quando a requisição enviou um token Bearer que o guard recusou, o challenge traz os atributos de erro da RFC 6750:
 
 ```http
 WWW-Authenticate: Bearer realm="Bootgly API", error="invalid_token", error_description="The access token is missing or invalid.", error_uri="https://docs.bootgly.com/manual/WPI/HTTP/HTTP_Server_CLI/Authentication", scope="demo:read", resource_metadata="https://api.example.com/.well-known/oauth-protected-resource"
+```
+
+Quando a requisição não enviou token Bearer algum — sem header `Authorization`, com um vazio, ou com outro esquema como `Basic` — o cliente ainda não foi avisado de que precisa de um token, então o challenge não traz informação de erro (RFC 6750 §3.1): `error`, `error_description` e `error_uri` ficam de fora; `realm`, `scope` e `resource_metadata` permanecem.
+
+```http
+WWW-Authenticate: Bearer realm="Bootgly API", scope="demo:read", resource_metadata="https://api.example.com/.well-known/oauth-protected-resource"
 ```
 
 `metadata` é a URL de metadados do recurso protegido (RFC 9728). Ela é enviada como `resource_metadata="…"` depois dos outros atributos, para que clientes OAuth (entre eles clientes MCP) descubram qual servidor de autorização emite tokens para este recurso. Deixe-a vazia (o padrão) para omiti-la. Atributos vazios são sempre omitidos.
@@ -213,7 +221,7 @@ yield $Router->route('/auth/jwt', function (Request $Request, Response $Response
 }, GET, middlewares: [new Authentication($JWT)]);
 ```
 
-A assinatura JWT lança `RuntimeException` quando claims ou headers não podem ser codificados como JSON. A verificação JWT rejeita tokens malformados, algoritmos não suportados, valores `typ` não suportados, assinaturas inválidas, `exp` expirado, `nbf` futuro e `iat` futuro. O segredo HS256 precisa ter no mínimo 32 bytes. `Policies` pode exigir `iss` exato, `aud` compatível, `sub` não vazio e `jti` não vazio. O guard ainda retorna apenas um desafio Bearer genérico `invalid_token` para o cliente.
+A assinatura JWT lança `RuntimeException` quando claims ou headers não podem ser codificados como JSON. A verificação JWT rejeita tokens malformados, algoritmos não suportados, valores `typ` não suportados, assinaturas inválidas, `exp` expirado, `nbf` futuro e `iat` futuro. O segredo HS256 precisa ter no mínimo 32 bytes. `Policies` pode exigir `iss` exato, `aud` compatível, `sub` não vazio e `jti` não vazio. O guard ainda retorna apenas um desafio Bearer genérico `invalid_token` para o cliente (ou, quando nenhum token foi enviado, o desafio sem código de erro).
 
 O padrão de `JWT->leeway` é `0`, então a verificação de claims temporais é estrita. Defina um valor pequeno, como `5` segundos, quando seus servidores puderem ter pequeno desvio de relógio.
 
@@ -612,7 +620,8 @@ yield $Router->route('/mcp', $Handler, [GET, POST, DELETE, OPTIONS], middlewares
 
 O que cada requisição recebe:
 
-- Sem token ou com token desconhecido → `401 Unauthorized` com `WWW-Authenticate: Bearer realm="mcp", error="invalid_token", resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"`.
+- Sem token → `401 Unauthorized` com `WWW-Authenticate: Bearer realm="mcp", resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"` — o cliente lê a URL de metadados e busca um token.
+- Com token desconhecido → `401 Unauthorized` com `WWW-Authenticate: Bearer realm="mcp", error="invalid_token", resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"`.
 - Um token cuja identidade não tem `mcp:tools` → `403 Forbidden` com `WWW-Authenticate: Bearer realm="mcp", error="insufficient_scope", scope="mcp:tools", resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"`, para que o cliente peça um token com esse scope.
 - Um preflight (`OPTIONS`) de `https://app.example.com` → `204` do `CORS`, antes de Authentication executar.
 
@@ -706,7 +715,7 @@ Cria o store de JWT num diretório (o driver `file`) ou num `Cache` pronto cujo 
 public function __construct (Closure $Resolver, string $realm = 'Protected area', string $error = 'invalid_token', string $description = '', string $URI = '', string $scope = '', string $metadata = '')
 ```
 
-Cria um guard Bearer opaco. `$Resolver` recebe `(string $token, Request $Request)` e retorna `false`/`null` para negar, `true` para expor o token como `$Request->identity`, ou qualquer outro valor para expor esse valor. Os demais argumentos preenchem o challenge `401`: `realm`, `error`, `error_description`, `error_uri`, `scope` e, por último, `resource_metadata`; valores vazios são omitidos. Todo valor é escrito como quoted-string da RFC 9110; um valor com caractere de controle lança `InvalidArgumentException`, assim como um `error`, `description`, `URI` ou `scope` fora do seu conjunto de caracteres da RFC 6750 §3 (veja a tabela acima). O guard `JWT` recebe os mesmos argumentos de challenge depois de `$Token` e `$Policies`.
+Cria um guard Bearer opaco. `$Resolver` recebe `(string $token, Request $Request)` e retorna `false`/`null` para negar, `true` para expor o token como `$Request->identity`, ou qualquer outro valor para expor esse valor. Os demais argumentos preenchem o challenge `401`: `realm`, `error`, `error_description`, `error_uri`, `scope` e, por último, `resource_metadata`; valores vazios são omitidos. No servidor HTTP, uma requisição sem token Bearer recebe o mesmo challenge sem `error`, `error_description` e `error_uri` (RFC 6750 §3.1); o upgrade WebSocket ainda envia o challenge com erro. Todo valor é escrito como quoted-string da RFC 9110; um valor com caractere de controle lança `InvalidArgumentException`, assim como um `error`, `description`, `URI` ou `scope` fora do seu conjunto de caracteres da RFC 6750 §3 (veja a tabela acima). O guard `JWT` recebe os mesmos argumentos de challenge depois de `$Token` e `$Policies`.
 
 ```php
 public private(set) string $metadata

@@ -133,8 +133,10 @@ yield $Router->route('/reports', $Handler, GET, middlewares: [
 
 ```http
 HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer realm="Bootgly API", error="invalid_token"
+WWW-Authenticate: Bearer realm="Bootgly API"
 ```
+
+A requisição acima não enviou token, então o challenge não traz código de erro (RFC 6750 §3.1); uma requisição que enviou um token mas chegou ao gate sem identidade recebe também `error="invalid_token"`.
 
 Uma identidade que não é um objeto `Identity` (um valor opaco devolvido por um resolver de `Bearer`) é um cliente autenticado sem scopes, então continua recebendo o challenge `403 insufficient_scope`. Sem `Bearer:`, uma requisição sem identidade recebe o `403 Forbidden` simples, como antes.
 
