@@ -592,7 +592,7 @@ new SecureHeaders(
 
 ### TrustedProxy
 
-Resolve o IP real do cliente a partir dos headers de proxy confiáveis (`X-Forwarded-For`, `X-Real-IP`) quando o servidor roda atrás de um reverse proxy, load balancer ou CDN.
+Resolve o IP real do cliente (`$Request->address`) e o esquema (`$Request->scheme`) a partir dos headers de encaminhamento quando o servidor roda atrás de um reverse proxy, load balancer ou CDN — mas só quando a conexão vem de um proxy em que você confia.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
@@ -603,16 +603,66 @@ new TrustedProxy(
 );
 ```
 
-Quando a requisição vem de um proxy confiável, o middleware:
+Quando o par do socket está em `proxies`, o middleware:
 
-- Lê `X-Forwarded-For` (da direita para a esquerda, primeiro hop não confiável) ou `X-Real-IP` para atualizar `$Request->address`
+- Lê o endereço do cliente conforme a sua `strategy` (por padrão: `X-Forwarded-For` da direita para a esquerda, primeiro hop não confiável, ou `X-Real-IP` quando não há `X-Forwarded-For`) para atualizar `$Request->address`
 - Lê `X-Forwarded-Proto` para atualizar `$Request->scheme`
 
-IPs de proxy não confiáveis são ignorados — o endereço e esquema permanecem inalterados.
+IPs de proxy não confiáveis são ignorados — o endereço e o esquema permanecem inalterados. Um valor ausente ou malformado também nunca substitui o endereço: a requisição mantém o par do socket.
+
+#### Escolha a estratégia que a sua borda sustenta
+
+Nenhum header prova quem o escreveu. Cada estratégia só é segura para um formato de deploy — escolha a que corresponde ao que a sua borda faz com o header que ela lê.
+
+**Atrás de proxies que acrescentam ao `X-Forwarded-For` (AWS ALB, HAProxy `option forwardfor`, nginx com `$proxy_add_x_forwarded_for`, uma CDN cujas faixas você lista)** — mantenha o default. Todo hop que acrescenta precisa estar em `proxies`; a caminhada pula esses hops pela direita e para no primeiro endereço que nenhum deles avaliza.
+
+```php
+new TrustedProxy(proxies: ['10.0.0.0/8']);
+```
+
+**Atrás de um nginx que define só o `X-Real-IP`** (`proxy_set_header X-Real-IP $remote_addr;` e nenhuma linha de `X-Forwarded-For`) — leia esse único header. Na estratégia padrão, um `X-Forwarded-For` escrito pelo cliente, repassado por esse nginx, venceria.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy\Strategies;
+
+new TrustedProxy(
+   proxies: ['10.0.0.5'],
+   strategy: Strategies::Header,
+   header: 'X-Real-IP'
+);
+```
+
+O mesmo formato serve para qualquer borda que define um header próprio em toda requisição — `Fly-Client-IP`, ou `CF-Connecting-IP` quando a origem só é alcançada pela Cloudflare.
+
+**Atrás de uma borda que sobrescreve o `X-Forwarded-For` e cujos hops não são publicados** — a caminhada pela direita pararia num hop da borda e daria um mesmo endereço a todo visitante que passa por ele. Leia a entrada mais à esquerda:
+
+```php
+new TrustedProxy(proxies: ['10.0.0.0/8'], strategy: Strategies::Leftmost);
+```
+
+**Com uma CDN na frente da borda** — quando o endereço escolhido pela estratégia é ele mesmo um proxy confiável (um nó da CDN), o header de visitante da CDN nomeia o cliente. Adicione as faixas da CDN em `proxies` e nomeie esse header como `relay`:
+
+```php
+new TrustedProxy(
+   proxies: ['10.0.0.2', '10.0.0.3', '173.245.48.0/20', '2400:cb00::/32'],
+   strategy: Strategies::Leftmost,
+   relay: 'CF-Connecting-IP'
+);
+```
+
+O relay só é lido quando dados encaminhados escolheram um endereço confiável. Uma requisição sem nenhum header de encaminhamento mantém o par do socket, então um cliente que chega direto na sua borda não escolhe o próprio endereço escrevendo `CF-Connecting-IP` — desde que a borda escreva o campo que a estratégia lê; o relay herda a premissa da estratégia. Um valor de relay ausente ou malformado deixa o endereço no par do socket, nunca no nó da CDN, e o mesmo vale para um visitante dentro da lista de confiança: um proxy na frente nomeia o cliente, nunca outro proxy.
+
+Toda entrada de `proxies` é confiável para nomear o visitante pelo `relay`, então mantenha a lista restrita aos seus proxies reais — os endereços exatos da borda, não uma faixa privada inteira. Qualquer host dentro de uma faixa listada que alcance a borda consegue definir o header do relay.
+
+> **Segurança — `Leftmost` e `Header` confiam que a sua borda sobrescreve o header.** As duas leem um valor que a borda precisa escrever ela mesma em **toda** requisição, descartando o que o cliente mandou. Atrás de uma borda que acrescenta ao header ou o repassa intacto, **qualquer cliente escolhe o próprio endereço** — e com ele o seu balde de rate limit (`RateLimit(trustForwarded: true)`), qualquer allowlist de IP que leia `$Request->address` e o que o `AccessLog` registra. Na dúvida, mantenha a estratégia padrão. O Bootgly não consegue detectar isso em runtime: é um fato sobre a sua borda, não sobre a requisição.
+
+> **Segurança — uma faixa de CDN prova a rede, não o cliente da CDN.** Uma CDN compartilhada atende muitos clientes a partir dos mesmos endereços, e alguns deles podem rodar código ali (Workers, edge functions) que manda o `CF-Connecting-IP` que quiser. Confiar nas faixas da CDN é confiar em todo cliente dela. Se isso importa para a sua aplicação, restrinja a origem à sua própria zona no nível de rede (authenticated origin pulls, um túnel privado) — isso fica fora deste middleware.
+
+Toda estratégia falha fechada: `Leftmost` nunca pula uma primeira entrada inválida para chegar a uma posterior, e a caminhada pela direita para num hop não confiável inválido em vez de passar por ele — as entradas à esquerda desse hop são escritas por quem o escreveu, então seguir em frente deixaria o cliente escolher.
 
 **Faixas CIDR.** Atrás de uma CDN cada requisição chega de um endereço de borda diferente, então nenhuma lista literal expressa o conjunto de confiança — liste as faixas publicadas do provedor. Um IP literal vale como `/32` | `/128`, então listas existentes de IPs válidos seguem funcionando; variantes textuais de IPv6 (`0:0:0:0:0:0:0:1` vs `::1`) agora casam por valor; a forma IPv4-mapeada (`::ffff:a.b.c.d`) casa seu equivalente IPv4 nos dois lados; e espaços em volta são tolerados. Uma entrada CIDR com bits de host preenchidos (`10.0.0.8/8`) confia em toda a sua rede, pela convenção usual. A lista é compilada uma vez na construção, então o match por requisição é comparação de bytes — e uma entrada que não seja um IP ou CIDR válido agora lança `InvalidArgumentException` no boot em vez de silenciosamente nunca casar, que é a única quebra de compatibilidade aqui. A caminhada do `X-Forwarded-For` pula hops confiáveis pelo mesmo match de faixa, então um endereço de borda dentro da cadeia nunca é confundido com o cliente. Faixas de provedor mudam com o tempo — carregue-as de um arquivo que você possa atualizar (`proxies: require 'faixas.php'`) em vez de embutir.
 
-> **CDNs que não acrescentam ao `X-Forwarded-For`.** Algumas bordas publicam o cliente apenas em um header próprio (`CF-Connecting-IP`, `True-Client-IP`). Ler esses headers ainda não é suportado — confiar num quarto campo com segurança exige também ensinar o cache de rota sobre ele, senão uma resposta que varia por endereço, cacheada para um cliente, poderia ser reservida a outro. A Cloudflare e a maioria das CDNs também acrescentam ao `X-Forwarded-For`, então listar as faixas delas acima já resolve o cliente real.
+**Cache de rota.** Um `header` ou `relay` que você configura é tratado como `X-Forwarded-For`, `X-Forwarded-Proto` e `X-Real-IP` pelo [cache de respostas de rota](/manual/WPI/HTTP/HTTP_Server_CLI/Router/overview/): uma requisição que o carrega é buscada em um espaço de chaves próprio e nunca armazena uma entrada, então a representação de um visitante nunca é servida a outro.
 
 **`$Request->address` vs `$Request->peer`.** Este middleware só altera `$Request->address` (o IP do cliente voltado à aplicação). O par de socket real está sempre disponível, inalterado, como **`$Request->peer`** — use-o para decisões anti-abuso que não podem ser forjáveis (o rate limiting usa-o como chave por padrão; veja [RateLimit](#ratelimit)).
 
@@ -651,6 +701,57 @@ public private(set) array $expose
 ```
 
 Os nomes de headers de resposta expostos, na ordem configurada, unidos com `, ` em `Access-Control-Expose-Headers` em respostas reais para origens permitidas.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy
+
+```php
+public function __construct (null|array $proxies = null, Strategies $strategy = Strategies::Rightmost, null|string $header = null, null|string $relay = null)
+```
+
+Cria o middleware. `$proxies` lista os IPs literais e faixas CIDR confiáveis; `null` recai em `127.0.0.1` e `::1` com um aviso único. `$strategy` escolhe de onde o endereço do cliente é lido. `$header` nomeia o campo que `Strategies::Header` lê. `$relay` nomeia o header de visitante de um proxy confiável na frente — toda entrada de `$proxies` pode escrevê-lo, e um visitante dentro da lista de confiança é recusado. Lança `InvalidArgumentException` quando uma entrada de `proxies` não é um IP ou faixa CIDR válida, quando `Strategies::Header` não recebe `$header` ou outra estratégia recebe um, ou quando `$header`/`$relay` não é um token de nome de campo da RFC 9110. Um `$header` ou `$relay` entra nos campos de encaminhamento que o cache de rota usa na chave e com os quais nunca armazena.
+
+```php
+public function process (object $Request, object $Response, Closure $next): object
+```
+
+Quando `$Request->peer` é confiável, define `$Request->address` a partir do valor da estratégia — ou do relay, quando esse valor é ele mesmo um proxy confiável — e `$Request->scheme` a partir do `X-Forwarded-Proto` (só `http` ou `https`). Um valor ausente ou malformado não muda nada, e um campo de `header`/`relay` repetido (unido por vírgula na chegada) é recusado; linhas repetidas de `X-Forwarded-For` são unidas e lidas como uma só cadeia. Depois chama `$next($Request, $Response)` e retorna o resultado. Um par não confiável vai direto para `$next`.
+
+```php
+public private(set) array $proxies
+```
+
+A lista de confiança, como configurada (ou o padrão localhost).
+
+```php
+public private(set) Strategies $strategy
+```
+
+De onde o endereço do cliente é lido: `Strategies::Rightmost`, a menos que o construtor receba outra.
+
+```php
+public private(set) null|string $header
+```
+
+O header que `Strategies::Header` lê, como configurado; `null` em qualquer outra estratégia.
+
+```php
+public private(set) null|string $relay
+```
+
+O header de visitante de um proxy confiável na frente, como configurado; `null` quando não há relay.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy\Strategies
+
+```php
+enum Strategies: string
+{
+   case Rightmost = 'rightmost';
+   case Leftmost = 'leftmost';
+   case Header = 'header';
+}
+```
+
+De onde o `TrustedProxy` lê o endereço do cliente depois que o par do socket é confiável. `Rightmost` percorre o `X-Forwarded-For` pela direita, pulando hops confiáveis, e para no primeiro não confiável — o cliente quando é um IP válido, nada caso contrário; sem `X-Forwarded-For`, lê o `X-Real-IP`. `Leftmost` lê só a primeira entrada do `X-Forwarded-For` e não tem fallback. `Header` lê o único campo nomeado por `TrustedProxy::$header`; um campo repetido chega unido por vírgula e é recusado.
 
 ### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator
 

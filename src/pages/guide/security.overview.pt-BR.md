@@ -281,6 +281,21 @@ Só habilite confiança em headers de proxy para proxies que você realmente con
 `$Request->address` continua sendo o peer observado pelo kernel e não pode ser forjado por um
 header do cliente.
 
+Depois escolha a `strategy` que a sua borda realmente sustenta — uma escolha errada deixa um
+cliente escolher `$Request->address`:
+
+| Sua borda | Estratégia segura | Forjável quando |
+|---|---|---|
+| Acrescenta ao `X-Forwarded-For`, todo hop que acrescenta em `proxies` | `Strategies::Rightmost` (default) | falta em `proxies` um hop que acrescenta |
+| Sobrescreve o `X-Forwarded-For`, hops não publicados | `Strategies::Leftmost` | a borda acrescenta ou repassa o header do cliente |
+| Define um header próprio (`X-Real-IP`, `Fly-Client-IP`) | `Strategies::Header` | a borda não sobrescreve esse header em toda requisição |
+| CDN na frente da borda | as faixas dela em `proxies` + `relay: 'CF-Connecting-IP'` | outro cliente da mesma CDN roda código ali |
+
+O relay nunca é lido quando nenhum dado encaminhado escolheu um endereço, então um cliente que
+chega direto na borda não consegue usá-lo — desde que a borda escreva o campo que a estratégia lê.
+Toda entrada de `proxies` pode escrever o header do relay: liste os endereços exatos dos seus
+proxies, não faixas privadas inteiras. Receitas completas: [TrustedProxy](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#trustedproxy).
+
 ### Onde fica a evidência
 
 ```text

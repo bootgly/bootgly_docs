@@ -357,9 +357,11 @@ option:
   or a listener on `Request\Events::Received` / `Request\Events::Handled`,
   turns the cache off for every route.
 - **The request came through a proxy** — a request carrying
-  `X-Forwarded-For`, `X-Forwarded-Proto` or `X-Real-IP` is looked up in its own
-  key space and never stores an entry, so behind a load balancer that adds
-  these fields the cache stays empty.
+  `X-Forwarded-For`, `X-Forwarded-Proto` or `X-Real-IP` — or a `header`/`relay`
+  a [TrustedProxy](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#trustedproxy)
+  was configured with, such as `CF-Connecting-IP` — is looked up in its own key
+  space and never stores an entry, so behind a load balancer that adds these
+  fields the cache stays empty.
 - **The request asks for a fresh answer** — `Cache-Control: no-cache` skips
   the lookup.
 - **The response is too large** — an entry is stored only up to 1 MiB of wire

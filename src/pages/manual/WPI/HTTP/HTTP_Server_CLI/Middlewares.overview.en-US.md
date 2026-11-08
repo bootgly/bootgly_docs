@@ -591,7 +591,7 @@ new SecureHeaders(
 
 ### TrustedProxy
 
-Resolves the real client IP from trusted proxy headers (`X-Forwarded-For`, `X-Real-IP`) when the server runs behind a reverse proxy, load balancer or CDN.
+Resolves the real client IP (`$Request->address`) and scheme (`$Request->scheme`) from forwarding headers when the server runs behind a reverse proxy, load balancer or CDN — but only when the connection comes from a proxy you trust.
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy;
@@ -602,15 +602,65 @@ new TrustedProxy(
 );
 ```
 
-When the request comes from a trusted proxy, the middleware:
-- Reads `X-Forwarded-For` (right-to-left, first untrusted hop) or `X-Real-IP` to update `$Request->address`
+When the socket peer is in `proxies`, the middleware:
+- Reads the client address according to its `strategy` (by default: `X-Forwarded-For` right-to-left, first untrusted hop, or `X-Real-IP` when there is no `X-Forwarded-For`) to update `$Request->address`
 - Reads `X-Forwarded-Proto` to update `$Request->scheme`
 
-Untrusted proxy IPs are ignored — the address and scheme are left unchanged.
+Untrusted proxy IPs are ignored — the address and scheme are left unchanged. A missing or malformed value never replaces the address either: the request keeps the socket peer.
+
+#### Pick the strategy your edge supports
+
+No header can prove who wrote it. Each strategy is sound for one deployment shape only — pick the one that matches what your edge does with the header it reads.
+
+**Behind proxies that append to `X-Forwarded-For` (AWS ALB, HAProxy `option forwardfor`, nginx with `$proxy_add_x_forwarded_for`, a CDN whose ranges you list)** — keep the default. Every hop that appends must be in `proxies`; the walk skips them from the right and stops at the first address none of them vouches for.
+
+```php
+new TrustedProxy(proxies: ['10.0.0.0/8']);
+```
+
+**Behind an nginx that sets only `X-Real-IP`** (`proxy_set_header X-Real-IP $remote_addr;` and no `X-Forwarded-For` line) — read that one header. Under the default strategy a client-written `X-Forwarded-For`, passed through by such an nginx, would win over it.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy\Strategies;
+
+new TrustedProxy(
+   proxies: ['10.0.0.5'],
+   strategy: Strategies::Header,
+   header: 'X-Real-IP'
+);
+```
+
+The same shape covers any edge that sets a header of its own on every request — `Fly-Client-IP`, `CF-Connecting-IP` when the origin is reached only through Cloudflare.
+
+**Behind an edge that overwrites `X-Forwarded-For` and whose hops are not published** — the right-most walk would stop at an edge hop and share one address among every visitor that comes through it. Read the left-most entry instead:
+
+```php
+new TrustedProxy(proxies: ['10.0.0.0/8'], strategy: Strategies::Leftmost);
+```
+
+**With a CDN in front of the edge** — when the address the strategy picked is itself a trusted proxy (a CDN node), the CDN's visitor header names the client. Add the CDN's ranges to `proxies` and name that header as the `relay`:
+
+```php
+new TrustedProxy(
+   proxies: ['10.0.0.2', '10.0.0.3', '173.245.48.0/20', '2400:cb00::/32'],
+   strategy: Strategies::Leftmost,
+   relay: 'CF-Connecting-IP'
+);
+```
+
+The relay is read only when forwarded data picked a trusted address. A request that carries no forwarding header keeps the socket peer, so a client that reaches your edge directly cannot choose its address by writing `CF-Connecting-IP` itself — as long as the edge writes the field the strategy reads; the relay inherits the strategy's precondition. A missing or malformed relay value leaves the address at the socket peer, never at the CDN node, and so does a visitor inside the trust list: a front proxy names the client, never another proxy.
+
+Every `proxies` entry is trusted to name the visitor through the `relay`, so keep the list to your real proxies — the edge's exact addresses rather than a whole private range. Any host inside a listed range that can reach the edge can set the relay header.
+
+> **Security — `Leftmost` and `Header` trust your edge to overwrite the header.** Both read a value the edge must write itself on **every** request, dropping whatever the client sent. Behind an edge that appends to the header or passes it on untouched, **any client chooses its own address** — and with it its rate-limit bucket (`RateLimit(trustForwarded: true)`), any IP allowlist that reads `$Request->address`, and what `AccessLog` records. When unsure, keep the default strategy. Bootgly cannot detect this at runtime: it is a fact about your edge, not about the request.
+
+> **Security — a CDN range proves the network, not the tenant.** A shared CDN serves many customers from the same addresses, and some of them can run code there (Workers, edge functions) that sends any `CF-Connecting-IP` it likes. Trusting the CDN's ranges trusts every customer of that CDN. If that matters for your application, lock the origin to your own zone at the network level (authenticated origin pulls, a private tunnel) — that is outside this middleware.
+
+Every strategy fails closed: `Leftmost` never skips an invalid first entry to reach a later one, and the right-most walk stops at an invalid untrusted hop instead of walking past it — entries left of that hop are written by whoever wrote it, so walking on would let the client choose.
 
 **CIDR ranges.** Behind a CDN every request arrives from a different edge address, so no literal list can express the trust set — list the provider's published ranges instead. An IP literal counts as `/32` | `/128`, so existing lists of valid IPs keep working; textual IPv6 variants (`0:0:0:0:0:0:0:1` vs `::1`) now match by value; an IPv4-mapped form (`::ffff:a.b.c.d`) matches its IPv4 equivalent on both sides; and surrounding whitespace is tolerated. A CIDR entry whose host bits are set (`10.0.0.8/8`) trusts its whole network, per the usual convention. The list is compiled once at construction, so per-request matching is a byte comparison — and an entry that is not a valid IP or CIDR now throws `InvalidArgumentException` at boot instead of silently never matching, which is the one breaking change here. The `X-Forwarded-For` walk skips trusted hops by the same range match, so an in-chain edge address is never mistaken for the client. Provider ranges change over time — load them from a file you can refresh (`proxies: require 'ranges.php'`) rather than hardcoding.
 
-> **CDNs that do not append to `X-Forwarded-For`.** Some edges publish the client only in a header of their own (`CF-Connecting-IP`, `True-Client-IP`). Reading those is not supported yet — trusting a fourth field safely also requires teaching the route cache about it, otherwise an address-varying response cached for one client could be replayed to another. Cloudflare and most CDNs also append to `X-Forwarded-For`, so listing their ranges above already resolves the real client.
+**Route cache.** A `header` or `relay` you configure is treated like `X-Forwarded-For`, `X-Forwarded-Proto` and `X-Real-IP` by the [route response cache](/manual/WPI/HTTP/HTTP_Server_CLI/Router/overview/): a request carrying it is looked up in its own key space and never stores an entry, so one visitor's representation is never replayed to another.
 
 **`$Request->address` vs `$Request->peer`.** This middleware only ever changes `$Request->address` (the application-facing client IP). The real socket peer is always available, unaltered, as **`$Request->peer`** — use it for anti-abuse decisions that must not be spoofable (rate limiting keys on it by default; see [RateLimit](#ratelimit)).
 
@@ -649,6 +699,57 @@ public private(set) array $expose
 ```
 
 The exposed response header names, in configured order, joined with `, ` in `Access-Control-Expose-Headers` on actual responses to allowed origins.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy
+
+```php
+public function __construct (null|array $proxies = null, Strategies $strategy = Strategies::Rightmost, null|string $header = null, null|string $relay = null)
+```
+
+Creates the middleware. `$proxies` lists trusted IP literals and CIDR ranges; `null` falls back to `127.0.0.1` and `::1` with a one-time warning. `$strategy` picks where the client address is read from. `$header` names the field `Strategies::Header` reads. `$relay` names the visitor header of a trusted front proxy — every `$proxies` entry may author it, and a visitor inside the trust list is refused. Throws `InvalidArgumentException` when a `proxies` entry is not a valid IP or CIDR range, when `Strategies::Header` has no `$header` or another strategy has one, or when `$header`/`$relay` is not an RFC 9110 field-name token. A `$header` or `$relay` joins the forwarding fields the route cache keys on and never stores.
+
+```php
+public function process (object $Request, object $Response, Closure $next): object
+```
+
+When `$Request->peer` is trusted, sets `$Request->address` from the strategy's value — or from the relay, when that value is itself a trusted proxy — and `$Request->scheme` from `X-Forwarded-Proto` (`http` or `https` only). A missing or malformed value changes nothing, and a repeated `header`/`relay` field (comma-joined on arrival) is refused; repeated `X-Forwarded-For` lines are joined and read as one chain. Then calls `$next($Request, $Response)` and returns its result. An untrusted peer goes straight to `$next`.
+
+```php
+public private(set) array $proxies
+```
+
+The trust list, as configured (or the localhost default).
+
+```php
+public private(set) Strategies $strategy
+```
+
+Where the client address is read from: `Strategies::Rightmost` unless the constructor got another.
+
+```php
+public private(set) null|string $header
+```
+
+The header `Strategies::Header` reads, as configured; `null` under every other strategy.
+
+```php
+public private(set) null|string $relay
+```
+
+The visitor header of a trusted front proxy, as configured; `null` when there is no relay.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\TrustedProxy\Strategies
+
+```php
+enum Strategies: string
+{
+   case Rightmost = 'rightmost';
+   case Leftmost = 'leftmost';
+   case Header = 'header';
+}
+```
+
+Where `TrustedProxy` reads the client address once the socket peer is trusted. `Rightmost` walks `X-Forwarded-For` from the right, skipping trusted hops, and stops at the first untrusted one — the client when it is a valid IP, nothing otherwise; without `X-Forwarded-For` it reads `X-Real-IP`. `Leftmost` reads only the first `X-Forwarded-For` entry and has no fallback. `Header` reads the one field named by `TrustedProxy::$header`; a repeated field arrives comma-joined and is refused.
 
 ### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Validator
 

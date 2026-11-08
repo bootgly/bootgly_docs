@@ -276,6 +276,20 @@ new TrustedProxy(/* ... */)
 Only enable proxy-header trust for proxies you actually control. Left disabled,
 `$Request->address` stays the kernel-observed peer and cannot be spoofed by a client header.
 
+Then pick the `strategy` your edge actually supports — a mismatch lets a client choose
+`$Request->address`:
+
+| Your edge | Safe strategy | Spoofable when |
+|---|---|---|
+| Appends to `X-Forwarded-For`, every appending hop in `proxies` | `Strategies::Rightmost` (default) | an appending hop is missing from `proxies` |
+| Overwrites `X-Forwarded-For`, hops unpublished | `Strategies::Leftmost` | the edge appends or passes the client's header on |
+| Sets one header of its own (`X-Real-IP`, `Fly-Client-IP`) | `Strategies::Header` | the edge does not overwrite that header on every request |
+| CDN in front of the edge | add its ranges to `proxies` + `relay: 'CF-Connecting-IP'` | another tenant of the same CDN runs code there |
+
+The relay is never read when no forwarded data picked an address, so a client reaching the edge
+directly cannot use it — provided the edge writes the field the strategy reads. Every `proxies`
+entry may author the relay header: list your proxies' exact addresses, not whole private ranges. Full recipes: [TrustedProxy](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#trustedproxy).
+
 ### Where the evidence lives
 
 ```text

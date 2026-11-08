@@ -359,8 +359,10 @@ não tivesse a opção `cache`:
   `SAPI::$Middlewares`, ou um listener de `Request\Events::Received` /
   `Request\Events::Handled`, desliga o cache para todas as rotas.
 - **A requisição veio por um proxy** — uma requisição com `X-Forwarded-For`,
-  `X-Forwarded-Proto` ou `X-Real-IP` é buscada em um espaço de chaves próprio e
-  nunca armazena uma entrada, então atrás de um load balancer que adiciona esses
+  `X-Forwarded-Proto` ou `X-Real-IP` — ou com um `header`/`relay` configurado num
+  [TrustedProxy](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#trustedproxy),
+  como `CF-Connecting-IP` — é buscada em um espaço de chaves próprio e nunca
+  armazena uma entrada, então atrás de um load balancer que adiciona esses
   campos o cache fica vazio.
 - **A requisição pede uma resposta nova** — `Cache-Control: no-cache` pula a
   busca.
