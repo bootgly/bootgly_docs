@@ -304,6 +304,7 @@ O Bootgly endurece o carregamento de configs com várias regras:
 - Dot-notation não é suportada por `Configs::get()`.
 - Segredos obrigatórios podem falhar em modo fail-closed com `bind(required: true)`.
 - Um `Schema` reporta de uma vez todas as chaves inválidas de um escopo, e o relatório nunca contém um valor configurado.
+- Um valor rejeitado por um cast e o default passado ao `bind()` são parâmetros sensíveis: nunca aparecem como argumentos em traces de exceção, mesmo com `zend.exception_ignore_args=0`.
 - Arquivos `.Config.php` são código PHP confiável e devem ser revisados como código-fonte.
 
 > [!WARNING]

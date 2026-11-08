@@ -304,6 +304,7 @@ Bootgly hardens config loading with several rules:
 - Dot-notation is not supported by `Configs::get()`.
 - Required secrets can fail closed with `bind(required: true)`.
 - A `Schema` reports every invalid key of a scope at once, and its report never contains a configured value.
+- A value a cast rejects and the default passed to `bind()` are sensitive parameters: they never appear as arguments in exception traces, even with `zend.exception_ignore_args=0`.
 - `.Config.php` files are trusted PHP code and must be reviewed like source code.
 
 > [!WARNING]
