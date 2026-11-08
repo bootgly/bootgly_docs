@@ -1577,8 +1577,8 @@ export default {
       version: 'v1.1.0',
       meta: {
         description: {
-          'en-US': 'The Model Context Protocol server core over JSON-RPC: revision negotiation, tools, resources and prompts from your closures, the Initializer for the session, the empty-result rule, and what stays with the transport.',
-          'pt-BR': 'O núcleo de servidor do Model Context Protocol sobre JSON-RPC: negociação de revisão, tools, resources e prompts a partir das suas closures, o Initializer para a sessão, a regra do resultado vazio e o que fica com o transporte.'
+          'en-US': 'The Model Context Protocol server core over JSON-RPC: revision negotiation, tools, resources and prompts from your closures, the Initializer for the session, the empty-result rule, and its HTTP and stdio transports.',
+          'pt-BR': 'O núcleo de servidor do Model Context Protocol sobre JSON-RPC: negociação de revisão, tools, resources e prompts a partir das suas closures, o Initializer para a sessão, a regra do resultado vazio e seus transportes HTTP e stdio.'
         }
       },
       menu: {},
@@ -1643,6 +1643,31 @@ export default {
     data: {
       '*': {
         title: 'Commands'
+      }
+    }
+  },
+  '/CLI/MCP': {
+    config: {
+      icon: 'smart_toy',
+      status: 'new',
+      version: 'v1.2.0',
+      meta: {
+        description: {
+          'en-US': 'Serve an MCP server over stdio from a command: one JSON-RPC message per line on stdin, answers on stdout, every diagnostic — and whatever a tool prints — on stderr.',
+          'pt-BR': 'Sirva um servidor MCP via stdio a partir de um comando: uma mensagem JSON-RPC por linha no stdin, respostas no stdout e todo diagnóstico — e o que um tool imprimir — no stderr.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'MCP over stdio'
+      },
+      'pt-BR': {
+        title: 'MCP via stdio'
       }
     }
   },
@@ -3103,6 +3128,31 @@ export default {
     data: {
       '*': {
         title: 'Middlewares'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/MCP': {
+    config: {
+      icon: 'smart_toy',
+      status: 'new',
+      version: 'v1.2.0',
+      meta: {
+        description: {
+          'en-US': 'Serve an MCP server on a route over Streamable HTTP: sessions shared across workers and bound to the caller, protocol-version and Origin checks, JSON or event-stream answers, the GET listening stream and DELETE.',
+          'pt-BR': 'Sirva um servidor MCP em uma rota via Streamable HTTP: sessões compartilhadas entre workers e vinculadas a quem chama, verificação de versão do protocolo e de Origin, respostas em JSON ou event stream, o stream de escuta via GET e o DELETE.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'MCP over HTTP'
+      },
+      'pt-BR': {
+        title: 'MCP via HTTP'
       }
     }
   },

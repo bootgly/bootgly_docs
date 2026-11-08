@@ -413,15 +413,29 @@ echo $MCP->handle('[
 
 `notifications/initialized` e `notifications/cancelled` são aceitas e não respondem nada.
 
+## Transportes
+
+O Bootgly traz os dois transportes MCP em volta deste núcleo, então a aplicação só escreve as
+suas closures:
+
+- **Streamable HTTP** — `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\MCP`, um route handler:
+  `$Router->route('/mcp', new MCP($Server), [GET, POST, DELETE])`. Ele emite e confere o
+  `Mcp-Session-Id` (sessões compartilhadas entre workers, vinculadas ao principal autenticado),
+  confere `MCP-Protocol-Version` e `Origin`, responde em JSON ou event stream conforme o
+  `Accept`, e atende o stream de escuta via `GET` e o `DELETE`. O contexto de cada chamada é o
+  `Request`. Veja **[MCP via HTTP](/manual/WPI/HTTP/HTTP_Server_CLI/MCP/overview/)**.
+- **stdio** — `Bootgly\CLI\MCP`, para um servidor que o cliente MCP inicia como processo filho:
+  uma mensagem por linha no stdin, uma resposta por linha no stdout, todo o resto no stderr.
+  Veja **[MCP via stdio](/manual/CLI/MCP/overview/)**.
+
 ## O que fica de fora
 
 A classe é só o núcleo do protocolo. A aplicação, ou o transporte em volta dela, cuida de:
 
 - **O transporte.** Streamable HTTP ou stdio: ler mensagens, escrever respostas e as regras do
-  próprio transporte (ids de sessão, conferência de `Origin`, streams). `handle()` retorna `null`
-  quando nada é devido — um transporte HTTP responde `202`, o stdio não escreve nada; a
-  **[receita HTTP](/manual/API/RPC/JSON/overview/#servir-sobre-http)** da página JSON-RPC mostra
-  esse formato.
+  próprio transporte (ids de sessão, conferência de `Origin`, streams) — os
+  **[transportes](#transportes)** acima fazem isso. `handle()` retorna `null` quando nada é
+  devido — um transporte HTTP responde `202`, o stdio não escreve nada.
 - **Sessões.** O servidor não guarda estado por cliente; passe a sessão do transporte como o
   contexto, e deixe o `Initializer` guardar a revisão nela.
 - **Autenticação e autorização.** Confira quem está chamando antes de o payload chegar a

@@ -408,15 +408,29 @@ echo $MCP->handle('[
 
 `notifications/initialized` and `notifications/cancelled` are accepted and answer nothing.
 
+## Transports
+
+Bootgly ships the two MCP transports around this core, so an application only writes its
+closures:
+
+- **Streamable HTTP** — `Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\MCP`, a route handler:
+  `$Router->route('/mcp', new MCP($Server), [GET, POST, DELETE])`. It issues and checks
+  `Mcp-Session-Id` (sessions shared across workers, bound to the authenticated principal),
+  checks `MCP-Protocol-Version` and `Origin`, answers JSON or an event stream after `Accept`,
+  and serves the `GET` listening stream and `DELETE`. Each call's context is the `Request`.
+  See **[MCP over HTTP](/manual/WPI/HTTP/HTTP_Server_CLI/MCP/overview/)**.
+- **stdio** — `Bootgly\CLI\MCP`, for a server an MCP client launches as a child process:
+  one message per line on stdin, one answer per line on stdout, everything else on stderr.
+  See **[MCP over stdio](/manual/CLI/MCP/overview/)**.
+
 ## What stays outside
 
 The class is the protocol core only. The application, or the transport around it, owns:
 
 - **The transport.** Streamable HTTP or stdio: reading messages, writing answers, and the
-  transport's own rules (session ids, `Origin` checks, streams). `handle()` returns `null` when
-  nothing is owed — an HTTP transport answers `202`, stdio writes nothing; the
-  **[HTTP recipe](/manual/API/RPC/JSON/overview/#serve-it-over-http)** of the JSON-RPC page shows
-  that shape.
+  transport's own rules (session ids, `Origin` checks, streams) — the
+  **[transports](#transports)** above do it. `handle()` returns `null` when nothing is owed —
+  an HTTP transport answers `202`, stdio writes nothing.
 - **Sessions.** The server keeps no per-client state; pass the transport's session as the
   context, and let the `Initializer` store the revision into it.
 - **Authentication and authorization.** Check who is calling before the payload reaches
