@@ -196,9 +196,9 @@ O framework aplica o mesmo gate a si mesmo, medindo todo arquivo PHP em `Bootgly
 
 - a cada push na `main`: no mínimo 65% dos statements cobertos;
 - a cada pull request: o mesmo limite mínimo sobre as linhas alteradas, e nenhuma classe alterada sem um statement coberto;
-- a cada release: o gate da árvore na tag, com o relatório clover anexado ao release do GitHub como `bootgly-<tag>-coverage.clover.xml`.
+- a cada release: o gate da árvore na tag; quando todas as suítes e o gate passam, o relatório clover é anexado ao release do GitHub como `bootgly-<tag>-coverage.clover.xml`.
 
-Na árvore da 1.2.0, um run cobre cerca de 69,6% de 68.199 statements (66,5% de 71.325 na contagem mais conservadora). A regra "nenhuma classe zerada" ainda não vale para a árvore inteira: 67 arquivos de classe estavam zerados nesse baseline.
+Na árvore da 1.2.0, um run cobre 69,8% de 69.266 statements. A regra "nenhuma classe zerada" ainda não vale para a árvore inteira: 66 arquivos de classe estavam zerados nesse baseline.
 
 ## API programática
 

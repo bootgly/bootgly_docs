@@ -196,9 +196,9 @@ The framework gates itself the same way, measuring every PHP source in `Bootgly/
 
 - every push to `main`: at least 65% of the statements covered;
 - every pull request: the same floor over the lines it changed, and no changed class left without a covered statement;
-- every release: the tree gate on the tag, and its clover report attached to the GitHub release as `bootgly-<tag>-coverage.clover.xml`.
+- every release: the tree gate on the tag; when every suite and the gate pass, its clover report is attached to the GitHub release as `bootgly-<tag>-coverage.clover.xml`.
 
-On the 1.2.0 tree, one run covers about 69.6% of 68,199 statements (66.5% of 71,325 at the most conservative count). The "no class at zero" rule does not gate the whole tree yet: 67 class sources were at zero in that baseline.
+On the 1.2.0 tree, one run covers 69.8% of 69,266 statements. The "no class at zero" rule does not gate the whole tree yet: 66 class sources were at zero in that baseline.
 
 ## Programmatic API
 
