@@ -89,6 +89,79 @@ foreach ($rows as $index => $row) {
 }
 ```
 
+## Payloads aninhados
+
+Um body JSON raramente é plano. Aponte uma regra para uma chave aninhada com pontos, e para cada
+entrada de uma lista com `*`:
+
+```php
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Integer;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\ADI\Validators\Required;
+
+$Order = new Validation(
+   source: [
+      'customer' => ['email' => 'ada@example.com'],
+      'lines' => [
+         ['sku' => 'A-1', 'quantity' => '2'],
+         ['sku' => '', 'quantity' => '0'],
+      ],
+   ],
+   rules: [
+      'customer.email' => [new Required, new Email],
+      'lines' => [new Required, new Maximum(100)],
+      'lines.*.sku' => [new Required],
+      'lines.*.quantity' => [new Required, new Integer, new Minimum(1)],
+   ]
+);
+
+$Order->errors;
+// [
+//    'lines.1.sku' => ['lines.1.sku is required.'],
+//    'lines.1.quantity' => ['lines.1.quantity must be at least 1.'],
+// ]
+```
+
+Os erros nomeiam a entrada exata, então um cliente consegue marcar a linha certa. Dê à lista uma
+regra própria (`'lines' => [new Required, …]`): `lines.*.sku` sozinho aceita um `lines` ausente. Um
+curinga visita no máximo 1000 entradas por chave de regra por padrão — passe `limit:` para payloads
+maiores. Uma chave que contém ponto se escreve `'app\.name'`. Caminhos, containers e o limite estão
+detalhados em
+**[Caminhos aninhados e curingas](/manual/ADI/Validation/overview/#caminhos-aninhados-e-curingas)**.
+
+## Descrevendo a entrada como JSON Schema
+
+As regras que validam um payload também podem descrevê-lo. O `Validation\Renderer` as transforma em
+um documento JSON Schema 2020-12 — o `inputSchema` de uma tool MCP, por exemplo:
+
+```php
+use Bootgly\ADI\Validation\Renderer;
+
+$rules = [
+   'customer.email' => [new Required, new Email],
+   'lines.*.sku' => [new Required],
+   'lines.*.quantity' => [new Required, new Integer, new Minimum(1)],
+];
+
+$Renderer = new Renderer($rules);
+
+$tool = [
+   'name' => 'create_order',
+   'description' => 'Create an order',
+   'inputSchema' => $Renderer->document,
+];
+
+// Regras que o JSON Schema não expressa (Confirmed, uploads, as suas) aparecem aqui:
+$Renderer->omissions; // []
+```
+
+Valide os argumentos com as mesmas `$rules` quando a chamada chegar: o schema orienta o cliente, a
+`Validation` decide. O que cada regra vira, e onde os dois diferem, está em
+**[Exporte um JSON Schema](/manual/ADI/Validation/overview/#exporte-um-json-schema)**.
+
 ## Campos opcionais e regras implícitas
 
 Um campo ausente, `null`, `''` ou `[]` é tratado como *em branco*. Campos em branco pulam todas as regras **exceto as implícitas** — `Required` é implícita, então ainda roda e falha. Isso torna campos opcionais naturais:
@@ -114,7 +187,7 @@ new URL(message: 'Give me a real URL.');
 
 Uma mensagem que você passa é montada como a padrão: ela mantém os placeholders da regra e passa pelos catálogos de tradução — veja **[Mensagens](/manual/ADI/Validation/overview/#mensagens)**.
 
-Por enquanto, verifique o tamanho de um texto (uma senha, um nome) com `Regex` e as flags `su`, como acima: `Minimum` e `Maximum` não contam caracteres — veja [Números, tamanhos e contagens](/manual/ADI/Validators/overview/#números-tamanhos-e-contagens).
+Verifique o tamanho de um texto (uma senha, um nome) com `Length`, que conta caracteres: `Minimum` e `Maximum` comparam strings numéricas pelo valor e medem as outras strings em bytes — veja [Números, tamanhos e contagens](/manual/ADI/Validators/overview/#números-tamanhos-e-contagens).
 
 ## Regras customizadas
 
@@ -176,4 +249,4 @@ não é varrer malware está em **[MIME](/manual/ADI/Validators/overview/#mime)*
 
 ## Regras built-in
 
-`Bootgly\ADI\Validators` traz 14 regras: `Boolean`, `Confirmed`, `Date`, `Email`, `Extension`, `In`, `Integer`, `Maximum`, `MIME`, `Minimum`, `Regex`, `Required`, `Size` e `URL`. Os argumentos delas, os valores que cada uma aceita e rejeita, as mensagens padrão e as ressalvas estão em **[Validadores](/manual/ADI/Validators/overview/)**; o motor — `Validation`, a classe base `Condition` e como uma mensagem é montada — tem a Referência dele em **[Validação](/manual/ADI/Validation/overview/#referência)**. Toda mensagem é uma key dos catálogos de tradução do domínio `validation`: **[Mensagens de validação localizadas](/guide/i18n/overview/#mensagens-de-validação-localizadas)** mostra um catálogo `pt-BR` completo.
+`Bootgly\ADI\Validators` traz 18 regras: `Boolean`, `Confirmed`, `Date`, `Email`, `Extension`, `In`, `Integer`, `Keys`, `Length`, `Maximum`, `MIME`, `Minimum`, `Regex`, `Required`, `Size`, `Text`, `URL` e `UUID`. Os argumentos delas, os valores que cada uma aceita e rejeita, as mensagens padrão e as ressalvas estão em **[Validadores](/manual/ADI/Validators/overview/)**; o motor — `Validation`, a classe base `Condition` e como uma mensagem é montada — tem a Referência dele em **[Validação](/manual/ADI/Validation/overview/#referência)**. Toda mensagem é uma key dos catálogos de tradução do domínio `validation`: **[Mensagens de validação localizadas](/guide/i18n/overview/#mensagens-de-validação-localizadas)** mostra um catálogo `pt-BR` completo.

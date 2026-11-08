@@ -1,6 +1,6 @@
 # Validators
 
-`Bootgly\ADI\Validators` holds the 14 rules Bootgly ships for `Bootgly\ADI\Validation`. A rule is an
+`Bootgly\ADI\Validators` holds the 18 rules Bootgly ships for `Bootgly\ADI\Validation`. A rule is an
 object built with its arguments: list it under a field, and the validation runs it on that field's
 value and, when the value fails, adds the rule's message to the field's errors.
 
@@ -37,7 +37,7 @@ caveats.
 
 Every rule extends `Bootgly\ADI\Validation\Condition` directly. None of them extends
 `Bootgly\ADI\Validators`, the abstract class that shares the namespace's name, so
-`$Rule instanceof Validators` is `false` for all 14: check a rule's type against `Condition`.
+`$Rule instanceof Validators` is `false` for all 18: check a rule's type against `Condition`.
 
 ## Rules at a glance
 
@@ -50,23 +50,27 @@ Every rule extends `Bootgly\ADI\Validation\Condition` directly. None of them ext
 | [Extension](#extension) | `extensions` | An upload whose file name ends in one of them | No | `{field} must have an allowed extension.` |
 | [In](#in) | `values`, `strict` (default `true`) | One of `values` | No | `{field} must be one of the allowed values.` |
 | [Integer](#integer) | — | An `int`, or a string of digits with an optional sign | No | `{field} must be an integer.` |
+| [Keys](#keys) | `keys` | An array whose keys are all among `keys` (a closed object) | No | `{field} has keys that are not allowed.` |
+| [Length](#length) | `minimum`, `maximum` | A string of that many characters (code points) | No | `{field} must be between {minimum} and {maximum} characters.`; with one bound, `{field} must be at least {minimum} characters.` or `{field} must be at most {maximum} characters.` |
 | [Maximum](#maximum) | `limit` | At most `limit`, by value, byte length or count | No | `{field} must be at most {limit}.` |
 | [MIME](#mime) | `types` | An upload whose bytes sniff as one of them | No | `{field} must have an allowed MIME type.` |
 | [Minimum](#minimum) | `limit` | At least `limit`, by value, byte length or count | No | `{field} must be at least {limit}.` |
 | [Regex](#regex) | `pattern` | A scalar that matches it | No | `{field} has an invalid format.` |
 | [Required](#required) | — | Anything but `null`, `[]` and a blank string | Yes | `{field} is required.` |
 | [Size](#size) | `limit`, in bytes | An upload of at most `limit` bytes | No | `{field} must be at most {limit} bytes.` |
+| [Text](#text) | — | A string | No | `{field} must be a string.` |
 | [URL](#url) | — | A URL | No | `{field} must be a valid URL.` |
+| [UUID](#uuid) | — | A UUID in canonical 8-4-4-4-12 hex form | No | `{field} must be a valid UUID.` |
 
 - **`message`** — Every rule takes it as its last argument, `''` by default. A message you pass
   replaces the template and keeps its placeholders:
   `new Size(2 * 1024 * 1024, '{field} must be a file of at most {limit} bytes.')`.
 - **Implicit** — Only `Required` runs on a blank value: a missing field, `null`, `''` or `[]`. The
-  other 13 skip it, so a field stays optional until you add `Required`. A string of spaces is not
+  other 17 skip it, so a field stays optional until you add `Required`. A string of spaces is not
   blank: every rule runs on it, and `Required` fails it. See
   [Blank values and implicit rules](/manual/ADI/Validation/overview/#blank-values-and-implicit-rules).
 - **Template** — The English message, and also its key in the `validation` translation catalogs.
-  `{field}` becomes the field's key; `{limit}` and `{format}` become the rule's argument as PHP
+  `{field}` becomes the field's key; `{limit}`, `{format}`, `{minimum}` and `{maximum}` become the rule's argument as PHP
   converts it to a string — `Minimum(1.5)` says `1.5`, `Size(2 * 1024 * 1024)` says `2097152`. A
   complete `pt-BR` catalog is in
   **[Localized validation messages](/guide/i18n/overview/#localized-validation-messages)**.
@@ -106,26 +110,26 @@ $Validation->errors; // ['age' => ['age must be at least 18.'], 'tags' => ['tags
 > [!WARNING]
 > **Not a text-length rule.** A string that looks like a number is compared by its value, so the
 > password `'1234'` passes `Minimum(8)`; any other string is measured in bytes, so a bio of 300 `'é'`
-> is 600 bytes and fails `Maximum(500)`. There is no length rule for now: bound a text's length with
-> `Regex` and the `su` flags.
+> is 600 bytes and fails `Maximum(500)`. Bound a text's length with [Length](#length), which counts
+> characters.
 
 ```php
 use Bootgly\ADI\Validation;
-use Bootgly\ADI\Validators\Regex;
+use Bootgly\ADI\Validators\Length;
 
 $Validation = new Validation(
    source: ['password' => '1234', 'bio' => str_repeat('é', 300)],
    rules: [
-      'password' => [new Regex('/\A.{8,}\z/su', '{field} must have at least 8 characters.')],
-      'bio' => [new Regex('/\A.{0,500}\z/su', '{field} must have at most 500 characters.')],
+      'password' => [new Length(8)],
+      'bio' => [new Length(maximum: 500)],
    ]
 );
 
-$Validation->errors; // ['password' => ['password must have at least 8 characters.']]
+$Validation->errors; // ['password' => ['password must be at least 8 characters.']]
 ```
 
-`u` makes `.` match one Unicode codepoint, the unit `mb_strlen()` counts, and `s` lets it match a line
-break too. A codepoint is not always one visible character: an `é` typed as `e` plus a combining
+`Length` counts Unicode codepoints, the unit `mb_strlen()` counts, and a string that is not valid
+UTF-8 fails it. A codepoint is not always one visible character: an `é` typed as `e` plus a combining
 accent counts 2, and an emoji built from several codepoints counts each of them, so a maximum can
 reject a text that looks shorter.
 
@@ -284,6 +288,50 @@ $errors; // ['photos.1' => ['photos.1 must have an allowed MIME type.']]
 
 Here the second file was a PHP script sent as `image/png`.
 
+## JSON Schema
+
+`Bootgly\ADI\Validation\Renderer` renders a rule set as a JSON Schema document (see
+**[Export a JSON Schema](/manual/ADI/Validation/overview/#export-a-json-schema)**). Fourteen rules implement
+`Bootgly\ADI\Validation\Descriptor` and say which keywords they stand for; the other four are left
+out and listed in the Renderer's `omissions`.
+
+| Rule | Keywords | Not expressed |
+|---|---|---|
+| Boolean | `type: boolean` | `0`, `1`, `'0'`, `'1'`, `'true'`, `'false'` |
+| Date | `type: string`; `format: date` for `Y-m-d`, `format: date-time` for `Y-m-d\TH:i:sP` (`DATE_ATOM`, `DATE_RFC3339`) and `Y-m-d\TH:i:sp` | Any other format, and the `strtotime()` check; `date-time` also admits `Z`, fractional seconds and a lowercase `t`/`z`, which the rule rejects (`toISOString()` output fails it) |
+| Email | `type: string`, `format: email` | Addresses the format admits but `FILTER_VALIDATE_EMAIL` rejects, such as `a@localhost` |
+| In | `enum` of the values | A loose (`strict: false`) match; values that are not JSON scalars make the rule unexpressible |
+| Integer | `type: integer` | Integer strings such as `'18'` |
+| Keys | `type: object`, `propertyNames: {enum: keys}` (`maxProperties: 0` when `keys` is empty) | A list whose indexes are allowed keys (`Keys(['0', '1'])` passes `['a', 'b']`), which `type: object` refuses |
+| Length | `type: string`, `minLength` / `maxLength` (both count code points) | An optional blank `''`, which `Validation` skips and `minLength` refuses |
+| Maximum | `maximum`, and `maxLength`, `maxItems`, `maxProperties` of the whole count the limit admits | Numeric strings compared by value; byte lengths (JSON Schema counts characters); an infinite limit makes the rule unexpressible |
+| Minimum | `minimum`, and `minLength`, `minItems`, `minProperties` of the whole count the limit admits | Same as `Maximum` |
+| Regex | `pattern`, translated to ECMA-262 | See below |
+| Required | The key in its parent's `required`, plus the non-blank keywords of the value's type | A string of spaces |
+| Text | `type: string` | — |
+| URL | `type: string`, `format: uri` | URIs without `//` that the rule rejects, such as `urn:isbn:0451450523` |
+| UUID | `type: string`, `format: uuid` | — |
+| Confirmed, Extension, MIME, Size | — (omitted) | A cross-field check and the upload records have no JSON Schema form |
+
+`Minimum` and `Maximum` emit a bound for every type, and the Renderer keeps the one the value's
+`type` needs: `[new Integer, new Minimum(18)]` renders `{"type":"integer","minimum":18}`.
+
+`Regex` drops its delimiters and turns `\A`, `\z` and `\Z` into `^` and `$`; the result compiles
+under the `u` flag JSON Schema validators use. An escaped punctuation character that is not ECMA-262
+syntax — the `\-`, `\#` or `\:` that `preg_quote()` writes — becomes the plain character (`\-`
+stays escaped inside a class). A pattern with a modifier other than `u` and `D` — `i` included — or
+a construct ECMA-262 lacks or reads differently is not translated, and the rule is omitted:
+`(?P<…>`, `(?>…)`, `(*…)`, inline modifiers, possessive quantifiers such as `a++`, a brace that is not
+a `{n}`, `{n,}` or `{n,m}` quantifier (`x{,3}`), a lone `]`, POSIX classes, a `]` right after `[`,
+and an escaped letter or digit other than `\d \D \w \W \s \S \b \B \n \r \t \f`, `\cX`, `\xHH`,
+`\p{L}`-style categories, `\k<name>` and a one-digit backreference (so `\K`, `\R`, `\h`, `\v`, `\Q…\E`,
+`\x{…}`, `\o{…}` and octal `\012` are refused), a quantified lookaround (`(?=a)*`) and a `\p{…}` that
+is not a general category. Without `u`, PCRE matches bytes, so a pattern must be ASCII to translate —
+no `é`, no `\xE9`, no `\p{…}`. Differences remain, so the server keeps checking with PCRE: `$`
+matches before a final newline, `.` matches `\r`, a backreference to a group that did not take part
+fails in PCRE and matches empty in ECMA-262, and with `u` PCRE's `\d`, `\w`, `\s` and `\b` are
+Unicode-aware (`١٢٣` is `\d+`) where ECMA-262's are ASCII.
+
 ## Errors
 
 Two rules can throw when they are built:
@@ -337,6 +385,17 @@ which declares its `validate()` and gives it `format()` and the `$implicit` and 
 see the Reference of **[Validation](/manual/ADI/Validation/overview/#condition)**. The arguments below stay
 readable on the rule, and none of them can be changed once it is built.
 
+The fourteen rules listed in [JSON Schema](#json-schema) also implement
+`Bootgly\ADI\Validation\Descriptor`:
+
+```php
+describe (): null|array
+```
+
+Returns the JSON Schema keywords of that table, or `null` when this rule's arguments cannot be
+expressed (an `In` value that is not a JSON scalar, an infinite `Minimum`/`Maximum`, a `Regex` with
+a modifier or a PCRE-only construct). `Required` returns `['required' => true]`.
+
 ### Boolean
 
 ```php
@@ -355,7 +414,10 @@ __construct (null|string $field = null, string $message = '')
 ```
 
 Passes when the source holds the confirming field — `$field`, or `<field>_confirmation` when it is
-`null` — with a value identical (`===`) to the field's: `'secret'` against `'secret '` fails, and so
+`null` — with a value identical (`===`) to the field's. Both are paths (see
+**[Nested paths and wildcards](/manual/ADI/Validation/overview/#nested-paths-and-wildcards)**):
+`<field>_confirmation` of `user.password` is `user.password_confirmation`, its sibling, and `$field`
+is read from the root of the source. `'secret'` against `'secret '` fails, and so
 does `'1234'` against the integer `1234`. A missing confirming field fails. The rule is not implicit:
 when the field itself is blank it does not run, whatever the confirming field holds, so pair it with
 `Required`. Template: `{field} confirmation does not match.`
@@ -364,7 +426,7 @@ when the field itself is blank it does not run, whatever the confirming field ho
 public private(set) null|string $field;
 ```
 
-The confirming field, as given; `null` stands for `<field>_confirmation`.
+The confirming field's path, as given; `null` stands for `<field>_confirmation`.
 
 ### Date
 
@@ -452,6 +514,50 @@ Inherited from `Condition`. Passes an `int`, or a string of digits with an optio
 hexadecimal (`'0x1A'`), `'1_000'`, a space or a line break around the digits, and `true` fail. The
 range is not checked: `'99999999999999999999'`, past `PHP_INT_MAX`, passes. Template:
 `{field} must be an integer.`
+
+### Keys
+
+```php
+__construct (array $keys, string $message = '')
+```
+
+Passes an array whose keys are all in `$keys` (`array<int,string>`), compared as strings — a closed
+object: `['name' => 'Ada', 'role' => 'admin']` fails `new Keys(['name', 'email'])`. A list passes only
+when its indexes (`'0'`, `'1'`, …) are listed, and anything that is not an array fails. The message
+never names the extra key. Missing keys are not its concern: give each required key its own
+`Required`. Throws `InvalidArgumentException` with `Allowed keys must be strings.` for a key that is
+not a string. Template: `{field} has keys that are not allowed.`
+
+```php
+public private(set) array $keys;
+```
+
+The allowed keys, `array<int,string>`.
+
+### Length
+
+```php
+__construct (null|int $minimum = null, null|int $maximum = null, string $message = '')
+```
+
+Passes a string whose length in characters — Unicode code points, as `mb_strlen()` counts — is within
+the bounds; a string that is not valid UTF-8, and anything that is not a string, fails. Give one
+bound or both. Throws `InvalidArgumentException` with `Length needs a minimum or a maximum.`,
+`Length bounds must not be negative.` or `Length minimum must not exceed its maximum.` Template:
+`{field} must be between {minimum} and {maximum} characters.`, or with one bound
+`{field} must be at least {minimum} characters.` / `{field} must be at most {maximum} characters.`
+
+```php
+public private(set) null|int $minimum;
+```
+
+The fewest characters allowed; `null` for no lower bound.
+
+```php
+public private(set) null|int $maximum;
+```
+
+The most characters allowed; `null` for no upper bound.
 
 ### Maximum
 
@@ -571,6 +677,15 @@ public private(set) int $limit;
 
 The largest size accepted, in bytes.
 
+### Text
+
+```php
+__construct (string $message = '')
+```
+
+Inherited from `Condition`. Passes any string — `'12'` included — and fails numbers, booleans and
+arrays: it declares that a field holds text. Template: `{field} must be a string.`
+
 ### URL
 
 ```php
@@ -579,3 +694,13 @@ __construct (string $message = '')
 
 Inherited from `Condition`. Passes a string PHP's `FILTER_VALIDATE_URL` accepts, whatever its scheme
 and host — see [Web links](#web-links). Template: `{field} must be a valid URL.`
+
+### UUID
+
+```php
+__construct (string $message = '')
+```
+
+Inherited from `Condition`. Passes a UUID in its canonical text form — 32 hexadecimal digits in
+groups of 8-4-4-4-12, in either case (RFC 9562), any version, the nil UUID included. Braces,
+`urn:uuid:`, unhyphenated forms and anything else fail. Template: `{field} must be a valid UUID.`

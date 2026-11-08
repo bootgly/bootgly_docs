@@ -2,7 +2,7 @@
 
 `Bootgly\ADI\Validation` confere um array associativo contra regras e informa, campo a campo, a
 mensagem de cada regra que falhou. Uma regra é um objeto, um `Bootgly\ADI\Validation\Condition`: as
-14 regras built-in ficam em `Bootgly\ADI\Validators\*`, e o que cada uma aceita está em
+18 regras built-in ficam em `Bootgly\ADI\Validators\*`, e o que cada uma aceita está em
 **[Validadores](/manual/ADI/Validators/overview/)**. Uma aplicação escreve as suas estendendo
 `Bootgly\ADI\Validators` (veja [Escreva uma regra customizada](#escreva-uma-regra-customizada)).
 
@@ -68,47 +68,13 @@ O resultado não carrega valores: o motor informa, e os dados ficam no array que
 
 ## Regras por campo
 
-A chave de uma regra nomeia uma chave de primeiro nível da origem, comparada de forma exata:
-diferenciando maiúsculas de minúsculas, e sem sintaxe de caminho. `'user.email'` procura uma chave
-chamada literalmente `user.email`, e `'email'` não casa com `'Email'`; campos aninhados não são
-suportados por enquanto. Os headers do Request são a única exceção que o middleware `Validator` faz
-por você: ele casa os nomes deles em qualquer caixa antes de o motor rodar (veja
+A chave de uma regra nomeia uma chave da origem, comparada de forma exata e diferenciando maiúsculas
+de minúsculas: `'email'` não casa com `'Email'`. Uma chave com `.` ou com um segmento `*` é um
+caminho para dentro de arrays aninhados — `'user.email'`, `'items.*.sku'` — veja
+[Caminhos aninhados e curingas](#caminhos-aninhados-e-curingas). Os headers do Request são a única
+exceção que o middleware `Validator` faz por você: ele casa os nomes deles em qualquer caixa antes
+de o motor rodar (veja
 **[Middlewares → Validator](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/#validator)**).
-
-Um valor array chega inteiro às regras dele, então, para conferir as chaves dentro dele, dê a esse
-array uma `Validation` própria:
-
-```php
-use Bootgly\ADI\Validation;
-use Bootgly\ADI\Validators\Email;
-use Bootgly\ADI\Validators\In;
-use Bootgly\ADI\Validators\Required;
-
-$payload = [
-   'user' => ['email' => 'ada.example.com', 'role' => 'admin'],
-   'plan' => 'pro',
-];
-
-$Payload = new Validation($payload, [
-   'user' => [new Required],
-   'plan' => [new Required, new In(['free', 'pro'])],
-]);
-$User = new Validation($payload['user'], [
-   'email' => [new Required, new Email],
-   'role' => [new In(['member', 'owner'])],
-]);
-
-$Payload->valid; // true
-$User->errors;
-// [
-//    'email' => ['email must be a valid email address.'],
-//    'role' => ['role must be one of the allowed values.'],
-// ]
-```
-
-As mensagens internas nomeiam as chaves internas — `email`, não `user.email`. A origem precisa ser
-um array, então confira se um valor aninhado é um antes de passá-lo: qualquer outra coisa lança
-`TypeError`.
 
 - As chaves da origem que nenhuma regra nomeia são ignoradas: não causam erro, e nada as remove. Uma
   chave extra `is_admin` continua no array depois de uma validação que passou, então escolha você
@@ -119,6 +85,111 @@ um array, então confira se um valor aninhado é um antes de passá-lo: qualquer
   middleware `Validator` conta com isso: ele cria uma `Validation` nova a cada requisição a partir
   dos objetos de regra que a rota declarou uma vez.
 - Uma lista vazia — `'note' => []` — não confere nada.
+
+## Caminhos aninhados e curingas
+
+Uma chave de regra com pontos entra em arrays aninhados, e um segmento `*` vale para cada entrada do
+array naquele nível:
+
+```php
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\In;
+use Bootgly\ADI\Validators\Integer;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\ADI\Validators\Required;
+
+$payload = [
+   'user' => ['email' => 'ada.example.com', 'role' => 'admin'],
+   'items' => [
+      ['sku' => 'A-1', 'quantity' => 2],
+      ['sku' => 'B-2', 'quantity' => 0],
+      ['quantity' => 1],
+   ],
+];
+
+$Validation = new Validation($payload, [
+   'user.email' => [new Required, new Email],
+   'user.role' => [new In(['member', 'owner'])],
+   'items' => [new Required, new Maximum(50)],
+   'items.*.sku' => [new Required],
+   'items.*.quantity' => [new Required, new Integer, new Minimum(1)],
+]);
+
+$Validation->errors;
+// [
+//    'user.email' => ['user.email must be a valid email address.'],
+//    'user.role' => ['user.role must be one of the allowed values.'],
+//    'items.2.sku' => ['items.2.sku is required.'],
+//    'items.1.quantity' => ['items.1.quantity must be at least 1.'],
+// ]
+```
+
+- Um erro fica na chave do caminho concreto que falhou — `items.2.sku`, não `items.*.sku` — e esse
+  caminho é o `{field}` da mensagem. As chaves de regra rodam na ordem de `$rules`, e um curinga
+  percorre o array dele em ordem.
+- Um `*` percorre uma lista e um array com chaves do mesmo jeito, então campos de formulário
+  `items[a][sku]=…` também funcionam. Só um segmento inteiro é curinga: `a*` é uma chave chamada
+  `a*`.
+- Um caminho cujo container falta, é `null` ou `''` está ausente, como uma chave plana: `Required`
+  falha no caminho completo (`address.city is required.`) e as outras regras o pulam. Um curinga
+  sobre um container ausente, em branco ou vazio não tem entradas, então `items.*.sku` nunca torna
+  `items` obrigatório — dê a `items` uma regra própria, como acima.
+- Um container presente que não é array falha fechado: `address` com `'Rua A, 10'` sob
+  `address.city` informa `address must be an array.` uma vez só, no container, por mais chaves de
+  regra que passem por ele, e as regras abaixo dele não rodam.
+- Uma regra recebe o caminho concreto em `$field` e a origem inteira em `$data`. O `Confirmed` lê
+  `<caminho>_confirmation` como caminho, então `user.password` é confirmado por
+  `user.password_confirmation`.
+
+### Chaves com ponto
+
+Um ponto sempre separa segmentos: `'app.name'` é a chave `name` dentro de `app`, nunca uma chave
+chamada `app.name`. Escape o ponto para nomear uma chave assim: `'app\.name'`. `\*` é uma chave
+chamada `*`, e `\\` uma barra invertida; qualquer outra barra invertida fica como está. Um caminho
+de erro escapa as chaves da origem do mesmo jeito, para poder ser lido de volta como chave de
+regra — um curinga `*` sobre `['a.b' => …]` informa `rows.a\.b.n`.
+
+```php
+$Validation = new Validation(['app.name' => 'Bootgly'], [
+   'app\.name' => [new Required], // a chave "app.name": passa
+   'app.name' => [new Required],  // "name" dentro de "app": falha
+]);
+
+$Validation->errors; // ['app.name' => ['app.name is required.']]
+```
+
+Antes da 1.2.0 uma chave de regra era sempre uma chave literal, então uma chave com ponto casava com
+essa chave. Escape essas chaves ao atualizar. Uma chave sem escape nem sempre falha de forma visível:
+o `Required` informa a chave como ausente, mas uma regra opcional (`'session.token' => [new Regex(…)]`)
+agora lê uma chave que não existe e passa em silêncio — enquanto o seu código continua lendo a chave
+literal, sem validação.
+
+### Limite dos curingas
+
+Os curingas de uma chave de regra visitam no máximo `limit` entradas, 1000 por padrão — toda
+entrada conta, as aninhadas inclusive. Uma chave de regra que visitaria mais não roda: ela informa
+um `{field} has too many items.` no container do primeiro curinga e nada mais.
+
+```php
+$Validation = new Validation(['tags' => range(1, 1001)], ['tags.*' => [new Integer]]);
+$Validation->errors; // ['tags' => ['tags has too many items.']]
+
+$Validation = new Validation(['tags' => range(1, 1001)], ['tags.*' => [new Integer]], limit: 5000);
+$Validation->valid; // true
+```
+
+O limite impede que um payload hostil dite o trabalho: um body JSON de 1 MB com entradas `[]` tem
+349 525 entradas, e validar `items.*.id` em todas elas levou 213 MB e escreveu 17 MB de mensagens;
+com o limite, para na entrada 1001. Aumente `limit` onde um payload deve ser grande (uma importação
+em lote). O middleware `Validator` usa o padrão.
+
+Entradas não são o único custo: uma chave do cliente é copiada no caminho de toda entrada abaixo
+dela, então uma chave de 200 KB sobre `items.*.tags.*` repetiria 200 KB em até 1000 caminhos e
+mensagens. Por isso os caminhos concretos que uma chave de regra monta (seus alvos e containers que
+falharam) também ficam limitados a `limit` × `Validation::BYTES` bytes — 256 KB por padrão. Acima
+disso, a chave de regra falha do mesmo jeito, com `{field} has too many items.`
 
 ## Valores em branco e regras implícitas
 
@@ -506,6 +577,110 @@ $Textbox->Validator = static fn (string $answer): true|string =>
 
 Uma resposta `80a` é recusada com `port must be an integer.`, e a pergunta é feita de novo.
 
+## Exporte um JSON Schema
+
+O `Bootgly\ADI\Validation\Renderer` gera, a partir das mesmas regras, um documento JSON Schema
+(draft 2020-12) — para o `inputSchema` de uma tool MCP, uma descrição OpenAPI ou um formulário no
+cliente:
+
+```php
+use Bootgly\ADI\Validation\Renderer;
+use Bootgly\ADI\Validators\Confirmed;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Integer;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\ADI\Validators\Required;
+
+$Renderer = new Renderer([
+   'email' => [new Required, new Email],
+   'age' => [new Integer, new Minimum(18)],
+   'items.*.sku' => [new Required],
+   'password' => [new Required, new Confirmed],
+]);
+
+json_encode($Renderer->document, JSON_UNESCAPED_SLASHES);
+$Renderer->omissions; // ['password' => ['Bootgly\ADI\Validators\Confirmed']]
+```
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "email": { "type": "string", "format": "email", "minLength": 1 },
+    "age": { "type": "integer", "minimum": 18 },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sku": { "minLength": 1, "minItems": 1, "minProperties": 1, "not": { "type": "null" } }
+        },
+        "required": ["sku"]
+      }
+    },
+    "password": { "minLength": 1, "minItems": 1, "minProperties": 1, "not": { "type": "null" } }
+  },
+  "required": ["email", "password"]
+}
+```
+
+O Renderer descreve; ele não valida. A `Validation` continua sendo a autoridade, então o servidor
+valida de novo o que um cliente montou a partir do schema.
+
+- **Caminhos** — Um segmento nomeado vira uma propriedade de objeto, e um `*` os `items` de um
+  array. Um `*` ao lado de chaves nomeadas (`meta.*` e `meta.count`), ou ao lado de uma regra que faz
+  do nó um objeto (`Keys`), vira um objeto cujo `additionalProperties` é o schema do curinga. Uma chave de regra com um segmento de índice
+  (`items.0.id`, `codes.200`) fica de fora inteira e é listada em `omissions`: a `Validation` lê o
+  índice `0` de uma lista e a chave `"0"` de um objeto do mesmo jeito, e nenhum formato único de
+  schema aceita os dois sem rejeitar um deles.
+- **Regras** — Cada regra que implementa `Bootgly\ADI\Validation\Descriptor` contribui com keywords;
+  o mapeamento das regras built-in está em
+  **[Validadores → JSON Schema](/manual/ADI/Validators/overview/#json-schema)**. Keywords de um tipo
+  diferente do `type` do valor são descartadas, e uma keyword definida duas vezes com valores
+  diferentes mantém os dois por meio de `allOf`.
+- **Required** — O `Required` lista a chave no `required` do pai, e em todo pai nomeado até o
+  primeiro curinga, já que a `Validation` reprova `address.city` quando `address` falta. Ele também
+  acrescenta as keywords de não-vazio do tipo do valor (`minLength: 1` para uma string), ou todas elas
+  e `not: {type: null}` quando o tipo é desconhecido.
+- **Omissões** — Uma regra que não é `Descriptor`, ou cujo `describe()` retorna `null`, fica fora do
+  documento e é listada em `omissions` sob a chave da regra: o `Confirmed` (uma verificação entre
+  campos), as regras de upload, um `Regex` que o JSON Schema não consegue expressar e as suas próprias
+  regras. Confira `omissions` onde um schema precisa estar completo — no boot, antes de publicar uma
+  tool.
+- **Onde os dois diferem** — O schema descreve o formato JSON canônico; a `Validation` é mais
+  tolerante em alguns pontos: aceita strings de inteiro no `Integer`, `0`/`1`/`'true'` no `Boolean` e
+  compara strings numéricas pelo valor em `Minimum`/`Maximum`; conta o tamanho das strings em bytes,
+  onde o JSON Schema conta caracteres; pula um valor opcional em branco (`null` inclusive) que um
+  schema tipado recusa; um `In` não estrito casa mais do que o `enum` dele. Regras que convertem
+  também podem se combinar num schema que nada satisfaz, sem aviso: `[new Integer, new In(['1', '2'])]`
+  gera `type: integer` com um `enum` de strings (escreva `new In([1, 2])`), e
+  `[new Boolean, new Integer]` gera os dois tipos. Os formatos declarados são mais amplos do que o
+  verificado: veja **[Validadores → JSON Schema](/manual/ADI/Validators/overview/#json-schema)**.
+- Schemas vazios são objetos `stdClass`, então o `json_encode()` escreve `{}`.
+
+Para exportar uma regra sua, implemente `Descriptor` junto com `Condition`:
+
+```php
+use Bootgly\ADI\Validation\Descriptor;
+use Bootgly\ADI\Validators;
+
+class Slug extends Validators implements Descriptor
+{
+   protected string $template = '{field} must be a slug.';
+
+   public function validate (string $field, mixed $value, array $data): bool
+   {
+      return is_string($value) && preg_match('/\A[a-z0-9-]+\z/', $value) === 1;
+   }
+
+   public function describe (): null|array
+   {
+      return ['type' => 'string', 'pattern' => '^[a-z0-9-]+$'];
+   }
+}
+```
+
 ## Erros
 
 O `new Validation()` lança `InvalidArgumentException` quando chega a um campo cujas regras não são
@@ -546,23 +721,44 @@ catch (InvalidArgumentException $Exception) {
 `Bootgly\ADI\Validation` — o motor.
 
 ```php
-__construct (array $source, array $rules)
+__construct (array $source, array $rules, int $limit = 1000)
 ```
 
 Valida `$source` (`array<string,mixed>`) contra `$rules`
-(`array<string, Condition|array<int,Condition>>`) na hora e guarda o resultado em `errors`. Campo a
-campo, na ordem de `$rules`, lê o valor do campo — `null` quando a chave falta — e executa as regras
-dele em ordem, só as implícitas quando o valor está em branco (`null`, `''` ou `[]`), acrescentando
-o `format()` de cada regra que retorna `false`. Lança `InvalidArgumentException` para regras que
-não são objetos `Condition` (veja [Erros](#erros)); uma exceção lançada por uma regra escapa.
+(`array<string, Condition|array<int,Condition>>`) na hora e guarda o resultado em `errors`. Chave de
+regra a chave de regra, na ordem de `$rules`, resolve o caminho da chave em alvos concretos (veja
+[Caminhos aninhados e curingas](#caminhos-aninhados-e-curingas)) — um só para uma chave plana, com
+valor `null` quando a chave falta — e executa as regras da chave em cada alvo, em ordem, só as
+implícitas quando o valor está em branco (`null`, `''` ou `[]`), acrescentando o `format()` de cada
+regra que retorna `false` sob o caminho do alvo. `$limit` limita as entradas que os curingas de uma
+chave de regra visitam (veja [Limite dos curingas](#limite-dos-curingas)). Lança
+`InvalidArgumentException` para regras que não são objetos `Condition` (veja [Erros](#erros)) e para
+um `$limit` menor que `1` (`Validation limit must be at least 1.`); uma exceção lançada por uma regra
+escapa.
+
+```php
+public private(set) int $limit
+```
+
+O máximo de entradas que os curingas de uma chave de regra podem visitar, como passado ao construtor.
+Também define o orçamento de caminhos: `limit` × `Validation::BYTES` bytes de caminhos concretos por
+chave de regra.
+
+```php
+public const int BYTES = 256
+```
+
+Os bytes de caminho concreto que uma chave de regra pode montar por entrada de `limit` (veja
+[Limite dos curingas](#limite-dos-curingas)).
 
 ```php
 public private(set) array $errors = []
 ```
 
-As mensagens das regras que falharam, `array<string, array<int,string>>`: um campo só aparece
-quando ao menos uma das regras dele falhou, com uma mensagem por falha, na ordem das regras. `[]`
-quando todas as regras passaram.
+As mensagens das regras que falharam, `array<string, array<int,string>>`, na chave do caminho
+concreto que falhou: um caminho só aparece quando ao menos uma das regras dele falhou, com uma
+mensagem por falha, na ordem das regras, mais as estruturais `{field} must be an array.` e
+`{field} has too many items.` (cada uma uma vez por caminho). `[]` quando todas as regras passaram.
 
 ```php
 public bool $valid { get; }
@@ -587,8 +783,8 @@ construtor próprio precisa chamá-lo (veja
 validate (string $field, mixed $value, array $data): bool
 ```
 
-Abstrato: cada regra o implementa. Retorna `true` quando `$value` passa. `$field` é a chave da
-regra, `$value` o valor da origem para ela — `null` quando a chave falta — e `$data` a origem
+Abstrato: cada regra o implementa. Retorna `true` quando `$value` passa. `$field` é o caminho
+concreto conferido — a própria chave da regra, para uma chave plana — `$value` o valor da origem para ela — `null` quando a chave falta — e `$data` a origem
 inteira (`array<string,mixed>`). A `Validation` o chama para um valor em branco só quando a regra é
 implícita; chamado diretamente, ele julga qualquer valor.
 
@@ -642,3 +838,115 @@ abstract class Validators extends Condition
 membros dela são os do `Condition`. As regras built-in estendem `Condition` diretamente, então
 `new Required instanceof Validators` é `false`: para saber se um valor é uma regra, teste
 `instanceof Condition`, como a `Validation` faz.
+
+### Path
+
+`Bootgly\ADI\Validation\Path` — uma chave de regra lida como caminho. A `Validation`, o `Renderer`
+e o `Confirmed` a usam; uma regra de aplicação pode usá-la para ler outro caminho de `$data`.
+
+```php
+__construct (string $key)
+```
+
+Interpreta `$key`: `.` separa segmentos, um segmento que é exatamente `*` é um curinga, e `\`
+escapa um `.`, `*` ou `\` seguinte. A interpretação nunca falha — um segmento vazio é a chave vazia,
+e qualquer outra barra invertida é mantida.
+
+```php
+public private(set) string $key
+```
+
+A chave da regra como foi escrita.
+
+```php
+public private(set) array $segments
+```
+
+Os segmentos sem escape, em ordem, `array<int, null|string>`; `null` marca um curinga.
+`new Path('items.*.id')->segments` é `['items', null, 'id']`.
+
+```php
+public private(set) bool $wildcard
+```
+
+`true` quando algum segmento é curinga.
+
+```php
+public private(set) string $prefix
+```
+
+O caminho escapado antes do primeiro curinga — o container que ele expande (`items` para
+`items.*.id`, `''` para `*.id`); a própria chave quando não há curinga.
+
+```php
+static escape (int|string $segment): string
+```
+
+Escapa uma chave da origem como segmento: `\` → `\\`, `.` → `\.`, e a chave `*` → `\*`. Juntar
+chaves escapadas com `.` dá um caminho que é interpretado de volta nessas chaves. Uma chave que não é
+UTF-8 válido (o nome de um campo de formulário ou de query) tem cada byte a partir de `0x80` escrito
+como `\xHH`, então um caminho de erro sempre pode ser codificado em JSON; esse segmento é só para
+exibição e não volta para a chave bruta (então o `Confirmed` sob uma chave assim falha).
+
+```php
+resolve (array $source): array
+```
+
+Procura o caminho em `$source` e retorna `[bool $exists, mixed $value]` — `[false, null]` quando uma
+chave falta, um container no caminho não é array ou um segmento é curinga.
+
+### Renderer
+
+`Bootgly\ADI\Validation\Renderer` — gera um documento JSON Schema (draft 2020-12) a partir de um
+conjunto de regras (veja [Exporte um JSON Schema](#exporte-um-json-schema)).
+
+```php
+__construct (array $rules)
+```
+
+Gera `document` a partir de `$rules` — o mesmo `array<string, Condition|array<int,Condition>>` que
+uma `Validation` recebe — e lista o que deixou de fora em `omissions`. Lança
+`InvalidArgumentException` para regras que não são objetos `Condition`, com as mensagens da
+`Validation`.
+
+```php
+public private(set) array $rules
+```
+
+As regras passadas ao construtor.
+
+```php
+public private(set) array $document
+```
+
+O schema, `array<string,mixed>`: `$schema` (a URI do dialeto 2020-12), `type: object`, e as
+`properties` e o `required` das chaves de regra. Schemas vazios são `stdClass`, então o
+`json_encode()` escreve `{}`.
+
+```php
+public private(set) array $omissions = []
+```
+
+As regras deixadas de fora, `array<string, array<int,string>>`: chave da regra → nomes de classe
+(uma classe anônima aparece como `<pai>@anonymous`).
+
+```php
+const string DIALECT = 'https://json-schema.org/draft/2020-12/schema'
+```
+
+A URI `$schema` de todo documento.
+
+### Descriptor
+
+`Bootgly\ADI\Validation\Descriptor` — o contrato opcional de uma regra que o JSON Schema consegue
+expressar. A `Validation` nunca o chama.
+
+```php
+describe (): null|array
+```
+
+Retorna as keywords que o valor precisa satisfazer (`array<string,mixed>`), ou `null` quando a regra
+não pode ser expressa. A entrada `'required' => true` não é uma keyword: ela marca o valor como
+obrigatório e não vazio, e o Renderer o lista no `required` do pai. Qualquer outro valor de `required`
+(uma lista de nomes de propriedades) é a keyword do JSON Schema e é mantido. Uma lista (chaves
+inteiras) conta como `null`.

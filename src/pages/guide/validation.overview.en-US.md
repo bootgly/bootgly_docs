@@ -89,6 +89,78 @@ foreach ($rows as $index => $row) {
 }
 ```
 
+## Nested payloads
+
+A JSON body is rarely flat. Point a rule at a nested key with dots, and at every entry of a list
+with `*`:
+
+```php
+use Bootgly\ADI\Validation;
+use Bootgly\ADI\Validators\Email;
+use Bootgly\ADI\Validators\Integer;
+use Bootgly\ADI\Validators\Maximum;
+use Bootgly\ADI\Validators\Minimum;
+use Bootgly\ADI\Validators\Required;
+
+$Order = new Validation(
+   source: [
+      'customer' => ['email' => 'ada@example.com'],
+      'lines' => [
+         ['sku' => 'A-1', 'quantity' => '2'],
+         ['sku' => '', 'quantity' => '0'],
+      ],
+   ],
+   rules: [
+      'customer.email' => [new Required, new Email],
+      'lines' => [new Required, new Maximum(100)],
+      'lines.*.sku' => [new Required],
+      'lines.*.quantity' => [new Required, new Integer, new Minimum(1)],
+   ]
+);
+
+$Order->errors;
+// [
+//    'lines.1.sku' => ['lines.1.sku is required.'],
+//    'lines.1.quantity' => ['lines.1.quantity must be at least 1.'],
+// ]
+```
+
+Errors name the exact entry, so a client can mark the right row. Give the list a rule of its own
+(`'lines' => [new Required, …]`): `lines.*.sku` alone accepts a missing `lines`. A wildcard visits
+at most 1000 entries per rule key by default — pass `limit:` for bigger payloads. A key that holds
+a dot is written `'app\.name'`. Paths, containers and the limit are detailed in
+**[Nested paths and wildcards](/manual/ADI/Validation/overview/#nested-paths-and-wildcards)**.
+
+## Describing the input as JSON Schema
+
+The rules that validate a payload can also describe it. `Validation\Renderer` turns them into a
+JSON Schema 2020-12 document — the `inputSchema` of an MCP tool, for example:
+
+```php
+use Bootgly\ADI\Validation\Renderer;
+
+$rules = [
+   'customer.email' => [new Required, new Email],
+   'lines.*.sku' => [new Required],
+   'lines.*.quantity' => [new Required, new Integer, new Minimum(1)],
+];
+
+$Renderer = new Renderer($rules);
+
+$tool = [
+   'name' => 'create_order',
+   'description' => 'Create an order',
+   'inputSchema' => $Renderer->document,
+];
+
+// Rules JSON Schema cannot express (Confirmed, uploads, your own) are listed here:
+$Renderer->omissions; // []
+```
+
+Validate the arguments with the same `$rules` when the call arrives: the schema guides the client,
+`Validation` decides. What each rule becomes, and where the two differ, is in
+**[Export a JSON Schema](/manual/ADI/Validation/overview/#export-a-json-schema)**.
+
 ## Optional fields and implicit rules
 
 A field that is missing, `null`, `''` or `[]` is treated as *blank*. Blank fields skip every rule **except implicit ones** — `Required` is implicit, so it still runs and fails. This makes optional fields natural:
@@ -114,7 +186,7 @@ new URL(message: 'Give me a real URL.');
 
 A message you pass is built like the default one: it keeps the rule's placeholders and goes through the translation catalogs — see **[Messages](/manual/ADI/Validation/overview/#messages)**.
 
-For now, check the length of a text (a password, a name) with `Regex` and the `su` flags, as above: `Minimum` and `Maximum` do not count characters — see [Numbers, lengths and counts](/manual/ADI/Validators/overview/#numbers-lengths-and-counts).
+Check the length of a text (a password, a name) with `Length`, which counts characters: `Minimum` and `Maximum` compare numeric strings by value and measure other strings in bytes — see [Numbers, lengths and counts](/manual/ADI/Validators/overview/#numbers-lengths-and-counts).
 
 ## Custom rules
 
@@ -176,4 +248,4 @@ under **[MIME](/manual/ADI/Validators/overview/#mime)**.
 
 ## Built-in rules
 
-`Bootgly\ADI\Validators` ships 14 rules: `Boolean`, `Confirmed`, `Date`, `Email`, `Extension`, `In`, `Integer`, `Maximum`, `MIME`, `Minimum`, `Regex`, `Required`, `Size` and `URL`. Their arguments, the values each one accepts and rejects, their default messages and their caveats are on **[Validators](/manual/ADI/Validators/overview/)**; the engine — `Validation`, the `Condition` base class and how a message is built — has its Reference on **[Validation](/manual/ADI/Validation/overview/#reference)**. Every message is a key of the `validation` translation catalogs: **[Localized validation messages](/guide/i18n/overview/#localized-validation-messages)** shows a complete `pt-BR` catalog.
+`Bootgly\ADI\Validators` ships 18 rules: `Boolean`, `Confirmed`, `Date`, `Email`, `Extension`, `In`, `Integer`, `Keys`, `Length`, `Maximum`, `MIME`, `Minimum`, `Regex`, `Required`, `Size`, `Text`, `URL` and `UUID`. Their arguments, the values each one accepts and rejects, their default messages and their caveats are on **[Validators](/manual/ADI/Validators/overview/)**; the engine — `Validation`, the `Condition` base class and how a message is built — has its Reference on **[Validation](/manual/ADI/Validation/overview/#reference)**. Every message is a key of the `validation` translation catalogs: **[Localized validation messages](/guide/i18n/overview/#localized-validation-messages)** shows a complete `pt-BR` catalog.

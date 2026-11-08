@@ -1,6 +1,6 @@
 # Validadores
 
-`Bootgly\ADI\Validators` reúne as 14 regras que o Bootgly traz para o `Bootgly\ADI\Validation`. Uma
+`Bootgly\ADI\Validators` reúne as 18 regras que o Bootgly traz para o `Bootgly\ADI\Validation`. Uma
 regra é um objeto criado com os argumentos dela: liste-a sob um campo, e a validação a executa sobre o
 valor desse campo e, quando o valor falha, adiciona a mensagem da regra aos erros do campo.
 
@@ -36,7 +36,7 @@ Esta página trata das regras em si: o que cada uma aceita e rejeita, a mensagem
 
 Toda regra estende `Bootgly\ADI\Validation\Condition` diretamente. Nenhuma delas estende
 `Bootgly\ADI\Validators`, a classe abstrata que tem o mesmo nome do namespace, então
-`$Rule instanceof Validators` é `false` para as 14: verifique o tipo de uma regra contra `Condition`.
+`$Rule instanceof Validators` é `false` para as 18: verifique o tipo de uma regra contra `Condition`.
 
 ## Regras em resumo
 
@@ -49,23 +49,27 @@ Toda regra estende `Bootgly\ADI\Validation\Condition` diretamente. Nenhuma delas
 | [Extension](#extension) | `extensions` | Um upload cujo nome de arquivo termina em uma delas | Não | `{field} must have an allowed extension.` |
 | [In](#in) | `values`, `strict` (padrão `true`) | Um dos `values` | Não | `{field} must be one of the allowed values.` |
 | [Integer](#integer) | — | Um `int`, ou uma string de dígitos com sinal opcional | Não | `{field} must be an integer.` |
+| [Keys](#keys) | `keys` | Um array cujas chaves estão todas em `keys` (um objeto fechado) | Não | `{field} has keys that are not allowed.` |
+| [Length](#length) | `minimum`, `maximum` | Uma string com essa quantidade de caracteres (codepoints) | Não | `{field} must be between {minimum} and {maximum} characters.`; com um limite só, `{field} must be at least {minimum} characters.` ou `{field} must be at most {maximum} characters.` |
 | [Maximum](#maximum) | `limit` | No máximo `limit`, por valor, tamanho em bytes ou contagem | Não | `{field} must be at most {limit}.` |
 | [MIME](#mime) | `types` | Um upload cujos bytes são identificados como um deles | Não | `{field} must have an allowed MIME type.` |
 | [Minimum](#minimum) | `limit` | No mínimo `limit`, por valor, tamanho em bytes ou contagem | Não | `{field} must be at least {limit}.` |
 | [Regex](#regex) | `pattern` | Um escalar que casa com ele | Não | `{field} has an invalid format.` |
 | [Required](#required) | — | Tudo menos `null`, `[]` e uma string em branco | Sim | `{field} is required.` |
 | [Size](#size) | `limit`, em bytes | Um upload de no máximo `limit` bytes | Não | `{field} must be at most {limit} bytes.` |
+| [Text](#text) | — | Uma string | Não | `{field} must be a string.` |
 | [URL](#url) | — | Uma URL | Não | `{field} must be a valid URL.` |
+| [UUID](#uuid) | — | Um UUID na forma canônica hexadecimal 8-4-4-4-12 | Não | `{field} must be a valid UUID.` |
 
 - **`message`** — Toda regra o recebe como último argumento, `''` por padrão. Uma mensagem que você
   passa substitui o template e mantém os placeholders dele:
   `new Size(2 * 1024 * 1024, '{field} must be a file of at most {limit} bytes.')`.
 - **Implícita** — Só `Required` roda sobre um valor em branco: um campo ausente, `null`, `''` ou `[]`.
-  As outras 13 o pulam, então um campo continua opcional até você adicionar `Required`. Uma string de
+  As outras 17 o pulam, então um campo continua opcional até você adicionar `Required`. Uma string de
   espaços não está em branco: toda regra roda sobre ela, e `Required` a reprova. Veja
   [Valores em branco e regras implícitas](/manual/ADI/Validation/overview/#valores-em-branco-e-regras-implícitas).
 - **Template** — A mensagem em inglês, e também a key dela nos catálogos de tradução do domínio
-  `validation`. `{field}` vira a key do campo; `{limit}` e `{format}` viram o argumento da regra do
+  `validation`. `{field}` vira a key do campo; `{limit}`, `{format}`, `{minimum}` e `{maximum}` viram o argumento da regra do
   jeito que o PHP o converte em string — `Minimum(1.5)` diz `1.5`, `Size(2 * 1024 * 1024)` diz
   `2097152`. Um catálogo `pt-BR` completo está em
   **[Mensagens de validação localizadas](/guide/i18n/overview/#mensagens-de-validação-localizadas)**.
@@ -105,26 +109,26 @@ $Validation->errors; // ['age' => ['age must be at least 18.'], 'tags' => ['tags
 > [!WARNING]
 > **Não é uma regra de tamanho de texto.** Uma string que parece um número é comparada pelo valor
 > dela, então a senha `'1234'` passa em `Minimum(8)`; qualquer outra string é medida em bytes, então
-> uma bio de 300 `'é'` tem 600 bytes e falha em `Maximum(500)`. Por enquanto não há regra de tamanho:
-> limite o tamanho de um texto com `Regex` e as flags `su`.
+> uma bio de 300 `'é'` tem 600 bytes e falha em `Maximum(500)`. Limite o tamanho de um texto com
+> [Length](#length), que conta caracteres.
 
 ```php
 use Bootgly\ADI\Validation;
-use Bootgly\ADI\Validators\Regex;
+use Bootgly\ADI\Validators\Length;
 
 $Validation = new Validation(
    source: ['password' => '1234', 'bio' => str_repeat('é', 300)],
    rules: [
-      'password' => [new Regex('/\A.{8,}\z/su', '{field} must have at least 8 characters.')],
-      'bio' => [new Regex('/\A.{0,500}\z/su', '{field} must have at most 500 characters.')],
+      'password' => [new Length(8)],
+      'bio' => [new Length(maximum: 500)],
    ]
 );
 
-$Validation->errors; // ['password' => ['password must have at least 8 characters.']]
+$Validation->errors; // ['password' => ['password must be at least 8 characters.']]
 ```
 
-O `u` faz o `.` casar com um codepoint Unicode, a unidade que o `mb_strlen()` conta, e o `s` o deixa
-casar também com uma quebra de linha. Um codepoint nem sempre é um caractere visível: um `é` digitado
+O `Length` conta codepoints Unicode, a unidade que o `mb_strlen()` conta, e uma string que não é
+UTF-8 válido falha nele. Um codepoint nem sempre é um caractere visível: um `é` digitado
 como `e` mais um acento combinante conta 2, e um emoji formado por vários codepoints conta cada um
 deles, então um máximo pode rejeitar um texto que parece mais curto.
 
@@ -288,6 +292,51 @@ $errors; // ['photos.1' => ['photos.1 must have an allowed MIME type.']]
 
 Aqui o segundo arquivo era um script PHP enviado como `image/png`.
 
+## JSON Schema
+
+O `Bootgly\ADI\Validation\Renderer` gera um documento JSON Schema a partir de um conjunto de regras
+(veja **[Exporte um JSON Schema](/manual/ADI/Validation/overview/#exporte-um-json-schema)**). Catorze
+regras implementam `Bootgly\ADI\Validation\Descriptor` e dizem quais keywords representam; as
+outras quatro ficam de fora e são listadas em `omissions` do Renderer.
+
+| Regra | Keywords | Não expresso |
+|---|---|---|
+| Boolean | `type: boolean` | `0`, `1`, `'0'`, `'1'`, `'true'`, `'false'` |
+| Date | `type: string`; `format: date` para `Y-m-d`, `format: date-time` para `Y-m-d\TH:i:sP` (`DATE_ATOM`, `DATE_RFC3339`) e `Y-m-d\TH:i:sp` | Qualquer outro formato, e a verificação do `strtotime()`; `date-time` também admite `Z`, frações de segundo e `t`/`z` minúsculos, que a regra rejeita (a saída de `toISOString()` falha nela) |
+| Email | `type: string`, `format: email` | Endereços que o formato admite mas o `FILTER_VALIDATE_EMAIL` rejeita, como `a@localhost` |
+| In | `enum` dos valores | Uma comparação frouxa (`strict: false`); valores que não são escalares JSON tornam a regra inexprimível |
+| Integer | `type: integer` | Strings de inteiro como `'18'` |
+| Keys | `type: object`, `propertyNames: {enum: keys}` (`maxProperties: 0` quando `keys` está vazio) | Uma lista cujos índices são chaves permitidas (`Keys(['0', '1'])` aceita `['a', 'b']`), que o `type: object` recusa |
+| Length | `type: string`, `minLength` / `maxLength` (os dois contam codepoints) | Um `''` opcional em branco, que a `Validation` pula e o `minLength` recusa |
+| Maximum | `maximum`, e `maxLength`, `maxItems`, `maxProperties` da contagem inteira que o limite admite | Strings numéricas comparadas pelo valor; tamanho em bytes (o JSON Schema conta caracteres); um limite infinito torna a regra inexprimível |
+| Minimum | `minimum`, e `minLength`, `minItems`, `minProperties` da contagem inteira que o limite admite | O mesmo do `Maximum` |
+| Regex | `pattern`, traduzido para ECMA-262 | Veja abaixo |
+| Required | A chave no `required` do pai, mais as keywords de não-vazio do tipo do valor | Uma string só de espaços |
+| Text | `type: string` | — |
+| URL | `type: string`, `format: uri` | URIs sem `//` que a regra rejeita, como `urn:isbn:0451450523` |
+| UUID | `type: string`, `format: uuid` | — |
+| Confirmed, Extension, MIME, Size | — (omitidas) | Uma verificação entre campos e os registros de upload não têm forma em JSON Schema |
+
+`Minimum` e `Maximum` emitem um limite para cada tipo, e o Renderer mantém o que o `type` do valor
+pede: `[new Integer, new Minimum(18)]` vira `{"type":"integer","minimum":18}`.
+
+O `Regex` descarta os delimitadores e troca `\A`, `\z` e `\Z` por `^` e `$`; o resultado compila
+com a flag `u` que os validadores de JSON Schema usam. Um caractere de pontuação escapado que não é
+sintaxe do ECMA-262 — o `\-`, `\#` ou `\:` que o `preg_quote()` escreve — vira o caractere simples
+(`\-` continua escapado dentro de uma classe). Um pattern com um modificador diferente de `u` e `D` —
+`i` inclusive — ou com uma construção que o ECMA-262 não tem ou lê diferente não é traduzido, e a
+regra é omitida: `(?P<…>`, `(?>…)`, `(*…)`, modificadores inline, quantificadores possessivos como
+`a++`, uma chave que não é um quantificador `{n}`, `{n,}` ou `{n,m}` (`x{,3}`), um `]` solto, classes
+POSIX, um `]` logo depois de `[`, e uma letra ou dígito escapado que não seja
+`\d \D \w \W \s \S \b \B \n \r \t \f`, `\cX`, `\xHH`, categorias no estilo `\p{L}`, `\k<name>` e uma
+referência de um dígito (então `\K`, `\R`, `\h`, `\v`, `\Q…\E`, `\x{…}`, `\o{…}` e o octal `\012` são
+recusados), um lookaround com quantificador (`(?=a)*`) e um `\p{…}` que não seja uma categoria
+geral. Sem `u`, o PCRE casa bytes, então um pattern precisa ser ASCII para ser traduzido — sem `é`,
+sem `\xE9`, sem `\p{…}`. Restam diferenças, então o servidor continua conferindo com PCRE: `$` casa
+antes de uma quebra de linha final, `.` casa `\r`, uma referência a um grupo que não participou
+falha no PCRE e casa vazio no ECMA-262, e com `u` o `\d`, o `\w`, o `\s` e o `\b` do PCRE reconhecem
+Unicode (`١٢٣` é `\d+`) onde os do ECMA-262 são ASCII.
+
 ## Erros
 
 Duas regras podem lançar exceção ao serem criadas:
@@ -342,6 +391,18 @@ declara o `validate()` dela e lhe dá o `format()` e as propriedades `$implicit`
 Referência de **[Validation](/manual/ADI/Validation/overview/#condition)**. Os argumentos abaixo continuam
 legíveis na regra, e nenhum deles pode ser alterado depois que ela é criada.
 
+As catorze regras listadas em [JSON Schema](#json-schema) também implementam
+`Bootgly\ADI\Validation\Descriptor`:
+
+```php
+describe (): null|array
+```
+
+Retorna as keywords de JSON Schema daquela tabela, ou `null` quando os argumentos desta regra não
+podem ser expressos (um valor do `In` que não é escalar JSON, um `Minimum`/`Maximum` infinito, um
+`Regex` com modificador ou com uma construção exclusiva do PCRE). O `Required` retorna
+`['required' => true]`.
+
 ### Boolean
 
 ```php
@@ -360,7 +421,10 @@ __construct (null|string $field = null, string $message = '')
 ```
 
 Passa quando a origem contém o campo de confirmação — `$field`, ou `<field>_confirmation` quando ele é
-`null` — com um valor idêntico (`===`) ao do campo: `'secret'` contra `'secret '` falha, e `'1234'`
+`null` — com um valor idêntico (`===`) ao do campo. Os dois são caminhos (veja
+**[Caminhos aninhados e curingas](/manual/ADI/Validation/overview/#caminhos-aninhados-e-curingas)**):
+o `<field>_confirmation` de `user.password` é `user.password_confirmation`, o irmão dele, e `$field`
+é lido a partir da raiz da origem. `'secret'` contra `'secret '` falha, e `'1234'`
 contra o inteiro `1234` também. Um campo de confirmação ausente falha. A regra não é implícita: quando
 o próprio campo está em branco ela não roda, seja o que for que o campo de confirmação contenha, então
 combine-a com `Required`. Template: `{field} confirmation does not match.`
@@ -369,7 +433,7 @@ combine-a com `Required`. Template: `{field} confirmation does not match.`
 public private(set) null|string $field;
 ```
 
-O campo de confirmação, como foi passado; `null` significa `<field>_confirmation`.
+O caminho do campo de confirmação, como foi passado; `null` significa `<field>_confirmation`.
 
 ### Date
 
@@ -458,6 +522,52 @@ Herdado de `Condition`. Passa um `int`, ou uma string de dígitos com um sinal i
 hexadecimal (`'0x1A'`), `'1_000'`, um espaço ou uma quebra de linha em volta dos dígitos, e `true`
 falham. O intervalo não é verificado: `'99999999999999999999'`, além de `PHP_INT_MAX`, passa.
 Template: `{field} must be an integer.`
+
+### Keys
+
+```php
+__construct (array $keys, string $message = '')
+```
+
+Passa um array cujas chaves estão todas em `$keys` (`array<int,string>`), comparadas como strings —
+um objeto fechado: `['name' => 'Ada', 'role' => 'admin']` falha em `new Keys(['name', 'email'])`. Uma
+lista só passa quando os índices dela (`'0'`, `'1'`, …) estão listados, e qualquer coisa que não seja
+array falha. A mensagem nunca nomeia a chave a mais. Chaves ausentes não são problema dela: dê a cada
+chave obrigatória o próprio `Required`. Lança `InvalidArgumentException` com
+`Allowed keys must be strings.` para uma chave que não é string. Template:
+`{field} has keys that are not allowed.`
+
+```php
+public private(set) array $keys;
+```
+
+As chaves permitidas, `array<int,string>`.
+
+### Length
+
+```php
+__construct (null|int $minimum = null, null|int $maximum = null, string $message = '')
+```
+
+Passa uma string cujo tamanho em caracteres — codepoints Unicode, como o `mb_strlen()` conta — está
+dentro dos limites; uma string que não é UTF-8 válido, e qualquer coisa que não seja string, falha.
+Passe um limite ou os dois. Lança `InvalidArgumentException` com
+`Length needs a minimum or a maximum.`, `Length bounds must not be negative.` ou
+`Length minimum must not exceed its maximum.` Template:
+`{field} must be between {minimum} and {maximum} characters.`, ou com um limite só
+`{field} must be at least {minimum} characters.` / `{field} must be at most {maximum} characters.`
+
+```php
+public private(set) null|int $minimum;
+```
+
+O menor número de caracteres aceito; `null` para nenhum limite inferior.
+
+```php
+public private(set) null|int $maximum;
+```
+
+O maior número de caracteres aceito; `null` para nenhum limite superior.
 
 ### Maximum
 
@@ -580,6 +690,15 @@ public private(set) int $limit;
 
 O maior tamanho aceito, em bytes.
 
+### Text
+
+```php
+__construct (string $message = '')
+```
+
+Herdado de `Condition`. Passa qualquer string — `'12'` inclusive — e reprova números, booleanos e
+arrays: declara que um campo guarda texto. Template: `{field} must be a string.`
+
 ### URL
 
 ```php
@@ -588,3 +707,13 @@ __construct (string $message = '')
 
 Herdado de `Condition`. Passa uma string que o `FILTER_VALIDATE_URL` do PHP aceita, seja qual for o
 esquema e o host — veja [Links da web](#links-da-web). Template: `{field} must be a valid URL.`
+
+### UUID
+
+```php
+__construct (string $message = '')
+```
+
+Herdado de `Condition`. Passa um UUID na forma de texto canônica — 32 dígitos hexadecimais em grupos
+de 8-4-4-4-12, em qualquer caixa (RFC 9562), de qualquer versão, o UUID nulo inclusive. Chaves,
+`urn:uuid:`, formas sem hífen e qualquer outra coisa falham. Template: `{field} must be a valid UUID.`

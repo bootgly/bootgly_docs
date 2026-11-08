@@ -548,6 +548,8 @@ Forneça uma closure em `fallback` para renderizar uma resposta de erro customiz
 
 Com `Sources::Headers`, as chaves das regras casam com os nomes dos headers de forma case-insensitive (RFC 9110) — uma regra com a chave `'X-API-Key'` liga ao header enviado pelo cliente independentemente da capitalização, e os erros de validação mantêm a chave exatamente como você a escreveu. Com `Sources::Cookies`, as regras ligam pelo nome do cookie, e um nome enviado em várias linhas `Cookie` fica com o valor da primeira linha. Todas as outras fontes casam as chaves de forma case-sensitive.
 
+Desde a 1.2.0 uma chave de regra é um caminho: um ponto separa segmentos (veja [Chaves com ponto](/manual/ADI/Validation/overview/#chaves-com-ponto)). Escape o ponto de um nome de cookie, header, query ou campo que tenha um — `'session\.token'`. Sem escape, o `Required` informa o nome como ausente, e uma regra opcional passa sem nunca conferir o valor que o seu handler depois lê.
+
 Consulte a seção [Validação de Requisição](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#validação-de-requisição) para exemplos end-to-end. As regras são objetos do ADI: toda regra built-in está em [Validadores](/manual/ADI/Validators/overview/), como um conjunto de regras é executado — valores em branco, regras implícitas, mensagens — em [Validação](/manual/ADI/Validation/overview/), e como escrever uma regra sua em [Escreva uma regra customizada](/manual/ADI/Validation/overview/#escreva-uma-regra-customizada).
 
 **Fase:** Pré-processamento — valida a entrada antes do handler executar.

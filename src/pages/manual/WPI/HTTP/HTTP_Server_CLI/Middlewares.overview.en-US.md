@@ -547,6 +547,8 @@ Provide a `fallback` closure to render a custom error response while keeping the
 
 With `Sources::Headers`, rule keys match header names case-insensitively (RFC 9110) — a rule keyed `'X-API-Key'` binds to the header the client sent regardless of casing, and validation errors keep the key exactly as you wrote it. With `Sources::Cookies`, rules bind by cookie name, and a name sent on several `Cookie` lines takes the first line's value. All other sources match keys case-sensitively.
 
+Since 1.2.0 a rule key is a path: a dot separates segments (see [Keys with dots](/manual/ADI/Validation/overview/#keys-with-dots)). Escape the dot of a cookie, header, query or field name that contains one — `'session\.token'`. Unescaped, `Required` reports the name as missing, and an optional rule passes without ever checking the value your handler then reads.
+
 See the [Request Validation](/manual/WPI/HTTP/HTTP_Server_CLI/Request/#request-validation) section for end-to-end examples. The rules are ADI objects: every built-in rule is on [Validators](/manual/ADI/Validators/overview/), how a set of rules runs — blank values, implicit rules, messages — on [Validation](/manual/ADI/Validation/overview/), and how to write a rule of your own in [Write a custom rule](/manual/ADI/Validation/overview/#write-a-custom-rule).
 
 **Phase:** Pre-processing — validates input before the handler runs.
