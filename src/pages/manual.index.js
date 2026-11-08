@@ -563,6 +563,38 @@ export default {
       }
     }
   },
+  '/ABI/Syntax': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Syntax'
+      }
+    }
+  },
+  '/ABI/Syntax/Lint': {
+    config: {
+      icon: 'rule',
+      status: 'new',
+      version: 'v1.2.0',
+      meta: {
+        description: {
+          'en-US': 'Configure bootgly lint check in one bootgly.Lint.php: the trees checked, the paths excluded, the rules enforced and every waiver with its reason — stale waivers fail the run.',
+          'pt-BR': 'Configure o bootgly lint check num único bootgly.Lint.php: as árvores checadas, os caminhos excluídos, as regras aplicadas e cada isenção com o seu motivo — isenções obsoletas falham a execução.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Syntax'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Lint'
+      }
+    }
+  },
 
   // ADI
   '/ADI': {
