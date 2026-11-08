@@ -76,7 +76,7 @@ class — `use Bootgly\API\RPC;` and `new RPC\MCP(…)` — and both names stay 
 Anything a tool prints while it runs — `echo`, `print`, `var_dump`, an output buffer it left
 open, flushed or tried to end, an error printed before the process dies — is captured and moved
 to stderr, so a stray debug line can never corrupt the protocol. Errors PHP displays are
-displayed on stderr too (with `display_errors` off they stay hidden), and the capture stays in
+displayed on stderr too (with `display_errors` off — any value PHP itself reads as off — they stay hidden), and the capture stays in
 place after `serving()` returns: whatever the command prints next lands on stderr as well. What bypasses PHP's output is not captured: writes to the
 `STDOUT` stream or to `php://stdout` (`fwrite(STDOUT, …)`, a log handler built on them) and child
 processes that inherit stdout (`proc_open`/`exec` without redirecting it). Point loggers at

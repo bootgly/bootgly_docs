@@ -104,8 +104,11 @@ curl -i -X DELETE http://localhost:8080/mcp -H 'Mcp-Session-Id: 4f0c5b8e2d7a91c3
   `initialize`; qualquer outro valor é `400`. Um cliente que não o envia (revisão `2025-03-26`)
   é atendido.
 - Uma sessão expira depois de `TTL` segundos sem request (`3600` por padrão); cada request a
-  renova. Até o primeiro request depois do `initialize` ela é provisória e dura no máximo 60
-  segundos, então sessões que um cliente abre e nunca usa saem do armazenamento em um minuto.
+  renova, e um stream de escuta aberto conta como um: enquanto ele está aberto a sessão não
+  expira. Com os streams `GET` habilitados (`streams` acima de `0`), cada renovação concede pelo
+  menos 15 segundos — o lease de um stream —, por menor que seja o `TTL`. Até o primeiro request
+  depois do `initialize` a sessão é provisória e dura `TTL` segundos, no máximo 60, então sessões
+  que um cliente abre e nunca usa saem do armazenamento em um minuto.
 
 As sessões ficam num **[Cache](/guide/cache/overview/)** da ABI. Por padrão é um segmento de
 memória compartilhada de 1 MiB só delas no host (o driver `shared`, com chaves prefixadas por `mcp:`) —
@@ -128,9 +131,8 @@ O segmento de memória compartilhada tem tamanho fixo (1 MiB, cerca de 3.500 ses
 uma sessão, o `initialize` é respondido com `503`. Varrer as sessões expiradas de um
 armazenamento cheio segura o lock dele — e trava todo worker que o lê nesse meio-tempo —, então
 um armazenamento é varrido por um worker de cada vez, no máximo uma vez a cada 4 a 5 segundos, e
-o `initialize` volta a ser atendido assim que uma varredura libera espaço. Nada mais o varre: os
-streams abertos ficam dentro dos registros de sessão e nunca acrescentam uma entrada ao
-armazenamento. Um cliente que continua enviando `initialize`
+o `initialize` volta a ser atendido assim que uma varredura libera espaço. Os streams abertos
+ficam dentro dos registros de sessão e nunca acrescentam uma entrada ao armazenamento. Um cliente que continua enviando `initialize`
 sem usá-los consegue manter o armazenamento cheio, e as sessões novas recusadas, enquanto
 continuar: num endpoint aberto a clientes não confiáveis, coloque um guard de autenticação e um
 **[RateLimit](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/)** na frente da rota. Um
@@ -218,7 +220,8 @@ Uma sessão pode manter até `streams` streams abertos ao mesmo tempo (`1` por p
 entre todos os workers; um a mais é `409 Conflict`. Cada vaga é mantida num lease de 15
 segundos que o stream aberto renova, então um stream cortado sem fechar (um worker morto, o
 servidor reiniciado, um cliente que sumiu) libera a vaga em até 15 segundos. As vagas ficam no registro da sessão, então um armazenamento
-cheio demais para comportar mais uma vaga responde o `GET` com `503`. Com `streams: 0`, o
+cheio demais para comportar mais uma vaga é varrido do mesmo jeito, e responde o `GET` com `503`
+enquanto nenhuma varredura libera espaço. Com `streams: 0`, o
 endpoint fica só JSON e responde `GET` com `405`; um `GET` em HTTP/1.0 é `505`, pois essa versão
 não mantém um stream aberto.
 
@@ -283,8 +286,9 @@ public function __construct (
 Cria o transporte para um núcleo de servidor. `$origins` são os origins de navegador autorizados
 a chamar (`scheme://host[:port]`, normalizados em minúsculas e sem barra final); `$Cache` é o
 armazenamento de sessões (por padrão, um Cache `shared` num segmento de 1 MiB só dele, com
-chaves prefixadas por `mcp:`); `$TTL`, os segundos que uma sessão sobrevive sem request (uma sessão
-ainda não retomada dura no máximo 60); `$body`, o maior corpo de request em
+chaves prefixadas por `mcp:`); `$TTL`, os segundos que uma sessão sobrevive sem request (um stream de
+escuta aberto conta como um; cada renovação concede pelo menos 15 com os streams `GET` habilitados;
+uma sessão ainda não retomada dura no máximo 60); `$body`, o maior corpo de request em
 bytes; `$streams`, quantos streams de escuta uma sessão pode manter abertos (`0` desabilita o
 `GET`). Lança `InvalidArgumentException` para um origin com path, wildcard ou sem scheme, para
 `$TTL` ou `$body` abaixo de `1` e para `$streams` negativo.
@@ -313,7 +317,8 @@ Os origins de navegador autorizados, normalizados.
 public private(set) int $TTL;
 ```
 
-Segundos que uma sessão sobrevive sem request.
+Segundos que uma sessão sobrevive sem request — um stream de escuta aberto conta como um; cada
+renovação concede pelo menos 15 com os streams `GET` habilitados.
 
 ```php
 public private(set) int $body;

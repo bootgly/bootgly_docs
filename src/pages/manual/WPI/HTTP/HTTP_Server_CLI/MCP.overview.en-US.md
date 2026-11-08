@@ -104,8 +104,11 @@ curl -i -X DELETE http://localhost:8080/mcp -H 'Mcp-Session-Id: 4f0c5b8e2d7a91c3
   `initialize`; any other value is `400`. A client that does not send it (revision
   `2025-03-26`) is served.
 - A session expires after `TTL` seconds without a request (`3600` by default); each request
-  renews it. Until its first request after `initialize` it is provisional and lasts at most 60
-  seconds, so sessions a client opens and never uses leave the store within a minute.
+  renews it, and an open listening stream counts as one: while it is open the session does not
+  expire. While `GET` streams are enabled (`streams` above `0`), each renewal grants at least
+  15 seconds — a stream's lease — however short the `TTL`. Until its first request after
+  `initialize` a session is provisional and lasts `TTL` seconds, 60 at most, so sessions a
+  client opens and never uses leave the store within a minute.
 
 Sessions live in an ABI **[Cache](/guide/cache/overview/)**. By default it is a 1 MiB
 shared-memory segment of their own on the host (the `shared` driver, keys prefixed `mcp:`) —
@@ -128,8 +131,7 @@ the one request that needs no session. A store that cannot hold one more session
 `initialize` with `503`. Sweeping expired sessions out of a full store holds its lock — and
 stalls every worker that reads the store meanwhile — so a store is swept by one worker at a
 time, at most once every 4 to 5 seconds, and `initialize` is served again once a sweep frees
-room. Nothing else sweeps it: open streams are kept inside the session records and never add
-an entry to the store. A client that
+room. Open streams are kept inside the session records and never add an entry to the store. A client that
 keeps sending unused `initialize` calls can keep the store full, and new sessions refused, for
 as long as it keeps going: on an endpoint open to untrusted clients, put an authentication guard
 and a **[RateLimit](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/overview/)** in front of the
@@ -216,7 +218,7 @@ One session may hold `streams` streams open at once (`1` by default), counted ac
 more is `409 Conflict`. A slot is held on a 15-second lease that the open stream renews, so a
 stream cut off without closing (a worker killed, the server restarted, a client gone silent)
 frees its slot within 15 seconds. The slots live in the session record, so a store too full to
-hold one more slot answers `GET` with `503`. With `streams: 0` the endpoint is JSON-only and answers `GET`
+hold one more slot is swept the same way, and answers `GET` with `503` while no sweep frees room. With `streams: 0` the endpoint is JSON-only and answers `GET`
 with `405`; a `GET` over HTTP/1.0 is `505`, since that version cannot hold a stream open.
 
 ## Browsers and DNS rebinding
@@ -280,8 +282,9 @@ public function __construct (
 Creates the transport for one server core. `$origins` are the browser origins allowed to call
 (`scheme://host[:port]`, normalized to lowercase without a trailing slash); `$Cache` is the
 session store (by default a `shared` Cache on a 1 MiB segment of its own, keys prefixed `mcp:`);
-`$TTL` the seconds a session survives without a request (a session not resumed yet lasts at
-most 60); `$body` the largest request body in bytes;
+`$TTL` the seconds a session survives without a request (an open listening stream counts as one;
+each renewal grants at least 15 while `GET` streams are enabled; a session not resumed yet lasts
+at most 60); `$body` the largest request body in bytes;
 `$streams` the listening streams one session may hold open (`0` disables `GET`). Throws
 `InvalidArgumentException` for an origin with a path, a wildcard or no scheme, for a `$TTL` or
 `$body` below `1`, and for a negative `$streams`.
@@ -310,7 +313,8 @@ The allowed browser origins, normalized.
 public private(set) int $TTL;
 ```
 
-Seconds a session survives without a request.
+Seconds a session survives without a request — an open listening stream counts as one; each
+renewal grants at least 15 while `GET` streams are enabled.
 
 ```php
 public private(set) int $body;

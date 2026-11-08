@@ -77,7 +77,7 @@ classe — `use Bootgly\API\RPC;` e `new RPC\MCP(…)` — e os dois nomes ficam
 Tudo o que uma tool imprime enquanto roda — `echo`, `print`, `var_dump`, um output buffer que ela
 deixou aberto, descarregou ou tentou encerrar, um erro impresso antes de o processo morrer — é
 capturado e movido para o stderr, então uma linha de debug perdida nunca corrompe o protocolo. Os
-erros que o PHP exibe também saem no stderr (com `display_errors` desligado, continuam ocultos),
+erros que o PHP exibe também saem no stderr (com `display_errors` desligado — qualquer valor que o próprio PHP lê como desligado —, continuam ocultos),
 e a captura continua de pé depois que `serving()` retorna: o que o comando imprimir em seguida
 também vai para o stderr. O que contorna a saída do PHP não é
 capturado: escritas no stream `STDOUT` ou em `php://stdout` (`fwrite(STDOUT, …)`, um handler de
