@@ -162,11 +162,14 @@ The runner accepts coverage flags handled by `Bootgly\ACI\Tests\Coverage`:
 
 | Option | Description |
 | ------ | ----------- |
-| `--coverage` | Enable coverage with the auto-detected driver. |
+| `--coverage` | Enable coverage with the auto-detected driver (Xdebug, then PCOV); the run stops before any suite when neither can measure. |
 | `--coverage-driver=<name>` | Force a driver: `xdebug`, `pcov`, `native`, or `nothing`. |
 | `--coverage-native-mode=<mode>` | Native driver mode (default `strict`). |
 | `--coverage-report=<format>[:<path>]` | Report format (`text`, `html`, `clover`). When `path` is omitted the report is printed to stdout. |
-| `--coverage-diff` | Restrict the report to lines changed against the working tree. |
+| `--coverage-diff[=<range>]` | Bare: per-file covered/uncovered lines in the `text` report. With a git range (`origin/main...HEAD`): measure only the lines it changed. |
+| `--coverage-path=<dir>` | Measure every PHP source under `dir`; files no test loaded count at zero. |
+| `--coverage-floor=<percent>` | Fail the run when covered statements are below `percent`. |
+| `--coverage-classes` | Fail the run when a class, trait or enum has no covered statement. |
 
 Example — native driver, text report to stdout, scoped to suite `8`:
 
@@ -204,7 +207,7 @@ vendor/bin/phpstan analyse -c @/phpstan.neon
 
 - Re-run a failing test in isolation with `php bootgly test <suite> <case>` before pushing.
 - Hunting one failure in a suite? `php bootgly test <suite> --fail-fast` stops at the first red case; without it the suite always runs to its end.
-- Pair `--coverage-diff` with a specific suite index to verify that new or changed lines are covered.
+- Gate a branch on its own changes: `php bootgly test --coverage --coverage-path=Bootgly/ --coverage-diff=origin/main...HEAD --coverage-floor=90` (see [Code Coverage](/testing/deep/coverage/overview/)).
 - For CI, prefer the global form `bootgly test` — `proc_open` subprocesses inherit CI environment variables (e.g. `GITHUB_ACTIONS`), which can change suite registration if your tests rely on `Environment::CI_CD`.
 
 ## Reference
@@ -214,7 +217,8 @@ vendor/bin/phpstan analyse -c @/phpstan.neon
 `Bootgly\ACI\Tests\Results` — the static collector behind the agent document. `TestCommand`
 turns `Results::$enabled` on when `Agent::detect()` reports an agent and stores that agent's name
 in `Results::$agent`. Its public data is `$cases` (every recorded case), `$suitesTotal`,
-`$suitesFailed`, `$suitesSkipped`, `$suitesPassed`, `$assertions` and `$durationMs`.
+`$suitesFailed`, `$suitesSkipped`, `$suitesPassed`, `$assertions` and `$durationMs`, plus
+`$coverage` — the outcome of a coverage gate (`null` when none ran), see below.
 
 ```php
 public static function record (string $suite, int $case, string $file, string $status, null|string $message = null, float $elapsedMs = 0): void
@@ -230,7 +234,10 @@ public static function compile (): array
 ```
 
 Folds the recorded cases and the suite tallies into the result array — exactly the structure of the
-JSON document above, `failures` included only when a case failed. The case counts are derived from
+JSON document above, `failures` included only when a case failed. When a coverage gate ran, a
+`coverage` key carries `$coverage` (`{"gate":"passed"|"failed"|"skipped","failures":[…]}`) and a
+failed gate turns `result` into `failed`; a coverage measurement that fails (an unreadable
+`--coverage-path`) is reported the same way, gate or not. The case counts are derived from
 `$cases`, and `suites.skipped` from `total − failed − passed`, so a `--fail-fast` run reports the
 suites it never reached instead of shrinking its total (it falls back to the incremental
 `$suitesSkipped` if that subtraction ever goes negative).

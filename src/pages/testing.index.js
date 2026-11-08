@@ -403,8 +403,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Measure test coverage with Bootgly coverage drivers and text, HTML or Clover reports.',
-          'pt-BR': 'Meça cobertura de testes com os drivers de cobertura do Bootgly e relatórios em texto, HTML ou Clover.'
+          'en-US': 'Measure test coverage with Bootgly coverage drivers and text, HTML or Clover reports, and gate a run on a statements floor.',
+          'pt-BR': 'Meça cobertura de testes com os drivers de cobertura do Bootgly e relatórios em texto, HTML ou Clover, e barre um run abaixo de um limite mínimo de statements.'
         }
       },
       menu: {},
