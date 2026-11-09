@@ -406,7 +406,7 @@ export default {
   '/ABI/Clock': {
     config: {
       icon: 'schedule',
-      status: 'new',
+      status: 'done',
       version: 'v1.1.0',
       meta: {
         description: {
@@ -470,7 +470,7 @@ export default {
   '/ABI/Code/__String/Bytes': {
     config: {
       icon: 'straighten',
-      status: 'new',
+      status: 'done',
       version: 'v1.1.0',
       meta: {
         description: {
@@ -542,7 +542,7 @@ export default {
   '/ABI/IO/FS/File': {
     config: {
       icon: 'description',
-      status: 'new',
+      status: 'done',
       version: 'v1.1.0',
       meta: {
         description: {
@@ -630,7 +630,7 @@ export default {
   '/ADI/Casters': {
     config: {
       icon: 'swap_horiz',
-      status: 'done',
+      status: 'new',
       version: 'v1.2.0',
       meta: {
         description: {
@@ -1543,7 +1543,7 @@ export default {
   '/API': {
     config: {
       icon: 'api',
-      status: 'new',
+      status: 'done',
       version: 'v1.1.0',
       meta: {
         description: {
@@ -1581,7 +1581,7 @@ export default {
   '/API/RPC/JSON': {
     config: {
       icon: 'swap_horiz',
-      status: 'new',
+      status: 'done',
       version: 'v1.1.0',
       meta: {
         description: {
@@ -1605,7 +1605,7 @@ export default {
   '/API/RPC/MCP': {
     config: {
       icon: 'smart_toy',
-      status: 'new',
+      status: 'done',
       version: 'v1.1.0',
       meta: {
         description: {
@@ -1877,7 +1877,7 @@ export default {
   '/CLI/Terminal/Input/Lines': {
     config: {
       icon: 'notes',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -1941,7 +1941,7 @@ export default {
   '/CLI/Terminal/Output/Region': {
     config: {
       icon: 'vertical_split',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2059,7 +2059,7 @@ export default {
   '/CLI/UI/Atoms/Button': {
     config: {
       icon: 'smart_button',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2083,7 +2083,7 @@ export default {
   '/CLI/UI/Atoms/Differ': {
     config: {
       icon: 'difference',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2105,7 +2105,7 @@ export default {
   '/CLI/UI/Atoms/Dumper': {
     config: {
       icon: 'data_object',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2127,7 +2127,7 @@ export default {
   '/CLI/UI/Atoms/Figlet': {
     config: {
       icon: 'title',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2149,7 +2149,7 @@ export default {
   '/CLI/UI/Atoms/Highlighter': {
     config: {
       icon: 'code',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2171,7 +2171,7 @@ export default {
   '/CLI/UI/Atoms/Scrollbar': {
     config: {
       icon: 'unfold_more',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2193,7 +2193,7 @@ export default {
   '/CLI/UI/Atoms/Statusbar': {
     config: {
       icon: 'call_to_action',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2266,7 +2266,7 @@ export default {
   '/CLI/UI/Base/Flyout': {
     config: {
       icon: 'expand_more',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2288,7 +2288,7 @@ export default {
   '/CLI/UI/Base/Frame': {
     config: {
       icon: 'picture_in_picture',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2310,7 +2310,7 @@ export default {
   '/CLI/UI/Base/Listbox': {
     config: {
       icon: 'list',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2332,7 +2332,7 @@ export default {
   '/CLI/UI/Base/Tabs': {
     config: {
       icon: 'tab',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2406,7 +2406,7 @@ export default {
   '/CLI/UI/Components/Grid': {
     config: {
       icon: 'grid_view',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2428,7 +2428,7 @@ export default {
   '/CLI/UI/Components/Heatmap': {
     config: {
       icon: 'grid_on',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2470,7 +2470,7 @@ export default {
   '/CLI/UI/Components/Markdown': {
     config: {
       icon: 'article',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2534,7 +2534,7 @@ export default {
   '/CLI/UI/Components/Select': {
     config: {
       icon: 'checklist',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2620,7 +2620,7 @@ export default {
   '/CLI/UI/Components/Textbox': {
     config: {
       icon: 'text_fields',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2686,7 +2686,7 @@ export default {
   '/CLI/UI/Components/Tree': {
     config: {
       icon: 'account_tree',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2724,7 +2724,7 @@ export default {
   '/CLI/UX/Components/Dialog': {
     config: {
       icon: 'picture_in_picture',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2748,7 +2748,7 @@ export default {
   '/CLI/UX/Components/Filepicker': {
     config: {
       icon: 'folder_open',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2814,7 +2814,7 @@ export default {
   '/CLI/UX/Components/Toasts': {
     config: {
       icon: 'notifications',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {
@@ -2836,7 +2836,7 @@ export default {
   '/CLI/UX/Components/Wizard': {
     config: {
       icon: 'checklist',
-      status: 'new',
+      status: 'done',
       version: 'v1.0.0',
       meta: {
         description: {

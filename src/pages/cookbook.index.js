@@ -14,7 +14,7 @@ export default {
   '/about/cookbook': {
     config: {
       icon: 'restaurant_menu',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Real projects built step by step on each Bootgly platform — from an empty machine to a running app.',
@@ -53,7 +53,7 @@ export default {
   '/console/monitor': {
     config: {
       icon: 'monitor_heart',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build Monitor, a live system dashboard in the terminal: screens, keymaps, status bar and tables over /proc.',
@@ -79,7 +79,7 @@ export default {
   '/console/breakout': {
     config: {
       icon: 'sports_esports',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build Breakout, a terminal game: fixed-timestep loop, diff-rendered canvas, held keys, scenes and collisions.',
@@ -116,7 +116,7 @@ export default {
   '/web/guestbook': {
     config: {
       icon: 'edit_note',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build Guestbook, an MVC web app: a form, a list, SQLite migrations, CSRF, a layout and static assets.',
@@ -142,7 +142,7 @@ export default {
   '/web/contacts': {
     config: {
       icon: 'contacts',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build Contacts, a REST API: JSON CRUD, validation, problem+json errors, pagination and SQLite.',
@@ -166,7 +166,7 @@ export default {
   '/web/shop': {
     config: {
       icon: 'storefront',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build Shop, a store on MySQL: catalogue with pagination, a session cart, a checkout in one transaction with row locks, ORM relations.',
@@ -190,7 +190,7 @@ export default {
   '/web/polls': {
     config: {
       icon: 'how_to_vote',
-      status: 'new',
+      status: 'done',
       meta: {
         description: {
           'en-US': 'Build Polls, a voting app on PostgreSQL: one vote per visitor by upsert, RETURNING in a transaction, TIMESTAMPTZ, ORM relations.',
