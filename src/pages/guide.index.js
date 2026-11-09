@@ -678,8 +678,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Lint your code against Bootgly\'s style in four submodules — use statements and nullable shorthands (auto-fixable), constructor promotion and camelCase method names (check-only) — with a JSON report for agents.',
-          'pt-BR': 'Linte o seu código contra o estilo do Bootgly em quatro submódulos — use statements e atalhos nullable (corrigíveis), constructor promotion e métodos em camelCase (só checagem) — com relatório JSON para agentes.'
+          'en-US': 'Check your code against Bootgly\'s style with bootgly lint check — seven rules, three auto-fixable, configured once in a bootgly.Lint.php with recorded exemptions — and a JSON report for agents.',
+          'pt-BR': 'Cheque o seu código contra o estilo do Bootgly com bootgly lint check — sete regras, três corrigíveis, configuradas uma vez num bootgly.Lint.php com isenções registradas — e um relatório JSON para agentes.'
         }
       },
       book: 'guide',

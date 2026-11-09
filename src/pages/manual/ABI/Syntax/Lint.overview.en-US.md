@@ -63,6 +63,7 @@ use Bootgly\ABI\Syntax\Lint;
 use Bootgly\ABI\Syntax\Lint\Exemption;
 
 return new Lint(
+   version: 1,
    paths: ['app/'],
    excludes: ['**/tests/fixtures/**'],
    rules: [Rules::Imports, Rules::Nullables, Rules::Spacing, Rules::Methods],
@@ -77,6 +78,8 @@ return new Lint(
 );
 ```
 
+- `version` — the format the file is written in. Required: this Bootgly reads version `1`, and
+  any other value fails the run, so a file written for a later format is never misread.
 - `paths` — the trees checked: directories or files, plain relative paths (no wildcards, no
   `..`, `.` or empty segments inside); `.` alone is the file's own directory. At least one.
 - `excludes` — patterns of the paths never checked (see *Patterns* below).
@@ -92,8 +95,8 @@ return new Lint(
 | `Rules::Nullables` | No nullable shorthand — `?T` is written `null\|T` | yes |
 | `Rules::Promotions` | No constructor property promotion | check-only |
 | `Rules::Methods` | Method names are a single word, and that word is a verb in its base form (`load()`, not `loaded()`, `status()` or `isReady()`); the `-ing` form is kept for loops (`reading()`) | check-only |
-| `Rules::Spacing` | One space before a declaration's parameter list (`function charge (`), none before a call's arguments (`charge(`) | yes |
-| `Rules::Casing` | A variable, parameter or property holding an object, or a collection of objects, starts uppercase (`$Request`, `$Requests`); an acronym is uppercase (`$URL`, `$SQL`) | check-only |
+| `Rules::Spacing` | One space before a declaration's parameter list (`function charge (`), none before a call's arguments (`charge(`); language constructs (`array (`, `isset (`, `if (`, …) keep the spacing they are written with | yes |
+| `Rules::Casing` | An object or object collection the tokens type starts uppercase — a property or parameter typed with a class or documented as a collection of one, a variable assigned `new X` (`$Request`, `$Requests`); an acronym is uppercase (`$URL`, `$SQL`) | check-only |
 | `Rules::Sections` | Properties are grouped under `// * Config`, `// * Data` and `// * Metadata`, in that order; Config is publicly readable, Metadata is never publicly writable | check-only |
 
 Names whose form is imposed by PHP or by a contract — magic methods, `getIterator()`,
@@ -164,6 +167,15 @@ A `bootgly.Lint.php` that does not load fails the run: a parse error, a value th
 Malformed bootgly.Lint.php: Lint exemption for 'methods' at 'app/Services/Billing.php' needs a reason.
 ```
 
+A file written for another format version fails the same way:
+
+```text
+Malformed bootgly.Lint.php: Lint version 2 is not supported: this Bootgly reads version 1.
+```
+
+Inside a kit, `bootgly kit boot` writes `projects/bootgly.Lint.php` when there is none — every rule
+enabled over `projects/`. It never overwrites the file: from then on it is yours.
+
 ## Check a part of the tree
 
 Pass a path to check only part of the configured trees:
@@ -230,10 +242,11 @@ JSON document. `check` opens it with the command, the rules run and the configur
 ### Lint
 
 ```php
-new Lint (array $paths, array $excludes = [], array $rules = [Rules::Imports, Rules::Nullables, Rules::Promotions, Rules::Methods], array $Exemptions = [])
+new Lint (int $version, array $paths, array $excludes = [], array $rules = [Rules::Imports, Rules::Nullables, Rules::Promotions, Rules::Methods], array $Exemptions = [])
 ```
 
-Builds the configuration and checks every entry: each argument must be a list; `paths` holds at
+Builds the configuration and checks every entry: `version` must be one of `Lint::VERSIONS`; each
+other argument must be a list; `paths` holds at
 least one plain relative path; `excludes` holds valid patterns; `rules` holds `Rules` cases, at
 least one, none repeated; `Exemptions` holds `Exemption`s for enabled rules with valid patterns.
 Anything else throws an `InvalidArgumentException` naming the entry.
@@ -269,6 +282,13 @@ Returns the exemptions of `$rule` whose pattern matches the relative `$path`, ke
 index in `Exemptions`.
 
 ```php
+Lint::VERSIONS    // [1] — the format versions this Bootgly reads
+```
+
+The format versions a `bootgly.Lint.php` may declare in `version`.
+
+```php
+$Lint->version    // int
 $Lint->paths      // array<int,string>
 $Lint->excludes   // array<int,string>
 $Lint->rules      // array<int,Rules>
