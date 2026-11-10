@@ -218,6 +218,26 @@ $Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta
 
 A disk's `root` acts as a key prefix.
 
+#### Direct transfers
+
+The S3 driver can also keep the bytes off your server: a presigned URL lets someone download or
+upload one object for a limited time, the `Uploads` handle lets a browser send a large file
+straight to the bucket in parts, and `read()` takes an offset and a length to fetch a window of
+an object. They belong to the driver, not to the facade:
+
+```php
+/** @var Storage\Drivers\S3 $S3 */
+$S3 = $Storage->open('cdn');
+
+$URL = $S3->presign('GET', 'report.csv', 300);                      // a link valid for 5 minutes
+$id = $S3->Uploads->create('videos/source.mp4', ['type' => 'video/mp4']);
+$S3->read('videos/source.mp4', $Sink, 0, 1024);                     // the first 1024 bytes
+```
+
+The [S3 manual](/manual/ABI/Resources/Storage/Drivers/S3/overview/) has the whole flow — what a
+presigned URL authorizes, the browser upload step by step, and the notes for S3-compatible
+stores.
+
 ### Register your own driver
 
 ```php
@@ -282,6 +302,8 @@ public function read (string $path, $sink): bool
 
 Streams the file at `$path` into the writable resource `$sink`. Returns `false` when the path
 is missing or unreadable (nothing is written to `$sink`), `true` otherwise.
+On S3, `read()` also takes an offset and a length — see the
+[S3 manual](/manual/ABI/Resources/Storage/Drivers/S3/overview/).
 
 ```php
 public function delete (string $path): bool
@@ -360,6 +382,7 @@ empties the whole disk.
 
 ## Next references
 
+- **[S3 driver](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — presigned URLs, browser uploads straight to the bucket, ranged reads.
 - **[Cache](/guide/cache/overview/)** — the sibling ABI resource facade (TTL, tags, drivers).
 - **[Configuration](/guide/configuration/overview/)** — load scoped configs and `.env` values.
 - **[Docker](/guide/docker/overview/)** — persist `storage/` across containers with a volume.

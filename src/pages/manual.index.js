@@ -595,6 +595,54 @@ export default {
       }
     }
   },
+  '/ABI/Resources': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Resources'
+      }
+    }
+  },
+  '/ABI/Resources/Storage': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Storage'
+      }
+    }
+  },
+  '/ABI/Resources/Storage/Drivers': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Drivers'
+      }
+    }
+  },
+  '/ABI/Resources/Storage/Drivers/S3': {
+    config: {
+      icon: 'cloud_upload',
+      status: 'new',
+      version: 'v1.3.0',
+      meta: {
+        description: {
+          'en-US': 'Presign time-limited download and upload links, let a browser send a Multipart Upload straight to the bucket, and read a byte range of an object with the S3 Storage driver.',
+          'pt-BR': 'Pré-assine links de download e upload com prazo, deixe o navegador enviar um Multipart Upload direto para o bucket e leia uma faixa de bytes de um objeto com o driver S3 do Storage.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Resources.Storage.Drivers'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'S3'
+      }
+    }
+  },
   '/ABI/Syntax': {
     config: null,
     data: {

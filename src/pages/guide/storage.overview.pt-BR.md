@@ -225,6 +225,26 @@ $Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta
 
 O `root` de um disk funciona como prefixo de chave.
 
+#### Transferências diretas
+
+O driver S3 também consegue manter os bytes fora do seu servidor: uma URL pré-assinada deixa
+alguém baixar ou enviar um objeto por um tempo limitado, o handle `Uploads` deixa o navegador
+enviar um arquivo grande direto para o bucket em partes, e o `read()` recebe um offset e um
+tamanho para buscar uma janela de um objeto. Eles pertencem ao driver, não ao facade:
+
+```php
+/** @var Storage\Drivers\S3 $S3 */
+$S3 = $Storage->open('cdn');
+
+$URL = $S3->presign('GET', 'report.csv', 300);                      // um link válido por 5 minutos
+$id = $S3->Uploads->create('videos/source.mp4', ['type' => 'video/mp4']);
+$S3->read('videos/source.mp4', $Sink, 0, 1024);                     // os primeiros 1024 bytes
+```
+
+O [manual do S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/) traz o fluxo inteiro — o que
+uma URL pré-assinada autoriza, o upload pelo navegador passo a passo, e as notas para serviços
+compatíveis com S3.
+
 ### Registre seu próprio driver
 
 ```php
@@ -289,6 +309,8 @@ public function read (string $path, $sink): bool
 
 Transmite o arquivo em `$path` para o resource gravável `$sink`. Retorna `false` quando o
 caminho está ausente ou ilegível (nada é escrito em `$sink`), `true` caso contrário.
+No S3, o `read()` também recebe um offset e um tamanho — veja o
+[manual do S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/).
 
 ```php
 public function delete (string $path): bool
@@ -368,6 +390,7 @@ disk inteiro.
 
 ## Próximas referências
 
+- **[Driver S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — URLs pré-assinadas, uploads do navegador direto para o bucket, leituras por faixa.
 - **[Cache](/guide/cache/overview/)** — o facade de recurso ABI irmão (TTL, tags, drivers).
 - **[Configuração](/guide/configuration/overview/)** — carregue configs com escopo e valores `.env`.
 - **[Docker](/guide/docker/overview/)** — persista `storage/` entre containers com um volume.
