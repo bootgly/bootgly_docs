@@ -169,6 +169,10 @@ As três respostas do `wait()` se distinguem assim:
 | `0` | `true` | um sinal chegou antes |
 | `0` | `false` | o deadline passou |
 
+Com sinais assíncronos (`pcntl_async_signals(true)`) o handler roda durante a própria espera.
+Uma exceção lançada por ele não é capturada pelo Selector: ela chega ao código que chamou o
+`wait()`.
+
 ## Parando de observar
 
 O `forget()` remove um stream — um interesse, ou os dois quando você não informa nenhum. Remova o
@@ -274,7 +278,9 @@ A espera em si continua acontecendo no sistema: com o relógio fake **antes** do
 
 O `Bootgly\ABI\IO\IPC\Pipe::reading()` espera em um Selector: cada espera dura o timeout
 informado, os sinais pendentes são despachados entre uma espera e outra, e um sinal que
-interrompe a espera faz ela continuar sem estender o timeout.
+interrompe a espera faz ela continuar sem estender o timeout. Um timeout não encerra o loop —
+ele entrega `null` e espera de novo —, então quem consome sai com `break` quando já esperou o
+bastante.
 
 ## Referência
 

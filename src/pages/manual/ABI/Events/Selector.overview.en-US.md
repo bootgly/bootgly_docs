@@ -164,6 +164,9 @@ So the three answers of `wait()` are told apart like this:
 | `0` | `true` | a signal arrived first |
 | `0` | `false` | the deadline passed |
 
+With asynchronous signals (`pcntl_async_signals(true)`) the handler runs during the wait itself.
+An exception it throws is not caught by the Selector: it reaches the code that called `wait()`.
+
 ## Stop watching
 
 `forget()` removes a stream — one interest, or both when you name none. Forget a stream **before**
@@ -270,7 +273,8 @@ really blocks for the time left. See [Clock](/manual/ABI/Clock/overview/).
 
 `Bootgly\ABI\IO\IPC\Pipe::reading()` waits on a Selector: each wait lasts the given timeout,
 pending signals are dispatched between waits, and a signal that interrupts a wait resumes it
-without extending the timeout.
+without extending the timeout. A timeout does not end the loop — it yields `null` and waits
+again — so the consumer leaves it with `break` when it has waited enough.
 
 ## Reference
 
