@@ -523,6 +523,38 @@ export default {
       }
     }
   },
+  '/ABI/Events': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Events'
+      }
+    }
+  },
+  '/ABI/Events/Selector': {
+    config: {
+      icon: 'sensors',
+      status: 'new',
+      version: 'v1.3.0',
+      meta: {
+        description: {
+          'en-US': 'Wait until a stream can be read or written, with an absolute monotonic deadline, signal interruption reported and named refusals instead of hangs.',
+          'pt-BR': 'Espere até um stream poder ser lido ou escrito, com um deadline monotônico absoluto, interrupção por sinal reportada e recusas nomeadas em vez de travamentos.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Events'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Selector'
+      }
+    }
+  },
   '/ABI/IO': {
     config: null,
     data: {
