@@ -422,18 +422,105 @@ When both group and route-level middlewares are present, they are **merged** —
 
 See [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares) for the full middleware pipeline documentation.
 
+## Route List
+
+`$Router->Routes` lists the routes the Router stored — one row per route, in the order they were registered. It is read-only and costs nothing per request: rows are written while the routes are registered, and the dispatcher never reads them.
+
+### Reading the list in a handler
+
+```php
+yield $Router->route('/routes', function ($Request, $Response) use ($Router) {
+   $routes = [];
+   foreach ($Router->Routes as $Registration) {
+      $routes[] = [
+         'path' => $Registration->path,
+         'methods' => $Registration->methods ?? 'any',
+         'kind' => $Registration->Kind->name,
+      ];
+   }
+
+   return $Response->JSON->send($routes);
+}, GET);
+```
+
+The list is complete once `$Router->cached` is `true`. A handler always sees it complete — handlers run after the warm-up — including the routes registered after its own. The routes of a group come after the top-level ones: a group registers its routes when it is flattened, at the end of the warm-up.
+
+### Reading the list without a request
+
+Outside the server — a test, a command, a tool — there is no first request to warm the Router. `warm()` does it: pass it the Generator your route set returns.
+
+This check fails when an API route was added without a line in the published list:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+
+$Router = new Router;
+$Handler = $Router->load(__DIR__ . '/router'); // the folder your server loads
+$Router->warm($Handler(new Request, new Response, $Router));
+
+$published = [
+   'GET /api/users',
+   'POST /api/users',
+   'GET /api/users/:id<int>',
+];
+
+$missing = [];
+foreach ($Router->Routes as $Registration) {
+   if (str_starts_with($Registration->path, '/api/') === false) {
+      continue;
+   }
+
+   foreach ($Registration->methods ?? ['ANY'] as $method) {
+      $line = "$method {$Registration->path}";
+      if (in_array($line, $published, true) === false) {
+         $missing[] = $line;
+      }
+   }
+}
+// $missing — the API routes nobody published
+```
+
+`warm()` leaves `$Router->cached` at `true`, exactly as the first request does. On a Router that is already warm it does nothing.
+
+### What a row says
+
+- **`path`** — the path as you wrote it, with the group prefix applied: `/api/users/:id<int>`. The root is `/` and the generic catch-all is `/*`.
+- **`methods`** — the methods the Router accepts for the route; `null` means every method. A route in a group registered without methods inherits the group's; one registered with methods keeps only those the group also has.
+- **`Middlewares`** — every middleware that runs for the route, outermost first: the ones from `intercept()` in effect when the route was registered, the group's, then the route's own `middlewares:`. A route registered before an `intercept()` call does not carry it.
+- **`handler`** — the callable you passed to `route()`. A `serve()` route has no handler: it has a **`body`**.
+- **`parameters`** — one entry per `:param`, in path order, with its `name`, its `constraint` type when you used one (`int`, `slug`, …) and the `pattern` a segment must match.
+- **`cache`** — the `cache:` options as you wrote them. A route with middlewares is never served from the response cache (see [When the cache steps aside](#when-the-cache-steps-aside)), so check `Middlewares` too.
+- **`Kind`** — how the Router finds the route: `Static`, `Dynamic`, `CatchAll`, or `Body` for a `serve()` route answered without a handler call.
+
+### A registration log
+
+The list records what was registered, not which route wins a request:
+
+- **A path registered twice has two rows.** For a static path and for the generic catch-all, the later registration is the one that answers; for a dynamic path, the earlier one.
+- **A row says what the Router does**, where that differs from the arguments:
+  - the generic catch-all `/*` answers every method, so its `methods` is `null` whatever was passed;
+  - a dynamic route registered with an empty method list (`[]`) answers every method — `null` too;
+  - a static route registered with an empty method list is not stored: it has no row and matches nothing;
+  - a static route registered with an empty method name (`''`, alone or in a list) answers every method — `null` too;
+  - a route registered as `''` inside a group lands on the site root — its `path` is `/`.
+- **Not everything leaves a row.** A group (`/admin/:*`) is not a route — its children are. A registration made while the Router is paused, after the warm-up, or one that threw an exception stored nothing.
+- **A warm-up that throws** leaves the list empty and `$Router->cached` at `false`; the next request registers every route again. What the failed attempt stored stays in the Router's lookup tables, so after such a failure a route can answer without a row.
+- **A route set that runs more than once is logged each time.** The list is emptied only when the warm-up itself throws. A handler that registers with direct `$Router->route()` calls and then answers the request itself — or throws — leaves the Router cold: the next request runs the registrations again and their rows repeat, one more copy per request, until a request reaches a route. Register with a Generator (`yield $Router->route(...)`), or return early *before* registering, and the list holds each route once.
+
 ## Route Object
+
+`Route` is the **current match**: the state of the route the Router matched for the request being handled — `$this` inside a Closure handler. It is not a registered route; for that, read a row of the [route list](#route-list).
 
 The `Route` class (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) exposes the following properties:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `path` | `string` | The route path pattern |
+| `path` | `string` | The path of the request that matched (`/user/42`), not the route pattern |
 | `Params` | `Params` | Route parameters container |
 | `Middlewares` | `array<Middleware>` | The middleware chain folded around the matched route (group entries first, then the route's own), present only while a middleware-bearing dispatch runs — the chain a deferred generation keeps for its `Recovering` boundaries (see [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)) |
 | `base` | `string` | The request base path (property hook) |
-| `parameterized` | `bool` | Whether the route has `:param` segments (property hook) |
-| `nested` | `bool` | Whether this is inside a route group |
 
 ### Params Object
 
@@ -453,3 +540,45 @@ foreach ($this->Params as $name => $value) {
    // $value → 'abc', ['val1', 'val2'], etc.
 }
 ```
+
+## Reference
+
+### Router
+
+```php
+public private(set) array $Routes
+```
+
+The route list: `array<int,Registration>`, one row per stored route, in registration order. Complete once `$cached` is `true`. Readable from anywhere, written only by the Router.
+
+```php
+warm (null|Generator $Routes = null) : void
+```
+
+Warms the route cache without a request: drains `$Routes` (the Generator a route set returns), then flattens the route groups. Pass `null` when the routes were registered with direct `$Router->route()` calls. Does nothing on a warm Router. If a route set or a registration throws, the exception is rethrown, the Router stays cold and the route list is emptied (the lookup tables keep what that attempt stored).
+
+### Registration
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Registration` — one row of the route list. Every property is read-only.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `path` | `string` | The registered path with its group prefix; `/` for the root, `/*` for the generic catch-all |
+| `methods` | `null\|array<int,string>` | The methods the Router accepts; `null` when the route answers every method |
+| `handler` | `null\|object\|array\|string` | The callable as registered; `null` for a `serve()` route |
+| `body` | `null\|string` | The fixed body of a `serve()` route; `null` for a `route()` one |
+| `Middlewares` | `array<int,Middleware>` | The middlewares that run for the route, outermost first |
+| `parameters` | `array<int,array{name: string, constraint: null\|string, pattern: string}>` | The path params in path order; `pattern` is `[^\/]+` for a plain param and `.+` for a `:name*` one |
+| `cache` | `null\|array{TTL: int}` | The `cache:` options as registered; `null` without them |
+| `Kind` | `Kinds` | How the Router finds the route |
+
+### Kinds
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Registration\Kinds`
+
+| Case | Meaning |
+|------|---------|
+| `Static` | A literal path, found by one lookup and answered by its handler |
+| `Dynamic` | A path with `:param` segments |
+| `CatchAll` | The generic `/*` fallback |
+| `Body` | A literal path registered with `serve()` and no middleware: the body is copied into the response without a handler call |

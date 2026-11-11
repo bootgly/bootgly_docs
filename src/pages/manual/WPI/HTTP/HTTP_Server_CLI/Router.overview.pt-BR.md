@@ -427,18 +427,105 @@ Quando middlewares de grupo e de rota estão presentes, eles são **mesclados** 
 
 Veja [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares) para a documentação completa do pipeline de middlewares.
 
+## Lista de Rotas
+
+`$Router->Routes` lista as rotas que o Router armazenou — uma linha por rota, na ordem em que foram registradas. É somente leitura e não custa nada por requisição: as linhas são escritas enquanto as rotas são registradas, e o dispatcher nunca as lê.
+
+### Lendo a lista em um handler
+
+```php
+yield $Router->route('/routes', function ($Request, $Response) use ($Router) {
+   $routes = [];
+   foreach ($Router->Routes as $Registration) {
+      $routes[] = [
+         'path' => $Registration->path,
+         'methods' => $Registration->methods ?? 'any',
+         'kind' => $Registration->Kind->name,
+      ];
+   }
+
+   return $Response->JSON->send($routes);
+}, GET);
+```
+
+A lista está completa quando `$Router->cached` é `true`. Um handler sempre a vê completa — handlers rodam depois do warmup —, incluindo as rotas registradas depois da dele. As rotas de um grupo vêm depois das de nível superior: um grupo registra suas rotas quando é expandido, no fim do warmup.
+
+### Lendo a lista sem uma requisição
+
+Fora do servidor — um teste, um comando, uma ferramenta — não existe primeira requisição para aquecer o Router. `warm()` faz isso: passe o Generator que o seu conjunto de rotas retorna.
+
+Esta verificação falha quando uma rota da API foi adicionada sem uma linha na lista publicada:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+
+$Router = new Router;
+$Handler = $Router->load(__DIR__ . '/router'); // a pasta que o seu servidor carrega
+$Router->warm($Handler(new Request, new Response, $Router));
+
+$published = [
+   'GET /api/users',
+   'POST /api/users',
+   'GET /api/users/:id<int>',
+];
+
+$missing = [];
+foreach ($Router->Routes as $Registration) {
+   if (str_starts_with($Registration->path, '/api/') === false) {
+      continue;
+   }
+
+   foreach ($Registration->methods ?? ['ANY'] as $method) {
+      $line = "$method {$Registration->path}";
+      if (in_array($line, $published, true) === false) {
+         $missing[] = $line;
+      }
+   }
+}
+// $missing — as rotas da API que ninguém publicou
+```
+
+`warm()` deixa `$Router->cached` em `true`, exatamente como a primeira requisição. Em um Router já aquecido ele não faz nada.
+
+### O que uma linha diz
+
+- **`path`** — o caminho como você escreveu, com o prefixo do grupo aplicado: `/api/users/:id<int>`. A raiz é `/` e o catch-all genérico é `/*`.
+- **`methods`** — os métodos que o Router aceita para a rota; `null` significa qualquer método. Uma rota de grupo registrada sem métodos herda os do grupo; uma registrada com métodos fica só com os que o grupo também tem.
+- **`Middlewares`** — todo middleware que roda para a rota, do mais externo para o mais interno: os de `intercept()` em vigor quando a rota foi registrada, os do grupo e, por fim, os `middlewares:` da própria rota. Uma rota registrada antes de uma chamada a `intercept()` não a carrega.
+- **`handler`** — o callable que você passou para `route()`. Uma rota de `serve()` não tem handler: tem um **`body`**.
+- **`parameters`** — uma entrada por `:param`, na ordem do caminho, com o `name`, o tipo de `constraint` quando você usou um (`int`, `slug`, …) e o `pattern` que o segmento precisa casar.
+- **`cache`** — as opções de `cache:` como você escreveu. Uma rota com middlewares nunca é servida do cache de resposta (veja [Quando o cache sai de cena](#quando-o-cache-sai-de-cena)), então confira `Middlewares` também.
+- **`Kind`** — como o Router encontra a rota: `Static`, `Dynamic`, `CatchAll`, ou `Body` para uma rota de `serve()` respondida sem chamar um handler.
+
+### Um log de registro
+
+A lista registra o que foi registrado, não qual rota vence uma requisição:
+
+- **Um caminho registrado duas vezes tem duas linhas.** Para um caminho estático e para o catch-all genérico, quem responde é o registro mais recente; para um caminho dinâmico, o mais antigo.
+- **Uma linha diz o que o Router faz**, quando isso difere dos argumentos:
+  - o catch-all genérico `/*` responde a qualquer método, então seu `methods` é `null`, não importa o que foi passado;
+  - uma rota dinâmica registrada com uma lista de métodos vazia (`[]`) responde a qualquer método — `null` também;
+  - uma rota estática registrada com uma lista de métodos vazia não é armazenada: não tem linha e não casa com nada;
+  - uma rota estática registrada com um nome de método vazio (`''`, sozinho ou em uma lista) responde a qualquer método — `null` também;
+  - uma rota registrada como `''` dentro de um grupo cai na raiz do site — seu `path` é `/`.
+- **Nem tudo deixa uma linha.** Um grupo (`/admin/:*`) não é uma rota — suas filhas são. Um registro feito com o Router pausado, depois do warmup, ou um que lançou uma exceção não armazenou nada.
+- **Um warmup que lança uma exceção** deixa a lista vazia e `$Router->cached` em `false`; a próxima requisição registra todas as rotas de novo. O que a tentativa que falhou armazenou continua nas tabelas de busca do Router, então depois de uma falha dessas uma rota pode responder sem ter linha.
+- **Um conjunto de rotas que roda mais de uma vez é registrado no log a cada vez.** A lista só é esvaziada quando o próprio warmup lança. Um handler que registra com chamadas diretas a `$Router->route()` e depois responde ele mesmo à requisição — ou lança — deixa o Router frio: a próxima requisição roda os registros de novo e as linhas se repetem, uma cópia a mais por requisição, até que uma requisição chegue a uma rota. Registre com um Generator (`yield $Router->route(...)`), ou retorne *antes* de registrar, e a lista guarda cada rota uma vez só.
+
 ## Objeto Route
+
+`Route` é o **match atual**: o estado da rota que o Router casou para a requisição em atendimento — o `$this` dentro de um handler Closure. Não é uma rota registrada; para isso, leia uma linha da [lista de rotas](#lista-de-rotas).
 
 A classe `Route` (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) expõe as seguintes propriedades:
 
 | Propriedade | Tipo | Descrição |
 |-------------|------|-----------|
-| `path` | `string` | O padrão do caminho da rota |
+| `path` | `string` | O caminho da requisição que casou (`/user/42`), não o padrão da rota |
 | `Params` | `Params` | Container dos parâmetros da rota |
 | `Middlewares` | `array<Middleware>` | A cadeia de middlewares dobrada em volta da rota casada (entradas do grupo primeiro, depois as da própria rota), presente só enquanto um dispatch com middleware roda — a cadeia que uma geração deferred mantém para suas fronteiras `Recovering` (veja [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)) |
 | `base` | `string` | O caminho base da requisição (property hook) |
-| `parameterized` | `bool` | Se a rota tem segmentos `:param` (property hook) |
-| `nested` | `bool` | Se está dentro de um grupo de rotas |
 
 ### Objeto Params
 
@@ -458,3 +545,45 @@ foreach ($this->Params as $nome => $valor) {
    // $valor → 'abc', ['val1', 'val2'], etc.
 }
 ```
+
+## Referência
+
+### Router
+
+```php
+public private(set) array $Routes
+```
+
+A lista de rotas: `array<int,Registration>`, uma linha por rota armazenada, na ordem de registro. Completa quando `$cached` é `true`. Pode ser lida de qualquer lugar; só o Router escreve nela.
+
+```php
+warm (null|Generator $Routes = null) : void
+```
+
+Aquece o cache de rotas sem uma requisição: itera `$Routes` (o Generator que um conjunto de rotas retorna) e depois expande os grupos de rotas. Passe `null` quando as rotas foram registradas com chamadas diretas a `$Router->route()`. Não faz nada em um Router já aquecido. Se um conjunto de rotas ou um registro lançar, a exceção é relançada, o Router continua frio e a lista de rotas é esvaziada (as tabelas de busca mantêm o que essa tentativa armazenou).
+
+### Registration
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Registration` — uma linha da lista de rotas. Todas as propriedades são somente leitura.
+
+| Propriedade | Tipo | Descrição |
+|-------------|------|-----------|
+| `path` | `string` | O caminho registrado com o prefixo do grupo; `/` para a raiz, `/*` para o catch-all genérico |
+| `methods` | `null\|array<int,string>` | Os métodos que o Router aceita; `null` quando a rota responde a qualquer método |
+| `handler` | `null\|object\|array\|string` | O callable como foi registrado; `null` para uma rota de `serve()` |
+| `body` | `null\|string` | O corpo fixo de uma rota de `serve()`; `null` para uma de `route()` |
+| `Middlewares` | `array<int,Middleware>` | Os middlewares que rodam para a rota, do mais externo para o mais interno |
+| `parameters` | `array<int,array{name: string, constraint: null\|string, pattern: string}>` | Os parâmetros na ordem do caminho; `pattern` é `[^\/]+` para um parâmetro simples e `.+` para um `:name*` |
+| `cache` | `null\|array{TTL: int}` | As opções de `cache:` como registradas; `null` sem elas |
+| `Kind` | `Kinds` | Como o Router encontra a rota |
+
+### Kinds
+
+`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Registration\Kinds`
+
+| Case | Significado |
+|------|-------------|
+| `Static` | Um caminho literal, encontrado com uma busca e respondido pelo seu handler |
+| `Dynamic` | Um caminho com segmentos `:param` |
+| `CatchAll` | O fallback genérico `/*` |
+| `Body` | Um caminho literal registrado com `serve()` e sem middleware: o corpo é copiado para a resposta sem chamar um handler |
