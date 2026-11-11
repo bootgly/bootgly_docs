@@ -1,8 +1,12 @@
 # Timers de Intervalo
 
-`Bootgly\ACI\Events\Timer` é a roda de timers por intervalo, nativa e sem dependências,
-usada pelos workers do Bootgly. Os timers são locais ao processo e cooperativos: a event
-loop despacha `tick()`, portanto código bloqueante da aplicação pode atrasar um callback.
+O Bootgly tem dois timers de intervalo. O `Bootgly\ACI\Events\Timer`, visto primeiro, é a
+roda de timers nativa e sem dependências, em segundos inteiros, que funciona em qualquer
+processo. Dentro de um worker de servidor, a event loop também executa
+[timers recorrentes](#timers-recorrentes-na-event-loop) em frações de segundo.
+
+Os callbacks do `Timer` são locais ao processo e cooperativos: a event loop despacha `tick()`,
+portanto código bloqueante da aplicação pode atrasar um callback.
 
 ```php
 use Bootgly\ACI\Events\Timer;
@@ -78,7 +82,102 @@ um supervisor obrigatório depois do último reset comum ou aninhado limitado se
 API pública de observers em um caminho prioritário sem bound. Os IDs dos observers são positivos
 e não são reutilizados enquanto o observer estiver vivo ou representado no snapshot do despacho.
 
+## Timers recorrentes na event loop
+
+Dentro de um worker de servidor, a própria event loop pode executar um callback em um intervalo
+fixo — em frações de segundo, no relógio monotônico, sem nenhum sinal envolvido. A loop oferece
+isso como uma capacidade opcional, `Bootgly\ACI\Events\Repeating`, então verifique antes de
+usar:
+
+```php
+use Bootgly\ACI\Events\Repeating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+$Loop = HTTP_Server_CLI::$Event;
+
+if ($Loop instanceof Repeating) {
+   $id = $Loop->repeat(0.25, static function (): void {
+      // a cada 250 ms, na event loop deste worker
+   });
+
+   // depois — pare o timer
+   $Loop->cancel($id);
+}
+```
+
+A loop nativa (`Bootgly\WPI\Events\Select`) implementa `Repeating`. Registre a partir de
+código que roda no worker — um handler de rota, por exemplo — porque cada worker tem a sua
+própria loop. O objeto da loop já existe no processo master, onde ela nunca roda: um timer
+registrado ali, em código de boot, não faz nada no master e é copiado para cada worker criado
+depois, onde cada worker roda a sua própria cópia.
+
+**A agenda é uma grade fixa.** A execução `k` vence em `registro + k × intervalo`: nem o tempo
+que o callback leva nem a latência da loop se acumulam como drift. Quando a loop chega atrasada
+a uma execução — um handler bloqueante a segurou por um segundo — o callback roda **uma vez**, os
+pontos da grade que passaram nesse meio-tempo são pulados, e a próxima execução é o primeiro
+ponto da grade depois dela. Um timer atrasado nunca dispara uma rajada.
+
+**Cancelamento.** O identificador vem da mesma sequência do `defer()` de disparo único e é
+parado com o mesmo `cancel()`, que responde `true` uma única vez. Um callback pode cancelar a si
+mesmo ou qualquer outro timer; um callback recorrente cancelado antes na mesma passada não roda
+nessa passada, e um registrado dentro de um callback roda pela primeira vez em uma passada
+posterior.
+
+**Falhas.** Um callback que lança não para a loop nem a sua própria agenda: a falha é reportada
+via `Throwables::notify()` com o contexto `['origin' => 'loop.repeat', 'id' => $id]`, e o
+callback roda de novo no próximo período.
+
+**Intervalos.** Um intervalo zero, negativo, `NAN` ou infinito é recusado com uma
+`InvalidArgumentException`, assim como um maior que `Select::HORIZON`. Um intervalo menor que
+`Select::RESOLUTION` (um milissegundo) é elevado até ele, de modo que nenhum intervalo
+transforma a loop em um busy loop.
+
+Os callbacks rodam na loop, entre dois despachos de I/O: mantenha-os curtos. Eles são locais ao
+processo — um timer registrado em um worker não existe em outro. Uma passada da loop custa os
+timers que venceram, não os que estão esperando, então milhares de timers com vencimentos
+diferentes não são problema; o que eles custam são os seus callbacks.
+
+### Quando o `Timer` ainda se aplica
+
+- **Fora da loop de um worker** — o processo master nunca roda a sua loop, e um comando ou um
+  script não tem nenhuma: use o `Timer`.
+- **Em uma loop sem a capacidade** — uma loop customizada que implementa apenas `Scheduler`
+  continua funcionando; `instanceof Repeating` é `false` nela, e o `Timer` é o fallback.
+- **Segundos inteiros bastam e o código já o usa** — o `Timer` mantém a sua API.
+
 ## Referência
+
+### `Repeating`
+
+```php
+public function repeat (float $interval, Closure $Callback): int
+```
+
+Registra `$Callback` para rodar a cada `$interval` segundos no relógio monotônico e retorna o
+seu identificador. Lança `InvalidArgumentException` para um intervalo zero, negativo, não
+numérico, infinito ou maior que o horizonte da loop.
+
+```php
+public function cancel (int $ID): bool
+```
+
+Herdado de `Bootgly\ACI\Events\Scheduler`: para um timer recorrente (ou cancela um `defer()`
+de disparo único antes de ele disparar). Retorna `false` para um identificador desconhecido ou
+já parado.
+
+### `Select`
+
+```php
+public const float RESOLUTION = 0.001;
+```
+
+Menor intervalo recorrente, em segundos; o `repeat()` eleva um intervalo menor até ele.
+
+```php
+public const float HORIZON = 1_000_000_000.0;
+```
+
+Maior intervalo recorrente, em segundos (cerca de 31 anos); o `repeat()` recusa um maior.
 
 ### `Timer`
 

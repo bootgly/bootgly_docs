@@ -35,8 +35,25 @@ $Router->route('/events', function (Request $Request, Response $Response): Respo
 }, GET);
 ```
 
-A closure `Tick` é acionada pelo timer do servidor — uma chamada a cada `interval`
-segundos até o stream terminar. Você também pode enviar eventos diretamente depois do
+A closure `Tick` é acionada pela event loop do servidor — uma chamada a cada `interval`
+segundos até o stream terminar. O intervalo pode ser uma fração de segundo, para um contador
+ao vivo ou uma barra de progresso que anda várias vezes por segundo:
+
+```php
+$SSE->open(
+   Tick: static function (SSE $SSE): void {
+      $SSE->send(data: ['at' => microtime(true)], event: 'tick');
+   },
+   interval: 0.1            // executa o Tick a cada 100 ms
+);
+```
+
+O `Tick` roda em uma grade fixa contada a partir do `open()`, qualquer que seja o `heartbeat`.
+Se o worker ficou ocupado por mais tempo que o intervalo, o `Tick` roda uma vez quando a loop
+volta — nunca é repetido para compensar. Mantenha a closure curta: ela roda na event loop do
+worker, entre dois despachos de I/O.
+
+Você também pode enviar eventos diretamente depois do
 `open()` (ou de onde mantiver o handle `$SSE`) — `send()` escreve direto para o cliente:
 
 ```php
@@ -170,15 +187,24 @@ seu próprio pub/sub por enquanto.
 ## Reference
 
 ```php
-public function open (null|Closure $Tick = null, int $interval = 1, null|Closure $Close = null): self
+public function open (null|Closure $Tick = null, int|float $interval = 1, null|Closure $Close = null): self
 ```
 
 Abre o event stream: escreve o head `text/event-stream` (preservando headers já definidos
 na Response), marca a Response como deferred e instala o supervisor. `$Tick` roda a cada
-`$interval` segundos (segundos inteiros — a granularidade do timer do servidor); `$Close`
-roda exatamente uma vez no teardown. Idempotente: uma segunda chamada retorna o mesmo
-resource sem alterações. Em requisições HTTP/1.0 recusa com `505` (respostas
-interim/streams sem tamanho são HTTP/1.1+).
+`$interval` segundos; `$Close` roda exatamente uma vez no teardown. Idempotente: uma
+segunda chamada retorna o mesmo resource sem alterações. Em requisições HTTP/1.0 recusa com
+`505` (respostas interim/streams sem tamanho são HTTP/1.1+).
+
+`$interval` aceita uma fração de segundo (`0.1` são 100 ms) até um milissegundo — a
+resolução dos [timers recorrentes](/guide/timers) da event loop. Um intervalo zero, negativo
+ou não finito significa um segundo; um maior do que a loop consegue agendar
+(`Select::HORIZON`, cerca de 31 anos) nunca vence, então o stream abre e segue aberto sem o
+seu `Tick`. Em uma event loop customizada sem timers recorrentes o
+`Tick` divide com o supervisor o `Timer` de segundos inteiros: um intervalo fracionário é
+arredondado **para cima** até o próximo segundo (`0.1` → 1 s, `1.5` → 2 s) e o `Tick` roda na
+primeira execução do supervisor depois que o intervalo passou desde a anterior. Uma classe que
+sobrescreve `open()` precisa alargar o parâmetro `$interval` para `int|float`.
 
 ```php
 public function send (mixed $data, null|string $event = null, null|string $id = null): bool

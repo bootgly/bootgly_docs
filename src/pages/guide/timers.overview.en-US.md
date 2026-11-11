@@ -1,7 +1,11 @@
 # Interval Timers
 
-`Bootgly\ACI\Events\Timer` is the dependency-free interval timer wheel used by Bootgly
-workers. Timers are process-local and cooperative: the event loop dispatches `tick()`, so
+Bootgly has two interval timers. `Bootgly\ACI\Events\Timer`, covered first, is the
+dependency-free timer wheel in whole seconds that works in any process. Inside a server worker,
+the event loop also runs [recurring timers](#recurring-timers-on-the-event-loop) in fractions of
+a second.
+
+`Timer` callbacks are process-local and cooperative: the event loop dispatches `tick()`, so
 blocking application code can delay a due callback.
 
 ```php
@@ -76,7 +80,99 @@ supervisor recover after the last bounded ordinary or nested reset without makin
 observer API an unbounded priority path. Observer identifiers are positive and are not reused
 while the observer is live or represented in the active dispatch snapshot.
 
+## Recurring timers on the event loop
+
+Inside a server worker, the event loop itself can run a callback at a fixed interval — in
+fractions of a second, on the monotonic clock, with no signal involved. The loop offers it as
+an optional capability, `Bootgly\ACI\Events\Repeating`, so check for it before use:
+
+```php
+use Bootgly\ACI\Events\Repeating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+$Loop = HTTP_Server_CLI::$Event;
+
+if ($Loop instanceof Repeating) {
+   $id = $Loop->repeat(0.25, static function (): void {
+      // every 250 ms, on this worker's event loop
+   });
+
+   // later — stop it
+   $Loop->cancel($id);
+}
+```
+
+The built-in loop (`Bootgly\WPI\Events\Select`) implements `Repeating`. Register from code
+that runs in the worker — a route handler, for example — because each worker has its own loop.
+The loop object already exists in the master process, where it never runs: a timer registered
+there, in boot code, does nothing in the master and is copied into every worker forked
+afterwards, where each worker runs its own copy.
+
+**The schedule is a fixed grid.** Run `k` is due at `registration + k × interval`: neither the
+time the callback takes nor the latency of the loop adds up as drift. When the loop reaches a
+run late — a blocking handler held it for a second — the callback runs **once**, the grid points
+that passed meanwhile are skipped, and the next run is the first grid point after it. A late
+timer never fires a burst.
+
+**Cancelling.** The identifier comes from the same sequence as the one-shot `defer()` and is
+stopped with the same `cancel()`, which answers `true` once. A callback may cancel itself or any
+other timer; a recurring callback cancelled earlier in the same pass does not run in that pass,
+and one registered inside a callback first runs on a later pass.
+
+**Failures.** A callback that throws does not stop the loop nor its own schedule: the failure is
+reported through `Throwables::notify()` with the context `['origin' => 'loop.repeat', 'id' => $id]`,
+and the callback runs again on its next period.
+
+**Intervals.** A zero, negative, `NAN` or infinite interval is refused with an
+`InvalidArgumentException`, as is one longer than `Select::HORIZON`. An interval shorter than
+`Select::RESOLUTION` (one millisecond) is raised to it, so no interval can turn the loop into a
+busy loop.
+
+Callbacks run on the loop, between two I/O dispatches: keep them short. They are process-local
+— a timer registered in one worker does not exist in another. A pass of the loop costs the
+timers that are due, not the ones that are waiting, so thousands of timers with different
+deadlines are fine; what they cost is their callbacks.
+
+### When `Timer` still applies
+
+- **Outside a worker loop** — the master process never runs its loop, and a command or a
+  script has none: use `Timer`.
+- **On a loop without the capability** — a custom loop that implements only `Scheduler` keeps
+  working; `instanceof Repeating` is `false` there, and `Timer` is the fallback.
+- **Whole seconds are enough and the code already uses it** — `Timer` keeps its API.
+
 ## Reference
+
+### `Repeating`
+
+```php
+public function repeat (float $interval, Closure $Callback): int
+```
+
+Registers `$Callback` to run every `$interval` seconds on the monotonic clock and returns its
+identifier. Throws `InvalidArgumentException` for an interval that is zero, negative, not a
+number, infinite or longer than the loop's horizon.
+
+```php
+public function cancel (int $ID): bool
+```
+
+Inherited from `Bootgly\ACI\Events\Scheduler`: stops a recurring timer (or cancels a one-shot
+`defer()` before it fires). Returns `false` for an identifier that is unknown or already stopped.
+
+### `Select`
+
+```php
+public const float RESOLUTION = 0.001;
+```
+
+Shortest recurring interval, in seconds; `repeat()` raises a shorter one up to it.
+
+```php
+public const float HORIZON = 1_000_000_000.0;
+```
+
+Longest recurring interval, in seconds (about 31 years); `repeat()` refuses a longer one.
 
 ### `Timer`
 

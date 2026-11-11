@@ -10,6 +10,8 @@ Built-in resources are available lazily on every response:
 - `$Response->JSONP` - sends JSONP through the normal response sender.
 - `$Response->Plaintext` - sends plain text and sets the `text/plain` media type.
 - `$Response->Pre` - formats debug output for preformatted HTML.
+- `$Response->SSE` - opens a `text/event-stream` and pushes events; its `Tick` interval accepts
+  fractions of a second. See the [SSE guide](/guide/sse).
 - `$Response->View` - renders project views.
 
 Project resources are registered once — through a `Response\Configs` handed to
