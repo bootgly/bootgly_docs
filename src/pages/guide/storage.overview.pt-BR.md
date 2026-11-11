@@ -13,8 +13,10 @@ memória do PHP.
 
 > [!NOTE]
 > A pasta de dados de runtime do Bootgly é `storage/` (renomeada de `storage/`). Seu caminho
-> absoluto é a constante `BOOTGLY_STORAGE_DIR`, que você pode pré-definir antes do boot (por
-> exemplo, apontando para um volume montado). O disk **local** padrão é ancorado nela. Os
+> absoluto é a constante `BOOTGLY_STORAGE_DIR`. Para movê-la (por exemplo, para um volume
+> montado), defina a variável de ambiente `BOOTGLY_STORAGE_DIR` — validada no boot, veja
+> **[Mover o diretório de storage](/guide/docker/overview/#mover-o-diretório-de-storage)** —
+> ou pré-defina a constante num launcher seu. O disk **local** padrão é ancorado nela. Os
 > uploads HTTP são gravados em `BOOTGLY_UPLOADS_DIR`, sempre `BOOTGLY_STORAGE_DIR .
 > 'temp/files/downloaded/'`: o servidor é dono dessa pasta e apaga os arquivos dela a cada start,
 > então ela segue o caminho do storage e não pode ser pré-definida (o boot lança uma

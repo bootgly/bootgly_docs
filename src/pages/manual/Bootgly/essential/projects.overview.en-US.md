@@ -426,6 +426,8 @@ WantedBy=multi-user.target
 
 The start-rate lines follow `Wants=` in the real unit (`StartLimitIntervalSec=300`, `StartLimitBurst=10`): a service that keeps dying stops being retried after ten starts in five minutes, and `systemctl reset-failed` arms it again.
 
+A service starts with none of your shell's variables. When `startup` itself booted with the storage directory moved by the `BOOTGLY_STORAGE_DIR` environment variable, the unit carries it — `Environment="BOOTGLY_STORAGE_DIR=/data/storage"`, right before `ExecStart=` — so the service keeps its state where the commands you run by hand look for it. Run `startup` again after changing the value: the unit keeps the one it was written with. With the storage moved, the unit is staged under `<BOOTGLY_STORAGE_DIR>/systemd/` — the command prints the path. Run `startup` as the account the service runs as and install with the `sudo` commands it prints: `sudo` drops the variable, so `sudo php bootgly … startup` writes a unit without it, and a root boot given the variable refuses a storage directory that belongs to another account.
+
 ### `project unstartup`
 
 Removes what `startup` installed: the units are disabled and stopped, their files deleted, systemd reloaded. Root only — anyone else gets the commands:

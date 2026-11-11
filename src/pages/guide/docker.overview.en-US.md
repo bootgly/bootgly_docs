@@ -194,6 +194,130 @@ Two consequences worth stating plainly:
 The first-run marker is `projects/.initialized`, so it lives in the volume too: mount
 `projects/` and the wizard opens once, on the first run; later bare runs print the CLI help.
 
+### A volume the platform mounts as root
+
+Hosting platforms and orchestrators ignore the `VOLUME` declarations of an image and mount a
+volume of their own over `/bootgly/storage`: empty, and owned by root. The layout the image
+created at build time stays under the mount, out of reach.
+
+From 1.3.0 on, the entrypoint of the kit image prepares that directory on every start as root,
+before the command runs:
+
+```text
+/bootgly/storage                                   root      0755   as mounted — never changed
+├── cache/ locks/ pids/ queues/ schedule/ temp/ tests/   root      0755
+├── logs/                                                bootgly   0755
+└── sessions/                                            bootgly   0700
+```
+
+So the only thing to configure is the mount path. To see it on your machine, mount a volume
+Docker does not seed from the image (`nocopy`):
+
+```bash :toolbar="true";
+docker run --rm -p 8082:8082 \
+  -v storage:/bootgly/storage:nocopy \
+  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+```
+
+What the preparation does, and what it never does:
+
+- **It creates only what is missing.** A directory that already exists is left as found —
+  owner, mode and contents — so a second start changes nothing.
+- **Only `logs/` and `sessions/` go to `bootgly`**, the account the workers run as, and only
+  when the entrypoint has just created them. Nothing changes owner recursively and nothing
+  through a link: the workers own what is inside those two directories.
+- **It mirrors the kit image, for the kit's account.** The mount ends up as the image's own
+  `storage/` is. A project whose server Configs demote to another `user:` then meets a
+  `sessions/` that is not that account's, and the server refuses to start over it — as it
+  does over the image's own `storage/`. Up to 1.2.0 the server created both directories
+  itself on an empty mount, so that configuration started there. An image layer never
+  reaches a mount: hand the two directories over on the volume itself, once (here to
+  `www-data`):
+
+```bash
+docker run --rm -v storage:/bootgly/storage --entrypoint sh bootgly/bootgly.kit -c \
+  'cd /bootgly/storage && mkdir -p logs && mkdir -p -m 0700 sessions && chown www-data: logs sessions'
+```
+
+- **An image without a `bootgly` account gets nothing prepared** — the framework image: its
+  server creates what it needs for the account its project names.
+- **The storage root, `pids/` and `cache/` stay root's** — root-run code reads what `cache/`
+  holds.
+- **A link or a file where a directory is expected stops the container**, before anything is
+  created, and says which one:
+
+```
+bootgly: storage is not prepared: symbolic link: /bootgly/storage/sessions
+```
+
+- **It prepares only a storage root that root owns and that its group and others cannot
+  write.** Any other — a host directory of your own, bind-mounted as in the previous
+  section — is left as it is and behaves as described there. A bind source Docker had to
+  create is root's, and is prepared like a volume.
+- **It is skipped under `--user`.** A container that does not start as root cannot give a
+  directory away: mount a storage that uid already owns.
+
+### Move the storage directory
+
+When a volume cannot be mounted at `/bootgly/storage`, name its path in the
+`BOOTGLY_STORAGE_DIR` environment variable:
+
+```bash :toolbar="true";
+docker run --rm -p 8082:8082 \
+  -e BOOTGLY_STORAGE_DIR=/data/storage \
+  -v storage:/data/storage \
+  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+```
+
+The entrypoint prepares that directory the same way — once the framework has accepted it —
+and logs, PIDs, sessions, locks and cache all move there. The variable is the framework's, not the image's: every `bootgly` command reads
+it, in a container or on a host.
+
+The directory is validated at boot, before anything else runs. It must be:
+
+- an **absolute, canonical path** — no `.` or `..` segment, no doubled separator, no symbolic
+  link anywhere in it (one trailing `/` is accepted);
+- an **existing real directory** — it is never created for you, so a mistyped path cannot
+  become a directory that dies with the container;
+- **owned by root or by the user the process runs as**, and not writable by its group or by
+  others;
+- **under ancestors nobody else can use to replace it**: each one owned by root or by that
+  user, and not writable by its group or by others unless it is sticky.
+
+A value that fails a check stops the boot with exit status `1` and one line on stderr that
+names the check and the path. It never falls back to the default directory:
+
+```
+Bootgly: BOOTGLY_STORAGE_DIR from the environment is refused: group/world-writable (0775): /data/storage
+```
+
+An empty value is refused too: a `${VARIABLE}` a Compose file could not resolve would
+otherwise send the data, in silence, to the container's own filesystem.
+
+> **Why so strict.** A server launched as root writes its process state there, and root-run
+> commands load compiled templates from it — so a directory another local account controls,
+> or can replace, is that account's code running as root. For the same reason, mind where a
+> privileged launch gets its environment from. `sudo` drops the variable by default: do not
+> add it to `env_keep`, and do not grant `SETENV`, for an account you would not hand root to.
+> In a systemd unit, set it with `Environment=` in the unit root owns, never through an
+> `EnvironmentFile` another account can write.
+
+**Every command needs the same value.** A command started without the variable looks at the
+default directory: `stop`, `status` or `reload` then find no server, and a second `start`
+keeps its own state apart. Three places lose it without a word:
+
+- **`docker exec`** keeps the variables the container was created with (`-e`, Compose
+  `environment:`), not the ones a shell exported later;
+- **`sudo`** drops it — name it on the command itself:
+  `sudo env BOOTGLY_STORAGE_DIR=/data/storage bootgly project MyApp stop`;
+- **a service** starts with none of your shell's variables. `project <Name> startup` writes
+  the variable into the units it generates when the boot took it from the environment; a unit
+  of your own needs its `Environment=` line.
+
+A launcher that defines the `BOOTGLY_STORAGE_DIR` or `BOOTGLY_STORAGE_BASE` constant before
+the framework boots still wins: the variable is then not read. Every refusal is listed in
+[Storage directory refusals](#storage-directory-refusals).
+
 ### Run a server
 
 Pass `-f` to run a server in the **foreground** (headless) — required in containers. Without
@@ -269,6 +393,117 @@ docker build -f Dockerfile --target kit \
   --build-arg BOOTGLY_VERSION=1.0.0 \
   --build-arg BOOTGLY_KIT_REF=main \
   -t bootgly.kit:main .
+```
+
+## Deploy to production
+
+In production the code is part of the image and only the runtime state lives in a volume. Four
+pieces: an image of your own built on the kit, the storage volume, the migrations as a step of
+the deploy, and the health probe.
+
+### Build your image
+
+Keep the `projects/` directory of your kit — the project registry `Bootgly.projects.php` and
+the project folders — next to a `Dockerfile`:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+FROM bootgly/bootgly.kit:1.3.0
+
+# The code is baked in: production mounts no volume over /bootgly/projects
+COPY projects/ /bootgly/projects/
+
+# The health probe the orchestrator reads (see below)
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s \
+  CMD curl -fsS "http://127.0.0.1:${PORT:-8080}/health" || exit 1
+
+# The server, in the foreground
+CMD ["project", "MyApp", "start", "-f"]
+```
+
+```bash
+docker build -t my-app .
+```
+
+Pin an exact kit version: a deploy must not change because `latest` moved. Keep secrets out
+of the image — leave every `.env` file and every repository out of the build context with a
+`.dockerignore` beside the `Dockerfile`, and set the same keys as environment variables at
+run time: a config reads the process environment before any `.env` file.
+
+```
+**/.env*
+**/.git
+```
+
+### Mount the storage volume
+
+Sessions, logs, locks and queues must survive a redeploy, so `storage/` is the one volume:
+
+```bash
+docker run -d --name my-app -p 8080:8080 \
+  -v my-app-storage:/bootgly/storage \
+  my-app
+```
+
+On a platform, mount its volume at `/bootgly/storage` — it arrives empty and root-owned, and
+the entrypoint prepares it (see [A volume the platform mounts as
+root](#a-volume-the-platform-mounts-as-root)). Mount the real volume there, never a link to
+it: the framework refuses a storage directory that is a symbolic link. If the platform only
+mounts elsewhere, set `BOOTGLY_STORAGE_DIR` to that path.
+
+### Run the migrations before the deploy
+
+Migrations are a step of the deploy, not of the server start: every replica would race to
+apply them. Run them once, with the image that is about to be deployed, and start the servers
+only when the command exits `0`:
+
+```bash
+docker run --rm \
+  -e DB_HOST=db.internal -e DB_NAME=app -e DB_USER=app -e DB_PASS \
+  my-app project MyApp migrate up
+```
+
+That is the *pre-deploy* (or *release*) command of a hosting platform, an init container in
+Kubernetes, or a one-off service the server `depends_on` with
+`condition: service_completed_successfully` in Compose. The workflow itself is in
+**[Database migrations](/guide/database-migrations/overview/)**.
+
+### Wire the health probe
+
+Turn on the built-in health endpoint in the server Configs of the project — it answers before
+any middleware, so rate limiting or authentication can never fail a probe:
+
+```php
+new Configs(
+   host: '0.0.0.0',
+   port: getenv('PORT') ? (int) getenv('PORT') : 8080,
+   user: 'bootgly',
+   group: 'bootgly',
+   health: '/health',
+)
+```
+
+The `HEALTHCHECK` of the Dockerfile above then reports the container as `healthy` once the
+server answers, and a platform probe takes the same path:
+
+```bash
+curl -s http://127.0.0.1:8080/health
+# {"status":"ok"}
+```
+
+See **[Observability](/guide/observability/overview/)** for what the endpoint answers and
+when.
+
+### A PostgreSQL client, when you need one
+
+The kit image ships no database client: an application talks to its database through the
+framework. If your deploy needs `psql` — a one-time role or schema bootstrap, an operations
+shell — add one line to your image:
+
+```dockerfile
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-client \
+ && rm -rf /var/lib/apt/lists/*
 ```
 
 ## Build on the framework image
@@ -495,7 +730,8 @@ The framework image exposes the same set plus `8084` (the benchmark pair `8083`/
 
 ```text
 /bootgly/projects   VOLUME (kit image) — your projects + the .initialized marker
-/bootgly/storage    VOLUME (kit image) — logs, PIDs, cache, locks, queues, temp, tests
+/bootgly/storage    VOLUME (kit image) — logs, PIDs, cache, locks, queues, temp, tests;
+                    moved by BOOTGLY_STORAGE_DIR
 /bootgly            WORKDIR · symlinked to /usr/local/bin/bootgly
 /bootgly/Bootgly    the framework, inside the kit image
 /bootgly_benchmarks the benchmark cases (benchmark images only)
@@ -507,6 +743,12 @@ The framework image exposes the same set plus `8084` (the benchmark pair `8083`/
 ```text
 PORT              Overrides a server's listening port
 AI_AGENT          Any non-empty value selects machine-readable test output
+BOOTGLY_STORAGE_DIR  Moves the storage directory (default: <kit>/storage). Read by the
+                  framework at boot — in or out of a container — and by the entrypoint.
+                  An absolute, canonical path to an existing real directory that root
+                  or the running user owns and nobody else can write or replace; an
+                  unsafe or empty value stops the boot, with no fallback. A constant
+                  of the same name defined before the boot wins
 BOOTGLY_DOCKER    Set to 1 by both published images; it only changes the wording of the
                   `kit` refusal (releases are image tags here). Nothing else reads it —
                   which image you are in is decided by the layout on disk, so setting
@@ -515,6 +757,33 @@ DB_HOST DB_PORT   Benchmark images only — default to the container's local
 DB_NAME DB_USER   PostgreSQL, overridable with `docker run -e`
 DB_PASS
 ```
+
+### Storage directory refusals
+
+What a boot with `BOOTGLY_STORAGE_DIR` in the environment prints after `Bootgly:
+BOOTGLY_STORAGE_DIR from the environment is refused:`, in the order the checks run. The first
+check that fails ends the boot.
+
+| Refusal | The value |
+|---|---|
+| `empty value` | is set, and empty |
+| `not an absolute path: <value>` | does not start with `/` |
+| `the filesystem root: <value>` | is `/` |
+| ``not canonical (an empty, `.` or `..` segment): <value>`` | has a `.` or `..` segment, a doubled separator or more than one trailing `/` |
+| `its owner cannot be verified (the posix extension is missing): <path>` | cannot be checked by this PHP |
+| `does not exist or cannot be inspected: <path>` | names nothing, or something under a directory the process cannot search |
+| `symbolic link: <path>` | names a link |
+| `not a directory: <path>` | names a file |
+| `not canonical (resolves to <target>): <path>` | goes through a symbolic link |
+| `owner <uid> is neither the effective user (<uid>) nor root: <path>` | belongs to another account |
+| `group/world-writable (<mode>): <path>` | can be written by its group or by others |
+| `ancestor cannot be inspected: <ancestor>` | sits under a directory the process cannot inspect |
+| `ancestor owner <uid> is neither the effective user (<uid>) nor root: <ancestor>` | sits under a directory of another account — in a user namespace, any account it does not map, the host's root included |
+| `ancestor group/world-writable without the sticky bit (<mode>): <ancestor>` | sits under a directory its group or others can write |
+
+The entrypoint of the kit image stops a root start with `bootgly: storage is not prepared:`
+followed by `symbolic link: <path>`, `not a directory: <path>`, `cannot be inspected: <path>`,
+`cannot create: <path>` or `cannot give to bootgly: <path>`.
 
 ### Build arguments
 
@@ -562,7 +831,8 @@ User       The image runs as root on purpose: binding :80/:443 — Auto-TLS' HTT
            wizard names it in its `user`/`group` server Configs, and a project with
            none configured takes it by default on a root launch. What root writes
            into a mounted projects/ is handed to the directory's owner; storage/
-           stays the runtime's. `--user` is not a drop-in override: a non-root run
+           stays the runtime's, and a root start prepares one that was mounted
+           empty and root-owned. `--user` is not a drop-in override: a non-root run
            needs both mounted from the host, owned by that uid, and binds no
            privileged port.
 Stop       STOPSIGNAL is SIGTERM and the server drains in flight work, so

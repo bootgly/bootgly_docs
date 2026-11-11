@@ -199,6 +199,130 @@ O marcador de primeira execução é `projects/.initialized`, então ele também
 monte `projects/` e o wizard abre uma vez, na primeira execução; as execuções seguintes sem
 argumentos imprimem a ajuda da CLI.
 
+### Um volume que a plataforma monta como root
+
+Plataformas de hospedagem e orquestradores ignoram as declarações `VOLUME` de uma imagem e
+montam um volume próprio sobre `/bootgly/storage`: vazio e com dono root. O layout que a
+imagem criou no build fica embaixo da montagem, fora de alcance.
+
+A partir da 1.3.0, o entrypoint da imagem do kit prepara esse diretório a cada início como
+root, antes de o comando rodar:
+
+```text
+/bootgly/storage                                   root      0755   como foi montado — nunca alterado
+├── cache/ locks/ pids/ queues/ schedule/ temp/ tests/   root      0755
+├── logs/                                                bootgly   0755
+└── sessions/                                            bootgly   0700
+```
+
+Ou seja, a única coisa a configurar é o caminho da montagem. Para ver isso na sua máquina,
+monte um volume que o Docker não semeia a partir da imagem (`nocopy`):
+
+```bash :toolbar="true";
+docker run --rm -p 8082:8082 \
+  -v storage:/bootgly/storage:nocopy \
+  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+```
+
+O que a preparação faz, e o que ela nunca faz:
+
+- **Cria só o que falta.** Um diretório que já existe fica como foi encontrado — dono, modo e
+  conteúdo —, então um segundo início não muda nada.
+- **Só `logs/` e `sessions/` vão para `bootgly`**, a conta com que os workers rodam, e só
+  quando o entrypoint acabou de criá-los. Nada muda de dono recursivamente e nada através de
+  um link: o que está dentro desses dois diretórios é dos workers.
+- **Espelha a imagem do kit, para a conta do kit.** O mount fica como o `storage/` da própria
+  imagem. Um projeto cujo Configs do servidor rebaixa para outro `user:` encontra então um
+  `sessions/` que não é dessa conta, e o servidor se recusa a iniciar sobre ele — como já faz
+  sobre o `storage/` da própria imagem. Até a 1.2.0 o servidor criava os dois diretórios ele
+  mesmo num mount vazio, então essa configuração iniciava ali. Uma camada da imagem nunca
+  alcança um mount: entregue os dois diretórios no próprio volume, uma vez (aqui para
+  `www-data`):
+
+```bash
+docker run --rm -v storage:/bootgly/storage --entrypoint sh bootgly/bootgly.kit -c \
+  'cd /bootgly/storage && mkdir -p logs && mkdir -p -m 0700 sessions && chown www-data: logs sessions'
+```
+
+- **Uma imagem sem a conta `bootgly` não tem nada preparado** — a imagem do framework: o
+  servidor dela cria o que precisa para a conta que o projeto nomeia.
+- **A raiz do storage, `pids/` e `cache/` continuam sendo do root** — código que roda como
+  root lê o que `cache/` guarda.
+- **Um link ou um arquivo onde se espera um diretório interrompe o container**, antes de
+  qualquer coisa ser criada, e diz qual:
+
+```
+bootgly: storage is not prepared: symbolic link: /bootgly/storage/sessions
+```
+
+- **Só prepara uma raiz de storage que é do root e que grupo e outros não podem escrever.**
+  Qualquer outra — um diretório seu no host, montado como na seção anterior — fica como está
+  e se comporta como descrito lá. Uma origem de bind que o Docker precisou criar é do root, e
+  é preparada como um volume.
+- **É pulada com `--user`.** Um container que não inicia como root não consegue entregar um
+  diretório a outra conta: monte um storage que já seja daquele uid.
+
+### Mover o diretório de storage
+
+Quando o volume não pode ser montado em `/bootgly/storage`, informe o caminho dele na variável
+de ambiente `BOOTGLY_STORAGE_DIR`:
+
+```bash :toolbar="true";
+docker run --rm -p 8082:8082 \
+  -e BOOTGLY_STORAGE_DIR=/data/storage \
+  -v storage:/data/storage \
+  bootgly/bootgly.kit project Demo/HTTP_Server_CLI start -f
+```
+
+O entrypoint prepara esse diretório do mesmo jeito — depois que o framework o aceita —, e
+logs, PIDs, sessões, locks e cache passam a viver lá. A variável é do framework, não da imagem: todo comando `bootgly` a lê, num
+container ou num host.
+
+O diretório é validado no boot, antes de qualquer outra coisa rodar. Ele precisa ser:
+
+- um **caminho absoluto e canônico** — sem segmento `.` ou `..`, sem separador duplicado, sem
+  link simbólico em nenhum ponto (uma `/` final é aceita);
+- um **diretório real que já existe** — ele nunca é criado para você, então um caminho
+  digitado errado não vira um diretório que morre com o container;
+- **do root ou do usuário com que o processo roda**, sem permissão de escrita para o grupo nem
+  para outros;
+- **sob ancestrais que ninguém mais consegue usar para substituí-lo**: cada um do root ou
+  daquele usuário, e sem escrita para grupo ou outros, a menos que tenha o sticky bit.
+
+Um valor que falha numa verificação interrompe o boot com status de saída `1` e uma linha no
+stderr que nomeia a verificação e o caminho. Nunca há fallback para o diretório padrão:
+
+```
+Bootgly: BOOTGLY_STORAGE_DIR from the environment is refused: group/world-writable (0775): /data/storage
+```
+
+Um valor vazio também é recusado: um `${VARIAVEL}` que o Compose não conseguiu resolver
+mandaria os dados, em silêncio, para o sistema de arquivos do próprio container.
+
+> **Por que tanto rigor.** Um servidor lançado como root grava ali o estado dos processos, e
+> comandos que rodam como root carregam templates compilados de lá — então um diretório que
+> outra conta local controla, ou consegue substituir, é código dessa conta rodando como root.
+> Pelo mesmo motivo, atenção a de onde um lançamento privilegiado tira o ambiente. O `sudo`
+> descarta a variável por padrão: não a inclua em `env_keep` nem conceda `SETENV` a uma conta
+> a quem você não daria root. Numa unit do systemd, defina-a com `Environment=` na unit que é
+> do root, nunca por um `EnvironmentFile` que outra conta consegue escrever.
+
+**Todo comando precisa do mesmo valor.** Um comando iniciado sem a variável olha para o
+diretório padrão: `stop`, `status` ou `reload` não encontram servidor nenhum, e um segundo
+`start` guarda o próprio estado à parte. Três lugares a perdem sem avisar:
+
+- **`docker exec`** mantém as variáveis com que o container foi criado (`-e`, `environment:`
+  do Compose), não as que um shell exportou depois;
+- **`sudo`** a descarta — nomeie-a no próprio comando:
+  `sudo env BOOTGLY_STORAGE_DIR=/data/storage bootgly project MyApp stop`;
+- **um serviço** inicia sem nenhuma variável do seu shell. O `project <Name> startup` grava a
+  variável nos units que gera quando o boot a tomou do ambiente; um unit seu precisa da
+  própria linha `Environment=`.
+
+Um launcher que define a constante `BOOTGLY_STORAGE_DIR` ou `BOOTGLY_STORAGE_BASE` antes de o
+framework iniciar continua prevalecendo: a variável nem é lida. Todas as recusas estão em
+[Recusas do diretório de storage](#recusas-do-diretório-de-storage).
+
 ### Rodar um servidor
 
 Passe `-f` para rodar um servidor em **primeiro plano** (headless) — necessário em
@@ -275,6 +399,118 @@ docker build -f Dockerfile --target kit \
   --build-arg BOOTGLY_VERSION=1.0.0 \
   --build-arg BOOTGLY_KIT_REF=main \
   -t bootgly.kit:main .
+```
+
+## Deploy em produção
+
+Em produção o código faz parte da imagem e só o estado de runtime vive num volume. São quatro
+peças: uma imagem sua construída sobre o kit, o volume de storage, as migrations como etapa do
+deploy e o health probe.
+
+### Construa a sua imagem
+
+Mantenha o diretório `projects/` do seu kit — o registro de projetos `Bootgly.projects.php` e
+as pastas dos projetos — ao lado de um `Dockerfile`:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+FROM bootgly/bootgly.kit:1.3.0
+
+# O código vai dentro da imagem: produção não monta volume sobre /bootgly/projects
+COPY projects/ /bootgly/projects/
+
+# O health probe que o orquestrador lê (veja abaixo)
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s \
+  CMD curl -fsS "http://127.0.0.1:${PORT:-8080}/health" || exit 1
+
+# O servidor, em foreground
+CMD ["project", "MyApp", "start", "-f"]
+```
+
+```bash
+docker build -t my-app .
+```
+
+Fixe uma versão exata do kit: um deploy não pode mudar porque a `latest` andou. Mantenha os
+segredos fora da imagem — deixe todo arquivo `.env` e todo repositório fora do build context
+com um `.dockerignore` ao lado do `Dockerfile`, e defina as mesmas chaves como variáveis de
+ambiente na execução: um config lê o ambiente do processo antes de qualquer arquivo `.env`.
+
+```
+**/.env*
+**/.git
+```
+
+### Monte o volume de storage
+
+Sessões, logs, locks e filas precisam sobreviver a um redeploy, então `storage/` é o único
+volume:
+
+```bash
+docker run -d --name my-app -p 8080:8080 \
+  -v my-app-storage:/bootgly/storage \
+  my-app
+```
+
+Numa plataforma, monte o volume dela em `/bootgly/storage` — ele chega vazio e com dono root,
+e o entrypoint o prepara (veja [Um volume que a plataforma monta como
+root](#um-volume-que-a-plataforma-monta-como-root)). Monte o volume de verdade ali, nunca um
+link para ele: o framework recusa um diretório de storage que seja link simbólico. Se a
+plataforma só monta em outro lugar, aponte `BOOTGLY_STORAGE_DIR` para esse caminho.
+
+### Rode as migrations antes do deploy
+
+Migrations são uma etapa do deploy, não do início do servidor: todas as réplicas disputariam
+para aplicá-las. Rode uma vez, com a imagem que está prestes a entrar no ar, e só inicie os
+servidores quando o comando sair com `0`:
+
+```bash
+docker run --rm \
+  -e DB_HOST=db.internal -e DB_NAME=app -e DB_USER=app -e DB_PASS \
+  my-app project MyApp migrate up
+```
+
+É o comando de *pre-deploy* (ou *release*) de uma plataforma de hospedagem, um init container
+no Kubernetes, ou um serviço avulso do qual o servidor depende (`depends_on` com
+`condition: service_completed_successfully`) no Compose. O fluxo em si está em
+**[Migrations de banco](/guide/database-migrations/overview/)**.
+
+### Ligue o health probe
+
+Ative o endpoint de health nativo nos Configs do servidor do projeto — ele responde antes de
+qualquer middleware, então rate limit ou autenticação nunca derrubam um probe:
+
+```php
+new Configs(
+   host: '0.0.0.0',
+   port: getenv('PORT') ? (int) getenv('PORT') : 8080,
+   user: 'bootgly',
+   group: 'bootgly',
+   health: '/health',
+)
+```
+
+O `HEALTHCHECK` do Dockerfile acima passa então a marcar o container como `healthy` assim que
+o servidor responde, e o probe de uma plataforma usa o mesmo caminho:
+
+```bash
+curl -s http://127.0.0.1:8080/health
+# {"status":"ok"}
+```
+
+Veja em **[Observabilidade](/guide/observability/overview/)** o que o endpoint responde e
+quando.
+
+### Um cliente PostgreSQL, quando você precisar
+
+A imagem do kit não traz cliente de banco: uma aplicação fala com o banco pelo framework. Se o
+seu deploy precisa do `psql` — um bootstrap único de role ou schema, um shell de operação —,
+acrescente uma linha à sua imagem:
+
+```dockerfile
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-client \
+ && rm -rf /var/lib/apt/lists/*
 ```
 
 ## Construir sobre a imagem do framework
@@ -504,7 +740,8 @@ A imagem do framework expõe o mesmo conjunto mais a `8084` (o par de benchmark 
 
 ```text
 /bootgly/projects   VOLUME (imagem do kit) — seus projetos + o marcador .initialized
-/bootgly/storage    VOLUME (imagem do kit) — logs, PIDs, cache, locks, queues, temp, tests
+/bootgly/storage    VOLUME (imagem do kit) — logs, PIDs, cache, locks, queues, temp, tests;
+                    movido por BOOTGLY_STORAGE_DIR
 /bootgly            WORKDIR · symlink em /usr/local/bin/bootgly
 /bootgly/Bootgly    o framework, dentro da imagem do kit
 /bootgly_benchmarks os casos de benchmark (apenas nas imagens de benchmark)
@@ -516,6 +753,12 @@ A imagem do framework expõe o mesmo conjunto mais a `8084` (o par de benchmark 
 ```text
 PORT              Sobrescreve a porta de escuta de um servidor
 AI_AGENT          Qualquer valor não vazio seleciona a saída de testes legível por máquina
+BOOTGLY_STORAGE_DIR  Move o diretório de storage (padrão: <kit>/storage). Lida pelo
+                  framework no boot — dentro ou fora de um container — e pelo entrypoint.
+                  Um caminho absoluto e canônico para um diretório real que já existe,
+                  do root ou do usuário em execução, que ninguém mais consegue escrever
+                  ou substituir; um valor inseguro ou vazio interrompe o boot, sem
+                  fallback. Uma constante de mesmo nome definida antes do boot prevalece
 BOOTGLY_DOCKER    Definida como 1 pelas duas imagens publicadas; muda apenas a redação da recusa
                   do `kit` (aqui, releases são tags de imagem). Nada mais lê essa variável —
                   em qual imagem você está é decidido pelo layout em disco, então defini-la
@@ -524,6 +767,33 @@ DB_HOST DB_PORT   Apenas nas imagens de benchmark — apontam para o PostgreSQL 
 DB_NAME DB_USER   do container e podem ser sobrescritas com `docker run -e`
 DB_PASS
 ```
+
+### Recusas do diretório de storage
+
+O que um boot com `BOOTGLY_STORAGE_DIR` no ambiente imprime depois de `Bootgly:
+BOOTGLY_STORAGE_DIR from the environment is refused:`, na ordem em que as verificações rodam.
+A primeira que falha encerra o boot.
+
+| Recusa | O valor |
+|---|---|
+| `empty value` | está definido, e vazio |
+| `not an absolute path: <value>` | não começa com `/` |
+| `the filesystem root: <value>` | é `/` |
+| ``not canonical (an empty, `.` or `..` segment): <value>`` | tem um segmento `.` ou `..`, um separador duplicado ou mais de uma `/` final |
+| `its owner cannot be verified (the posix extension is missing): <path>` | não pode ser verificado por este PHP |
+| `does not exist or cannot be inspected: <path>` | não aponta para nada, ou aponta para algo sob um diretório que o processo não consegue percorrer |
+| `symbolic link: <path>` | aponta para um link |
+| `not a directory: <path>` | aponta para um arquivo |
+| `not canonical (resolves to <target>): <path>` | passa por um link simbólico |
+| `owner <uid> is neither the effective user (<uid>) nor root: <path>` | pertence a outra conta |
+| `group/world-writable (<mode>): <path>` | pode ser escrito pelo grupo ou por outros |
+| `ancestor cannot be inspected: <ancestor>` | está sob um diretório que o processo não consegue inspecionar |
+| `ancestor owner <uid> is neither the effective user (<uid>) nor root: <ancestor>` | está sob um diretório de outra conta — num user namespace, qualquer conta que ele não mapeia, inclusive o root do host |
+| `ancestor group/world-writable without the sticky bit (<mode>): <ancestor>` | está sob um diretório que o grupo ou outros podem escrever |
+
+O entrypoint da imagem do kit interrompe um início como root com `bootgly: storage is not prepared:`
+seguido de `symbolic link: <path>`, `not a directory: <path>`, `cannot be inspected: <path>`,
+`cannot create: <path>` ou `cannot give to bootgly: <path>`.
 
 ### Argumentos de build
 
@@ -571,7 +841,8 @@ Usuário    A imagem roda como root de propósito: escutar em :80/:443 — inclu
            wizard a nomeia nos Configs `user`/`group` do servidor, e um projeto sem
            nada configurado a assume por padrão quando lançado como root. O que o
            root escreve num projects/ montado é entregue ao dono do diretório; o
-           storage/ continua sendo do runtime. `--user` não é substituição direta:
+           storage/ continua sendo do runtime, e um início como root prepara um
+           que foi montado vazio e com dono root. `--user` não é substituição direta:
            uma execução não-root precisa dos dois montados do host, com dono
            daquele uid, e sem porta privilegiada.
 Parada     O STOPSIGNAL é SIGTERM e o servidor drena o que está em andamento, então

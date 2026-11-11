@@ -11,8 +11,10 @@ chunks, so even a multi-gigabyte file never lands whole in PHP memory.
 
 > [!NOTE]
 > Bootgly's runtime data folder is `storage/` (renamed from `storage/`). Its absolute path
-> is the `BOOTGLY_STORAGE_DIR` constant, which you can pre-define before boot (e.g. to point
-> at a mounted volume). The default **local** disk is rooted there. HTTP uploads stream into
+> is the `BOOTGLY_STORAGE_DIR` constant. To move it (e.g. to a mounted volume), set the
+> `BOOTGLY_STORAGE_DIR` environment variable — validated at boot, see
+> **[Move the storage directory](/guide/docker/overview/#move-the-storage-directory)** — or
+> pre-define the constant in a launcher of your own. The default **local** disk is rooted there. HTTP uploads stream into
 > `BOOTGLY_UPLOADS_DIR`, always `BOOTGLY_STORAGE_DIR . 'temp/files/downloaded/'`: the server owns
 > that folder and deletes its files at every start, so it follows the storage path and cannot be
 > pre-defined (boot throws a `LogicException`). Keep your own files on a disk, never there.
