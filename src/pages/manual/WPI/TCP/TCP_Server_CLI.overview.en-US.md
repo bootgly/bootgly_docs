@@ -401,7 +401,7 @@ Master process
 ```
 
 - The **master** process installs signals, stores process state, monitors workers and reforks a replacement if one crashes — backing off a slot whose workers keep dying at boot — or recycles — forking the replacement as soon as the worker announces the recycle, while the old one drains (one retiree per slot: the slot's next recycle waits for it, and it is killed past its deadline) — logged as a recycle. A reload whose relay fork is refused is aborted, and the server keeps serving.
-- Each **worker** creates its own server socket with `SO_REUSEPORT`, then enters the shared `Select` event loop.
+- Each **worker** creates its own server socket with `SO_REUSEPORT`, then enters the shared `Select` event loop. The worker hands the server's signals to that loop, which runs their handlers between callbacks (see [Select](/manual/WPI/Events/Select/overview/)).
 - Accepted sockets are wrapped in connection objects that track remote peer info, timers, writes and connection status.
 
 Socket options configured by default include:

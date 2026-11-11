@@ -141,6 +141,11 @@ Payloads are positional, in the order listed.
 | `Shutdown` | the server is stopping | `$level` (process level) |
 | `Reload` | a worker is reloading (SIGUSR2) | `$index` (int) |
 
+A `Shutdown` listener that throws does not keep the process from stopping: the failure is
+reported through `Throwables::notify()` with the context `['origin' => 'server.stop']`, and the
+stop goes on. The HTTP server logs it to its `exceptions` log; on a TCP, WebSocket or UDP server,
+register a reporter in `Throwables::$reporters` to record it.
+
 ### ACI — Scheduler
 
 `Bootgly\ACI\Schedule\Events` — see the **[Scheduler](/guide/scheduler/overview/)** guide:

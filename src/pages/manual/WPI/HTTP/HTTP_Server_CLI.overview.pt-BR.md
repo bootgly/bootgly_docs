@@ -769,7 +769,7 @@ Booting → Configuring → Starting → Running → Paused → Stopping
 O servidor utiliza uma arquitetura **multi-processo** com `fork()`:
 
 - O processo **master** gerencia o ciclo de vida: tratamento de sinais, recuperação de workers e coordenação.
-- Cada processo **worker** cria seu próprio socket de servidor usando `SO_REUSEPORT`, de forma que todos fazem bind independentemente na mesma porta. Isso evita contenção em um socket compartilhado.
+- Cada processo **worker** cria seu próprio socket de servidor usando `SO_REUSEPORT`, de forma que todos fazem bind independentemente na mesma porta. Isso evita contenção em um socket compartilhado. O worker entrega os sinais do servidor ao seu event loop, que executa os handlers entre callbacks (veja [Select](/manual/WPI/Events/Select/overview/)).
 - Um worker acima de `maxRequests` ou `maxMemory` avisa o master, que cria o substituto por fork na hora enquanto o worker antigo drena e sai de propósito — registrado como reciclagem; um slot mantém no máximo um worker drenando (a sua próxima reciclagem espera por ele), e o master encerra um que ainda drena `drainTimeout` + 5 s depois (veja [Reciclagem de workers](#reciclagem-de-workers)).
 - Quando um worker morre inesperadamente, o master automaticamente cria um substituto no mesmo índice via tratamento do `SIGCHLD`. Um slot cujos workers morrem antes de entrar no loop de eventos três vezes seguidas é recriado após 0,5 s, dobrando até 5 s, e cerca de uma em cada N conexões novas espera essa tentativa; um fork recusado é tentado de novo a cada segundo, em vez de encerrar o master.
 - Opções de socket por worker: `backlog: 102400`, `SO_KEEPALIVE`, `TCP_NODELAY`.

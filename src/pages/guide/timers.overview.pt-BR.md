@@ -137,6 +137,10 @@ processo — um timer registrado em um worker não existe em outro. Uma passada 
 timers que venceram, não os que estão esperando, então milhares de timers com vencimentos
 diferentes não são problema; o que eles custam são os seus callbacks.
 
+A mesma loop também executa os handlers de sinal do worker — inclusive o `SIGALRM`, que move o
+`Timer` estático — entre callbacks. Para executar o seu próprio handler quando um sinal chegar,
+veja [Select](/manual/WPI/Events/Select/overview/).
+
 ### Quando o `Timer` ainda se aplica
 
 - **Fora da loop de um worker** — o processo master nunca roda a sua loop, e um comando ou um

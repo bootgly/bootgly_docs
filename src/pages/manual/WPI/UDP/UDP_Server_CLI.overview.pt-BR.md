@@ -382,7 +382,9 @@ encerrar o worker. Desde a 1.0.12.
   mantenha o número de descritores do processo bem abaixo de FD_SETSIZE.
 - Todo worker — criado na partida, recriado após uma morte ou criado por um master recarregado —
   serve sob a máscara de sinais que o lançador tinha quando chamou `start()`. Um lançador que bloqueia
-  `SIGTERM` ou `SIGALRM`, portanto, recebe workers que não conseguem atendê-los.
+  `SIGTERM` ou `SIGALRM`, portanto, recebe workers que não conseguem atendê-los. O worker entrega os
+  sinais do servidor ao seu event loop, que executa os handlers entre callbacks (veja
+  [Select](/manual/WPI/Events/Select/overview/)).
 - No modo `Interactive`, um worker recriado enquanto o servidor está pausado começa pausado e volta no
   próximo resume.
 - Um sinal de parada (`SIGTERM`, `SIGINT`, `SIGQUIT`, `SIGHUP`) que chega durante um reload para o

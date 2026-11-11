@@ -133,6 +133,10 @@ Callbacks run on the loop, between two I/O dispatches: keep them short. They are
 timers that are due, not the ones that are waiting, so thousands of timers with different
 deadlines are fine; what they cost is their callbacks.
 
+The same loop also runs the worker's signal handlers — `SIGALRM`, which drives the static
+`Timer`, included — between callbacks. To run your own handler when a signal arrives, see
+[Select](/manual/WPI/Events/Select/overview/).
+
 ### When `Timer` still applies
 
 - **Outside a worker loop** — the master process never runs its loop, and a command or a

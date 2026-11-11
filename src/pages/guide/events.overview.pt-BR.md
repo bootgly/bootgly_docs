@@ -142,6 +142,11 @@ Bootgly\ABI\Event`). Payloads são posicionais, na ordem listada.
 | `Shutdown` | o servidor está parando | `$level` (nível do processo) |
 | `Reload` | um worker está recarregando (SIGUSR2) | `$index` (int) |
 
+Um listener de `Shutdown` que lança não impede o processo de parar: a falha é reportada por
+`Throwables::notify()` com o contexto `['origin' => 'server.stop']`, e a parada segue. O servidor
+HTTP a grava no seu log `exceptions`; em um servidor TCP, WebSocket ou UDP, registre um reporter
+em `Throwables::$reporters` para registrá-la.
+
 ### ACI — Scheduler
 
 `Bootgly\ACI\Schedule\Events` — veja o guia **[Scheduler](/guide/scheduler/overview/)**:

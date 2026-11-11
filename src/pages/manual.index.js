@@ -3598,6 +3598,38 @@ export default {
       }
     }
   },
+  '/WPI/Events': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Events'
+      }
+    }
+  },
+  '/WPI/Events/Select': {
+    config: {
+      icon: 'sensors',
+      status: 'new',
+      version: 'v1.3.0',
+      meta: {
+        description: {
+          'en-US': 'Handle POSIX signals on the worker event loop: handlers run between callbacks, one per signal, restored on release, with failures reported instead of stopping the loop.',
+          'pt-BR': 'Trate sinais POSIX no event loop do worker: handlers rodam entre callbacks, um por sinal, restaurados ao liberar, com falhas reportadas em vez de parar o loop.'
+        }
+      },
+      menu: {
+        subheader: '.WPI.Events'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Select'
+      }
+    }
+  },
 
   // Web (platform)
   '/Web': {

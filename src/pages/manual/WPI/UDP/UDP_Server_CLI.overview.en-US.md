@@ -373,7 +373,9 @@ and an error thrown inside the command is caught instead of ending the worker. S
   process's descriptor count well below FD_SETSIZE.
 - Every worker — forked at start, reforked after a death or forked by a reloaded master — serves
   under the signal mask the launcher held when it called `start()`. A launcher that blocks `SIGTERM`
-  or `SIGALRM` therefore gets workers that cannot field them.
+  or `SIGALRM` therefore gets workers that cannot field them. The worker hands the server's signals
+  to its event loop, which runs their handlers between callbacks (see
+  [Select](/manual/WPI/Events/Select/overview/)).
 - In `Interactive` mode, a worker reforked while the server is paused starts paused and joins the next
   resume.
 - A stop signal (`SIGTERM`, `SIGINT`, `SIGQUIT`, `SIGHUP`) that arrives while a reload is under way

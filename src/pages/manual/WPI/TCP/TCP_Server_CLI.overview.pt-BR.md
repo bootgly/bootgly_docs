@@ -406,7 +406,7 @@ Processo master
 ```
 
 - O **master** instala sinais, salva o estado do processo, monitora workers e recria um substituto se algum cair — com espera crescente para um slot cujos workers continuam morrendo no boot — ou reciclar — criando o substituto assim que o worker avisa a reciclagem, enquanto o antigo drena (um aposentado por slot: a próxima reciclagem do slot espera por ele, e ele é encerrado após o seu prazo) — registrado como reciclagem. Um reload cujo fork do relay é recusado é abortado, e o servidor continua servindo.
-- Cada **worker** cria seu próprio socket de servidor com `SO_REUSEPORT` e entra no event loop compartilhado `Select`.
+- Cada **worker** cria seu próprio socket de servidor com `SO_REUSEPORT` e entra no event loop compartilhado `Select`. O worker entrega os sinais do servidor a esse loop, que executa os handlers entre callbacks (veja [Select](/manual/WPI/Events/Select/overview/)).
 - Os sockets aceitos são encapsulados em objetos de conexão que acompanham peer remoto, timers, escritas e status da conexão.
 
 As opções de socket configuradas por padrão incluem:
