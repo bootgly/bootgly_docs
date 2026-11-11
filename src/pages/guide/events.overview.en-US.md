@@ -27,8 +27,10 @@ Emitter::$Instance->listen(Events::Miss, function (Emission $Emission) {
 });
 ```
 
-That's the whole API surface for consumers: `listen()` once, read `$Emission->payload`
-(a positional `array` — see each event's payload table below).
+That is all most consumers need: `listen()` once, read `$Emission->payload` (a positional
+`array` — see each event's payload table below). The listener stays registered for the
+life of the process, unless you register it for a single delivery or remove it — see
+[Listen once, or stop listening](#listen-once-or-stop-listening).
 
 ## Catch slow queries
 
@@ -54,6 +56,65 @@ Emitter::$Instance->listen(Events::Slow, function (Emission $Emission) {
 `Slow` is announced after `Executed`, and only for statements that succeed: one that fails
 or times out is announced as `Failed` instead. The elapsed time counts from the moment the
 operation was created, so it includes any wait for a free pooled connection.
+
+## Listen once, or stop listening
+
+Pass `once: true` and the listener is delivered to a single time — the first emission
+that reaches it — then it is gone:
+
+```php
+use Bootgly\ABI\Events\Emission;
+use Bootgly\ABI\Events\Emitter;
+use Bootgly\ADI\Databases\SQL\Events;
+
+Emitter::$Instance->listen(Events::Connected, function (Emission $Emission) {
+   error_log('database reachable: first connection authenticated');
+}, once: true);
+```
+
+To remove a listener yourself, keep the closure you registered and hand it to `forget()`.
+A listener may do it from inside its own handler — here it samples the first 100
+statements and then stops listening:
+
+```php
+use Bootgly\ABI\Events\Emission;
+use Bootgly\ABI\Events\Emitter;
+use Bootgly\ADI\Databases\SQL\Events;
+
+$sampled = 0;
+
+$Sampler = function (Emission $Emission) use (&$sampled, &$Sampler) {
+   [$Operation] = $Emission->payload;
+
+   error_log("sample: {$Operation->SQL}");
+
+   if (++$sampled === 100) {
+      Emitter::$Instance->forget(Events::Executed, $Sampler);
+   }
+};
+
+Emitter::$Instance->listen(Events::Executed, $Sampler);
+```
+
+What to count on:
+
+- `forget()` returns `true` when it removed something and `false` when the listener was
+  not registered for that event. It removes **every** registration of the listener for
+  the event, one-shot ones included.
+- A `Closure` is matched by the object you registered, so keep it in a variable: another
+  closure with the same body is another listener. First-class callables are the
+  exception — `$Object->handle(...)` creates a new closure each time, and
+  `forget($Event, $Object->handle(...))` still removes the one registered earlier for the
+  same method of the same object. A `Listener` object is matched by identity.
+- Removal takes effect at once, even in the middle of an emission: a listener forgotten
+  by an earlier handler is not delivered to by the emission in flight, and every other
+  listener still runs exactly once, in priority order. A listener *registered* by a
+  handler waits for the next emission.
+- A one-shot listener is removed **before** it runs. It runs at most once even when it
+  throws or emits its own event again; inside it `check()` no longer counts it, and
+  forgetting it from there returns `false` — it is gone already.
+- When the last listener of an event is gone, the event is unobserved again: `check()`
+  answers `false` and the emit sites are back to their zero-allocation path.
 
 ## Built-in events
 
@@ -218,6 +279,9 @@ Emitter::$Instance->listen(Events::Imported, function (Emission $Emission) {
 }, priority: 10);
 ```
 
+A one-shot listener keeps its priority position. One that an emission never reaches —
+propagation was stopped above it — stays registered and waits for the next emission.
+
 What a listener **throw** does depends on the event's declared contract:
 
 - By default an event is **steering**: a listener Throwable propagates to the emitter,
@@ -235,6 +299,9 @@ What a listener **throw** does depends on the event's declared contract:
   paths, where an escaping listener exception would corrupt the connection pool. Do not
   write gates or validators as listeners of an Observing event.
 
+Either way a one-shot listener that throws does not come back: it was removed before it
+ran.
+
 ## Reference
 
 ### `Emitter`
@@ -242,11 +309,22 @@ What a listener **throw** does depends on the event's declared contract:
 `Bootgly\ABI\Events\Emitter` — the canonical bus lives in `Emitter::$Instance`.
 
 ```php
-public function listen (Event&UnitEnum $Event, Listener|Closure $Listener, int $priority = 0): self
+public function listen (Event&UnitEnum $Event, Listener|Closure $Listener, int $priority = 0, bool $once = false): self
 ```
 
 Registers one listener for an event. Higher `$priority` runs first; registration order
-breaks ties. Returns the emitter for chaining.
+breaks ties. With `$once` the listener is removed right before its first delivery, so it
+runs at most once. Returns the emitter for chaining.
+
+```php
+public function forget (Event&UnitEnum $Event, Listener|Closure $Listener): bool
+```
+
+Removes every registration of a listener for an event and returns whether there was one.
+A `Listener` object matches by identity; a `Closure` by identity, or by equality for two
+first-class callables of the same method on the same object. The listener is not
+delivered to again, not even by an emission in flight. Removing the last listener of an
+event makes `check()` answer `false`.
 
 ```php
 public function check (Event&UnitEnum $Event): bool
@@ -261,7 +339,42 @@ public function emit (Event&UnitEnum $Event, mixed ...$payload): null|Emission
 ```
 
 Dispatches the event synchronously to its listeners in priority order. Returns `null`
-when the event has no listeners (zero-allocation path), otherwise the `Emission`.
+when the event has no listeners (zero-allocation path), otherwise the `Emission`. The
+emission delivers to the listeners registered when it starts, minus the ones removed
+since.
+
+### `Listeners`
+
+`Bootgly\ABI\Events\Emitter\Listeners` — the listeners of one event, behind
+`$Emitter->Listeners` (keyed by `spl_object_id()` of the enum case; an event has a key
+only while it has a listener). Its `$entries` property is readable: each registration by
+its id, in dispatch order, as `[priority, listener, one-shot]`. Iterating the collection
+yields the listeners as a list, in the same order.
+
+> [!WARNING]
+> Register and remove through `Emitter::listen()` and `Emitter::forget()`. The emitter is
+> what drops a collection left empty from its map: empty one directly with the methods
+> below and its event keeps answering `check()` as observed.
+
+```php
+public function add (Listener|Closure $Listener, int $priority = 0, bool $once = false): void
+```
+
+Registers one listener after every registration of a higher or equal priority.
+
+```php
+public function remove (Listener|Closure $Listener): bool
+```
+
+Removes every registration of a listener — matched as in `forget()` — and returns whether
+there was one.
+
+```php
+public function drop (int $id): bool
+```
+
+Removes the one registration with that id — its key in `$entries` — and returns whether
+it was still there.
 
 ### `Emission`
 
