@@ -372,22 +372,21 @@ export default {
     }
   },
 
-  // ABI
-  '/ABI': {
+  // WPI
+  '/WPI': {
     config: {
-      icon: 'bolt',
+      icon: 'language',
       status: 'done',
-      version: 'v1.0.0',
       meta: {
         description: {
-          'en-US': 'The base layer every other one stands on: code primitives, templates, IO, resources, events and debugging.',
-          'pt-BR': 'A camada base sobre a qual todas as outras se apoiam: primitivas de código, templates, IO, recursos, eventos e depuração.'
+          'en-US': 'Build web-facing systems with Bootgly HTTP, TCP and UDP layers, from datagrams and sockets to high-level servers.',
+          'pt-BR': 'Crie sistemas voltados para a Web com as camadas HTTP, TCP e UDP do Bootgly, de datagramas e sockets a servidores de alto nível.'
         }
       },
       menu: {
         header: {
-          icon: 'bolt',
-          label: 'Bootgly ABI'
+          icon: 'language',
+          label: 'Bootgly WPI'
         },
         separators: {
           lineBottom: true
@@ -399,55 +398,253 @@ export default {
     },
     data: {
       '*': {
-        title: 'Abstract Bootable Interface'
+        title: 'Web Programming Interface'
       }
     }
   },
-  '/ABI/Clock': {
-    config: {
-      icon: 'schedule',
-      status: 'done',
-      version: 'v1.1.0',
-      meta: {
-        description: {
-          'en-US': 'Read wall and monotonic time through one injectable Clock, measure durations with Bootgly\\ABI\\Stopwatch, and hand time-sensitive code a fake clock in tests.',
-          'pt-BR': 'Leia a hora de parede e a monotônica por um único Clock injetável, meça durações com Bootgly\\ABI\\Stopwatch e entregue um relógio fake ao código sensível ao tempo nos testes.'
-        }
-      },
-      menu: {
-        subheader: '.ABI'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Clock'
-      }
-    }
-  },
-  '/ABI/Code': {
+  '/WPI/HTTP': {
     config: null,
     data: {
       '*': {
-        title: 'Code'
+        title: 'HTTP'
       }
     }
   },
-  '/ABI/Code/__Array': {
+  '/WPI/HTTP/HTTP_Server_CLI': {
     config: {
-      icon: 'data_array',
+      icon: 'dns',
       status: 'done',
-      version: 'v1.0.0',
       meta: {
         description: {
-          'en-US': 'Chain array operations in a single pass: map, filter, early-exit find/check and reusable pipelines.',
-          'pt-BR': 'Encadeie operações de array em uma passagem: map, filter, find/check com saída antecipada e pipelines reutilizáveis.'
+          'en-US': 'Run an event-driven HTTP server in pure PHP with workers, fibers, routing and middleware.',
+          'pt-BR': 'Execute um servidor HTTP orientado a eventos em PHP puro, com workers, fibers, roteamento e middleware.'
         }
       },
       menu: {
-        subheader: '.ABI.Code'
+        subheader: '.WPI.HTTP'
+      },
+      subpages: {
+        showcase: false,
+        vs: { template: 'vs' }
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Server CLI'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/HTTP2': {
+    config: {
+      icon: 'bolt',
+      status: 'done',
+      version: 'v0.19.0',
+      meta: {
+        description: {
+          'en-US': 'Serve HTTP/2 natively — h2 over TLS (ALPN) and cleartext prior knowledge, HPACK, multiplexing, flow control and rapid-reset protection, dependency-free.',
+          'pt-BR': 'Sirva HTTP/2 nativamente — h2 sobre TLS (ALPN) e prior knowledge em texto claro, HPACK, multiplexação, controle de fluxo e proteção rapid-reset, sem dependências.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP/2'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Request': {
+    config: {
+      icon: 'last_page',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Inspect HTTP request data, connection details and URL parts inside Bootgly handlers.',
+          'pt-BR': 'Inspecione dados da requisição HTTP, detalhes da conexão e partes da URL dentro dos handlers do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Request'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Response': {
+    config: {
+      icon: 'first_page',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Compose HTTP responses with headers, body formats, files and protocol-aware delivery.',
+          'pt-BR': 'Monte respostas HTTP com headers, formatos de body, arquivos e entrega consciente do protocolo.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Response'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Response/Resources': {
+    config: {
+      icon: 'extension',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View, Database, KV and HTTP.',
+          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View, Database, KV e HTTP.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Response Resources'
+      },
+      'pt-BR': {
+        title: 'Response Resources'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Router': {
+    config: {
+      icon: 'alt_route',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Match routes and dispatch HTTP requests through Bootgly routing.',
+          'pt-BR': 'Faça o match de rotas e despache requisições HTTP pelo roteamento do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Routing'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Authentication': {
+    config: {
+      icon: 'shield',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Protect HTTP Server CLI routes with Basic, Bearer, JWT and Session authentication guards.',
+          'pt-BR': 'Proteja rotas do HTTP Server CLI com guards de autenticação Basic, Bearer, JWT e Session.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Authentication'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Authorization': {
+    config: {
+      icon: 'verified_user',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Require Scope, Role and Policy gates after HTTP authentication succeeds.',
+          'pt-BR': 'Exija gates de Scope, Role e Policy depois que a autenticação HTTP passa.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Authorization'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
+    config: {
+      icon: 'settings_input_component',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Chain CORS, rate limits, security headers and other HTTP middlewares around each request.',
+          'pt-BR': 'Encadeie CORS, rate limits, secure headers e outros middlewares HTTP ao redor de cada requisição.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Middlewares'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/MCP': {
+    config: {
+      icon: 'smart_toy',
+      status: 'new',
+      version: 'v1.2.0',
+      meta: {
+        description: {
+          'en-US': 'Serve an MCP server on a route over Streamable HTTP: sessions shared across workers and bound to the caller, protocol-version and Origin checks, JSON or event-stream answers, the GET listening stream and DELETE.',
+          'pt-BR': 'Sirva um servidor MCP em uma rota via Streamable HTTP: sessões compartilhadas entre workers e vinculadas a quem chama, verificação de versão do protocolo e de Origin, respostas em JSON ou event stream, o stream de escuta via GET e o DELETE.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'MCP over HTTP'
+      },
+      'pt-BR': {
+        title: 'MCP via HTTP'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Server_CLI/Queues': {
+    config: {
+      icon: 'queue',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Enqueue background jobs from request handlers and process them with a queue worker.',
+          'pt-BR': 'Enfileire jobs em background a partir dos route handlers e processe-os com um worker de fila.'
+        }
+      },
+      menu: {
+        separators: {
+          lineBottom: true
+        }
       },
       subpages: {
         showcase: false
@@ -455,31 +652,94 @@ export default {
     },
     data: {
       '*': {
-        title: '__Array'
+        title: 'Queues'
       }
     }
   },
-  '/ABI/Code/__String': {
+  '/WPI/HTTP/HTTP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Send outbound HTTP requests from the CLI with Bootgly client, decoding and connection flow.',
+          'pt-BR': 'Envie requisições HTTP de saída pela CLI com o cliente, a decodificação e o fluxo de conexão do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'HTTP Client CLI'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI/Request': {
+    config: {
+      icon: 'last_page',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Build outbound HTTP requests with methods, headers, body data and transport options.',
+          'pt-BR': 'Monte requisições HTTP de saída com métodos, headers, dados de body e opções de transporte.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Request'
+      }
+    }
+  },
+  '/WPI/HTTP/HTTP_Client_CLI/Response': {
+    config: {
+      icon: 'first_page',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Read outbound HTTP responses, status codes, headers and payloads from Bootgly CLI clients.',
+          'pt-BR': 'Leia respostas HTTP de saída, status codes, headers e payloads nos clientes CLI do Bootgly.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Response'
+      }
+    }
+  },
+  '/WPI/WS': {
     config: null,
     data: {
       '*': {
-        title: '__String'
+        title: 'WS'
       }
     }
   },
-  '/ABI/Code/__String/Bytes': {
+  '/WPI/WS/WS_Server_CLI': {
     config: {
-      icon: 'straighten',
+      icon: 'sync_alt',
       status: 'done',
-      version: 'v1.1.0',
+      version: 'v0.19.0',
       meta: {
         description: {
-          'en-US': 'Format byte counts as human-readable sizes and parse sizes such as "512M" or "1.5 GB" back into bytes.',
-          'pt-BR': 'Formate contagens de bytes como tamanhos legíveis e interprete tamanhos como "512M" ou "1.5 GB" de volta em bytes.'
+          'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
+          'pt-BR': 'Execute um servidor WebSocket orientado a eventos em PHP puro — framing RFC 6455, salas, heartbeat ping/pong, compressão e autenticação no handshake.'
         }
       },
       menu: {
-        subheader: '.ABI.Code.__String'
+        subheader: '.WPI.WS'
       },
       subpages: {
         showcase: false
@@ -487,31 +747,133 @@ export default {
     },
     data: {
       '*': {
-        title: 'Bytes'
+        title: 'WS Server CLI'
       }
     }
   },
-  '/ABI/Data': {
+  '/WPI/WS/WS_Server_CLI/Channels': {
+    config: {
+      icon: 'forum',
+      status: 'done',
+      version: 'v0.19.0',
+      meta: {
+        description: {
+          'en-US': 'Group WebSocket sessions into rooms and broadcast to every member across workers.',
+          'pt-BR': 'Agrupe sessões WebSocket em salas e faça broadcast para todos os membros entre workers.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Channels'
+      }
+    }
+  },
+  '/WPI/WS/WS_Server_CLI/Compression': {
+    config: {
+      icon: 'compress',
+      status: 'done',
+      version: 'v0.19.0',
+      meta: {
+        description: {
+          'en-US': 'Negotiate permessage-deflate (RFC 7692) to compress WebSocket messages with built-in zlib.',
+          'pt-BR': 'Negocie permessage-deflate (RFC 7692) para comprimir mensagens WebSocket com o zlib embutido.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Compression'
+      },
+      'pt-BR': {
+        title: 'Compressão'
+      }
+    }
+  },
+  '/WPI/WS/WS_Server_CLI/Authentication': {
+    config: {
+      icon: 'shield',
+      status: 'done',
+      version: 'v0.19.0',
+      meta: {
+        description: {
+          'en-US': 'Authenticate the WebSocket handshake by reusing the HTTP Server CLI auth guards.',
+          'pt-BR': 'Autentique o handshake WebSocket reaproveitando os guards de autenticação do HTTP Server CLI.'
+        }
+      },
+      menu: {
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Authentication'
+      }
+    }
+  },
+  '/WPI/WS/WS_Client_CLI': {
+    config: {
+      icon: 'cell_tower',
+      status: 'done',
+      version: 'v0.19.0',
+      meta: {
+        description: {
+          'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',
+          'pt-BR': 'Converse com um endpoint WebSocket em PHP puro — framing mascarado RFC 6455, fragmentação, ping/pong, permessage-deflate e wss://.'
+        }
+      },
+      menu: {
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'WS Client CLI'
+      }
+    }
+  },
+  '/WPI/TCP': {
     config: null,
     data: {
       '*': {
-        title: 'Data'
+        title: 'TCP'
       }
     }
   },
-  '/ABI/Data/URI': {
+  '/WPI/TCP/TCP_Server_CLI': {
     config: {
-      icon: 'link',
+      icon: 'dns',
       status: 'done',
-      version: 'v1.0.6',
       meta: {
         description: {
-          'en-US': 'Parse RFC 3986 URIs and resolve references — the one resolver behind every redirect Location.',
-          'pt-BR': 'Interprete URIs RFC 3986 e resolva referências — o único resolvedor por trás de todo Location de redirect.'
+          'en-US': 'Accept low-level TCP connections with non-blocking sockets, multi-worker runtime and raw package handlers.',
+          'pt-BR': 'Aceite conexões TCP de baixo nível com sockets não bloqueantes, runtime multi-worker e handlers raw de pacotes.'
         }
       },
       menu: {
-        subheader: '.ABI.Data'
+        subheader: '.WPI.TCP',  
+        separators: {
+          lineBottom: true
+        }
+      
       },
       subpages: {
         showcase: false
@@ -519,11 +881,87 @@ export default {
     },
     data: {
       '*': {
-        title: 'URI'
+        title: 'TCP Server CLI'
       }
     }
   },
-  '/ABI/Events': {
+  '/WPI/TCP/TCP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
+          'pt-BR': 'Abra conexões TCP de saída de baixo nível para protocolos customizados, event loops e fluxos raw de socket.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'TCP Client CLI'
+      }
+    }
+  },
+  '/WPI/UDP': {
+    config: null,
+    data: {
+      '*': {
+        title: 'UDP'
+      }
+    }
+  },
+  '/WPI/UDP/UDP_Server_CLI': {
+    config: {
+      icon: 'dns',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Accept UDP datagrams with a raw handler API, worker-based execution and terminal-friendly control.',
+          'pt-BR': 'Aceite datagramas UDP com uma API raw de handler, execução com workers e controle amigável pelo terminal.'
+        }
+      },
+      menu: {
+        separators: {
+          lineBottom: true
+        },
+        subheader: '.WPI.UDP'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'UDP Server CLI'
+      }
+    }
+  },
+  '/WPI/UDP/UDP_Client_CLI': {
+    config: {
+      icon: 'desktop_windows',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Send UDP datagrams with callback-based client flows, configurable workers and monitor-friendly execution.',
+          'pt-BR': 'Envie datagramas UDP com fluxos de cliente baseados em callbacks, workers configuráveis e execução amigável para monitoramento.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'UDP Client CLI'
+      }
+    }
+  },
+  '/WPI/Events': {
     config: null,
     data: {
       '*': {
@@ -531,19 +969,19 @@ export default {
       }
     }
   },
-  '/ABI/Events/Selector': {
+  '/WPI/Events/Select': {
     config: {
       icon: 'sensors',
       status: 'new',
       version: 'v1.3.0',
       meta: {
         description: {
-          'en-US': 'Wait until a stream can be read or written, with an absolute monotonic deadline, signal interruption reported and named refusals instead of hangs.',
-          'pt-BR': 'Espere até um stream poder ser lido ou escrito, com um deadline monotônico absoluto, interrupção por sinal reportada e recusas nomeadas em vez de travamentos.'
+          'en-US': 'Handle POSIX signals on the worker event loop: handlers run between callbacks, one per signal, restored on release, with failures reported instead of stopping the loop.',
+          'pt-BR': 'Trate sinais POSIX no event loop do worker: handlers rodam entre callbacks, um por sinal, restaurados ao liberar, com falhas reportadas em vez de parar o loop.'
         }
       },
       menu: {
-        subheader: '.ABI.Events'
+        subheader: '.WPI.Events'
       },
       subpages: {
         showcase: false
@@ -551,147 +989,26 @@ export default {
     },
     data: {
       '*': {
-        title: 'Selector'
-      }
-    }
-  },
-  '/ABI/IO': {
-    config: null,
-    data: {
-      '*': {
-        title: 'IO'
-      }
-    }
-  },
-  '/ABI/IO/FS': {
-    config: null,
-    data: {
-      '*': {
-        title: 'FS'
-      }
-    }
-  },
-  '/ABI/IO/FS/File': {
-    config: {
-      icon: 'description',
-      status: 'done',
-      version: 'v1.1.0',
-      meta: {
-        description: {
-          'en-US': 'Replace a file atomically and durably, with its permissions set before the first byte, and serialize writers across processes with advisory locks.',
-          'pt-BR': 'Substitua um arquivo de forma atômica e durável, com as permissões definidas antes do primeiro byte, e serialize escritores entre processos com locks consultivos.'
-        }
-      },
-      menu: {
-        subheader: '.ABI.IO.FS'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'File'
-      }
-    }
-  },
-  '/ABI/Resources': {
-    config: null,
-    data: {
-      '*': {
-        title: 'Resources'
-      }
-    }
-  },
-  '/ABI/Resources/Storage': {
-    config: null,
-    data: {
-      '*': {
-        title: 'Storage'
-      }
-    }
-  },
-  '/ABI/Resources/Storage/Drivers': {
-    config: null,
-    data: {
-      '*': {
-        title: 'Drivers'
-      }
-    }
-  },
-  '/ABI/Resources/Storage/Drivers/S3': {
-    config: {
-      icon: 'cloud_upload',
-      status: 'new',
-      version: 'v1.3.0',
-      meta: {
-        description: {
-          'en-US': 'Presign time-limited download and upload links, let a browser send a Multipart Upload straight to the bucket, and read a byte range of an object with the S3 Storage driver.',
-          'pt-BR': 'Pré-assine links de download e upload com prazo, deixe o navegador enviar um Multipart Upload direto para o bucket e leia uma faixa de bytes de um objeto com o driver S3 do Storage.'
-        }
-      },
-      menu: {
-        subheader: '.ABI.Resources.Storage.Drivers'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'S3'
-      }
-    }
-  },
-  '/ABI/Syntax': {
-    config: null,
-    data: {
-      '*': {
-        title: 'Syntax'
-      }
-    }
-  },
-  '/ABI/Syntax/Lint': {
-    config: {
-      icon: 'rule',
-      status: 'new',
-      version: 'v1.2.0',
-      meta: {
-        description: {
-          'en-US': 'Configure bootgly lint check in one bootgly.Lint.php: the trees checked, the paths excluded, the rules enforced and every waiver with its reason — stale waivers fail the run.',
-          'pt-BR': 'Configure o bootgly lint check num único bootgly.Lint.php: as árvores checadas, os caminhos excluídos, as regras aplicadas e cada isenção com o seu motivo — isenções obsoletas falham a execução.'
-        }
-      },
-      menu: {
-        subheader: '.ABI.Syntax'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Lint'
+        title: 'Select'
       }
     }
   },
 
-  // ADI
-  '/ADI': {
+  // Web (platform)
+  '/Web': {
     config: {
-      icon: 'data_array',
+      icon: 'public',
       status: 'done',
-      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Store and check data in Bootgly: the SQL and KV (Redis) databases, connection pooling, Query and Schema Builders, migrations, seeders and the ORM Data Mapper, the in-memory Table dataset, and Validation with its built-in rules.',
-          'pt-BR': 'Guarde e confira dados no Bootgly: bancos SQL e KV (Redis), pool de conexões, Query e Schema Builders, migrations, seeders e o ORM Data Mapper, o dataset Table em memória e a Validação com as suas regras built-in.'
+          'en-US': 'The opinionated web platform over the WPI interface: MVC apps and REST APIs.',
+          'pt-BR': 'A plataforma web opinativa sobre a interface WPI: apps MVC e APIs REST.'
         }
       },
       menu: {
         header: {
-          icon: 'data_array',
-          label: 'Bootgly ADI'
+          icon: 'public',
+          label: 'Web'
         },
         separators: {
           lineBottom: true
@@ -703,506 +1020,18 @@ export default {
     },
     data: {
       '*': {
-        title: 'Abstract Data Interface'
+        title: 'Web'
       }
     }
   },
-  '/ADI/Casters': {
+  '/Web/App': {
     config: {
-      icon: 'swap_horiz',
-      status: 'new',
-      version: 'v1.2.0',
-      meta: {
-        description: {
-          'en-US': 'Convert one value to int, float, bool, string or DateTimeImmutable: the Strict mode for input a person wrote, the Loose mode for values a driver produced, what each type accepts, and refusals that never echo the value.',
-          'pt-BR': 'Converta um valor para int, float, bool, string ou DateTimeImmutable: o modo Strict para entrada escrita por uma pessoa, o modo Loose para valores que um driver produziu, o que cada tipo aceita, e recusas que nunca ecoam o valor.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Casters'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Casters'
-      }
-    }
-  },
-  '/ADI/Database': {
-    config: {
-      icon: 'hub',
+      icon: 'dashboard',
       status: 'done',
-      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'The transport-agnostic DBAL core both facades extend: connection config, the connection pool, how an operation runs and fails, Operation states and Result fields.',
-          'pt-BR': 'O núcleo do DBAL, agnóstico de transporte, que as duas fachadas estendem: config de conexão, o pool de conexões, como uma operação roda e falha, os estados da Operation e os campos do Result.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Database'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'DBAL core'
-      },
-      'pt-BR': {
-        title: 'Núcleo do DBAL'
-      }
-    }
-  },
-  '/ADI/Database/Config': {
-    config: {
-      icon: 'settings',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Connection config for every database driver: keys and defaults, driver names, the operation timeout, pool size, TLS (secure) rules and the configuration errors.',
-          'pt-BR': 'Config de conexão de todo driver de banco: chaves e padrões, nomes de driver, o timeout das operações, o tamanho do pool, as regras de TLS (secure) e os erros de configuração.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Database configuration'
-      },
-      'pt-BR': {
-        title: 'Configuração do banco'
-      }
-    }
-  },
-  '/ADI/Database/Pool': {
-    config: {
-      icon: 'device_hub',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'The database connection pool: sizing and co-location, synchronous waits, deadlines, cancellation, withdrawn work and session reset, and replica health.',
-          'pt-BR': 'O pool de conexões do banco: dimensionamento e co-localização, esperas síncronas, prazos, cancelamento, trabalho retirado e reset de sessão, e saúde das réplicas.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Connection pool'
-      },
-      'pt-BR': {
-        title: 'Pool de conexões'
-      }
-    }
-  },
-  '/ADI/Databases': {
-    config: {
-      icon: 'category',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Database paradigm facades: SQL for relational databases and KV for Redis commands, where to open each one, and the Databases registry that creates a facade by name.',
-          'pt-BR': 'As fachadas de paradigma de banco: SQL para bancos relacionais e KV para comandos Redis, onde abrir cada uma e o registry Databases, que cria uma fachada pelo nome.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Databases'
-      },
-      'pt-BR': {
-        title: 'Bancos de dados'
-      }
-    }
-  },
-
-  '/ADI/Databases/SQL': {
-    config: {
-      icon: 'dataset',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'The SQL facade: open a database, its SQL config keys, run and await queries, read the outcome, read-after-write routing, builders, transactions and repositories, events and errors.',
-          'pt-BR': 'A fachada SQL: abrir um banco, as chaves de config SQL, executar e aguardar queries, ler o resultado, roteamento read-after-write, builders, transações e repositórios, eventos e erros.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Databases.SQL'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'SQL database'
-      },
-      'pt-BR': {
-        title: 'Banco SQL'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Drivers': {
-    config: {
-      icon: 'cable',
-      status: 'done',
-      version: 'v0.22.0',
-      meta: {
-        description: {
-          'en-US': 'Native SQL wire drivers: PostgreSQL, MySQL/MariaDB and SQLite — selection, capabilities, result differences, error codes, limits and pool notes.',
-          'pt-BR': 'Wire drivers SQL nativos: PostgreSQL, MySQL/MariaDB e SQLite — seleção, capacidades, diferenças no resultado, códigos de erro, limites e notas de pool.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Drivers'
-      },
-      'pt-BR': {
-        title: 'Drivers'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Drivers/PostgreSQL': {
-    config: {
-      icon: 'dns',
-      status: 'done',
-      version: 'v0.22.0',
-      meta: {
-        description: {
-          'en-US': 'Native PostgreSQL Protocol 3.0 driver: SCRAM authentication, TLS, extended protocol and pipelining.',
-          'pt-BR': 'Driver nativo do PostgreSQL Protocol 3.0: autenticação SCRAM, TLS, protocolo estendido e pipelining.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'PostgreSQL'
-      },
-      'pt-BR': {
-        title: 'PostgreSQL'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Drivers/MySQL': {
-    config: {
-      icon: 'bolt',
-      status: 'done',
-      version: 'v0.22.0',
-      meta: {
-        description: {
-          'en-US': 'Native MySQL/MariaDB driver: caching_sha2 authentication, TLS, binary prepared statements and KILL QUERY.',
-          'pt-BR': 'Driver nativo MySQL/MariaDB: autenticação caching_sha2, TLS, prepared statements binários e KILL QUERY.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'MySQL'
-      },
-      'pt-BR': {
-        title: 'MySQL'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Drivers/SQLite': {
-    config: {
-      icon: 'sd_storage',
-      status: 'done',
-      version: 'v0.22.0',
-      meta: {
-        description: {
-          'en-US': 'Native SQLite driver over ext-sqlite3: zero-setup file and :memory: databases for tests and prototypes.',
-          'pt-BR': 'Driver nativo SQLite sobre ext-sqlite3: bancos em arquivo e :memory: sem setup para testes e protótipos.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'SQLite'
-      },
-      'pt-BR': {
-        title: 'SQLite'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Drivers/Types': {
-    config: {
-      icon: 'data_object',
-      status: 'done',
-      version: 'v0.22.0',
-      meta: {
-        description: {
-          'en-US': 'How PostgreSQL, MySQL and SQLite bind PHP parameters and return column types, side by side, and what to normalize in PHP for portable code.',
-          'pt-BR': 'Como PostgreSQL, MySQL e SQLite vinculam parâmetros PHP e devolvem tipos de coluna, lado a lado, e o que normalizar no PHP para código portável.'
-        }
-      },
-      menu: {
-        separators: {
-          lineBottom: true
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Type mapping'
-      },
-      'pt-BR': {
-        title: 'Mapeamento de tipos'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Transaction': {
-    config: {
-      icon: 'sync_alt',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'SQL transactions on one pinned pooled connection: commit, rollback and abort, savepoints, refusals, repositories inside a transaction, read-after-write marks and lifecycle events.',
-          'pt-BR': 'Transações SQL em uma conexão fixada do pool: commit, rollback e abort, savepoints, recusas, repositórios dentro de uma transação, marcas de read-after-write e eventos do ciclo de vida.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Transactions'
-      },
-      'pt-BR': {
-        title: 'Transações'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Builder': {
-    config: {
-      icon: 'storage',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Build parameterized SELECT, INSERT, UPDATE and DELETE statements through the SQL Query Builder.',
-          'pt-BR': 'Monte SELECT, INSERT, UPDATE e DELETE parametrizados com o Query Builder SQL.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Query Builder'
-      },
-      'pt-BR': {
-        title: 'Query Builder'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Builder/Reading': {
-    config: {
-      icon: 'search',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Read rows with select, filters, text matching, joins, aliases, aggregates, grouping, order and locks.',
-          'pt-BR': 'Leia linhas com select, filtros, busca textual, joins, aliases, agregações, agrupamento, ordem e locks.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Reading rows'
-      },
-      'pt-BR': {
-        title: 'Lendo linhas'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Builder/Writing': {
-    config: {
-      icon: 'edit_note',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Write rows with insert, multi-row set values, update/delete guards, RETURNING output and upsert handling.',
-          'pt-BR': 'Escreva linhas com insert, valores multi-row, guards de update/delete, output RETURNING e upsert.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Writing rows'
-      },
-      'pt-BR': {
-        title: 'Escrevendo linhas'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Builder/Composing': {
-    config: {
-      icon: 'account_tree',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Compose advanced query shapes with Identifier, Expression, nested filters, subqueries, derived tables and CTEs.',
-          'pt-BR': 'Componha queries avançadas com Identifier, Expression, filtros aninhados, subqueries, tabelas derivadas e CTEs.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Composing queries'
-      },
-      'pt-BR': {
-        title: 'Compondo queries'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Builder/Dialects': {
-    config: {
-      icon: 'compare_arrows',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Compare Query Builder output across PostgreSQL, MySQL and SQLite: quotes, placeholders and capabilities.',
-          'pt-BR': 'Compare a saída do Query Builder em PostgreSQL, MySQL e SQLite: quotes, placeholders e capacidades.'
-        }
-      },
-      menu: {
-        separators: {
-          lineBottom: true
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Query dialects'
-      },
-      'pt-BR': {
-        title: 'Dialetos de query'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Schema': {
-    config: {
-      icon: 'schema',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Compile portable CREATE, ALTER, DROP, RENAME, index and constraint DDL into dialect-specific SQL.',
-          'pt-BR': 'Compile DDL portável de CREATE, ALTER, DROP, RENAME, índices e constraints em SQL específico do dialeto.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Schema Builder'
-      },
-      'pt-BR': {
-        title: 'Schema Builder'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Schema/Blueprint': {
-    config: {
-      icon: 'view_column',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Define tables and columns fluently: types, modifiers, keys, references and auxiliary enums.',
-          'pt-BR': 'Defina tabelas e colunas de forma fluente: tipos, modificadores, chaves, referências e enums auxiliares.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Defining tables'
-      },
-      'pt-BR': {
-        title: 'Definindo tabelas'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Schema/Migrations': {
-    config: {
-      icon: 'history',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Version the schema with migration files, the Runner, batches, history, transactions and locking.',
-          'pt-BR': 'Versione o schema com arquivos de migration, o Runner, batches, histórico, transações e lock.'
+          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics, single-page apps and view conventions.',
+          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics, single-page apps e convenções de views.'
         }
       },
       menu: {},
@@ -1212,485 +1041,18 @@ export default {
     },
     data: {
       '*': {
-        title: 'Migrations'
+        title: 'Web App'
       }
     }
   },
-  '/ADI/Databases/SQL/Schema/Dialects': {
-    config: {
-      icon: 'compare_arrows',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'PostgreSQL, MySQL and SQLite compilation differences and capability checks.',
-          'pt-BR': 'Diferenças de compilação e checagem de capacidades de PostgreSQL, MySQL e SQLite.'
-        }
-      },
-      menu: {
-        separators: {
-          lineBottom: true
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Dialects'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Seed': {
-    config: {
-      icon: 'playlist_add',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Create and run rerunnable SQL seeders with Query Builder, transactions, locks and deterministic fakers.',
-          'pt-BR': 'Crie e rode seeders SQL reexecutáveis com Query Builder, transações, locks e fakers determinísticos.'
-        }
-      },
-      menu: {
-        separators: {
-          lineBottom: true
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Seeders'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/ORM': {
-    config: null,
-    data: {
-      '*': {
-        title: 'SQL ORM'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Model': {
-    config: {
-      icon: 'label',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Map entity classes to tables: compiled and cached metadata, Model::reflect(), mapping rules and errors, property types and constructors, readonly and inherited properties, and dates per driver.',
-          'pt-BR': 'Mapeie classes de entidade para tabelas: metadata compilada e cacheada, Model::reflect(), regras e erros de mapeamento, tipos de propriedade e construtores, propriedades readonly e herdadas, e datas por driver.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Databases.SQL.ORM'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Model'
-      },
-      'pt-BR': {
-        title: 'ORM Model'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Model/Attributes': {
-    config: {
-      icon: 'sell',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Table, Key, Column and Relation attributes: generated and application-assigned keys, the insert, update, generated and nullable column flags, and relation kinds, keys, pivots, names and lazy wrappers.',
-          'pt-BR': 'Attributes Table, Key, Column e Relation: chaves geradas e atribuídas pela aplicação, as flags de coluna insert, update, generated e nullable, e tipos, chaves, pivots, nomes e wrappers lazy de relação.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Model Attributes'
-      },
-      'pt-BR': {
-        title: 'ORM Model Attributes'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Repository': {
-    config: {
-      icon: 'account_tree',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Run ORM Data Mapper operations with repositories, selections, hydration and local identity maps.',
-          'pt-BR': 'Execute operações ORM Data Mapper com repositories, selections, hidratação e identity maps locais.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Repository'
-      },
-      'pt-BR': {
-        title: 'ORM Repository'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Repository/Pagination': {
-    config: {
-      icon: 'last_page',
-      status: 'done',
-      version: 'v0.22.0',
-      meta: {
-        description: {
-          'en-US': 'Paginate ORM repositories by page with a COUNT(*) total or by keyset cursor: REST bodies and headers in HTTP routes, cursor walks at the ADI layer and the order columns a cursor accepts.',
-          'pt-BR': 'Pagine repositórios ORM por página, com total COUNT(*), ou por cursor keyset: bodies e headers REST em rotas HTTP, caminhadas por cursor na camada ADI e as colunas de ordenação que um cursor aceita.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Repository Pagination'
-      },
-      'pt-BR': {
-        title: 'ORM Repository Pagination'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Repository/Relations': {
-    config: {
-      icon: 'hub',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Load ORM relations as deferred operations, eagerly through an await bridge or lazily through LazyCollection/LazyReference wrappers, for has-one, has-many, belongs-to and many-to-many data; relation properties are never persisted.',
-          'pt-BR': 'Carregue relações ORM como operações deferidas, em modo eager por uma ponte de await ou em modo lazy pelos wrappers LazyCollection/LazyReference, para has-one, has-many, belongs-to e many-to-many; propriedades de relação nunca são persistidas.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Repository Relations'
-      },
-      'pt-BR': {
-        title: 'ORM Repository Relations'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Repository/Selection': {
-    config: {
-      icon: 'filter_list',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Describe the rows an ORM repository reads: filters by property or column, OR, text matching, order, slices, row locks, relations to load and named scopes, with the call-order caveats.',
-          'pt-BR': 'Descreva as linhas que um repositório ORM lê: filtros por propriedade ou coluna, OR, busca textual, ordem, fatias, locks de linha, relações a carregar e escopos nomeados, com as ressalvas de ordem de chamada.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Repository Selection'
-      },
-      'pt-BR': {
-        title: 'ORM Repository Selection'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Repository/Hydration': {
-    config: {
-      icon: 'water_drop',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Turn finished operations into entities: the mapped result, how rows are cast into typed properties, the identity map and reset(), saved entities on every driver and the current limitations.',
-          'pt-BR': 'Transforme operações terminadas em entidades: o resultado mapeado, como linhas viram propriedades tipadas, o identity map e reset(), entidades salvas em cada driver e as limitações atuais.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Repository Hydration'
-      },
-      'pt-BR': {
-        title: 'ORM Repository Hydration'
-      }
-    }
-  },
-  '/ADI/Databases/SQL/Repository/Hooks': {
-    config: {
-      icon: 'webhook',
-      status: 'done',
-      version: 'v0.16.0',
-      meta: {
-        description: {
-          'en-US': 'Listen to the eight ORM repository lifecycle hooks: the arguments each receives, which calls emit it, why Saved runs before the write lands, and how listeners steer or refuse the work.',
-          'pt-BR': 'Escute os oito hooks do ciclo de vida do repositório ORM: os argumentos de cada um, quais chamadas o emitem, por que Saved roda antes de a escrita acontecer, e como listeners conduzem ou recusam o trabalho.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'ORM Repository Hooks'
-      },
-      'pt-BR': {
-        title: 'ORM Repository Hooks'
-      }
-    }
-  },
-  '/ADI/Databases/KV': {
-    config: {
-      icon: 'key',
-      status: 'done',
-      version: 'v0.17.0',
-      meta: {
-        description: {
-          'en-US': 'The KV facade: open a Redis database, run commands and read their replies, pipeline them, timeouts, cancel and withdraw, errors, the kv config scope adapter and the limits of a shared, pipelined pool.',
-          'pt-BR': 'A fachada KV: abrir um banco Redis, executar comandos e ler as respostas, enviá-los em pipeline, timeouts, cancelamento e retirada, erros, o adaptador do escopo de config kv e os limites de um pool compartilhado em pipeline.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Databases.KV'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'KV database'
-      },
-      'pt-BR': {
-        title: 'Banco KV'
-      }
-    }
-  },
-  '/ADI/Databases/KV/Drivers': {
-    config: null,
-    data: {
-      '*': {
-        title: 'Drivers'
-      }
-    }
-  },
-  '/ADI/Databases/KV/Drivers/Redis': {
-    config: {
-      icon: 'memory',
-      status: 'done',
-      version: 'v0.17.0',
-      meta: {
-        description: {
-          'en-US': 'Native Redis driver of the KV facade: non-blocking TCP dial, AUTH/SELECT preamble, implicit TLS and when prefer falls back to plaintext, RESP3 push frames, pipelining and cancellation.',
-          'pt-BR': 'Driver Redis nativo da fachada KV: discagem TCP não bloqueante, preâmbulo AUTH/SELECT, TLS implícito e quando o prefer cai para plaintext, push frames do RESP3, pipelining e cancelamento.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Redis'
-      },
-      'pt-BR': {
-        title: 'Redis'
-      }
-    }
-  },
-
-  '/ADI/Table': {
-    config: {
-      icon: 'table_rows',
-      status: 'done',
-      version: 'v0.1.3',
-      meta: {
-        description: {
-          'en-US': 'The Table dataset behind the CLI Table: header, body and footer rows, the array syntax to read and change them, sum, subtract, multiply, divide and find over a body column, and their current limits.',
-          'pt-BR': 'O dataset Table por trás da Table do CLI: linhas de cabeçalho, corpo e rodapé, a sintaxe de array para lê-las e alterá-las, sum, subtract, multiply, divide e find sobre uma coluna do corpo, e os seus limites atuais.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Table'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Table dataset'
-      },
-      'pt-BR': {
-        title: 'Dataset de tabela'
-      }
-    }
-  },
-  '/ADI/Validation': {
-    config: {
-      icon: 'fact_check',
-      status: 'done',
-      version: 'v0.23.0',
-      meta: {
-        description: {
-          'en-US': 'The validation engine: run rules against an array, read valid and errors, blank values and implicit rules, every rule runs and nothing is converted, how messages are built and translated, writing a custom rule, and the Condition contract.',
-          'pt-BR': 'O motor de validação: executar regras sobre um array, ler valid e errors, valores em branco e regras implícitas, toda regra roda e nada é convertido, como as mensagens são montadas e traduzidas, escrever uma regra customizada e o contrato Condition.'
-        }
-      },
-      menu: {
-        subheader: '.ADI.Validation'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Validation'
-      },
-      'pt-BR': {
-        title: 'Validação'
-      }
-    }
-  },
-  '/ADI/Validators': {
-    config: {
-      icon: 'checklist',
-      status: 'done',
-      version: 'v0.23.0',
-      meta: {
-        description: {
-          'en-US': 'The 14 built-in validation rules: what each one accepts and rejects, its arguments, default message and placeholders, the caveats of numbers, text lengths, dates, links and uploads, and the errors their constructors throw.',
-          'pt-BR': 'As 14 regras de validação built-in: o que cada uma aceita e rejeita, os argumentos, a mensagem padrão e os placeholders, as ressalvas de números, tamanhos de texto, datas, links e uploads, e os erros que os construtores lançam.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Validators'
-      },
-      'pt-BR': {
-        title: 'Validadores'
-      }
-    }
-  },
-
-  // API
-  '/API': {
+  '/Web/API': {
     config: {
       icon: 'api',
       status: 'done',
-      version: 'v1.1.0',
       meta: {
         description: {
-          'en-US': 'The application layer of Bootgly: projects, configuration, the environment, transport-independent security primitives and the RPC protocols — a JSON-RPC 2.0 dispatcher and an MCP server core.',
-          'pt-BR': 'A camada de aplicação do Bootgly: projetos, configuração, o ambiente, primitivas de segurança independentes de transporte e os protocolos RPC — um dispatcher JSON-RPC 2.0 e um núcleo de servidor MCP.'
-        }
-      },
-      menu: {
-        header: {
-          icon: 'api',
-          label: 'Bootgly API'
-        },
-        separators: {
-          lineBottom: true
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Application Programming Interface'
-      }
-    }
-  },
-  '/API/RPC': {
-    config: null,
-    data: {
-      '*': {
-        title: 'RPC'
-      }
-    }
-  },
-  '/API/RPC/JSON': {
-    config: {
-      icon: 'swap_horiz',
-      status: 'done',
-      version: 'v1.1.0',
-      meta: {
-        description: {
-          'en-US': 'A transport-independent JSON-RPC 2.0 dispatcher: methods by name, single requests, batches and notifications, designed errors with Fault, hidden internal errors with a Reporter, the batch limit and an HTTP route recipe.',
-          'pt-BR': 'Um dispatcher JSON-RPC 2.0 independente de transporte: métodos por nome, requisições únicas, batches e notificações, erros planejados com Fault, erros internos escondidos com um Reporter, o limite de batch e uma receita de rota HTTP.'
-        }
-      },
-      menu: {
-        subheader: '.API.RPC'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'JSON-RPC'
-      }
-    }
-  },
-  '/API/RPC/MCP': {
-    config: {
-      icon: 'smart_toy',
-      status: 'done',
-      version: 'v1.1.0',
-      meta: {
-        description: {
-          'en-US': 'The Model Context Protocol server core over JSON-RPC: revision negotiation, tools, resources and prompts from your closures, the Initializer for the session, the empty-result rule, and its HTTP and stdio transports.',
-          'pt-BR': 'O núcleo de servidor do Model Context Protocol sobre JSON-RPC: negociação de revisão, tools, resources e prompts a partir das suas closures, o Initializer para a sessão, a regra do resultado vazio e seus transportes HTTP e stdio.'
+          'en-US': 'The REST shell: Action dispatch, REST routes, RFC 9457 problems and Resource transformers.',
+          'pt-BR': 'O shell REST: dispatch de Action, rotas REST, problems RFC 9457 e transformadores Resource.'
         }
       },
       menu: {},
@@ -1699,11 +1061,8 @@ export default {
       }
     },
     data: {
-      'en-US': {
-        title: 'MCP server'
-      },
-      'pt-BR': {
-        title: 'Servidor MCP'
+      '*': {
+        title: 'Web API'
       }
     }
   },
@@ -3009,21 +2368,22 @@ export default {
     }
   },
 
-  // WPI
-  '/WPI': {
+  // API
+  '/API': {
     config: {
-      icon: 'language',
+      icon: 'api',
       status: 'done',
+      version: 'v1.1.0',
       meta: {
         description: {
-          'en-US': 'Build web-facing systems with Bootgly HTTP, TCP and UDP layers, from datagrams and sockets to high-level servers.',
-          'pt-BR': 'Crie sistemas voltados para a Web com as camadas HTTP, TCP e UDP do Bootgly, de datagramas e sockets a servidores de alto nível.'
+          'en-US': 'The application layer of Bootgly: projects, configuration, the environment, transport-independent security primitives and the RPC protocols — a JSON-RPC 2.0 dispatcher and an MCP server core.',
+          'pt-BR': 'A camada de aplicação do Bootgly: projetos, configuração, o ambiente, primitivas de segurança independentes de transporte e os protocolos RPC — um dispatcher JSON-RPC 2.0 e um núcleo de servidor MCP.'
         }
       },
       menu: {
         header: {
-          icon: 'language',
-          label: 'Bootgly WPI'
+          icon: 'api',
+          label: 'Bootgly API'
         },
         separators: {
           lineBottom: true
@@ -3035,114 +2395,51 @@ export default {
     },
     data: {
       '*': {
-        title: 'Web Programming Interface'
+        title: 'Application Programming Interface'
       }
     }
   },
-  '/WPI/HTTP': {
+  '/API/RPC': {
     config: null,
     data: {
       '*': {
-        title: 'HTTP'
+        title: 'RPC'
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_CLI': {
+  '/API/RPC/JSON': {
     config: {
-      icon: 'dns',
+      icon: 'swap_horiz',
       status: 'done',
+      version: 'v1.1.0',
       meta: {
         description: {
-          'en-US': 'Run an event-driven HTTP server in pure PHP with workers, fibers, routing and middleware.',
-          'pt-BR': 'Execute um servidor HTTP orientado a eventos em PHP puro, com workers, fibers, roteamento e middleware.'
+          'en-US': 'A transport-independent JSON-RPC 2.0 dispatcher: methods by name, single requests, batches and notifications, designed errors with Fault, hidden internal errors with a Reporter, the batch limit and an HTTP route recipe.',
+          'pt-BR': 'Um dispatcher JSON-RPC 2.0 independente de transporte: métodos por nome, requisições únicas, batches e notificações, erros planejados com Fault, erros internos escondidos com um Reporter, o limite de batch e uma receita de rota HTTP.'
         }
       },
       menu: {
-        subheader: '.WPI.HTTP'
+        subheader: '.API.RPC'
       },
-      subpages: {
-        showcase: false,
-        vs: { template: 'vs' }
-      }
-    },
-    data: {
-      '*': {
-        title: 'HTTP Server CLI'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/HTTP2': {
-    config: {
-      icon: 'bolt',
-      status: 'done',
-      version: 'v0.19.0',
-      meta: {
-        description: {
-          'en-US': 'Serve HTTP/2 natively — h2 over TLS (ALPN) and cleartext prior knowledge, HPACK, multiplexing, flow control and rapid-reset protection, dependency-free.',
-          'pt-BR': 'Sirva HTTP/2 nativamente — h2 sobre TLS (ALPN) e prior knowledge em texto claro, HPACK, multiplexação, controle de fluxo e proteção rapid-reset, sem dependências.'
-        }
-      },
-      menu: {},
       subpages: {
         showcase: false
       }
     },
     data: {
       '*': {
-        title: 'HTTP/2'
+        title: 'JSON-RPC'
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_CLI/Request': {
+  '/API/RPC/MCP': {
     config: {
-      icon: 'last_page',
+      icon: 'smart_toy',
       status: 'done',
+      version: 'v1.1.0',
       meta: {
         description: {
-          'en-US': 'Inspect HTTP request data, connection details and URL parts inside Bootgly handlers.',
-          'pt-BR': 'Inspecione dados da requisição HTTP, detalhes da conexão e partes da URL dentro dos handlers do Bootgly.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Request'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Response': {
-    config: {
-      icon: 'first_page',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Compose HTTP responses with headers, body formats, files and protocol-aware delivery.',
-          'pt-BR': 'Monte respostas HTTP com headers, formatos de body, arquivos e entrega consciente do protocolo.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Response'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Response/Resources': {
-    config: {
-      icon: 'extension',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View, Database, KV and HTTP.',
-          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View, Database, KV e HTTP.'
+          'en-US': 'The Model Context Protocol server core over JSON-RPC: revision negotiation, tools, resources and prompts from your closures, the Initializer for the session, the empty-result rule, and its HTTP and stdio transports.',
+          'pt-BR': 'O núcleo de servidor do Model Context Protocol sobre JSON-RPC: negociação de revisão, tools, resources e prompts a partir das suas closures, o Initializer para a sessão, a regra do resultado vazio e seus transportes HTTP e stdio.'
         }
       },
       menu: {},
@@ -3152,106 +2449,105 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Response Resources'
+        title: 'MCP server'
       },
       'pt-BR': {
-        title: 'Response Resources'
+        title: 'Servidor MCP'
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_CLI/Router': {
+
+  // ADI
+  '/ADI': {
     config: {
-      icon: 'alt_route',
+      icon: 'data_array',
       status: 'done',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Match routes and dispatch HTTP requests through Bootgly routing.',
-          'pt-BR': 'Faça o match de rotas e despache requisições HTTP pelo roteamento do Bootgly.'
+          'en-US': 'Store and check data in Bootgly: the SQL and KV (Redis) databases, connection pooling, Query and Schema Builders, migrations, seeders and the ORM Data Mapper, the in-memory Table dataset, and Validation with its built-in rules.',
+          'pt-BR': 'Guarde e confira dados no Bootgly: bancos SQL e KV (Redis), pool de conexões, Query e Schema Builders, migrations, seeders e o ORM Data Mapper, o dataset Table em memória e a Validação com as suas regras built-in.'
         }
       },
-      menu: {},
+      menu: {
+        header: {
+          icon: 'data_array',
+          label: 'Bootgly ADI'
+        },
+        separators: {
+          lineBottom: true
+        }
+      },
       subpages: {
         showcase: false
       }
     },
     data: {
       '*': {
-        title: 'Routing'
+        title: 'Abstract Data Interface'
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_CLI/Authentication': {
+  '/ADI/Casters': {
     config: {
-      icon: 'shield',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Protect HTTP Server CLI routes with Basic, Bearer, JWT and Session authentication guards.',
-          'pt-BR': 'Proteja rotas do HTTP Server CLI com guards de autenticação Basic, Bearer, JWT e Session.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Authentication'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Authorization': {
-    config: {
-      icon: 'verified_user',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Require Scope, Role and Policy gates after HTTP authentication succeeds.',
-          'pt-BR': 'Exija gates de Scope, Role e Policy depois que a autenticação HTTP passa.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Authorization'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/Middlewares': {
-    config: {
-      icon: 'settings_input_component',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Chain CORS, rate limits, security headers and other HTTP middlewares around each request.',
-          'pt-BR': 'Encadeie CORS, rate limits, secure headers e outros middlewares HTTP ao redor de cada requisição.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Middlewares'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Server_CLI/MCP': {
-    config: {
-      icon: 'smart_toy',
+      icon: 'swap_horiz',
       status: 'new',
       version: 'v1.2.0',
       meta: {
         description: {
-          'en-US': 'Serve an MCP server on a route over Streamable HTTP: sessions shared across workers and bound to the caller, protocol-version and Origin checks, JSON or event-stream answers, the GET listening stream and DELETE.',
-          'pt-BR': 'Sirva um servidor MCP em uma rota via Streamable HTTP: sessões compartilhadas entre workers e vinculadas a quem chama, verificação de versão do protocolo e de Origin, respostas em JSON ou event stream, o stream de escuta via GET e o DELETE.'
+          'en-US': 'Convert one value to int, float, bool, string or DateTimeImmutable: the Strict mode for input a person wrote, the Loose mode for values a driver produced, what each type accepts, and refusals that never echo the value.',
+          'pt-BR': 'Converta um valor para int, float, bool, string ou DateTimeImmutable: o modo Strict para entrada escrita por uma pessoa, o modo Loose para valores que um driver produziu, o que cada tipo aceita, e recusas que nunca ecoam o valor.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Casters'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Casters'
+      }
+    }
+  },
+  '/ADI/Database': {
+    config: {
+      icon: 'hub',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'The transport-agnostic DBAL core both facades extend: connection config, the connection pool, how an operation runs and fails, Operation states and Result fields.',
+          'pt-BR': 'O núcleo do DBAL, agnóstico de transporte, que as duas fachadas estendem: config de conexão, o pool de conexões, como uma operação roda e falha, os estados da Operation e os campos do Result.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Database'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'DBAL core'
+      },
+      'pt-BR': {
+        title: 'Núcleo do DBAL'
+      }
+    }
+  },
+  '/ADI/Database/Config': {
+    config: {
+      icon: 'settings',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Connection config for every database driver: keys and defaults, driver names, the operation timeout, pool size, TLS (secure) rules and the configuration errors.',
+          'pt-BR': 'Config de conexão de todo driver de banco: chaves e padrões, nomes de driver, o timeout das operações, o tamanho do pool, as regras de TLS (secure) e os erros de configuração.'
         }
       },
       menu: {},
@@ -3261,21 +2557,200 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'MCP over HTTP'
+        title: 'Database configuration'
       },
       'pt-BR': {
-        title: 'MCP via HTTP'
+        title: 'Configuração do banco'
       }
     }
   },
-  '/WPI/HTTP/HTTP_Server_CLI/Queues': {
+  '/ADI/Database/Pool': {
     config: {
-      icon: 'queue',
+      icon: 'device_hub',
       status: 'done',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Enqueue background jobs from request handlers and process them with a queue worker.',
-          'pt-BR': 'Enfileire jobs em background a partir dos route handlers e processe-os com um worker de fila.'
+          'en-US': 'The database connection pool: sizing and co-location, synchronous waits, deadlines, cancellation, withdrawn work and session reset, and replica health.',
+          'pt-BR': 'O pool de conexões do banco: dimensionamento e co-localização, esperas síncronas, prazos, cancelamento, trabalho retirado e reset de sessão, e saúde das réplicas.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Connection pool'
+      },
+      'pt-BR': {
+        title: 'Pool de conexões'
+      }
+    }
+  },
+  '/ADI/Databases': {
+    config: {
+      icon: 'category',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Database paradigm facades: SQL for relational databases and KV for Redis commands, where to open each one, and the Databases registry that creates a facade by name.',
+          'pt-BR': 'As fachadas de paradigma de banco: SQL para bancos relacionais e KV para comandos Redis, onde abrir cada uma e o registry Databases, que cria uma fachada pelo nome.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Databases'
+      },
+      'pt-BR': {
+        title: 'Bancos de dados'
+      }
+    }
+  },
+
+  '/ADI/Databases/SQL': {
+    config: {
+      icon: 'dataset',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'The SQL facade: open a database, its SQL config keys, run and await queries, read the outcome, read-after-write routing, builders, transactions and repositories, events and errors.',
+          'pt-BR': 'A fachada SQL: abrir um banco, as chaves de config SQL, executar e aguardar queries, ler o resultado, roteamento read-after-write, builders, transações e repositórios, eventos e erros.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.SQL'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'SQL database'
+      },
+      'pt-BR': {
+        title: 'Banco SQL'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers': {
+    config: {
+      icon: 'cable',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native SQL wire drivers: PostgreSQL, MySQL/MariaDB and SQLite — selection, capabilities, result differences, error codes, limits and pool notes.',
+          'pt-BR': 'Wire drivers SQL nativos: PostgreSQL, MySQL/MariaDB e SQLite — seleção, capacidades, diferenças no resultado, códigos de erro, limites e notas de pool.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Drivers'
+      },
+      'pt-BR': {
+        title: 'Drivers'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/PostgreSQL': {
+    config: {
+      icon: 'dns',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native PostgreSQL Protocol 3.0 driver: SCRAM authentication, TLS, extended protocol and pipelining.',
+          'pt-BR': 'Driver nativo do PostgreSQL Protocol 3.0: autenticação SCRAM, TLS, protocolo estendido e pipelining.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'PostgreSQL'
+      },
+      'pt-BR': {
+        title: 'PostgreSQL'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/MySQL': {
+    config: {
+      icon: 'bolt',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native MySQL/MariaDB driver: caching_sha2 authentication, TLS, binary prepared statements and KILL QUERY.',
+          'pt-BR': 'Driver nativo MySQL/MariaDB: autenticação caching_sha2, TLS, prepared statements binários e KILL QUERY.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'MySQL'
+      },
+      'pt-BR': {
+        title: 'MySQL'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/SQLite': {
+    config: {
+      icon: 'sd_storage',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Native SQLite driver over ext-sqlite3: zero-setup file and :memory: databases for tests and prototypes.',
+          'pt-BR': 'Driver nativo SQLite sobre ext-sqlite3: bancos em arquivo e :memory: sem setup para testes e protótipos.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'SQLite'
+      },
+      'pt-BR': {
+        title: 'SQLite'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Drivers/Types': {
+    config: {
+      icon: 'data_object',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'How PostgreSQL, MySQL and SQLite bind PHP parameters and return column types, side by side, and what to normalize in PHP for portable code.',
+          'pt-BR': 'Como PostgreSQL, MySQL e SQLite vinculam parâmetros PHP e devolvem tipos de coluna, lado a lado, e o que normalizar no PHP para código portável.'
         }
       },
       menu: {
@@ -3288,137 +2763,23 @@ export default {
       }
     },
     data: {
-      '*': {
-        title: 'Queues'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Client_CLI': {
-    config: {
-      icon: 'desktop_windows',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Send outbound HTTP requests from the CLI with Bootgly client, decoding and connection flow.',
-          'pt-BR': 'Envie requisições HTTP de saída pela CLI com o cliente, a decodificação e o fluxo de conexão do Bootgly.'
-        }
+      'en-US': {
+        title: 'Type mapping'
       },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'HTTP Client CLI'
+      'pt-BR': {
+        title: 'Mapeamento de tipos'
       }
     }
   },
-  '/WPI/HTTP/HTTP_Client_CLI/Request': {
-    config: {
-      icon: 'last_page',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Build outbound HTTP requests with methods, headers, body data and transport options.',
-          'pt-BR': 'Monte requisições HTTP de saída com métodos, headers, dados de body e opções de transporte.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Request'
-      }
-    }
-  },
-  '/WPI/HTTP/HTTP_Client_CLI/Response': {
-    config: {
-      icon: 'first_page',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Read outbound HTTP responses, status codes, headers and payloads from Bootgly CLI clients.',
-          'pt-BR': 'Leia respostas HTTP de saída, status codes, headers e payloads nos clientes CLI do Bootgly.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Response'
-      }
-    }
-  },
-  '/WPI/WS': {
-    config: null,
-    data: {
-      '*': {
-        title: 'WS'
-      }
-    }
-  },
-  '/WPI/WS/WS_Server_CLI': {
+  '/ADI/Databases/SQL/Transaction': {
     config: {
       icon: 'sync_alt',
       status: 'done',
-      version: 'v0.19.0',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
-          'pt-BR': 'Execute um servidor WebSocket orientado a eventos em PHP puro — framing RFC 6455, salas, heartbeat ping/pong, compressão e autenticação no handshake.'
-        }
-      },
-      menu: {
-        subheader: '.WPI.WS'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'WS Server CLI'
-      }
-    }
-  },
-  '/WPI/WS/WS_Server_CLI/Channels': {
-    config: {
-      icon: 'forum',
-      status: 'done',
-      version: 'v0.19.0',
-      meta: {
-        description: {
-          'en-US': 'Group WebSocket sessions into rooms and broadcast to every member across workers.',
-          'pt-BR': 'Agrupe sessões WebSocket em salas e faça broadcast para todos os membros entre workers.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Channels'
-      }
-    }
-  },
-  '/WPI/WS/WS_Server_CLI/Compression': {
-    config: {
-      icon: 'compress',
-      status: 'done',
-      version: 'v0.19.0',
-      meta: {
-        description: {
-          'en-US': 'Negotiate permessage-deflate (RFC 7692) to compress WebSocket messages with built-in zlib.',
-          'pt-BR': 'Negocie permessage-deflate (RFC 7692) para comprimir mensagens WebSocket com o zlib embutido.'
+          'en-US': 'SQL transactions on one pinned pooled connection: commit, rollback and abort, savepoints, refusals, repositories inside a transaction, read-after-write marks and lifecycle events.',
+          'pt-BR': 'Transações SQL em uma conexão fixada do pool: commit, rollback e abort, savepoints, recusas, repositórios dentro de uma transação, marcas de read-after-write e eventos do ciclo de vida.'
         }
       },
       menu: {},
@@ -3428,22 +2789,122 @@ export default {
     },
     data: {
       'en-US': {
-        title: 'Compression'
+        title: 'Transactions'
       },
       'pt-BR': {
-        title: 'Compressão'
+        title: 'Transações'
       }
     }
   },
-  '/WPI/WS/WS_Server_CLI/Authentication': {
+  '/ADI/Databases/SQL/Builder': {
     config: {
-      icon: 'shield',
+      icon: 'storage',
       status: 'done',
-      version: 'v0.19.0',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Authenticate the WebSocket handshake by reusing the HTTP Server CLI auth guards.',
-          'pt-BR': 'Autentique o handshake WebSocket reaproveitando os guards de autenticação do HTTP Server CLI.'
+          'en-US': 'Build parameterized SELECT, INSERT, UPDATE and DELETE statements through the SQL Query Builder.',
+          'pt-BR': 'Monte SELECT, INSERT, UPDATE e DELETE parametrizados com o Query Builder SQL.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Query Builder'
+      },
+      'pt-BR': {
+        title: 'Query Builder'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Reading': {
+    config: {
+      icon: 'search',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Read rows with select, filters, text matching, joins, aliases, aggregates, grouping, order and locks.',
+          'pt-BR': 'Leia linhas com select, filtros, busca textual, joins, aliases, agregações, agrupamento, ordem e locks.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Reading rows'
+      },
+      'pt-BR': {
+        title: 'Lendo linhas'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Writing': {
+    config: {
+      icon: 'edit_note',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Write rows with insert, multi-row set values, update/delete guards, RETURNING output and upsert handling.',
+          'pt-BR': 'Escreva linhas com insert, valores multi-row, guards de update/delete, output RETURNING e upsert.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Writing rows'
+      },
+      'pt-BR': {
+        title: 'Escrevendo linhas'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Composing': {
+    config: {
+      icon: 'account_tree',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Compose advanced query shapes with Identifier, Expression, nested filters, subqueries, derived tables and CTEs.',
+          'pt-BR': 'Componha queries avançadas com Identifier, Expression, filtros aninhados, subqueries, tabelas derivadas e CTEs.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Composing queries'
+      },
+      'pt-BR': {
+        title: 'Compondo queries'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Builder/Dialects': {
+    config: {
+      icon: 'compare_arrows',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Compare Query Builder output across PostgreSQL, MySQL and SQLite: quotes, placeholders and capabilities.',
+          'pt-BR': 'Compare a saída do Query Builder em PostgreSQL, MySQL e SQLite: quotes, placeholders e capacidades.'
         }
       },
       menu: {
@@ -3456,80 +2917,73 @@ export default {
       }
     },
     data: {
-      '*': {
-        title: 'Authentication'
+      'en-US': {
+        title: 'Query dialects'
+      },
+      'pt-BR': {
+        title: 'Dialetos de query'
       }
     }
   },
-  '/WPI/WS/WS_Client_CLI': {
+  '/ADI/Databases/SQL/Schema': {
     config: {
-      icon: 'cell_tower',
+      icon: 'schema',
       status: 'done',
-      version: 'v0.19.0',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',
-          'pt-BR': 'Converse com um endpoint WebSocket em PHP puro — framing mascarado RFC 6455, fragmentação, ping/pong, permessage-deflate e wss://.'
+          'en-US': 'Compile portable CREATE, ALTER, DROP, RENAME, index and constraint DDL into dialect-specific SQL.',
+          'pt-BR': 'Compile DDL portável de CREATE, ALTER, DROP, RENAME, índices e constraints em SQL específico do dialeto.'
         }
       },
-      menu: {
-        separators: {
-          lineBottom: true
-        }
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
     },
     data: {
-      '*': {
-        title: 'WS Client CLI'
+      'en-US': {
+        title: 'Schema Builder'
+      },
+      'pt-BR': {
+        title: 'Schema Builder'
       }
     }
   },
-  '/WPI/TCP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'TCP'
-      }
-    }
-  },
-  '/WPI/TCP/TCP_Server_CLI': {
+  '/ADI/Databases/SQL/Schema/Blueprint': {
     config: {
-      icon: 'dns',
+      icon: 'view_column',
       status: 'done',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Accept low-level TCP connections with non-blocking sockets, multi-worker runtime and raw package handlers.',
-          'pt-BR': 'Aceite conexões TCP de baixo nível com sockets não bloqueantes, runtime multi-worker e handlers raw de pacotes.'
+          'en-US': 'Define tables and columns fluently: types, modifiers, keys, references and auxiliary enums.',
+          'pt-BR': 'Defina tabelas e colunas de forma fluente: tipos, modificadores, chaves, referências e enums auxiliares.'
         }
       },
-      menu: {
-        subheader: '.WPI.TCP',  
-        separators: {
-          lineBottom: true
-        }
-      
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
     },
     data: {
-      '*': {
-        title: 'TCP Server CLI'
+      'en-US': {
+        title: 'Defining tables'
+      },
+      'pt-BR': {
+        title: 'Definindo tabelas'
       }
     }
   },
-  '/WPI/TCP/TCP_Client_CLI': {
+  '/ADI/Databases/SQL/Schema/Migrations': {
     config: {
-      icon: 'desktop_windows',
+      icon: 'history',
       status: 'done',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Open low-level outbound TCP connections for custom protocols, event loops and raw socket workflows.',
-          'pt-BR': 'Abra conexões TCP de saída de baixo nível para protocolos customizados, event loops e fluxos raw de socket.'
+          'en-US': 'Version the schema with migration files, the Runner, batches, history, transactions and locking.',
+          'pt-BR': 'Versione o schema com arquivos de migration, o Runner, batches, histórico, transações e lock.'
         }
       },
       menu: {},
@@ -3539,66 +2993,565 @@ export default {
     },
     data: {
       '*': {
-        title: 'TCP Client CLI'
+        title: 'Migrations'
       }
     }
   },
-  '/WPI/UDP': {
-    config: null,
-    data: {
-      '*': {
-        title: 'UDP'
-      }
-    }
-  },
-  '/WPI/UDP/UDP_Server_CLI': {
+  '/ADI/Databases/SQL/Schema/Dialects': {
     config: {
-      icon: 'dns',
+      icon: 'compare_arrows',
       status: 'done',
+      version: 'v0.16.0',
       meta: {
         description: {
-          'en-US': 'Accept UDP datagrams with a raw handler API, worker-based execution and terminal-friendly control.',
-          'pt-BR': 'Aceite datagramas UDP com uma API raw de handler, execução com workers e controle amigável pelo terminal.'
+          'en-US': 'PostgreSQL, MySQL and SQLite compilation differences and capability checks.',
+          'pt-BR': 'Diferenças de compilação e checagem de capacidades de PostgreSQL, MySQL e SQLite.'
         }
       },
       menu: {
         separators: {
           lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Dialects'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Seed': {
+    config: {
+      icon: 'playlist_add',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Create and run rerunnable SQL seeders with Query Builder, transactions, locks and deterministic fakers.',
+          'pt-BR': 'Crie e rode seeders SQL reexecutáveis com Query Builder, transações, locks e fakers determinísticos.'
+        }
+      },
+      menu: {
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Seeders'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/ORM': {
+    config: null,
+    data: {
+      '*': {
+        title: 'SQL ORM'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Model': {
+    config: {
+      icon: 'label',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Map entity classes to tables: compiled and cached metadata, Model::reflect(), mapping rules and errors, property types and constructors, readonly and inherited properties, and dates per driver.',
+          'pt-BR': 'Mapeie classes de entidade para tabelas: metadata compilada e cacheada, Model::reflect(), regras e erros de mapeamento, tipos de propriedade e construtores, propriedades readonly e herdadas, e datas por driver.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.SQL.ORM'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Model'
+      },
+      'pt-BR': {
+        title: 'ORM Model'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Model/Attributes': {
+    config: {
+      icon: 'sell',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Table, Key, Column and Relation attributes: generated and application-assigned keys, the insert, update, generated and nullable column flags, and relation kinds, keys, pivots, names and lazy wrappers.',
+          'pt-BR': 'Attributes Table, Key, Column e Relation: chaves geradas e atribuídas pela aplicação, as flags de coluna insert, update, generated e nullable, e tipos, chaves, pivots, nomes e wrappers lazy de relação.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Model Attributes'
+      },
+      'pt-BR': {
+        title: 'ORM Model Attributes'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository': {
+    config: {
+      icon: 'account_tree',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Run ORM Data Mapper operations with repositories, selections, hydration and local identity maps.',
+          'pt-BR': 'Execute operações ORM Data Mapper com repositories, selections, hidratação e identity maps locais.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository'
+      },
+      'pt-BR': {
+        title: 'ORM Repository'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Pagination': {
+    config: {
+      icon: 'last_page',
+      status: 'done',
+      version: 'v0.22.0',
+      meta: {
+        description: {
+          'en-US': 'Paginate ORM repositories by page with a COUNT(*) total or by keyset cursor: REST bodies and headers in HTTP routes, cursor walks at the ADI layer and the order columns a cursor accepts.',
+          'pt-BR': 'Pagine repositórios ORM por página, com total COUNT(*), ou por cursor keyset: bodies e headers REST em rotas HTTP, caminhadas por cursor na camada ADI e as colunas de ordenação que um cursor aceita.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Pagination'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Pagination'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Relations': {
+    config: {
+      icon: 'hub',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Load ORM relations as deferred operations, eagerly through an await bridge or lazily through LazyCollection/LazyReference wrappers, for has-one, has-many, belongs-to and many-to-many data; relation properties are never persisted.',
+          'pt-BR': 'Carregue relações ORM como operações deferidas, em modo eager por uma ponte de await ou em modo lazy pelos wrappers LazyCollection/LazyReference, para has-one, has-many, belongs-to e many-to-many; propriedades de relação nunca são persistidas.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Relations'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Relations'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Selection': {
+    config: {
+      icon: 'filter_list',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Describe the rows an ORM repository reads: filters by property or column, OR, text matching, order, slices, row locks, relations to load and named scopes, with the call-order caveats.',
+          'pt-BR': 'Descreva as linhas que um repositório ORM lê: filtros por propriedade ou coluna, OR, busca textual, ordem, fatias, locks de linha, relações a carregar e escopos nomeados, com as ressalvas de ordem de chamada.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Selection'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Selection'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Hydration': {
+    config: {
+      icon: 'water_drop',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Turn finished operations into entities: the mapped result, how rows are cast into typed properties, the identity map and reset(), saved entities on every driver and the current limitations.',
+          'pt-BR': 'Transforme operações terminadas em entidades: o resultado mapeado, como linhas viram propriedades tipadas, o identity map e reset(), entidades salvas em cada driver e as limitações atuais.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Hydration'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Hydration'
+      }
+    }
+  },
+  '/ADI/Databases/SQL/Repository/Hooks': {
+    config: {
+      icon: 'webhook',
+      status: 'done',
+      version: 'v0.16.0',
+      meta: {
+        description: {
+          'en-US': 'Listen to the eight ORM repository lifecycle hooks: the arguments each receives, which calls emit it, why Saved runs before the write lands, and how listeners steer or refuse the work.',
+          'pt-BR': 'Escute os oito hooks do ciclo de vida do repositório ORM: os argumentos de cada um, quais chamadas o emitem, por que Saved roda antes de a escrita acontecer, e como listeners conduzem ou recusam o trabalho.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'ORM Repository Hooks'
+      },
+      'pt-BR': {
+        title: 'ORM Repository Hooks'
+      }
+    }
+  },
+  '/ADI/Databases/KV': {
+    config: {
+      icon: 'key',
+      status: 'done',
+      version: 'v0.17.0',
+      meta: {
+        description: {
+          'en-US': 'The KV facade: open a Redis database, run commands and read their replies, pipeline them, timeouts, cancel and withdraw, errors, the kv config scope adapter and the limits of a shared, pipelined pool.',
+          'pt-BR': 'A fachada KV: abrir um banco Redis, executar comandos e ler as respostas, enviá-los em pipeline, timeouts, cancelamento e retirada, erros, o adaptador do escopo de config kv e os limites de um pool compartilhado em pipeline.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Databases.KV'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'KV database'
+      },
+      'pt-BR': {
+        title: 'Banco KV'
+      }
+    }
+  },
+  '/ADI/Databases/KV/Drivers': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Drivers'
+      }
+    }
+  },
+  '/ADI/Databases/KV/Drivers/Redis': {
+    config: {
+      icon: 'memory',
+      status: 'done',
+      version: 'v0.17.0',
+      meta: {
+        description: {
+          'en-US': 'Native Redis driver of the KV facade: non-blocking TCP dial, AUTH/SELECT preamble, implicit TLS and when prefer falls back to plaintext, RESP3 push frames, pipelining and cancellation.',
+          'pt-BR': 'Driver Redis nativo da fachada KV: discagem TCP não bloqueante, preâmbulo AUTH/SELECT, TLS implícito e quando o prefer cai para plaintext, push frames do RESP3, pipelining e cancelamento.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Redis'
+      },
+      'pt-BR': {
+        title: 'Redis'
+      }
+    }
+  },
+
+  '/ADI/Table': {
+    config: {
+      icon: 'table_rows',
+      status: 'done',
+      version: 'v0.1.3',
+      meta: {
+        description: {
+          'en-US': 'The Table dataset behind the CLI Table: header, body and footer rows, the array syntax to read and change them, sum, subtract, multiply, divide and find over a body column, and their current limits.',
+          'pt-BR': 'O dataset Table por trás da Table do CLI: linhas de cabeçalho, corpo e rodapé, a sintaxe de array para lê-las e alterá-las, sum, subtract, multiply, divide e find sobre uma coluna do corpo, e os seus limites atuais.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Table'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Table dataset'
+      },
+      'pt-BR': {
+        title: 'Dataset de tabela'
+      }
+    }
+  },
+  '/ADI/Validation': {
+    config: {
+      icon: 'fact_check',
+      status: 'done',
+      version: 'v0.23.0',
+      meta: {
+        description: {
+          'en-US': 'The validation engine: run rules against an array, read valid and errors, blank values and implicit rules, every rule runs and nothing is converted, how messages are built and translated, writing a custom rule, and the Condition contract.',
+          'pt-BR': 'O motor de validação: executar regras sobre um array, ler valid e errors, valores em branco e regras implícitas, toda regra roda e nada é convertido, como as mensagens são montadas e traduzidas, escrever uma regra customizada e o contrato Condition.'
+        }
+      },
+      menu: {
+        subheader: '.ADI.Validation'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Validation'
+      },
+      'pt-BR': {
+        title: 'Validação'
+      }
+    }
+  },
+  '/ADI/Validators': {
+    config: {
+      icon: 'checklist',
+      status: 'done',
+      version: 'v0.23.0',
+      meta: {
+        description: {
+          'en-US': 'The 14 built-in validation rules: what each one accepts and rejects, its arguments, default message and placeholders, the caveats of numbers, text lengths, dates, links and uploads, and the errors their constructors throw.',
+          'pt-BR': 'As 14 regras de validação built-in: o que cada uma aceita e rejeita, os argumentos, a mensagem padrão e os placeholders, as ressalvas de números, tamanhos de texto, datas, links e uploads, e os erros que os construtores lançam.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Validators'
+      },
+      'pt-BR': {
+        title: 'Validadores'
+      }
+    }
+  },
+
+  // ABI
+  '/ABI': {
+    config: {
+      icon: 'bolt',
+      status: 'done',
+      version: 'v1.0.0',
+      meta: {
+        description: {
+          'en-US': 'The base layer every other one stands on: code primitives, templates, IO, resources, events and debugging.',
+          'pt-BR': 'A camada base sobre a qual todas as outras se apoiam: primitivas de código, templates, IO, recursos, eventos e depuração.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'bolt',
+          label: 'Bootgly ABI'
         },
-        subheader: '.WPI.UDP'
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'UDP Server CLI'
-      }
-    }
-  },
-  '/WPI/UDP/UDP_Client_CLI': {
-    config: {
-      icon: 'desktop_windows',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Send UDP datagrams with callback-based client flows, configurable workers and monitor-friendly execution.',
-          'pt-BR': 'Envie datagramas UDP com fluxos de cliente baseados em callbacks, workers configuráveis e execução amigável para monitoramento.'
+        separators: {
+          lineBottom: true
         }
       },
-      menu: {},
       subpages: {
         showcase: false
       }
     },
     data: {
       '*': {
-        title: 'UDP Client CLI'
+        title: 'Abstract Bootable Interface'
       }
     }
   },
-  '/WPI/Events': {
+  '/ABI/Clock': {
+    config: {
+      icon: 'schedule',
+      status: 'done',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'Read wall and monotonic time through one injectable Clock, measure durations with Bootgly\\ABI\\Stopwatch, and hand time-sensitive code a fake clock in tests.',
+          'pt-BR': 'Leia a hora de parede e a monotônica por um único Clock injetável, meça durações com Bootgly\\ABI\\Stopwatch e entregue um relógio fake ao código sensível ao tempo nos testes.'
+        }
+      },
+      menu: {
+        subheader: '.ABI'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Clock'
+      }
+    }
+  },
+  '/ABI/Code': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Code'
+      }
+    }
+  },
+  '/ABI/Code/__Array': {
+    config: {
+      icon: 'data_array',
+      status: 'done',
+      version: 'v1.0.0',
+      meta: {
+        description: {
+          'en-US': 'Chain array operations in a single pass: map, filter, early-exit find/check and reusable pipelines.',
+          'pt-BR': 'Encadeie operações de array em uma passagem: map, filter, find/check com saída antecipada e pipelines reutilizáveis.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Code'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: '__Array'
+      }
+    }
+  },
+  '/ABI/Code/__String': {
+    config: null,
+    data: {
+      '*': {
+        title: '__String'
+      }
+    }
+  },
+  '/ABI/Code/__String/Bytes': {
+    config: {
+      icon: 'straighten',
+      status: 'done',
+      version: 'v1.1.0',
+      meta: {
+        description: {
+          'en-US': 'Format byte counts as human-readable sizes and parse sizes such as "512M" or "1.5 GB" back into bytes.',
+          'pt-BR': 'Formate contagens de bytes como tamanhos legíveis e interprete tamanhos como "512M" ou "1.5 GB" de volta em bytes.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Code.__String'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Bytes'
+      }
+    }
+  },
+  '/ABI/Data': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Data'
+      }
+    }
+  },
+  '/ABI/Data/URI': {
+    config: {
+      icon: 'link',
+      status: 'done',
+      version: 'v1.0.6',
+      meta: {
+        description: {
+          'en-US': 'Parse RFC 3986 URIs and resolve references — the one resolver behind every redirect Location.',
+          'pt-BR': 'Interprete URIs RFC 3986 e resolva referências — o único resolvedor por trás de todo Location de redirect.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Data'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'URI'
+      }
+    }
+  },
+  '/ABI/Events': {
     config: null,
     data: {
       '*': {
@@ -3606,19 +3559,19 @@ export default {
       }
     }
   },
-  '/WPI/Events/Select': {
+  '/ABI/Events/Selector': {
     config: {
       icon: 'sensors',
       status: 'new',
       version: 'v1.3.0',
       meta: {
         description: {
-          'en-US': 'Handle POSIX signals on the worker event loop: handlers run between callbacks, one per signal, restored on release, with failures reported instead of stopping the loop.',
-          'pt-BR': 'Trate sinais POSIX no event loop do worker: handlers rodam entre callbacks, um por sinal, restaurados ao liberar, com falhas reportadas em vez de parar o loop.'
+          'en-US': 'Wait until a stream can be read or written, with an absolute monotonic deadline, signal interruption reported and named refusals instead of hangs.',
+          'pt-BR': 'Espere até um stream poder ser lido ou escrito, com um deadline monotônico absoluto, interrupção por sinal reportada e recusas nomeadas em vez de travamentos.'
         }
       },
       menu: {
-        subheader: '.WPI.Events'
+        subheader: '.ABI.Events'
       },
       subpages: {
         showcase: false
@@ -3626,30 +3579,39 @@ export default {
     },
     data: {
       '*': {
-        title: 'Select'
+        title: 'Selector'
       }
     }
   },
-
-  // Web (platform)
-  '/Web': {
+  '/ABI/IO': {
+    config: null,
+    data: {
+      '*': {
+        title: 'IO'
+      }
+    }
+  },
+  '/ABI/IO/FS': {
+    config: null,
+    data: {
+      '*': {
+        title: 'FS'
+      }
+    }
+  },
+  '/ABI/IO/FS/File': {
     config: {
-      icon: 'public',
+      icon: 'description',
       status: 'done',
+      version: 'v1.1.0',
       meta: {
         description: {
-          'en-US': 'The opinionated web platform over the WPI interface: MVC apps and REST APIs.',
-          'pt-BR': 'A plataforma web opinativa sobre a interface WPI: apps MVC e APIs REST.'
+          'en-US': 'Replace a file atomically and durably, with its permissions set before the first byte, and serialize writers across processes with advisory locks.',
+          'pt-BR': 'Substitua um arquivo de forma atômica e durável, com as permissões definidas antes do primeiro byte, e serialize escritores entre processos com locks consultivos.'
         }
       },
       menu: {
-        header: {
-          icon: 'public',
-          label: 'Web'
-        },
-        separators: {
-          lineBottom: true
-        }
+        subheader: '.ABI.IO.FS'
       },
       subpages: {
         showcase: false
@@ -3657,49 +3619,87 @@ export default {
     },
     data: {
       '*': {
-        title: 'Web'
+        title: 'File'
       }
     }
   },
-  '/Web/App': {
-    config: {
-      icon: 'dashboard',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics, single-page apps and view conventions.',
-          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics, single-page apps e convenções de views.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
+  '/ABI/Resources': {
+    config: null,
     data: {
       '*': {
-        title: 'Web App'
+        title: 'Resources'
       }
     }
   },
-  '/Web/API': {
+  '/ABI/Resources/Storage': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Storage'
+      }
+    }
+  },
+  '/ABI/Resources/Storage/Drivers': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Drivers'
+      }
+    }
+  },
+  '/ABI/Resources/Storage/Drivers/S3': {
     config: {
-      icon: 'api',
-      status: 'done',
+      icon: 'cloud_upload',
+      status: 'new',
+      version: 'v1.3.0',
       meta: {
         description: {
-          'en-US': 'The REST shell: Action dispatch, REST routes, RFC 9457 problems and Resource transformers.',
-          'pt-BR': 'O shell REST: dispatch de Action, rotas REST, problems RFC 9457 e transformadores Resource.'
+          'en-US': 'Presign time-limited download and upload links, let a browser send a Multipart Upload straight to the bucket, and read a byte range of an object with the S3 Storage driver.',
+          'pt-BR': 'Pré-assine links de download e upload com prazo, deixe o navegador enviar um Multipart Upload direto para o bucket e leia uma faixa de bytes de um objeto com o driver S3 do Storage.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.ABI.Resources.Storage.Drivers'
+      },
       subpages: {
         showcase: false
       }
     },
     data: {
       '*': {
-        title: 'Web API'
+        title: 'S3'
+      }
+    }
+  },
+  '/ABI/Syntax': {
+    config: null,
+    data: {
+      '*': {
+        title: 'Syntax'
+      }
+    }
+  },
+  '/ABI/Syntax/Lint': {
+    config: {
+      icon: 'rule',
+      status: 'new',
+      version: 'v1.2.0',
+      meta: {
+        description: {
+          'en-US': 'Configure bootgly lint check in one bootgly.Lint.php: the trees checked, the paths excluded, the rules enforced and every waiver with its reason — stale waivers fail the run.',
+          'pt-BR': 'Configure o bootgly lint check num único bootgly.Lint.php: as árvores checadas, os caminhos excluídos, as regras aplicadas e cada isenção com o seu motivo — isenções obsoletas falham a execução.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Syntax'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Lint'
       }
     }
   },
