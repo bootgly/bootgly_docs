@@ -5,7 +5,8 @@ the existing JWT and Authorization components:
 
 - `Encrypter` — authenticated symmetric encryption (AES-256-GCM via OpenSSL) with key
   management and rotation.
-- `Password` — argon2id password hashing with a rehash-on-verify policy.
+- `Password` — argon2id password hashing with a rehash-on-verify policy, and verifiers
+  for the hashes of users imported from another stack.
 
 Both are transport-agnostic: they encrypt values and hash passwords for any storage —
 database columns, cookies, queue payloads — without touching HTTP concerns.
@@ -160,9 +161,133 @@ if ($Verification->hash !== null) {
 `Bootgly\API\Security\Users::verify()` does all of this for you — the decoy, the
 verify and the compare-and-set upgrade; write it by hand only for a store of your own.
 
-This is also the migration path from legacy storage: verification is format-agnostic, so
-a bcrypt `$2y$…` hash still verifies — and `inspect()` upgrades it to argon2id on the
-user's next successful login. No batch migration, no forced resets.
+This is also the migration path from legacy storage: `verify()` reads every format PHP's
+`password_verify()` reads, so a bcrypt `$2y$…` hash — or the `$2a$…`, `$2b$…` and `$6$…`
+hashes other stacks write — still verifies, and `inspect()` upgrades it to argon2id on the
+user's next successful login. No batch migration, no forced resets. A format PHP cannot
+read needs a verifier — the next section.
+
+## Users imported from another stack
+
+Accounts that come from another stack often carry a hash PHP cannot read: a PBKDF2
+string, a salted digest. A **verifier** teaches `Password` that one format, so those users
+sign in with the password they already have and leave the legacy format behind on their
+first successful sign-in.
+
+**Before you enable a verifier, check the hash column.** The upgrade writes an argon2id
+hash over the legacy one, and an argon2id hash of the default policy is 97 characters
+long — longer than most legacy formats. A column sized for the old format rejects the
+write or, worse, truncates it: the user signs in once and never again. Make the column
+`VARCHAR(255)` (or `TEXT`) first.
+
+Then pass the verifier to `Password`. The shipped one reads PBKDF2:
+
+```php
+use Bootgly\API\Security\Password;
+use Bootgly\API\Security\Password\Verifiers\PBKDF2;
+use Bootgly\API\Security\Users;
+
+$Password = new Password(Verifiers: [
+   new PBKDF2(prefix: 'v1:', digest: 'sha256', ceiling: 100_000),
+]);
+$Users = new Users($Database, $Password);
+
+$Identity = $Users->verify($email, $input);
+// first sign-in: verified by the verifier, the row now holds an argon2id hash
+// next sign-ins: verified natively, nothing is written
+```
+
+What happens on a sign-in:
+
+1. Native formats come first: `password_verify()` is asked for every hash. A hash
+   `password_hash()` mints (argon2id, argon2i, bcrypt `$2y$…`) is answered by it alone —
+   a verifier never sees one, whatever the password, and never sees an empty hash.
+2. Only a hash PHP did not accept **and** names no algorithm for goes to the verifiers,
+   in the order you gave them: a legacy format, or a `$2a$…` / `$6$…` hash of another
+   stack that the password did not open. The first verifier that accepts it ends the
+   search.
+3. A legacy hash never conforms to the current policy, so `inspect()` returns a fresh
+   argon2id hash and `Users::verify()` stores it. The second sign-in finds a native hash.
+
+Set `ceiling` to the highest iteration count present in the imported rows — a stack
+that raised its default over the years left more than one. A stored hash asking for more
+never verifies (and nothing is reported), so a tampered PBKDF2 row cannot keep a worker
+busy.
+
+A row PHP names an algorithm for never reaches a verifier: any row starting
+`$argon2i$` or `$argon2id$`, and a `$2y$` row that happens to be exactly 60 bytes long.
+If a legacy format's rows start like that, give them a prefix of their own in the table
+first; `PBKDF2` refuses a prefix that could produce such a row.
+
+### What the shipped verifier reads
+
+`PBKDF2` reads one layout: `<prefix><iterations>:<salt>:<key>`.
+
+| Part | Rule |
+|---|---|
+| `prefix` | Whatever marks the rows of the other stack (`v1:`, `pbkdf2:`). Required, never empty, never the start of a native hash |
+| `iterations` | Decimal, no sign, no leading zero, from 1 to the ceiling |
+| `salt` | Standard Base64 with padding, not empty |
+| `key` | Standard Base64 with padding; exactly the digest's output — 32 bytes for `sha256`, 64 for `sha512` |
+
+Anything else answers `false`: another separator (`$`), hex or unpadded Base64, a
+truncated or longer key, a row above 1024 bytes. It does not read Django's
+`pbkdf2_sha256$…` or passlib's `$pbkdf2-sha256$…` strings. For those — or for a salted
+digest — write a verifier.
+
+### Write a verifier
+
+A verifier is one method:
+
+```php
+use SensitiveParameter;
+
+use Bootgly\API\Security\Password\Verifier;
+
+final class SaltedDigest implements Verifier
+{
+   public function verify (#[SensitiveParameter] string $password, #[SensitiveParameter] string $hash): bool
+   {
+      // legacy rows: sha256$<salt>$<64 hex characters>
+      $parts = explode('$', $hash);
+
+      if (
+         count($parts) !== 3
+         || $parts[0] !== 'sha256'
+         || strlen($parts[1]) > 64
+         || strlen($parts[2]) !== 64
+      ) {
+         return false;
+      }
+
+      return hash_equals($parts[2], hash('sha256', "{$parts[1]}{$password}"));
+   }
+}
+
+$Password = new Password(Verifiers: [new SaltedDigest]);
+```
+
+It is a security surface, so keep five rules:
+
+- **Answer `true` only for your own format.** Every hash PHP cannot read reaches the
+  verifier — including a `$2a$…` or `$6$…` hash that a wrong password did not open.
+- **Bound the work.** Cap iterations and lengths before you compute anything.
+- **Compare with `hash_equals()`**, never with `===`.
+- **Answer `false` on a malformed row; do not throw.** A verifier that throws fails the
+  sign-in — it is never a pass. The throwable is reported through `Throwables::notify()`
+  and no other verifier is asked for that hash. The HTTP server logs what is reported,
+  so an outage of something the verifier calls shows up there; a process of your own (a
+  command, a job) sees it only if it registers a reporter.
+- **Mark the password and the hash `#[SensitiveParameter]`**, as above, so neither
+  appears in the trace of a reported throwable.
+
+The upgrade stores the hash of the password as it was typed at that sign-in. A verifier
+that accepts more than one spelling of a password therefore moves the account to the
+spelling used — accept exactly one.
+
+Until its first successful sign-in, an imported account verifies at the cost of its legacy
+format, not at the cost of argon2id — see the enumeration note in the
+[authentication guide](/guide/authentication/overview/).
 
 ## Testing
 
@@ -176,6 +301,13 @@ AI_AGENT=1 bootgly test 22 14     # Encrypter AAD binding
 AI_AGENT=1 bootgly test 22 15     # Key guards, keyring and rotation
 AI_AGENT=1 bootgly test 22 16     # Password hashing
 AI_AGENT=1 bootgly test 22 17     # Password rehash policy and migration
+AI_AGENT=1 bootgly test 22 53     # crypt-family hashes of other stacks ($2a$, $2b$, $6$)
+AI_AGENT=1 bootgly test 22 54     # when a verifier is asked, and when it never is
+AI_AGENT=1 bootgly test 22 55     # legacy hash: verify, one rehash, conformant afterwards
+AI_AGENT=1 bootgly test 22 56     # PBKDF2 verifier: format, ceiling, key length
+AI_AGENT=1 bootgly test 22 57     # a verifier that throws
+AI_AGENT=1 bootgly test 22 58     # imported account: sign-in and stored upgrade
+AI_AGENT=1 bootgly test 22 59     # additive surface, sensitive parameters, constant-time compare
 ```
 
 ## Reference
@@ -310,13 +442,15 @@ The key used to encrypt new payloads.
 ### Password
 
 ```php
-public function __construct (int $memory = 65536, int $time = 4, int $threads = 1)
+public function __construct (int $memory = 65536, int $time = 4, int $threads = 1, array $Verifiers = [])
 ```
 
-Creates a password hasher with argon2id cost parameters (`memory` in KiB). Throws a
-`RuntimeException` when the PHP build lacks Argon2 support and an
-`InvalidArgumentException` when a parameter is below the OWASP floor (19456 KiB, 2
-iterations, 1 thread).
+Creates a password hasher with argon2id cost parameters (`memory` in KiB). `$Verifiers`
+is the list of `Password\Verifier` objects asked, in order, for a stored hash PHP did not
+accept and does not recognise. Throws a `RuntimeException` when the PHP build lacks Argon2
+support, an `InvalidArgumentException` when a parameter is below the OWASP floor (19456
+KiB, 2 iterations, 1 thread) and a `TypeError` when an element of `$Verifiers` does not
+implement `Password\Verifier`.
 
 ```php
 public function hash (#[\SensitiveParameter] string $password): string
@@ -326,11 +460,15 @@ Hashes a password with the current policy. The returned string embeds the algori
 cost parameters.
 
 ```php
-public function verify (#[\SensitiveParameter] string $password, string $hash): bool
+public function verify (#[\SensitiveParameter] string $password, #[\SensitiveParameter] string $hash): bool
 ```
 
-Verifies a password against a stored hash. Format-agnostic — hashes minted by other
-algorithms (e.g. legacy bcrypt) still verify. An empty stored hash never verifies.
+Verifies a password against a stored hash. Every format `password_verify()` reads is
+tried natively first — hashes minted by other algorithms (legacy bcrypt, argon2i, the
+crypt-family hashes of other stacks) still verify. A hash it did not accept and that names
+no native algorithm is handed to the configured verifiers, in order; a verifier that
+throws makes the answer `false` and is reported through `Throwables::notify()`. An empty
+stored hash never verifies.
 
 ```php
 public function check (string $hash): bool
@@ -340,7 +478,7 @@ Checks whether a stored hash conforms to the current policy — `false` means th
 should be regenerated.
 
 ```php
-public function inspect (#[\SensitiveParameter] string $password, string $hash): Verification
+public function inspect (#[\SensitiveParameter] string $password, #[\SensitiveParameter] string $hash): Verification
 ```
 
 Verifies a password and applies the rehash-on-verify policy in one call. Returns a
@@ -360,3 +498,51 @@ public private(set) null|string $hash;
 
 Fresh policy-conformant hash to persist. Filled only when the password is valid and the
 stored hash no longer conforms to the current policy.
+
+### Password\Verifier
+
+```php
+public function verify (#[SensitiveParameter] string $password, #[SensitiveParameter] string $hash): bool
+```
+
+The contract of a legacy-format verifier. Called only for a non-empty stored hash that
+`password_verify()` did not accept and that names no native algorithm. Returns `true`
+only when the hash is in the verifier's own format and the password matches it.
+
+### Password\Verifiers\PBKDF2
+
+```php
+public function __construct (string $prefix, string $digest = 'sha256', int $ceiling = 1_000_000)
+```
+
+Creates a verifier for PBKDF2 hashes stored as `<prefix><iterations>:<salt>:<key>`. Throws
+an `InvalidArgumentException` when the prefix is empty or could be read by PHP as a
+native hash (`$2y$…`, or one carrying the `argon2i$` / `argon2id$` identifier), the
+digest is not an HMAC algorithm of the PHP build
+(`hash_hmac_algos()`) or the ceiling is below 1.
+
+```php
+public function verify (#[SensitiveParameter] string $password, #[SensitiveParameter] string $hash): bool
+```
+
+Verifies a password against a stored PBKDF2 hash, comparing in constant time. Returns
+`false` — never throws — for a hash of another format, a malformed one, one above the
+iteration ceiling or one whose key is not exactly the digest's length.
+
+```php
+public private(set) string $prefix;
+```
+
+The format prefix that marks a stored hash as this verifier's.
+
+```php
+public private(set) string $digest;
+```
+
+The HMAC digest of the derivation.
+
+```php
+public private(set) int $ceiling;
+```
+
+The iteration ceiling — a stored hash asking for more never verifies.

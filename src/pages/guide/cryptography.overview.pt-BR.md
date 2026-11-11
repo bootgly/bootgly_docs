@@ -5,7 +5,8 @@ O Bootgly traz dois essenciais de criptografia na camada de aplicação em
 
 - `Encrypter` — criptografia simétrica autenticada (AES-256-GCM via OpenSSL) com
   gerenciamento e rotação de chaves.
-- `Password` — hashing de senhas com argon2id e política rehash-on-verify.
+- `Password` — hashing de senhas com argon2id e política rehash-on-verify, mais
+  verificadores para os hashes de usuários importados de outra stack.
 
 Ambos são agnósticos de transporte: criptografam valores e fazem hash de senhas para
 qualquer armazenamento — colunas de banco, cookies, payloads de fila — sem tocar em
@@ -165,10 +166,135 @@ if ($Verification->hash !== null) {
 `Bootgly\API\Security\Users::verify()` faz tudo isso por você — o decoy, a verificação
 e o upgrade compare-and-set; escreva à mão só para um store próprio.
 
-Este também é o caminho de migração de armazenamento legado: a verificação é agnóstica de
-formato, então um hash bcrypt `$2y$…` ainda verifica — e `inspect()` o atualiza para
+Este também é o caminho de migração de armazenamento legado: `verify()` lê todo formato
+que o `password_verify()` do PHP lê, então um hash bcrypt `$2y$…` — ou os hashes `$2a$…`,
+`$2b$…` e `$6$…` que outras stacks gravam — ainda verifica, e `inspect()` o atualiza para
 argon2id no próximo login bem-sucedido do usuário. Sem migração em lote, sem resets
-forçados.
+forçados. Um formato que o PHP não lê precisa de um verificador — a próxima seção.
+
+## Usuários importados de outra stack
+
+Contas que vêm de outra stack costumam trazer um hash que o PHP não lê: uma string
+PBKDF2, um digest com salt. Um **verificador** ensina esse formato ao `Password`, e esses
+usuários entram com a senha que já têm e deixam o formato legado para trás no primeiro
+login bem-sucedido.
+
+**Antes de habilitar um verificador, confira a coluna do hash.** O upgrade grava um hash
+argon2id por cima do legado, e um hash argon2id da política padrão tem 97 caracteres —
+mais que a maioria dos formatos legados. Uma coluna dimensionada para o formato antigo
+rejeita a escrita ou, pior, trunca o valor: o usuário entra uma vez e nunca mais. Deixe a
+coluna como `VARCHAR(255)` (ou `TEXT`) primeiro.
+
+Depois, passe o verificador ao `Password`. O que já vem pronto lê PBKDF2:
+
+```php
+use Bootgly\API\Security\Password;
+use Bootgly\API\Security\Password\Verifiers\PBKDF2;
+use Bootgly\API\Security\Users;
+
+$Password = new Password(Verifiers: [
+   new PBKDF2(prefix: 'v1:', digest: 'sha256', ceiling: 100_000),
+]);
+$Users = new Users($Database, $Password);
+
+$Identity = $Users->verify($email, $input);
+// primeiro login: verificado pelo verificador, a linha passa a guardar um hash argon2id
+// logins seguintes: verificados nativamente, nada é gravado
+```
+
+O que acontece em um login:
+
+1. Os formatos nativos vêm primeiro: o `password_verify()` é consultado para todo hash.
+   Um hash que o `password_hash()` gera (argon2id, argon2i, bcrypt `$2y$…`) é respondido
+   só por ele — um verificador nunca vê um desses, seja qual for a senha, e nunca vê um
+   hash vazio.
+2. Só um hash que o PHP não aceitou **e** para o qual não nomeia um algoritmo vai para os
+   verificadores, na ordem em que você os passou: um formato legado, ou um hash `$2a$…` /
+   `$6$…` de outra stack que a senha não abriu. O primeiro verificador que aceita encerra
+   a busca.
+3. Um hash legado nunca está conforme a política atual, então `inspect()` retorna um hash
+   argon2id novo e `Users::verify()` o grava. O segundo login já encontra um hash nativo.
+
+Defina `ceiling` com a maior contagem de iterações presente nas linhas importadas — uma
+stack que aumentou o default ao longo dos anos deixou mais de uma. Um hash armazenado que
+peça mais nunca verifica (e nada é reportado), então uma linha PBKDF2 adulterada não
+consegue prender um worker.
+
+Uma linha para a qual o PHP nomeia um algoritmo nunca chega a um verificador: toda linha
+que começa com `$argon2i$` ou `$argon2id$`, e uma linha `$2y$` que por acaso tenha
+exatamente 60 bytes. Se as linhas de um formato legado começam assim, dê antes a elas um
+prefixo próprio na tabela; o `PBKDF2` recusa um prefixo que possa produzir uma linha dessas.
+
+### O que o verificador pronto lê
+
+`PBKDF2` lê um layout só: `<prefix><iterations>:<salt>:<key>`.
+
+| Parte | Regra |
+|---|---|
+| `prefix` | O que marca as linhas da outra stack (`v1:`, `pbkdf2:`). Obrigatório, nunca vazio, nunca o começo de um hash nativo |
+| `iterations` | Decimal, sem sinal, sem zero à esquerda, de 1 até o teto |
+| `salt` | Base64 padrão com padding, não vazio |
+| `key` | Base64 padrão com padding; exatamente a saída do digest — 32 bytes para `sha256`, 64 para `sha512` |
+
+Qualquer outra coisa responde `false`: outro separador (`$`), hex ou Base64 sem padding,
+uma chave truncada ou maior, uma linha acima de 1024 bytes. Ele não lê as strings
+`pbkdf2_sha256$…` do Django nem as `$pbkdf2-sha256$…` do passlib. Para essas — ou para um
+digest com salt — escreva um verificador.
+
+### Escreva um verificador
+
+Um verificador é um método só:
+
+```php
+use SensitiveParameter;
+
+use Bootgly\API\Security\Password\Verifier;
+
+final class SaltedDigest implements Verifier
+{
+   public function verify (#[SensitiveParameter] string $password, #[SensitiveParameter] string $hash): bool
+   {
+      // linhas legadas: sha256$<salt>$<64 caracteres hex>
+      $parts = explode('$', $hash);
+
+      if (
+         count($parts) !== 3
+         || $parts[0] !== 'sha256'
+         || strlen($parts[1]) > 64
+         || strlen($parts[2]) !== 64
+      ) {
+         return false;
+      }
+
+      return hash_equals($parts[2], hash('sha256', "{$parts[1]}{$password}"));
+   }
+}
+
+$Password = new Password(Verifiers: [new SaltedDigest]);
+```
+
+Ele é uma superfície de segurança, então siga cinco regras:
+
+- **Responda `true` só para o seu formato.** Todo hash que o PHP não lê chega ao
+  verificador — inclusive um hash `$2a$…` ou `$6$…` que uma senha errada não abriu.
+- **Limite o trabalho.** Imponha teto de iterações e de tamanhos antes de calcular
+  qualquer coisa.
+- **Compare com `hash_equals()`**, nunca com `===`.
+- **Responda `false` para uma linha malformada; não lance exceção.** Um verificador que
+  lança faz o login falhar — nunca conta como senha correta. O throwable é reportado por
+  `Throwables::notify()` e nenhum outro verificador é consultado para aquele hash. O
+  servidor HTTP loga o que é reportado, então uma queda de algo que o verificador chama
+  aparece ali; um processo seu (um comando, um job) só vê isso se registrar um reporter.
+- **Marque a senha e o hash com `#[SensitiveParameter]`**, como acima, para nenhum dos
+  dois aparecer no trace de um throwable reportado.
+
+O upgrade grava o hash da senha como ela foi digitada naquele login. Um verificador que
+aceita mais de uma grafia de uma senha, portanto, move a conta para a grafia usada —
+aceite exatamente uma.
+
+Até o primeiro login bem-sucedido, uma conta importada verifica no custo do formato
+legado, não no custo do argon2id — veja a nota de enumeração no
+[guia de autenticação](/guide/authentication/overview/).
 
 ## Testes
 
@@ -182,6 +308,13 @@ AI_AGENT=1 bootgly test 22 14     # vínculo de AAD do Encrypter
 AI_AGENT=1 bootgly test 22 15     # guards de Key, keyring e rotação
 AI_AGENT=1 bootgly test 22 16     # hashing de Password
 AI_AGENT=1 bootgly test 22 17     # política de rehash e migração do Password
+AI_AGENT=1 bootgly test 22 53     # hashes crypt-family de outras stacks ($2a$, $2b$, $6$)
+AI_AGENT=1 bootgly test 22 54     # quando um verificador é consultado, e quando nunca é
+AI_AGENT=1 bootgly test 22 55     # hash legado: verifica, um rehash, conforme depois
+AI_AGENT=1 bootgly test 22 56     # verificador PBKDF2: formato, teto, tamanho da chave
+AI_AGENT=1 bootgly test 22 57     # um verificador que lança
+AI_AGENT=1 bootgly test 22 58     # conta importada: login e upgrade gravado
+AI_AGENT=1 bootgly test 22 59     # superfície aditiva, parâmetros sensíveis, comparação em tempo constante
 ```
 
 ## Reference
@@ -316,13 +449,15 @@ A chave usada para criptografar novos payloads.
 ### Password
 
 ```php
-public function __construct (int $memory = 65536, int $time = 4, int $threads = 1)
+public function __construct (int $memory = 65536, int $time = 4, int $threads = 1, array $Verifiers = [])
 ```
 
-Cria um hasher de senhas com parâmetros de custo do argon2id (`memory` em KiB). Lança
-`RuntimeException` quando o build do PHP não tem suporte a Argon2 e
-`InvalidArgumentException` quando um parâmetro fica abaixo do piso OWASP (19456 KiB, 2
-iterações, 1 thread).
+Cria um hasher de senhas com parâmetros de custo do argon2id (`memory` em KiB).
+`$Verifiers` é a lista de objetos `Password\Verifier` consultados, em ordem, para um hash
+armazenado que o PHP não aceitou e não reconhece. Lança `RuntimeException` quando o build
+do PHP não tem suporte a Argon2, `InvalidArgumentException` quando um parâmetro fica
+abaixo do piso OWASP (19456 KiB, 2 iterações, 1 thread) e `TypeError` quando um elemento
+de `$Verifiers` não implementa `Password\Verifier`.
 
 ```php
 public function hash (#[\SensitiveParameter] string $password): string
@@ -332,12 +467,15 @@ Faz hash de uma senha com a política atual. A string retornada embute o algorit
 parâmetros de custo.
 
 ```php
-public function verify (#[\SensitiveParameter] string $password, string $hash): bool
+public function verify (#[\SensitiveParameter] string $password, #[\SensitiveParameter] string $hash): bool
 ```
 
-Verifica uma senha contra um hash armazenado. Agnóstico de formato — hashes criados por
-outros algoritmos (por exemplo, bcrypt legado) ainda verificam. Um hash armazenado vazio
-nunca verifica.
+Verifica uma senha contra um hash armazenado. Todo formato que o `password_verify()` lê é
+tentado nativamente primeiro — hashes criados por outros algoritmos (bcrypt legado, argon2i, os
+hashes crypt-family de outras stacks) ainda verificam. Um hash que ele não aceitou e que
+não nomeia um algoritmo nativo é entregue aos verificadores configurados, em ordem; um
+verificador que lança faz a resposta ser `false` e é reportado por `Throwables::notify()`.
+Um hash armazenado vazio nunca verifica.
 
 ```php
 public function check (string $hash): bool
@@ -347,7 +485,7 @@ Confere se um hash armazenado está conforme a política atual — `false` signi
 hash deve ser regenerado.
 
 ```php
-public function inspect (#[\SensitiveParameter] string $password, string $hash): Verification
+public function inspect (#[\SensitiveParameter] string $password, #[\SensitiveParameter] string $hash): Verification
 ```
 
 Verifica uma senha e aplica a política rehash-on-verify em uma chamada. Retorna um
@@ -367,3 +505,51 @@ public private(set) null|string $hash;
 
 Hash novo e conforme a política para persistir. Preenchido apenas quando a senha é válida
 e o hash armazenado não está mais conforme a política atual.
+
+### Password\Verifier
+
+```php
+public function verify (#[SensitiveParameter] string $password, #[SensitiveParameter] string $hash): bool
+```
+
+O contrato de um verificador de formato legado. Chamado apenas para um hash armazenado
+não vazio que o `password_verify()` não aceitou e que não nomeia um algoritmo nativo.
+Retorna `true` só quando o hash está no formato do próprio verificador e a senha bate.
+
+### Password\Verifiers\PBKDF2
+
+```php
+public function __construct (string $prefix, string $digest = 'sha256', int $ceiling = 1_000_000)
+```
+
+Cria um verificador para hashes PBKDF2 armazenados como `<prefix><iterations>:<salt>:<key>`.
+Lança `InvalidArgumentException` quando o prefixo é vazio ou poderia ser lido pelo PHP
+como um hash nativo (`$2y$…`, ou um que carregue o identificador `argon2i$` /
+`argon2id$`), o digest não é um algoritmo HMAC do build do PHP
+(`hash_hmac_algos()`) ou o teto é menor que 1.
+
+```php
+public function verify (#[SensitiveParameter] string $password, #[SensitiveParameter] string $hash): bool
+```
+
+Verifica uma senha contra um hash PBKDF2 armazenado, comparando em tempo constante.
+Retorna `false` — nunca lança — para um hash de outro formato, um malformado, um acima do
+teto de iterações ou um cuja chave não tem exatamente o tamanho do digest.
+
+```php
+public private(set) string $prefix;
+```
+
+O prefixo de formato que marca um hash armazenado como sendo deste verificador.
+
+```php
+public private(set) string $digest;
+```
+
+O digest HMAC da derivação.
+
+```php
+public private(set) int $ceiling;
+```
+
+O teto de iterações — um hash armazenado que peça mais nunca verifica.

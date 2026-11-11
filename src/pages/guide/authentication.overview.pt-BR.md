@@ -248,8 +248,16 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   um identificador desconhecido custa uma verificação contra um decoy da
   política atual, o mesmo trabalho de uma senha errada, para o timing não
   revelar existência de conta. Contas cujo hash guardado segue outro algoritmo
-  ou custo (um hash bcrypt legado) verificam no custo desse hash até o próximo
-  login com sucesso atualizá-lo — até lá, o timing delas difere.
+  ou custo (um hash bcrypt legado, ou um hash lido por um
+  [verificador legado](/guide/cryptography/overview/)) verificam no custo desse
+  hash até o próximo login com sucesso atualizá-lo — até lá, o timing delas
+  difere, e dá para distinguir uma conta importada das demais. Medido em um
+  núcleo: uma senha errada contra uma conta argon2id da política padrão e um
+  identificador desconhecido levam cerca de 324 ms cada; uma senha errada
+  contra uma linha PBKDF2-SHA256 leva cerca de 38 ms com 100 000 iterações,
+  226 ms com 600 000 e 377 ms com 1 000 000. A diferença se fecha conta a
+  conta, a cada primeiro login; para fechá-la de uma vez, force um reset de
+  senha nas contas que ainda estão no formato legado.
 - **Tokens em repouso** — só o digest sha256 do verifier/validator é
   persistido; o segredo raw existe uma vez, no `Token->value` retornado.
 - **Uso único** — o resgate deleta a linha atomicamente
@@ -385,7 +393,8 @@ public function verify (string $email, #[\SensitiveParameter] string $password):
 
 Verifica credenciais com timing uniforme e rehash-on-verify: um identificador
 desconhecido custa uma verificação contra um decoy da política atual, e hashes
-legados migram para a política argon2id atual de forma transparente. Retorna uma
+legados — os que o PHP lê e os que um verificador do `Password` lê — migram para a
+política argon2id atual de forma transparente. Retorna uma
 `Identity` com claims `email` e `verified`, ou `null`. A persistência do rehash
 é best-effort e compare-and-set sobre o hash recém-verificado: um reset ou troca
 de senha gravado durante o login vence — a senha antiga nunca volta, esse login

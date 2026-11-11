@@ -245,8 +245,16 @@ new RateLimit(limit: 5, window: 60, scope: 'auth-login');
   unknown identifier costs one verify against a decoy of the current policy,
   the same work as a wrong password, so timing does not reveal account
   existence. Accounts whose stored hash follows another algorithm or cost (a
-  legacy bcrypt hash) verify at that hash's own cost until their next
-  successful login upgrades it — until then their timing differs.
+  legacy bcrypt hash, or a hash read by a
+  [legacy verifier](/guide/cryptography/overview/)) verify at that hash's own
+  cost until their next successful login upgrades it — until then their timing
+  differs, and an imported account can be told apart from the others. Measured
+  on one core: a wrong password against an argon2id account of the default
+  policy and an unknown identifier both take about 324 ms; a wrong password
+  against a PBKDF2-SHA256 row takes about 38 ms at 100 000 iterations, 226 ms
+  at 600 000 and 377 ms at 1 000 000. The difference closes account by account,
+  on each first sign-in; to close it at once, force a password reset for the
+  accounts still on the legacy format.
 - **Tokens at rest** — only the sha256 digest of the verifier/validator is
   persisted; the raw secret exists once, in the returned `Token->value`.
 - **Single use** — redeeming deletes the row atomically
@@ -377,7 +385,8 @@ public function verify (string $email, #[\SensitiveParameter] string $password):
 
 Verifies credentials with uniform timing and rehash-on-verify: an unknown
 identifier costs one verify against a decoy of the current policy, and legacy
-hashes upgrade to the current argon2id policy transparently. Returns an `Identity`
+hashes — the ones PHP reads and the ones a `Password` verifier reads — upgrade to
+the current argon2id policy transparently. Returns an `Identity`
 with `email` and `verified` claims, or `null`. The rehash persistence is
 best-effort and compare-and-set on the hash just verified: a reset or password
 change committed during the login wins — the old password never comes back, that
