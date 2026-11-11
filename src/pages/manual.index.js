@@ -372,6 +372,79 @@ export default {
     }
   },
 
+  // Web (platform)
+  '/Web': {
+    config: {
+      icon: 'public',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'The opinionated web platform over the WPI interface: MVC apps and REST APIs.',
+          'pt-BR': 'A plataforma web opinativa sobre a interface WPI: apps MVC e APIs REST.'
+        }
+      },
+      menu: {
+        header: {
+          icon: 'public',
+          label: 'Web'
+        },
+        separators: {
+          lineBottom: true
+        }
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Web'
+      }
+    }
+  },
+  '/Web/App': {
+    config: {
+      icon: 'dashboard',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics, single-page apps and view conventions.',
+          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics, single-page apps e convenções de views.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Web App'
+      }
+    }
+  },
+  '/Web/API': {
+    config: {
+      icon: 'api',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'The REST shell: Action dispatch, REST routes, RFC 9457 problems and Resource transformers.',
+          'pt-BR': 'O shell REST: dispatch de Action, rotas REST, problems RFC 9457 e transformadores Resource.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Web API'
+      }
+    }
+  },
+
   // WPI
   '/WPI': {
     config: {
@@ -994,21 +1067,21 @@ export default {
     }
   },
 
-  // Web (platform)
-  '/Web': {
+  // Console (platform)
+  '/Console': {
     config: {
-      icon: 'public',
+      icon: 'terminal',
       status: 'done',
       meta: {
         description: {
-          'en-US': 'The opinionated web platform over the WPI interface: MVC apps and REST APIs.',
-          'pt-BR': 'A plataforma web opinativa sobre a interface WPI: apps MVC e APIs REST.'
+          'en-US': 'The opinionated TUI platform over the CLI interface: full-screen apps and terminal games.',
+          'pt-BR': 'A plataforma TUI opinativa sobre a interface CLI: apps full-screen e jogos de terminal.'
         }
       },
       menu: {
         header: {
-          icon: 'public',
-          label: 'Web'
+          icon: 'terminal',
+          label: 'Console'
         },
         separators: {
           lineBottom: true
@@ -1020,18 +1093,18 @@ export default {
     },
     data: {
       '*': {
-        title: 'Web'
+        title: 'Console'
       }
     }
   },
-  '/Web/App': {
+  '/Console/App': {
     config: {
       icon: 'dashboard',
       status: 'done',
       meta: {
         description: {
-          'en-US': 'The MVC shell: App, Controller dispatch, resource routing, Statics, single-page apps and view conventions.',
-          'pt-BR': 'O shell MVC: App, dispatch de Controllers, resource routing, Statics, single-page apps e convenções de views.'
+          'en-US': 'The TUI application shell: Screens + Router, Keymaps with chords, Statusbar, Toasts, Palette and Tail.',
+          'pt-BR': 'O shell de aplicação TUI: Screens + Router, Keymaps com chords, Statusbar, Toasts, Palette e Tail.'
         }
       },
       menu: {},
@@ -1041,28 +1114,28 @@ export default {
     },
     data: {
       '*': {
-        title: 'Web App'
+        title: 'Console App'
       }
     }
   },
-  '/Web/API': {
+  '/Console/Game': {
     config: {
-      icon: 'api',
+      icon: 'sports_esports',
       status: 'done',
       meta: {
         description: {
-          'en-US': 'The REST shell: Action dispatch, REST routes, RFC 9457 problems and Resource transformers.',
-          'pt-BR': 'O shell REST: dispatch de Action, rotas REST, problems RFC 9457 e transformadores Resource.'
+          'en-US': 'The game shell: fixed-timestep Loop, diff-rendered Canvas, Keyboard held-key heuristics and Scenes.',
+          'pt-BR': 'O shell de jogos: Loop de timestep fixo, Canvas com diff, heurísticas de tecla segurada no Keyboard e Scenes.'
         }
       },
       menu: {},
       subpages: {
-        showcase: false
+        showcase: true
       }
     },
     data: {
       '*': {
-        title: 'Web API'
+        title: 'Console Game'
       }
     }
   },
@@ -2291,79 +2364,6 @@ export default {
     data: {
       '*': {
         title: 'Wizard'
-      }
-    }
-  },
-
-  // Console (platform)
-  '/Console': {
-    config: {
-      icon: 'terminal',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'The opinionated TUI platform over the CLI interface: full-screen apps and terminal games.',
-          'pt-BR': 'A plataforma TUI opinativa sobre a interface CLI: apps full-screen e jogos de terminal.'
-        }
-      },
-      menu: {
-        header: {
-          icon: 'terminal',
-          label: 'Console'
-        },
-        separators: {
-          lineBottom: true
-        }
-      },
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Console'
-      }
-    }
-  },
-  '/Console/App': {
-    config: {
-      icon: 'dashboard',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'The TUI application shell: Screens + Router, Keymaps with chords, Statusbar, Toasts, Palette and Tail.',
-          'pt-BR': 'O shell de aplicação TUI: Screens + Router, Keymaps com chords, Statusbar, Toasts, Palette e Tail.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Console App'
-      }
-    }
-  },
-  '/Console/Game': {
-    config: {
-      icon: 'sports_esports',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'The game shell: fixed-timestep Loop, diff-rendered Canvas, Keyboard held-key heuristics and Scenes.',
-          'pt-BR': 'O shell de jogos: Loop de timestep fixo, Canvas com diff, heurísticas de tecla segurada no Keyboard e Scenes.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: true
-      }
-    },
-    data: {
-      '*': {
-        title: 'Console Game'
       }
     }
   },
