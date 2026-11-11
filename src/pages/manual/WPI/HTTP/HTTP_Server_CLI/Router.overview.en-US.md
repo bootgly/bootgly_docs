@@ -391,7 +391,7 @@ response that still does not fit is served without being cached.
 public function intercept (Middleware ...$middlewares): void;
 ```
 
-Applies middlewares to all routes defined after the `intercept()` call within the current routing scope:
+Applies middlewares to all routes defined after the `intercept()` call within the current routing scope. A warm Router ignores the call — no route is registered after the warm-up:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
@@ -506,8 +506,9 @@ The list records what was registered, not which route wins a request:
   - a static route registered with an empty method name (`''`, alone or in a list) answers every method — `null` too;
   - a route registered as `''` inside a group lands on the site root — its `path` is `/`.
 - **Not everything leaves a row.** A group (`/admin/:*`) is not a route — its children are. A registration made while the Router is paused, after the warm-up, or one that threw an exception stored nothing.
-- **A warm-up that throws** leaves the list empty and `$Router->cached` at `false`; the next request registers every route again. What the failed attempt stored stays in the Router's lookup tables, so after such a failure a route can answer without a row.
-- **A route set that runs more than once is logged each time.** The list is emptied only when the warm-up itself throws. A handler that registers with direct `$Router->route()` calls and then answers the request itself — or throws — leaves the Router cold: the next request runs the registrations again and their rows repeat, one more copy per request, until a request reaches a route. Register with a Generator (`yield $Router->route(...)`), or return early *before* registering, and the list holds each route once.
+- **A warm-up that throws** leaves `$Router->cached` at `false` and the Router as the warm-up found it — the list and the lookup tables alike. The next request registers every route again.
+- **A route set that runs more than once is listed once.** A handler that registers with direct `$Router->route()` calls runs again on every request until the Router is warm, and the Router stays cold while that handler answers the request itself or throws. The server rewinds the Router before each of those runs: the first route a run registers starts from what the Router held before the first run, so the list and the lookup tables hold one copy of each route. A run that registers nothing changes nothing. Outside the server, call `rewind()` before each run of such a handler.
+- **A run registers the whole route set, or nothing.** Once a run registers a route, the routes and the `intercept()` middlewares an earlier run registered and this one does not repeat are gone. Do not guard part of the registrations to run once (a `static` flag, a `require_once`) while the rest runs on every request — an `intercept()` least of all: its routes would be registered again without the middleware.
 
 ## Route Object
 
@@ -555,7 +556,13 @@ The route list: `array<int,Registration>`, one row per stored route, in registra
 warm (null|Generator $Routes = null) : void
 ```
 
-Warms the route cache without a request: drains `$Routes` (the Generator a route set returns), then flattens the route groups. Pass `null` when the routes were registered with direct `$Router->route()` calls. Does nothing on a warm Router. If a route set or a registration throws, the exception is rethrown, the Router stays cold and the route list is emptied (the lookup tables keep what that attempt stored).
+Warms the route cache without a request: drains `$Routes` (the Generator a route set returns), then flattens the route groups. Pass `null` when the routes were registered with direct `$Router->route()` calls. Does nothing on a warm Router. If a route set or a registration throws, the exception is rethrown and the Router stays cold, as `warm()` found it: the routes registered before the call stay, their groups pending again.
+
+```php
+rewind () : void
+```
+
+Marks the start of a registration attempt on a cold Router. The first call records what the Router holds. After each later call the middlewares from `intercept()` are the recorded ones again, and the first route registered puts the rest back before it is stored — the lookup tables, the pending groups and the route list. Routes registered before the first call stay, and an attempt that registers nothing keeps what the last one left; one that registers a route keeps only what it registers and intercepts itself. Does nothing on a warm Router. The server calls it before each run of the request handler while the Router is cold; call it yourself only to run a handler that registers with direct `$Router->route()` calls more than once outside the server.
 
 ### Registration
 
