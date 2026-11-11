@@ -395,6 +395,12 @@ $Transaction = $Database->begin();
 $Database->await($Transaction->Operation);
 $Database->await($Transaction->query('UPDATE users SET name = $1 WHERE id = $2', ['Ada', 1]));
 $Database->await($Transaction->commit());
+
+$renamed = $Database->transact(function (Transaction $Transaction): int {
+   $Rename = $Transaction->query('UPDATE users SET name = $1 WHERE id = $2', ['Ada', 1]);
+
+   return $Transaction->await($Rename)->affected;
+});
 ```
 
 - `table()` starts a Query Builder on a table — or on a derived source, a builder or a compiled
@@ -405,6 +411,11 @@ $Database->await($Transaction->commit());
 - `begin()` starts a transaction on one connection of the primary pool. Its `BEGIN` is assigned at
   once, as `$Transaction->Operation`: await it before the first statement. Commit, rollback,
   savepoints and refusals are in **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)**.
+- `transact()` runs a closure inside a transaction and blocks until it ends: it awaits the
+  `BEGIN`, passes the `Transaction` to the closure, commits and returns the closure's result, or
+  rolls back and rethrows what the closure threw. It is the form for commands, jobs and scripts
+  — the recipes are in **[Database transactions](/guide/database-transactions/overview/)** — and
+  routes use `$Response->Database->transact()`, which does not block the worker.
 
 ### Repositories
 
@@ -493,6 +504,9 @@ $Database->await($Database->query($Where, [], $Job))->Result->cell; // app
 - A write through `$Transaction->query()` marks its scope too (see
   **[Transactions](/manual/ADI/Databases/SQL/Transaction/overview/)**), and in `HTTP_Server_CLI`
   routes `$Response->Database` gives each request a scope of its own.
+- `transact()` marks the default scope once its outermost `COMMIT` succeeded, so the window
+  counts from the commit and not from the write inside it. A `transact()` that rolled back, and a
+  nested one that only released its savepoint, set no mark.
 - A read that fails on a replica is re-run once on the primary, and a replica that keeps failing to
   connect is skipped for a while — see
   **[Replica health](/manual/ADI/Database/Pool/overview/#replica-health)**.
@@ -566,10 +580,13 @@ Emitter::$Instance->listen(Events::Failed, function (Emission $Emission): void {
 | `duplicate key value violates unique constraint "users_pkey"` | `await()` | The server's error, kept in the operation's `error` |
 | `Database operation timed out after 30 seconds.` | `await()` | The operation's `timeout` elapsed |
 | `Database pool has no capacity for the operation.` | `await()` | The awaited operation is still parked in `pending` |
+| `SQL transaction is not active.` | `transact()` | The closure ended the top level itself, or a nested `transact()` was called after the whole transaction had been ended |
+| `SQL transaction operation is still active.` | `transact()` | The closure returned with a statement still in flight |
 
 `new SQL()`, `query()`, `table()`, `begin()` and `map()` throw an `InvalidArgumentException` —
 except `map()` for a class that does not exist, which throws a `ReflectionException`; `await()`
-throws a `RuntimeException` carrying the failed operation's `error`. The connection keys' own
+throws a `RuntimeException` carrying the failed operation's `error`, and so does `transact()` for
+its `BEGIN` and its `COMMIT` — besides rethrowing whatever its closure threw. The connection keys' own
 errors are in **[Database configuration](/manual/ADI/Database/Config/overview/#errors)**, the pool's in
 **[Connection pool](/manual/ADI/Database/Pool/overview/#errors)**, and connection failures in
 **[Failures](/manual/ADI/Database/overview/#failures)**.
@@ -660,6 +677,22 @@ begin (): Transaction
 Starts a transaction on the primary pool. Its `BEGIN` is assigned at once, in
 `$Transaction->Operation`. Throws `InvalidArgumentException` when no SQL driver is registered under
 `driver`.
+
+```php
+transact (Closure $Work): mixed
+```
+
+Runs `$Work($Transaction)` inside a transaction and blocks until it ends. It awaits the `BEGIN`,
+commits every level the closure left open and returns the closure's result. Any throwable rolls
+the transaction back — level by level, falling back to `abort()` when a level cannot be rolled
+back — and is rethrown; a `BEGIN` or a `COMMIT` that fails is thrown as a `RuntimeException`
+carrying the operation's `error`. On every way out the transaction has ended and its connection is
+back in the pool, or dropped when the teardown had to overtake an operation already on the server.
+A call made inside the closure, in the same context — the same Fiber, or outside any — nests on
+the open transaction as a savepoint and receives the same `Transaction`; a call from another
+context opens its own. A nested level that can be neither rolled back nor released ends the whole
+transaction. After the outermost `COMMIT` it marks the default read-after-write scope.
+Inside a Fiber it blocks the worker for the whole transaction.
 
 ```php
 map (string $Entity, null|object $Scope = null, null|Awaiting $Awaiting = null): Repository

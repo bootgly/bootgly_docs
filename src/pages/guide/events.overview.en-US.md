@@ -184,6 +184,13 @@ throws makes `begin()`, `commit()` or `rollback()` throw before any statement is
 and an open transaction stays open on its reserved pooled connection — `abort()`, which
 emits nothing, still ends it.
 
+`$Database->transact()` and `$Response->Database->transact()` make these calls for you, so the
+same events fire: no `Begin` for the transaction itself (it is opened through
+`$Database->begin()`), a `Begin` for the savepoint of a nested call, one `Commit` for each
+level committed and, when the work throws, one `Rollback` for each level rolled back. A
+`Rollback` listener that throws does not keep `$Database->transact()` from ending the
+transaction: it falls back to `abort()`, which announces nothing for the levels it ends.
+
 `Bootgly\ADI\Databases\SQL\Schema\Migration\Events`:
 
 | Event | When | Payload |

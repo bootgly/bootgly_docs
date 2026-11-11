@@ -1,9 +1,12 @@
 # Transactions
 
 `Bootgly\ADI\Databases\SQL\Transaction` pins SQL operations to one pooled connection, so that
-several statements commit or roll back together. Open one with `$Database->begin()`. In
-`HTTP_Server_CLI` routes, use `$Response->Database->transact()` instead: it begins the
-transaction, runs your callback, commits, and rolls back when the callback throws (see
+several statements commit or roll back together. Open one with `$Database->begin()`, or let
+`$Database->transact()` drive a whole one around a closure: it begins the transaction, runs the
+closure, commits, and rolls back when the closure throws (see
+**[SQL database](/manual/ADI/Databases/SQL/overview/#entry-points)**). In `HTTP_Server_CLI`
+routes, use `$Response->Database->transact()`, which has the same contract and does not block the
+worker (see
 **[Database methods](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#database-methods)**).
 
 > Looking for the practical flow first? Start with the
@@ -35,8 +38,8 @@ connection back once the `COMMIT` finishes.
 
 `await()` returns the finished operation and throws a `RuntimeException` carrying its `error` when
 it fails. Put the work and the commit in a `try` and end the transaction in the `catch`, as the
-guide's **[Commit or roll back](/guide/database-transactions/overview/#commit-or-roll-back)**
-recipe does. The example opens `$Database` from the project's `database` config scope, the form
+guide's **[By hand](/guide/database-transactions/overview/#by-hand)** recipe does — or hand the
+work to `$Database->transact()`, which does both. The example opens `$Database` from the project's `database` config scope, the form
 for a boot function, a command or a script inside a project; outside a project, pass the
 connection keys as an array (see **[Configuration](/manual/ADI/Database/Config/overview/)**).
 
@@ -143,7 +146,7 @@ the `COMMIT` of a transaction in which a statement had failed with a rollback, w
 into `SQL transaction was rolled back by the server: a statement inside it had failed.`, and a
 deferred constraint that fails at commit time fails the `COMMIT` too. Either way, a `rollback()` or
 `abort()` that follows is refused with `SQL transaction is not active.`, which is why the guide's
-recipe guards the `abort()` in its `catch`. On SQLite, a `COMMIT` refused on a deferred
+by-hand recipe guards the `abort()` in its `catch`. On SQLite, a `COMMIT` refused on a deferred
 constraint or with `database is locked` is rolled back by the driver, and its error is the
 engine's own message (see **[Engine notes](/guide/database-transactions/overview/#engine-notes)**).
 
@@ -249,6 +252,7 @@ keyword of the statement the call would have composed: `BEGIN`, `SAVEPOINT`, `RE
 | Message | Returned by | When |
 | --- | --- | --- |
 | `SQL transaction operation is still active.` | `begin()`, `query()`, `commit()`, `save()`, `release()`, and `rollback()` at a savepoint level or with a name | The previous statement has not finished |
+| `SQL transaction BEGIN is still in flight: await it before the next operation.` | `begin()` | The statement that has not finished is the transaction's own `BEGIN` — the one `$Database->begin()` composed, or the one that re-opened a closed transaction — which nobody awaited yet. Every other call made at that moment keeps the message above |
 | `SQL transaction is not active.` | `query()`, `commit()`, `rollback()`, `abort()`, `save()`, and `begin()` while `depth` is `1` or more | A `COMMIT` or top-level `ROLLBACK` already closed the transaction, its `BEGIN` failed, or the session its `BEGIN` ran on is gone. For now, `rollback()` and `abort()` also return it while the `BEGIN` is still parked in `pending`, and that refusal ends nothing: the `BEGIN` still runs once capacity frees (see [Abort or roll back](#abort-or-roll-back)) |
 | `SQL transaction savepoint is not active.` | `release()` | No savepoint is open, or the transaction is not active |
 | `SQL transaction savepoint is not available.` | `release('name')`, `rollback('name')` | The name is not open: never created, or destroyed by an earlier named teardown |
@@ -293,6 +297,12 @@ the transaction is classified, a raw string included, and a hand-built `Query` c
 unless it was built with `reading: true`. Statements through the transaction itself always run on
 its pinned primary connection, whatever they are. Without replicas, the mark changes nothing. See
 **[Database read replicas](/guide/database-read-replicas/overview/#read-after-write-scope)**.
+
+A replica cannot have the write before the transaction commits, so a window that started at the
+write may be over by then. `$Database->transact()` therefore marks the default scope again once
+its outermost `COMMIT` succeeded — not after a rollback, and not when a nested call releases its
+savepoint. A transaction you drive by hand does not: call `$Database->touch()` after its `COMMIT`
+when the reads that follow need the window to count from there.
 
 ## Events
 
@@ -345,6 +355,20 @@ listener that throws makes `begin()`, `commit()` or `rollback()` throw before an
 composed. The listener above refuses every top-level commit, a maintenance switch for instance; the
 transaction stays open on its reserved connection, and `abort()`, which emits nothing, still ends
 it. See **[Priority and propagation](/guide/events/overview/#priority-and-propagation)**.
+
+`$Database->transact()` makes these same calls, so its listeners hear them:
+
+| What `transact()` does | Events |
+| --- | --- |
+| Opens the transaction | None — it opens it through `$Database->begin()` |
+| Opens a savepoint for a nested call | `Begin` |
+| Commits | One `Commit` for each level it commits: the savepoints the closure left open, then the transaction |
+| Rolls back | One `Rollback` for each level it rolls back |
+| Ends a transaction it cannot unwind level by level | None for the levels `abort()` ends |
+
+A `Commit` listener that throws makes `transact()` roll the transaction back and rethrow the
+listener's throwable. A `Rollback` listener that throws cannot keep the transaction open:
+`transact()` then ends it with `abort()`, and the throwable you get is still the closure's.
 
 ## Reference
 

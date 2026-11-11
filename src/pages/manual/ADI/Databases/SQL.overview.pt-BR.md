@@ -404,6 +404,12 @@ $Transaction = $Database->begin();
 $Database->await($Transaction->Operation);
 $Database->await($Transaction->query('UPDATE users SET name = $1 WHERE id = $2', ['Ada', 1]));
 $Database->await($Transaction->commit());
+
+$renamed = $Database->transact(function (Transaction $Transaction): int {
+   $Rename = $Transaction->query('UPDATE users SET name = $1 WHERE id = $2', ['Ada', 1]);
+
+   return $Transaction->await($Rename)->affected;
+});
 ```
 
 - O `table()` inicia um Query Builder sobre uma tabela — ou sobre uma fonte derivada, um builder ou
@@ -414,6 +420,11 @@ $Database->await($Transaction->commit());
 - O `begin()` inicia uma transação em uma conexão do pool primário. O `BEGIN` dela é atribuído na
   hora, como `$Transaction->Operation`: aguarde-o antes da primeira instrução. Commit, rollback,
   savepoints e recusas estão em **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)**.
+- O `transact()` roda uma closure dentro de uma transação e bloqueia até ela terminar: aguarda o
+  `BEGIN`, passa a `Transaction` para a closure, faz o commit e devolve o resultado da closure, ou
+  faz o rollback e relança o que a closure lançou. É a forma para comandos, jobs e scripts — as
+  receitas estão em **[Transações de banco](/guide/database-transactions/overview/)** — e as rotas
+  usam o `$Response->Database->transact()`, que não bloqueia o worker.
 
 ### Repositórios
 
@@ -503,6 +514,9 @@ $Database->await($Database->query($Where, [], $Job))->Result->cell; // app
 - Uma escrita por `$Transaction->query()` também marca o escopo dela (veja
   **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)**), e em rotas `HTTP_Server_CLI`
   o `$Response->Database` dá a cada requisição um escopo próprio.
+- O `transact()` marca o escopo padrão quando o `COMMIT` mais externo dele dá certo, então a
+  janela conta a partir do commit, e não da escrita feita dentro dele. Um `transact()` que fez
+  rollback, e um aninhado que só liberou o savepoint dele, não marcam nada.
 - Uma leitura que falha numa réplica é repetida uma vez no primário, e uma réplica que continua
   falhando ao conectar é pulada por um tempo — veja
   **[Saúde das réplicas](/manual/ADI/Database/Pool/overview/#saúde-das-réplicas)**.
@@ -579,11 +593,14 @@ Emitter::$Instance->listen(Events::Failed, function (Emission $Emission): void {
 | `duplicate key value violates unique constraint "users_pkey"` | `await()` | O erro do servidor, guardado no `error` da operação |
 | `Database operation timed out after 30 seconds.` | `await()` | O `timeout` da operação passou |
 | `Database pool has no capacity for the operation.` | `await()` | A operação aguardada ainda está estacionada em `pending` |
+| `SQL transaction is not active.` | `transact()` | A closure encerrou o nível superior por conta própria, ou um `transact()` aninhado foi chamado depois que a transação inteira já tinha sido encerrada |
+| `SQL transaction operation is still active.` | `transact()` | A closure retornou com uma instrução ainda em andamento |
 
 O `new SQL()`, o `query()`, o `table()`, o `begin()` e o `map()` lançam uma
 `InvalidArgumentException` — exceto o `map()` para uma classe que não existe, que lança uma
 `ReflectionException`; o `await()` lança uma `RuntimeException` com o `error` da operação que
-falhou. Os erros das próprias chaves de conexão estão em
+falhou, e o `transact()` faz o mesmo para o `BEGIN` e o `COMMIT` dele — além de relançar o que a
+closure lançou. Os erros das próprias chaves de conexão estão em
 **[Configuração do banco](/manual/ADI/Database/Config/overview/#erros)**, os do pool em
 **[Pool de conexões](/manual/ADI/Database/Pool/overview/#erros)**, e as falhas de conexão em
 **[Falhas](/manual/ADI/Database/overview/#falhas)**.
@@ -674,6 +691,23 @@ begin (): Transaction
 Inicia uma transação no pool primário. O `BEGIN` dela é atribuído na hora, em
 `$Transaction->Operation`. Lança `InvalidArgumentException` quando nenhum driver SQL está
 registrado sob o `driver`.
+
+```php
+transact (Closure $Work): mixed
+```
+
+Roda `$Work($Transaction)` dentro de uma transação e bloqueia até ela terminar. Aguarda o `BEGIN`,
+faz o commit de todos os níveis que a closure deixou abertos e devolve o resultado da closure.
+Qualquer throwable desfaz a transação — nível a nível, caindo para o `abort()` quando um nível não
+pode ser desfeito — e é relançado; um `BEGIN` ou um `COMMIT` que falha é lançado como
+`RuntimeException` com o `error` da operação. Em qualquer saída, a transação terminou e a conexão
+dela voltou para o pool, ou foi derrubada quando o teardown precisou passar por cima de uma
+operação que já estava no servidor. Uma chamada feita dentro da closure, no mesmo contexto — a
+mesma Fiber, ou fora de qualquer uma — se aninha na transação aberta como um savepoint e recebe a
+mesma `Transaction`; uma chamada de outro contexto abre a própria. Um nível aninhado que não pode ser
+desfeito nem liberado encerra a transação inteira. Depois do `COMMIT` mais externo,
+ele marca o escopo padrão de read-after-write. Dentro de uma Fiber, bloqueia o worker durante a
+transação inteira.
 
 ```php
 map (string $Entity, null|object $Scope = null, null|Awaiting $Awaiting = null): Repository

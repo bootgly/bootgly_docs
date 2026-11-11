@@ -1,9 +1,12 @@
 # Transações
 
 `Bootgly\ADI\Databases\SQL\Transaction` prende operações SQL a uma conexão do pool, para que várias
-instruções façam commit ou rollback juntas. Abra uma com `$Database->begin()`. Em rotas do
-`HTTP_Server_CLI`, use `$Response->Database->transact()` em vez disso: ele inicia a transação, roda
-o seu callback, faz o commit e faz o rollback quando o callback lança uma exceção (veja
+instruções façam commit ou rollback juntas. Abra uma com `$Database->begin()`, ou deixe o
+`$Database->transact()` conduzir uma inteira em volta de uma closure: ele inicia a transação, roda
+a closure, faz o commit e faz o rollback quando a closure lança (veja
+**[Banco SQL](/manual/ADI/Databases/SQL/overview/#pontos-de-entrada)**). Em rotas do
+`HTTP_Server_CLI`, use o `$Response->Database->transact()`, que tem o mesmo contrato e não bloqueia
+o worker (veja
 **[Métodos do Database](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/#métodos-do-database)**).
 
 > Quer o fluxo prático primeiro? Comece pelo guia
@@ -35,8 +38,8 @@ conexão de volta quando o `COMMIT` termina.
 
 O `await()` devolve a operação terminada e lança uma `RuntimeException` com o `error` dela quando
 ela falha. Coloque o trabalho e o commit num `try` e encerre a transação no `catch`, como faz a
-receita **[Commit ou rollback](/guide/database-transactions/overview/#commit-ou-rollback)** do
-guia. O exemplo abre o `$Database` a partir do escopo de config `database` do projeto, a forma para
+receita **[Manualmente](/guide/database-transactions/overview/#manualmente)** do guia — ou entregue
+o trabalho ao `$Database->transact()`, que faz as duas coisas. O exemplo abre o `$Database` a partir do escopo de config `database` do projeto, a forma para
 uma função de boot, um comando ou um script dentro de um projeto; fora de um projeto, passe as
 chaves de conexão como array (veja **[Configuração](/manual/ADI/Database/Config/overview/)**).
 
@@ -145,7 +148,7 @@ o `COMMIT` de uma transação em que uma instrução tinha falhado com um rollba
 transforma em `SQL transaction was rolled back by the server: a statement inside it had failed.`, e
 uma constraint deferida que falha no commit também faz o `COMMIT` falhar. Nos dois casos, um
 `rollback()` ou `abort()` em seguida é recusado com `SQL transaction is not active.`, e é por isso
-que a receita do guia protege o `abort()` no `catch`. No SQLite, um `COMMIT` recusado numa
+que a receita manual do guia protege o `abort()` no `catch`. No SQLite, um `COMMIT` recusado numa
 constraint deferida ou com `database is locked` é desfeito pelo driver, e o erro dele é a própria
 mensagem do engine (veja **[Notas por engine](/guide/database-transactions/overview/#notas-por-engine)**).
 
@@ -251,6 +254,7 @@ instrução que a chamada teria composto: `BEGIN`, `SAVEPOINT`, `RELEASE SAVEPOI
 | Mensagem | Devolvida por | Quando |
 | --- | --- | --- |
 | `SQL transaction operation is still active.` | `begin()`, `query()`, `commit()`, `save()`, `release()`, e `rollback()` num nível de savepoint ou com nome | A instrução anterior ainda não terminou |
+| `SQL transaction BEGIN is still in flight: await it before the next operation.` | `begin()` | A instrução que ainda não terminou é o próprio `BEGIN` da transação — o que o `$Database->begin()` compôs, ou o que reabriu uma transação fechada — e ninguém o aguardou ainda. Qualquer outra chamada feita nesse momento mantém a mensagem acima |
 | `SQL transaction is not active.` | `query()`, `commit()`, `rollback()`, `abort()`, `save()`, e `begin()` enquanto `depth` é `1` ou mais | Um `COMMIT` ou `ROLLBACK` de nível superior já fechou a transação, o `BEGIN` dela falhou, ou a sessão em que o `BEGIN` rodou deixou de existir. Por enquanto, `rollback()` e `abort()` também a devolvem enquanto o `BEGIN` ainda está estacionado em `pending`, e essa recusa não encerra nada: o `BEGIN` ainda roda quando a capacidade libera (veja [Abortar ou fazer rollback](#abortar-ou-fazer-rollback)) |
 | `SQL transaction savepoint is not active.` | `release()` | Nenhum savepoint está aberto, ou a transação não está ativa |
 | `SQL transaction savepoint is not available.` | `release('name')`, `rollback('name')` | O nome não está aberto: nunca foi criado, ou um teardown nomeado anterior o destruiu |
@@ -295,6 +299,13 @@ transação é classificada, inclusive uma string raw, e uma `Query` montada à 
 menos que tenha sido criada com `reading: true`. Instruções pela própria transação sempre rodam na
 conexão primária fixada dela, sejam o que forem. Sem réplicas, a marca não muda nada. Veja
 **[Réplicas de leitura de banco](/guide/database-read-replicas/overview/#escopo-de-read-after-write)**.
+
+Uma réplica não tem como ter a escrita antes do commit da transação, então uma janela que começou
+na escrita pode já ter acabado nessa hora. Por isso o `$Database->transact()` marca o escopo padrão
+de novo quando o `COMMIT` mais externo dele dá certo — não depois de um rollback, nem quando uma
+chamada aninhada libera o savepoint dela. Uma transação conduzida manualmente não faz isso: chame
+`$Database->touch()` depois do `COMMIT` quando as leituras seguintes precisarem que a janela conte
+a partir dali.
 
 ## Eventos
 
@@ -349,6 +360,21 @@ composta. O listener acima recusa todo commit de nível superior, um interruptor
 exemplo; a transação continua aberta na conexão reservada dela, e o `abort()`, que não emite nada,
 ainda a encerra. Veja
 **[Prioridade e propagação](/guide/events/overview/#prioridade-e-propagação)**.
+
+O `$Database->transact()` faz essas mesmas chamadas, então os listeners delas o ouvem:
+
+| O que o `transact()` faz | Eventos |
+| --- | --- |
+| Abre a transação | Nenhum — ele a abre pelo `$Database->begin()` |
+| Abre um savepoint para uma chamada aninhada | `Begin` |
+| Faz o commit | Um `Commit` para cada nível commitado: os savepoints que a closure deixou abertos e, depois, a transação |
+| Faz o rollback | Um `Rollback` para cada nível desfeito |
+| Encerra uma transação que não consegue desfazer nível a nível | Nenhum para os níveis que o `abort()` encerra |
+
+Um listener de `Commit` que lança faz o `transact()` desfazer a transação e relançar o throwable do
+listener. Um listener de `Rollback` que lança não consegue manter a transação aberta: o
+`transact()` então a encerra com `abort()`, e o throwable que você recebe continua sendo o da
+closure.
 
 ## Referência
 

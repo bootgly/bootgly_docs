@@ -224,6 +224,8 @@ envia comandos Redis com `command()`; `SQL` abre o resto da pilha SQL:
 - `$Database->query(...)` — ponto de execução para SQL raw, um builder ou uma `Query` compilada.
 - `$Database->table(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
 - `$Database->begin()` — uma transação presa a uma conexão do pool.
+- `$Database->transact(...)` — uma closure rodada dentro de uma transação: commitada quando
+  retorna, desfeita quando lança.
 - `$Database->structure()` — Schema Builder (DDL + migrations), uma instância `Schema` em cache
   vinculada ao dialeto do banco (mesma instância em toda chamada).
 - `$Database->map(...)` — um repositório ORM para uma classe de entidade.

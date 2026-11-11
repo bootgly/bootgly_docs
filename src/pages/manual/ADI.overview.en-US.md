@@ -215,6 +215,8 @@ Redis commands with `command()`; `SQL` opens the rest of the SQL stack:
 - `$Database->query(...)` — execution entrypoint for raw SQL, a builder or a compiled `Query`.
 - `$Database->table(...)` — Query Builder (DML: `SELECT`/`INSERT`/`UPDATE`/`DELETE`).
 - `$Database->begin()` — a transaction pinned to one pooled connection.
+- `$Database->transact(...)` — a closure run inside a transaction: committed when it returns,
+  rolled back when it throws.
 - `$Database->structure()` — Schema Builder (DDL + migrations), a cached `Schema` instance bound
   to the database dialect (same instance on every call).
 - `$Database->map(...)` — an ORM repository for one entity class.

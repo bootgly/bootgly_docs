@@ -9,6 +9,7 @@ falha deve desfazer o grupo inteiro.
 ```php
 use Bootgly\ADI\Databases\SQL;
 use Bootgly\ADI\Databases\SQL\Builder\Auxiliaries\Operators;
+use Bootgly\ADI\Databases\SQL\Transaction;
 use Bootgly\API\Environment\Configs\DatabaseConfig;
 
 enum Tables: string { case Users = 'users'; case Profiles = 'profiles'; }
@@ -16,6 +17,42 @@ enum Columns: string { case Id = 'id'; case UserId = 'user_id'; case Active = 'a
 
 $Database = new SQL(new DatabaseConfig(BOOTGLY_PROJECT->Configs->get('database'))->configure());
 
+$deactivated = $Database->transact(function (Transaction $Transaction): int {
+   $Deactivate = $Transaction
+      ->table(Tables::Users)
+      ->update()
+      ->set(Columns::Active, false)
+      ->filter(Columns::Id, Operators::Equal, 7);
+
+   return $Transaction->await($Transaction->query($Deactivate))->affected;
+});
+```
+
+O `transact()` é uma chamada só para a unidade de trabalho inteira: ele inicia a transação,
+espera o `BEGIN`, roda a sua closure com a `Transaction`, faz o commit e devolve o que a closure
+devolveu. Quando a closure lança, a transação é desfeita e o mesmo throwable sai da chamada. Nos
+dois casos, quando a chamada termina a transação acabou e a conexão dela já voltou para o pool.
+
+Isso abre o `$Database` a partir do escopo de config `database` do projeto (veja
+**[DBAL de banco](/guide/database-dbal/overview/)**), e o `transact()` bloqueia até a transação
+terminar: é a forma para um comando, um job ou um script. Numa rota HTTP, use o resource por
+worker
+**[`$Response->Database`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**: o
+`transact()` dele tem o mesmo contrato sem bloquear o worker, e o callback dele recebe dois
+argumentos — a transação e o resource.
+
+Dentro da closure, aguarde cada instrução antes de enviar a próxima: uma transação carrega uma
+operação por vez, e uma chamada enviada enquanto a anterior ainda roda é recusada (veja
+**[Recusas](/manual/ADI/Databases/SQL/Transaction/overview/#recusas)**). Envie todas as
+instruções da unidade de trabalho pela `$Transaction`: um `$Database->query()` feito dentro da
+closure roda em outra conexão, fora da transação.
+
+### Passo a passo
+
+O `transact()` é feito de chamadas que você também pode fazer por conta própria, quando uma
+transação precisa durar mais que uma função:
+
+```php
 $Transaction = $Database->begin();
 $Database->await($Transaction->Operation);
 
@@ -29,26 +66,78 @@ $Database->await($Transaction->query($Deactivate));
 $Database->await($Transaction->commit());
 ```
 
-Isso abre o `$Database` a partir do escopo de config `database` do projeto (veja
-**[DBAL de banco](/guide/database-dbal/overview/)**): é a forma para uma função de boot, um
-comando ou um script que roda dentro de um projeto. Numa rota HTTP, use o resource por worker
-**[`$Response->Database`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**: o
-`transact()` dele inicia a transação, roda o seu callback e faz o commit, ou o rollback quando
-o callback lança uma exceção.
-
 `begin()` inicia imediatamente e guarda a operação `BEGIN` em `$Transaction->Operation`.
-Aguarde essa operação antes de enviar a primeira instrução e depois aguarde cada operação antes
-de enviar a próxima: uma transação carrega uma operação por vez, e uma chamada enviada enquanto
-a anterior ainda roda é recusada (veja
-**[Recusas](/manual/ADI/Databases/SQL/Transaction/overview/#recusas)**).
+Aguarde essa operação antes de enviar a primeira instrução: um `begin()` chamado enquanto ela
+ainda está em andamento é recusado com
+`SQL transaction BEGIN is still in flight: await it before the next operation.`
 
 ## Commit ou rollback
 
-O `$Database->await()` espera pelo pool da operação (veja
+```php
+use RuntimeException;
+
+try {
+   $Database->transact(function (Transaction $Transaction): void {
+      $Create = $Transaction
+         ->table(Tables::Users)
+         ->insert()
+         ->set(Columns::Active, true);
+
+      $Transaction->await($Transaction->query($Create));
+
+      throw new RuntimeException('The profile could not be created.');
+   });
+}
+catch (RuntimeException $Exception) {
+   $Exception->getMessage(); // The profile could not be created.
+   // Nada foi inserido, e a conexão já voltou para o pool.
+}
+```
+
+O `$Transaction->await()` espera pelo pool da operação (veja
 **[Aguarde de forma síncrona](/manual/ADI/Database/Pool/overview/#aguarde-de-forma-síncrona)**) e
 lança uma `RuntimeException` cuja mensagem é `$Operation->error` quando a operação falha — uma
-chamada recusada inclusive. Envolva o trabalho da aplicação e o commit em `try/catch` e encerre a
-transação com `abort()` no `catch`:
+chamada recusada inclusive. Deixe a exceção sair da closure: o `transact()` encerra a transação
+por você.
+
+- **No retorno**, ele faz o commit da transação inteira, e não de um nível dela: cada nível de
+  savepoint que a closure deixou aberto é liberado primeiro, e então o `COMMIT` é enviado.
+- **Num throwable**, ele faz o rollback nível a nível — um `rollback()` para cada nível aberto,
+  então os listeners de `Rollback` ouvem todos — e relança o mesmo throwable. Quando um nível
+  não pode ser desfeito — um listener de `Rollback` que lança, uma instrução que a closure
+  deixou em andamento num nível de savepoint, um rollback que o servidor recusa — ele encerra a
+  transação inteira com `abort()`, que compõe o `ROLLBACK` de nível superior e não emite evento
+  (veja
+  **[Abortar ou fazer rollback](/manual/ADI/Databases/SQL/Transaction/overview/#abortar-ou-fazer-rollback)**).
+  O throwable que você recebe continua sendo o da closure.
+- **Um `BEGIN` que falha** é lançado antes de a closure rodar. **Um `COMMIT` que falha** também
+  é lançado — uma constraint deferida, por exemplo, que faz o PostgreSQL desfazer a transação
+  inteira: o `transact()` só retorna depois que o `COMMIT` mais externo deu certo.
+- **Uma closure que retorna com uma instrução ainda em andamento** não é commitada: a transação
+  é desfeita e o `transact()` lança `SQL transaction operation is still active.`
+- **Uma closure que encerra o nível superior por conta própria** — com `commit()`, `rollback()`
+  ou `abort()` — faz o `transact()` lançar `SQL transaction is not active.` O que a closure fez
+  continua valendo: um `commit()` que ela enviou está commitado, e esse erro não o desfaz. Os
+  savepoints são seus; o nível externo é do `transact()`.
+
+Depois da chamada, a transação acabou e a conexão fixada voltou para o pool — ou foi derrubada,
+quando o teardown precisou cortar uma instrução que já tinha chegado ao servidor, e a vaga dela
+continua contada até o deadline dessa instrução (veja
+**[Commit e rollback](/manual/ADI/Databases/SQL/Transaction/overview/#commit-e-rollback)**).
+A `Transaction` fica com profundidade `0`, com uma exceção: quando a conexão com o servidor
+caiu no meio do trabalho, o objeto mantém a profundidade que tinha. Nada fica reservado nesse
+caso também, mas não use mais esse objeto.
+
+Uma falha não é a resposta do servidor: a própria espera pode lançar, antes de a operação
+terminar. O `transact()` então retira essa operação e derruba a sessão dela, e nada fica
+reservado. Para um `BEGIN` ou um `ROLLBACK`, o servidor desfaz o trabalho. Para o `COMMIT`, o
+resultado no servidor é desconhecido — ele pode ter sido aplicado —, então leia os dados de
+volta antes de repetir a unidade de trabalho.
+
+### Manualmente
+
+Uma transação que você conduz por conta própria pede o mesmo cuidado. Envolva o trabalho e o
+commit em `try/catch` e encerre a transação com `abort()` no `catch`:
 
 ```php
 use Throwable;
@@ -79,24 +168,14 @@ catch (Throwable $Throwable) {
 }
 ```
 
-Depois de `commit()`, de um `rollback()` externo ou de `abort()`, a profundidade da transação
-vira `0` e a conexão fixada volta para o pool — ou é derrubada, quando o teardown precisou cortar
-uma instrução que já tinha chegado ao servidor, e a vaga dela continua contada até o deadline
-dessa instrução (veja
-**[Commit e rollback](/manual/ADI/Databases/SQL/Transaction/overview/#commit-e-rollback)**). A
-receita faz o commit dentro do `try`, então o `catch` também encerra uma transação que o
-`commit()` não conseguiu fechar: um listener de `Commit` que lança (veja
-**[Eventos](/manual/ADI/Databases/SQL/Transaction/overview/#eventos)**) ou uma instrução que o
-trabalho deixou em andamento, o que faz o `commit()` devolver uma operação recusada. Quando o
-próprio `COMMIT` falha (uma constraint deferida, por exemplo, que faz o PostgreSQL desfazer a
-transação inteira), o `commit()` já fechou a transação, então o `abort()` do `catch` é recusado e
-o erro relançado é o do próprio `COMMIT`.
-
 O `catch` usa `abort()`, e não `rollback()`: ele compõe o `ROLLBACK` de nível superior em
 qualquer profundidade, então também desfaz todos os níveis de savepoint que o trabalho abriu
-(um `rollback()` sem nome só encerra o mais recente), e não emite evento `Rollback` — um
-listener de `Rollback` não pode recusar esse teardown nem vê-lo (veja
-**[Abortar ou fazer rollback](/manual/ADI/Databases/SQL/Transaction/overview/#abortar-ou-fazer-rollback)**).
+(um `rollback()` sem nome só encerra o mais recente), e não emite evento `Rollback`. A receita
+faz o commit dentro do `try`, então o `catch` também encerra uma transação que o `commit()` não
+conseguiu fechar: um listener de `Commit` que lança (veja
+**[Eventos](/manual/ADI/Databases/SQL/Transaction/overview/#eventos)**) ou uma instrução que o
+trabalho deixou em andamento. Quando o próprio `COMMIT` falha, o `commit()` já fechou a
+transação, então o `abort()` é recusado e o erro relançado é o do próprio `COMMIT`.
 
 ## Builders, SQL raw e objetos Query
 
@@ -114,7 +193,9 @@ $Database->await($Transaction->query($Transaction->table(Tables::Users)->select(
 As três rodam na conexão fixada da transação. A segunda é uma `Query` montada à mão, que conta
 como escrita a menos que seja criada com `reading: true`, então ela também marca o escopo de
 read-after-write — o que só importa quando há réplicas configuradas (veja
-**[Escopo de read-after-write](/manual/ADI/Databases/SQL/Transaction/overview/#escopo-de-read-after-write)**).
+**[Escopo de read-after-write](/manual/ADI/Databases/SQL/Transaction/overview/#escopo-de-read-after-write)**);
+o `transact()` marca o escopo de novo quando o `COMMIT` mais externo dele dá certo, então a
+janela conta a partir do commit.
 Para entidades, `$Transaction->map()` dá um repositório ORM cujas instruções rodam dentro da
 transação (veja
 **[Repositórios dentro de uma transação](/manual/ADI/Databases/SQL/Transaction/overview/#repositórios-dentro-de-uma-transação)**).
@@ -159,6 +240,41 @@ Chamar `begin()` enquanto uma transação já está ativa também cria um savepo
 `commit()` com profundidade maior que `1` libera o savepoint atual em vez de commitar a
 transação externa.
 
+### Unidades de trabalho aninhadas
+
+```php
+$Database->transact(function (Transaction $Transaction) use ($Database): void {
+   $Transaction->await($Transaction->query('UPDATE users SET active = false WHERE id = 7'));
+
+   try {
+      $Database->transact(function (Transaction $Transaction): void {
+         $Transaction->await($Transaction->query('INSERT INTO profiles (user_id) VALUES (7)'));
+      });
+   }
+   catch (RuntimeException) {
+      // O perfil é opcional: o UPDATE acima continua fazendo parte da transação.
+   }
+});
+```
+
+Um `transact()` chamado dentro da closure não abre uma segunda transação: ele se aninha na que
+já está aberta, como um savepoint, e a closure dele recebe a mesma `Transaction`. Quando a
+closure aninhada retorna, o savepoint dela é liberado; quando ela lança, só aquele nível é
+desfeito e o throwable chega à closure externa, que pode capturá-lo e seguir em frente. Uma
+função que envolve o próprio trabalho em `transact()` pode, portanto, ser chamada sozinha ou de
+dentro de uma unidade de trabalho maior.
+
+Quando o nível aninhado não pode ser fechado — o servidor recusa o rollback ou a liberação
+dele, ou um dos casos acima —, a transação inteira é encerrada e o `transact()` externo avisa —
+`SQL transaction is not active.` — em vez de commitar um trabalho pelo qual ele não pode mais
+responder. Uma closure externa que captura a falha do nível aninhado não tem mais o que
+continuar: deixe-a terminar, e não reabra a transação com `begin()`. Isso vale também para um
+`rollback()` ou um `commit()` desse nível enviado por você: quando o servidor o recusa, o
+`transact()` aninhado lança esse erro mesmo que a closure o tenha capturado e retornado. Só uma
+closure que o captura e depois envia mais instruções o esconde — o `transact()` não tem mais
+como saber que o nível está em dúvida. O aninhamento é por contexto: um `transact()` feito a partir de outra
+Fiber abre a própria transação, na própria conexão.
+
 ## Notas por engine
 
 - **PostgreSQL** — um statement que falha dentro de uma transação aborta o bloco inteiro.
@@ -181,6 +297,8 @@ transação externa.
 
 ## Referência
 
+- **[Banco SQL](/manual/ADI/Databases/SQL/overview/#referência)** — `transact()` e `begin()` na
+  fachada.
 - **[Transações](/manual/ADI/Databases/SQL/Transaction/overview/)** — API, recusas, eventos,
   repositórios e comportamento de savepoints.
 - **[Query Builder](/manual/ADI/Databases/SQL/Builder/overview/)** — monte as instruções

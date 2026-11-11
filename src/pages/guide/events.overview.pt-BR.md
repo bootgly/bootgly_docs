@@ -186,6 +186,13 @@ lança faz `begin()`, `commit()` ou `rollback()` lançar antes de qualquer instr
 composta, e uma transação aberta continua aberta na sua conexão reservada do pool —
 `abort()`, que não emite nada, ainda a encerra.
 
+O `$Database->transact()` e o `$Response->Database->transact()` fazem essas chamadas por você,
+então os mesmos eventos disparam: nenhum `Begin` para a transação em si (ela é aberta pelo
+`$Database->begin()`), um `Begin` para o savepoint de uma chamada aninhada, um `Commit` para
+cada nível commitado e, quando o trabalho lança, um `Rollback` para cada nível desfeito. Um
+listener de `Rollback` que lança não impede o `$Database->transact()` de encerrar a transação:
+ele cai para o `abort()`, que não anuncia nada para os níveis que encerra.
+
 `Bootgly\ADI\Databases\SQL\Schema\Migration\Events`:
 
 | Evento | Quando | Payload |
