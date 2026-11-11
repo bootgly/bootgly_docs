@@ -366,9 +366,10 @@ Two consequences worth knowing:
   `defer($work, timeout:)` — for that; see *Deadlines* under *Deferred Response Lifecycle*. A deferral
   that parks with no deadline of its own (`Readiness::read($socket)` defaults to none) and no budget
   holds its connection and its Fiber until the client leaves — bound it, or rely on `maxConnections`.
-- The window is coarse by design: the supervisor runs on the worker's one-second alarm, so a reap lands
-  between `N` and `N+1` seconds after the last activity tick (up to `2N` to `2N+1` when the write lands
-  right after a tick).
+- The window is coarse by design: the supervisor runs once a second on the worker's event loop, so a
+  reap lands between `N` and `N+1` seconds after the last activity tick (up to `2N` to `2N+1` when the
+  write lands right after a tick). On a custom event loop without [recurring timers](/guide/timers)
+  the supervisor runs on the whole-second `Timer` alarm instead, with the same window.
 
 Long-lived protocols behave differently. A WebSocket session **replaces** the reaper with its ping/pong
 supervisor right after the upgrade, so `connectionIdleTimeout` no longer applies to it. A Server-Sent
@@ -893,8 +894,8 @@ of a handler is still yours at the bottom.
 The flip side: **a blocking call blocks every connection of that worker.** With one worker, a
 route that spends 1.5 s in a CPU loop made a trivial route on another connection wait 1.2 s.
 `sleep()`, a blocking HTTP client (`file_get_contents('https://...')`, curl), PDO and any other
-synchronous I/O have the same effect — and `sleep()` is also cut short by the worker's own timer
-signal, so it is not even a reliable delay.
+synchronous I/O have the same effect — and `sleep()` is also cut short by any signal the worker
+handles (a `Timer` alarm, a reload), so it is not even a reliable delay.
 
 Bootgly is pure PHP: it cannot turn PHP's blocking functions into non-blocking ones behind your
 back. Use the clients that park on the event loop instead:
@@ -1316,7 +1317,7 @@ The server itself. Named arguments only — the constructor's first slot is the 
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Maximum simultaneously-established connections **per worker**. Connections accepted past this ceiling are immediately shed (accepted, then closed) to bound file-descriptor and memory use under a connection-flood DoS. `0` disables the limit. Evaluated once per accept — never on the per-request hot path. |
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Maximum simultaneously-established connections **from a single peer IP**. Opt-in: `0` means unlimited, because a reverse proxy collapses every client onto one source IP — enable it only when the peer IP is the real client. |
 | `headroom` | `null\|int` | `null` (= `32`) | Selector entries each worker keeps free for its own dependency I/O (deferred DB/KV waits, the embedded HTTP client) by shedding clients earlier: once a worker holds `1000 − headroom` connections, the next one is accepted and immediately closed, so the effective ceiling is the smaller of that and `maxConnections`. The listener takes one of these entries, so size it to at least the sum of the `pool.max` of the worker's resources plus one. `0` disables it; it is clamped so a worker always admits clients. Sets `TCP_Server_CLI::$headroom`. |
-| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. `0` disables the reaper. Whole seconds: the supervisor runs on the one-second timer wheel, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
+| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds an established connection may stay silent — no completed write since the previous supervisor tick and no pending work retained on it — before the worker closes it. A parked deferred response counts as pending work, so it is never reaped as idle. `0` disables the reaper. Whole seconds: the supervisor runs once a second on the worker's event loop, so a reap lands between `N` and `N+1` seconds after the last activity tick. |
 | `maxWorkerPendingBytes` | `null\|int` | `null` (= `64 MiB`) | Worker memory budget: the bytes one worker may hold between events — unfinished request bodies (at most half), route cache entries (at most a quarter) and pending output — charged at their allocator footprint. Lowered to half of `memory_limit` at start, with a warning, when larger. Sets `TCP_Server_CLI::$maxWorkerPendingBytes`. See [Memory budget](#memory-budget). |
 | `maxRequests` | `int` | `0` (= off) | Requests after which a worker is recycled — replaced at once, while it drains like a reload. Each request a keep-alive connection carries counts once, and each HTTP/2 stream. A worker whose slot's previous worker still drains holds its recycle until that one is gone. Negative throws `InvalidArgumentException`. Sets `TCP_Server_CLI::$maxRequests`. See [Worker recycling](#worker-recycling). |
 | `jitter` | `float` | `0.1` | Spread of each worker's own limit around `maxRequests`, as a fraction from `0` to `1` (`0.1` = ±10%): every worker draws inside its own band, so workers never recycle together. Outside `0`–`1` throws `InvalidArgumentException`. Sets `TCP_Server_CLI::$jitter`. |

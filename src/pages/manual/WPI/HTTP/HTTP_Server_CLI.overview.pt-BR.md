@@ -372,9 +372,11 @@ Duas consequências que valem saber:
   por chamada — para isso; veja *Deadlines* em *Ciclo de vida da resposta deferred*. Um deferral que
   estaciona sem deadline próprio (`Readiness::read($socket)` não tem nenhum por padrão) e sem orçamento
   segura a conexão e a Fiber até o cliente ir embora — limite-o, ou conte com `maxConnections`.
-- A janela é grosseira por desenho: o supervisor roda no alarme de um segundo do worker, então o corte
-  cai entre `N` e `N+1` segundos após o último tick com atividade (até `2N` a `2N+1` quando a escrita
-  cai logo depois de um tick).
+- A janela é grosseira por desenho: o supervisor roda uma vez por segundo na event loop do worker,
+  então o corte cai entre `N` e `N+1` segundos após o último tick com atividade (até `2N` a `2N+1`
+  quando a escrita cai logo depois de um tick). Em uma event loop customizada sem
+  [timers recorrentes](/guide/timers) o supervisor roda no alarme de segundos inteiros do `Timer`,
+  com a mesma janela.
 
 Protocolos de vida longa se comportam de outro jeito. Uma sessão WebSocket **substitui** o reaper pelo
 seu supervisor de ping/pong logo depois do upgrade, então `connectionIdleTimeout` deixa de se aplicar a
@@ -911,8 +913,8 @@ handler ainda é sua no final dele.
 O outro lado: **uma chamada bloqueante bloqueia todas as conexões daquele worker.** Com um
 worker, uma rota que passa 1,5 s em um loop de CPU fez uma rota trivial em outra conexão esperar
 1,2 s. `sleep()`, um cliente HTTP bloqueante (`file_get_contents('https://...')`, curl), PDO e
-qualquer outro I/O síncrono têm o mesmo efeito — e o `sleep()` ainda é interrompido pelo sinal de
-timer do próprio worker, então nem como pausa ele é confiável.
+qualquer outro I/O síncrono têm o mesmo efeito — e o `sleep()` ainda é interrompido por qualquer
+sinal que o worker trate (um alarme do `Timer`, um reload), então nem como pausa ele é confiável.
 
 O Bootgly é PHP puro: ele não consegue transformar as funções bloqueantes do PHP em não
 bloqueantes por baixo dos panos. Use os clientes que estacionam no event loop:
@@ -1343,7 +1345,7 @@ O servidor em si. Somente argumentos nomeados — o primeiro slot do construtor 
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Número máximo de conexões estabelecidas simultaneamente **por worker**. Conexões aceitas além desse teto são imediatamente descartadas (aceitas e então fechadas) para limitar o uso de file descriptors e memória sob um DoS de inundação de conexões. `0` desativa o limite. Avaliado uma vez por accept — nunca no hot path por requisição. |
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Número máximo de conexões estabelecidas simultaneamente **de um único IP de origem**. Opcional: `0` significa ilimitado, porque um proxy reverso concentra todos os clientes em um único IP de origem — habilite apenas quando o IP do par é o cliente real. |
 | `headroom` | `null\|int` | `null` (= `32`) | Entradas do selector que cada worker mantém livres para o próprio I/O de dependências (esperas deferred de DB/KV, o cliente HTTP embarcado), descartando clientes mais cedo: quando um worker já segura `1000 − headroom` conexões, a próxima é aceita e imediatamente fechada, então o teto efetivo é o menor entre esse valor e `maxConnections`. O socket de escuta ocupa uma dessas entradas, então dimensione-o para pelo menos a soma dos `pool.max` dos resources do worker mais uma. `0` o desativa; ele é limitado para que um worker sempre admita clientes. Define `TCP_Server_CLI::$headroom`. |
-| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. `0` desativa o reaper. Segundos inteiros: o supervisor roda na roda de timers de um segundo, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
+| `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos que uma conexão estabelecida pode ficar em silêncio — sem escrita concluída desde o tick anterior do supervisor e sem trabalho pendente retido nela — antes de o worker fechá-la. Uma resposta deferred estacionada conta como trabalho pendente, então nunca é ceifada como ociosa. `0` desativa o reaper. Segundos inteiros: o supervisor roda uma vez por segundo na event loop do worker, então o corte cai entre `N` e `N+1` segundos após o último tick com atividade. |
 | `maxWorkerPendingBytes` | `null\|int` | `null` (= `64 MiB`) | Orçamento de memória do worker: os bytes que um worker pode segurar entre eventos — corpos de requisição inacabados (no máximo metade), entradas do cache de rotas (no máximo um quarto) e saída pendente —, cobrados pelo footprint no alocador. Reduzido para metade do `memory_limit` na partida, com um aviso, quando maior. Define `TCP_Server_CLI::$maxWorkerPendingBytes`. Veja [Orçamento de memória](#orçamento-de-memória). |
 | `maxRequests` | `int` | `0` (= desligado) | Requisições após as quais um worker é reciclado — substituído na hora, enquanto drena como num reload. Cada requisição que uma conexão keep-alive carrega conta uma vez, e cada stream HTTP/2. Um substituto cujo antecessor no slot ainda drena segura a sua reciclagem até ele sair. Negativo lança `InvalidArgumentException`. Define `TCP_Server_CLI::$maxRequests`. Veja [Reciclagem de workers](#reciclagem-de-workers). |
 | `jitter` | `float` | `0.1` | Dispersão do limite próprio de cada worker em torno de `maxRequests`, como fração de `0` a `1` (`0.1` = ±10%): cada worker sorteia dentro da sua própria faixa, então os workers nunca reciclam juntos. Fora de `0`–`1` lança `InvalidArgumentException`. Define `TCP_Server_CLI::$jitter`. |
