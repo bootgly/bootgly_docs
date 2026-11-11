@@ -79,6 +79,11 @@ one frame, call `$Session->send()` yourself and return nothing:
 })
 ```
 
+A handler that throws does not close the session: the message gets no reply and the server goes
+on. The failure is reported through `Throwables::notify()` with the peer's address, so it lands
+on the server's `exceptions` log channel — see
+[Error handling](/guide/error-handling/overview/).
+
 ## Send anytime
 
 `$Session` is your handle to one client. Hold a reference to it (e.g. in a presence map keyed by

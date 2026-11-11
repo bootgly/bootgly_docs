@@ -102,9 +102,9 @@ same pass — each still reaches its handler. The failure is reported through
 `Throwables::notify()`: every reporter registered in `Throwables::$reporters` receives it with the
 context `['origin' => 'loop.signal', 'signal' => $signal]`.
 
-Only the HTTP server registers a reporter by itself — it writes the failure to its `exceptions`
-log. On a TCP, WebSocket or UDP server, or on a loop you run yourself, nothing records the
-failure until you register a reporter:
+Every server — HTTP, TCP, WebSocket and UDP — logs what is reported to its `exceptions` log
+channel, so the failure shows up there. On a loop you run yourself, without a server, nothing
+records it until you register a reporter:
 
 ```php
 use Bootgly\ABI\Debugging\Data\Throwables;
@@ -116,7 +116,7 @@ Throwables::$reporters[] = static function (Throwable $Throwable, array $context
 };
 ```
 
-Register it before the server starts, so every worker inherits it.
+Register it before anything forks, so every child inherits it.
 
 ## Signals that are refused
 

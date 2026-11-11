@@ -282,8 +282,8 @@ Ele é uma superfície de segurança, então siga cinco regras:
 - **Compare com `hash_equals()`**, nunca com `===`.
 - **Responda `false` para uma linha malformada; não lance exceção.** Um verificador que
   lança faz o login falhar — nunca conta como senha correta. O throwable é reportado por
-  `Throwables::notify()` e nenhum outro verificador é consultado para aquele hash. O
-  servidor HTTP loga o que é reportado, então uma queda de algo que o verificador chama
+  `Throwables::notify()` e nenhum outro verificador é consultado para aquele hash. Um
+  servidor loga o que é reportado, então uma queda de algo que o verificador chama
   aparece ali; um processo seu (um comando, um job) só vê isso se registrar um reporter.
 - **Marque a senha e o hash com `#[SensitiveParameter]`**, como acima, para nenhum dos
   dois aparecer no trace de um throwable reportado.

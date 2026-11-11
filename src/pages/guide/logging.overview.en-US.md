@@ -77,7 +77,7 @@ pass it through `mb_scrub()` first.
 > with a host of `.;` rebuilds the `@.;` line break.
 
 > [!NOTE]
-> The HTTP Server's `exceptions` channel does this for every exception message it logs, so a
+> Every server's `exceptions` channel does this for every exception message it logs, so a
 > multi-line message shows a literal `\n`.
 
 ## Send logs to a file (with rotation)

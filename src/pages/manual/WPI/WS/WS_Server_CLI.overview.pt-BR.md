@@ -81,6 +81,10 @@ mais de um frame, chame `$Session->send()` você mesmo e não retorne nada:
 })
 ```
 
+Um handler que lança não fecha a sessão: a mensagem fica sem resposta e o servidor segue. A falha
+é reportada por `Throwables::notify()` com o endereço do peer, então ela cai no canal de log
+`exceptions` do servidor — veja [Tratamento de erros](/guide/error-handling/overview/).
+
 ## Enviar a qualquer momento
 
 `$Session` é seu handle para um cliente. Guarde uma referência a ele (ex.: num mapa de presença

@@ -83,9 +83,12 @@ Renderização é o que o *cliente* vê; **reporting** é o que *você* vê. Tod
 aos handlers do framework é despachado — exatamente uma vez por instância — para os reporters
 registrados:
 
-- **Canal de log** — o HTTP Server registra um canal Logger `exceptions` (pulado no ambiente
-  Test). Com o file sink do Demo, falhas caem em `storage/logs/exceptions.log` como linhas
-  JSON com classe, arquivo, linha, método, URI e peer. A mensagem é registrada inerte — uma
+- **Canal de log** — todo servidor (HTTP, TCP, WebSocket, UDP) registra um canal Logger
+  `exceptions` ao iniciar (pulado no modo Test). Com o file sink do Demo, falhas caem em
+  `storage/logs/exceptions.log` como linhas JSON com classe, arquivo, linha e o que o reporte
+  carrega — método, URI e peer para uma requisição, o peer para uma mensagem WebSocket cujo
+  handler lançou, o `origin` para um timer, um handler de sinal ou um listener de shutdown.
+  A mensagem é registrada inerte — uma
   exceção costuma citar bytes do cliente: limitada a 4 KiB, com caracteres de controle e quebras
   de linha escapados (`\n`, `\u001b`), o markup neutralizado e UTF-8 inválido trocado por `?`.
 - **Observability** — quando `Observability::$Instance` está configurado (por exemplo por uma
@@ -172,8 +175,26 @@ Throwables::$reporters
 ```
 
 `array<int,Closure(Throwable,array<string,mixed>):void>` — o seam de reporters. Faça push de
-closures no boot; camadas superiores (ACI Observability, o canal de log do HTTP Server) fazem
+closures no boot; camadas superiores (ACI Observability, o canal de log dos servidores) fazem
 push das delas automaticamente.
+
+```php
+Reporter::register (): void
+```
+
+Registra o reporter que grava todo throwable reportado no canal Logger `exceptions`
+(`Bootgly\WPI\Endpoints\Servers\Reporter`). Todo servidor o chama ao iniciar, fora do modo
+Test; chamá-lo de novo no mesmo processo não registra nada. Para onde o registro vai é assunto
+do Logger: o arquivo vem dos sinks do projeto e o layout da linha vem das configurações de display
+do servidor, então em um processo sem nenhum dos dois ele só imprime a mensagem crua — escreva o
+seu próprio reporter nesse caso.
+
+```php
+Reporter::defuse (string $message): string
+```
+
+Retorna `$message` segura para o log: limitada a 4 KiB, com UTF-8 inválido trocado, caracteres
+de controle escapados e o markup neutralizado. O canal `exceptions` grava toda mensagem por ela.
 
 ```php
 Throwables::$exit

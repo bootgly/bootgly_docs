@@ -144,8 +144,7 @@ Bootgly\ABI\Event`). Payloads são posicionais, na ordem listada.
 
 Um listener de `Shutdown` que lança não impede o processo de parar: a falha é reportada por
 `Throwables::notify()` com o contexto `['origin' => 'server.stop']`, e a parada segue. O servidor
-HTTP a grava no seu log `exceptions`; em um servidor TCP, WebSocket ou UDP, registre um reporter
-em `Throwables::$reporters` para registrá-la.
+a grava no seu canal de log `exceptions`.
 
 ### ACI — Scheduler
 

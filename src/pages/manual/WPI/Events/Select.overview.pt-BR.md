@@ -103,9 +103,9 @@ Um handler que lança não para o loop, e não esconde os outros sinais pendente
 reporter registrado em `Throwables::$reporters` a recebe com o contexto
 `['origin' => 'loop.signal', 'signal' => $signal]`.
 
-Só o servidor HTTP registra um reporter por conta própria — ele grava a falha no seu log
-`exceptions`. Em um servidor TCP, WebSocket ou UDP, ou em um loop que você mesmo executa, nada
-registra a falha até você registrar um reporter:
+Todo servidor — HTTP, TCP, WebSocket e UDP — grava o que é reportado no seu canal de log
+`exceptions`, então a falha aparece ali. Em um loop que você mesmo executa, sem servidor, nada
+a registra até você registrar um reporter:
 
 ```php
 use Bootgly\ABI\Debugging\Data\Throwables;
@@ -117,7 +117,7 @@ Throwables::$reporters[] = static function (Throwable $Throwable, array $context
 };
 ```
 
-Registre-o antes de o servidor iniciar, para que todo worker o herde.
+Registre-o antes de qualquer fork, para que todo filho o herde.
 
 ## Sinais que são recusados
 

@@ -77,8 +77,8 @@ passe-o antes pelo `mb_scrub()`.
 > `"{$user}@{$host}"` com o host `.;` reconstrói a quebra de linha `@.;`.
 
 > [!NOTE]
-> O canal `exceptions` do HTTP Server faz isso para toda mensagem de exceção que registra, então
-> uma mensagem de várias linhas mostra um `\n` literal.
+> O canal `exceptions` de todo servidor faz isso para toda mensagem de exceção que registra,
+> então uma mensagem de várias linhas mostra um `\n` literal.
 
 ## Envie logs para um arquivo (com rotação)
 

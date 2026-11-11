@@ -275,7 +275,7 @@ It is a security surface, so keep five rules:
 - **Compare with `hash_equals()`**, never with `===`.
 - **Answer `false` on a malformed row; do not throw.** A verifier that throws fails the
   sign-in — it is never a pass. The throwable is reported through `Throwables::notify()`
-  and no other verifier is asked for that hash. The HTTP server logs what is reported,
+  and no other verifier is asked for that hash. A server logs what is reported,
   so an outage of something the verifier calls shows up there; a process of your own (a
   command, a job) sees it only if it registers a reporter.
 - **Mark the password and the hash `#[SensitiveParameter]`**, as above, so neither

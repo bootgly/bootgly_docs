@@ -81,9 +81,11 @@ Rendering is what the *client* sees; **reporting** is what *you* see. Every thro
 reaches the framework's handlers is dispatched — exactly once per throwable instance — to the
 registered reporters:
 
-- **Log channel** — the HTTP Server registers an `exceptions` Logger channel (skipped in the
-  Test environment). With the Demo's file sink, failures land in
-  `storage/logs/exceptions.log` as JSON lines with class, file, line, method, URI and peer.
+- **Log channel** — every server (HTTP, TCP, WebSocket, UDP) registers an `exceptions` Logger
+  channel when it starts (skipped in Test mode). With the Demo's file sink, failures land in
+  `storage/logs/exceptions.log` as JSON lines with class, file, line and what the report
+  carries — method, URI and peer for a request, the peer for a WebSocket message whose handler
+  threw, the `origin` for a timer, a signal handler or a shutdown listener.
   The message is logged inert — an exception often quotes a client's bytes: capped at 4 KiB,
   control characters and line feeds escaped (`\n`, `\u001b`), markup defused and invalid UTF-8
   replaced by `?`.
@@ -169,7 +171,25 @@ Throwables::$reporters
 ```
 
 `array<int,Closure(Throwable,array<string,mixed>):void>` — the reporter seam. Push closures at
-boot; higher layers (ACI Observability, the HTTP Server log channel) push theirs automatically.
+boot; higher layers (ACI Observability, the servers' log channel) push theirs automatically.
+
+```php
+Reporter::register (): void
+```
+
+Registers the reporter that logs every reported throwable to the `exceptions` Logger channel
+(`Bootgly\WPI\Endpoints\Servers\Reporter`). Every server calls it when it starts, outside Test
+mode; calling it again in the same process registers nothing. Where the record goes is the
+Logger's business: the file comes from the project's sinks and the line's layout from the server's
+display settings, so in a process with neither it only prints the bare message — write your own
+reporter there.
+
+```php
+Reporter::defuse (string $message): string
+```
+
+Returns `$message` safe to log: capped at 4 KiB, invalid UTF-8 replaced, control characters
+escaped and markup defused. The `exceptions` channel logs every message through it.
 
 ```php
 Throwables::$exit
