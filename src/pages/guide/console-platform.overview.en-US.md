@@ -4,7 +4,7 @@ Build full-screen terminal apps — dashboards, tools, even games — with Bootg
 
 ## Set it up
 
-The [canonical installer](/guide/getting-started) can install it right away — it asks which platforms to set up, so just pick **Console**:
+The [canonical installer](/guide/getting-started) sets it up right away — every platform comes installed, with no question asked:
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
@@ -80,7 +80,7 @@ The platform ships three complete games as exportable projects — play them rig
 Pick a game and press Run, then **click the terminal to focus it**. Enter starts, `q` quits. Snake: arrows steer, holding accelerates. Pong: hold ↑/↓, first to 5 wins. Invaders: ←/→ move, Space fires.
 </d-block-terminal>
 
-In your own kit, import them with the wizard (**Import projects from Platforms**) and run natively:
+In your own kit, a fresh kit imports them into `projects/Demo/` automatically — run them natively:
 
 ```bash
 php bootgly project Demo/Snake start

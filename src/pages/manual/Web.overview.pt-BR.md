@@ -4,7 +4,7 @@ A plataforma Web (`bootgly/bootgly-web`) é a **camada web opinativa** do Bootgl
 
 O WPI em si permanece deliberadamente de baixo nível — a plataforma é onde as opiniões vivem: controllers, resource routing, erros problem+json, assets estáticos e convenções de views. Tudo o que ela conecta continua sendo WPI puro por baixo.
 
-Ela é distribuída como um git submodule opcional do starter kit — o wizard de projetos a oferece no multiselect de **Platforms** (veja [Primeiros passos](/guide/getting-started)).
+Ela é distribuída como um git submodule do starter kit, que a acompanha ao lado da plataforma Console: um kit novo configura todas as plataformas sem perguntar nada (veja [Primeiros passos](/guide/getting-started)), e uma execução posterior do wizard de projetos configura só as plataformas que o `--platform=` nomeia — `--platform=web` traz esta de volta a um kit de onde ela foi removida. Para construir um primeiro app e uma API REST passo a passo, siga o guia [Plataforma Web](/guide/web-platform); este manual cobre cada peça em profundidade.
 
 ## Instalando a plataforma
 
@@ -16,7 +16,13 @@ curl -fsSL https://bootgly.com/install | bash
 
 ## Como ela inicializa
 
-O kit inicializa as plataformas opcionais **antes** da plataforma Bootgly, então projetos Web encontram o autoloader da plataforma já registrado. O `Web/autoboot.php` define as constantes da plataforma (`WEB_ROOT_DIR`, `WEB_WORKING_DIR`, `WEB_VERSION`) e registra o autoloader `Web\` — sem dependência do Bootgly, que ainda não foi carregado. A raiz da plataforma, a classe `Web`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Web` e a inicializa:
+O kit inicializa os submodules de plataforma **antes** da plataforma Bootgly, então projetos Web encontram o autoloader da plataforma já registrado. O `Web/autoboot.php` define as constantes da plataforma e registra o autoloader `Web\` — sem dependência do Bootgly, que ainda não foi carregado:
+
+- `WEB_ROOT_BASE` e `WEB_ROOT_DIR` — a pasta da plataforma, sem e com o separador no final. O `WEB_ROOT_BASE` é o que marca a plataforma como instalada: o arquivo retorna na hora quando ele já está definido, e o `Bootgly::mount()` pula uma plataforma que nunca o definiu;
+- `WEB_WORKING_BASE` e `WEB_WORKING_DIR` — a pasta onde o autoloader `Web\` procura primeiro, antes da pasta da plataforma: a própria pasta da plataforma, a menos que um lançador tenha definido as duas antes de incluir o arquivo;
+- `WEB_VERSION` — o release da plataforma (`'1.2.0'`).
+
+A raiz da plataforma, a classe `Web`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Web` e a inicializa:
 
 ```php
 // dentro do Bootgly::autoboot(), para cada plataforma instalada
@@ -40,11 +46,11 @@ A plataforma é uma **biblioteca de classes** sobre `Bootgly\WPI`: não há work
 
 ## Projetos Web
 
-Um projeto Web é um projeto Bootgly comum vinculado à interface `WPI`. Registre-o no `projects/Bootgly.projects.php` do consumidor:
+Um projeto Web é um projeto Bootgly comum vinculado à interface `WPI`. Registre-o no `projects/Bootgly.projects.php` do consumidor, pelo seu caminho sob `projects/`:
 
 ```php
 return [
-   'Site' => ['interfaces' => ['WPI']],
+   'Demo/Site' => ['interfaces' => ['WPI']],
 ];
 ```
 
@@ -80,18 +86,26 @@ return new Project(
 );
 ```
 
-Inicie-o como qualquer projeto:
+Inicie-o como qualquer projeto, por esse caminho:
 
 ```bash :toolbar="true";
 php bootgly project Demo/Site start
 ```
 
-A plataforma inclui **projetos exportáveis** em `Web/projects/` — o picker *Import projects from Platforms* do wizard os examina:
+A plataforma traz estes **projetos de exemplo** em `Web/projects/Demo/`, e um kit novo importa todos eles para `projects/Demo/` automaticamente — guias vivos, para pessoas e agentes de IA:
 
+- **Auth** (`:8087`) — um scaffold de autenticação por sessão/cookie: cadastro, verificação de e-mail, login com remember-me, redefinição de senha, SQLite.
 - **Blog** (`:8080`) — o ciclo MVC completo: controllers, models do ORM, views, formulários com Session + CSRF, SQLite (zero setup).
 - **Chat** (`:8085`) — salas em tempo real sobre o servidor WebSocket; a página do cliente é servida na mesma porta.
 - **Site** (`:8088`) — páginas de landing: views despachadas por controller, layouts e estáticos inline, sem banco.
+- **SPA** (`:8092`) — a mesma lista de tarefas como um build React e um build Vue do Vite, cada um servido pelo `Web\App\SPA` no seu próprio prefixo (`/react/`, `/vue/`), sobre uma API JSON com SQLite; o start faz os builds quando o Node.js e o npm estão no `PATH`.
 - **Tasks** (`:8090`) — uma API REST: resources, erros problem+json, mutações protegidas por JWT, paginação.
+
+## Skill para agentes
+
+A plataforma traz uma skill para agentes de IA que programam, a `bootgly-build-web`, em `Web/templates/projects/.agents/skills/bootgly-build-web/`. O `SKILL.md` dela conduz um agente por um projeto Web do jeito que este manual faz — inicializar um `Web\App`, registrar rotas, mapear controllers, renderizar views, servir estáticos, proteger formulários com CSRF, testar por HTTP — e o `references/REST.md` acrescenta as convenções de API JSON do `Web\API`. Ela estende a skill `bootgly-build` do próprio framework.
+
+O `bootgly kit boot` a instala em `<kit>/projects/.agents/skills/`, ao lado das skills `bootgly-*` do framework, enquanto a plataforma Web estiver configurada no kit — e a liga em `projects/.claude/skills/` para o Claude Code. Um kit novo roda esse passo sozinho; um kit que configura a plataforma depois, com `--platform=web`, recebe a skill na hora; o `bootgly kit boot --agents` instala só as regras e skills para agentes; e o `kit upgrade` e o `kit downgrade` as alinham ao release para o qual movem o kit. A cópia é gerenciada pela máquina — reescrita sempre que difere do template da plataforma, removida quando a plataforma deixa de trazê-la —, então não a edite (veja [CLI do Kit](/guide/kit/overview/#instale-os-diretórios-de-recursos)).
 
 ---
 

@@ -24,7 +24,7 @@ Os três jogos são projetos exportáveis da plataforma Console (`Console/projec
 - As **Scenes** (Menu → Play → Over) estruturam o fluxo de cada jogo.
 - **Sprites e matemática 2D** movem o Invaders: uma formação de sprite sheet animando em lockstep, uma cadência de marcha com interval mutável de `Timer`, projéteis integrados por `Vector` e colisões por `Zone` (AABB).
 
-Importe-os para o seu próprio kit com o wizard de projetos (*Import projects from Platforms*) e rode nativamente:
+Um kit novo os importa em `projects/Demo/` automaticamente — rode-os nativamente:
 
 ```bash
 php bootgly project Demo/Snake start

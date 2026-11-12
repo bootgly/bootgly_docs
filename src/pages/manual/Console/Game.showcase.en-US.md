@@ -24,7 +24,7 @@ The three games are exportable Console platform projects (`Console/projects/`) b
 - **Scenes** (Menu → Play → Over) structure each game's flow.
 - **Sprites and 2D math** power Invaders: a sprite-sheet formation animating in lockstep, a march cadence on a mutable `Timer` interval, `Vector`-integrated projectiles and `Zone` (AABB) collisions.
 
-Import them into your own kit with the project wizard (*Import projects from Platforms*) and run them natively:
+A fresh kit imports them into `projects/Demo/` automatically — run them natively:
 
 ```bash
 php bootgly project Demo/Snake start

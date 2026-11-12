@@ -4,7 +4,7 @@ Construa aplicações web — sites MVC e APIs REST — com a plataforma Web opi
 
 ## Configure
 
-O [instalador canônico](/guide/getting-started) pode instalá-la de imediato — ele pergunta quais plataformas configurar, então basta escolher **Web**:
+O [instalador canônico](/guide/getting-started) já a configura de imediato — toda plataforma vem instalada, sem nenhuma pergunta:
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
@@ -124,7 +124,7 @@ A paginação vem do core: `$Response->Database->paginate(Task::class)` lê `?pa
 
 ## Experimente os demos
 
-A plataforma inclui projetos exportáveis completos — importe-os com o wizard (**Import projects from Platforms**) e execute:
+A plataforma inclui projetos exportáveis completos — um kit novo os importa em `projects/Demo/` automaticamente — execute:
 
 ```bash
 php bootgly project Demo/Blog start    # MVC: CRUD de posts + forms CSRF + SQLite → :8080

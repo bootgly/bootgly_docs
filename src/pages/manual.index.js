@@ -1124,8 +1124,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'The game shell: fixed-timestep Loop, diff-rendered Canvas, Keyboard held-key heuristics and Scenes.',
-          'pt-BR': 'O shell de jogos: Loop de timestep fixo, Canvas com diff, heurísticas de tecla segurada no Keyboard e Scenes.'
+          'en-US': 'The game shell: fixed-timestep Loop, diff-rendered Canvas, Keyboard held-key heuristics, Scenes, Sprites and the Vector, Zone and Timer helpers.',
+          'pt-BR': 'O shell de jogos: Loop de timestep fixo, Canvas com diff, heurísticas de tecla segurada no Keyboard, Scenes, Sprites e os helpers Vector, Zone e Timer.'
         }
       },
       menu: {},

@@ -19,14 +19,8 @@ in the framework:
 
 ## Scaffold the Auth project
 
-In a Bootgly kit, import the Auth project through the wizard — it appears in
-the "Import projects from Platforms" picker:
-
-```bash :toolbar="true";
-php bootgly projects create
-```
-
-Or non-interactively:
+A fresh Bootgly kit already imports the Auth project into `projects/Demo/Auth`
+— you can start it right away (below). To scaffold your own project from it:
 
 ```bash :toolbar="true";
 php bootgly projects create Auth --from=Demo/Auth --yes

@@ -30,7 +30,7 @@ return new Project(
 
 `load()` reads the standard router folder (`router/router.index.php` + `router/routes/<Name>.routes.php`) — the same convention as any WPI project. `start()` wires the events, applies the view conventions and boots the server.
 
-`configure()` takes **Configs** — the same typed value objects every WPI node takes. One `Web\App\Configs` carries every option of the underlying `HTTP_Server_CLI\Configs` (bind address, workers, TLS or Auto-TLS, privilege dropping, HTTP/2, health endpoint, connection caps) with the platform defaults filled in — `host: '0.0.0.0'`, `port: 8080`, `workers: 2`, `health: '/health'` — plus the three shell concerns, `Middlewares`, `Resources` and `deferredTimeout`. Nothing is required: `$App->configure()` alone boots on the defaults. Named arguments only — a positional `new Configs('0.0.0.0', 8080)` raises a `TypeError`.
+`configure()` takes **Configs** — the same typed value objects every WPI node takes. One `Web\App\Configs` carries every option of the underlying `HTTP_Server_CLI\Configs` (bind address, workers, TLS or Auto-TLS, privilege dropping, HTTP/2, health endpoint, connection caps, selector headroom, idle timeout, worker memory budget, worker recycling) with the platform defaults filled in — `host: '0.0.0.0'`, `port: 8080`, `workers: 2`, `health: '/health'` — plus the three shell concerns, `Middlewares`, `Resources` and `deferredTimeout`. Nothing is required: `$App->configure()` alone boots on the defaults. Named arguments only — a positional `new Configs('0.0.0.0', 8080)` raises a `TypeError`.
 
 > [!WARNING]
 > **Breaking: the flat named parameters are gone.** `configure(port: 8080, middlewares: [...])` no longer exists, with no alias — the App follows the WPI nodes, which moved to typed Configs in `1.0.0-rc.1`. Wrap the same options in a `Web\App\Configs`: `middlewares:` becomes `Middlewares:`, `resources:` becomes `Resources:`, and `secure: new AutoTLS(...)` becomes `AutoTLS: new AutoTLS(...)` (`secure:` keeps the manual TLS context only).
@@ -61,6 +61,24 @@ $App->configure(
    new RequestConfigs(maxBodySize: 12 * 1024 * 1024)  // 12 MB — two such bodies at once fit the default worker memory budget
 );
 ```
+
+## Worker recycling
+
+The server options that bound a worker travel in the same `Web\App\Configs`. To limit what a long-lived worker gathers — a leaking library, a cache without eviction, a fragmented heap — let the server replace workers on its own:
+
+```php
+// php.ini: memory_limit = 1G — maxMemory must stay below it
+$App->configure(new Configs(
+   port: 8080,
+   maxRequests: 10_000,  // recycle a worker after about 10 000 requests...
+   jitter: 0.1,          // ...each worker at its own limit, within ±10% (the default)
+   maxMemory: '512M'     // ...or as soon as its real memory passes 512 MiB
+));
+```
+
+A worker that reaches its limit answers the request in hand and finishes what is in flight, while the master forks its replacement at once — the slot never goes without a worker. `maxMemory` takes bytes or a size such as `'512M'`, and must lie between the memory a worker starts with and PHP's `memory_limit`: `start()` refuses to start otherwise, so raise `memory_limit` in `php.ini` first. A negative value, a `jitter` outside `0`–`1` or a size that does not parse throws `InvalidArgumentException` at `new Configs`.
+
+Two more worker bounds travel the same way: `headroom` (`32` by default) keeps that many selector entries of each worker free for its own database, KV and HTTP-client waits, and `maxWorkerPendingBytes` (64 MiB by default) is the memory budget that unfinished request bodies, the route cache and pending output share in each worker. Their full semantics are on the HTTP Server page: [Worker recycling](/manual/WPI/HTTP/HTTP_Server_CLI/#worker-recycling), [Connection limits](/manual/WPI/HTTP/HTTP_Server_CLI/#connection-limits) and [Memory budget](/manual/WPI/HTTP/HTTP_Server_CLI/#memory-budget).
 
 ## Controllers
 
@@ -259,6 +277,61 @@ $SPA = new SPA(
 - `robots` — the `/robots.txt` body, answered from the configuration (handy to keep a staging deploy out of search engines); `null` serves the build's own `robots.txt`.
 - `aliases` — names browsers request on their own, mapped to the file the build ships.
 
+### Several builds under path prefixes
+
+One project can serve more than one build — a storefront and a back office, say — each from its own folder, under its own URL prefix. Build each one with Vite's `base` set to its prefix, so the asset URLs written into its `index.html` carry it, and give the client router the same base (React Router's `basename="/admin"`, Vue Router's `createWebHistory('/admin/')`):
+
+```js
+// frontends/admin/vite.config.js — the build lands in the project's builds/admin/
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  base: '/admin/',
+  build: {
+    outDir: '../../builds/admin',
+    emptyOutDir: true
+  }
+});
+```
+
+Then mount one `SPA` per build, on the prefix and on a catch-all under it:
+
+```php
+<?php
+
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
+use Web\API\Problem;
+use Web\App\SPA;
+
+
+return static function (Request $Request, Response $Response, Router $Router): Generator
+{
+   // * API — its routes first, then a problem+json 404 for any other API path
+   yield $Router->route('/api/health', function (Request $Request, Response $Response) {
+      return $Response->JSON->send(['status' => 'ok']);
+   }, GET);
+
+   $Unknown = function (Request $Request, Response $Response) {
+      return new Problem(404, detail: 'No API route matches this path.')->render($Response);
+   };
+   yield $Router->route('/api', $Unknown);
+   yield $Router->route('/api/:path*', $Unknown);
+
+   // * Interfaces — one SPA per build, each on its own prefix
+   foreach (['admin', 'store'] as $name) {
+      $SPA = new SPA(path: "builds/{$name}");
+
+      yield $Router->route("/{$name}", $SPA, [GET, HEAD], middlewares: [new ETag]);
+      yield $Router->route("/{$name}/:file*", $SPA, [GET, HEAD], middlewares: [new ETag]);
+   }
+};
+```
+
+The router drops a trailing slash, so `/admin` and `/admin/` both reach the prefix route and answer the index, as does a client route like `/admin/orders/42`; `/admin/assets/index-4f9a2c1e.js` is the file `builds/admin/assets/index-4f9a2c1e.js`, cached as immutable — the route param, and with it `immutable`, `aliases` and every name the handler serves, is relative to the build folder, not to the URL. An unmatched `/api/...` call gets a `404` problem from `$Unknown`, which renders the `Problem` instead of throwing it, so no `Problems` middleware is needed in the stack. Anything outside the prefixes — `/` included — needs routes of its own. The `Demo/SPA` example serves a React and a Vue build this way.
+
 ## Logs
 
 `start()` registers a global file sink: exception reports and opted-in loggers persist to `storage/logs/<channel>.log` in every mode. In **Daemon** mode the workers detach from the terminal — the log file is where errors land — and this sink takes the place of the default one the server would otherwise install at that path, so no record is persisted twice.
@@ -293,6 +366,24 @@ public function start (): void
 
 Registers the global log sink, wires the platform events (view conventions + global middleware stack on the first-request drain, the launch banner on `Events::ServerAdvertised` — rendered by the process that owns the terminal, so it survives the Daemon detach — and the stop banner) and starts the server. Throws when no router was loaded.
 
+```php
+public array $Middlewares
+```
+
+The global middleware stack, applied to every route in order: the default stack (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`) until a `configure()` whose `Configs` carries `Middlewares:` replaces it wholesale — a call without one leaves it as it is. `start()` reads it once, so change it before.
+
+```php
+public HTTP_Server_CLI $Server
+```
+
+The `HTTP_Server_CLI` node the shell configures and starts, in the constructor's mode — the way to what the shell does not wrap. `start()` registers `Events::RequestReceived`, `Events::ServerAdvertised` and `Events::ServerStopped` itself, and an event takes one callback, so `Events::ServerStarted` is the one left for `$App->Server->on()` (master-side setup: timers, schedulers); registering any of the other three makes `start()` throw `InvalidArgumentException`.
+
+```php
+public Views $Views
+```
+
+The view conventions — default layout and shared variables — that `start()` applies to each worker's View resource. Change them before `start()`.
+
 ### Web\App\Configs
 
 ```php
@@ -309,14 +400,19 @@ public function __construct (
    null|string $health = '/health',
    null|int $maxConnections = null,
    null|int $maxConnectionsPerIP = null,
+   null|int $headroom = null,
    null|int $connectionIdleTimeout = null,
+   null|int $maxWorkerPendingBytes = null,
+   int $maxRequests = 0,
+   float $jitter = 0.1,
+   int|string $maxMemory = 0,
    null|array $Middlewares = null,
    null|array $Resources = null,
    null|int|float $deferredTimeout = null
 )
 ```
 
-Extends `HTTP_Server_CLI\Configs`: every server option but the worker memory budget (`maxWorkerPendingBytes` — set `TCP_Server_CLI::$maxWorkerPendingBytes` before `start()` until the App forwards it), with the Web platform defaults filled in (`host`, `port` and `workers` fall back instead of being required), plus the three shell concerns. Named arguments only — the first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`. Throws `InvalidArgumentException` at `new` when both `secure` and `AutoTLS` are given, on a `Middlewares` entry that is not a `Middleware`, or on a `Resources` value that is not a Closure keyed by name.
+Extends `HTTP_Server_CLI\Configs` and carries every one of its options — the worker memory budget and worker recycling included — with the Web platform defaults filled in (`host`, `port` and `workers` fall back instead of being required), plus the three shell concerns; `App->configure()` forwards them all to the server. Named arguments only — the first slot is the `Bootgly\ABI\Argument` guard, so a positional call raises a `TypeError`. Throws `InvalidArgumentException` at `new` when both `secure` and `AutoTLS` are given, on a recycling option out of range (a negative `maxRequests` or `maxMemory`, a `jitter` outside `0`–`1`, a `maxMemory` size that does not parse), on a `Middlewares` entry that is not a `Middleware`, or on a `Resources` value that is not a Closure keyed by name.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -331,7 +427,12 @@ Extends `HTTP_Server_CLI\Configs`: every server option but the worker memory bud
 | `health` | `null\|string` | `'/health'` | Built-in health-check endpoint, answered before any middleware. `null` disables it. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Maximum established connections per worker; `0` disables the limit. |
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Maximum established connections per client IP; `0` means unlimited. |
+| `headroom` | `null\|int` | `null` (= `32`) | Selector entries each worker keeps free for its own dependency I/O — deferred database, KV and HTTP-client waits — by shedding clients earlier; `0` disables it. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Seconds of silence before an idle connection is closed; `0` disables the reaper. |
+| `maxWorkerPendingBytes` | `null\|int` | `null` (= 64 MiB) | Worker memory budget shared by unfinished request bodies, the route cache and pending output, at their allocator footprint. Lowered to half of `memory_limit` at start, with a warning, when it does not fit. |
+| `maxRequests` | `int` | `0` | Requests a worker dispatches before it recycles — its replacement is forked at once while it drains; `0` never recycles. |
+| `jitter` | `float` | `0.1` | Spread of each worker's own limit around `maxRequests` (`0.1` = ±10%), so workers do not recycle together; from `0` to `1`. |
+| `maxMemory` | `int\|string` | `0` | Real memory (`memory_get_usage(true)`) past which a worker recycles — bytes, or a size such as `'512M'`. Must lie between what a worker starts with and `memory_limit`, or `start()` refuses to start; `0` keeps it off. |
 | `Middlewares` | `null\|array<int,Middleware>` | `null` | Replaces the default middleware stack wholesale; `null` keeps it. |
 | `Resources` | `null\|array<string,Closure>` | `null` | Extra response resources (name => factory), merged with the automatic Database/KV — explicit entries win. |
 | `deferredTimeout` | `null\|int\|float` | `null` (= server default) | Seconds a deferred response may take before it is cancelled. |
@@ -356,7 +457,7 @@ Renders a project view through the Response View resource. `layout:` overrides t
 protected function redirect (string $URI, null|int $code = null): Response
 ```
 
-Redirects through the Response. A null code derives from the request method (POST → 303, otherwise 307).
+Redirects through the Response — to a `/`-relative target only. It calls `$Response->redirect($URI, $code)` without `allowExternal`, so the core's open-redirect guard sends `/` in place of an absolute URL (`https://example.com/`), a protocol-relative `//example.com` or any other target that does not start with `/` — and, external or not, in place of a target carrying a control character, a backslash or an executable scheme (`javascript:`, `data:`, `vbscript:`, `file:`). For an external target, call the Response from the action: `return $Response->redirect($URI, $code, allowExternal: true);` — after checking `$URI` against the hosts you allow, never with raw user input. A null code derives from the request method (POST → 303, otherwise 307), and so does a code other than 300–303, 307 or 308.
 
 ### Web\App\Controllers
 
@@ -389,7 +490,13 @@ public function serve (string $file, Response $Response, string $cache): false|R
 Sends one resolved name inline with the media type of its real target's extension (a symlink is typed and judged by the file it points to) and the given `Cache-Control`, reading the whole file into memory. The name is not decoded again. Returns `false`, writing nothing, when the file is a PHP source (`.php`, `.php<N>`, `.phps`, `.phtml`, `.pht`, `.phar`), missing, a directory, unreadable or outside the jail — the core `File` conversion to `<name>.php` / `<name>/index.php` is disabled.
 
 ```php
-public string $base
+public private(set) string $path
+```
+
+The jail directory, relative to the project root, as the constructor received it (`'statics'` by default). Read-only.
+
+```php
+public string $base { get }
 ```
 
 The absolute jail directory (the project path plus `path`), with a trailing slash. Read-only.
@@ -415,55 +522,67 @@ public function __construct (
 )
 ```
 
-Invokable single-page-app handler for the root route and a catch-all param route (`/:file*`). Serves the files of the build through `Files` — a name with an extension, a name under `.well-known/` or an extension-less regular file of the build — and answers the index to every other path. `$SPA->path` reads the jail of its `Files`.
+Invokable single-page-app handler for the root route and a catch-all param route (`/:file*`) — or for a prefix and the catch-all under it (`/admin`, `/admin/:file*`). Each argument is kept in the read-only property of the same name below; `path` is read from its `Files`.
 
 ```php
-string $path = 'statics'
+public function __invoke (object $Request, object $Response): object
 ```
 
-Project directory (relative to the project root) holding the build.
+Answers one request. Reads the requested name from the `param` route param (empty on the root route) and serves the files of the build through `Files` — a name with an extension, a name under `.well-known/` or an extension-less regular file of the build — and the index to every other path. A refused or excluded name answers `404`, and so does a file name that is missing, unreadable or a PHP source; a fallback while the index is missing answers `503`. Returns the Response.
 
 ```php
-string $index = 'index.html'
+public string $path { get }
 ```
 
-The document every client route falls back to, sent with `Cache-Control: no-cache` — also when requested by name. Missing, it makes every fallback answer `503` with the neutral body `Service Unavailable` and `Cache-Control: no-store`.
+Project directory (relative to the project root) holding the build — `'statics'` by default, read from `$Files->path`.
 
 ```php
-string $param = 'file'
+public private(set) string $index
 ```
 
-Route param carrying the requested path; empty on the root route.
+The document every client route falls back to (`'index.html'` by default), sent with `Cache-Control: no-cache` — also when requested by name. Missing, it makes every fallback answer `503` with the neutral body `Service Unavailable` and `Cache-Control: no-store`.
 
 ```php
-array $excludes = []
+public private(set) string $param
 ```
 
-First path segments (`['api']`) answered `404`, never the index. Exact, case-sensitive matches of the first segment, compared after decoding and normalization: `/%61pi/x` and `/./api/x` are excluded too, `/API/x` and `/apis/x` are not.
+Route param carrying the requested path (`'file'` by default); empty on the root route.
 
 ```php
-string $immutable = 'assets/'
+public private(set) array $excludes
 ```
 
-Path prefix of fingerprinted build output, sent with `Cache-Control: public, max-age=31536000, immutable`. `''` disables it.
+First path segments (`['api']`) answered `404`, never the index — none by default. Exact, case-sensitive matches of the first segment, compared after decoding and normalization: `/%61pi/x` and `/./api/x` are excluded too, `/API/x` and `/apis/x` are not.
 
 ```php
-string $cache = 'public, max-age=3600'
+public private(set) string $immutable
 ```
 
-`Cache-Control` of every other served file.
+Path prefix of fingerprinted build output (`'assets/'` by default), relative to the build folder, sent with `Cache-Control: public, max-age=31536000, immutable`. `''` disables it.
 
 ```php
-null|string $robots = null
+public private(set) string $cache
 ```
 
-Body of `/robots.txt`, sent as `text/plain; charset=UTF-8` with `Cache-Control: public, max-age=86400`. `null` serves the build's own file.
+`Cache-Control` of every other served file (`'public, max-age=3600'` by default).
 
 ```php
-array $aliases = []
+public private(set) null|string $robots
 ```
 
-Requested name => served name (`['favicon.ico' => 'favicon.svg']`); the served file keeps its own media type.
+Body of `/robots.txt`, sent as `text/plain; charset=UTF-8` with `Cache-Control: public, max-age=86400`. `null` (the default) serves the build's own file.
+
+```php
+public private(set) array $aliases
+```
+
+Requested name => served name (`['favicon.ico' => 'favicon.svg']`; none by default); the served file keeps its own media type.
+
+```php
+public private(set) Files $Files
+```
+
+The jailed file server over `path` — the same `Files` routine `Statics` serves through.
 
 ### Web\App\Statics
 
@@ -471,9 +590,51 @@ Requested name => served name (`['favicon.ico' => 'favicon.svg']`); the served f
 public function __construct (string $path = 'statics', string $param = 'file', string $cache = 'public, max-age=3600')
 ```
 
-Invokable static-file handler for a catch-all param route (`/statics/:file*`). Serves through `Files` — inline, with the media type mapped from the file extension and the given `Cache-Control` — and answers `404` to a refused, missing or PHP-source name. `$Statics->path` reads the jail of its `Files`. The requested name is percent-decoded once (new in 1.1).
+Invokable static-file handler for a catch-all param route (`/statics/:file*`). Each argument is kept in the read-only property of the same name below; `path` is read from its `Files`.
+
+```php
+public function __invoke (object $Request, object $Response): object
+```
+
+Serves the file the `param` route param names through `Files` — inline, with the media type mapped from the file extension and the `cache` header — and answers `404` to a refused, missing or PHP-source name. The requested name is percent-decoded once (new in 1.1). Returns the Response.
+
+```php
+public string $path { get }
+```
+
+Project directory (relative to the project root) that jails the assets — `'statics'` by default, read from `$Files->path`.
+
+```php
+public private(set) string $param
+```
+
+Route param carrying the requested file (`'file'` by default).
+
+```php
+public private(set) string $cache
+```
+
+`Cache-Control` of every served asset (`'public, max-age=3600'` by default).
+
+```php
+public private(set) Files $Files
+```
+
+The jailed file server over `path`.
 
 ### Web\App\Views
+
+```php
+public string $layout = 'layouts/main'
+```
+
+The default layout wrapping every render that declares no `@extends` — `views/layouts/main.template.php`. Empty disables it; a render's own `layout:` argument overrides it.
+
+```php
+public array $shared = []
+```
+
+Variables exported to every render, by name — what `share()` merges into.
 
 ```php
 public function share (array $variables): self

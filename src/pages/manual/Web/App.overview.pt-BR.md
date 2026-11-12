@@ -30,7 +30,7 @@ return new Project(
 
 `load()` lê a pasta de router padrão (`router/router.index.php` + `router/routes/<Name>.routes.php`) — a mesma convenção de qualquer projeto WPI. `start()` conecta os eventos, aplica as convenções de views e inicializa o servidor.
 
-`configure()` recebe **Configs** — os mesmos value objects tipados que todo node WPI recebe. Um `Web\App\Configs` carrega toda opção do `HTTP_Server_CLI\Configs` subjacente (endereço de bind, workers, TLS ou Auto-TLS, privilege dropping, HTTP/2, endpoint de health, limites de conexão) com os defaults da plataforma preenchidos — `host: '0.0.0.0'`, `port: 8080`, `workers: 2`, `health: '/health'` — mais os três concerns do shell, `Middlewares`, `Resources` e `deferredTimeout`. Nada é obrigatório: `$App->configure()` sozinho inicializa com os defaults. Apenas named arguments — um `new Configs('0.0.0.0', 8080)` posicional levanta um `TypeError`.
+`configure()` recebe **Configs** — os mesmos value objects tipados que todo node WPI recebe. Um `Web\App\Configs` carrega toda opção do `HTTP_Server_CLI\Configs` subjacente (endereço de bind, workers, TLS ou Auto-TLS, privilege dropping, HTTP/2, endpoint de health, limites de conexão, headroom do selector, timeout de ociosidade, orçamento de memória do worker, reciclagem de workers) com os defaults da plataforma preenchidos — `host: '0.0.0.0'`, `port: 8080`, `workers: 2`, `health: '/health'` — mais os três concerns do shell, `Middlewares`, `Resources` e `deferredTimeout`. Nada é obrigatório: `$App->configure()` sozinho inicializa com os defaults. Apenas named arguments — um `new Configs('0.0.0.0', 8080)` posicional levanta um `TypeError`.
 
 > [!WARNING]
 > **Breaking: os named parameters planos se foram.** `configure(port: 8080, middlewares: [...])` não existe mais, sem alias — o App segue os nodes WPI, que migraram para Configs tipados em `1.0.0-rc.1`. Embrulhe as mesmas opções em um `Web\App\Configs`: `middlewares:` vira `Middlewares:`, `resources:` vira `Resources:`, e `secure: new AutoTLS(...)` vira `AutoTLS: new AutoTLS(...)` (`secure:` fica só com o contexto TLS manual).
@@ -61,6 +61,24 @@ $App->configure(
    new RequestConfigs(maxBodySize: 12 * 1024 * 1024)  // 12 MB — dois corpos assim cabem ao mesmo tempo no orçamento de memória padrão do worker
 );
 ```
+
+## Reciclagem de workers
+
+As opções do servidor que limitam um worker viajam no mesmo `Web\App\Configs`. Para limitar o que um worker de vida longa junta — um vazamento numa biblioteca, um cache sem descarte, um heap fragmentado —, deixe o servidor substituir workers por conta própria:
+
+```php
+// php.ini: memory_limit = 1G — o maxMemory precisa ficar abaixo dele
+$App->configure(new Configs(
+   port: 8080,
+   maxRequests: 10_000,  // recicla um worker após cerca de 10 000 requisições...
+   jitter: 0.1,          // ...cada worker no seu próprio limite, dentro de ±10% (o padrão)
+   maxMemory: '512M'     // ...ou assim que sua memória real passar de 512 MiB
+));
+```
+
+Um worker que atinge o seu limite responde a requisição em mãos e termina o que está em andamento, enquanto o master cria o substituto por fork na hora — o slot nunca fica sem worker. O `maxMemory` aceita bytes ou um tamanho como `'512M'`, e precisa ficar entre a memória com que um worker sobe e o `memory_limit` do PHP: senão o `start()` se recusa a subir, então aumente o `memory_limit` no `php.ini` antes. Um valor negativo, um `jitter` fora de `0`–`1` ou um tamanho que não é interpretável lança `InvalidArgumentException` no `new Configs`.
+
+Mais dois limites do worker viajam do mesmo jeito: o `headroom` (`32` por padrão) mantém essa quantidade de entradas do selector de cada worker livre para as esperas do próprio worker por banco, KV e cliente HTTP, e o `maxWorkerPendingBytes` (64 MiB por padrão) é o orçamento de memória que corpos de requisição inacabados, o cache de rotas e a saída pendente compartilham em cada worker. A semântica completa deles está na página do HTTP Server: [Reciclagem de workers](/manual/WPI/HTTP/HTTP_Server_CLI/#reciclagem-de-workers), [Limites de conexão](/manual/WPI/HTTP/HTTP_Server_CLI/#limites-de-conexão) e [Orçamento de memória](/manual/WPI/HTTP/HTTP_Server_CLI/#orçamento-de-memória).
 
 ## Controllers
 
@@ -259,6 +277,61 @@ $SPA = new SPA(
 - `robots` — o body de `/robots.txt`, respondido a partir da configuração (útil para manter um deploy de staging fora dos buscadores); `null` serve o `robots.txt` do próprio build.
 - `aliases` — nomes que browsers pedem por conta própria, mapeados para o arquivo que o build entrega.
 
+### Vários builds sob prefixos de caminho
+
+Um projeto pode servir mais de um build — uma loja e um painel administrativo, por exemplo —, cada um da sua própria pasta, sob o seu próprio prefixo de URL. Faça o build de cada um com o `base` do Vite apontando para o seu prefixo, para que as URLs de assets escritas no `index.html` o carreguem, e dê ao router do cliente a mesma base (o `basename="/admin"` do React Router, o `createWebHistory('/admin/')` do Vue Router):
+
+```js
+// frontends/admin/vite.config.js — o build vai para builds/admin/ do projeto
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  base: '/admin/',
+  build: {
+    outDir: '../../builds/admin',
+    emptyOutDir: true
+  }
+});
+```
+
+Depois monte um `SPA` por build, no prefixo e num catch-all abaixo dele:
+
+```php
+<?php
+
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\ETag;
+use Web\API\Problem;
+use Web\App\SPA;
+
+
+return static function (Request $Request, Response $Response, Router $Router): Generator
+{
+   // * API — as rotas dela primeiro, depois um 404 problem+json para qualquer outro caminho da API
+   yield $Router->route('/api/health', function (Request $Request, Response $Response) {
+      return $Response->JSON->send(['status' => 'ok']);
+   }, GET);
+
+   $Unknown = function (Request $Request, Response $Response) {
+      return new Problem(404, detail: 'No API route matches this path.')->render($Response);
+   };
+   yield $Router->route('/api', $Unknown);
+   yield $Router->route('/api/:path*', $Unknown);
+
+   // * Interfaces — um SPA por build, cada um no seu próprio prefixo
+   foreach (['admin', 'store'] as $name) {
+      $SPA = new SPA(path: "builds/{$name}");
+
+      yield $Router->route("/{$name}", $SPA, [GET, HEAD], middlewares: [new ETag]);
+      yield $Router->route("/{$name}/:file*", $SPA, [GET, HEAD], middlewares: [new ETag]);
+   }
+};
+```
+
+O router descarta a barra final, então `/admin` e `/admin/` chegam os dois à rota do prefixo e respondem o index, assim como uma rota do cliente como `/admin/orders/42`; `/admin/assets/index-4f9a2c1e.js` é o arquivo `builds/admin/assets/index-4f9a2c1e.js`, cacheado como imutável — o param da rota, e com ele o `immutable`, os `aliases` e todo nome que o handler serve, é relativo à pasta do build, não à URL. Uma chamada `/api/...` sem rota recebe um problem `404` do `$Unknown`, que renderiza o `Problem` em vez de lançá-lo, então nenhum middleware `Problems` é necessário na stack. Tudo o que fica fora dos prefixos — `/` incluído — precisa de rotas próprias. O exemplo `Demo/SPA` serve um build React e um build Vue desse jeito.
+
 ## Logs
 
 `start()` registra um sink global de arquivo: relatórios de exceção e loggers opted-in persistem em `storage/logs/<channel>.log` em todos os modos. No modo **Daemon** os workers se desconectam do terminal — o arquivo de log é onde os erros aparecem — e esse sink toma o lugar do sink padrão que o servidor instalaria nesse path, então nenhum record é persistido duas vezes.
@@ -293,6 +366,24 @@ public function start (): void
 
 Registra o sink global de logs, conecta os eventos da plataforma (convenções de views + stack global de middlewares no drain do primeiro request, o banner de inicialização em `Events::ServerAdvertised` — renderizado pelo processo que possui o terminal, então sobrevive ao detach do Daemon — e o banner de parada) e inicia o servidor. Lança quando nenhum router foi carregado.
 
+```php
+public array $Middlewares
+```
+
+A stack global de middlewares, aplicada a toda rota, em ordem: a stack padrão (`SecureHeaders`, `RequestId`, `BodyParser`, `CSRF`) até que um `configure()` cujo `Configs` carregue `Middlewares:` a substitua por inteiro — uma chamada sem ele a deixa como está. O `start()` a lê uma vez, então altere-a antes.
+
+```php
+public HTTP_Server_CLI $Server
+```
+
+O node `HTTP_Server_CLI` que o shell configura e inicia, no modo do construtor — o caminho para o que o shell não embrulha. O `start()` registra `Events::RequestReceived`, `Events::ServerAdvertised` e `Events::ServerStopped` por conta própria, e um evento aceita um único callback, então o `Events::ServerStarted` é o que sobra para o `$App->Server->on()` (setup do lado do master: timers, schedulers); registrar qualquer um dos outros três faz o `start()` lançar `InvalidArgumentException`.
+
+```php
+public Views $Views
+```
+
+As convenções de views — layout padrão e variáveis compartilhadas — que o `start()` aplica ao View resource de cada worker. Altere-as antes do `start()`.
+
 ### Web\App\Configs
 
 ```php
@@ -309,14 +400,19 @@ public function __construct (
    null|string $health = '/health',
    null|int $maxConnections = null,
    null|int $maxConnectionsPerIP = null,
+   null|int $headroom = null,
    null|int $connectionIdleTimeout = null,
+   null|int $maxWorkerPendingBytes = null,
+   int $maxRequests = 0,
+   float $jitter = 0.1,
+   int|string $maxMemory = 0,
    null|array $Middlewares = null,
    null|array $Resources = null,
    null|int|float $deferredTimeout = null
 )
 ```
 
-Estende `HTTP_Server_CLI\Configs`: toda opção do servidor exceto o orçamento de memória do worker (`maxWorkerPendingBytes` — defina `TCP_Server_CLI::$maxWorkerPendingBytes` antes do `start()` até o App repassá-lo), com os defaults da plataforma Web preenchidos (`host`, `port` e `workers` têm fallback em vez de serem obrigatórios), mais os três concerns do shell. Apenas named arguments — o primeiro slot é o guard `Bootgly\ABI\Argument`, então uma chamada posicional levanta um `TypeError`. Lança `InvalidArgumentException` no `new` quando `secure` e `AutoTLS` são dados juntos, em uma entrada de `Middlewares` que não é um `Middleware`, ou em um valor de `Resources` que não é uma Closure indexada por nome.
+Estende `HTTP_Server_CLI\Configs` e carrega todas as opções dele — o orçamento de memória do worker e a reciclagem de workers incluídos — com os defaults da plataforma Web preenchidos (`host`, `port` e `workers` têm fallback em vez de serem obrigatórios), mais os três concerns do shell; o `App->configure()` repassa todas ao servidor. Apenas named arguments — o primeiro slot é o guard `Bootgly\ABI\Argument`, então uma chamada posicional levanta um `TypeError`. Lança `InvalidArgumentException` no `new` quando `secure` e `AutoTLS` são dados juntos, em uma opção de reciclagem fora da faixa (um `maxRequests` ou `maxMemory` negativo, um `jitter` fora de `0`–`1`, um tamanho de `maxMemory` que não é interpretável), em uma entrada de `Middlewares` que não é um `Middleware`, ou em um valor de `Resources` que não é uma Closure indexada por nome.
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |---|---|---|---|
@@ -331,7 +427,12 @@ Estende `HTTP_Server_CLI\Configs`: toda opção do servidor exceto o orçamento 
 | `health` | `null\|string` | `'/health'` | Endpoint embutido de health-check, respondido antes de qualquer middleware. `null` desabilita. |
 | `maxConnections` | `null\|int` | `null` (= `10000`) | Máximo de conexões estabelecidas por worker; `0` desabilita o limite. |
 | `maxConnectionsPerIP` | `null\|int` | `null` (= `0`) | Máximo de conexões estabelecidas por IP de cliente; `0` significa ilimitado. |
+| `headroom` | `null\|int` | `null` (= `32`) | Entradas do selector que cada worker mantém livres para o I/O das suas próprias dependências — esperas deferred por banco, KV e cliente HTTP —, descartando clientes mais cedo; `0` o desativa. |
 | `connectionIdleTimeout` | `null\|int` | `null` (= `15`) | Segundos de silêncio antes de uma conexão ociosa ser fechada; `0` desabilita o reaper. |
+| `maxWorkerPendingBytes` | `null\|int` | `null` (= 64 MiB) | Orçamento de memória do worker, compartilhado por corpos de requisição inacabados, o cache de rotas e a saída pendente, medidos pelo que o alocador gasta. Reduzido à metade do `memory_limit` no start, com um aviso, quando não cabe. |
+| `maxRequests` | `int` | `0` | Requisições que um worker despacha antes de reciclar — o substituto é criado por fork na hora enquanto ele drena; `0` nunca recicla. |
+| `jitter` | `float` | `0.1` | Dispersão do limite próprio de cada worker em torno de `maxRequests` (`0.1` = ±10%), para que os workers não reciclem juntos; de `0` a `1`. |
+| `maxMemory` | `int\|string` | `0` | Memória real (`memory_get_usage(true)`) acima da qual um worker recicla — bytes, ou um tamanho como `'512M'`. Precisa ficar entre a memória com que um worker sobe e o `memory_limit`, senão o `start()` se recusa a subir; `0` o mantém desligado. |
 | `Middlewares` | `null\|array<int,Middleware>` | `null` | Substitui a stack de middlewares padrão por inteiro; `null` a mantém. |
 | `Resources` | `null\|array<string,Closure>` | `null` | Response resources extras (nome => factory), mesclados com os Database/KV automáticos — entradas explícitas vencem. |
 | `deferredTimeout` | `null\|int\|float` | `null` (= default do servidor) | Segundos que uma resposta deferred pode levar antes de ser cancelada. |
@@ -356,7 +457,7 @@ Renderiza uma view do projeto pelo View resource da Response. `layout:` sobrescr
 protected function redirect (string $URI, null|int $code = null): Response
 ```
 
-Redireciona pela Response. Um code null deriva do método do request (POST → 303, senão 307).
+Redireciona pela Response — apenas para um destino relativo, começando por `/`. Ele chama `$Response->redirect($URI, $code)` sem `allowExternal`, então a proteção contra open redirect do core envia `/` no lugar de uma URL absoluta (`https://example.com/`), de um `//example.com` relativo ao protocolo ou de qualquer outro destino que não comece com `/` — e, externo ou não, no lugar de um destino com caractere de controle, barra invertida ou esquema executável (`javascript:`, `data:`, `vbscript:`, `file:`). Para um destino externo, chame a Response a partir da ação: `return $Response->redirect($URI, $code, allowExternal: true);` — depois de conferir o `$URI` contra os hosts que você permite, nunca com input do usuário sem checagem. Um code null deriva do método do request (POST → 303, senão 307), e o mesmo vale para um code que não seja 300–303, 307 ou 308.
 
 ### Web\App\Controllers
 
@@ -389,7 +490,13 @@ public function serve (string $file, Response $Response, string $cache): false|R
 Envia um nome resolvido inline com o media type da extensão do seu alvo real (um symlink é tipado e julgado pelo arquivo para o qual aponta) e o `Cache-Control` dado, lendo o arquivo inteiro para a memória. O nome não é decodificado de novo. Retorna `false`, sem escrever nada, quando o arquivo é um fonte PHP (`.php`, `.php<N>`, `.phps`, `.phtml`, `.pht`, `.phar`), não existe, é um diretório, não é legível ou está fora da jail — a conversão do `File` do core para `<nome>.php` / `<nome>/index.php` fica desligada.
 
 ```php
-public string $base
+public private(set) string $path
+```
+
+O diretório da jail, relativo à raiz do projeto, como o construtor o recebeu (`'statics'` por padrão). Somente leitura.
+
+```php
+public string $base { get }
 ```
 
 O diretório absoluto da jail (o path do projeto mais `path`), com barra no final. Somente leitura.
@@ -415,55 +522,67 @@ public function __construct (
 )
 ```
 
-Handler invocável de single-page app para a rota raiz e uma rota de param catch-all (`/:file*`). Serve os arquivos do build pelo `Files` — um nome com extensão, um nome sob `.well-known/` ou um arquivo regular sem extensão do build — e responde o index a todo outro caminho. `$SPA->path` lê a jail do seu `Files`.
+Handler invocável de single-page app para a rota raiz e uma rota de param catch-all (`/:file*`) — ou para um prefixo e o catch-all sob ele (`/admin`, `/admin/:file*`). Cada argumento fica guardado na propriedade somente leitura de mesmo nome abaixo; `path` é lido do seu `Files`.
 
 ```php
-string $path = 'statics'
+public function __invoke (object $Request, object $Response): object
 ```
 
-Diretório do projeto (relativo à raiz do projeto) que guarda o build.
+Responde um request. Lê o nome pedido do param de rota `param` (vazio na rota raiz) e serve os arquivos do build pelo `Files` — um nome com extensão, um nome sob `.well-known/` ou um arquivo regular sem extensão do build — e o index a todo outro caminho. Um nome recusado ou excluído responde `404`, assim como um nome de arquivo ausente, ilegível ou fonte PHP; um fallback enquanto o index falta responde `503`. Retorna a Response.
 
 ```php
-string $index = 'index.html'
+public string $path { get }
 ```
 
-O documento para o qual toda rota do cliente cai, enviado com `Cache-Control: no-cache` — também quando pedido pelo nome. Se faltar, todo fallback responde `503` com o body neutro `Service Unavailable` e `Cache-Control: no-store`.
+Diretório do projeto (relativo à raiz do projeto) que guarda o build — `'statics'` por padrão, lido do `$Files->path`.
 
 ```php
-string $param = 'file'
+public private(set) string $index
 ```
 
-Param da rota que carrega o caminho pedido; vazio na rota raiz.
+O documento para o qual toda rota do cliente cai (`'index.html'` por padrão), enviado com `Cache-Control: no-cache` — também quando pedido pelo nome. Se faltar, todo fallback responde `503` com o body neutro `Service Unavailable` e `Cache-Control: no-store`.
 
 ```php
-array $excludes = []
+public private(set) string $param
 ```
 
-Primeiros segmentos do caminho (`['api']`) respondidos com `404`, nunca com o index. Comparações exatas e sensíveis a maiúsculas do primeiro segmento, feitas depois da decodificação e da normalização: `/%61pi/x` e `/./api/x` também ficam excluídos, `/API/x` e `/apis/x` não.
+Param da rota que carrega o caminho pedido (`'file'` por padrão); vazio na rota raiz.
 
 ```php
-string $immutable = 'assets/'
+public private(set) array $excludes
 ```
 
-Prefixo de caminho da saída com fingerprint do build, enviada com `Cache-Control: public, max-age=31536000, immutable`. `''` desliga.
+Primeiros segmentos do caminho (`['api']`) respondidos com `404`, nunca com o index — nenhum por padrão. Comparações exatas e sensíveis a maiúsculas do primeiro segmento, feitas depois da decodificação e da normalização: `/%61pi/x` e `/./api/x` também ficam excluídos, `/API/x` e `/apis/x` não.
 
 ```php
-string $cache = 'public, max-age=3600'
+public private(set) string $immutable
 ```
 
-`Cache-Control` de todo outro arquivo servido.
+Prefixo de caminho da saída com fingerprint do build (`'assets/'` por padrão), relativo à pasta do build, enviada com `Cache-Control: public, max-age=31536000, immutable`. `''` desliga.
 
 ```php
-null|string $robots = null
+public private(set) string $cache
 ```
 
-Body de `/robots.txt`, enviado como `text/plain; charset=UTF-8` com `Cache-Control: public, max-age=86400`. `null` serve o arquivo do próprio build.
+`Cache-Control` de todo outro arquivo servido (`'public, max-age=3600'` por padrão).
 
 ```php
-array $aliases = []
+public private(set) null|string $robots
 ```
 
-Nome pedido => nome servido (`['favicon.ico' => 'favicon.svg']`); o arquivo servido mantém o próprio media type.
+Body de `/robots.txt`, enviado como `text/plain; charset=UTF-8` com `Cache-Control: public, max-age=86400`. `null` (o padrão) serve o arquivo do próprio build.
+
+```php
+public private(set) array $aliases
+```
+
+Nome pedido => nome servido (`['favicon.ico' => 'favicon.svg']`; nenhum por padrão); o arquivo servido mantém o próprio media type.
+
+```php
+public private(set) Files $Files
+```
+
+O servidor de arquivos com jail sobre `path` — a mesma rotina `Files` pela qual o `Statics` serve.
 
 ### Web\App\Statics
 
@@ -471,9 +590,51 @@ Nome pedido => nome servido (`['favicon.ico' => 'favicon.svg']`); o arquivo serv
 public function __construct (string $path = 'statics', string $param = 'file', string $cache = 'public, max-age=3600')
 ```
 
-Handler invocável de arquivos estáticos para uma rota de param catch-all (`/statics/:file*`). Serve pelo `Files` — inline, com o media type mapeado da extensão do arquivo e o `Cache-Control` dado — e responde `404` a um nome recusado, ausente ou fonte PHP. `$Statics->path` lê a jail do seu `Files`. O nome pedido é percent-decodificado uma vez (novo na 1.1).
+Handler invocável de arquivos estáticos para uma rota de param catch-all (`/statics/:file*`). Cada argumento fica guardado na propriedade somente leitura de mesmo nome abaixo; `path` é lido do seu `Files`.
+
+```php
+public function __invoke (object $Request, object $Response): object
+```
+
+Serve o arquivo que o param de rota `param` nomeia pelo `Files` — inline, com o media type mapeado da extensão do arquivo e o header `cache` — e responde `404` a um nome recusado, ausente ou fonte PHP. O nome pedido é percent-decodificado uma vez (novo na 1.1). Retorna a Response.
+
+```php
+public string $path { get }
+```
+
+Diretório do projeto (relativo à raiz do projeto) que serve de jail para os assets — `'statics'` por padrão, lido do `$Files->path`.
+
+```php
+public private(set) string $param
+```
+
+Param da rota que carrega o arquivo pedido (`'file'` por padrão).
+
+```php
+public private(set) string $cache
+```
+
+`Cache-Control` de todo asset servido (`'public, max-age=3600'` por padrão).
+
+```php
+public private(set) Files $Files
+```
+
+O servidor de arquivos com jail sobre `path`.
 
 ### Web\App\Views
+
+```php
+public string $layout = 'layouts/main'
+```
+
+O layout padrão que envolve toda renderização que não declara `@extends` — `views/layouts/main.template.php`. Vazio o desliga; o argumento `layout:` da própria renderização o sobrescreve.
+
+```php
+public array $shared = []
+```
+
+Variáveis exportadas a toda renderização, por nome — onde o `share()` mescla.
 
 ```php
 public function share (array $variables): self

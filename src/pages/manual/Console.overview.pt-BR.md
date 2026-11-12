@@ -2,7 +2,7 @@
 
 A plataforma Console (`bootgly/bootgly-console`) é a **camada TUI opinativa** do Bootgly sobre a interface CLI: um shell de aplicação para apps de terminal full-screen ([App](/manual/Console/App)) e um módulo para jogos de terminal ([Game](/manual/Console/Game)).
 
-Ela é distribuída como submódulo git opcional do kit inicial — o wizard de projetos a oferece no multiselect de **Plataformas** (veja [Começando](/guide/getting-started)).
+O kit inicial a rastreia, assim como a Web, como submódulo git. Um kit novo configura todas as plataformas sem perguntar (`--platform=` restringe essa primeira execução); depois disso, uma execução só adiciona as plataformas que o `--platform=` nomeia — uma plataforma que você removeu continua removida (veja [Começando](/guide/getting-started)).
 
 ## Instalando a plataforma
 
@@ -14,7 +14,7 @@ curl -fsSL https://bootgly.com/install | bash
 
 ## Como ela boota
 
-O kit boota as plataformas opcionais **antes** da plataforma Bootgly, porque o roteamento de comandos (ex.: `project <Nome> start`) acontece dentro do autoboot do Bootgly — projetos Console precisam do autoloader da plataforma já registrado:
+O lançador do kit boota as plataformas **antes** da plataforma Bootgly, porque o roteamento de comandos (ex.: `project <Nome> start`) acontece dentro do autoboot do Bootgly — projetos Console precisam do autoloader da plataforma já registrado:
 
 ```php
 // <kit>/bootgly (trecho)
@@ -24,12 +24,18 @@ foreach (['Console', 'Web'] as $platform) {
    }
 }
 
-$booted =
-   (@include __DIR__ . '/@imports/autoload.php') ||
-   (@include __DIR__ . '/Bootgly/autoboot.php');
+$booted = (@include __DIR__ . '/Bootgly/autoboot.php');
 ```
 
-O `Console/autoboot.php` define as constantes da plataforma (`CONSOLE_ROOT_DIR`, `CONSOLE_WORKING_DIR`, `CONSOLE_VERSION`) e registra o autoloader `Console\` — sem dependência do Bootgly, que ainda não foi carregado. A raiz da plataforma, a classe `Console`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Console` e a boota:
+O `Console/autoboot.php` define as constantes da plataforma e registra o autoloader das classes `Console\` — sem dependência do Bootgly, que ainda não foi carregado:
+
+- `CONSOLE_ROOT_BASE` / `CONSOLE_ROOT_DIR` — a pasta da plataforma, sem e com o separador final;
+- `CONSOLE_WORKING_BASE` / `CONSOLE_WORKING_DIR` — a mesma pasta, a menos que um lançador defina as duas antes do include;
+- `CONSOLE_VERSION` — a release da plataforma.
+
+O autoloader tenta primeiro o `CONSOLE_WORKING_DIR` e cai para o `CONSOLE_ROOT_DIR` quando os dois diferem.
+
+A raiz da plataforma, a classe `Console`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Console` e a boota:
 
 ```php
 // dentro do Bootgly::autoboot(), para cada plataforma instalada
@@ -53,11 +59,11 @@ A plataforma é uma **biblioteca de classes** sobre `Bootgly\CLI`: não há work
 
 ## Projetos Console
 
-Um projeto Console é um projeto Bootgly comum vinculado à interface `CLI`. Registre-o no `projects/Bootgly.projects.php` do consumidor:
+Um projeto Console é um projeto Bootgly comum vinculado à interface `CLI`. Registre-o no `projects/Bootgly.projects.php` do consumidor, pelo caminho dele dentro de `projects/`:
 
 ```php
 return [
-   'Snake' => ['interfaces' => ['CLI']],
+   'Demo/Snake' => ['interfaces' => ['CLI']],
 ];
 ```
 
@@ -89,7 +95,27 @@ Inicie-o como qualquer projeto:
 php bootgly project Demo/Snake start
 ```
 
-A plataforma traz **projetos exportáveis** em `Console/projects/` — o picker *Import projects from Platforms* do wizard os enumera (os jogos Snake e Pong saem de lá).
+A plataforma traz **projetos exportáveis** em `Console/projects/` — os jogos Snake, Pong e Invaders. Um kit novo os importa sozinho para `projects/Demo/`, como guias vivos: inicie um, leia o código ou copie-o para um novo caminho:
+
+```bash :toolbar="true";
+php bootgly projects create MyGame --from=Demo/Snake
+```
+
+A cópia renomeia só o arquivo de assinatura: as classes continuam declarando `Demo\Snake\…` e seguem sendo carregadas do exemplo original até você renomear esse namespace para o novo caminho (`namespace MyGame;`).
+
+## Execuções headless
+
+A interatividade é decidida uma vez, no boot, pelo `BOOTGLY_TTY`: verdadeiro quando o **STDIN** é um terminal. Redirecionar a saída (`| head`) não muda isso — a TUI continua tomando o terminal. Defina `BOOTGLY_TTY=0` para forçar uma execução headless: um [App](/manual/Console/App) renderiza um frame e retorna, um [Game](/manual/Console/Game) roda um tick e desenha um frame, e o comando termina — o smoke test de scripts, CI e agentes de IA:
+
+```bash :toolbar="true";
+BOOTGLY_TTY=0 php bootgly project Demo/Snake start | head -40
+```
+
+O frame mantém as sequências de escape (movimentos de cursor, cores). `BOOTGLY_TTY=1` força o contrário — um terminal emulado atrás de um STDIN que não é terminal, como um runtime WebAssembly alimentado pelo xterm.js; qualquer outro valor volta a checar o STDIN.
+
+## Skill de agente
+
+A plataforma traz uma skill para agentes de IA, a `bootgly-build-console`, dentro do pacote: `Console/templates/projects/.agents/skills/bootgly-build-console/SKILL.md`. O `bootgly kit boot` — que o primeiro `projects create` ou `import` executa — a instala em `<kit>/projects/.agents/skills/`, ao lado das skills `bootgly-*` do próprio framework e com um link em `projects/.claude/skills/` para o Claude Code, e a atualiza sempre que a release da plataforma traz uma versão diferente: ela é gerenciada pela máquina, então não a edite. Ela estende a `bootgly-build` para o trabalho com Console: escolher entre um comando, um App e um Game, os dois shells, o smoke test com `BOOTGLY_TTY=0` e testes que dirigem views sem terminal.
 
 ---
 

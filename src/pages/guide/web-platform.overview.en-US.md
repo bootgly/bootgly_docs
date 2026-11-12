@@ -4,7 +4,7 @@ Build web applications — MVC sites and REST APIs — with Bootgly's opinionate
 
 ## Set it up
 
-The [canonical installer](/guide/getting-started) can install it right away — it asks which platforms to set up, so just pick **Web**:
+The [canonical installer](/guide/getting-started) sets it up right away — every platform comes installed, with no question asked:
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
@@ -124,7 +124,7 @@ Pagination comes from the core: `$Response->Database->paginate(Task::class)` rea
 
 ## Try the demos
 
-The platform ships complete exportable projects — import them with the wizard (**Import projects from Platforms**) and run:
+The platform ships complete exportable projects — a fresh kit imports them into `projects/Demo/` automatically — run:
 
 ```bash
 php bootgly project Demo/Blog start    # MVC: posts CRUD + CSRF forms + SQLite  → :8080

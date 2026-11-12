@@ -2,7 +2,7 @@
 
 The Console platform (`bootgly/bootgly-console`) is Bootgly's **opinionated TUI layer** over the CLI interface: an application shell for full-screen terminal apps ([App](/manual/Console/App)) and a module for terminal games ([Game](/manual/Console/Game)).
 
-It ships as an optional git submodule of the starter kit — the project wizard offers it in the **Platforms** multiselect (see [Getting started](/guide/getting-started)).
+The starter kit tracks it, like Web, as a git submodule. A fresh kit sets every platform up without asking (`--platform=` narrows that first run); afterwards, a run only adds the platforms `--platform=` names — a platform you removed stays removed (see [Getting started](/guide/getting-started)).
 
 ## Installing the platform
 
@@ -14,7 +14,7 @@ curl -fsSL https://bootgly.com/install | bash
 
 ## How it boots
 
-The kit boots the optional platforms **before** the Bootgly platform, because command routing (e.g. `project <Name> start`) happens inside the Bootgly autoboot — Console projects need the platform autoloader already registered:
+The kit launcher boots the platforms **before** the Bootgly platform, because command routing (e.g. `project <Name> start`) happens inside the Bootgly autoboot — Console projects need the platform autoloader already registered:
 
 ```php
 // <kit>/bootgly (excerpt)
@@ -24,12 +24,18 @@ foreach (['Console', 'Web'] as $platform) {
    }
 }
 
-$booted =
-   (@include __DIR__ . '/@imports/autoload.php') ||
-   (@include __DIR__ . '/Bootgly/autoboot.php');
+$booted = (@include __DIR__ . '/Bootgly/autoboot.php');
 ```
 
-`Console/autoboot.php` defines the platform constants (`CONSOLE_ROOT_DIR`, `CONSOLE_WORKING_DIR`, `CONSOLE_VERSION`) and registers the `Console\` autoloader — with no Bootgly dependency, since Bootgly is not loaded yet. The platform root, the `Console` class, implements `Bootgly\API\Platform`, so it can only exist once Bootgly's own autoloader does: `Bootgly::autoboot()` creates it right after, before routing any command, defines the global `Console` constant and boots it:
+`Console/autoboot.php` defines the platform constants and registers the autoloader of the `Console\` classes — with no Bootgly dependency, since Bootgly is not loaded yet:
+
+- `CONSOLE_ROOT_BASE` / `CONSOLE_ROOT_DIR` — the platform folder, without and with the trailing separator;
+- `CONSOLE_WORKING_BASE` / `CONSOLE_WORKING_DIR` — the same folder, unless a launcher defines both before the include;
+- `CONSOLE_VERSION` — the platform release.
+
+The autoloader tries `CONSOLE_WORKING_DIR` first and falls back to `CONSOLE_ROOT_DIR` when they differ.
+
+The platform root, the `Console` class, implements `Bootgly\API\Platform`, so it can only exist once Bootgly's own autoloader does: `Bootgly::autoboot()` creates it right after, before routing any command, defines the global `Console` constant and boots it:
 
 ```php
 // inside Bootgly::autoboot(), for each installed platform
@@ -53,11 +59,11 @@ The platform is a **class library** over `Bootgly\CLI`: there are no process-wid
 
 ## Console projects
 
-A Console project is a regular Bootgly project bound to the `CLI` interface. Register it in the consumer `projects/Bootgly.projects.php`:
+A Console project is a regular Bootgly project bound to the `CLI` interface. Register it in the consumer `projects/Bootgly.projects.php`, keyed by its path under `projects/`:
 
 ```php
 return [
-   'Snake' => ['interfaces' => ['CLI']],
+   'Demo/Snake' => ['interfaces' => ['CLI']],
 ];
 ```
 
@@ -89,7 +95,27 @@ Start it as any project:
 php bootgly project Demo/Snake start
 ```
 
-The platform ships **exportable projects** under `Console/projects/` — the wizard's *Import projects from Platforms* picker surveys them (the Snake and Pong games ship there).
+The platform ships **exportable projects** under `Console/projects/` — the Snake, Pong and Invaders games. A fresh kit imports them into `projects/Demo/` by itself, as living guides: start one, read it, or copy it under a new path:
+
+```bash :toolbar="true";
+php bootgly projects create MyGame --from=Demo/Snake
+```
+
+The copy renames only its signature file: its classes still declare `Demo\Snake\…` and keep loading from the original example until you rename that namespace after the new path (`namespace MyGame;`).
+
+## Headless runs
+
+Interactivity is decided once, at boot, by `BOOTGLY_TTY`: true when **STDIN** is a terminal. Piping the output (`| head`) does not change it — the TUI still takes over the terminal. Set `BOOTGLY_TTY=0` to force a headless run: an [App](/manual/Console/App) renders one frame and returns, a [Game](/manual/Console/Game) runs one tick and draws one frame, and the command exits — the smoke test for scripts, CI and AI agents:
+
+```bash :toolbar="true";
+BOOTGLY_TTY=0 php bootgly project Demo/Snake start | head -40
+```
+
+The frame keeps its escape sequences (cursor moves, colors). `BOOTGLY_TTY=1` forces the opposite — an emulated terminal behind a non-terminal STDIN, such as a WebAssembly runtime fed by xterm.js; any other value falls back to checking STDIN.
+
+## Agent skill
+
+The platform ships an agent skill for AI coding agents, `bootgly-build-console`, inside the package: `Console/templates/projects/.agents/skills/bootgly-build-console/SKILL.md`. `bootgly kit boot` — which the first `projects create` or `import` runs — lays it down in `<kit>/projects/.agents/skills/`, beside the framework's own `bootgly-*` skills and linked into `projects/.claude/skills/` for Claude Code, and refreshes it whenever the platform release ships a different one: it is machine-managed, so do not edit it. It extends `bootgly-build` for Console work: picking between a command, an App and a Game, the two shells, the `BOOTGLY_TTY=0` smoke test and tests that drive views without a terminal.
 
 ---
 

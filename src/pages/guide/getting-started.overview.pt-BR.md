@@ -26,24 +26,24 @@ O instalador:
 >
 > O volume compartilha o espaço livre do container, então não precisa de tamanho fixo. O Windows (fora do WSL2) tem a mesma limitação; use WSL2 ou Docker lá.
 
-> **Rodar de novo é seguro.** Se a instalação foi interrompida em qualquer etapa, execute o mesmo comando novamente: quando o diretório alvo já é um checkout do Bootgly Kit, o instalador **retoma** — imprime um checklist do que já foi feito, inicializa o que falta (submodules, resources) e reabre o wizard (pulando-o quando um projeto já está registrado). O wizard só oferece as plataformas ainda não configuradas.
+> **Rodar de novo é seguro.** Se a instalação foi interrompida em qualquer etapa, execute o mesmo comando novamente: quando o diretório alvo já é um checkout do Bootgly Kit, o instalador **retoma** — imprime um checklist do que já foi feito, inicializa o que falta (submodules, resources) e reabre o wizard (pulando-o quando um projeto já está registrado).
 
 Um kit recém-clonado (`git clone`) contém apenas os arquivos do kit — todos os submodules de plataforma ficam **vazios** até serem instalados:
 
 ```text
 bootgly.kit/
 ├── Bootgly/            ← plataforma base (git submodule OBRIGATÓRIO — vazio, ainda não instalado)
-├── Console/            ← plataforma Console (git submodule opcional — vazio)
-├── Web/                ← plataforma Web (git submodule opcional — vazio)
+├── Console/            ← plataforma Console (git submodule — vazio)
+├── Web/                ← plataforma Web (git submodule — vazio)
 ├── .gitignore
-├── .gitmodules         ← Bootgly (obrigatório) + Console e Web (plataformas opcionais)
+├── .gitmodules         ← Bootgly (obrigatório) + Console e Web (plataformas)
 ├── LICENSE
 ├── README.md
-├── bootgly             ← o launcher da CLI (autoboota o Bootgly + as plataformas opcionais)
+├── bootgly             ← o launcher da CLI (autoboota o Bootgly + as plataformas)
 └── index.php           ← o front controller Web
 ```
 
-O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules da plataforma escolhida e roda o `bootgly kit boot` para instalar as suas próprias pastas de recursos:
+O instalador inicializa a plataforma base obrigatória (`git submodule update --init Bootgly`); a primeira execução do wizard inicializa os submodules de todas as plataformas (sem perguntar) e roda o `bootgly kit boot` para instalar as suas próprias pastas de recursos:
 
 > **As plataformas caem em um release, não em um commit.** Depois de inicializar um submodule, o instalador o move para a tag mais nova alcançável a partir do pin do kit — um release estável quando existe, senão o pre-release mais novo. Ele nunca avança *além* do pin, então você nunca recebe uma plataforma com a qual o kit não foi construído. Quando um pin saiu de um release, a execução avisa (`Bootgly was pinned 1 commit past v1.0.0 — checked out the release`), e o `git status` passa a mostrar aquele submodule como modificado: esse é o pin corrigido, não uma alteração sua — deixe como está. O kit não é seu para commitar; um `git submodule update` posterior devolve o submodule ao que o kit registra, e a próxima execução do instalador reaplica a correção.
 
@@ -69,7 +69,7 @@ bootgly.kit/
 │   ├── composer.json
 │   └── index.php
 ├── Console/            ← plataforma Console (instalada pelo wizard)
-├── Web/                ← plataforma Web (instalada quando escolhida)
+├── Web/                ← plataforma Web (instalada pelo wizard)
 ├── projects/           ← 🏁 os SEUS projetos — cada um um repositório git próprio (registrados em `Bootgly.projects.php`)
 ├── scripts/            ← instalado pelo `bootgly kit boot`
 ├── storage/            ← instalado pelo `bootgly kit boot` (cache/, logs/, pids/)
@@ -77,7 +77,7 @@ bootgly.kit/
 ├── .gitmodules
 ├── LICENSE
 ├── README.md
-├── bootgly             ← agora autoboota o Bootgly + Console (+ Web) pela cadeia condicional
+├── bootgly             ← agora autoboota Console + Web, depois o Bootgly
 └── index.php
 ```
 

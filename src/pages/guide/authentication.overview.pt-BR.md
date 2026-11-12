@@ -19,14 +19,8 @@ framework:
 
 ## Gere o projeto Auth
 
-Em um kit Bootgly, importe o projeto Auth pelo wizard — ele aparece no picker
-"Import projects from Platforms":
-
-```bash :toolbar="true";
-php bootgly projects create
-```
-
-Ou de forma não interativa:
+Um kit Bootgly novo já importa o projeto Auth em `projects/Demo/Auth` — você
+pode iniciá-lo de imediato (abaixo). Para gerar o seu próprio projeto a partir dele:
 
 ```bash :toolbar="true";
 php bootgly projects create Auth --from=Demo/Auth --yes

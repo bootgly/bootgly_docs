@@ -4,7 +4,7 @@ Construa apps de terminal full-screen — dashboards, ferramentas e até jogos �
 
 ## Configure
 
-O [instalador canônico](/guide/getting-started) já a instala na hora — ele pergunta quais plataformas configurar, é só escolher **Console**:
+O [instalador canônico](/guide/getting-started) já a configura na hora — toda plataforma vem instalada, sem nenhuma pergunta:
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
@@ -80,7 +80,7 @@ A plataforma traz três jogos completos como projetos exportáveis — jogue-os 
 Escolha um jogo e pressione Run, depois **clique no terminal para focá-lo**. Enter inicia, `q` sai. Snake: setas dirigem, segurar acelera. Pong: segure ↑/↓, o primeiro a 5 vence. Invaders: ←/→ movem, Space atira.
 </d-block-terminal>
 
-No seu próprio kit, importe-os com o wizard (**Import projects from Platforms**) e rode nativamente:
+No seu próprio kit, um kit novo os importa em `projects/Demo/` automaticamente — rode-os nativamente:
 
 ```bash
 php bootgly project Demo/Snake start

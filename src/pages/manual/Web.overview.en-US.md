@@ -4,7 +4,7 @@ The Web platform (`bootgly/bootgly-web`) is Bootgly's **opinionated web layer** 
 
 WPI itself stays deliberately low-level — the platform is where the opinions live: controllers, resource routing, problem+json errors, static assets and view conventions. Everything it wires remains plain WPI underneath.
 
-It ships as an optional git submodule of the starter kit — the project wizard offers it in the **Platforms** multiselect (see [Getting started](/guide/getting-started)).
+It ships as a git submodule of the starter kit, which tracks it beside the Console platform: a fresh kit sets up every platform with no question asked (see [Getting started](/guide/getting-started)), and a later run of the project wizard sets up only the platforms `--platform=` names — `--platform=web` brings this one back to a kit it was removed from. To build a first app and a REST API step by step, follow the [Web Platform](/guide/web-platform) guide; this manual covers each piece in depth.
 
 ## Installing the platform
 
@@ -16,7 +16,13 @@ curl -fsSL https://bootgly.com/install | bash
 
 ## How it boots
 
-The kit boots the optional platforms **before** the Bootgly platform, so Web projects find the platform autoloader already registered. `Web/autoboot.php` defines the platform constants (`WEB_ROOT_DIR`, `WEB_WORKING_DIR`, `WEB_VERSION`) and registers the `Web\` autoloader — with no Bootgly dependency, since Bootgly is not loaded yet. The platform root, the `Web` class, implements `Bootgly\API\Platform`, so it can only exist once Bootgly's own autoloader does: `Bootgly::autoboot()` creates it right after, before routing any command, defines the global `Web` constant and boots it:
+The kit boots the platform submodules **before** the Bootgly platform, so Web projects find the platform autoloader already registered. `Web/autoboot.php` defines the platform constants and registers the `Web\` autoloader — with no Bootgly dependency, since Bootgly is not loaded yet:
+
+- `WEB_ROOT_BASE` and `WEB_ROOT_DIR` — the platform folder, without and with the trailing separator. `WEB_ROOT_BASE` is what marks the platform as installed: the file returns at once when it is already defined, and `Bootgly::mount()` skips a platform that never defined it;
+- `WEB_WORKING_BASE` and `WEB_WORKING_DIR` — the folder the `Web\` autoloader searches first, before the platform folder: the platform folder itself, unless a launcher defined both before including the file;
+- `WEB_VERSION` — the platform release (`'1.2.0'`).
+
+The platform root, the `Web` class, implements `Bootgly\API\Platform`, so it can only exist once Bootgly's own autoloader does: `Bootgly::autoboot()` creates it right after, before routing any command, defines the global `Web` constant and boots it:
 
 ```php
 // inside Bootgly::autoboot(), for each installed platform
@@ -40,11 +46,11 @@ The platform is a **class library** over `Bootgly\WPI`: there are no process-wid
 
 ## Web projects
 
-A Web project is a regular Bootgly project bound to the `WPI` interface. Register it in the consumer `projects/Bootgly.projects.php`:
+A Web project is a regular Bootgly project bound to the `WPI` interface. Register it in the consumer `projects/Bootgly.projects.php`, keyed by its path under `projects/`:
 
 ```php
 return [
-   'Site' => ['interfaces' => ['WPI']],
+   'Demo/Site' => ['interfaces' => ['WPI']],
 ];
 ```
 
@@ -80,18 +86,26 @@ return new Project(
 );
 ```
 
-Start it as any project:
+Start it as any project, by that path:
 
 ```bash :toolbar="true";
 php bootgly project Demo/Site start
 ```
 
-The platform ships **exportable projects** under `Web/projects/` — the wizard's *Import projects from Platforms* picker surveys them:
+The platform ships these **example projects** in `Web/projects/Demo/`, and a fresh kit imports every one of them into `projects/Demo/` automatically — living guides, for people and AI agents alike:
 
+- **Auth** (`:8087`) — a session/cookie authentication scaffold: registration, e-mail verification, login with remember-me, password reset, SQLite.
 - **Blog** (`:8080`) — the full MVC loop: controllers, ORM models, views, Session + CSRF forms, SQLite (zero setup).
 - **Chat** (`:8085`) — realtime rooms over the WebSocket server; the client page is served on the same port.
 - **Site** (`:8088`) — landing pages: controller-dispatched views, layouts and inline statics, no database.
+- **SPA** (`:8092`) — the same task list as a React and a Vue Vite build, each served by `Web\App\SPA` on its own prefix (`/react/`, `/vue/`), over a JSON API with SQLite; the start builds them when Node.js and npm are on the `PATH`.
 - **Tasks** (`:8090`) — a REST API: resources, problem+json errors, JWT-protected mutations, pagination.
+
+## Agent skill
+
+The platform ships a skill for AI coding agents, `bootgly-build-web`, in `Web/templates/projects/.agents/skills/bootgly-build-web/`. Its `SKILL.md` takes an agent through a Web project the way this manual does — boot a `Web\App`, register routes, map controllers, render views, serve statics, guard forms with CSRF, test over HTTP — and `references/REST.md` adds the JSON API conventions of `Web\API`. It extends the framework's own `bootgly-build` skill.
+
+`bootgly kit boot` lays it down in `<kit>/projects/.agents/skills/`, beside the framework's `bootgly-*` skills, while the Web platform is set up in the kit — and links it into `projects/.claude/skills/` for Claude Code. A fresh kit runs that step on its own; a kit that sets the platform up later, with `--platform=web`, gets the skill at once; `bootgly kit boot --agents` lays down only the agent rules and skills; and `kit upgrade` and `kit downgrade` bring them in line with the release they move to. The copy is machine-managed — rewritten whenever it differs from the platform's template, removed once the platform no longer ships it — so do not edit it (see [Kit CLI](/guide/kit/overview/#boot-the-resource-directories)).
 
 ---
 

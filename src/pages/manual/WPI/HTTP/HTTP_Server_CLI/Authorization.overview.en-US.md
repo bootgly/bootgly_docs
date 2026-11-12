@@ -25,7 +25,7 @@ use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorizing;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authorization\Scope;
 
-$JWT = new JWT('application-secret');
+$JWT = new JWT((string) getenv('JWT_SECRET'));  // HS256: at least 32 bytes
 $JWTStrategy = new Authenticating(new JWTGuard($JWT));
 $Authorizing = new Authorizing(new Scope('demo:read'));
 
