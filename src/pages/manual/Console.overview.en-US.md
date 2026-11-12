@@ -6,22 +6,10 @@ It ships as an optional git submodule of the starter kit — the project wizard 
 
 ## Installing the platform
 
-The canonical installer already offers it — it asks which platforms to set up, and picking **Console** initializes the submodule right away:
+The canonical installer already sets it up — every platform comes initialized:
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
-```
-
-Didn't pick it at install time? Add it later to an existing kit:
-
-```bash :toolbar="true";
-git submodule update --init Console
-```
-
-Or through the wizard, non-interactively:
-
-```bash :toolbar="true";
-php bootgly projects create --platform=console
 ```
 
 ## How it boots

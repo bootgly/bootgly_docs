@@ -6,22 +6,10 @@ Ela é distribuída como submódulo git opcional do kit inicial — o wizard de 
 
 ## Instalando a plataforma
 
-O instalador canônico já a oferece — ele pergunta quais plataformas configurar, e escolher **Console** inicializa o submódulo na hora:
+O instalador canônico já a configura — todas as plataformas vêm inicializadas:
 
 ```bash :toolbar="true";
 curl -fsSL https://bootgly.com/install | bash
-```
-
-Não escolheu na instalação? Adicione depois em um kit existente:
-
-```bash :toolbar="true";
-git submodule update --init Console
-```
-
-Ou pelo wizard, de forma não interativa:
-
-```bash :toolbar="true";
-php bootgly projects create --platform=console
 ```
 
 ## Como ela boota
