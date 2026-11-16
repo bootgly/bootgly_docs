@@ -388,6 +388,8 @@ their caller stops waiting, and sends nothing. Both are described in
 ## Entry points
 
 ```php
+use Bootgly\ADI\Databases\SQL\Transaction;
+
 $Builder = $Database->table(Tables::Users);
 $Schema = $Database->structure();
 

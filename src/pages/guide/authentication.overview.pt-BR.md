@@ -319,7 +319,7 @@ opcionalmente remover as colunas.
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users, RBAC (1.1-1.49)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users, RBAC (1.1-1.59)
 AI_AGENT=1 ./bootgly test 29   # middlewares WPI — guard Remember, redirect do Fallback (11.2-11.3)
 
 # bootgly-web

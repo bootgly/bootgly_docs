@@ -397,6 +397,8 @@ e **[Operações retiradas](/manual/ADI/Database/Pool/overview/#operações-reti
 ## Pontos de entrada
 
 ```php
+use Bootgly\ADI\Databases\SQL\Transaction;
+
 $Builder = $Database->table(Tables::Users);
 $Schema = $Database->structure();
 

@@ -69,9 +69,10 @@ while (str_ends_with($reply, "\r\n") === false) {
 }
 ```
 
-A wait that times out never returns before its deadline, so waiting again on a timeout cannot
-spin. Readiness is another matter: a peer that closed stays readable forever, so always handle
-the empty read — as above — or the loop would run without ever waiting.
+A wait that times out never returns before its deadline (unless the deadline is years away — see
+Limits), so waiting again on a timeout cannot spin. Readiness is another matter: a peer that
+closed stays readable forever, so always handle the empty read — as above — or the loop would
+run without ever waiting.
 
 ## Poll without waiting
 
@@ -244,6 +245,10 @@ $Selector->wait($Selector->Clock->tick + 250_000_000); // 250 ms
   buffer, `wait()` reports the stream at once — and that answer lists **only** the streams with
   buffered data: `$writable` comes back empty even when a stream could be written. Drain what is
   readable and wait again.
+- **One wait lasts at most about 3.17 years** — a hundred million seconds, the longest timeout
+  every supported kernel accepts. With a deadline farther away, `wait()` returns `0` without
+  setting `$interrupted` once that time has passed, before the deadline: compare
+  `$Selector->Clock->tick` with the deadline and wait again with the same one.
 - **Not a reactor.** No callbacks, timers or Fibers: the HTTP server's event loop is
   `Bootgly\WPI\Events\Select`.
 

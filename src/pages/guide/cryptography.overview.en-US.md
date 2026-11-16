@@ -164,8 +164,13 @@ verify and the compare-and-set upgrade; write it by hand only for a store of you
 This is also the migration path from legacy storage: `verify()` reads every format PHP's
 `password_verify()` reads, so a bcrypt `$2y$…` hash — or the `$2a$…`, `$2b$…` and `$6$…`
 hashes other stacks write — still verifies, and `inspect()` upgrades it to argon2id on the
-user's next successful login. No batch migration, no forced resets. A format PHP cannot
-read needs a verifier — the next section.
+user's next successful login. No batch migration, no forced resets — with one exception. A
+format that reads only part of the password also accepts other spellings of it: traditional
+DES crypt (13 characters, no `$`) reads the first 8 bytes, bcrypt the first 72. The upgrade
+stores the password as it was typed, so a sign-in that matches only up to that limit succeeds
+and moves the account to its own spelling. Force a reset on DES crypt rows instead of letting
+a sign-in upgrade them; bcrypt is exposed only for passwords longer than 72 bytes. A format
+PHP cannot read needs a verifier — the next section.
 
 ## Users imported from another stack
 

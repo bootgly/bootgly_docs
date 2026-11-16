@@ -273,15 +273,22 @@ Authorization tests are split by layer:
 
 ```bash
 AI_AGENT=1 bootgly test 22       # API/Security: policies, abilities and RBAC
-AI_AGENT=1 bootgly test 26       # WPI middleware units
-AI_AGENT=1 bootgly test 28 166   # E2E Scope success
-AI_AGENT=1 bootgly test 28 167   # E2E Scope failure
-AI_AGENT=1 bootgly test 28 168   # E2E Role success
-AI_AGENT=1 bootgly test 28 169   # E2E Role failure
-AI_AGENT=1 bootgly test 28 170   # E2E Policy success
-AI_AGENT=1 bootgly test 28 171   # E2E Policy failure
-AI_AGENT=1 bootgly test 28 172   # E2E RBAC optional path, no DB by default
+AI_AGENT=1 bootgly test 29       # WPI middleware units (12.1-12.2)
+AI_AGENT=1 bootgly test 31 257   # E2E 11.1 Scope success
+AI_AGENT=1 bootgly test 31 258   # E2E 11.2 Scope failure
+AI_AGENT=1 bootgly test 31 259   # E2E 11.3 Role success
+AI_AGENT=1 bootgly test 31 260   # E2E 11.4 Role failure
+AI_AGENT=1 bootgly test 31 261   # E2E 11.5 Policy success
+AI_AGENT=1 bootgly test 31 262   # E2E 11.6 Policy failure
+AI_AGENT=1 bootgly test 31 263   # E2E 11.7 RBAC optional path, no DB by default
+AI_AGENT=1 bootgly test 31 264   # E2E 11.8 Scope missing: insufficient_scope challenge
+AI_AGENT=1 bootgly test 31 265   # E2E 11.9 No identity: Bearer 401 challenge
 ```
+
+The E2E cases are the `Router/Middleware/11.*-middleware-authorization_*.Test.php` files of
+`Bootgly/WPI/Nodes/HTTP_Server_CLI/tests/E2E/`. A case index is the file's position in the
+`tests` list of that suite's `autoboot.php`, so it moves when a case is added before it: when
+an index no longer runs the case its comment names, look the file up there.
 
 Use focused tests first when changing gates or policies. Add broader E2E coverage when a
 new route flow combines Authentication and Authorization middleware. To run the optional

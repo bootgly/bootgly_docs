@@ -52,27 +52,25 @@ bootgly.kit/
 ├── Bootgly/            ← plataforma base (submodule instalado)
 │   ├── @/              ← meta recursos do framework (certificados, análise estática, ...)
 │   ├── Bootgly/        ← o framework em si — as interfaces I2P, em ordem de dependência:
-│   │   ├── ABI/        ← Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
-│   │   ├── ACI/        ← Events/ Fakers/ Logs/ Observability/ Process/ Queues/ Schedule/ Tests/
-│   │   ├── ADI/        ← Database/ Databases/ Table/ Validation/ Validators/
-│   │   ├── API/        ← Endpoints/ Environment/ Projects/ Security/ Workables/
-│   │   ├── CLI/        ← Commands/ Terminal/ UI/
-│   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
+│   │   ├── ABI/        ← Clock/ Code/ Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
+│   │   ├── ACI/        ← Events/ Fakers/ Logs/ Mail/ Observability/ Process/ Queues/ Schedule/ Tests/ VCS/
+│   │   ├── ADI/        ← Casters/ Database/ Databases/ Table/ Validation/ Validators/
+│   │   ├── API/        ← Endpoints/ Environment/ Platform/ Projects/ RPC/ Security/ Workables/
+│   │   ├── CLI/        ← Commands/ MCP/ Terminal/ UI/ UX/
+│   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/ Services/
 │   │   └── commands/   ← comandos built-in da CLI (demo, kit, projects, project, test, ...)
 │   ├── configs/        ← configs do framework
-│   ├── projects/       ← projects a nível de author — as fontes do import (Benchmark/, Demo/, Example/)
+│   ├── projects/       ← projects a nível de author (Benchmark/, Demo/) — o Demo/ guarda as fontes do import
 │   ├── scripts/        ← template de recursos usado pelo `bootgly kit boot`
-│   ├── storage/        ← template de recursos usado pelo `bootgly kit boot`
 │   ├── Bootgly.php     ← a entity raiz do framework
 │   ├── autoboot.php    ← autoboot do framework (requerido pelo launcher do kit)
 │   ├── bootgly         ← o launcher da CLI do próprio framework
-│   ├── composer.json
-│   └── index.php
+│   └── composer.json
 ├── Console/            ← plataforma Console (instalada pelo wizard)
 ├── Web/                ← plataforma Web (instalada pelo wizard)
 ├── projects/           ← 🏁 os SEUS projetos — cada um um repositório git próprio (registrados em `Bootgly.projects.php`)
 ├── scripts/            ← instalado pelo `bootgly kit boot`
-├── storage/            ← instalado pelo `bootgly kit boot` (cache/, logs/, pids/)
+├── storage/            ← criado pelo `bootgly kit boot` (cache/, locks/, logs/, pids/, queues/, schedule/, temp/, tests/)
 ├── .gitignore
 ├── .gitmodules
 ├── LICENSE

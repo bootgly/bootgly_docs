@@ -372,7 +372,9 @@ Two consequences worth knowing:
   the supervisor runs on the whole-second `Timer` alarm instead, with the same window.
 
 Long-lived protocols behave differently. A WebSocket session **replaces** the reaper with its ping/pong
-supervisor right after the upgrade, so `connectionIdleTimeout` no longer applies to it. A Server-Sent
+supervisor right after the upgrade, so `connectionIdleTimeout` no longer applies to it; a protocol of your
+own does the same with `Connection::watch()` (see
+[Connection supervision](/manual/WPI/TCP/TCP_Server_CLI/overview/#connection-supervision)). A Server-Sent
 Events stream instead **renews** the lease from its own supervisor, which runs every
 `min(10, interval, heartbeat)` seconds and never slower than the connection's own expiration — so a
 short `connectionIdleTimeout` only makes that supervisor tick more often. `connectionIdleTimeout: 0`

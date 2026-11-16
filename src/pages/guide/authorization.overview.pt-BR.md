@@ -274,15 +274,22 @@ Os testes de Authorization são separados por camada:
 
 ```bash
 AI_AGENT=1 bootgly test 22       # API/Security: policies, abilities e RBAC
-AI_AGENT=1 bootgly test 26       # Units dos middlewares WPI
-AI_AGENT=1 bootgly test 28 166   # E2E Scope success
-AI_AGENT=1 bootgly test 28 167   # E2E Scope failure
-AI_AGENT=1 bootgly test 28 168   # E2E Role success
-AI_AGENT=1 bootgly test 28 169   # E2E Role failure
-AI_AGENT=1 bootgly test 28 170   # E2E Policy success
-AI_AGENT=1 bootgly test 28 171   # E2E Policy failure
-AI_AGENT=1 bootgly test 28 172   # E2E RBAC opcional, sem DB por padrão
+AI_AGENT=1 bootgly test 29       # Units dos middlewares WPI (12.1-12.2)
+AI_AGENT=1 bootgly test 31 257   # E2E 11.1 Scope success
+AI_AGENT=1 bootgly test 31 258   # E2E 11.2 Scope failure
+AI_AGENT=1 bootgly test 31 259   # E2E 11.3 Role success
+AI_AGENT=1 bootgly test 31 260   # E2E 11.4 Role failure
+AI_AGENT=1 bootgly test 31 261   # E2E 11.5 Policy success
+AI_AGENT=1 bootgly test 31 262   # E2E 11.6 Policy failure
+AI_AGENT=1 bootgly test 31 263   # E2E 11.7 RBAC opcional, sem DB por padrão
+AI_AGENT=1 bootgly test 31 264   # E2E 11.8 Scope ausente: desafio insufficient_scope
+AI_AGENT=1 bootgly test 31 265   # E2E 11.9 Sem identidade: desafio Bearer 401
 ```
+
+Os casos E2E são os arquivos `Router/Middleware/11.*-middleware-authorization_*.Test.php` de
+`Bootgly/WPI/Nodes/HTTP_Server_CLI/tests/E2E/`. O índice de um caso é a posição do arquivo na
+lista `tests` do `autoboot.php` dessa suíte, então ele muda quando um caso é adicionado antes:
+quando um índice não roda mais o caso que o comentário nomeia, procure o arquivo lá.
 
 Use testes focados primeiro ao mudar gates ou policies. Adicione E2E mais amplo quando um
 novo fluxo de rota combinar middlewares de Authentication e Authorization. Para rodar o

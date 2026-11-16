@@ -39,8 +39,13 @@ This opens `$Database` from the project's `database` config scope (see
 transaction ends: it is the form for a command, a job or a script. In an HTTP route, use the
 per-worker
 **[`$Response->Database`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**
-resource instead: its `transact()` has the same contract without blocking the worker, and its
-callback takes two arguments — the transaction and the resource.
+resource instead: its `transact()` begins, commits and rolls back the same way without blocking
+the worker, and its callback takes two arguments — the transaction and the resource. Run the
+whole unit of work of a route through it: the two entry points do not nest into each other, so a
+`$Database->transact()` called inside the route's `transact()` blocks the worker, opens its own
+transaction on its own connection and commits by itself — its writes survive the route's
+rollback. Nor does the resource end the whole transaction when a nested level cannot be rolled
+back or released (see [Nested units of work](#nested-units-of-work)).
 
 Inside the closure, await each statement before sending the next one: a transaction carries one
 operation at a time, and a call sent while the previous one is still running is refused (see
@@ -192,8 +197,10 @@ All three run on the transaction's pinned connection. The second is a hand-built
 which counts as a write unless it is built with `reading: true`, so it also marks the
 read-after-write scope — which only matters when replicas are configured (see
 **[Read-after-write scope](/manual/ADI/Databases/SQL/Transaction/overview/#read-after-write-scope)**);
-`transact()` marks the scope again once its outermost `COMMIT` succeeded, so the window counts
-from the commit.
+`transact()` marks the default scope again once its outermost `COMMIT` succeeded, so its window
+counts from the commit. A scope you pass as the third argument of `query()` keeps the window its
+statement opened: call `$Database->touch($Scope)` after `transact()` returns when its reads need
+the window to count from the commit.
 For entities, `$Transaction->map()` gives an ORM repository whose statements run inside the
 transaction (see
 **[Repositories inside a transaction](/manual/ADI/Databases/SQL/Transaction/overview/#repositories-inside-a-transaction)**).
@@ -260,7 +267,7 @@ already open, as a savepoint, and its closure receives the same `Transaction`. W
 closure returns, its savepoint is released; when it throws, that level alone is rolled back and
 the throwable reaches the outer closure, which may catch it and carry on. A function that wraps
 its own work in `transact()` can therefore be called on its own or from inside a larger unit of
-work.
+work that `$Database->transact()` opened in the same context.
 
 When the nested level cannot be closed — its rollback or its release is refused by the server,
 or one of the cases above — the whole transaction is ended and the outer `transact()` reports
@@ -269,9 +276,19 @@ An outer closure that catches the nested failure has nothing left to continue: l
 do not reopen the transaction with `begin()`. This also covers a `rollback()` or a `commit()` of
 that level you send yourself: when the server refuses it, the nested `transact()` throws that
 error even if the closure caught it and returned. Only a closure that catches it and then sends
-more statements hides it — `transact()` cannot know the level is in doubt any more. The nesting
-is per context: a `transact()` made from another Fiber opens its
-own transaction on its own connection.
+more statements hides it — `transact()` cannot know the level is in doubt any more. Nor can it
+for a savepoint the outermost closure opens itself: when its `rollback()` or `release()` fails and
+the closure catches the error and returns, `transact()` sends the `COMMIT` anyway. Do not catch a
+failed savepoint close and go on: let the error leave the closure, and `transact()` rolls the
+whole transaction back.
+
+The nesting is per context and per entry point. A `transact()` made from another Fiber opens its
+own transaction on its own connection, and so does a `$Database->transact()` called inside a
+route's `$Response->Database->transact()`: it commits by itself, and its writes survive the
+route's rollback. Inside a route, open nested levels with the resource's own `transact()`, which
+nests on the route's transaction as a savepoint. A nested level there whose rollback or release
+fails does not end the whole transaction, though: the transaction stays open, and an outer
+callback that catches that failure and carries on commits what the level wrote.
 
 ## Engine notes
 
@@ -283,7 +300,13 @@ own transaction on its own connection.
   savepoint around the statement you expect to fail, `rollback('name')` on it, then
   `release('name')`, as the savepoint recipe above does.
 - **MySQL/MariaDB** — DDL statements (`CREATE`/`ALTER`/`DROP` ...) inside a transaction
-  cause an **implicit commit**: keep schema changes out of transactional business flows.
+  cause an **implicit commit**: keep schema changes out of transactional business flows. A
+  deadlock (error `1213`) makes the server roll the whole transaction back on the spot, and so
+  does a lock wait timeout (`1205`) on a server running with `innodb_rollback_on_timeout`. The
+  statements sent after it run outside any transaction, each committed on its own, and the
+  eventual `COMMIT` answers OK: a closure that catches that error and carries on keeps only what
+  it ran afterwards, while `transact()` reports success. Do not catch it and go on: let it leave
+  the closure, and run the unit of work again.
 - **SQLite** — transactions and savepoints work on the synchronous driver exactly like on
   the async ones; even DDL is transactional. A `COMMIT` that fails — on a
   `DEFERRABLE INITIALLY DEFERRED` key, or with `database is locked` — is rolled back before the

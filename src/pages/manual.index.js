@@ -682,7 +682,7 @@ export default {
   '/WPI/HTTP/HTTP_Server_CLI/MCP': {
     config: {
       icon: 'smart_toy',
-      status: 'new',
+      status: 'done',
       version: 'v1.2.0',
       meta: {
         description: {
@@ -1193,7 +1193,7 @@ export default {
   '/CLI/MCP': {
     config: {
       icon: 'smart_toy',
-      status: 'new',
+      status: 'done',
       version: 'v1.2.0',
       meta: {
         description: {
@@ -2491,7 +2491,7 @@ export default {
   '/ADI/Casters': {
     config: {
       icon: 'swap_horiz',
-      status: 'new',
+      status: 'done',
       version: 'v1.2.0',
       meta: {
         description: {
@@ -3682,7 +3682,7 @@ export default {
   '/ABI/Syntax/Lint': {
     config: {
       icon: 'rule',
-      status: 'new',
+      status: 'done',
       version: 'v1.2.0',
       meta: {
         description: {

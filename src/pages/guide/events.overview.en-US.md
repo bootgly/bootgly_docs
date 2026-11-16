@@ -112,7 +112,9 @@ What to count on:
   handler waits for the next emission.
 - A one-shot listener is removed **before** it runs. It runs at most once even when it
   throws or emits its own event again; inside it `check()` no longer counts it, and
-  forgetting it from there returns `false` — it is gone already.
+  forgetting it from there returns `false` — it is gone already — unless the listener has
+  another registration for the event. `once` counts per registration: the same closure
+  registered twice with `once: true` runs twice in one emission.
 - When the last listener of an event is gone, the event is unobserved again: `check()`
   answers `false` and the emit sites are back to their zero-allocation path.
 
@@ -139,7 +141,6 @@ Payloads are positional, in the order listed.
 |---|---|---|
 | `Boot` | a worker process was forked | `$index` (int) |
 | `Shutdown` | the server is stopping | `$level` (process level) |
-| `Reload` | a worker is reloading (SIGUSR2) | `$index` (int) |
 
 A `Shutdown` listener that throws does not keep the process from stopping: the failure is
 reported through `Throwables::notify()` with the context `['origin' => 'server.stop']`, and the

@@ -12,7 +12,7 @@ trafegam em pedaços limitados, então mesmo um arquivo de vários gigabytes nun
 memória do PHP.
 
 > [!NOTE]
-> A pasta de dados de runtime do Bootgly é `storage/` (renomeada de `storage/`). Seu caminho
+> A pasta de dados de runtime do Bootgly é `storage/` (renomeada de `workdata/`). Seu caminho
 > absoluto é a constante `BOOTGLY_STORAGE_DIR`. Para movê-la (por exemplo, para um volume
 > montado), defina a variável de ambiente `BOOTGLY_STORAGE_DIR` — validada no boot, veja
 > **[Mover o diretório de storage](/guide/docker/overview/#mover-o-diretório-de-storage)** —
@@ -286,6 +286,13 @@ public function open (string $name = ''): Driver
 Abre um disk pelo nome, construindo o seu driver uma vez no primeiro acesso. Sem
 argumento, retorna o disk padrão. Os próprios métodos de arquivo do facade (abaixo) delegam
 ao disk padrão.
+
+Ele lança uma `InvalidArgumentException` para um disk que não está configurado ou que nomeia
+um driver não registrado, e quando o driver recusa as opções dele ao ser construído: um disk
+`s3` cujo `key`, `region`, `service` ou `token` tem um espaço ou um caractere de controle — uma
+quebra de linha no fim, lida de um arquivo de segredo, por exemplo — ou que pede `http://` ou
+`verify => false` sem `'insecure' => true`. Os próprios métodos de arquivo do facade abrem o
+disk padrão do mesmo jeito, então também a lançam.
 
 ### Contrato do Driver
 

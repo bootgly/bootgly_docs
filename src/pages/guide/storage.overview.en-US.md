@@ -10,7 +10,7 @@ One facade, named **disks**, and pluggable **drivers** — **Local** (filesystem
 chunks, so even a multi-gigabyte file never lands whole in PHP memory.
 
 > [!NOTE]
-> Bootgly's runtime data folder is `storage/` (renamed from `storage/`). Its absolute path
+> Bootgly's runtime data folder is `storage/` (renamed from `workdata/`). Its absolute path
 > is the `BOOTGLY_STORAGE_DIR` constant. To move it (e.g. to a mounted volume), set the
 > `BOOTGLY_STORAGE_DIR` environment variable — validated at boot, see
 > **[Move the storage directory](/guide/docker/overview/#move-the-storage-directory)** — or
@@ -278,6 +278,13 @@ public function open (string $name = ''): Driver
 
 Opens a disk by name, building its driver once on first access. With no argument it
 returns the default disk. The facade's own file methods (below) proxy to the default disk.
+
+It throws an `InvalidArgumentException` for a disk that is not configured or names a driver
+that is not registered, and when the driver refuses its options as it is built: an `s3` disk
+whose `key`, `region`, `service` or `token` holds a space or a control character — a trailing
+newline read from a secrets file, for one — or that asks for `http://` or `verify => false`
+without `'insecure' => true`. The facade's own file methods open the default disk the same way,
+so they throw it too.
 
 ### Driver contract
 

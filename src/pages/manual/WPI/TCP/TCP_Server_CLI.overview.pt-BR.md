@@ -429,10 +429,35 @@ Na camada de conexão, o Bootgly acompanha:
 - instante de criação e último uso
 - estado do handshake TLS
 - contadores de escrita e estatísticas globais de leitura/escrita
-- timers de expiração por ociosidade, semeados por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — trabalho deferred pendente conta como atividade
+- expiração por ociosidade, semeada por `TCP_Server_CLI::$connectionIdleTimeout` (padrão `15` segundos; o servidor HTTP o expõe como `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — trabalho deferred pendente conta como atividade; desde a v1.3.0 ela roda na varredura de supervisão do worker, sem um timer por conexão (veja [Supervisão de conexões](#supervisão-de-conexões))
 - verificações opcionais de blacklist
 
 A saída que um peer ainda não leu fica em memória até o socket drenar, cobrada pelo que o alocador do PHP gasta para mantê-la (uma string acima de cerca de 680 KiB é cobrada como um chunk inteiro de 2 MiB), contra dois tetos: `TCP_Server_CLI::$maxPendingBytes` (12 MiB) por conexão e `TCP_Server_CLI::$maxWorkerPendingBytes` (64 MiB) por worker — o orçamento de memória do worker, no qual os servidores HTTP e WebSocket também cobram os seus corpos de requisição, mensagens inacabadas e cache de rotas. Uma escrita que não cabe derruba aquela conexão. Na partida, o orçamento do worker é reduzido para metade do `memory_limit`, com um aviso, quando é maior; `memory_limit = -1` o mantém.
+
+### Supervisão de conexões
+
+Desde a v1.3.0 as verificações periódicas das conexões de um worker rodam em uma única **varredura de supervisão**: o ticker de um segundo do loop do worker a executa, e ela roda a verificação de toda conexão cuja vez chegou — um despertar para o worker inteiro, seja qual for o número de conexões. A expiração por ociosidade é essa verificação por padrão. Uma verificação a cada `N` segundos cai entre `N` e `N+1` segundos depois da anterior.
+
+Um protocolo com a sua própria regra para saber se o peer continua vivo coloca a sua verificação no lugar da expiração por ociosidade com `Connection::watch()` — o servidor WebSocket faz isso para o seu supervisor de ping/pong:
+
+```php
+// $Connection — a conexão que o seu protocolo atende (um decoder a lê de `$Package->Connection`)
+$Check = static function () use ($Connection): void {
+   // roda a cada 20 segundos (20 a 21; a primeira de 19 a 21 a partir de agora) até a conexão fechar:
+   // chame $Connection->close() quando a sua regra falhar
+};
+
+if ($Connection->watch(20, $Check) === false) {
+   // um loop sem timers recorrentes: nada foi instalado — agende a verificação você mesmo
+}
+
+// Quando o seu protocolo não precisar mais dela
+$Connection->watch(0);
+```
+
+Sem uma verificação, `watch()` roda a expiração por ociosidade — `$Connection->watch($Connection->expiration)` devolve a configurada — e `watch(0)` para a verificação periódica; fechar a conexão também a para. `$Connection->due` é o segundo de relógio da próxima verificação, `0` enquanto a conexão não tem nenhuma na varredura. Em uma event loop customizada sem [timers recorrentes](/guide/timers/overview/) não há varredura: pedida uma verificação, `watch()` responde `false` e não instala nada, e a expiração por ociosidade volta a uma tarefa estática do `Timer` por conexão, como antes da v1.3.0.
+
+`Connections::supervise()`, `Connections::release()`, `Connections::sweep()` e `Connection::inspect()` são a engrenagem da própria varredura — `watch()` e o worker os chamam; o código da aplicação, não.
 
 Veja `Connection` e `Packages` para os detalhes de nível mais baixo.
 
@@ -479,3 +504,21 @@ return new Project(
 	}
 );
 ```
+
+## Referência
+
+### Connection
+
+`Bootgly\WPI\Interfaces\TCP_Server_CLI\Connections\Connection` — uma conexão aceita.
+
+```php
+watch (int $interval, null|Closure $Check = null) : bool
+```
+
+Roda uma verificação periódica da conexão na varredura de supervisão do worker, a cada `$interval` segundos inteiros — a primeira entre `$interval - 1` e `$interval + 1` segundos a partir de agora, já que o segundo em que vence é contado no relógio de parede — no lugar da verificação em vigor. Sem `$Check`, a verificação é a expiração por ociosidade. A varredura roda uma vez por segundo, então uma verificação cai entre `$interval` e `$interval + 1` segundos depois da anterior. Um `$interval` não positivo, ou uma conexão que está fechando ou fechada, para a verificação periódica e responde `true`, em qualquer loop. Fora isso, retorna `true` quando a verificação fica instalada, e `false` quando o loop do worker não tem timers recorrentes: nada foi instalado, e quem chamou mantém um `Timer` estático no lugar.
+
+```php
+public private(set) int $due
+```
+
+O segundo de relógio (um valor de `time()`) da próxima verificação periódica da conexão na varredura; `0` enquanto ela não tem nenhuma ali.

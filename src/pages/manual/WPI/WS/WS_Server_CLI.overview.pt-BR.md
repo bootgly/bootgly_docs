@@ -293,7 +293,8 @@ Envia um frame de close e derruba a conexão (dispara `Disconnected`).
 ### Propriedades da Session
 
 `id` (int, o id da conexão), `ip`, `port`, `subprotocol` (negociado, ou `''`), `identity` (definido
-por um guard de autenticação, ou `null`). Os helpers de sala (`join`/`leave`/`broadcast`) estão
+por um guard de autenticação, ou `null`), `watched` (bool, somente leitura: se o supervisor de
+heartbeat roda na varredura de supervisão do worker em vez de uma tarefa do `Timer`). Os helpers de sala (`join`/`leave`/`broadcast`) estão
 documentados na página **Channels**.
 
 ### Propriedades da Message

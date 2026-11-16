@@ -424,10 +424,35 @@ At the connection layer, Bootgly tracks:
 - connection start time and last usage timestamp
 - TLS handshake state
 - write counters and global read/write stats
-- idle expiration timers, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — pending deferred work counts as activity
+- idle expiration, seeded from `TCP_Server_CLI::$connectionIdleTimeout` (default `15` seconds; the HTTP server exposes it as `new HTTP_Server_CLI\Configs(connectionIdleTimeout: ...)`) — pending deferred work counts as activity; since v1.3.0 it rides the worker's supervision sweep, with no timer per connection (see [Connection supervision](#connection-supervision))
 - optional blacklist checks
 
 Output a peer has not read yet stays in memory until the socket drains, charged at what PHP's allocator spends to keep it (a string over about 680 KiB is charged a whole 2 MiB chunk), against two ceilings: `TCP_Server_CLI::$maxPendingBytes` (12 MiB) per connection and `TCP_Server_CLI::$maxWorkerPendingBytes` (64 MiB) per worker — the worker memory budget the HTTP and WebSocket servers also charge their request bodies, unfinished messages and route cache to. A write that does not fit drops that connection. At start the worker budget is lowered to half of `memory_limit`, with a warning, when it is larger; `memory_limit = -1` keeps it.
+
+### Connection supervision
+
+Since v1.3.0 the periodic checks of a worker's connections ride one **supervision sweep**: the worker's one-second loop ticker runs it, and it runs the check of every connection that is due — one wakeup for the whole worker, whatever the number of connections. The idle expiration is that check by default. A check every `N` seconds lands between `N` and `N+1` seconds after the previous one.
+
+A protocol with a liveness rule of its own puts its check in place of the idle expiration with `Connection::watch()` — the WebSocket server does it for its ping/pong supervisor:
+
+```php
+// $Connection — the connection your protocol serves (a decoder reads it from `$Package->Connection`)
+$Check = static function () use ($Connection): void {
+   // runs every 20 seconds (20 to 21; the first one 19 to 21 from now) until the connection closes:
+   // call $Connection->close() when your liveness rule fails
+};
+
+if ($Connection->watch(20, $Check) === false) {
+   // a loop without recurring timers: nothing was installed — schedule the check yourself
+}
+
+// When your protocol no longer needs it
+$Connection->watch(0);
+```
+
+Without a check, `watch()` runs the idle expiration — `$Connection->watch($Connection->expiration)` puts the configured one back — and `watch(0)` stops the periodic check; closing the connection stops it too. `$Connection->due` is the wall second of the next check, `0` while the connection has none on the sweep. On a custom event loop without [recurring timers](/guide/timers/overview/) there is no sweep: asked for a check, `watch()` answers `false` and installs nothing, and the idle expiration falls back to a static `Timer` task per connection, as before v1.3.0.
+
+`Connections::supervise()`, `Connections::release()`, `Connections::sweep()` and `Connection::inspect()` are the sweep's own machinery — `watch()` and the worker call them; application code does not.
 
 See `Connection` and `Packages` for the lower-level details.
 
@@ -474,3 +499,21 @@ return new Project(
 	}
 );
 ```
+
+## Reference
+
+### Connection
+
+`Bootgly\WPI\Interfaces\TCP_Server_CLI\Connections\Connection` — one accepted connection.
+
+```php
+watch (int $interval, null|Closure $Check = null) : bool
+```
+
+Runs a periodic check for the connection on the worker's supervision sweep, every `$interval` whole seconds — the first one between `$interval - 1` and `$interval + 1` seconds from now, since its due second is counted on the wall clock — in place of the check in force. Without `$Check` the check is the idle expiration. The sweep runs once a second, so a check lands between `$interval` and `$interval + 1` seconds after the previous one. A non-positive `$interval`, or a connection that is closing or closed, stops the periodic check and answers `true`, on any loop. Otherwise it returns `true` once the check is in place, and `false` when the worker's loop has no recurring timers: nothing was installed, and the caller keeps a static `Timer` instead.
+
+```php
+public private(set) int $due
+```
+
+The wall second (a `time()` value) of the connection's next periodic check on the sweep; `0` while it has none there.

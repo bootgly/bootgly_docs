@@ -113,7 +113,9 @@ Com o que você pode contar:
   espera a próxima emissão.
 - Um listener de entrega única é removido **antes** de rodar. Ele roda no máximo uma vez
   mesmo quando lança ou emite o próprio evento de novo; dentro dele o `check()` já não o
-  conta, e removê-lo dali retorna `false` — ele já saiu.
+  conta, e removê-lo dali retorna `false` — ele já saiu —, a menos que o listener tenha outro
+  registro no evento. O `once` vale por registro: a mesma closure registrada duas vezes com
+  `once: true` roda duas vezes numa emissão só.
 - Quando o último listener de um evento sai, o evento volta a não ser observado: `check()`
   responde `false` e os pontos de emissão voltam ao caminho de zero alocação.
 
@@ -140,7 +142,6 @@ Bootgly\ABI\Event`). Payloads são posicionais, na ordem listada.
 |---|---|---|
 | `Boot` | um processo worker sofreu fork | `$index` (int) |
 | `Shutdown` | o servidor está parando | `$level` (nível do processo) |
-| `Reload` | um worker está recarregando (SIGUSR2) | `$index` (int) |
 
 Um listener de `Shutdown` que lança não impede o processo de parar: a falha é reportada por
 `Throwables::notify()` com o contexto `['origin' => 'server.stop']`, e a parada segue. O servidor

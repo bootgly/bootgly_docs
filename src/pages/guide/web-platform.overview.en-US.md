@@ -131,10 +131,11 @@ php bootgly project Demo/Blog start    # MVC: posts CRUD + CSRF forms + SQLite  
 php bootgly project Demo/Tasks start   # REST: JWT + problem+json + pagination → :8090
 php bootgly project Demo/Chat start    # Realtime WS rooms (client page inside) → :8085
 php bootgly project Demo/Site start    # Landing pages + layouts + statics      → :8088
+php bootgly project Demo/Auth start    # Session/cookie auth scaffold + SQLite  → :8087
 php bootgly project Demo/SPA start     # React + Vue Vite builds over a JSON API → :8092
 ```
 
-Each is a compact reference: **Blog** for the full MVC loop (ORM models, migrations + seeds at boot, Session flash, masked CSRF tokens), **Tasks** for the REST shell, **Chat** for WebSocket Channels (open <http://localhost:8085> in two tabs — the WS server serves its own client page), **Site** for controller-dispatched pages without a database, and **SPA** for single-page apps: the same task list in React and in Vue, each Vite build served by `Web\App\SPA` on its own prefix (`/react/`, `/vue/`) over one JSON API. Its start builds the frontends when a build is missing or older than its sources (Node.js and npm required; without them the start warns and each frontend answers `503` until it is built).
+Each is a compact reference: **Blog** for the full MVC loop (ORM models, migrations + seeds at boot, Session flash, masked CSRF tokens), **Tasks** for the REST shell, **Chat** for WebSocket Channels (open <http://localhost:8085> in two tabs — the WS server serves its own client page), **Site** for controller-dispatched pages without a database, **Auth** for session/cookie authentication — registration, e-mail verification, login with remember-me, password reset (see [Authentication](/guide/authentication/overview/)) — and **SPA** for single-page apps: the same task list in React and in Vue, each Vite build served by `Web\App\SPA` on its own prefix (`/react/`, `/vue/`) over one JSON API. Its start builds the frontends when a build is missing or older than its sources (Node.js and npm required; without them the start warns and each frontend answers `503` until it is built).
 
 ## Going deeper
 

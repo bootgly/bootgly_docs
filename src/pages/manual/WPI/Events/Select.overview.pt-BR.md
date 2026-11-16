@@ -45,6 +45,12 @@ callback roda espera pela próxima passada; um que chega enquanto o loop está e
 acorda. O que o handler fizer com o loop — armar um timer, registrar ou
 liberar um sinal, parar o loop — vale já naquela mesma passada.
 
+Isso vale enquanto os sinais são entregues de forma síncrona, o padrão do PHP, e nenhum callback
+os despacha por conta própria: um callback que chama `pcntl_signal_dispatch()` executa ali mesmo
+os handlers pendentes. Os workers dos servidores embutidos desligam a entrega assíncrona antes de
+registrar os seus sinais, mas um loop que você mesmo executa sob `pcntl_async_signals(true)` roda
+um handler onde quer que o sinal caia — no meio de um callback também.
+
 **Um handler por sinal.** Registrar um sinal que o loop já detém substitui o handler:
 
 ```php
@@ -94,6 +100,13 @@ Registrar um deles substitui o tratamento do próprio servidor naquele worker �
 Escolha um sinal que o servidor não usa, como um de tempo real (`SIGRTMIN` a `SIGRTMAX`), a
 menos que substituir seja o que você quer.
 
+Essa tomada cobre o que um worker herdou para esses sinais: um handler que uma subclasse do
+servidor instala com `pcntl_signal()` antes do fork, para um deles, não roda mais nos workers — o
+loop deles assume o sinal, e só o master ainda roda aquele handler. A exceção é um handler que o
+loop não conseguiria devolver, como um método protegido ou privado (veja
+[Sinais que são recusados](#sinais-que-são-recusados)): cada worker deixa o sinal com ele, e
+registra um aviso no log.
+
 `SIGPIPE` é ignorado pelo processo inteiro e não é tratado no loop.
 
 ## Quando um handler lança
@@ -129,8 +142,8 @@ por vez: registrar um sinal que outro loop do mesmo processo detém lança uma `
 até que aquele loop o libere.
 
 `trap()` também lança uma `LogicException` quando o handler instalado para o sinal é um que o
-loop não conseguiria devolver no `untrap()` — um método privado que só a própria classe pode
-chamar. Nada muda nesse caso: o handler continua instalado.
+loop não conseguiria devolver no `untrap()` — um método protegido ou privado, que só a própria
+classe pode chamar. Nada muda nesse caso: o handler continua instalado.
 
 ## Forks e `destroy()`
 
@@ -148,6 +161,11 @@ quando o handler for só para os workers, ou substituir o do servidor.
 `destroy()` libera todo sinal que o loop detém, como descarta os seus timers. Um loop executado
 de novo depois disso começa sem handler: registre de novo.
 
+Destrua um loop que registrou um sinal — ou faça `untrap()` de todo sinal que ele detém — antes de
+descartá-lo: a tabela de handlers do processo mantém o loop vivo, então um loop descartado assim
+continua rodando os seus handlers, e o `trap()` de um desses sinais por outro loop lança uma
+`LogicException`.
+
 ## Um loop sem a capacidade
 
 `Signalling` é opcional, e o contrato do loop em si (`Bootgly\ACI\Events\Loops`) não tem método
@@ -164,7 +182,8 @@ public function trap (int $signal, Closure $Handler): void
 ```
 
 Executa `$Handler` no loop cada vez que o processo recebe `$signal`. O handler recebe o número
-do sinal e roda entre callbacks, fora de qualquer Fiber. Registrar um sinal que este loop já
+do sinal e roda entre callbacks, fora de qualquer Fiber, enquanto os sinais são entregues de forma
+síncrona e nenhum callback os despacha por conta própria. Registrar um sinal que este loop já
 detém substitui o handler. Lança `InvalidArgumentException` quando o sinal não pode ser
 capturado (`SIGKILL`, `SIGSTOP`) ou não é um número de sinal, e `LogicException` quando outro
 loop do processo detém o sinal ou o handler instalado para ele não poderia ser devolvido.

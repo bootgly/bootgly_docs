@@ -170,7 +170,12 @@ Este também é o caminho de migração de armazenamento legado: `verify()` lê 
 que o `password_verify()` do PHP lê, então um hash bcrypt `$2y$…` — ou os hashes `$2a$…`,
 `$2b$…` e `$6$…` que outras stacks gravam — ainda verifica, e `inspect()` o atualiza para
 argon2id no próximo login bem-sucedido do usuário. Sem migração em lote, sem resets
-forçados. Um formato que o PHP não lê precisa de um verificador — a próxima seção.
+forçados — com uma exceção. Um formato que lê só parte da senha também aceita outras grafias
+dela: o DES crypt tradicional (13 caracteres, sem `$`) lê os 8 primeiros bytes, o bcrypt os 72
+primeiros. O upgrade grava a senha como ela foi digitada, então um login que confere só até esse
+limite é aceito e move a conta para a grafia dele. Force um reset nas linhas DES crypt em vez de
+deixar um login atualizá-las; o bcrypt só fica exposto com senhas de mais de 72 bytes. Um
+formato que o PHP não lê precisa de um verificador — a próxima seção.
 
 ## Usuários importados de outra stack
 

@@ -490,8 +490,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Run process-local cooperative interval callbacks and inspect timer ownership without exposing a second mutation API.',
-          'pt-BR': 'Execute callbacks cooperativos por intervalo, locais ao processo, e inspecione ownership sem expor uma segunda API de mutação.'
+          'en-US': 'Run interval callbacks: the whole-second Timer wheel in any process, and the event loop\'s recurring timers, in fractions of a second, inside a server worker.',
+          'pt-BR': 'Execute callbacks por intervalo: a roda de timers em segundos inteiros, em qualquer processo, e os timers recorrentes da event loop, em frações de segundo, dentro de um worker de servidor.'
         }
       },
       book: 'guide',

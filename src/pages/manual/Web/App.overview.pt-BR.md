@@ -334,7 +334,7 @@ O router descarta a barra final, então `/admin` e `/admin/` chegam os dois à r
 
 ## Logs
 
-`start()` registra um sink global de arquivo: relatórios de exceção e loggers opted-in persistem em `storage/logs/<channel>.log` em todos os modos. No modo **Daemon** os workers se desconectam do terminal — o arquivo de log é onde os erros aparecem — e esse sink toma o lugar do sink padrão que o servidor instalaria nesse path, então nenhum record é persistido duas vezes.
+`start()` registra um sink global de arquivo: relatórios de exceção e loggers opted-in persistem em `logs/<channel>.log` dentro do diretório de storage em todos os modos — `storage/logs/` por padrão, ou no caminho para onde o `BOOTGLY_STORAGE_DIR` o move (veja [Mover o diretório de storage](/guide/docker/overview/#mover-o-diretório-de-storage)). No modo **Daemon** os workers se desconectam do terminal — o arquivo de log é onde os erros aparecem — e esse sink toma o lugar do sink padrão que o servidor instalaria nesse path, então nenhum record é persistido duas vezes.
 
 ---
 

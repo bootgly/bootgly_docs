@@ -48,9 +48,13 @@ $SSE->open(
 );
 ```
 
-O `Tick` roda em uma grade fixa contada a partir do `open()`, qualquer que seja o `heartbeat`.
-Se o worker ficou ocupado por mais tempo que o intervalo, o `Tick` roda uma vez quando a loop
-volta — nunca é repetido para compensar. Mantenha a closure curta: ela roda na event loop do
+O `Tick` roda em uma grade fixa, qualquer que seja o `heartbeat`: a cada `interval`, começando
+um intervalo depois do `open()`. A primeira execução pode atrasar até 1/16 do intervalo, nunca
+adiantar — os streams de um worker com o mesmo intervalo são alinhados em 16 instantes
+compartilhados por intervalo, de modo que mil deles acordam a event loop no máximo 16 vezes por
+intervalo, e não mil. Se o worker ficou ocupado por
+mais tempo que o intervalo, o `Tick` roda uma vez quando a loop volta — nunca é repetido para
+compensar. Mantenha a closure curta: ela roda na event loop do
 worker, entre dois despachos de I/O.
 
 Você também pode enviar eventos diretamente depois do

@@ -114,10 +114,27 @@ run late — a blocking handler held it for a second — the callback runs **onc
 that passed meanwhile are skipped, and the next run is the first grid point after it. A late
 timer never fires a burst.
 
+**Sharing wakeups.** Every timer with a grid of its own wakes the loop on its own: a thousand
+timers registered at a thousand different instants are a thousand wakeups per interval, even
+when their callbacks do nothing. Give them the same `slack` and they share their instants:
+
+```php
+// first run between 1.0 and 1.1 s from now; then every second, on the same instants as every
+// other timer registered with a slack of 0.1 and an interval in whole tenths
+$id = $Loop->repeat(1.0, $Callback, slack: 0.1);
+```
+
+With a slack, the first run moves up to the next multiple of the slack on the loop's clock, and
+the grid starts there — up to one slack late, never early. Timers that name the same slack start
+on shared instants, and keep sharing them when their interval is a whole multiple of the slack:
+then they come due together and cost one wakeup. A slack shorter than `Select::RESOLUTION` is raised to it, one
+longer than the interval is the interval, and a negative, `NAN` or infinite one is refused with
+an `InvalidArgumentException`. Zero, the default, keeps the grid anchored at registration.
+
 **Cancelling.** The identifier comes from the same sequence as the one-shot `defer()` and is
 stopped with the same `cancel()`, which answers `true` once. A callback may cancel itself or any
-other timer; a recurring callback cancelled earlier in the same pass does not run in that pass,
-and one registered inside a callback first runs on a later pass.
+other timer; a callback cancelled earlier in the same pass — recurring or one-shot — does not
+run in that pass, and a recurring timer registered inside a callback first runs on a later pass.
 
 **Failures.** A callback that throws does not stop the loop nor its own schedule: the failure is
 reported through `Throwables::notify()` with the context `['origin' => 'loop.repeat', 'id' => $id]`,
@@ -150,12 +167,14 @@ The same loop also runs the worker's signal handlers — `SIGALRM`, which drives
 ### `Repeating`
 
 ```php
-public function repeat (float $interval, Closure $Callback): int
+public function repeat (float $interval, Closure $Callback, float $slack = 0.0): int
 ```
 
 Registers `$Callback` to run every `$interval` seconds on the monotonic clock and returns its
-identifier. Throws `InvalidArgumentException` for an interval that is zero, negative, not a
-number, infinite or longer than the loop's horizon.
+identifier. With a `$slack`, in seconds, the first run moves up to the next multiple of it on
+the loop's clock, so timers of the same slack share their wakeups. Throws
+`InvalidArgumentException` for an interval that is zero, negative, not a number, infinite or
+longer than the loop's horizon, and for a slack that is negative, not a number or infinite.
 
 ```php
 public function cancel (int $ID): bool

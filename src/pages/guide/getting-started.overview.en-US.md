@@ -52,27 +52,25 @@ bootgly.kit/
 ├── Bootgly/            ← base platform (installed submodule)
 │   ├── @/              ← framework meta resources (certificates, static analysis, ...)
 │   ├── Bootgly/        ← the framework itself — the I2P interfaces, in dependency order:
-│   │   ├── ABI/        ← Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
-│   │   ├── ACI/        ← Events/ Fakers/ Logs/ Observability/ Process/ Queues/ Schedule/ Tests/
-│   │   ├── ADI/        ← Database/ Databases/ Table/ Validation/ Validators/
-│   │   ├── API/        ← Endpoints/ Environment/ Projects/ Security/ Workables/
-│   │   ├── CLI/        ← Commands/ Terminal/ UI/
-│   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/
+│   │   ├── ABI/        ← Clock/ Code/ Configs/ Data/ Debugging/ Differ/ Events/ IO/ Resources/ Syntax/ Templates/
+│   │   ├── ACI/        ← Events/ Fakers/ Logs/ Mail/ Observability/ Process/ Queues/ Schedule/ Tests/ VCS/
+│   │   ├── ADI/        ← Casters/ Database/ Databases/ Table/ Validation/ Validators/
+│   │   ├── API/        ← Endpoints/ Environment/ Platform/ Projects/ RPC/ Security/ Workables/
+│   │   ├── CLI/        ← Commands/ MCP/ Terminal/ UI/ UX/
+│   │   ├── WPI/        ← Connections/ Endpoints/ Events/ Interfaces/ Modules/ Nodes/ Queues/ Services/
 │   │   └── commands/   ← built-in CLI commands (demo, kit, projects, project, test, ...)
 │   ├── configs/        ← framework configs
-│   ├── projects/       ← author-level projects — the import sources (Benchmark/, Demo/, Example/)
+│   ├── projects/       ← author-level projects (Benchmark/, Demo/) — Demo/ holds the import sources
 │   ├── scripts/        ← resource template used by `bootgly kit boot`
-│   ├── storage/        ← resource template used by `bootgly kit boot`
 │   ├── Bootgly.php     ← the framework root entity
 │   ├── autoboot.php    ← framework autoboot (required by the kit launcher)
 │   ├── bootgly         ← the framework's own CLI launcher
-│   ├── composer.json
-│   └── index.php
+│   └── composer.json
 ├── Console/            ← Console platform (installed by the wizard)
 ├── Web/                ← Web platform (installed by the wizard)
 ├── projects/           ← 🏁 YOUR projects — each one a git repository of its own (registered in `Bootgly.projects.php`)
 ├── scripts/            ← installed by `bootgly kit boot`
-├── storage/            ← installed by `bootgly kit boot` (cache/, logs/, pids/)
+├── storage/            ← created by `bootgly kit boot` (cache/, locks/, logs/, pids/, queues/, schedule/, temp/, tests/)
 ├── .gitignore
 ├── .gitmodules
 ├── LICENSE

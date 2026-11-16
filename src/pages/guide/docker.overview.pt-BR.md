@@ -167,7 +167,11 @@ before starting.
 Rode esse comando uma vez, dentro do container (`docker run --rm --entrypoint chown … -R
 bootgly: /bootgly/storage/sessions`), e inicie de novo. A imagem do kit já traz
 `storage/sessions` pertencendo a `bootgly`; um volume de storage criado a partir de uma imagem
-mais antiga não tem esse diretório, e o servidor o cria na primeira inicialização como root.
+mais antiga não tem esse diretório. A partir da 1.3.0, o entrypoint da imagem do kit o cria para
+`bootgly` num início como root, antes de o servidor rodar (veja
+[Um volume que a plataforma monta como root](#um-volume-que-a-plataforma-monta-como-root)); num
+storage que o entrypoint deixa como está, como um diretório criado por você no host, o servidor o
+cria na primeira inicialização como root.
 O `storage/cache` continua do root: comandos executados como root leem o que ele guarda. Os
 workers mantêm a própria árvore de cache — templates compilados e caches de arquivo padrão — em
 `storage/cache-<uid>` (`0700`), que o servidor cria e entrega a `bootgly` numa inicialização como
@@ -235,7 +239,9 @@ O que a preparação faz, e o que ela nunca faz:
   imagem. Um projeto cujo Configs do servidor rebaixa para outro `user:` encontra então um
   `sessions/` que não é dessa conta, e o servidor se recusa a iniciar sobre ele — como já faz
   sobre o `storage/` da própria imagem. Até a 1.2.0 o servidor criava os dois diretórios ele
-  mesmo num mount vazio, então essa configuração iniciava ali. Uma camada da imagem nunca
+  mesmo quando faltavam, para a conta que o projeto nomeia, então essa configuração iniciava em
+  qualquer volume sem um `sessions/`: um mount vazio, ou um volume semeado a partir de uma imagem
+  do kit anterior à 1.1.0, que não trazia nenhum. Uma camada da imagem nunca
   alcança um mount: entregue os dois diretórios no próprio volume, uma vez (aqui para
   `www-data`):
 

@@ -313,7 +313,7 @@ drain all new workers before optionally removing the columns.
 
 ```bash
 # bootgly (core)
-AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users, RBAC (1.1-1.49)
+AI_AGENT=1 ./bootgly test 22   # API/Security — JWT, tokens, trust, users, RBAC (1.1-1.59)
 AI_AGENT=1 ./bootgly test 29   # WPI middlewares — Remember guard, Fallback redirect (11.2-11.3)
 
 # bootgly-web

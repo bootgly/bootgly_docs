@@ -47,9 +47,11 @@ $SSE->open(
 );
 ```
 
-The `Tick` runs on a fixed grid counted from `open()`, whatever the `heartbeat` is. If the
-worker was busy for longer than the interval, the `Tick` runs once when the loop comes back —
-it is never replayed to catch up. Keep the closure short: it runs on the worker's event loop,
+The `Tick` runs on a fixed grid, whatever the `heartbeat` is: every `interval`, starting one
+interval after `open()`. The first run may be up to 1/16 of the interval late, never early — the
+streams of a worker that share an interval are lined up on 16 shared instants per interval, so a
+thousand of them wake the event loop at most 16 times per interval instead of a thousand. If the worker was busy for longer than the
+interval, the `Tick` runs once when the loop comes back — it is never replayed to catch up. Keep the closure short: it runs on the worker's event loop,
 between two I/O dispatches.
 
 You can also send events directly after `open()` (or from anywhere

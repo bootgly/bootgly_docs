@@ -20,7 +20,7 @@ O kit inicializa os submodules de plataforma **antes** da plataforma Bootgly, en
 
 - `WEB_ROOT_BASE` e `WEB_ROOT_DIR` — a pasta da plataforma, sem e com o separador no final. O `WEB_ROOT_BASE` é o que marca a plataforma como instalada: o arquivo retorna na hora quando ele já está definido, e o `Bootgly::mount()` pula uma plataforma que nunca o definiu;
 - `WEB_WORKING_BASE` e `WEB_WORKING_DIR` — a pasta onde o autoloader `Web\` procura primeiro, antes da pasta da plataforma: a própria pasta da plataforma, a menos que um lançador tenha definido as duas antes de incluir o arquivo;
-- `WEB_VERSION` — o release da plataforma (`'1.2.0'`).
+- `WEB_VERSION` — o release da plataforma.
 
 A raiz da plataforma, a classe `Web`, implementa `Bootgly\API\Platform`, então só pode existir depois que o autoloader do próprio Bootgly existe: o `Bootgly::autoboot()` a cria logo em seguida, antes de rotear qualquer comando, define a constante global `Web` e a inicializa:
 

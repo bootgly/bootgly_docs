@@ -131,10 +131,11 @@ php bootgly project Demo/Blog start    # MVC: CRUD de posts + forms CSRF + SQLit
 php bootgly project Demo/Tasks start   # REST: JWT + problem+json + paginação    → :8090
 php bootgly project Demo/Chat start    # Salas WS em tempo real (client incluso) → :8085
 php bootgly project Demo/Site start    # Páginas de landing + layouts + estáticos → :8088
+php bootgly project Demo/Auth start    # Auth por sessão/cookie + SQLite         → :8087
 php bootgly project Demo/SPA start     # Builds Vite de React + Vue sobre uma API JSON → :8092
 ```
 
-Cada um é uma referência compacta: **Blog** para o ciclo MVC completo (models do ORM, migrations + seeds no boot, flash de Session, tokens CSRF mascarados), **Tasks** para o shell REST, **Chat** para os Channels de WebSocket (abra <http://localhost:8085> em duas abas — o servidor WS serve a própria página do cliente), **Site** para páginas despachadas por controller sem banco e **SPA** para single-page apps: a mesma lista de tarefas em React e em Vue, cada build do Vite servido pelo `Web\App\SPA` no seu próprio prefixo (`/react/`, `/vue/`) sobre uma única API JSON. O start dele faz o build dos frontends quando um build falta ou é mais antigo que os fontes (Node.js e npm necessários; sem eles o start avisa e cada frontend responde `503` até ser buildado).
+Cada um é uma referência compacta: **Blog** para o ciclo MVC completo (models do ORM, migrations + seeds no boot, flash de Session, tokens CSRF mascarados), **Tasks** para o shell REST, **Chat** para os Channels de WebSocket (abra <http://localhost:8085> em duas abas — o servidor WS serve a própria página do cliente), **Site** para páginas despachadas por controller sem banco, **Auth** para autenticação por sessão/cookie — cadastro, verificação de e-mail, login com remember-me, redefinição de senha (veja [Autenticação](/guide/authentication/overview/)) — e **SPA** para single-page apps: a mesma lista de tarefas em React e em Vue, cada build do Vite servido pelo `Web\App\SPA` no seu próprio prefixo (`/react/`, `/vue/`) sobre uma única API JSON. O start dele faz o build dos frontends quando um build falta ou é mais antigo que os fontes (Node.js e npm necessários; sem eles o start avisa e cada frontend responde `503` até ser buildado).
 
 ## Indo além
 

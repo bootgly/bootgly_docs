@@ -38,8 +38,13 @@ Isso abre o `$Database` a partir do escopo de config `database` do projeto (veja
 terminar: é a forma para um comando, um job ou um script. Numa rota HTTP, use o resource por
 worker
 **[`$Response->Database`](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/overview/)**: o
-`transact()` dele tem o mesmo contrato sem bloquear o worker, e o callback dele recebe dois
-argumentos — a transação e o resource.
+`transact()` dele inicia, faz o commit e o rollback do mesmo jeito sem bloquear o worker, e o
+callback dele recebe dois argumentos — a transação e o resource. Rode a unidade de trabalho
+inteira de uma rota por ele: os dois pontos de entrada não se aninham um no outro, então um
+`$Database->transact()` chamado dentro do `transact()` da rota bloqueia o worker, abre a própria
+transação, na própria conexão, e faz o commit sozinho — as escritas dele sobrevivem ao rollback
+da rota. O resource também não encerra a transação inteira quando um nível aninhado não pode ser
+desfeito nem liberado (veja [Unidades de trabalho aninhadas](#unidades-de-trabalho-aninhadas)).
 
 Dentro da closure, aguarde cada instrução antes de enviar a próxima: uma transação carrega uma
 operação por vez, e uma chamada enviada enquanto a anterior ainda roda é recusada (veja
@@ -194,8 +199,11 @@ As três rodam na conexão fixada da transação. A segunda é uma `Query` monta
 como escrita a menos que seja criada com `reading: true`, então ela também marca o escopo de
 read-after-write — o que só importa quando há réplicas configuradas (veja
 **[Escopo de read-after-write](/manual/ADI/Databases/SQL/Transaction/overview/#escopo-de-read-after-write)**);
-o `transact()` marca o escopo de novo quando o `COMMIT` mais externo dele dá certo, então a
-janela conta a partir do commit.
+o `transact()` marca o escopo padrão de novo quando o `COMMIT` mais externo dele dá certo, então
+a janela dele conta a partir do commit. Um escopo que você passa como terceiro argumento do
+`query()` fica com a janela que a instrução dele abriu: chame `$Database->touch($Scope)` depois
+que o `transact()` retornar quando as leituras dele precisarem que a janela conte a partir do
+commit.
 Para entidades, `$Transaction->map()` dá um repositório ORM cujas instruções rodam dentro da
 transação (veja
 **[Repositórios dentro de uma transação](/manual/ADI/Databases/SQL/Transaction/overview/#repositórios-dentro-de-uma-transação)**).
@@ -262,7 +270,7 @@ já está aberta, como um savepoint, e a closure dele recebe a mesma `Transactio
 closure aninhada retorna, o savepoint dela é liberado; quando ela lança, só aquele nível é
 desfeito e o throwable chega à closure externa, que pode capturá-lo e seguir em frente. Uma
 função que envolve o próprio trabalho em `transact()` pode, portanto, ser chamada sozinha ou de
-dentro de uma unidade de trabalho maior.
+dentro de uma unidade de trabalho maior que o `$Database->transact()` abriu no mesmo contexto.
 
 Quando o nível aninhado não pode ser fechado — o servidor recusa o rollback ou a liberação
 dele, ou um dos casos acima —, a transação inteira é encerrada e o `transact()` externo avisa —
@@ -272,8 +280,20 @@ continuar: deixe-a terminar, e não reabra a transação com `begin()`. Isso val
 `rollback()` ou um `commit()` desse nível enviado por você: quando o servidor o recusa, o
 `transact()` aninhado lança esse erro mesmo que a closure o tenha capturado e retornado. Só uma
 closure que o captura e depois envia mais instruções o esconde — o `transact()` não tem mais
-como saber que o nível está em dúvida. O aninhamento é por contexto: um `transact()` feito a partir de outra
-Fiber abre a própria transação, na própria conexão.
+como saber que o nível está em dúvida. Nem no caso de um savepoint que a closure mais externa abre
+por conta própria: quando o `rollback()` ou o `release()` dele falha e a closure captura o erro e
+retorna, o `transact()` envia o `COMMIT` mesmo assim. Não capture um fechamento de savepoint que
+falhou para seguir em frente: deixe o erro sair da closure, e o `transact()` desfaz a transação
+inteira.
+
+O aninhamento é por contexto e por ponto de entrada. Um `transact()` feito a partir de outra
+Fiber abre a própria transação, na própria conexão, e o mesmo vale para um
+`$Database->transact()` chamado dentro do `$Response->Database->transact()` de uma rota: ele faz
+o commit sozinho, e as escritas dele sobrevivem ao rollback da rota. Dentro de uma rota, abra os
+níveis aninhados com o próprio `transact()` do resource, que se aninha na transação da rota como
+um savepoint. Um nível aninhado ali cujo rollback ou liberação falha não encerra a transação
+inteira, porém: a transação continua aberta, e um callback externo que captura essa falha e
+segue em frente faz o commit do que o nível gravou.
 
 ## Notas por engine
 
@@ -286,7 +306,12 @@ Fiber abre a própria transação, na própria conexão.
   depois `release('name')`, como a receita de savepoints acima faz.
 - **MySQL/MariaDB** — statements DDL (`CREATE`/`ALTER`/`DROP` ...) dentro de uma transação
   causam **commit implícito**: mantenha mudanças de schema fora de fluxos de negócio
-  transacionais.
+  transacionais. Um deadlock (erro `1213`) faz o servidor desfazer a transação inteira na hora, e
+  um lock wait timeout (`1205`) também, num servidor que roda com `innodb_rollback_on_timeout`. Os
+  statements enviados depois rodam fora de qualquer transação, cada um commitado sozinho, e o
+  `COMMIT` final responde OK: uma closure que captura esse erro e segue em frente fica só com o
+  que rodou depois dele, enquanto o `transact()` informa sucesso. Não capture e siga em frente:
+  deixe o erro sair da closure e rode a unidade de trabalho de novo.
 - **SQLite** — transações e savepoints funcionam no driver síncrono exatamente como nos
   assíncronos; até DDL é transacional. Um `COMMIT` que falha — numa chave
   `DEFERRABLE INITIALLY DEFERRED`, ou com `database is locked` — é desfeito antes de a conexão

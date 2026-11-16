@@ -20,7 +20,7 @@ The kit boots the platform submodules **before** the Bootgly platform, so Web pr
 
 - `WEB_ROOT_BASE` and `WEB_ROOT_DIR` — the platform folder, without and with the trailing separator. `WEB_ROOT_BASE` is what marks the platform as installed: the file returns at once when it is already defined, and `Bootgly::mount()` skips a platform that never defined it;
 - `WEB_WORKING_BASE` and `WEB_WORKING_DIR` — the folder the `Web\` autoloader searches first, before the platform folder: the platform folder itself, unless a launcher defined both before including the file;
-- `WEB_VERSION` — the platform release (`'1.2.0'`).
+- `WEB_VERSION` — the platform release.
 
 The platform root, the `Web` class, implements `Bootgly\API\Platform`, so it can only exist once Bootgly's own autoloader does: `Bootgly::autoboot()` creates it right after, before routing any command, defines the global `Web` constant and boots it:
 

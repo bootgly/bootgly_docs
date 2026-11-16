@@ -117,11 +117,28 @@ a uma execução — um handler bloqueante a segurou por um segundo — o callba
 pontos da grade que passaram nesse meio-tempo são pulados, e a próxima execução é o primeiro
 ponto da grade depois dela. Um timer atrasado nunca dispara uma rajada.
 
+**Compartilhando despertares.** Cada timer com uma grade própria acorda a loop sozinho: mil
+timers registrados em mil instantes diferentes são mil despertares por intervalo, mesmo quando
+os callbacks não fazem nada. Dê a eles o mesmo `slack` e eles compartilham os instantes:
+
+```php
+// primeira execução entre 1,0 e 1,1 s a partir de agora; depois a cada segundo, nos mesmos
+// instantes de todo outro timer registrado com slack de 0.1 e intervalo em décimos inteiros
+$id = $Loop->repeat(1.0, $Callback, slack: 0.1);
+```
+
+Com um slack, a primeira execução sobe para o próximo múltiplo do slack no relógio da loop, e a
+grade começa ali — até um slack de atraso, nunca adiantada. Timers que nomeiam o mesmo slack
+começam em instantes compartilhados, e continuam compartilhando-os quando o intervalo é um
+múltiplo inteiro do slack: aí vencem juntos e custam um despertar. Um slack menor que `Select::RESOLUTION` é elevado até ela,
+um maior que o intervalo é o próprio intervalo, e um negativo, `NAN` ou infinito é recusado com
+`InvalidArgumentException`. Zero, o padrão, mantém a grade ancorada no registro.
+
 **Cancelamento.** O identificador vem da mesma sequência do `defer()` de disparo único e é
 parado com o mesmo `cancel()`, que responde `true` uma única vez. Um callback pode cancelar a si
-mesmo ou qualquer outro timer; um callback recorrente cancelado antes na mesma passada não roda
-nessa passada, e um registrado dentro de um callback roda pela primeira vez em uma passada
-posterior.
+mesmo ou qualquer outro timer; um callback cancelado antes na mesma passada — recorrente ou de
+disparo único — não roda nessa passada, e um timer recorrente registrado dentro de um callback
+roda pela primeira vez em uma passada posterior.
 
 **Falhas.** Um callback que lança não para a loop nem a sua própria agenda: a falha é reportada
 via `Throwables::notify()` com o contexto `['origin' => 'loop.repeat', 'id' => $id]`, e o
@@ -154,12 +171,14 @@ veja [Select](/manual/WPI/Events/Select/overview/).
 ### `Repeating`
 
 ```php
-public function repeat (float $interval, Closure $Callback): int
+public function repeat (float $interval, Closure $Callback, float $slack = 0.0): int
 ```
 
 Registra `$Callback` para rodar a cada `$interval` segundos no relógio monotônico e retorna o
-seu identificador. Lança `InvalidArgumentException` para um intervalo zero, negativo, não
-numérico, infinito ou maior que o horizonte da loop.
+seu identificador. Com um `$slack`, em segundos, a primeira execução sobe para o próximo
+múltiplo dele no relógio da loop, de modo que timers com o mesmo slack compartilham os
+despertares. Lança `InvalidArgumentException` para um intervalo zero, negativo, não numérico,
+infinito ou maior que o horizonte da loop, e para um slack negativo, não numérico ou infinito.
 
 ```php
 public function cancel (int $ID): bool

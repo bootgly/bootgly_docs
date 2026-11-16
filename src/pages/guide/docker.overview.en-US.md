@@ -163,8 +163,11 @@ before starting.
 
 Run that command once, inside the container (`docker run --rm --entrypoint chown … -R
 bootgly: /bootgly/storage/sessions`), and start again. The kit image ships `storage/sessions`
-already owned by `bootgly`; a storage volume created from an older image has none, and the
-server creates it on its first root launch. `storage/cache` stays root's: root-run commands
+already owned by `bootgly`; a storage volume created from an older image has none. From 1.3.0
+on, the kit image's entrypoint creates it for `bootgly` on a root start, before the server runs
+(see [A volume the platform mounts as root](#a-volume-the-platform-mounts-as-root)); on a storage
+the entrypoint leaves alone, such as a directory you created on the host, the server creates it
+on its first root launch. `storage/cache` stays root's: root-run commands
 read what it holds. The workers keep their own cache tree instead — compiled templates and
 default file caches — in `storage/cache-<uid>` (`0700`), which the server creates and hands to
 `bootgly` on a root launch under the same rules (when it cannot, it says so and the workers
@@ -230,7 +233,9 @@ What the preparation does, and what it never does:
   `storage/` is. A project whose server Configs demote to another `user:` then meets a
   `sessions/` that is not that account's, and the server refuses to start over it — as it
   does over the image's own `storage/`. Up to 1.2.0 the server created both directories
-  itself on an empty mount, so that configuration started there. An image layer never
+  itself when they were missing, for the account its project names, so that configuration
+  started on any volume without a `sessions/`: an empty mount, or a volume seeded from a kit
+  image before 1.1.0, which shipped none. An image layer never
   reaches a mount: hand the two directories over on the volume itself, once (here to
   `www-data`):
 

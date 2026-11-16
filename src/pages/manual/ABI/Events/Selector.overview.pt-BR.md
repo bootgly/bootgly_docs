@@ -71,10 +71,10 @@ while (str_ends_with($reply, "\r\n") === false) {
 }
 ```
 
-Uma espera que estoura o tempo nunca retorna antes do deadline, então esperar de novo depois de
-um timeout não tem como girar em falso. Com a prontidão é diferente: um stream cujo outro lado
-fechou fica legível para sempre. Por isso trate sempre a leitura vazia — como acima —, senão o
-loop rodaria sem nunca esperar.
+Uma espera que estoura o tempo nunca retorna antes do deadline (a não ser que ele esteja a anos
+de distância — veja Limites), então esperar de novo depois de um timeout não tem como girar em
+falso. Com a prontidão é diferente: um stream cujo outro lado fechou fica legível para sempre.
+Por isso trate sempre a leitura vazia — como acima —, senão o loop rodaria sem nunca esperar.
 
 ## Consultando sem esperar
 
@@ -250,6 +250,10 @@ $Selector->wait($Selector->Clock->tick + 250_000_000); // 250 ms
   buffer dele, o `wait()` reporta o stream na hora — e essa resposta lista **só** os streams com
   dados em buffer: `$writable` volta vazio mesmo que algum stream pudesse ser escrito. Leia o que
   está legível e espere de novo.
+- **Uma espera dura no máximo cerca de 3,17 anos** — cem milhões de segundos, o maior timeout
+  que todo kernel suportado aceita. Com um deadline mais distante, o `wait()` retorna `0` sem
+  marcar `$interrupted` quando esse tempo passa, antes do deadline: compare
+  `$Selector->Clock->tick` com o deadline e espere de novo com o mesmo.
 - **Não é um reactor.** Não tem callbacks, timers nem Fibers: o event loop do servidor HTTP é o
   `Bootgly\WPI\Events\Select`.
 

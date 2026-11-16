@@ -27,7 +27,7 @@ and call.
 | **Templates** | The template engine: directives, sections, loops and escaping |
 | **IO** | The filesystem (`FS`) and inter-process pipes (`IPC`) |
 | **Resources** | Cache and storage drivers behind one interface each |
-| **Events** | The emitter every layer publishes through |
+| **Events** | The emitter every layer publishes through, and the `Selector` that waits until a stream can be read or written |
 | **Data** | `Language` for i18n, `Registry`, and the `RESP` protocol codec |
 | **Debugging** | Backtraces, the error page, the dumper and the shutdown handler |
 | **Differ** | The text-diff engine, with pluggable calculators and outputs |
@@ -51,9 +51,22 @@ for the full API and the measurements behind it.
 
 ## Reference
 
+- **[Clock](/manual/ABI/Clock/overview/)** — wall and monotonic time behind one injectable
+  object, durations with `Stopwatch`, and a fake clock for tests.
 - **[__Array](/manual/ABI/Code/__Array/overview/)** — the array Code API: chained
   operations, early-exit terminals and reusable pipelines.
+- **[Bytes](/manual/ABI/Code/__String/Bytes/overview/)** — byte counts shown as readable
+  sizes, and sizes such as `"512M"` read back into bytes.
+- **[URI](/manual/ABI/Data/URI/overview/)** — RFC 3986 parsing and reference resolution,
+  the one resolver behind every redirect `Location`.
+- **[Selector](/manual/ABI/Events/Selector/overview/)** — waiting until a stream can be
+  read or written, with an absolute monotonic deadline, signals reported and named refusals.
+- **[File](/manual/ABI/IO/FS/File/overview/)** — the file primitive: atomic, durable
+  replacement and advisory locks between processes.
+- **[S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — the S3 Storage driver:
+  presigned URLs, browser-to-bucket Multipart Uploads and ranged reads.
+- **[Lint](/manual/ABI/Syntax/Lint/overview/)** — the `bootgly.Lint.php` that configures
+  `bootgly lint check`: trees, skipped paths, rules and waivers.
 
-The remaining areas are documented as their pages land. Until then the source is the
-reference: every entity lives under `Bootgly/ABI/` in the framework repository, mirroring
-the table above.
+For an area without a page, the source is the reference: every entity lives under
+`Bootgly/ABI/` in the framework repository, mirroring the table above.

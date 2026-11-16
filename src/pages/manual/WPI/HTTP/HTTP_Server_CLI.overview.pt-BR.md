@@ -380,7 +380,9 @@ Duas consequências que valem saber:
 
 Protocolos de vida longa se comportam de outro jeito. Uma sessão WebSocket **substitui** o reaper pelo
 seu supervisor de ping/pong logo depois do upgrade, então `connectionIdleTimeout` deixa de se aplicar a
-ela. Um stream Server-Sent Events, em vez disso, **renova** o lease a partir do próprio supervisor, que
+ela; um protocolo seu faz o mesmo com `Connection::watch()` (veja
+[Supervisão de conexões](/manual/WPI/TCP/TCP_Server_CLI/overview/#supervisão-de-conexões)).
+Um stream Server-Sent Events, em vez disso, **renova** o lease a partir do próprio supervisor, que
 roda a cada `min(10, interval, heartbeat)` segundos e nunca mais devagar que a expiração da própria
 conexão — então um `connectionIdleTimeout` curto só faz esse supervisor bater mais vezes.
 `connectionIdleTimeout: 0` desativa o reaper por completo — só faça isso atrás de um proxy que imponha

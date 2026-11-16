@@ -334,7 +334,7 @@ The router drops a trailing slash, so `/admin` and `/admin/` both reach the pref
 
 ## Logs
 
-`start()` registers a global file sink: exception reports and opted-in loggers persist to `storage/logs/<channel>.log` in every mode. In **Daemon** mode the workers detach from the terminal — the log file is where errors land — and this sink takes the place of the default one the server would otherwise install at that path, so no record is persisted twice.
+`start()` registers a global file sink: exception reports and opted-in loggers persist to `logs/<channel>.log` under the storage directory in every mode — `storage/logs/` by default, or under the path `BOOTGLY_STORAGE_DIR` moves it to (see [Move the storage directory](/guide/docker/overview/#move-the-storage-directory)). In **Daemon** mode the workers detach from the terminal — the log file is where errors land — and this sink takes the place of the default one the server would otherwise install at that path, so no record is persisted twice.
 
 ---
 

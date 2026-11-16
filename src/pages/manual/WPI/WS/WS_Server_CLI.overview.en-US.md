@@ -289,7 +289,8 @@ Send a close frame and tear the connection down (fires `Disconnected`).
 ### Session properties
 
 `id` (int, the connection id), `ip`, `port`, `subprotocol` (negotiated, or `''`), `identity` (set by
-an auth guard, or `null`). Room helpers (`join`/`leave`/`broadcast`) are documented on the
+an auth guard, or `null`), `watched` (bool, read-only: whether the heartbeat supervisor rides the
+worker's supervision sweep instead of a `Timer` task). Room helpers (`join`/`leave`/`broadcast`) are documented on the
 **Channels** page.
 
 ### Message properties

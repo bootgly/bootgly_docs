@@ -44,6 +44,12 @@ handler, a timer callback or a write. A signal that arrives while a callback run
 next pass; one that arrives while the loop is waiting wakes it. Whatever the handler does to the loop — arming a timer, trapping or releasing a
 signal, stopping the loop — takes effect in that same pass.
 
+That holds while signals are delivered synchronously, PHP's default, and no callback dispatches
+them itself: a callback that calls `pcntl_signal_dispatch()` runs the pending handlers right there.
+The built-in servers' workers turn asynchronous delivery off before they trap their signals, but a
+loop you run yourself under `pcntl_async_signals(true)` runs a handler wherever the signal lands —
+in the middle of a callback too.
+
 **One handler per signal.** Trapping a signal the loop already holds replaces its handler:
 
 ```php
@@ -93,6 +99,13 @@ you trapped no longer stops on `SIGTERM` — and `untrap()` gives the signal bac
 Pick a signal the server does not use, such as a real-time one (`SIGRTMIN` to `SIGRTMAX`), unless
 replacing is what you want.
 
+The takeover covers what a worker inherited for those signals: a handler a server subclass installs
+with `pcntl_signal()` before the fork, for one of them, no longer runs in the workers — their loop
+takes the signal over, and only the master still runs that handler. The exception is a handler the
+loop could not put back, such as a protected or private method (see
+[Signals that are refused](#signals-that-are-refused)): each worker leaves the signal to it, and logs
+a warning.
+
 `SIGPIPE` is ignored by the whole process and is not handled on the loop.
 
 ## When a handler throws
@@ -128,7 +141,8 @@ at a time: trapping a signal another loop of the same process holds throws a `Lo
 until that loop releases it.
 
 `trap()` also throws a `LogicException` when the handler installed for the signal is one the loop
-could not put back on `untrap()` — a private method only its own class may call. Nothing changes
+could not put back on `untrap()` — a protected or private method, which only its own class may
+call. Nothing changes
 in that case: the handler stays installed.
 
 ## Forks and `destroy()`
@@ -147,6 +161,10 @@ when the handler is meant for workers only, or replaces the server's.
 `destroy()` releases every signal the loop holds, as it drops its timers. A
 loop that is run again afterwards starts with no handler: trap again.
 
+Destroy a loop that trapped a signal — or `untrap()` every signal it holds — before you drop it:
+the process's handler table keeps the loop alive, so a loop dropped as it is goes on running its
+handlers, and another loop's `trap()` of one of its signals throws a `LogicException`.
+
 ## A loop without the capability
 
 `Signalling` is optional, and the loop contract itself (`Bootgly\ACI\Events\Loops`) has no signal
@@ -163,7 +181,8 @@ public function trap (int $signal, Closure $Handler): void
 ```
 
 Runs `$Handler` on the loop each time the process receives `$signal`. The handler receives the
-signal number and runs between callbacks, outside any Fiber. Trapping a signal this loop already
+signal number and runs between callbacks, outside any Fiber, while signals are delivered
+synchronously and no callback dispatches them itself. Trapping a signal this loop already
 holds replaces its handler. Throws `InvalidArgumentException` when the signal cannot be caught
 (`SIGKILL`, `SIGSTOP`) or is not a signal number, and `LogicException` when another loop of the
 process holds the signal or the handler installed for it could not be put back.
