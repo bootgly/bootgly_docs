@@ -3,26 +3,6 @@
 The Router provides a flexible and powerful routing system for the HTTP Server CLI.
 It features **automatic route caching** for high performance, **parameter constraint types** for input validation, and a **middleware pipeline** for cross-cutting concerns.
 
-## API
-
-The `route` method is used to define routes:
-
-```php
-route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = [], null|array $cache = null) : false|object
-```
-
-- `$route` — the URL pattern to match (accepts params, constraints, and catch-all).
-- `$handler` — the callback to be executed when the route is matched.
-- `$methods` — the HTTP method(s) that this route should respond to.
-- `$middlewares` — an optional array of middlewares for this specific route.
-- `$cache` — optional route response cache options (see **Route Response Cache**): `['TTL' => <seconds>]`.
-
-`$handler` arguments:
-
-- `$Request` — the HTTP Server Request
-- `$Response` — the HTTP Server Response
-- `$Route` — the matched Route object (only when the handler is not a Closure; in Closures, `$this` is bound to the Route)
-
 ## Basic usage
 
 ```php
@@ -67,7 +47,7 @@ yield $Router->route('/', function (Request $Request, Response $Response) {
 Consider that you have the following function:
 
 ```php
-function talk (Request $Request, Response $Response, Route $Route): Response
+function talk (Request $Request, Response $Response): Response
 {
    $queries = $Request->queries;
    $message = 'Hello ' . ($queries['who'] ?? 'World!');
@@ -87,7 +67,7 @@ Consider that you have the following class:
 ```php
 class World
 {
-   public static function hello (Request $Request, Response $Response, Route $Route): Response
+   public static function hello (Request $Request, Response $Response): Response
    {
       return $Response(body: 'Hello World!!!');
    }
@@ -108,10 +88,6 @@ yield $Router->route('/data', function ($Request, $Response) {
 
 ## Fixed-body routes
 
-```php
-serve (string $route, string $body, null|string|array $methods = null, array $middlewares = []) : false
-```
-
 `serve()` registers a route that always answers with the same string — there is no handler. It is the shortest and fastest way to publish a constant response, such as a health check or a fixed page:
 
 ```php
@@ -122,7 +98,7 @@ yield $Router->serve('/about', '<h1>About us</h1>', GET);
 It behaves like `route()` with a handler that returns `$Response(body: $body)`:
 
 - The response is `200 OK` with `$body` as the body. It sets no headers of its own.
-- `$methods`, route params, groups and catch-all work exactly as in `route()`. Registering the same route with both `route()` and `serve()` keeps the last registration.
+- `$methods`, route params, groups and catch-all work exactly as in `route()`. When the same route is registered with both `route()` and `serve()`, a static route and the catch-all answer with the later registration, a route with params with the earlier one (see [A registration log](#a-registration-log)).
 - `$middlewares` (and group middlewares from `intercept()`) still run for every request.
 - A static route without middlewares skips the handler call altogether: the stored string is copied straight into the response.
 
@@ -387,11 +363,7 @@ response that still does not fit is served without being cached.
 
 ## Route Group Middlewares (intercept)
 
-```php
-public function intercept (Middleware ...$middlewares): void;
-```
-
-Applies middlewares to all routes defined after the `intercept()` call within the current routing scope. A warm Router ignores the call — no route is registered after the warm-up:
+`intercept()` applies middlewares to all routes defined after the call within the current routing scope. A warm Router ignores the call — no route is registered after the warm-up:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
@@ -428,7 +400,20 @@ See [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares) for the full mid
 
 ### Reading the list in a handler
 
+The route inventory — every path, method and parameter pattern of the application — is not public information: guard a route that publishes it, as any private route (see [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/overview/)).
+
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Admin = new Authentication(new Authenticating(
+   new Bearer(function (string $token, Request $Request): bool {
+      return hash_equals((string) getenv('ROUTES_TOKEN'), $token);
+   })
+));
+
 yield $Router->route('/routes', function ($Request, $Response) use ($Router) {
    $routes = [];
    foreach ($Router->Routes as $Registration) {
@@ -440,10 +425,10 @@ yield $Router->route('/routes', function ($Request, $Response) use ($Router) {
    }
 
    return $Response->JSON->send($routes);
-}, GET);
+}, GET, middlewares: [$Admin]);
 ```
 
-The list is complete once `$Router->cached` is `true`. A handler always sees it complete — handlers run after the warm-up — including the routes registered after its own. The routes of a group come after the top-level ones: a group registers its routes when it is flattened, at the end of the warm-up.
+The list is complete once `$Router->cached` is `true`. A route handler always sees it complete — route handlers run after the warm-up — including the routes registered after its own. The request handler itself and a group handler run during the warm-up: they see the list as far as it has got, with `$Router->cached` still `false`. A request handler that registers with direct calls also runs again after the warm-up, on a request no route answers: it then sees the list complete. The routes of a group come after the top-level ones: a group registers its routes when it is flattened, at the end of the warm-up.
 
 ### Reading the list without a request
 
@@ -505,10 +490,12 @@ The list records what was registered, not which route wins a request:
   - a static route registered with an empty method list is not stored: it has no row and matches nothing;
   - a static route registered with an empty method name (`''`, alone or in a list) answers every method — `null` too;
   - a route registered as `''` inside a group lands on the site root — its `path` is `/`.
+- **A dynamic route keeps an empty method name as written.** Its `methods` lists `''` — `['']`, `['GET', '']` — though no request has that method: the route answers only the other methods of its list, and `['']` none.
 - **Not everything leaves a row.** A group (`/admin/:*`) is not a route — its children are. A registration made while the Router is paused, after the warm-up, or one that threw an exception stored nothing.
-- **A warm-up that throws** leaves `$Router->cached` at `false` and the Router as the warm-up found it — the list and the lookup tables alike. The next request registers every route again.
+- **A warm-up that throws** leaves `$Router->cached` at `false` and the Router as the warm-up found it — the list and the lookup tables alike — so the next request registers every route again. The exception is a route set that warmed the Router by itself (a `warm()` call of its own) before it threw: the Router then stays warm, with the routes stored up to that call.
 - **A route set that runs more than once is listed once.** A handler that registers with direct `$Router->route()` calls runs again on every request until the Router is warm, and the Router stays cold while that handler answers the request itself or throws. The server rewinds the Router before each of those runs: the first route a run registers starts from what the Router held before the first run, so the list and the lookup tables hold one copy of each route. A run that registers nothing changes nothing. Outside the server, call `rewind()` before each run of such a handler.
-- **A run registers the whole route set, or nothing.** Once a run registers a route, the routes and the `intercept()` middlewares an earlier run registered and this one does not repeat are gone. Do not guard part of the registrations to run once (a `static` flag, a `require_once`) while the rest runs on every request — an `intercept()` least of all: its routes would be registered again without the middleware.
+- **The routes of a run are whole or nothing.** Once a run registers a route, the routes an earlier run registered and this one does not repeat are gone: do not guard part of the routes to run once (a `static` flag, a `require_once`) while the rest runs on every request.
+- **The `intercept()` middlewares follow the registration, and never shrink.** In a handler that registers with direct calls, a registration an earlier run made too — the same methods and path, the same how-many-th time in the run (a refused registration does not count) — is stored with the middlewares this run intercepted itself up to there, in their order, plus each one it had then that this run did not intercept, kept in its place. A middleware built again the same way on each run — the same class with the same property values, the objects and closures it holds compared the same way — is the same middleware and is kept once; one with another configuration is another middleware, so both run. What cannot be compared counts as another one: an object of a class PHP defines, or of one extending it (`stdClass` and the objects `json_decode()` returns, `PDO`, `DateTime`, `SplObjectStorage`, a `WeakMap` — so the bundled `AccessLog` too), a lazy object not initialized yet, a closure declared on a line that declares another function (`fn ($role) => new Gate(fn () => …)`: put the inner closure on a line of its own), a closure from `eval()`, `NAN`, and anything nested deeper than 16 levels — and so does a middleware built from what changes on every run (the request, the time). Such a middleware is kept once per run while the Router stays cold, and then runs once per such run on each request: build it once, before the first request or outside the handler. A middleware is compared as it stands when the route is registered: what it keeps elsewhere (a `WeakMap` or static table keyed by it) or what changes in it later is not seen, so a middleware whose access decision depends on that must not be intercepted on one run only. A new registration takes the middlewares in effect at that point: until the run's first `intercept()`, the ones the previous run ended with; after it, the ones intercepted before the first request plus this run's. So a route stays behind a middleware intercepted on the first run only — beside other `intercept()` calls that run every time, or not — or on a later run only, a middleware built the same way on every run runs once, and a public route registered ahead of `intercept()` on every run stays public. Two shapes still lose a middleware intercepted on the first run only, so avoid them: a route that only a later run registers, after an `intercept()` of that run, when the run skips the first-run-only one; and a path a run registers fewer times than the run before, when an earlier registration of it sat ahead of the first-run-only `intercept()`. A route set that yields its routes takes nothing from an earlier run — the warm-up registers it on its own, starting with no middleware — so guard none of it, an `intercept()` least of all.
 
 ## Route Object
 
@@ -547,6 +534,24 @@ foreach ($this->Params as $name => $value) {
 ### Router
 
 ```php
+route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = [], null|array $cache = null) : false
+```
+
+Registers a route and returns `false`; a paused or warm Router ignores the call. `$route` is the URL pattern to match — params, constraints and catch-all included. `$handler` runs when a request matches: it receives the `Request` and the `Response`, and inside a Closure `$this` is the matched `Route`. `$methods` is the HTTP method or methods the route answers, every method when `null`. `$middlewares` holds the middlewares of this route alone, and `$cache` the [route response cache](#route-response-cache) options: `['TTL' => <seconds>]`.
+
+```php
+serve (string $route, string $body, null|string|array $methods = null, array $middlewares = []) : false
+```
+
+Registers a route that always answers `200 OK` with `$body` (see [Fixed-body routes](#fixed-body-routes)) and returns `false`. `$route`, `$methods` and `$middlewares` work as in `route()`; a paused or warm Router ignores the call.
+
+```php
+intercept (Middleware ...$Middlewares) : void
+```
+
+Applies `$Middlewares` to every route registered after the call in the current routing scope (see [Route Group Middlewares](#route-group-middlewares-intercept)). A warm Router ignores the call.
+
+```php
 public private(set) array $Routes
 ```
 
@@ -556,13 +561,13 @@ The route list: `array<int,Registration>`, one row per stored route, in registra
 warm (null|Generator $Routes = null) : void
 ```
 
-Warms the route cache without a request: drains `$Routes` (the Generator a route set returns), then flattens the route groups. Pass `null` when the routes were registered with direct `$Router->route()` calls. Does nothing on a warm Router. If a route set or a registration throws, the exception is rethrown and the Router stays cold, as `warm()` found it: the routes registered before the call stay, their groups pending again.
+Warms the route cache without a request: drains `$Routes` (the Generator a route set returns), then flattens the route groups. Pass `null` when the routes were registered with direct `$Router->route()` calls. Does nothing on a warm Router. If a route set or a registration throws, the exception is rethrown and the Router stays cold, as `warm()` found it: the routes registered before the call stay, their groups pending again — unless the route set warmed the Router by itself before it threw, which leaves it warm with the routes stored up to then.
 
 ```php
 rewind () : void
 ```
 
-Marks the start of a registration attempt on a cold Router. The first call records what the Router holds. After each later call the middlewares from `intercept()` are the recorded ones again, and the first route registered puts the rest back before it is stored — the lookup tables, the pending groups and the route list. Routes registered before the first call stay, and an attempt that registers nothing keeps what the last one left; one that registers a route keeps only what it registers and intercepts itself. Does nothing on a warm Router. The server calls it before each run of the request handler while the Router is cold; call it yourself only to run a handler that registers with direct `$Router->route()` calls more than once outside the server.
+Marks the start of a registration attempt on a cold Router. The first call records what the Router holds. After each later call the first route registered puts the recorded state back before it is stored — the lookup tables, the pending groups and the route list — and the first `intercept()` starts again from the recorded middlewares. Routes registered before the first call stay, and an attempt that registers nothing keeps what the last one left; one that registers a route keeps only the routes it registers itself. A registration an earlier attempt made too is stored with the middlewares this attempt intercepted itself up to there, plus each one it was stored with then that they lack, in its place; a new one takes the ones in effect when it is made (see [A registration log](#a-registration-log)). Does nothing on a warm Router. The server calls it before each run of the request handler while the Router is cold; call it yourself only to run a handler that registers with direct `$Router->route()` calls more than once outside the server.
 
 ### Registration
 

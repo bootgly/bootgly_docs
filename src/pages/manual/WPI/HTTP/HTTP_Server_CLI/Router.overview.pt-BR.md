@@ -3,26 +3,6 @@
 O Router fornece um sistema de roteamento flexível e poderoso para o HTTP Server CLI.
 Ele possui **cache automático de rotas** para alta performance, **tipos de restrição de parâmetros** para validação de entrada e um **pipeline de middlewares** para aspectos transversais.
 
-## API
-
-O método `route` é utilizado para definir rotas:
-
-```php
-route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = [], null|array $cache = null) : false|object
-```
-
-- `$route` — o padrão da URL a corresponder (aceita parâmetros, restrições e catch-all).
-- `$handler` — o callback a ser executado quando a rota for correspondida.
-- `$methods` — o(s) método(s) HTTP que essa rota deve atender.
-- `$middlewares` — um array opcional de middlewares para esta rota específica.
-- `$cache` — opções do cache de resposta da rota (veja **Cache de Resposta de Rota**): `['TTL' => <segundos>]`.
-
-Argumentos de `$handler`:
-
-- `$Request` — a Requisição do Servidor HTTP
-- `$Response` — a Resposta do Servidor HTTP
-- `$Route` — o objeto Route correspondido (apenas quando o manipulador não é uma Closure; em Closures, `$this` é vinculado ao Route)
-
 ## Uso Básico
 
 ```php
@@ -67,7 +47,7 @@ yield $Router->route('/', function (Request $Request, Response $Response) {
 Suponha que você tenha a seguinte função:
 
 ```php
-function falar (Request $Request, Response $Response, Route $Route): Response
+function falar (Request $Request, Response $Response): Response
 {
    $queries = $Request->queries;
    $mensagem = 'Olá ' . ($queries['quem'] ?? 'Mundo!');
@@ -87,7 +67,7 @@ Suponha que você tenha a seguinte classe:
 ```php
 class Mundo
 {
-   public static function ola (Request $Request, Response $Response, Route $Route): Response
+   public static function ola (Request $Request, Response $Response): Response
    {
       return $Response(body: 'Olá Mundo!!!');
    }
@@ -108,10 +88,6 @@ yield $Router->route('/dados', function ($Request, $Response) {
 
 ## Rotas de corpo fixo
 
-```php
-serve (string $route, string $body, null|string|array $methods = null, array $middlewares = []) : false
-```
-
 `serve()` registra uma rota que sempre responde com a mesma string — não há handler. É a forma mais curta e mais rápida de publicar uma resposta constante, como um health check ou uma página fixa:
 
 ```php
@@ -122,7 +98,7 @@ yield $Router->serve('/sobre', '<h1>Sobre nós</h1>', GET);
 Ela se comporta como um `route()` com um handler que retorna `$Response(body: $body)`:
 
 - A resposta é `200 OK` com `$body` como corpo. Ela não define headers próprios.
-- `$methods`, parâmetros de rota, grupos e catch-all funcionam exatamente como em `route()`. Registrar a mesma rota com `route()` e com `serve()` mantém o último registro.
+- `$methods`, parâmetros de rota, grupos e catch-all funcionam exatamente como em `route()`. Quando a mesma rota é registrada com `route()` e com `serve()`, uma rota estática e o catch-all respondem com o registro mais recente, uma rota com parâmetros com o mais antigo (veja [Um log de registro](#um-log-de-registro)).
 - `$middlewares` (e os middlewares de grupo via `intercept()`) continuam rodando em toda requisição.
 - Uma rota estática sem middlewares pula a chamada de handler por completo: a string armazenada é copiada direto para a resposta.
 
@@ -392,11 +368,7 @@ despeja primeiro as entradas mais antigas; uma resposta que ainda assim não cab
 
 ## Middlewares de Grupo de Rotas (intercept)
 
-```php
-public function intercept (Middleware ...$middlewares): void;
-```
-
-Aplica middlewares a todas as rotas definidas após a chamada `intercept()` dentro do escopo de roteamento atual. Um Router já aquecido ignora a chamada — nenhuma rota é registrada depois do warmup:
+`intercept()` aplica middlewares a todas as rotas definidas após a chamada dentro do escopo de roteamento atual. Um Router já aquecido ignora a chamada — nenhuma rota é registrada depois do warmup:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\CORS;
@@ -433,7 +405,20 @@ Veja [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares) para a document
 
 ### Lendo a lista em um handler
 
+O inventário de rotas — todo caminho, método e padrão de parâmetro da aplicação — não é informação pública: proteja a rota que o publica como qualquer rota privada (veja [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/overview/)).
+
 ```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Admin = new Authentication(new Authenticating(
+   new Bearer(function (string $token, Request $Request): bool {
+      return hash_equals((string) getenv('ROUTES_TOKEN'), $token);
+   })
+));
+
 yield $Router->route('/routes', function ($Request, $Response) use ($Router) {
    $routes = [];
    foreach ($Router->Routes as $Registration) {
@@ -445,10 +430,10 @@ yield $Router->route('/routes', function ($Request, $Response) use ($Router) {
    }
 
    return $Response->JSON->send($routes);
-}, GET);
+}, GET, middlewares: [$Admin]);
 ```
 
-A lista está completa quando `$Router->cached` é `true`. Um handler sempre a vê completa — handlers rodam depois do warmup —, incluindo as rotas registradas depois da dele. As rotas de um grupo vêm depois das de nível superior: um grupo registra suas rotas quando é expandido, no fim do warmup.
+A lista está completa quando `$Router->cached` é `true`. Um handler de rota sempre a vê completa — handlers de rota rodam depois do warmup —, incluindo as rotas registradas depois da dele. O próprio handler de requisição e um handler de grupo rodam durante o warmup: eles veem a lista até onde ela já chegou, com `$Router->cached` ainda `false`. Um handler de requisição que registra com chamadas diretas também roda de novo depois do warmup, em uma requisição que nenhuma rota responde: aí ele vê a lista completa. As rotas de um grupo vêm depois das de nível superior: um grupo registra suas rotas quando é expandido, no fim do warmup.
 
 ### Lendo a lista sem uma requisição
 
@@ -510,10 +495,12 @@ A lista registra o que foi registrado, não qual rota vence uma requisição:
   - uma rota estática registrada com uma lista de métodos vazia não é armazenada: não tem linha e não casa com nada;
   - uma rota estática registrada com um nome de método vazio (`''`, sozinho ou em uma lista) responde a qualquer método — `null` também;
   - uma rota registrada como `''` dentro de um grupo cai na raiz do site — seu `path` é `/`.
+- **Uma rota dinâmica guarda um nome de método vazio como foi escrito.** Seu `methods` lista `''` — `['']`, `['GET', '']` — embora nenhuma requisição tenha esse método: a rota responde só aos outros métodos da sua lista, e `['']` a nenhum.
 - **Nem tudo deixa uma linha.** Um grupo (`/admin/:*`) não é uma rota — suas filhas são. Um registro feito com o Router pausado, depois do warmup, ou um que lançou uma exceção não armazenou nada.
-- **Um warmup que lança uma exceção** deixa `$Router->cached` em `false` e o Router como o warmup o encontrou — a lista e as tabelas de busca. A próxima requisição registra todas as rotas de novo.
+- **Um warmup que lança uma exceção** deixa `$Router->cached` em `false` e o Router como o warmup o encontrou — a lista e as tabelas de busca —, então a próxima requisição registra todas as rotas de novo. A exceção é um conjunto de rotas que aqueceu o Router por conta própria (uma chamada a `warm()` dele mesmo) antes de lançar: o Router então continua aquecido, com as rotas armazenadas até aquela chamada.
 - **Um conjunto de rotas que roda mais de uma vez é listado uma vez só.** Um handler que registra com chamadas diretas a `$Router->route()` roda de novo a cada requisição até o Router estar aquecido, e o Router continua frio enquanto esse handler responde ele mesmo à requisição ou lança. O servidor rebobina o Router antes de cada uma dessas execuções: a primeira rota que uma execução registra parte do que o Router tinha antes da primeira execução, então a lista e as tabelas de busca guardam uma cópia de cada rota. Uma execução que não registra nada não muda nada. Fora do servidor, chame `rewind()` antes de cada execução de um handler desses.
-- **Uma execução registra o conjunto de rotas inteiro, ou nada.** Assim que uma execução registra uma rota, as rotas e os middlewares de `intercept()` que uma execução anterior registrou e esta não repete deixam de existir. Não proteja parte dos registros para rodar uma vez só (uma flag `static`, um `require_once`) enquanto o resto roda a cada requisição — muito menos um `intercept()`: as rotas dele seriam registradas de novo sem o middleware.
+- **As rotas de uma execução são inteiras, ou nada.** Assim que uma execução registra uma rota, as rotas que uma execução anterior registrou e esta não repete deixam de existir: não proteja parte das rotas para rodar uma vez só (uma flag `static`, um `require_once`) enquanto o resto roda a cada requisição.
+- **Os middlewares de `intercept()` acompanham o registro, e nunca diminuem.** Em um handler que registra com chamadas diretas, um registro que uma execução anterior também fez — mesmos métodos e caminho, a mesma vez na execução (um registro recusado não conta) — é armazenado com os middlewares que esta execução interceptou por conta própria até ali, na ordem deles, mais cada um que tinha então e que esta execução não interceptou, mantido no seu lugar. Um middleware construído de novo do mesmo jeito a cada execução — a mesma classe com os mesmos valores de propriedade, os objetos e closures que ele guarda comparados do mesmo jeito — é o mesmo middleware e fica uma vez; um com outra configuração é outro middleware, então os dois rodam. O que não dá para comparar conta como outro: um objeto de uma classe que o PHP define, ou de uma que a estende (`stdClass` e os objetos que `json_decode()` devolve, `PDO`, `DateTime`, `SplObjectStorage`, um `WeakMap` — logo o `AccessLog` que vem no framework também), um objeto lazy ainda não inicializado, uma closure declarada numa linha que declara outra função (`fn ($role) => new Gate(fn () => …)`: ponha a closure de dentro numa linha só dela), uma closure vinda de `eval()`, `NAN` e o que estiver aninhado a mais de 16 níveis — assim como um middleware construído a partir do que muda a cada execução (a requisição, a hora). Um middleware assim fica uma vez por execução enquanto o Router está frio, e depois roda uma vez por execução dessas a cada requisição: construa-o uma vez só, antes da primeira requisição ou fora do handler. Um middleware é comparado como está quando a rota é registrada: o que ele guarda em outro lugar (um `WeakMap` ou uma tabela estática com ele como chave) ou o que muda nele depois não é visto, então um middleware cuja decisão de acesso dependa disso não deve ser interceptado numa execução só. Um registro novo leva os middlewares em vigor naquele ponto: até o primeiro `intercept()` da execução, os que a execução anterior tinha ao terminar; depois dele, os interceptados antes da primeira requisição mais os desta execução. Assim, uma rota fica atrás de um middleware interceptado só na primeira execução — ao lado de outras chamadas a `intercept()` que rodam toda vez, ou não — ou só em uma execução posterior, um middleware construído do mesmo jeito em toda execução roda uma vez, e uma rota pública registrada antes do `intercept()` em toda execução continua pública. Dois formatos ainda perdem um middleware interceptado só na primeira execução, então evite-os: uma rota que só uma execução posterior registra, depois de um `intercept()` dessa execução, quando ela pula o da primeira execução; e um caminho que uma execução registra menos vezes que a anterior, quando um registro anterior dele ficava antes do `intercept()` da primeira execução. Um conjunto de rotas que entrega suas rotas com `yield` não herda nada de uma execução anterior — o warmup o registra por conta própria, começando sem middleware —, então não proteja nada dele, muito menos um `intercept()`.
 
 ## Objeto Route
 
@@ -552,6 +539,24 @@ foreach ($this->Params as $nome => $valor) {
 ### Router
 
 ```php
+route (string $route, callable $handler, null|string|array $methods = null, array $middlewares = [], null|array $cache = null) : false
+```
+
+Registra uma rota e retorna `false`; um Router pausado ou já aquecido ignora a chamada. `$route` é o padrão da URL a corresponder — parâmetros, restrições e catch-all incluídos. `$handler` roda quando uma requisição corresponde: ele recebe o `Request` e o `Response`, e dentro de uma Closure `$this` é o `Route` correspondido. `$methods` é o método HTTP, ou os métodos, que a rota atende — qualquer método quando `null`. `$middlewares` guarda os middlewares só desta rota, e `$cache` as opções do [cache de resposta da rota](#cache-de-resposta-de-rota): `['TTL' => <segundos>]`.
+
+```php
+serve (string $route, string $body, null|string|array $methods = null, array $middlewares = []) : false
+```
+
+Registra uma rota que sempre responde `200 OK` com `$body` (veja [Rotas de corpo fixo](#rotas-de-corpo-fixo)) e retorna `false`. `$route`, `$methods` e `$middlewares` funcionam como em `route()`; um Router pausado ou já aquecido ignora a chamada.
+
+```php
+intercept (Middleware ...$Middlewares) : void
+```
+
+Aplica `$Middlewares` a toda rota registrada depois da chamada no escopo de roteamento atual (veja [Middlewares de Grupo de Rotas](#middlewares-de-grupo-de-rotas-intercept)). Um Router já aquecido ignora a chamada.
+
+```php
 public private(set) array $Routes
 ```
 
@@ -561,13 +566,13 @@ A lista de rotas: `array<int,Registration>`, uma linha por rota armazenada, na o
 warm (null|Generator $Routes = null) : void
 ```
 
-Aquece o cache de rotas sem uma requisição: itera `$Routes` (o Generator que um conjunto de rotas retorna) e depois expande os grupos de rotas. Passe `null` quando as rotas foram registradas com chamadas diretas a `$Router->route()`. Não faz nada em um Router já aquecido. Se um conjunto de rotas ou um registro lançar, a exceção é relançada e o Router continua frio, como `warm()` o encontrou: as rotas registradas antes da chamada ficam, com seus grupos pendentes de novo.
+Aquece o cache de rotas sem uma requisição: itera `$Routes` (o Generator que um conjunto de rotas retorna) e depois expande os grupos de rotas. Passe `null` quando as rotas foram registradas com chamadas diretas a `$Router->route()`. Não faz nada em um Router já aquecido. Se um conjunto de rotas ou um registro lançar, a exceção é relançada e o Router continua frio, como `warm()` o encontrou: as rotas registradas antes da chamada ficam, com seus grupos pendentes de novo — a menos que o conjunto de rotas tenha aquecido o Router por conta própria antes de lançar, o que o deixa aquecido com as rotas armazenadas até ali.
 
 ```php
 rewind () : void
 ```
 
-Marca o início de uma tentativa de registro em um Router frio. A primeira chamada guarda o que o Router tem. Depois de cada chamada seguinte os middlewares de `intercept()` voltam a ser os guardados, e a primeira rota registrada coloca o resto de volta antes de ser armazenada — as tabelas de busca, os grupos pendentes e a lista de rotas. Rotas registradas antes da primeira chamada ficam, e uma tentativa que não registra nada mantém o que a anterior deixou; uma que registra uma rota mantém só o que ela mesma registra e intercepta. Não faz nada em um Router já aquecido. O servidor chama `rewind()` antes de cada execução do handler de requisição enquanto o Router está frio; chame você mesmo só para rodar mais de uma vez, fora do servidor, um handler que registra com chamadas diretas a `$Router->route()`.
+Marca o início de uma tentativa de registro em um Router frio. A primeira chamada guarda o que o Router tem. Depois de cada chamada seguinte a primeira rota registrada coloca o estado guardado de volta antes de ser armazenada — as tabelas de busca, os grupos pendentes e a lista de rotas — e o primeiro `intercept()` parte de novo dos middlewares guardados. Rotas registradas antes da primeira chamada ficam, e uma tentativa que não registra nada mantém o que a anterior deixou; uma que registra uma rota mantém só as rotas que ela mesma registra. Um registro que uma tentativa anterior também fez é armazenado com os middlewares que esta tentativa interceptou por conta própria até ali, mais cada um com que foi armazenado então e que falta neles, no seu lugar; um novo leva os que estão em vigor quando é feito (veja [Um log de registro](#um-log-de-registro)). Não faz nada em um Router já aquecido. O servidor chama `rewind()` antes de cada execução do handler de requisição enquanto o Router está frio; chame você mesmo só para rodar mais de uma vez, fora do servidor, um handler que registra com chamadas diretas a `$Router->route()`.
 
 ### Registration
 
