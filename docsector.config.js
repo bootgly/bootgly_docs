@@ -158,6 +158,7 @@ export default {
     links: [
       { label: 'GitHub', icon: 'code', href: 'https://github.com/bootgly/bootgly/' },
       { label: 'Kit', icon: 'rocket_launch', href: 'https://github.com/bootgly/bootgly.kit/' },
+      { label: 'Blog', icon: 'article', href: 'https://bootgly.com/blog/' },
       { label: { 'en-US': 'Ecosystem', 'pt-BR': 'Ecossistema' }, icon: 'hub', children: [
         { label: 'Bootgly Web', icon: 'language', href: 'https://github.com/bootgly/bootgly-web/' },
         { label: 'Bootgly Console', icon: 'terminal', href: 'https://github.com/bootgly/bootgly-console/' }
