@@ -298,6 +298,10 @@ can throw earlier, while it loads: a value a `cast:` cannot parse (`DB_PORT=abc`
 `Invalid integer config value.`) or a missing `required: true` key
 (`Required config value is missing: DB_PASS`).
 
+A debug dump of the `Database`, of its config or of a connection masks the password, a
+replica's included, and the config constructors keep their array out of stack-trace
+arguments. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Register it for HTTP routes
 
 Inside a `*.Project.php` file, register Bootgly's built-in Database Response Resource while

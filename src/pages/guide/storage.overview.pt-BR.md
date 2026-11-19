@@ -227,6 +227,9 @@ $Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta
 
 O `root` de um disk funciona como prefixo de chave.
 
+Um dump de debug de um disk mostra para onde ele aponta, nunca o seu `secret` nem o `token`
+de sessão, e as opções do disk ficam fora dos argumentos de stack traces. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 #### Transferências diretas
 
 O driver S3 também consegue manter os bytes fora do seu servidor: uma URL pré-assinada deixa

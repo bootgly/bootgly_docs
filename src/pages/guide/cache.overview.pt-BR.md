@@ -338,6 +338,9 @@ mais.
 > host em que código que você não controla roda como o mesmo usuário, já que esse usuário
 > consegue gravar nos dois stores.
 
+Um dump de debug do cache, da sua config ou do driver Redis mascara a senha do Redis, e o
+comando `AUTH` nunca aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Referência
 
 - **Contrato** — `Cache\Driver` (abstrato): `fetch`, `store`, `delete`, `clear`, `check`,

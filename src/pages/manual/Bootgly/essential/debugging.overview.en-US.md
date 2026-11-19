@@ -12,6 +12,7 @@ The whole layer is built on one contract — a single static `debug()` method �
 | `Debugging\Data` | The dispatcher — routes each value to the destination that fits it | this page |
 | `Debugging\Backtrace` | "Who called me?" — the call stack as objects and as a rendered string | [Backtrace](/manual/Bootgly/essential/debugging/backtrace/overview/) |
 | `Debugging\Data\Vars` | Value dumps — the engine behind `dump()`, `dd()` and the terminal dumper | [Dumper](/manual/CLI/UI/Atoms/Dumper/overview/) |
+| `Debugging\Data\Vars\Redactable` | Secrets kept out of dumps — the trait and its `#[Secret]` attribute | [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/) |
 | `Debugging\Data\Throwables` (and `Errors`, `Exceptions`) | Throwable reports, the reporter seam, the exit policy | [Error handling](/guide/error-handling/overview/) |
 | `Debugging\Page` | The self-contained development debug page | [Error handling](/guide/error-handling/overview/) |
 | `Debugging\Shutdown` | Fatal errors, which bypass every PHP handler | [Error handling](/guide/error-handling/overview/) |
@@ -61,6 +62,9 @@ Every dump is prefixed by the **call site** — the line that called `dump()` fi
 `dd()` ("dump and die") prints the same thing and then terminates the process — nothing after the call runs. Use it to stop a request or a command exactly where the interesting value is.
 
 The tree below the trace — `array:2 [ … ]`, typed literals, visibility sigils, caps — is produced by the dumper; see the [Dumper](/manual/CLI/UI/Atoms/Dumper/overview/) page for its rendering rules, caps and themes.
+
+> [!TIP]
+> A dump prints whatever the object holds — passwords and tokens included. A class that stores a secret keeps it out of every dump with the `Redactable` trait and a `#[Secret]` mark; see [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
 
 ## Route by type
 

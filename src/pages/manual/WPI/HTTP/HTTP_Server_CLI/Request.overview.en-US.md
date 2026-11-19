@@ -337,6 +337,8 @@ $Request->identity; // Bootgly\API\Security\Identity|string|null
 $Request->claims; // ['sub' => 'user-1', 'scope' => 'demo:read']
 ```
 
+> A debug dump of the request (`var_dump`, `print_r`, `Dumper`) masks the Basic password, the Bearer token, the credential header fields, the raw header block and the cookies. Reading `$Request->password`, `$Request->token` or a header still returns the real value. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 See [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) for guard-based Basic, Bearer, JWT, and Session examples.
 
 ## HTTP Content Negotiation

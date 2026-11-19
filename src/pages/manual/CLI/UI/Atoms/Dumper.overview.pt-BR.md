@@ -65,7 +65,44 @@ App\User {
 }
 ```
 
-O walk é livre de efeitos colaterais por design: propriedades com hooks mostram o **valor cru de backing** (get hooks nunca rodam), propriedades virtuais renderizam uma nota `virtual`, propriedades tipadas não inicializadas uma nota `uninitialized`. Propriedades privadas de classes pai são incluídas com a classe declarante como nota. Enums renderizam inline com seu backing value, closures renderizam sua localização `file:line`, e `__debugInfo()` — quando definido — substitui o walk de propriedades por completo.
+O walk é livre de efeitos colaterais por design: propriedades com hooks mostram o **valor cru de backing** (get hooks nunca rodam), propriedades virtuais renderizam uma nota `virtual`, propriedades tipadas não inicializadas uma nota `uninitialized`. Propriedades privadas de classes pai são incluídas com a classe declarante como nota. Enums renderizam inline com seu backing value, e closures renderizam sua localização `file:line`.
+
+Quando o objeto define `__debugInfo()`, o corpo dele substitui o walk, como no `var_dump`:
+
+- Um corpo indexado pelos nomes das próprias propriedades do objeto — como o trait [`Redactable`](/manual/Bootgly/essential/debugging/redaction/overview/) o retorna, com seus segredos mascarados — renderiza como o walk: os mesmos sigilos, marcas `readonly` e notas da classe declarante, com os valores do corpo, mais as linhas sem valor `virtual` e `uninitialized`. Uma propriedade inicializada que o corpo deixa de fora continua oculta.
+- Qualquer outra chave renderiza entre aspas, como uma entrada de array.
+- Um corpo `null` (ou qualquer coisa que não seja array) renderiza como um objeto vazio, como o `var_dump` o mostra — nunca lança.
+
+```php
+final class Money
+{
+   private int $cents = 1200;
+
+   public function __debugInfo (): array
+   {
+      return ['amount' => '12.00 BRL'];
+   }
+}
+
+final class Handle
+{
+   public int $id = 7;
+
+   public function __debugInfo (): null|array
+   {
+      return null;
+   }
+}
+```
+
+```text
+Money {
+   'amount' => '12.00 BRL'
+}
+Handle {}
+```
+
+O Dumper não mascara nada sozinho: uma senha ou um token fica fora de um dump só quando o `__debugInfo()` do objeto o deixa de fora. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/) para marcar as propriedades que guardam segredos.
 
 ## Caps
 

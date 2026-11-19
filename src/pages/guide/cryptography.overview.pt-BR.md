@@ -369,10 +369,11 @@ public function __construct (#[\SensitiveParameter] string $material, null|strin
 Encapsula material raw de chave. O material deve ter exatamente 32 bytes; o id opcional
 deve seguir `[A-Za-z0-9_-]` com no máximo 64 caracteres (ele viaja como metadado público
 do envelope). Lança `InvalidArgumentException` caso contrário, e `RuntimeException`
-quando o OpenSSL não está disponível. O material é estado privado — é redigido no
-`var_dump`, ausente do JSON e a chave recusa tanto `serialize()` quanto `unserialize()`.
-Reflection no mesmo processo (`var_export`, `ReflectionProperty`) não pode ser bloqueada
-em PHP e está fora dessa fronteira.
+quando o OpenSSL não está disponível. O material é estado privado, guardado selado num
+`SensitiveParameterValue`: `var_dump`, `print_r` e `Dumper` o mostram mascarado,
+`var_export` e um cast `(array)` não mostram nenhum byte, ele fica ausente do JSON e a chave
+recusa tanto `serialize()` quanto `unserialize()`. Reflection no mesmo processo que chama
+`getValue()` no objeto selado não pode ser bloqueada em PHP e está fora dessa fronteira.
 
 ```php
 public static function generate (null|string $id = null): self

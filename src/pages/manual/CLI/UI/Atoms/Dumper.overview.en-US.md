@@ -65,7 +65,44 @@ App\User {
 }
 ```
 
-The walk is side-effect free by design: hooked properties show their **raw backing value** (get hooks never run), virtual properties render a `virtual` note, uninitialized typed properties an `uninitialized` note. Private properties of parent classes are included with their declaring class as a note. Enums render inline with their backing value, closures render their `file:line` location, and `__debugInfo()` — when defined — replaces the property walk entirely.
+The walk is side-effect free by design: hooked properties show their **raw backing value** (get hooks never run), virtual properties render a `virtual` note, uninitialized typed properties an `uninitialized` note. Private properties of parent classes are included with their declaring class as a note. Enums render inline with their backing value, and closures render their `file:line` location.
+
+When the object defines `__debugInfo()`, its body replaces the walk, as in `var_dump`:
+
+- A body keyed by the object's own property names — as the [`Redactable`](/manual/Bootgly/essential/debugging/redaction/overview/) trait returns it, with its secrets masked — renders like the walk: the same sigils, `readonly` marks and declaring-class notes, with the body's values, plus the value-less `virtual` and `uninitialized` rows. An initialized property the body leaves out stays hidden.
+- Any other key renders quoted, like an array entry.
+- A body that is `null` (or anything but an array) renders as an empty object, as `var_dump` shows it — it never throws.
+
+```php
+final class Money
+{
+   private int $cents = 1200;
+
+   public function __debugInfo (): array
+   {
+      return ['amount' => '12.00 BRL'];
+   }
+}
+
+final class Handle
+{
+   public int $id = 7;
+
+   public function __debugInfo (): null|array
+   {
+      return null;
+   }
+}
+```
+
+```text
+Money {
+   'amount' => '12.00 BRL'
+}
+Handle {}
+```
+
+The Dumper masks nothing by itself: a password or a token stays out of a dump only when the object's `__debugInfo()` leaves it out. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/) to mark the properties that store secrets.
 
 ## Caps
 

@@ -313,6 +313,30 @@ export default {
       }
     }
   },
+  '/Bootgly/essential/debugging/redaction': {
+    config: {
+      icon: 'visibility_off',
+      status: 'done',
+      meta: {
+        description: {
+          'en-US': 'Keep passwords, keys and tokens out of debug dumps and stack traces with Redactable, #[Secret] and #[SensitiveParameter].',
+          'pt-BR': 'Mantenha senhas, chaves e tokens fora de dumps de debug e stack traces com Redactable, #[Secret] e #[SensitiveParameter].'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      'en-US': {
+        title: 'Redaction'
+      },
+      'pt-BR': {
+        title: 'Redação'
+      }
+    }
+  },
   '/Bootgly/essential/projects': {
     config: {
       icon: 'create_new_folder',
@@ -3534,8 +3558,8 @@ export default {
       version: 'v1.0.6',
       meta: {
         description: {
-          'en-US': 'Parse RFC 3986 URIs and resolve references — the one resolver behind every redirect Location.',
-          'pt-BR': 'Interprete URIs RFC 3986 e resolva referências — o único resolvedor por trás de todo Location de redirect.'
+          'en-US': 'Parse RFC 3986 URIs, resolve references — the one resolver behind every redirect Location — and redact URL credentials for display.',
+          'pt-BR': 'Interprete URIs RFC 3986, resolva referências — o único resolvedor por trás de todo Location de redirect — e oculte credenciais de URLs para exibição.'
         }
       },
       menu: {

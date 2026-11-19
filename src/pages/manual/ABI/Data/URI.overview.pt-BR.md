@@ -70,6 +70,63 @@ Duas diferenças deliberadas em relação aos exemplos da RFC 3986 §5.4: um res
 autoridade (`g:h`, `http:g`) é recusado em vez de devolvido, e fragmentos são descartados, já que
 nunca viajam em uma requisição.
 
+## Ocultar credenciais
+
+Uma URL pode carregar uma senha ou um token no seu userinfo (`usuario:senha@`). Antes de uma URL — ou
+de qualquer texto que possa conter uma: uma linha de log, uma mensagem de erro, um relatório — ser
+exibida, gravada em log ou impressa em um relatório, passe-a por `URI::redact()`. Ele remove o
+userinfo e mantém todo o resto:
+
+```php
+use Bootgly\ABI\Data\URI;
+
+URI::redact('https://user:SYNTH-TOKEN@api.example.com/v1/orders');
+// 'https://api.example.com/v1/orders'
+
+URI::redact('redis://:SYNTH-PASSWORD@127.0.0.1:6379/0');
+// 'redis://127.0.0.1:6379/0'
+```
+
+A entrada não precisa ser uma URI. Toda URL do texto é coberta, onde quer que esteja, e o resto do
+texto fica como está:
+
+```php
+URI::redact('see https://a@h1 and https://b@h2/x');
+// 'see https://h1 and https://h2/x'
+
+URI::redact("fatal: could not read Password for 'https://SYNTH-TOKEN@git.example.com'");
+// "fatal: could not read Password for 'https://git.example.com'"
+```
+
+Como ele lê o texto:
+
+- Cada `://` abre uma autoridade que vai até a próxima `/`; tudo até o **último** `@` dela é
+  removido, então uma senha que contém `@` sai inteira (`https://u:p@ss@example.com/x` →
+  `https://example.com/x`).
+- Barras extras depois de `://` são puladas (`https:///user:SYNTH@host/p` → `https:///host/p`),
+  exceto em uma URL `file:`, em que a parte depois da segunda barra é um caminho e nunca é tocada
+  (`file:///home/shop/user@example.com/data.txt` fica como está).
+- Um texto sem `@` ou sem `://` volta inalterado — um `git@example.com:shop/app.git` no estilo scp
+  não tem `://`, então não é uma URL que este método enxergue.
+- Nenhuma expressão regular roda: um texto malformado ou hostil custa uma passada linear e nunca
+  volta sem ocultação porque um padrão desistiu.
+
+Ele erra para o lado seguro. Um `@` depois de um `?` ou de um `#` mas antes da próxima `/` ainda
+corta, assim como um `@` mais adiante na mesma linha quando nenhuma `/` vem entre eles — o texto do
+meio vai junto:
+
+```php
+URI::redact('https://h/?a@b');      // 'https://h/?a@b' — a `/` encerrou a autoridade
+URI::redact('https://h?x@y/z');     // 'https://y/z'
+URI::redact('Pulled from https://git.example.com, mail ops@example.com');
+// 'Pulled from https://example.com'
+```
+
+O resultado serve só para exibição: não é um parser nem um validador. Nunca o interprete, guarde como
+configuração ou conecte com ele — mantenha a URL original para isso e passe-a por `parse()`. As
+listagens e a saída de remotes git do framework, e os manifestos de execução de benchmark, exibem
+URLs por este método.
+
 ## Referência
 
 ```php
@@ -85,6 +142,15 @@ public static function parse (string $URI): null|self
 
 Interpreta uma URI absoluta e hierárquica com host, ou responde `null` — a forma para entrada não
 confiável.
+
+```php
+public static function redact (string $text): string
+```
+
+Remove o userinfo de toda URL de um texto, para exibição: para cada `://`, tudo até o último `@`
+antes da próxima `/` é removido (em uma URL `file:`, a parte depois da segunda barra é um caminho e
+é mantida). Léxico e linear, sem expressão regular; o texto volta inalterado quando não tem `@` ou
+não tem `://`. Não valida nem disca nada — nunca interprete o resultado nem conecte com ele.
 
 ```php
 public function resolve (string $reference): null|self

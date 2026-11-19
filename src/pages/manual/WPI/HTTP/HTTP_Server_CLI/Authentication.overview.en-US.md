@@ -140,6 +140,7 @@ Authentication guards expose metadata through declared `Request` properties: `$R
 - Resolver callbacks should compare secrets with `hash_equals()` when checking passwords, API tokens, or shared secrets.
 - Place CSRF protection before state-changing authenticated browser routes; token/API routes that do not use cookies can be exempted by route policy.
 - JWT is transported as a Bearer token and shares the `$Request->token` hook with opaque Bearer credentials.
+- A resolver receives the credential itself: mark that parameter `#[SensitiveParameter]` (`use SensitiveParameter;`), as in `function (#[SensitiveParameter] string $token, Request $Request): bool`, so a stack trace thrown inside it — and the development debug page — shows no token. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
 
 ## Bearer token guard
 

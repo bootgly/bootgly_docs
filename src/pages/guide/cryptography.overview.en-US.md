@@ -362,10 +362,11 @@ public function __construct (#[\SensitiveParameter] string $material, null|strin
 Wraps raw key material. The material must be exactly 32 bytes; the optional id must match
 `[A-Za-z0-9_-]` with at most 64 characters (it travels as public envelope metadata).
 Throws an `InvalidArgumentException` otherwise, and a `RuntimeException` when OpenSSL is
-unavailable. The material is private state — it is redacted from `var_dump`, absent from
-JSON and the key refuses both `serialize()` and `unserialize()`. Same-process reflection
-(`var_export`, `ReflectionProperty`) cannot be blocked in PHP and is outside this
-boundary.
+unavailable. The material is private state, kept sealed in a `SensitiveParameterValue`:
+`var_dump`, `print_r` and `Dumper` show it masked, `var_export` and an `(array)` cast show
+no bytes, it is absent from JSON, and the key refuses both `serialize()` and
+`unserialize()`. Same-process reflection that calls `getValue()` on the sealed object
+cannot be blocked in PHP and is outside this boundary.
 
 ```php
 public static function generate (null|string $id = null): self

@@ -283,7 +283,30 @@ The git module the command is built on — with `SemVer`, the only dependency cr
 `resolve()`, `describe()`, `inspect()`, `fetch()`, `checkout()`), `$VCS->Tags->list()` reads the
 version-shaped tags newest first with their commits and `read()` an annotated tag's notes,
 `$VCS->Remotes` lists, finds and adds remotes, `$VCS->Submodules` inspects and updates the
-submodules the tree declares.
+submodules the tree declares. `$VCS->Remotes->list()` returns each remote's URL raw, as configured
+— credentials included: data to check and connect with, never text to show; display one only
+through `Remotes::redact()`.
+
+To show a remote, or what a failed git command printed, without leaking a token:
+
+```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Data\URI;
+use Bootgly\ACI\VCS;
+use Bootgly\ACI\VCS\Remotes;
+
+$VCS = new VCS(__DIR__);
+
+foreach ($VCS->Remotes->list() as $name => $URL) {
+   echo "{$name}: " . Remotes::redact($URL) . "\n";
+}
+
+$status = $VCS->Git->fetch('origin');
+if ($status !== 0) {
+   // `output` is raw: drop the credentials of every URL, escape controls, keep its line breaks
+   echo Controls::escape(URI::redact(mb_scrub($VCS->Git->output, 'UTF-8')), "\n");
+}
+```
 
 ```php
 Bootgly\ACI\VCS\Git->execute (array $arguments, null|Closure $Callback = null, array $variables = []): int
@@ -294,11 +317,15 @@ English (`LC_ALL=C`), no prompt, stdin from `/dev/null` — and return its exit 
 process could not start). `$variables` are set on the child, over the caller's environment.
 `$Callback` receives each line as it arrives, without its break, as text to show: a byte that is not
 UTF-8 becomes `?`, a carriage return (git's progress repainting) is dropped, and every other control
-character but TAB becomes a visible escape (`\u001b`), so the line is safe to `write()` to a UTF-8
-terminal as is — its Output markup is not defused: `Escaped::scrub()` it before a `render()`.
-`$output` keeps the raw bytes (the last 64 KiB, `Git::TAIL`, when a callback streamed them), for
-parsing: display it only through `Controls::escape(mb_scrub($Git->output, 'UTF-8'))`. Since 1.0.12
-for the callback contract.
+character but TAB becomes a visible escape (`\u001b`), and the userinfo of every URL in it is
+removed (`URI::redact()`) — a remote's URL that git repeats in a message
+(`fatal: could not read Password for 'https://<token>@host'`) reaches the callback without its
+credentials; only a URL that a line longer than `Git::TAIL` splits across two pieces keeps its
+halves as they are. So the line is safe to `write()` to a UTF-8 terminal as is — its Output markup
+is not defused: `Escaped::scrub()` it before a `render()`. `$output` keeps the raw bytes (the last
+64 KiB, `Git::TAIL`, when a callback streamed them), credentials included, for parsing: display it
+only through `Controls::escape(URI::redact(mb_scrub($Git->output, 'UTF-8')))`. Since 1.0.12 for
+the callback contract.
 
 ```php
 Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int
@@ -328,8 +355,21 @@ reason it is refused — `Malformed`, `Helper`, `Plaintext`, `Unsupported` or `C
 Bootgly\ACI\VCS\Remotes::redact (string $URL): string
 ```
 
-The URL for display, without its credentials: any userinfo of a `scheme://` URL is dropped, except
-an SSH login without a password; scp-like addresses and paths come back unchanged.
+The URL for display, without its credentials: the userinfo of a `scheme://` URL is dropped by
+`URI::redact()` (a lone name may be a token), except an SSH login without a password
+(`ssh://git@host/…` keeps `git@`); an scp-like `user:password@host:path` loses its
+`user:password@`; other scp-like addresses (`git@host:path`) and paths come back unchanged. Display
+only — it says nothing about which host is dialed: `screen()` the URL first.
+
+```php
+Bootgly\ABI\Data\URI::redact (string $text): string
+```
+
+Remove the userinfo of every URL in a text, for display: each `scheme://` authority (up to the next
+`/`) loses everything up to its last `@` — `https://user:secret@host/p` becomes `https://host/p`,
+`redis://:secret@127.0.0.1:6379/0` becomes `redis://127.0.0.1:6379/0`, and prose with several URLs
+has each one cleaned. A text without `@` or `://` comes back unchanged. It is not a parser or a
+validator, and it errs on the safe side: an `@` after `?` or `#` but before the next `/` also cuts.
 
 ## Next references
 

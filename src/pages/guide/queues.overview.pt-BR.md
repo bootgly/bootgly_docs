@@ -205,6 +205,9 @@ arquivos e de rede. Como defesa em profundidade, os drivers desserializam os job
 object-injection), e o worker se recusa a instanciar um handler que não seja um `Queues\Handler`
 declarado.
 
+Um dump de debug da configuração de filas mascara a senha do Redis, e o comando `AUTH` nunca
+aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Referência
 
 - **Gerenciador** — `Bootgly\ACI\Queues`: `fetch(string $name = 'default'): Queue`. Guarda o

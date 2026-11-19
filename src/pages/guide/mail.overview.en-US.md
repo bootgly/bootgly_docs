@@ -217,6 +217,9 @@ With no credentials configured, no AUTH is attempted. With credentials over an
 **unencrypted** session (`'secure' => 'none'`), the client refuses locally — before any
 credential byte touches the wire — unless you explicitly opt in with `'insecure' => true`.
 
+A debug dump of the mail configuration masks the password and the token, and the `AUTH`
+exchange never appears as a stack-trace argument. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Handle failures and retries
 
 Everything the client throws implements `Bootgly\ACI\Mail\Exceptioning`, so one `catch`

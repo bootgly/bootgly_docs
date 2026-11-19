@@ -45,7 +45,7 @@ Same hardware, same date, reproducible scripts — read the methodology before q
 Honesty is part of the bet. Choosing to build everything first-party has real costs:
 
 - **Features take longer to ship** — building a native component is slower than wiring a third-party package, so the roadmap moves deliberately;
-- **Rolling support** — `1.0` is not a long-term-support line: fixes ship on the latest `1.x` minor only, so staying current is part of the deal (see [Versioning](/guide/versioning/overview/));
+- **Rolling support** — `1.0` is not a long-term-support line: fixes ship only as patch releases of the latest minor (with `1.3` current, in `1.3.x`), with no backports to older minors, so staying current is part of the deal (see [Versioning](/guide/versioning/overview/));
 - **Linux-native** — Windows and other systems are supported through Docker only;
 - **Young ecosystem** — there is no marketplace of community packages; what the core does not ship, you build;
 - **No code-level standards** — Bootgly does not implement PHP's shared code contracts (PSRs), so PSR-based middleware and packages do not plug in directly; it interoperates through the protocols themselves instead (see [Interoperability by Protocol](/manual/Bootgly/basic/architecture/overview/#interoperability-by-protocol)).

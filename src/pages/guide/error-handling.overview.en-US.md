@@ -34,8 +34,17 @@ With `BOOTGLY_ENVIRONMENT=development`, an exception that escapes a route handle
 request with status `500` and the built-in debug page: a frame sidebar (click a frame to
 inspect it), a ±8-line source excerpt with the failing line marked, bounded argument previews,
 the chained `getPrevious()` throwables, and a **Context** section with the sanitized request
-data (`authorization` and `cookie` header values are masked). The page is a single
-self-contained HTML document — inline CSS/JS, no external assets.
+data (the credential header values — `authorization`, `proxy-authorization`, `cookie`,
+`set-cookie`, `x-csrf-token`, `x-api-key`, `x-auth-token` — are masked). The page is a
+single self-contained HTML document — inline CSS/JS, no external assets.
+
+The argument previews show what PHP recorded for each frame, so a password passed down a call
+chain can surface there. PHP records arguments only while `zend.exception_ignore_args` is
+`Off` — its default without a `php.ini`, and the setting of `php.ini-development` and of the
+official `php` Docker images. The framework marks every parameter that carries one of its own
+credentials with `#[SensitiveParameter]`, and the page shows a `SensitiveParameterValue` in
+its place. Mark your own the same way, on every function the value passes through — see
+[Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
 
 API clients negotiate: when the request prefers `application/json` (via the `Accept` header),
 the same failure answers as JSON instead:

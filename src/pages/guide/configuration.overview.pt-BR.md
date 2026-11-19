@@ -306,6 +306,7 @@ O Bootgly endurece o carregamento de configs com várias regras:
 - Um `Schema` reporta de uma vez todas as chaves inválidas de um escopo, e o relatório nunca contém um valor configurado.
 - Um valor rejeitado por um cast e o default passado ao `bind()` são parâmetros sensíveis: nunca aparecem como argumentos em traces de exceção, mesmo com `zend.exception_ignore_args=0`.
 - Arquivos `.Config.php` são código PHP confiável e devem ser revisados como código-fonte.
+- Um dump de debug (`var_dump`, `print_r`, `Dumper`) de um loader ou de uma árvore de config mostra os escopos e os nomes, com todo valor do `.env` e todo valor ligado mascarado; `get()` continua lendo-os.
 
 > [!WARNING]
 > Nunca permita que usuário, tenant, upload ou formulário administrativo grave um arquivo `.Config.php`. Para configuração não confiável, use um formato declarativo como JSON, INI ou YAML e converta para `Config` a partir de código confiável da aplicação.

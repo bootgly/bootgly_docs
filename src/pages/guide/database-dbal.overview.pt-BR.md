@@ -302,6 +302,10 @@ próprio escopo pode lançar antes, enquanto carrega: um valor que um `cast:` n�
 interpretar (`DB_PORT=abc` lança `Invalid integer config value.`) ou uma chave
 `required: true` ausente (`Required config value is missing: DB_PASS`).
 
+Um dump de debug do `Database`, da sua config ou de uma conexão mascara a senha, a de uma
+réplica inclusive, e os construtores de config mantêm o array fora dos argumentos de stack
+traces. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Registrar para rotas HTTP
 
 Dentro de um arquivo `*.Project.php`, registre o Database Response Resource built-in ao instanciar

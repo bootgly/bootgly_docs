@@ -35,9 +35,18 @@ Com `BOOTGLY_ENVIRONMENT=development`, uma exceção que escapa de um handler de
 requisição com status `500` e a página de debug embutida: uma barra lateral de frames (clique
 em um frame para inspecioná-lo), um trecho de código-fonte de ±8 linhas com a linha da falha
 marcada, previews limitados dos argumentos, os throwables encadeados de `getPrevious()`, e uma
-seção de **Contexto** com os dados sanitizados da requisição (os valores dos headers
-`authorization` e `cookie` são mascarados). A página é um único documento HTML auto-contido —
+seção de **Contexto** com os dados sanitizados da requisição (os valores dos headers de
+credencial — `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-csrf-token`,
+`x-api-key`, `x-auth-token` — são mascarados). A página é um único documento HTML auto-contido —
 CSS/JS inline, sem assets externos.
+
+Os previews de argumentos mostram o que o PHP registrou para cada frame, então uma senha
+repassada por uma cadeia de chamadas pode aparecer ali. O PHP só registra argumentos enquanto
+`zend.exception_ignore_args` está `Off` — seu padrão sem `php.ini`, e o valor do
+`php.ini-development` e das imagens Docker oficiais do `php`. O framework marca com
+`#[SensitiveParameter]` todo parâmetro que carrega uma credencial dele, e a página mostra um
+`SensitiveParameterValue` no lugar. Marque os seus do mesmo jeito, em toda função por onde o
+valor passa — veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
 
 Clientes de API negociam: quando a requisição prefere `application/json` (via header
 `Accept`), a mesma falha responde como JSON:

@@ -306,6 +306,7 @@ Bootgly hardens config loading with several rules:
 - A `Schema` reports every invalid key of a scope at once, and its report never contains a configured value.
 - A value a cast rejects and the default passed to `bind()` are sensitive parameters: they never appear as arguments in exception traces, even with `zend.exception_ignore_args=0`.
 - `.Config.php` files are trusted PHP code and must be reviewed like source code.
+- A debug dump (`var_dump`, `print_r`, `Dumper`) of a loader or of a config tree shows the scopes and the names, with every `.env` value and every bound value masked; `get()` still reads them.
 
 > [!WARNING]
 > Never let a user, tenant, upload or admin form write a `.Config.php` file. For untrusted configuration, use a declarative format such as JSON, INI or YAML and convert it to `Config` from trusted application code.

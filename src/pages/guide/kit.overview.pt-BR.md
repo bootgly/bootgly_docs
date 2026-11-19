@@ -287,7 +287,30 @@ ele: `$VCS->Git` roda um comando git por processo filho, sem shell (`execute()`,
 `resolve()`, `describe()`, `inspect()`, `fetch()`, `checkout()`), `$VCS->Tags->list()` lê as tags
 em forma de versão da mais nova para a mais antiga com seus commits e `read()` as notas de uma tag
 anotada, `$VCS->Remotes` lista, encontra e adiciona remotes, `$VCS->Submodules` inspeciona e
-atualiza os submódulos que a árvore declara.
+atualiza os submódulos que a árvore declara. `$VCS->Remotes->list()` retorna a URL de cada remote
+raw, como configurada — credenciais incluídas: dados para verificar e conectar, nunca texto para
+exibir; exiba uma só através de `Remotes::redact()`.
+
+Para mostrar um remote, ou o que um comando git que falhou imprimiu, sem vazar um token:
+
+```php
+use Bootgly\ABI\Code\__String\Controls;
+use Bootgly\ABI\Data\URI;
+use Bootgly\ACI\VCS;
+use Bootgly\ACI\VCS\Remotes;
+
+$VCS = new VCS(__DIR__);
+
+foreach ($VCS->Remotes->list() as $name => $URL) {
+   echo "{$name}: " . Remotes::redact($URL) . "\n";
+}
+
+$status = $VCS->Git->fetch('origin');
+if ($status !== 0) {
+   // `output` é raw: descarta as credenciais de cada URL, escapa controles, mantém as quebras de linha
+   echo Controls::escape(URI::redact(mb_scrub($VCS->Git->output, 'UTF-8')), "\n");
+}
+```
 
 ```php
 Bootgly\ACI\VCS\Git->execute (array $arguments, null|Closure $Callback = null, array $variables = []): int
@@ -298,11 +321,15 @@ Roda um comando git na árvore de trabalho — um processo filho sem shell, mens
 processo não pôde iniciar). `$variables` são definidas no processo filho, por cima do ambiente de
 quem chama. `$Callback` recebe cada linha conforme ela chega, sem a quebra, como texto para exibir:
 um byte que não é UTF-8 vira `?`, um carriage return (o repaint de progresso do git) é descartado, e
-todo outro caractere de controle exceto o TAB vira um escape visível (`\u001b`), então a linha pode
-ir por `write()` a um terminal UTF-8 como está — o markup de Output dela não é neutralizado: passe-a
-por `Escaped::scrub()` antes de um `render()`. `$output` guarda os bytes raw (os últimos 64 KiB,
-`Git::TAIL`, quando um callback recebeu o stream), para parsing: exiba-o só através de
-`Controls::escape(mb_scrub($Git->output, 'UTF-8'))`. Desde a 1.0.12 para o contrato do callback.
+todo outro caractere de controle exceto o TAB vira um escape visível (`\u001b`), e o userinfo de
+cada URL nela é removido (`URI::redact()`) — a URL de um remote que o git repete numa mensagem
+(`fatal: could not read Password for 'https://<token>@host'`) chega ao callback sem as credenciais; só
+uma URL que uma linha maior que `Git::TAIL` divide em dois pedaços mantém as metades como estão.
+Então a linha pode ir por `write()` a um terminal UTF-8 como está — o markup de Output dela não é
+neutralizado: passe-a por `Escaped::scrub()` antes de um `render()`. `$output` guarda os bytes raw
+(os últimos 64 KiB, `Git::TAIL`, quando um callback recebeu o stream), credenciais incluídas, para
+parsing: exiba-o só através de `Controls::escape(URI::redact(mb_scrub($Git->output, 'UTF-8')))`.
+Desde a 1.0.12 para o contrato do callback.
 
 ```php
 Bootgly\ACI\VCS\Git->transfer (array $arguments, null|Closure $Callback = null): int
@@ -334,8 +361,21 @@ admitida, ou o motivo da recusa — `Malformed`, `Helper`, `Plaintext`, `Unsuppo
 Bootgly\ACI\VCS\Remotes::redact (string $URL): string
 ```
 
-A URL para exibição, sem as credenciais: qualquer userinfo de uma URL `esquema://` é descartado,
-exceto um login SSH sem senha; endereços no estilo scp e caminhos voltam inalterados.
+A URL para exibição, sem as credenciais: o userinfo de uma URL `esquema://` é descartado por
+`URI::redact()` (um nome sozinho pode ser um token), exceto um login SSH sem senha
+(`ssh://git@host/…` mantém o `git@`); um endereço no estilo scp `user:password@host:path` perde o
+`user:password@`; outros endereços no estilo scp (`git@host:path`) e caminhos voltam inalterados.
+Só para exibição — não diz nada sobre qual host é discado: faça o `screen()` da URL antes.
+
+```php
+Bootgly\ABI\Data\URI::redact (string $text): string
+```
+
+Remove o userinfo de cada URL de um texto, para exibição: cada autoridade `esquema://` (até a
+próxima `/`) perde tudo até o seu último `@` — `https://user:secret@host/p` vira `https://host/p`,
+`redis://:secret@127.0.0.1:6379/0` vira `redis://127.0.0.1:6379/0`, e um texto com várias URLs tem
+cada uma limpa. Um texto sem `@` ou sem `://` volta inalterado. Não é um parser nem um validador, e
+erra para o lado seguro: um `@` depois de `?` ou `#` mas antes da próxima `/` também corta.
 
 ## Próximas referências
 

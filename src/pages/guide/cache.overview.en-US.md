@@ -328,6 +328,9 @@ reads cost about 9-13 % more.
 > neighbors should still prefer `file` or `redis` — and so should any host where code you do
 > not trust runs as the same user, since that user can write both stores.
 
+A debug dump of the cache, of its config or of the Redis driver masks the Redis password, and
+the `AUTH` command never appears as a stack-trace argument. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Reference
 
 - **Contract** — `Cache\Driver` (abstract): `fetch`, `store`, `delete`, `clear`, `check`,

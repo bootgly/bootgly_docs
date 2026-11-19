@@ -221,6 +221,9 @@ Sem credenciais configuradas, nenhum AUTH é tentado. Com credenciais sobre uma 
 qualquer byte de credencial tocar o fio — a menos que você opte explicitamente com
 `'insecure' => true`.
 
+Um dump de debug da configuração de mail mascara a senha e o token, e a troca `AUTH` nunca
+aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+
 ## Trate falhas e retries
 
 Tudo que o cliente lança implementa `Bootgly\ACI\Mail\Exceptioning`, então um único `catch`

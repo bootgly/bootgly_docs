@@ -70,6 +70,61 @@ Two deliberate differences from the RFC 3986 §5.4 examples: an opaque or author
 (`g:h`, `http:g`) is refused instead of returned, and fragments are dropped, since they never
 travel in a request.
 
+## Redact credentials
+
+A URL can carry a password or a token in its userinfo (`user:password@`). Before a URL — or any
+text that may hold one: a log line, an error message, a report — is shown, written to a log or
+printed in a report, pass it through `URI::redact()`. It drops the userinfo and keeps everything
+else:
+
+```php
+use Bootgly\ABI\Data\URI;
+
+URI::redact('https://user:SYNTH-TOKEN@api.example.com/v1/orders');
+// 'https://api.example.com/v1/orders'
+
+URI::redact('redis://:SYNTH-PASSWORD@127.0.0.1:6379/0');
+// 'redis://127.0.0.1:6379/0'
+```
+
+The input does not have to be a URI. Every URL in the text is covered, wherever it sits, and the
+rest of the text is kept as is:
+
+```php
+URI::redact('see https://a@h1 and https://b@h2/x');
+// 'see https://h1 and https://h2/x'
+
+URI::redact("fatal: could not read Password for 'https://SYNTH-TOKEN@git.example.com'");
+// "fatal: could not read Password for 'https://git.example.com'"
+```
+
+How it reads the text:
+
+- Each `://` opens an authority that runs to the next `/`; everything up to the **last** `@` in it is
+  dropped, so a password that contains `@` goes whole (`https://u:p@ss@example.com/x` →
+  `https://example.com/x`).
+- Extra slashes after `://` are skipped (`https:///user:SYNTH@host/p` → `https:///host/p`), except in
+  a `file:` URL, where the part after its second slash is a path and is never touched
+  (`file:///home/shop/user@example.com/data.txt` stays as it is).
+- A text with no `@` or no `://` comes back unchanged — an scp-like `git@example.com:shop/app.git`
+  has no `://`, so it is not a URL this method sees.
+- No regular expression runs: a malformed or hostile text costs one linear pass and can never come
+  back unredacted because a pattern gave up.
+
+It errs on the safe side. An `@` after a `?` or a `#` but before the next `/` still cuts, and so does
+a later `@` on the same line when no `/` comes in between — the text in between goes with it:
+
+```php
+URI::redact('https://h/?a@b');      // 'https://h/?a@b' — the `/` ended the authority
+URI::redact('https://h?x@y/z');     // 'https://y/z'
+URI::redact('Pulled from https://git.example.com, mail ops@example.com');
+// 'Pulled from https://example.com'
+```
+
+The result is for display only: it is not a parser or a validator. Never parse it, store it as
+configuration or connect with it — keep the original URL for that, and `parse()` it. The framework's
+git remote listings and output, and the benchmark run manifests, show URLs through this method.
+
 ## Reference
 
 ```php
@@ -84,6 +139,15 @@ public static function parse (string $URI): null|self
 ```
 
 Parses one absolute hierarchical URI with a host, or answers `null` — the form for untrusted input.
+
+```php
+public static function redact (string $text): string
+```
+
+Removes the userinfo of every URL in a text, for display: for each `://`, everything up to the last
+`@` before the next `/` is dropped (in a `file:` URL, the part after its second slash is a path and
+is kept). Lexical and linear, with no regular expression; the text comes back unchanged when it has
+no `@` or no `://`. It neither validates nor dials anything — never parse or connect with the result.
 
 ```php
 public function resolve (string $reference): null|self

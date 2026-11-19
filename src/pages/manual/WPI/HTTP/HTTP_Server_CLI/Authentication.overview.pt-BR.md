@@ -140,6 +140,7 @@ Guards de autenticação expõem metadados por propriedades declaradas em `Reque
 - Callbacks de resolver devem comparar segredos com `hash_equals()` ao verificar passwords, tokens de API ou segredos compartilhados.
 - Coloque proteção CSRF antes de rotas autenticadas de browser que alteram estado; rotas de token/API que não usam cookies podem ser isentas pela política da rota.
 - JWT é transportado como token Bearer e compartilha o hook `$Request->token` com credenciais Bearer opacas.
+- Um resolver recebe a própria credencial: marque esse parâmetro com `#[SensitiveParameter]` (`use SensitiveParameter;`), como em `function (#[SensitiveParameter] string $token, Request $Request): bool`, para que um stack trace lançado dentro dele — e a página de debug de desenvolvimento — não mostre o token. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
 
 ## Guard Bearer token
 
