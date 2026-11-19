@@ -6,17 +6,16 @@ Esta página explica os problemas que o Bootgly existe para resolver, como o seu
 
 ## O problema
 
-Deixar o PHP rápido e sustentável hoje normalmente custa em três frentes:
+Deixar o PHP rápido e sustentável hoje normalmente custa em quatro frentes:
 
-1. **Infra inchada** — para ter performance, times empilham Nginx na frente, PHP-FPM atrás, supervisores em volta e extensões em C (Swoole, event loops) por baixo. Cada peça extra é mais uma coisa para configurar, monitorar, atualizar e adaptar — e pagar;
+1. **Adaptadores externos demais** — para ter performance, times empilham Nginx na frente, PHP-FPM atrás, supervisores em volta e extensões em C (Swoole, event loops) por baixo. Cada peça extra é mais uma coisa para configurar, monitorar, atualizar e adaptar — e pagar;
 2. **Superfície de supply chain** — uma aplicação típica coloca centenas de pacotes do `vendor/` em produção. Cada um tem autor, estilo, cadência de release e vulnerabilidades próprias para acompanhar. O tempo de reação a patches fica limitado pelo terceiro mais lento;
-3. **Jeitos demais de fazer tudo** — servidores, ORMs, template engines e stacks de teste concorrentes fazem cada projeto começar com uma rodada de decisões de encanamento, cada onboarding começar do zero, e o código gerado por IA chutar entre padrões.
-
-Os dois primeiros custos ainda se somam em mais dois problemas. Cada peça externa da qual a stack depende é uma fronteira à qual o framework precisa se adaptar, então **a evolução fica mais lenta** — cada melhoria ou recurso novo espera o que essas peças permitem — e **a performance bate num teto**, porque toda requisição atravessa essas camadas de adaptação, e é aí que se formam os grandes gargalos.
+3. **Flexibilidade demais no Code API (mais de um caminho canônico)** — servidores, ORMs, template engines e stacks de teste concorrentes fazem cada projeto começar com uma rodada de decisões de encanamento, cada onboarding começar do zero, e o código gerado por IA chutar entre padrões;
+4. **Teto de evolução e de performance** — derivado dos dois primeiros: cada peça externa da qual a stack depende é uma fronteira à qual o framework precisa se adaptar, então cada melhoria ou recurso novo espera o que essas peças permitem, e toda requisição atravessa essas camadas de adaptação — é aí que se formam os grandes gargalos de performance.
 
 ## A resposta do Bootgly
 
-O Bootgly ataca os três custos diretamente, com três decisões deliberadas de design:
+O Bootgly ataca esses custos diretamente, com três decisões deliberadas de design:
 
 **Um único caminho canônico.** Existe exatamente uma forma de fazer cada coisa — um servidor HTTP, um schema de configuração, um autoloader, um framework de testes, um template engine. Quando você pergunta "como faço X no Bootgly?", há uma resposta. O onboarding acelera, os reviews aceleram, e o desenvolvimento assistido por IA fica preciso, porque não há ambiguidade sobre qual ferramenta ou padrão usar. A mesma regra faz o Bootgly ser **Linux nativo**: adaptá-lo por completo a outros sistemas significaria um segundo jeito de fazer coisas centrais. O Windows não tem as extensões nativas do PHP para processos (`pcntl`, `posix`), e o volume padrão do macOS não diferencia maiúsculas de minúsculas, então a pasta da plataforma `Bootgly/` e o launcher `bootgly` não convivem lado a lado. Use WSL2 ou Docker no Windows, e um volume case-sensitive no macOS (para desenvolvimento).
 

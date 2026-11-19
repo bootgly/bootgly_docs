@@ -6,17 +6,16 @@ This page explains the problems Bootgly exists to solve, how its design answers 
 
 ## The problem
 
-Making PHP fast and maintainable today usually costs you on three fronts:
+Making PHP fast and maintainable today usually costs you on four fronts:
 
-1. **Infrastructure sprawl** — to get performance, teams stack Nginx in front, PHP-FPM behind it, supervisors around it and C extensions (Swoole, event loops) underneath. Every extra piece is one more thing to configure, monitor, upgrade and adapt to — and pay for;
+1. **Too many external adapters** — to get performance, teams stack Nginx in front, PHP-FPM behind it, supervisors around it and C extensions (Swoole, event loops) underneath. Every extra piece is one more thing to configure, monitor, upgrade and adapt to — and pay for;
 2. **Supply-chain surface** — a typical application ships hundreds of `vendor/` packages to production. Each one has its own author, style, release cadence and vulnerabilities to track. Patch reaction time is bounded by the slowest third party;
-3. **Too many ways to do everything** — competing servers, ORMs, template engines and test stacks mean every project starts with a round of plumbing decisions, every onboarding starts from zero, and AI-generated code guesses among patterns.
-
-The first two costs compound into two more. Every external piece the stack depends on is a boundary the framework has to adapt to, so **evolution slows down** — each improvement or new feature waits on what those pieces allow — and **performance hits a ceiling**, because every request crosses those adaptation layers, and that is where the big bottlenecks form.
+3. **Too much flexibility in the code API (more than one canonical way)** — competing servers, ORMs, template engines and test stacks mean every project starts with a round of plumbing decisions, every onboarding starts from zero, and AI-generated code guesses among patterns;
+4. **An evolution and performance ceiling** — derived from the first two: every external piece the stack depends on is a boundary the framework has to adapt to, so each improvement or new feature waits on what those pieces allow, and every request crosses those adaptation layers — that is where the big performance bottlenecks form.
 
 ## The Bootgly answer
 
-Bootgly attacks the three costs directly, with three deliberate design decisions:
+Bootgly attacks these costs directly, with three deliberate design decisions:
 
 **One canonical way.** There is exactly one way to do each thing — one HTTP server, one config schema, one autoloader, one test framework, one template engine. When you ask "how do I do X in Bootgly?", there is one answer. Onboarding gets faster, reviews get faster, and AI-assisted development gets precise, because there is no ambiguity about which tool or pattern to use. The same rule makes Bootgly **Linux-native**: fully adapting it to other systems would mean a second way of doing core things. Windows lacks PHP's built-in process extensions (`pcntl`, `posix`), and the default macOS volume ignores case, so the `Bootgly/` platform folder and the `bootgly` launcher cannot sit side by side. Use WSL2 or Docker on Windows, and a case-sensitive volume on macOS (for development).
 
