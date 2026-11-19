@@ -162,42 +162,154 @@ php bootgly setup --uninstall
 
 ## Anatomia de um projeto
 
-No Bootgly, **Projetos** inicializam seus apps e servidores. Cada projeto é uma pasta dentro de `projects/` com um arquivo `<Leaf>.Project.php` na raiz — esse arquivo é a **assinatura de projeto Bootgly** — retornando uma instância configurada de `Project`:
+No Bootgly, **Projetos** inicializam seus apps e servidores. Cada projeto é uma pasta dentro de `projects/` com um arquivo `<Leaf>.Project.php` na raiz — esse arquivo é a **assinatura de projeto Bootgly**. Um projeto `WPI` (HTTP) gerado pelo wizard fica assim:
+
+```text
+projects/MyApp/
+├── MyApp.Project.php                 ← a assinatura: inicializa e configura o servidor
+├── router/
+│   ├── router.index.php              ← quais conjuntos de rotas estão ativos
+│   └── routes/
+│       └── Welcome.routes.php        ← um conjunto de rotas
+└── configs/
+    └── database/
+        └── database.Config.php       ← o escopo `database` (opcional)
+```
+
+### A assinatura
+
+A assinatura retorna um `Project` configurado. A função `boot` dele cria o servidor, configura, carrega as rotas e o inicia:
 
 ```php
-use Bootgly\API\Projects\Project;
+use const Bootgly\CLI;
 use Bootgly\API\Endpoints\Server\Modes;
+use Bootgly\API\Projects\Project;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Events;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request\Configs as RequestConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\Database;
+
 
 return new Project(
    name: 'MyApp',
    exportable: true,
    boot: function (array $arguments = [], array $options = []): void
    {
-      $Server = new HTTP_Server_CLI(Mode: Modes::Daemon);
+      // @ `-f` roda em foreground, `-i` interativo, `-m` com o monitor de logs
+      $Server = new HTTP_Server_CLI(Mode: match (true) {
+         isSet($options['f']) => Modes::Foreground,
+         isSet($options['i']) => Modes::Interactive,
+         isSet($options['m']) => Modes::Monitor,
+         default => Modes::Daemon
+      });
+
+      // @ Um objeto Configs por assunto — passe só os que você precisa
       $Server->configure(
-         new Configs(
+         // # Transporte: endereço, workers, TLS, limites de conexão...
+         new ServerConfigs(
             host: '0.0.0.0',
             port: 8080,
             workers: 2
+         ),
+         // # Limites da requisição: corpo, uploads, campos de header...
+         new RequestConfigs(
+            maxBodySize: 10 * 1024 * 1024
+         ),
+         // # Resources da resposta: serviços lazy acessíveis como `$Response-><Nome>`
+         new ResponseConfigs(
+            Resources: [
+               'Database' => Database::provide(__DIR__ . '/configs/'),
+            ]
          )
       );
+
       $Server
-         ->on(Events::RequestReceived, fn ($Request, $Response) => $Response(body: 'Hello, World!'))
+         // # Rotas — carregadas de router/router.index.php
+         ->on(Events::RequestReceived, HTTP_Server_CLI::$Router->load(__DIR__ . '/router'))
+         // # Banner de inicialização — disparado no processo que possui o terminal
+         //   (no modo Daemon, o launcher). `advertise()` imprime o endpoint vinculado.
          ->on(Events::ServerAdvertised, function ($Server) {
-            // Banner de inicialização — disparado no processo que possui o
-            //   terminal (no modo Daemon, o launcher). `advertise()` imprime
-            //   o endpoint vinculado.
+            CLI->Terminal->Output->render('@.;@#green:✓ MyApp started@;@.;');
             $Server->advertise();
          });
+
       $Server->start();
    }
 );
 ```
 
-Esse é o formato do que o wizard gera para um projeto `WPI` (mais um `router/` com uma rota de boas-vindas). Apenas caminhos de projeto registrados em `projects/Bootgly.projects.php` podem ser iniciados — o wizard registra por você.
+O `configure()` recebe **objetos Configs tipados**, um por assunto, e valida o conjunto inteiro antes de aplicar qualquer parte:
+
+| Configs | Configura |
+|---|---|
+| `HTTP_Server_CLI\Configs` | Endereço, porta, workers, `secure`/`AutoTLS` (veja [Habilitando HTTPS](#habilitando-https-ssl-tls)), troca de privilégios (`user`/`group`), HTTP/2, o probe `/health`, limites de conexão e reciclagem de workers |
+| `Request\Configs` | Limites da requisição: `maxBodySize`, `maxFileSize`, `maxHeaderFields` e os limites de multipart |
+| `Response\Configs` | `Resources` (serviços expostos na Response) e `deferredTimeout` |
+
+Os três aceitam apenas named arguments. Deixe de fora os que você não precisa — toda opção tem um default. A lista completa de opções está no manual do [HTTP Server CLI](/manual/WPI/HTTP/HTTP_Server_CLI).
+
+### Rotas
+
+`HTTP_Server_CLI::$Router->load(__DIR__ . '/router')` lê o `router/router.index.php`, um manifesto dos conjuntos de rotas a ativar:
+
+```php
+// router/router.index.php
+return [
+   'Welcome',
+   'Posts',
+];
+```
+
+Cada nome resolve para `router/routes/<Nome>.routes.php` — uma closure que faz `yield` das suas rotas. Vários conjuntos são compostos em um único handler de requisições, na ordem do manifesto:
+
+```php
+// router/routes/Posts.routes.php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router;
+
+
+return static function (Request $Request, Response $Response, Router $Router): Generator
+{
+   yield $Router->route('/posts', function (Request $Request, Response $Response) {
+      // @ O I/O de banco roda adiado — o worker segue atendendo outras requisições enquanto isso
+      return $Response->defer(function (Response $Response): void {
+         $Result = $Response->Database->fetch('SELECT id, title FROM posts');
+
+         $Response->JSON->send($Result->rows);
+      });
+   }, GET);
+};
+```
+
+Para adicionar um conjunto de rotas, crie o arquivo dele e liste o nome no manifesto. Parâmetros, grupos, métodos e middlewares estão no manual do [Router](/manual/WPI/HTTP/HTTP_Server_CLI/Router).
+
+### O banco de dados
+
+`$Response->Database` existe porque a assinatura o registrou no `Response\Configs`. O `Database::provide()` lê o escopo `database` de `configs/database/database.Config.php` e abre a conexão de forma lazy, no primeiro `$Response->Database` de cada worker. Um escopo SQLite não precisa de servidor:
+
+```php
+// configs/database/database.Config.php
+use Bootgly\API\Environment\Configs\Config;
+use Bootgly\API\Environment\Configs\Config\Types;
+
+
+return new Config(scope: 'database')
+   ->Enabled->bind(key: 'DB_ENABLED', default: true, cast: Types::Boolean)
+   ->Default->bind(key: '', default: 'sqlite')
+   ->Connections
+      ->SQLite
+         ->Driver->bind(key: '', default: 'sqlite')
+         ->Database->bind(key: 'DB_NAME', default: __DIR__ . '/../../database/app.sqlite')
+         ->up()
+      ->up();
+```
+
+Cada `bind()` lê a sua `key` do ambiente (ou do `.env` do projeto) e cai no `default`. PostgreSQL e MySQL, pools e réplicas de leitura estão no guia [Database DBAL](/guide/database-dbal); escopos de config em geral, em [Configuração](/guide/configuration).
+
+O wizard gera a assinatura e um conjunto de rotas `Welcome`; o escopo de banco você adiciona. Apenas caminhos de projeto registrados em `projects/Bootgly.projects.php` podem ser iniciados — o wizard os registra para você.
 
 ## Namespaces de projeto
 
