@@ -221,7 +221,7 @@ $Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta
 A disk's `root` acts as a key prefix.
 
 A debug dump of a disk shows where it points, never its `secret` or its session `token`, and
-the disk options stay out of stack-trace arguments. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+the disk options stay out of stack-trace arguments. See [Redaction](/manual/Bootgly/essential/debugging/overview/#redaction).
 
 #### Direct transfers
 

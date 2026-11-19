@@ -272,8 +272,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Inspect errors, backtraces and runtime state with Bootgly debugging and diagnostics foundations.',
-          'pt-BR': 'Inspecione erros, backtraces e estado de runtime com a base de debugging e diagnóstico do Bootgly.'
+          'en-US': 'Dump values, read backtraces and keep secrets out of dumps and stack traces with the Bootgly debugging layer.',
+          'pt-BR': 'Faça dump de valores, leia backtraces e mantenha segredos fora de dumps e stack traces com a camada de debugging do Bootgly.'
         }
       },
       menu: {
@@ -289,51 +289,6 @@ export default {
       },
       'pt-BR': {
         title: 'Debugando'
-      }
-    }
-  },
-  '/Bootgly/essential/debugging/backtrace': {
-    config: {
-      icon: 'format_list_numbered',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Capture the call stack as typed frames and render project-relative file:line traces.',
-          'pt-BR': 'Capture a call stack como frames tipados e renderize traces file:line relativos ao projeto.'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      '*': {
-        title: 'Backtrace'
-      }
-    }
-  },
-  '/Bootgly/essential/debugging/redaction': {
-    config: {
-      icon: 'visibility_off',
-      status: 'done',
-      meta: {
-        description: {
-          'en-US': 'Keep passwords, keys and tokens out of debug dumps and stack traces with Redactable, #[Secret] and #[SensitiveParameter].',
-          'pt-BR': 'Mantenha senhas, chaves e tokens fora de dumps de debug e stack traces com Redactable, #[Secret] e #[SensitiveParameter].'
-        }
-      },
-      menu: {},
-      subpages: {
-        showcase: false
-      }
-    },
-    data: {
-      'en-US': {
-        title: 'Redaction'
-      },
-      'pt-BR': {
-        title: 'Redação'
       }
     }
   },

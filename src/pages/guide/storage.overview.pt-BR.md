@@ -228,7 +228,7 @@ $Storage->open('cdn')->write('report.csv', $source, ['type' => 'text/csv', 'meta
 O `root` de um disk funciona como prefixo de chave.
 
 Um dump de debug de um disk mostra para onde ele aponta, nunca o seu `secret` nem o `token`
-de sessão, e as opções do disk ficam fora dos argumentos de stack traces. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+de sessão, e as opções do disk ficam fora dos argumentos de stack traces. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 #### Transferências diretas
 

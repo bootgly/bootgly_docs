@@ -44,7 +44,7 @@ chain can surface there. PHP records arguments only while `zend.exception_ignore
 official `php` Docker images. The framework marks every parameter that carries one of its own
 credentials with `#[SensitiveParameter]`, and the page shows a `SensitiveParameterValue` in
 its place. Mark your own the same way, on every function the value passes through — see
-[Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+[Redaction](/manual/Bootgly/essential/debugging/overview/#redaction).
 
 API clients negotiate: when the request prefers `application/json` (via the `Accept` header),
 the same failure answers as JSON instead:

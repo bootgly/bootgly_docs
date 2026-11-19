@@ -339,7 +339,7 @@ mais.
 > consegue gravar nos dois stores.
 
 Um dump de debug do cache, da sua config ou do driver Redis mascara a senha do Redis, e o
-comando `AUTH` nunca aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+comando `AUTH` nunca aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 ## Referência
 

@@ -222,7 +222,7 @@ qualquer byte de credencial tocar o fio — a menos que você opte explicitament
 `'insecure' => true`.
 
 Um dump de debug da configuração de mail mascara a senha e o token, e a troca `AUTH` nunca
-aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 ## Trate falhas e retries
 

@@ -341,7 +341,7 @@ $Request->identity; // Bootgly\API\Security\Identity|string|null
 $Request->claims; // ['sub' => 'user-1', 'scope' => 'demo:read']
 ```
 
-> Um dump de debug da requisição (`var_dump`, `print_r`, `Dumper`) mascara o password Basic, o token Bearer, os campos de header de credencial, o bloco raw de headers e os cookies. Ler `$Request->password`, `$Request->token` ou um header continua retornando o valor real. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+> Um dump de debug da requisição (`var_dump`, `print_r`, `Dumper`) mascara o password Basic, o token Bearer, os campos de header de credencial, o bloco raw de headers e os cookies. Ler `$Request->password`, `$Request->token` ou um header continua retornando o valor real. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 Veja [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) para exemplos com guards Basic, Bearer, JWT e Session.
 

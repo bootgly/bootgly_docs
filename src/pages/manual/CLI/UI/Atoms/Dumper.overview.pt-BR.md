@@ -69,7 +69,7 @@ O walk é livre de efeitos colaterais por design: propriedades com hooks mostram
 
 Quando o objeto define `__debugInfo()`, o corpo dele substitui o walk, como no `var_dump`:
 
-- Um corpo indexado pelos nomes das próprias propriedades do objeto — como o trait [`Redactable`](/manual/Bootgly/essential/debugging/redaction/overview/) o retorna, com seus segredos mascarados — renderiza como o walk: os mesmos sigilos, marcas `readonly` e notas da classe declarante, com os valores do corpo, mais as linhas sem valor `virtual` e `uninitialized`. Uma propriedade inicializada que o corpo deixa de fora continua oculta.
+- Um corpo indexado pelos nomes das próprias propriedades do objeto — como o trait [`Redactable`](/manual/Bootgly/essential/debugging/overview/#redação) o retorna, com seus segredos mascarados — renderiza como o walk: os mesmos sigilos, marcas `readonly` e notas da classe declarante, com os valores do corpo, mais as linhas sem valor `virtual` e `uninitialized`. Uma propriedade inicializada que o corpo deixa de fora continua oculta.
 - Qualquer outra chave renderiza entre aspas, como uma entrada de array.
 - Um corpo `null` (ou qualquer coisa que não seja array) renderiza como um objeto vazio, como o `var_dump` o mostra — nunca lança.
 
@@ -102,7 +102,7 @@ Money {
 Handle {}
 ```
 
-O Dumper não mascara nada sozinho: uma senha ou um token fica fora de um dump só quando o `__debugInfo()` do objeto o deixa de fora. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/) para marcar as propriedades que guardam segredos.
+O Dumper não mascara nada sozinho: uma senha ou um token fica fora de um dump só quando o `__debugInfo()` do objeto o deixa de fora. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação) para marcar as propriedades que guardam segredos.
 
 ## Caps
 

@@ -206,7 +206,7 @@ object-injection), e o worker se recusa a instanciar um handler que não seja um
 declarado.
 
 Um dump de debug da configuração de filas mascara a senha do Redis, e o comando `AUTH` nunca
-aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+aparece como argumento de stack trace. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 ## Referência
 

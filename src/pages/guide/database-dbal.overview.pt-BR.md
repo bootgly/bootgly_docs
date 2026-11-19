@@ -304,7 +304,7 @@ interpretar (`DB_PORT=abc` lança `Invalid integer config value.`) ou uma chave
 
 Um dump de debug do `Database`, da sua config ou de uma conexão mascara a senha, a de uma
 réplica inclusive, e os construtores de config mantêm o array fora dos argumentos de stack
-traces. Veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+traces. Veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 ## Registrar para rotas HTTP
 

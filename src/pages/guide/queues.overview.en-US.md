@@ -201,7 +201,7 @@ restricted to `Job` (so a tampered payload can never trigger an object-injection
 worker refuses to instantiate a handler that is not a declared `Queues\Handler`.
 
 A debug dump of the queue configuration masks the Redis password, and the `AUTH` command
-never appears as a stack-trace argument. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+never appears as a stack-trace argument. See [Redaction](/manual/Bootgly/essential/debugging/overview/#redaction).
 
 ## Reference
 

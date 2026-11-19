@@ -218,7 +218,7 @@ With no credentials configured, no AUTH is attempted. With credentials over an
 credential byte touches the wire — unless you explicitly opt in with `'insecure' => true`.
 
 A debug dump of the mail configuration masks the password and the token, and the `AUTH`
-exchange never appears as a stack-trace argument. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+exchange never appears as a stack-trace argument. See [Redaction](/manual/Bootgly/essential/debugging/overview/#redaction).
 
 ## Handle failures and retries
 

@@ -69,7 +69,7 @@ The walk is side-effect free by design: hooked properties show their **raw backi
 
 When the object defines `__debugInfo()`, its body replaces the walk, as in `var_dump`:
 
-- A body keyed by the object's own property names — as the [`Redactable`](/manual/Bootgly/essential/debugging/redaction/overview/) trait returns it, with its secrets masked — renders like the walk: the same sigils, `readonly` marks and declaring-class notes, with the body's values, plus the value-less `virtual` and `uninitialized` rows. An initialized property the body leaves out stays hidden.
+- A body keyed by the object's own property names — as the [`Redactable`](/manual/Bootgly/essential/debugging/overview/#redaction) trait returns it, with its secrets masked — renders like the walk: the same sigils, `readonly` marks and declaring-class notes, with the body's values, plus the value-less `virtual` and `uninitialized` rows. An initialized property the body leaves out stays hidden.
 - Any other key renders quoted, like an array entry.
 - A body that is `null` (or anything but an array) renders as an empty object, as `var_dump` shows it — it never throws.
 
@@ -102,7 +102,7 @@ Money {
 Handle {}
 ```
 
-The Dumper masks nothing by itself: a password or a token stays out of a dump only when the object's `__debugInfo()` leaves it out. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/) to mark the properties that store secrets.
+The Dumper masks nothing by itself: a password or a token stays out of a dump only when the object's `__debugInfo()` leaves it out. See [Redaction](/manual/Bootgly/essential/debugging/overview/#redaction) to mark the properties that store secrets.
 
 ## Caps
 

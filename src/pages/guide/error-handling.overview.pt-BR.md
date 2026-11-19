@@ -46,7 +46,7 @@ repassada por uma cadeia de chamadas pode aparecer ali. O PHP só registra argum
 `php.ini-development` e das imagens Docker oficiais do `php`. O framework marca com
 `#[SensitiveParameter]` todo parâmetro que carrega uma credencial dele, e a página mostra um
 `SensitiveParameterValue` no lugar. Marque os seus do mesmo jeito, em toda função por onde o
-valor passa — veja [Redação](/manual/Bootgly/essential/debugging/redaction/overview/).
+valor passa — veja [Redação](/manual/Bootgly/essential/debugging/overview/#redação).
 
 Clientes de API negociam: quando a requisição prefere `application/json` (via header
 `Accept`), a mesma falha responde como JSON:

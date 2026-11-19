@@ -300,7 +300,7 @@ can throw earlier, while it loads: a value a `cast:` cannot parse (`DB_PORT=abc`
 
 A debug dump of the `Database`, of its config or of a connection masks the password, a
 replica's included, and the config constructors keep their array out of stack-trace
-arguments. See [Redaction](/manual/Bootgly/essential/debugging/redaction/overview/).
+arguments. See [Redaction](/manual/Bootgly/essential/debugging/overview/#redaction).
 
 ## Register it for HTTP routes
 
