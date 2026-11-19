@@ -10,7 +10,7 @@ Deixar o PHP rápido e sustentável hoje normalmente custa em quatro frentes:
 
 1. **Adaptadores externos demais** — para ter performance, times empilham Nginx na frente, PHP-FPM atrás, supervisores em volta e extensões em C (Swoole, event loops) por baixo. Cada peça extra é mais uma coisa para configurar, monitorar, atualizar e adaptar — e pagar;
 2. **Superfície de supply chain** — uma aplicação típica coloca centenas de pacotes do `vendor/` em produção. Cada um tem autor, estilo, cadência de release e vulnerabilidades próprias para acompanhar. O tempo de reação a patches fica limitado pelo terceiro mais lento;
-3. **Flexibilidade demais no Code API (mais de um caminho canônico)** — servidores, ORMs, template engines e stacks de teste concorrentes fazem cada projeto começar com uma rodada de decisões de encanamento, cada onboarding começar do zero, e o código gerado por IA chutar entre padrões;
+3. **Flexibilidade demais no Code API (mais de um caminho canônico)** — servidores, ORMs, template engines e stacks de teste concorrentes fazem cada projeto começar com uma rodada de escolhas de ferramentas, cada onboarding começar do zero, e o código gerado por IA chutar entre padrões;
 4. **Teto de evolução e de performance** — derivado dos dois primeiros: cada peça externa da qual a stack depende é uma fronteira à qual o framework precisa se adaptar, então cada melhoria ou recurso novo espera o que essas peças permitem, e toda requisição atravessa essas camadas de adaptação — é aí que se formam os grandes gargalos de performance.
 
 ## A resposta do Bootgly
