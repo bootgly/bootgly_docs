@@ -224,7 +224,8 @@ The framework's own classes that store secrets use the trait, so a dump of them 
 - the database, cache, queue, mail and storage configurations (passwords, tokens, a disk's `secret`), and the TLS passphrases of servers and clients;
 - the environment configs: the `.env` values a loader holds and every value bound in a config tree;
 - JWT secrets and keys, refresh and remember tokens, and the encryption key material;
-- the credential header fields of requests and responses — on the server, the HTTP client and the WebSocket client — with the raw header blocks, the cookies, the `Set-Cookie` lines, the Basic password, the Bearer token and the session id.
+- the credential header fields of requests and responses — on the server, the HTTP client and the WebSocket client — with the raw header blocks, the cookies, the `Set-Cookie` lines, the Basic password, the Bearer token and the session id;
+- the wire buffers of a TCP server or client connection: what it read, what it is writing and what it holds back for the next read or write.
 
 The credential header fields are the names in `HTTP::SECRET_HEADERS`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-csrf-token`, `x-api-key` and `x-auth-token`. A credential under another header name is yours to mask. Request and response bodies, session data and log contexts hold application data and are not masked: keep a secret out of them, or out of their dump.
 

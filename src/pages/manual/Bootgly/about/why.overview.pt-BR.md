@@ -8,9 +8,11 @@ Esta página explica os problemas que o Bootgly existe para resolver, como o seu
 
 Deixar o PHP rápido e sustentável hoje normalmente custa em três frentes:
 
-1. **Infra inchada** — para ter performance, times empilham Nginx na frente, PHP-FPM atrás, supervisores em volta e extensões em C (Swoole, event loops) por baixo. Cada peça extra é mais uma coisa para configurar, monitorar, atualizar — e pagar;
+1. **Infra inchada** — para ter performance, times empilham Nginx na frente, PHP-FPM atrás, supervisores em volta e extensões em C (Swoole, event loops) por baixo. Cada peça extra é mais uma coisa para configurar, monitorar, atualizar e adaptar — e pagar;
 2. **Superfície de supply chain** — uma aplicação típica coloca centenas de pacotes do `vendor/` em produção. Cada um tem autor, estilo, cadência de release e vulnerabilidades próprias para acompanhar. O tempo de reação a patches fica limitado pelo terceiro mais lento;
 3. **Jeitos demais de fazer tudo** — servidores, ORMs, template engines e stacks de teste concorrentes fazem cada projeto começar com uma rodada de decisões de encanamento, cada onboarding começar do zero, e o código gerado por IA chutar entre padrões.
+
+Os dois primeiros custos ainda se somam em mais dois problemas. Cada peça externa da qual a stack depende é uma fronteira à qual o framework precisa se adaptar, então **a evolução fica mais lenta** — cada melhoria ou recurso novo espera o que essas peças permitem — e **a performance bate num teto**, porque toda requisição atravessa essas camadas de adaptação, e é aí que se formam os grandes gargalos.
 
 ## A resposta do Bootgly
 

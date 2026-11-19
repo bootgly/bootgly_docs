@@ -8,9 +8,11 @@ This page explains the problems Bootgly exists to solve, how its design answers 
 
 Making PHP fast and maintainable today usually costs you on three fronts:
 
-1. **Infrastructure sprawl** — to get performance, teams stack Nginx in front, PHP-FPM behind it, supervisors around it and C extensions (Swoole, event loops) underneath. Every extra piece is one more thing to configure, monitor, upgrade — and pay for;
+1. **Infrastructure sprawl** — to get performance, teams stack Nginx in front, PHP-FPM behind it, supervisors around it and C extensions (Swoole, event loops) underneath. Every extra piece is one more thing to configure, monitor, upgrade and adapt to — and pay for;
 2. **Supply-chain surface** — a typical application ships hundreds of `vendor/` packages to production. Each one has its own author, style, release cadence and vulnerabilities to track. Patch reaction time is bounded by the slowest third party;
 3. **Too many ways to do everything** — competing servers, ORMs, template engines and test stacks mean every project starts with a round of plumbing decisions, every onboarding starts from zero, and AI-generated code guesses among patterns.
+
+The first two costs compound into two more. Every external piece the stack depends on is a boundary the framework has to adapt to, so **evolution slows down** — each improvement or new feature waits on what those pieces allow — and **performance hits a ceiling**, because every request crosses those adaptation layers, and that is where the big bottlenecks form.
 
 ## The Bootgly answer
 

@@ -88,6 +88,7 @@ object seu, amplie a lista:
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertion\Comparators\Equal;
 use Bootgly\ACI\Tests\Assertion\Snapshots\FileStorageSnapshot;
+use RuntimeException;
 
 $Total = new Money(1999, 'USD'); // seu próprio value object
 
@@ -97,6 +98,10 @@ $Snapshot->classes = [...FileStorageSnapshot::CLASSES, Money::class];
 // A primeira execução captura o valor; cada execução seguinte compara com ele
 $expected = null;
 if ($Snapshot->restore('shop-total', $expected) === false) {
+   // Um snapshot que existe mas não restaura é um erro, nunca uma nova base
+   if ($Snapshot->refused === true) {
+      throw new RuntimeException('The shop-total snapshot does not restore.');
+   }
    $Snapshot->capture('shop-total', $Total);
    $expected = $Total;
 }
@@ -116,9 +121,12 @@ não por identidade. Um enum seu entra em `$classes` do mesmo jeito.
   falha — ela nunca passa em silêncio. Nada mais é carregado enquanto o arquivo é decodificado:
   nenhuma outra classe passa pelo autoloader (um enum incluído) e nenhum método mágico dela
   executa. Adicione a classe a `$classes` para restaurá-la inteira.
-- **Um arquivo que não decodifica** — lixo, truncado, com bytes sobrando ou vazio — não é um
-  snapshot: `restore()` retorna `false` e deixa intocado o valor que você passou, exatamente como
-  para um arquivo ausente. Um `false` capturado continua sendo um snapshot e restaura como `false`.
+- **Um arquivo que existe mas não restaura** — ilegível, lixo, truncado, com bytes sobrando,
+  vazio, ou um objeto cuja propriedade tipada receberia uma classe fora de `$classes` — é recusado:
+  `restore()` retorna `false`, deixa intocado o valor que você passou e marca `$refused`. A
+  comparação embutida (`using:` um snapshot) então falha e mantém o arquivo como está; só um
+  arquivo ausente é capturado de novo. Um `false` capturado continua sendo um snapshot e restaura
+  como `false`.
 
 ### Quem pode alterar um snapshot
 
@@ -157,4 +165,11 @@ Bootgly\ACI\Tests\Assertion\Snapshots\FileStorageSnapshot->restore (string $snap
 ```
 
 Lê o snapshot em `$data`: `true` quando restaurou, `false` — com `$data` intocado — quando o
-arquivo está ausente ou não decodifica.
+arquivo está ausente ou é recusado (veja `refused`).
+
+```php
+Bootgly\ACI\Tests\Assertion\Snapshot->refused: bool
+```
+
+Se o último `restore()` encontrou um snapshot que não conseguiu restaurar — `false` quando o
+arquivo está ausente. Enquanto é `true`, `assert()` falha e nunca captura por cima do arquivo.

@@ -224,7 +224,8 @@ As classes do próprio framework que guardam segredos usam o trait, então um du
 - as configurações de banco de dados, cache, filas, e-mail e storage (senhas, tokens, o `secret` de um disk), e as passphrases TLS de servidores e clientes;
 - as configs de ambiente: os valores do `.env` que um loader guarda e todo valor ligado numa árvore de config;
 - segredos e chaves JWT, tokens de refresh e de remember, e o material da chave de criptografia;
-- os campos de header de credencial de requisições e respostas — no servidor, no cliente HTTP e no cliente WebSocket — com os blocos raw de headers, os cookies, as linhas `Set-Cookie`, o password Basic, o token Bearer e o id de sessão.
+- os campos de header de credencial de requisições e respostas — no servidor, no cliente HTTP e no cliente WebSocket — com os blocos raw de headers, os cookies, as linhas `Set-Cookie`, o password Basic, o token Bearer e o id de sessão;
+- os buffers de rede de uma conexão TCP de servidor ou de cliente: o que ela leu, o que está escrevendo e o que guarda para a próxima leitura ou escrita.
 
 Os campos de header de credencial são os nomes em `HTTP::SECRET_HEADERS`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-csrf-token`, `x-api-key` e `x-auth-token`. Uma credencial sob outro nome de header é sua para mascarar. Corpos de requisição e resposta, dados de sessão e contextos de log guardam dados da aplicação e não são mascarados: mantenha um segredo fora deles, ou fora do dump deles.
 

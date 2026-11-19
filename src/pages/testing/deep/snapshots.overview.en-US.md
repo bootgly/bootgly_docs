@@ -88,6 +88,7 @@ widen the list:
 use Bootgly\ACI\Tests\Assertion;
 use Bootgly\ACI\Tests\Assertion\Comparators\Equal;
 use Bootgly\ACI\Tests\Assertion\Snapshots\FileStorageSnapshot;
+use RuntimeException;
 
 $Total = new Money(1999, 'USD'); // your own value object
 
@@ -97,6 +98,10 @@ $Snapshot->classes = [...FileStorageSnapshot::CLASSES, Money::class];
 // The first run captures the value; every later run compares against it
 $expected = null;
 if ($Snapshot->restore('shop-total', $expected) === false) {
+   // A snapshot that is there but does not restore is an error, never a new baseline
+   if ($Snapshot->refused === true) {
+      throw new RuntimeException('The shop-total snapshot does not restore.');
+   }
    $Snapshot->capture('shop-total', $Total);
    $expected = $Total;
 }
@@ -116,9 +121,11 @@ The restored `Money` is a new instance equal to the captured one, so compare it 
   fails — it never passes in silence. Nothing else is loaded while the file decodes: no
   other class is autoloaded (an enum included) and no magic method of it runs. Add the class to
   `$classes` to restore it whole.
-- **A file that does not decode** — garbage, truncated, trailing bytes or empty — is no
-  snapshot: `restore()` returns `false` and leaves the value you passed untouched, exactly as for
-  a missing file. A captured `false` is still a snapshot and restores as `false`.
+- **A file that is there but does not restore** — unreadable, garbage, truncated, trailing bytes,
+  empty, or an object whose typed property would hold a class outside `$classes` — is refused:
+  `restore()` returns `false`, leaves the value you passed untouched and sets `$refused`. The
+  built-in comparison (`using:` a snapshot) then fails and keeps the file as it is; only a
+  missing file is captured anew. A captured `false` is still a snapshot and restores as `false`.
 
 ### Who can change a snapshot
 
@@ -156,4 +163,11 @@ Bootgly\ACI\Tests\Assertion\Snapshots\FileStorageSnapshot->restore (string $snap
 ```
 
 Read the snapshot into `$data`: `true` when it restored, `false` — with `$data` untouched — when
-the file is missing or does not decode.
+the file is missing or is refused (see `refused`).
+
+```php
+Bootgly\ACI\Tests\Assertion\Snapshot->refused: bool
+```
+
+Whether the last `restore()` found a snapshot it could not restore — `false` when the file is
+missing. While it is `true`, `assert()` fails and never captures over the file.
