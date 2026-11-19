@@ -121,11 +121,14 @@ The restored `Money` is a new instance equal to the captured one, so compare it 
   fails — it never passes in silence. Nothing else is loaded while the file decodes: no
   other class is autoloaded (an enum included) and no magic method of it runs. Add the class to
   `$classes` to restore it whole.
-- **A file that is there but does not restore** — unreadable, garbage, truncated, trailing bytes,
-  empty, or an object whose typed property would hold a class outside `$classes` — is refused:
-  `restore()` returns `false`, leaves the value you passed untouched and sets `$refused`. The
-  built-in comparison (`using:` a snapshot) then fails and keeps the file as it is; only a
-  missing file is captured anew. A captured `false` is still a snapshot and restores as `false`.
+- **A file that is there but does not restore** — unreadable, a directory in its place, garbage,
+  truncated, trailing bytes, empty, or an object whose typed property would hold a class outside
+  `$classes` — is refused: `restore()` returns `false`, leaves the value you passed untouched and
+  sets `$refused`. The Assertion then fails — `using:` a snapshot alone or with expectations, and
+  after a `restore()` into the Assertion alike — and the file is kept as it is; only a missing
+  file is captured anew. A `capture()` after such a restore starts clean. A captured `false` is still a snapshot and restores as `false`.
+  Only the `.snap` file itself is read: a missing name never falls back to a `.php` or
+  `/index.php` beside it.
 
 ### Who can change a snapshot
 

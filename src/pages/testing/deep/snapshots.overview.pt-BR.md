@@ -121,12 +121,14 @@ não por identidade. Um enum seu entra em `$classes` do mesmo jeito.
   falha — ela nunca passa em silêncio. Nada mais é carregado enquanto o arquivo é decodificado:
   nenhuma outra classe passa pelo autoloader (um enum incluído) e nenhum método mágico dela
   executa. Adicione a classe a `$classes` para restaurá-la inteira.
-- **Um arquivo que existe mas não restaura** — ilegível, lixo, truncado, com bytes sobrando,
-  vazio, ou um objeto cuja propriedade tipada receberia uma classe fora de `$classes` — é recusado:
-  `restore()` retorna `false`, deixa intocado o valor que você passou e marca `$refused`. A
-  comparação embutida (`using:` um snapshot) então falha e mantém o arquivo como está; só um
-  arquivo ausente é capturado de novo. Um `false` capturado continua sendo um snapshot e restaura
-  como `false`.
+- **Um arquivo que existe mas não restaura** — ilegível, um diretório no lugar dele, lixo,
+  truncado, com bytes sobrando, vazio, ou um objeto cuja propriedade tipada receberia uma classe
+  fora de `$classes` — é recusado: `restore()` retorna `false`, deixa intocado o valor que você
+  passou e marca `$refused`. A Assertion então falha — `using:` um snapshot sozinho ou com
+  expectativas, e depois de um `restore()` na Assertion também — e o arquivo é mantido como está;
+  só um arquivo ausente é capturado de novo. Um `capture()` depois desse restore começa limpo. Um `false` capturado continua sendo um snapshot e
+  restaura como `false`. Só o próprio arquivo `.snap` é lido: um nome ausente nunca recai num
+  `.php` ou `/index.php` ao lado dele.
 
 ### Quem pode alterar um snapshot
 
