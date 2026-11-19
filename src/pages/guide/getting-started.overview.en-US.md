@@ -296,7 +296,34 @@ its master through the kernel lock table (`/proc/locks`), which stays readable.
 
 ## Enabling HTTPS (SSL/TLS)
 
-Bootgly supports TLSv1.2 and TLSv1.3 natively. Set `secure` in the server `Configs` you hand to `configure()`:
+Bootgly supports TLSv1.2 and TLSv1.3 natively, and the HTTP server can manage its own certificate. Pass an `AutoTLS` config in the server `Configs` you hand to `configure()` — the server obtains a certificate from **Let's Encrypt** by itself and renews it automatically, with no certbot and no cron:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\AutoTLS;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
+
+
+$Server->configure(
+   new Configs(
+      host: '0.0.0.0',
+      port: 443,
+      workers: 4,
+      AutoTLS: new AutoTLS(
+         domains: ['example.com', 'www.example.com'],
+         email: 'admin@example.com',
+         staging: true, // Validate against the staging CA first, then set it to false
+      ),
+      user: 'www-data', // Drop privileges after binding
+      group: 'www-data',
+   )
+);
+```
+
+The server binds at once on a temporary self-signed certificate, then swaps in the issued one without a restart. Validation (`HTTP-01`) arrives on port 80, which the server answers on its own. Every WPI project scaffold already carries this block commented in its `configure()` — set your domain and uncomment it. The full flow (port 80, renewal, storage) is in the [Auto-TLS](/guide/auto-tls) guide.
+
+### Using your own certificate
+
+To serve a certificate you already have, set `secure` instead — it takes the SSL context array. `secure` and `AutoTLS` are mutually exclusive:
 
 ```php
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs;
