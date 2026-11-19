@@ -51,7 +51,7 @@ Honesty is part of the bet. Choosing to build everything first-party has real co
 
 - **Features take longer to ship** — building a native component is slower than wiring a third-party package, so the roadmap moves deliberately;
 - **Rolling support** — `1.0` is not a long-term-support line: fixes ship only as patch releases of the latest minor (with `X.Y` current, in `X.Y.Z`), with no backports to older minors, so staying current is part of the deal (see [Versioning](/guide/versioning/overview/));
-- **Young ecosystem** — there is no marketplace of community packages; what the core does not ship, you build.
+- **Young ecosystem** — there is no marketplace of Bootgly-specific packages yet. The core already ships the common base every App needs; whatever is specific to your project, you add to it via Composer.
 
 Bootgly is probably **not** the right choice today if you need a large ecosystem of ready-made packages, long-term-support stability in production right now, or native Windows execution. If those are your constraints, a traditional full-stack framework will serve you better — and the comparison page above stays honest about that.
 

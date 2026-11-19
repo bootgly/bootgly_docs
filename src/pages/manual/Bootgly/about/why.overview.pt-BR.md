@@ -51,7 +51,7 @@ Honestidade faz parte da aposta. Escolher construir tudo como código próprio t
 
 - **Features demoram mais para sair** — construir um componente nativo é mais lento do que plugar um pacote de terceiro, então o roadmap avança deliberadamente;
 - **Suporte contínuo** — a `1.0` não é uma linha de suporte de longo prazo: as correções saem apenas como patch release da minor mais recente (com a `X.Y` atual, na `X.Y.Z`), sem backport para minors anteriores, então manter-se atualizado faz parte do acordo (veja [Versionamento](/guide/versioning/overview/));
-- **Ecossistema jovem** — não existe um marketplace de pacotes da comunidade; o que o núcleo não traz, você constrói.
+- **Ecossistema jovem** — ainda não existe um marketplace de pacotes feitos para o Bootgly. O núcleo já entrega a base comum a qualquer App; o que for específico do seu projeto você adiciona nele via Composer.
 
 O Bootgly provavelmente **não** é a escolha certa hoje se você precisa de um grande ecossistema de pacotes prontos, de estabilidade com suporte de longo prazo em produção agora, ou de execução nativa no Windows. Se essas são as suas restrições, um framework full-stack tradicional vai te servir melhor — e a página de comparação acima se mantém honesta sobre isso.
 
