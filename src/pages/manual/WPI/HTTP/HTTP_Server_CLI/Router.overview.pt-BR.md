@@ -304,8 +304,7 @@ yield $Router->route('/report', function ($Request, $Response) {
 A primeira requisição executa o handler e armazena a resposta construída;
 toda requisição nos próximos 30 segundos é respondida a partir dos bytes
 armazenados. Quando o `TTL` expira, a próxima requisição executa o handler
-novamente e renova a entrada. Handlers deferred (assíncronos) são cacheados
-da mesma forma que os síncronos.
+novamente e renova a entrada.
 
 ### O que é cacheado — e o que nunca é
 
@@ -344,6 +343,9 @@ não tivesse a opção `cache`:
   busca.
 - **A resposta é grande demais** — uma entrada só é armazenada com até 1 MiB de
   bytes de wire.
+- **O handler faz defer** — uma resposta respondida por `$Response->defer()`
+  nunca é armazenada, espere o trabalho ou termine de imediato: a rota executa
+  o handler em toda requisição.
 
 Navegadores enviam os seus cookies em toda requisição ao seu site, então em um
 site que usa Session o cache atende apenas clientes sem cookie. Ele serve para

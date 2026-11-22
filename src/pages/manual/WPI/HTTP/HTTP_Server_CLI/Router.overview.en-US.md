@@ -303,7 +303,7 @@ yield $Router->route('/report', function ($Request, $Response) {
 The first request runs the handler and stores the built response; every
 request in the next 30 seconds is answered from the stored bytes. When the
 `TTL` expires, the next request runs the handler again and refreshes the
-entry. Deferred (async) handlers are cached the same way as synchronous ones.
+entry.
 
 ### What is cached — and what never is
 
@@ -342,6 +342,9 @@ option:
   the lookup.
 - **The response is too large** — an entry is stored only up to 1 MiB of wire
   bytes.
+- **The handler defers** — a response answered through `$Response->defer()`
+  is never stored, whether its work waits or completes at once: the route runs
+  its handler on every request.
 
 Browsers send their cookies with every request to your site, so on a site
 that uses a Session the cache serves only cookieless clients. It fits public
