@@ -145,11 +145,7 @@ export default {
     changelog: 'https://github.com/bootgly/bootgly/releases/',
     roadmap: 'https://github.com/bootgly/bootgly/milestones/',
     // a page of the site opens in place: the standalone sponsors page
-    sponsor: '/sponsors/',
-    explore: [
-      { label: '🤯 Bootgly Awesome', url: 'https://github.com/bootgly/bootgly_awesome/' },
-      { label: '⏱️ Bootgly Benchmarks', url: 'https://github.com/bootgly/bootgly_benchmarks/' }
-    ]
+    sponsor: '/sponsors/'
   },
 
   // @ Header links — centered in the header where they fit; elsewhere they
@@ -162,6 +158,10 @@ export default {
       { label: { 'en-US': 'Ecosystem', 'pt-BR': 'Ecossistema' }, icon: 'hub', children: [
         { label: 'Bootgly Web', icon: 'language', href: 'https://github.com/bootgly/bootgly-web/' },
         { label: 'Bootgly Console', icon: 'terminal', href: 'https://github.com/bootgly/bootgly-console/' }
+      ] },
+      { label: { 'en-US': 'Resources', 'pt-BR': 'Recursos' }, icon: 'library_books', children: [
+        { label: 'Bootgly Awesome', icon: 'auto_awesome', href: 'https://github.com/bootgly/bootgly_awesome/' },
+        { label: 'Bootgly Benchmarks', icon: 'speed', href: 'https://github.com/bootgly/bootgly_benchmarks/' }
       ] }
     ]
   },
