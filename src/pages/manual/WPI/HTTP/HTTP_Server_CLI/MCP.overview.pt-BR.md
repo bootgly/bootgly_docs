@@ -193,6 +193,116 @@ Para que um cliente de navegador (ou o MCP Inspector) consiga ler os headers de 
 challenge, adicione o middleware `CORS` expondo `Mcp-Session-Id`, como em
 **[Protegendo um endpoint MCP](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/overview/)**.
 
+### Autenticar com um token guardado no banco de dados
+
+Um guard roda de forma síncrona, antes de qualquer trabalho deferred, então o `Resolver` acima não
+pode esperar por um banco de dados. Faça o defer primeiro, em um middleware de rota, e rode o
+middleware `Authentication` sem alterações dentro desse deferral, sobre o **snapshot do
+`Request`**:
+
+```php
+use Closure;
+use const Bootgly\WPI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middleware;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Authentication = new Authentication(new Authenticating(
+   new Bearer(
+      Resolver: function (string $token, Request $Request): mixed {
+         // ! Dentro do deferral, WPI->Response é a Response deferred
+         $WPI = WPI;
+
+         return $WPI->Response->Database
+            ->fetch('SELECT user_id FROM access_tokens WHERE token = ?', [$token])
+            ->cell;
+      },
+      metadata: 'https://mcp.example.com/.well-known/oauth-protected-resource'
+   )
+));
+
+$Deferred = new class ($Authentication) implements Middleware {
+   public Authentication $Authentication;
+
+   public function __construct (Authentication $Authentication)
+   {
+      $this->Authentication = $Authentication;
+   }
+
+   public function process (object $Request, object $Response, Closure $next): object
+   {
+      $Authentication = $this->Authentication;
+
+      return $Response->defer(
+         fn (Response $Response, Request $Snapshot): object => $Authentication->process($Snapshot, $Response, $next)
+      );
+   }
+};
+
+yield $Router->route('/mcp', new MCP($Server), [GET, POST, DELETE], middlewares: [$Deferred]);
+```
+
+A query suspende o deferral em vez de bloquear o worker. Um request sem token recebe o challenge
+`401` e um token desconhecido (`null`) o `401` com `error="invalid_token"` — ambos com
+`resource_metadata` quando `metadata` está definido —, escritos pelo guard na Response deferred.
+A identity que o guard resolve é definida no snapshot, que é o que o transporte recebe, então a
+sessão se vincula a ela em `POST`, `GET` e `DELETE` igualmente: o token de outro usuário nessa
+sessão é `404`.
+
+Duas regras mantêm isso correto:
+
+- **Defina a identity no snapshot, nunca no `$Request` vivo.** O `$Request` do middleware é o
+  Request da conexão; o deferral já capturou o snapshot dele, então uma identity definida depois
+  no vivo nunca chega ao transporte — a sessão se vincularia ao principal anônimo, e qualquer
+  cliente poderia conduzi-la.
+- **Responda na `$Response` que você recebe.** Atrás de um middleware que faz defer, o handler
+  roda dentro do deferral, e uma nova `Response` que ele retorne não é adotada (o cliente recebe
+  um `200` vazio). O `Router\MCP` responde na que recebe.
+
+Para chamar um guard você mesmo em vez do middleware, `authenticate()` define a identity no
+snapshot e `challenge()` escreve o `401` na Response deferred:
+
+```php
+return $Response->defer(function (Response $Response, Request $Snapshot) use ($Bearer, $next): void {
+   if ($Bearer->authenticate($Snapshot)) {
+      $next($Snapshot, $Response);
+
+      return;
+   }
+
+   $Bearer->challenge($Response);
+});
+```
+
+O handler também pode fazer isso, sem middleware: ele faz defer, resolve a identity, define-a no
+snapshot e invoca o transporte de dentro — o deferral do próprio transporte se aninha nele:
+
+```php
+$Transport = new MCP($Server);
+
+yield $Router->route('/mcp', function (Request $Request, Response $Response) use ($Transport): Response {
+   return $Response->defer(function (Response $Response, Request $Snapshot) use ($Transport): void {
+      $Snapshot->identity = $Response->Database
+         ->fetch('SELECT user_id FROM api_keys WHERE key = ?', [(string) $Snapshot->Header->get('X-Api-Key')])
+         ->cell;
+      if ($Snapshot->identity === null) {
+         $Response(code: 401);
+
+         return;
+      }
+
+      $Transport($Snapshot, $Response);
+   });
+}, [GET, POST, DELETE]);
+```
+
+Dentro de uma tool, `WPI->Response` é a Response deferred em que a chamada roda — com seus
+resources (`Database`, `KV`, …) — e `WPI->Response->Request` é o mesmo snapshot que a tool recebe
+como contexto, então `WPI->Response->Request->identity` é quem está chamando.
+
 ## Respostas: JSON ou stream
 
 Um `POST` precisa ser `Content-Type: application/json` (senão, `415`) e caber em `body` bytes

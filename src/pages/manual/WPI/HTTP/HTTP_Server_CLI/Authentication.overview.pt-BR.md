@@ -630,6 +630,8 @@ Mantenha o `CORS` primeiro: assim as respostas `401`/`403` ainda carregam `Acces
 
 O guard `JWT` é um `Bearer`, então aceita o mesmo argumento `metadata:` e pode ser passado ao `Scope` do mesmo jeito. Veja a página [Authorization](/manual/WPI/HTTP/HTTP_Server_CLI/Authorization/) para o gate `Scope` e a página [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/) para o `CORS`.
 
+Um guard roda de forma síncrona. Quando a busca do token precisa esperar por I/O — um token guardado no banco de dados —, envolva o mesmo `Authentication` em um middleware de rota que faz defer primeiro e o roda sobre o snapshot do `Request` do deferral: veja **[Autenticar com um token guardado no banco de dados](/manual/WPI/HTTP/HTTP_Server_CLI/MCP/overview/)** na página do MCP.
+
 ## Projeto demo
 
 O repositório inclui exemplos funcionais em `projects/Demo/HTTP_Server_CLI`:

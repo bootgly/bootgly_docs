@@ -192,6 +192,115 @@ To let a browser client (or the MCP Inspector) read the session and challenge he
 `CORS` middleware with `Mcp-Session-Id` exposed, as in
 **[Protecting an MCP endpoint](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/overview/)**.
 
+### Authenticate with a token stored in a database
+
+A guard runs synchronously, before any deferred work, so the `Resolver` above cannot wait for a
+database. Defer first, in a route middleware, and run the unchanged `Authentication` middleware
+inside that deferral, on its **`Request` snapshot**:
+
+```php
+use Closure;
+use const Bootgly\WPI;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middleware;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
+
+$Authentication = new Authentication(new Authenticating(
+   new Bearer(
+      Resolver: function (string $token, Request $Request): mixed {
+         // ! Inside the deferral, WPI->Response is the deferred Response
+         $WPI = WPI;
+
+         return $WPI->Response->Database
+            ->fetch('SELECT user_id FROM access_tokens WHERE token = ?', [$token])
+            ->cell;
+      },
+      metadata: 'https://mcp.example.com/.well-known/oauth-protected-resource'
+   )
+));
+
+$Deferred = new class ($Authentication) implements Middleware {
+   public Authentication $Authentication;
+
+   public function __construct (Authentication $Authentication)
+   {
+      $this->Authentication = $Authentication;
+   }
+
+   public function process (object $Request, object $Response, Closure $next): object
+   {
+      $Authentication = $this->Authentication;
+
+      return $Response->defer(
+         fn (Response $Response, Request $Snapshot): object => $Authentication->process($Snapshot, $Response, $next)
+      );
+   }
+};
+
+yield $Router->route('/mcp', new MCP($Server), [GET, POST, DELETE], middlewares: [$Deferred]);
+```
+
+The query suspends the deferral instead of blocking the worker. A request with no token gets the
+`401` challenge and an unknown token (`null`) the `401` with `error="invalid_token"` — both with
+`resource_metadata` when `metadata` is set — written by the guard onto the deferred Response.
+The identity the guard resolves is set on the snapshot, which is what the transport receives, so
+the session binds to it on `POST`, `GET` and `DELETE` alike: another user's token on that session
+is `404`.
+
+Two rules keep it correct:
+
+- **Set the identity on the snapshot, never on the live `$Request`.** The middleware's `$Request`
+  is the per-connection Request; the deferral already captured its snapshot, so an identity set
+  on the live one afterwards never reaches the transport — the session would bind to the
+  anonymous principal, and any client could drive it.
+- **Answer on the `$Response` you receive.** Behind a middleware that defers, the handler runs
+  inside the deferral, and a new `Response` it returns is not adopted (the client gets an empty
+  `200`). `Router\MCP` answers on the one it receives.
+
+To call a guard yourself instead of the middleware, `authenticate()` sets the identity on the
+snapshot and `challenge()` writes the `401` onto the deferred Response:
+
+```php
+return $Response->defer(function (Response $Response, Request $Snapshot) use ($Bearer, $next): void {
+   if ($Bearer->authenticate($Snapshot)) {
+      $next($Snapshot, $Response);
+
+      return;
+   }
+
+   $Bearer->challenge($Response);
+});
+```
+
+The handler can do it too, without a middleware: it defers, resolves the identity, sets it on the
+snapshot and invokes the transport from inside — the transport's own deferral nests in it:
+
+```php
+$Transport = new MCP($Server);
+
+yield $Router->route('/mcp', function (Request $Request, Response $Response) use ($Transport): Response {
+   return $Response->defer(function (Response $Response, Request $Snapshot) use ($Transport): void {
+      $Snapshot->identity = $Response->Database
+         ->fetch('SELECT user_id FROM api_keys WHERE key = ?', [(string) $Snapshot->Header->get('X-Api-Key')])
+         ->cell;
+      if ($Snapshot->identity === null) {
+         $Response(code: 401);
+
+         return;
+      }
+
+      $Transport($Snapshot, $Response);
+   });
+}, [GET, POST, DELETE]);
+```
+
+Inside a tool, `WPI->Response` is the deferred Response the call runs on — its resources
+(`Database`, `KV`, …) included — and `WPI->Response->Request` is the same snapshot the tool gets
+as its context, so `WPI->Response->Request->identity` is the caller.
+
 ## Answers: JSON or a stream
 
 A `POST` must be `Content-Type: application/json` (`415` otherwise) and fit in `body` bytes

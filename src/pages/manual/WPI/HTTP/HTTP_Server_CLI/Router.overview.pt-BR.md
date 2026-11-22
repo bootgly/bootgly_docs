@@ -508,6 +508,8 @@ A lista registra o que foi registrado, não qual rota vence uma requisição:
 
 `Route` é o **match atual**: o estado da rota que o Router casou para a requisição em atendimento — o `$this` dentro de um handler Closure. Não é uma rota registrada; para isso, leia uma linha da [lista de rotas](#lista-de-rotas).
 
+O Router mantém um único `Route` durante a vida do worker, e o `$this` de todo handler é esse objeto. Um handler alcançado a partir de trabalho deferred — atrás de um middleware que fez defer antes do `$next`, ou roteado por um Router cujas rotas foram registradas dentro de um deferral — continua lendo o `path` e os `Params` da própria requisição: cada trecho de trabalho deferred instala o match da sua requisição nesse `Route` enquanto roda, e mantém o que roteou através de `wait()` e de um `defer()` aninhado. Trate o `Route` como somente leitura num handler: uma entrada escrita em `$this->Params` não se perde através de um `wait()`, mas nada a limpa depois de um match estático ou catch-all — a próxima requisição roteada para um deles ainda a vê — e uma propriedade inteira substituída a partir de trabalho deferred (`$this->path = …`) pode se perder no próximo `wait()`.
+
 A classe `Route` (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) expõe as seguintes propriedades:
 
 | Propriedade | Tipo | Descrição |
@@ -515,6 +517,7 @@ A classe `Route` (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) expõe as se
 | `path` | `string` | O caminho da requisição que casou (`/user/42`), não o padrão da rota |
 | `Params` | `Params` | Container dos parâmetros da rota |
 | `Middlewares` | `array<Middleware>` | A cadeia de middlewares dobrada em volta da rota casada (entradas do grupo primeiro, depois as da própria rota), presente só enquanto um dispatch com middleware roda — a cadeia que uma geração deferred mantém para suas fronteiras `Recovering` (veja [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)) |
+| `parameterized` | `bool` | Se o match atual guardou parâmetros de rota — o Router o lê para limpá-los antes do próximo match estático ou catch-all. Interno: mantido pelo Router, nunca escrito pela aplicação |
 | `base` | `string` | O caminho base da requisição (property hook) |
 
 ### Objeto Params
