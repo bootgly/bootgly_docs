@@ -79,11 +79,23 @@ deixou aberto, descarregou ou tentou encerrar, um erro impresso antes de o proce
 capturado e movido para o stderr, então uma linha de debug perdida nunca corrompe o protocolo. Os
 erros que o PHP exibe também saem no stderr (com `display_errors` desligado — qualquer valor que o próprio PHP lê como desligado —, continuam ocultos),
 e a captura continua de pé depois que `serving()` retorna: o que o comando imprimir em seguida
-também vai para o stderr. O que contorna a saída do PHP não é
-capturado: escritas no stream `STDOUT` ou em `php://stdout` (`fwrite(STDOUT, …)`, um handler de
-log construído sobre eles) e processos filhos que herdam o stdout (`proc_open`/`exec` sem
-redirecioná-lo). Num processo stdio, aponte os loggers para `STDERR` e redirecione o que um filho
-imprime.
+também vai para o stderr.
+
+Os loggers também escrevem no stderr. Enquanto serve, o display fica desligado (`Display::NONE`),
+então os handlers `Stream` locais de todo logger — stdout por padrão, incluindo os loggers preguiçosos dos
+clientes do framework — ficam em silêncio, e todo record chega ao stderr pelo tap ao vivo
+(`Logger::$Tap`, substituído enquanto serve). Um handler `File` ou `Syslog` do logger continua
+escrevendo. Os dois são religados depois de cada chamada e restaurados quando `serving()` retorna;
+uma tool que religa o display (`Display::show(…)`, como faz um cliente ao parar) e loga nessa mesma
+chamada ainda escreve esses records no stdout. O mesmo vale para um worker que um cliente forka: o
+filho religa o display e escreve no stdout que herdou — num processo stdio, rode clientes sem
+workers. Os sinks globais (`Logger::$Sinks`) são alimentados seja qual for o display, então nunca
+construa um sobre `STDOUT` ali.
+
+O que mais contorna a saída do PHP não é capturado: escritas no stream `STDOUT` ou em
+`php://stdout` (`fwrite(STDOUT, …)`, ou `CLI\Terminal\Output`, que escreve no `STDOUT` por
+padrão) e processos filhos que herdam o stdout (`proc_open`/`exec` sem redirecioná-lo). Num
+processo stdio, aponte esses para `STDERR` e redirecione o que um filho imprime.
 
 ```bash
 printf '%s\n' \

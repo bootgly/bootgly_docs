@@ -108,6 +108,14 @@ rotação ocupa o primeiro número livre e só descarta o mais antigo quando tod
 ocupados. `keep: 0` não guarda nenhum arquivo — o arquivo que terminou é apagado. Um arquivo vazio
 nunca é arquivado.
 
+Um handler `File` continua escrevendo com o display do terminal desligado — `Display::NONE`, ligado
+pelo modo Monitor e por um servidor MCP stdio enquanto serve: só os handlers `Stream` de um logger (o
+terminal) ficam em silêncio; os handlers `File`, `Syslog`, `Memory` e `Pipe` escrevem como sempre.
+Dois limites: um `Stream` aberto num caminho de arquivo é mutado como o terminal, e um handler cujo
+formatter `Line` segue a máscara do terminal (`new Line`, sem segmentos fixos) escreve uma linha
+vazia por record sob `Display::NONE` — dê a ele segmentos fixos
+(`new Line(Display::MESSAGE | Display::SEVERITY)`) ou mantenha o padrão JSON do `File`.
+
 Todo processo que escreve no mesmo arquivo — o master e os workers de um servidor — o rotaciona
 **uma vez**: a rotação é decidida e feita sob o lock que cada escrita pega no arquivo, então um
 processo que esperou encontra o arquivo já rotacionado e escreve no novo. Dê a mesma `Rotation` a
@@ -441,8 +449,9 @@ topo/fim do record.
 
 > [!NOTE]
 > O viewer funciona porque o Monitor liga um tap ao vivo (`Logger::$Tap`) que **todo** `Logger`
-> alimenta — independente de opt-in — enquanto `Display::show(Display::NONE)` muta a saída local de
-> stdout para nada rabiscar a TUI diretamente. (O tap é separado do `Logger::$Sinks`, que é o canal
+> alimenta — independente de opt-in — enquanto `Display::show(Display::NONE)` muta os handlers
+> `Stream` de todo logger (a saída local de stdout) para nada rabiscar a TUI diretamente; um handler
+> `File` de um logger continua escrevendo. (O tap é separado do `Logger::$Sinks`, que é o canal
 > persistente opt-in abaixo.) Sob enxurrada de logs, a escrita não-bloqueante do pipe de um worker é
 > descartada em vez de travar o caminho da requisição.
 
@@ -471,8 +480,9 @@ Display::show(Display::MESSAGE, Display::TIMESTAMP, Display::CHANNEL);
 | `Display::CONTEXT` | o array `context`, codificado inline |
 
 `CHANNEL` e `SEVERITY` são independentes — juntos viram `canal.NÍVEL`, qualquer um aparece
-sozinho. `Display::show()` sem argumentos (ou `Display::NONE`) silencia a saída local de stdout por
-completo. As flags são um bitmask, então `Display::MESSAGE | Display::TIMESTAMP` também funciona. O
+sozinho. `Display::show()` sem argumentos (ou `Display::NONE`) silencia por completo os handlers
+`Stream` de todo logger — a saída local de stdout; os outros handlers dele (`File`, `Syslog`, …)
+continuam escrevendo. As flags são um bitmask, então `Display::MESSAGE | Display::TIMESTAMP` também funciona. O
 padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra final.
 
 ## Referência
@@ -487,7 +497,8 @@ padrão é só `Display::MESSAGE` — uma linha inline compacta, sem quebra fina
   `bootgly logs -f` estiver anexada.
 - **Display** — `Logs\Data\Display`: `show(int ...$segments): void` define o mask ativo, guardado no
   estático `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
-  `CONTEXT` — os segmentos da saída padrão `Line` (um bitmask; combine à vontade).
+  `CONTEXT` — os segmentos da saída padrão `Line` (um bitmask; combine à vontade). `NONE` também
+  muta os handlers `Stream` locais dos loggers; os outros handlers deles continuam escrevendo.
 - **Levels** — enum com backing `Logs\Data\Levels` (`Emergency` = 1 … `Debug` = 8; menor = mais severo):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:

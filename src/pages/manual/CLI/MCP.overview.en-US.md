@@ -77,10 +77,22 @@ Anything a tool prints while it runs — `echo`, `print`, `var_dump`, an output 
 open, flushed or tried to end, an error printed before the process dies — is captured and moved
 to stderr, so a stray debug line can never corrupt the protocol. Errors PHP displays are
 displayed on stderr too (with `display_errors` off — any value PHP itself reads as off — they stay hidden), and the capture stays in
-place after `serving()` returns: whatever the command prints next lands on stderr as well. What bypasses PHP's output is not captured: writes to the
-`STDOUT` stream or to `php://stdout` (`fwrite(STDOUT, …)`, a log handler built on them) and child
-processes that inherit stdout (`proc_open`/`exec` without redirecting it). Point loggers at
-`STDERR` in a stdio process and redirect what a child prints.
+place after `serving()` returns: whatever the command prints next lands on stderr as well.
+
+Loggers write to stderr too. While serving, the display is off (`Display::NONE`), so every
+logger's local `Stream` handlers — stdout by default, the lazy loggers of the framework's clients
+included — stay silent, and every record reaches stderr through the live tap (`Logger::$Tap`,
+replaced while serving). A logger's `File` or `Syslog` handler keeps writing. Both are set again
+after each call and restored when `serving()` returns; a tool that turns the display back on
+(`Display::show(…)`, as a client stopping does) and logs in that same call still writes those
+records to stdout. So does a worker a client forks: the child turns the display back on and writes
+to the stdout it inherited — run clients without workers in a stdio process. The global sinks
+(`Logger::$Sinks`) are fed whatever the display says, so never build one on `STDOUT` there.
+
+What bypasses PHP's output otherwise is not captured: writes to the `STDOUT` stream or to
+`php://stdout` (`fwrite(STDOUT, …)`, or `CLI\Terminal\Output`, which writes to `STDOUT` by
+default) and child processes that inherit stdout (`proc_open`/`exec` without redirecting it).
+Point those at `STDERR` in a stdio process and redirect what a child prints.
 
 ```bash
 printf '%s\n' \

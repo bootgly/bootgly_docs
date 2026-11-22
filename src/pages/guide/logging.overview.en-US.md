@@ -107,6 +107,14 @@ severe). Archives are numbered `app.log.1` … `app.log.7`, newest first: a rota
 free number and drops the oldest only when every number is taken. `keep: 0` keeps no archive — the
 file that ended is deleted. An empty file is never archived.
 
+A `File` handler keeps writing while the terminal display is off — `Display::NONE`, set by Monitor
+mode and by an MCP stdio server while it serves: only a logger's `Stream` handlers (the terminal)
+fall silent; `File`, `Syslog`, `Memory` and `Pipe` handlers write as always. Two limits: a `Stream`
+opened on a file path is muted like the terminal, and a handler whose `Line` formatter follows the
+terminal mask (`new Line`, no fixed segments) writes an empty line per record under
+`Display::NONE` — give it fixed segments (`new Line(Display::MESSAGE | Display::SEVERITY)`) or keep
+`File`'s JSON default.
+
 Every process writing the same file — a server's master and its workers — rotates it **once**: the
 rotation is decided and made under the lock each write takes on the file, so a process that waited
 finds the file already rotated and writes to the new one. Give every process that shares a file the
@@ -437,8 +445,9 @@ jump to the top/bottom of the record.
 
 > [!NOTE]
 > The viewer works because Monitor sets a live tap (`Logger::$Tap`) that **every** `Logger` feeds —
-> regardless of opt-in — while `Display::show(Display::NONE)` mutes the local stdout output so
-> nothing scribbles the TUI directly. (The tap is separate from `Logger::$Sinks`, which is the
+> regardless of opt-in — while `Display::show(Display::NONE)` mutes every logger's `Stream`
+> handlers (the local stdout output) so nothing scribbles the TUI directly; a `File` handler on a
+> logger keeps writing. (The tap is separate from `Logger::$Sinks`, which is the
 > opt-in persistent channel below.) Under a log flood, a worker's non-blocking pipe write is dropped
 > rather than blocking the request path.
 
@@ -467,8 +476,9 @@ Display::show(Display::MESSAGE, Display::TIMESTAMP, Display::CHANNEL);
 | `Display::CONTEXT` | the `context` array, encoded inline |
 
 `CHANNEL` and `SEVERITY` are independent — together they read `channel.LEVEL`, either one shows
-alone. `Display::show()` with no arguments (or `Display::NONE`) silences the local stdout output
-entirely. The flags are a bitmask, so `Display::MESSAGE | Display::TIMESTAMP` works too. The
+alone. `Display::show()` with no arguments (or `Display::NONE`) silences every logger's `Stream`
+handlers — the local stdout output — entirely; its other handlers (`File`, `Syslog`, …) keep
+writing. The flags are a bitmask, so `Display::MESSAGE | Display::TIMESTAMP` works too. The
 default is `Display::MESSAGE` alone — a compact inline line with no trailing newline.
 
 ## Reference
@@ -482,7 +492,8 @@ default is `Display::MESSAGE` alone — a compact inline line with no trailing n
   viewer and, in any mode, while a `bootgly logs -f` session is attached.
 - **Display** — `Logs\Data\Display`: `show(int ...$segments): void` sets the active mask, held in
   static `$segments`. Flags `Display::NONE` / `MESSAGE` / `TIMESTAMP` / `CHANNEL` / `SEVERITY` /
-  `CONTEXT` — the segments of the default `Line` output (a bitmask; combine freely).
+  `CONTEXT` — the segments of the default `Line` output (a bitmask; combine freely). `NONE` also
+  mutes the loggers' local `Stream` handlers; their other handlers keep writing.
 - **Levels** — `Logs\Data\Levels` backed enum (`Emergency` = 1 … `Debug` = 8; lower = more severe):
   `Levels::fetch(string $name): null|self`, `render(): string`.
 - **Record** — `Logs\Data\Record(Levels $Level, string $channel, string $message, array $context = [])`:
