@@ -698,7 +698,7 @@ A versão **é** a tag; não há sufixo de variante para confundir com ela.
 | Release | `bootgly/bootgly.kit` (o produto) | `bootgly/bootgly` (o ingrediente) |
 |---------|------------------------------------|-----------------------------------|
 | Estável `1.2.3` | `1.2.3`, `1.2`, `1`, `latest` | `1.2.3`, `1.2`, `1` |
-| Manutenção `1.3.2` (depois da `1.4.0`) | `1.3.2`, `1.3` | `1.3.2`, `1.3` |
+| Manutenção `1.9.2` (depois da `2.0.0`) | `1.9.2`, `1.9`, `1` | `1.9.2`, `1.9`, `1` |
 | Pre-release `1.0.0-rc.1` | `1.0.0-rc.1`, `rc` | `1.0.0-rc.1`, `rc` |
 | Pre-release `1.0.0-beta.4` | `1.0.0-beta.4`, `beta` | `1.0.0-beta.4`, `beta` |
 
@@ -714,9 +714,9 @@ a pre-release mais nova do seu tipo e fica parado quando uma estável sai — de
 `:rc` continua nomeando a `1.0.0-rc.1` até a próxima release candidate ser publicada.
 
 Uma release estável só move um apelido quando é a versão estável mais alta que aquele apelido
-cobre: a `1.3` a 1.3.x mais alta, a `1` a 1.x mais alta, a `latest` a mais alta de todas. Uma release de
-manutenção de uma linha mais antiga — a 1.3.2 publicada depois da 1.4.0 — move, portanto, só a
-sua tag exata e a `1.3`; a `1` e a `latest` continuam na 1.4.
+cobre: a `1.3` a 1.3.x mais alta, a `1` a 1.x mais alta, a `latest` a mais alta de todas. Só um major anterior
+recebe releases de manutenção: a 1.9.2 publicada depois da 2.0.0 move a `1.9.2`, a `1.9` e a
+`1`, enquanto a `latest` continua na 2.0.
 
 As imagens de benchmark são tagueadas por concorrente (`:swoole`, `:bun`, …) e reconstruídas
 contra cada imagem do framework recém-publicada que seja a estável mais alta — nunca contra uma

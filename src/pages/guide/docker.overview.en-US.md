@@ -688,7 +688,7 @@ The version **is** the tag; there is no variant suffix to confuse it with.
 | Release | `bootgly/bootgly.kit` (the product) | `bootgly/bootgly` (the ingredient) |
 |---------|-------------------------------------|------------------------------------|
 | Stable `1.2.3` | `1.2.3`, `1.2`, `1`, `latest` | `1.2.3`, `1.2`, `1` |
-| Maintenance `1.3.2` (after `1.4.0`) | `1.3.2`, `1.3` | `1.3.2`, `1.3` |
+| Maintenance `1.9.2` (after `2.0.0`) | `1.9.2`, `1.9`, `1` | `1.9.2`, `1.9`, `1` |
 | Pre-release `1.0.0-rc.1` | `1.0.0-rc.1`, `rc` | `1.0.0-rc.1`, `rc` |
 | Pre-release `1.0.0-beta.4` | `1.0.0-beta.4`, `beta` | `1.0.0-beta.4`, `beta` |
 
@@ -704,9 +704,9 @@ of its kind and stays put when a stable ships — after `1.0.0`, `:rc` still nam
 until the next release candidate is published.
 
 A stable release moves an alias only when it is the highest stable version that alias covers:
-`1.3` the highest 1.3.x, `1` the highest 1.x, `latest` the highest of all. A maintenance release of an older
-line — 1.3.2 published after 1.4.0 — therefore moves only its exact tag and `1.3`; `1` and
-`latest` stay on 1.4.
+`1.3` the highest 1.3.x, `1` the highest 1.x, `latest` the highest of all. Only an older major gets
+maintenance releases: 1.9.2 published after 2.0.0 moves `1.9.2`, `1.9` and `1`, while `latest`
+stays on 2.0.
 
 The benchmark images are tagged by contender instead (`:swoole`, `:bun`, …) and are rebuilt
 against each newly published framework image that is the highest stable — never against a
