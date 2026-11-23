@@ -39,7 +39,7 @@ page until the Reference.
 > benchmark harness, so the names said the opposite of the truth.
 
 > **`latest` follows the stable line.** Plain `bootgly/bootgly.kit` is `bootgly/bootgly.kit:latest`,
-> which moves forward with every stable release — it is what every command on this page uses,
+> which moves forward with every higher stable release — it is what every command on this page uses,
 > and the framework image never gets one (see the tag scheme). Pinning a version is what makes
 > a deploy immutable: `bootgly/bootgly.kit:1.0.0` never changes, and `bootgly/bootgly.kit:1`
 > moves only within the 1.x line. See [Tag scheme](#tag-scheme).
@@ -370,7 +370,7 @@ docker pull bootgly/bootgly.kit:1.0.0
 ```
 
 Pull an exact version to land on one specific release; a plain `docker pull bootgly/bootgly.kit`
-(or `:1`) moves to the newest stable instead.
+moves to the highest stable instead (`:1`: the highest 1.x).
 
 `kit upgrade` and `kit downgrade` refuse inside the image and say why: the image ships the
 kit *layout*, not a git checkout (the build removes `.git` deliberately), so there is nothing
@@ -548,7 +548,7 @@ docker run --rm -p 8082:8082 myapp
 ```
 
 Pin an exact version in `FROM` (`bootgly/bootgly:1.0.0`) when the image must reproduce byte
-for byte; pin the major (`bootgly/bootgly:1`) to move forward with every 1.x release without
+for byte; pin the major (`bootgly/bootgly:1`) to move forward with every higher 1.x release without
 touching the Dockerfile.
 
 Writing that file replaces the framework's own registry, so the shipped `Demo/*` projects
@@ -688,6 +688,7 @@ The version **is** the tag; there is no variant suffix to confuse it with.
 | Release | `bootgly/bootgly.kit` (the product) | `bootgly/bootgly` (the ingredient) |
 |---------|-------------------------------------|------------------------------------|
 | Stable `1.2.3` | `1.2.3`, `1.2`, `1`, `latest` | `1.2.3`, `1.2`, `1` |
+| Maintenance `1.3.2` (after `1.4.0`) | `1.3.2`, `1.3` | `1.3.2`, `1.3` |
 | Pre-release `1.0.0-rc.1` | `1.0.0-rc.1`, `rc` | `1.0.0-rc.1`, `rc` |
 | Pre-release `1.0.0-beta.4` | `1.0.0-beta.4`, `beta` | `1.0.0-beta.4`, `beta` |
 
@@ -702,8 +703,14 @@ A pre-release **never** moves `latest`, nor the major/minor aliases — otherwis
 of its kind and stays put when a stable ships — after `1.0.0`, `:rc` still names `1.0.0-rc.1`
 until the next release candidate is published.
 
+A stable release moves an alias only when it is the highest stable version that alias covers:
+`1.3` the highest 1.3.x, `1` the highest 1.x, `latest` the highest of all. A maintenance release of an older
+line — 1.3.2 published after 1.4.0 — therefore moves only its exact tag and `1.3`; `1` and
+`latest` stay on 1.4.
+
 The benchmark images are tagged by contender instead (`:swoole`, `:bun`, …) and are rebuilt
-against each freshly published framework image.
+against each newly published framework image that is the highest stable — never against a
+pre-release or a maintenance release.
 
 ### Architectures
 

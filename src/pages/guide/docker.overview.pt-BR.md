@@ -39,7 +39,7 @@ Referência.
 > enquanto a `full` era o harness de benchmark, ou seja, os nomes diziam o oposto da verdade.
 
 > **A `latest` acompanha a linha estável.** A `bootgly/bootgly.kit` pura é a
-> `bootgly/bootgly.kit:latest`, que avança a cada release estável — é ela que todo comando desta
+> `bootgly/bootgly.kit:latest`, que avança a cada release estável mais alta — é ela que todo comando desta
 > página usa, e a imagem do framework nunca recebe uma (veja o esquema de tags). Fixar uma
 > versão é o que torna um deploy imutável: a `bootgly/bootgly.kit:1.0.0` nunca muda, e a
 > `bootgly/bootgly.kit:1` só se move dentro da linha 1.x. Veja [Esquema de tags](#esquema-de-tags).
@@ -376,7 +376,7 @@ docker pull bootgly/bootgly.kit:1.0.0
 ```
 
 Baixe uma versão exata para cair em um release específico; um `docker pull bootgly/bootgly.kit`
-puro (ou `:1`) avança para a estável mais nova.
+puro avança para a estável mais alta (a `:1`: a 1.x mais alta).
 
 Os comandos `kit upgrade` e `kit downgrade` recusam dentro da imagem e explicam por quê: a
 imagem entrega o *layout* do kit, não um checkout git (o build remove o `.git` de propósito),
@@ -557,7 +557,7 @@ docker run --rm -p 8082:8082 myapp
 ```
 
 Fixe uma versão exata no `FROM` (`bootgly/bootgly:1.0.0`) quando a imagem precisa se reproduzir
-byte a byte; fixe o major (`bootgly/bootgly:1`) para avançar a cada release 1.x sem mexer no
+byte a byte; fixe o major (`bootgly/bootgly:1`) para avançar a cada release 1.x mais alta sem mexer no
 Dockerfile.
 
 Escrever esse arquivo substitui o registro do próprio framework, então os projetos `Demo/*`
@@ -698,6 +698,7 @@ A versão **é** a tag; não há sufixo de variante para confundir com ela.
 | Release | `bootgly/bootgly.kit` (o produto) | `bootgly/bootgly` (o ingrediente) |
 |---------|------------------------------------|-----------------------------------|
 | Estável `1.2.3` | `1.2.3`, `1.2`, `1`, `latest` | `1.2.3`, `1.2`, `1` |
+| Manutenção `1.3.2` (depois da `1.4.0`) | `1.3.2`, `1.3` | `1.3.2`, `1.3` |
 | Pre-release `1.0.0-rc.1` | `1.0.0-rc.1`, `rc` | `1.0.0-rc.1`, `rc` |
 | Pre-release `1.0.0-beta.4` | `1.0.0-beta.4`, `beta` | `1.0.0-beta.4`, `beta` |
 
@@ -712,8 +713,14 @@ de canal (`rc`, `beta`) são tags móveis que você escolhe usar deliberadamente
 a pre-release mais nova do seu tipo e fica parado quando uma estável sai — depois da `1.0.0`, a
 `:rc` continua nomeando a `1.0.0-rc.1` até a próxima release candidate ser publicada.
 
+Uma release estável só move um apelido quando é a versão estável mais alta que aquele apelido
+cobre: a `1.3` a 1.3.x mais alta, a `1` a 1.x mais alta, a `latest` a mais alta de todas. Uma release de
+manutenção de uma linha mais antiga — a 1.3.2 publicada depois da 1.4.0 — move, portanto, só a
+sua tag exata e a `1.3`; a `1` e a `latest` continuam na 1.4.
+
 As imagens de benchmark são tagueadas por concorrente (`:swoole`, `:bun`, …) e reconstruídas
-contra cada imagem do framework recém-publicada.
+contra cada imagem do framework recém-publicada que seja a estável mais alta — nunca contra uma
+pre-release nem contra uma release de manutenção.
 
 ### Arquiteturas
 
