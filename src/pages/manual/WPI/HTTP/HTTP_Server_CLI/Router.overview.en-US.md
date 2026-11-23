@@ -504,7 +504,7 @@ The list records what was registered, not which route wins a request:
 
 `Route` is the **current match**: the state of the route the Router matched for the request being handled — `$this` inside a Closure handler. It is not a registered route; for that, read a row of the [route list](#route-list).
 
-The Router keeps one `Route` for the worker's life, and every handler's `$this` is that object. A handler reached from deferred work — behind a middleware that deferred ahead of `$next`, or routed by a Router whose routes registered inside a deferral — still reads its own request's `path` and `Params`: each slice of deferred work installs its request's match in that `Route` while it runs, and keeps what it routed across `wait()` and a nested `defer()`. Treat the `Route` as read-only from a handler: an entry written into `$this->Params` is not lost across a `wait()`, but nothing clears it after a static or catch-all match — the next request routed to one still sees it — and a whole property replaced from deferred work (`$this->path = …`) can be lost at the next `wait()`.
+The Router keeps one `Route` for the worker's life, and every handler's `$this` is that object. A handler reached from deferred work — behind a middleware that deferred ahead of `$next`, or routed by a Router whose routes registered inside a deferral — still reads its own request's `path` and `Params`: each slice of deferred work installs its request's match in that `Route` while it runs, and keeps what it routed across `wait()` and a nested `defer()`. Treat the `Route` as read-only from a handler. An entry a handler writes into `$this->Params` lives for its request only: it is kept across a `wait()`, and the Router empties `Params` before it routes the next request, so no later request's handler — another client's included — reads it. Code that runs outside a routed handler — a global middleware, or a response answered from the [route response cache](#route-response-cache) — still sees the map of the last request routed. Inside deferred work, read params through `$this->Params`, never through a `Params` object captured before the `defer()`: that object is the worker's, and the next request empties it. A whole property replaced from deferred work (`$this->path = …`) can be lost at the next `wait()`.
 
 The `Route` class (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) exposes the following properties:
 
@@ -513,7 +513,6 @@ The `Route` class (`Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Route`) exposes the
 | `path` | `string` | The path of the request that matched (`/user/42`), not the route pattern |
 | `Params` | `Params` | Route parameters container |
 | `Middlewares` | `array<Middleware>` | The middleware chain folded around the matched route (group entries first, then the route's own), present only while a middleware-bearing dispatch runs — the chain a deferred generation keeps for its `Recovering` boundaries (see [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares)) |
-| `parameterized` | `bool` | Whether the current match stored route params — the Router reads it to clear them before the next static or catch-all match. Internal: maintained by the Router, never written by the application |
 | `base` | `string` | The request base path (property hook) |
 
 ### Params Object
