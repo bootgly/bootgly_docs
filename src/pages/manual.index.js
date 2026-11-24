@@ -1032,7 +1032,6 @@ export default {
     config: {
       icon: 'sensors',
       status: 'done',
-      version: 'v0.0.1',
       updated: ['v1.3.0'],
       meta: {
         description: {
