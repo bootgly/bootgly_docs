@@ -281,6 +281,35 @@ O [manual do S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/) traz o flux
 uma URL pré-assinada autoriza, o upload pelo navegador passo a passo, uma parte enviada pelo servidor, como decidir a partir de uma falha, e as notas para serviços
 compatíveis com S3.
 
+#### S3 dentro de um handler de request
+
+O driver bloqueia o worker enquanto o store responde — tudo bem num comando ou num job, mas dentro
+de um servidor HTTP toda outra conexão daquele worker espera junto. Num handler, registre o
+[resource de resposta S3](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/#registrar-o-resource-s3)
+para o mesmo disco e chame-o de `defer()`: ele envia os mesmos requests assinados pelo reactor do
+worker, então o request deferido estaciona e o worker continua respondendo.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\S3;
+
+$HTTP_Server_CLI->configure(new ResponseConfigs(Resources: [
+   'S3' => S3::provide($Storage, 'cdn'),
+]));
+
+// numa rota
+return $Response->defer(function (Response $Response) use ($bytes): void {
+   $saved = $Response->S3->write('logo.png', $bytes, ['type' => 'image/png']);
+
+   $Response->JSON->send(['saved' => $saved, 'code' => $Response->S3->Failure?->code]);
+});
+```
+
+Ele grava, lê, verifica e apaga objetos e tem o mesmo handle `Uploads`, e falha do mesmo jeito —
+`false`, `$error` e `$Failure`. Cada worker limita os bytes que suas escritas têm em voo (32 MiB
+por padrão): uma escrita que não cabe é recusada pelo nome, nunca cortada.
+
 ### Registre seu próprio driver
 
 ```php

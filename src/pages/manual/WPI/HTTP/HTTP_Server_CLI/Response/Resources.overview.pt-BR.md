@@ -16,8 +16,9 @@ Resources built-in ficam disponíveis de forma lazy em toda resposta:
 
 Resources de projeto são registrados uma vez — por um `Response\Configs` entregue ao
 `HTTP_Server_CLI->configure()` — e depois acessados pelo nome dentro da rota, por exemplo `$Response->Database` (SQL async),
-`$Response->KV` (key-value Redis async) ou `$Response->Upstream` (uma chamada HTTP de saída
-pelo client nativo embarcado no reactor do worker).
+`$Response->KV` (key-value Redis async), `$Response->Upstream` (uma chamada HTTP de saída
+pelo client nativo embarcado no reactor do worker) ou `$Response->S3` (objetos no bucket de um
+disco S3 do storage, por esse mesmo client).
 
 ## Usar resources built-in
 
@@ -924,6 +925,249 @@ aqui: `retryOn`, `retryDelay`, `retryMaxDelay`, `retryTimeout`, `retryJitter`,
 `allowInsecureRedirect`, `Redirection` (preso à origem do upstream por padrão),
 `crossOriginHeaders`, `enableHTTP2` e a família do `timeout`. Nunca envie por ele.
 
+## Registrar o resource S3
+
+`S3` grava objetos no bucket de um disco S3 do [Storage](/guide/storage) de dentro de um request
+deferido. Ele fala com o mesmo bucket, sob o mesmo prefixo e com as mesmas assinaturas do driver
+`s3` bloqueante daquele disco, mas envia seus requests por um `HTTP_Client_CLI` embarcado no
+reactor do worker: enquanto o store responde, o Fiber deferido estaciona e o worker continua
+servindo suas outras conexões. Registre-o uma vez, a partir da definição do disco:
+
+```php
+use Bootgly\ABI\Resources\Storage;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Configs as ServerConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\S3;
+
+$Storage = new Storage([
+   'disks' => [
+      'uploads' => [
+         'driver' => 's3',
+         'bucket' => 'assets',
+         'region' => 'us-east-1',
+         'key'    => '…',
+         'secret' => '…',
+      ],
+   ],
+]);
+
+$HTTP_Server_CLI->configure(
+   new ServerConfigs(host: '0.0.0.0', port: 8080, workers: 4),
+   new ResponseConfigs(
+      Resources: [
+         'S3' => S3::provide($Storage, 'uploads'),
+      ]
+   )
+);
+```
+
+`provide()` lê a definição do disco uma vez, no registro — um disco não configurado, que não é
+`s3` ou que não pode ser construído lança `InvalidArgumentException` ali, não no primeiro request.
+A factory que ele devolve guarda só o compositor de requests do disco, nunca o array de opções com
+as credenciais, e constrói um `S3` novo para cada deferral. O nome de disco `''` é o disco default
+da camada.
+
+Os defaults dimensionam um worker; passe os ajustes ao `provide()` para mudá-los:
+
+```php
+'S3' => S3::provide($Storage, 'uploads', part: 16 * 1024 * 1024, budget: 64 * 1024 * 1024, concurrency: 4),
+```
+
+O resource não é montado por padrão: um projeto define seus discos em código, então registra o
+resource junto deles.
+
+## Gravar objetos a partir de um handler
+
+Dentro de `defer()` cada chamada é uma linha, e cada uma estaciona o Fiber deferido até o store
+responder:
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+
+return $Response->defer(function (Response $Response) use ($bytes): void {
+   $saved = $Response->S3->write('avatars/1.png', $bytes, ['type' => 'image/png']);
+
+   $Response->JSON->send([
+      'saved' => $saved,
+      'code' => $Response->S3->Failure?->code,
+   ]);
+});
+```
+
+`write()` recebe uma string ou um stream legível, e as opções `type` e `meta` do driver. `read()`
+devolve o objeto — ou uma janela dele, com um offset e um tamanho — como string; `check()` diz se
+ele existe; `delete()` o remove:
+
+```php
+return $Response->defer(function (Response $Response): void {
+   $S3 = $Response->S3;
+
+   $head = $S3->read('reports/2026.csv', 0, 1024);   // os primeiros 1024 bytes
+   $exists = $S3->check('reports/2025.csv');
+   $removed = $S3->delete('reports/draft.csv');
+
+   $Response->JSON->send(['head' => $head, 'exists' => $exists, 'removed' => $removed]);
+});
+```
+
+Uma escrita maior que uma `part` vai como Multipart Upload: suas partes viajam até `concurrency`
+por vez, e as próximas saem quando aquele grupo respondeu. O handle `$Uploads` é o do driver —
+`create()`, `sign()`, `put()`, `list()`, `complete()`, `abort()` — para um upload que um navegador
+envia em partes:
+
+```php
+return $Response->defer(function (Response $Response): void {
+   $Uploads = $Response->S3->Uploads;
+
+   $id = $Uploads->create('videos/source.mp4', ['type' => 'video/mp4']);
+   $URL = $id !== false ? $Uploads->sign('videos/source.mp4', $id, 1, 900) : false;
+
+   $Response->JSON->send(['id' => $id, 'part1' => $URL]);
+});
+```
+
+Toda chamada falha como a do driver: `false`, o motivo em `$error` e a falha como dado em
+`$Failure` — o status HTTP, o código do store e o tipo (`Refusal`, `Transport`, `Protocol`) —
+para a rota decidir sem interpretar palavras. Uma chamada que dá certo limpa os dois.
+
+## Limites e ciclo de vida do S3
+
+**O orçamento em voo.** `budget` são os bytes de corpo de request que todos os resources `S3` de um
+worker podem ter entregue aos seus clients ao mesmo tempo. Uma escrita reserva o que envia antes
+de ler um byte — uma escrita multipart reserva seu grupo de partes e o mantém até terminar —, então
+uma escrita que não cabe é recusada no início, pelo nome, e nunca truncada nem enviada pela metade.
+Uma escrita grande nunca toma a última parte do orçamento (nos padrões, uma escrita mantém três
+partes de 8 MiB), então uma escrita de uma parte ou menos sempre encontra espaço enquanto só
+escritas grandes correm — uma stream também, cujo tamanho só aparece conforme é lida: a primeira
+parte dela pode tomar essa última parte, e ela é recusada antes de enviar um byte se uma segunda
+parte vier; uma segunda escrita grande que tomaria essa última parte é recusada. Com um orçamento
+abaixo de duas partes, uma escrita toma tudo:
+
+```text
+S3 write /big.bin: the worker's in-flight budget (33554432 bytes) cannot take one more part
+```
+
+O orçamento conta corpos de request; `read()` bufferiza a resposta inteira, limitada por
+`maxResponseBytes` (16 MiB por padrão) — além disso a leitura falha como `Protocol`.
+
+**Prazos.** `connectTimeout` limita a discagem e o handshake TLS, e `timeout` limita um request do
+seu envio até o último byte da resposta — uma parte de 8 MiB num link lento precisa de um `timeout`
+que cubra o upload dela. Os dois precisam ser maiores que `0`: um store que nunca responde nunca
+estaciona um request para sempre. A conclusão de um Multipart Upload espera pelo menos 120 s, já
+que o store junta todas as partes antes de responder; quando a resposta dela se perde — ou é um
+`NoSuchUpload`, o que recebe o replay de uma conclusão que o store já tratou — o resource pergunta ao
+store: um upload ainda listado falha a escrita (e é abortado); senão, um objeto na chave cujo ETag é
+o que as partes formam (e, no `write()`, do tamanho e dos headers escritos) é um sucesso, e qualquer
+outro caso falha com o desfecho desconhecido — o objeto na chave fica como está, e um upload que o
+store não quis listar é abortado mesmo assim, o que deixa intacto um objeto já concluído. Um store
+cujos ETags de parte não são MD5 (SSE-KMS, SSE-C, alguns stores compatíveis com S3) nunca mostra
+correspondência: as conclusões perdidas dele terminam com o desfecho desconhecido.
+
+**Uma escrita que termina antes.** Uma fonte stream precisa bloquear: uma leitura vazia antes do
+fim (um socket não bloqueante ainda sem dados) falha a escrita como `source stream read error` —
+nunca um objeto truncado. Uma parte ou uma conclusão que falha aborta o upload antes de `write()`
+retornar. Um `Timeout` de deferral lançado numa escrita em espera aborta o upload antes de o throw
+sair da escrita — exceto durante a conclusão, quando o store pode já ter formado o objeto: então o
+desfecho é desconhecido, e o objeto pode ficar na chave por trás do `503`. Um abort espera no máximo
+3 s para conectar e 3 s pela resposta; um upload que ele não conseguiu abortar, como o upload
+aberto de um request destruído enquanto espera — o client dele foi embora, o orçamento devolvido na
+hora —, fica para o próximo deferral que usar um resource do mesmo disco naquele worker, que aborta
+no máximo dois deles antes da própria chamada. Um cujo abort falha de novo fica para os próximos,
+três tentativas no total — o abort da própria escrita conta; um cujo abort o store recusa de vez
+(`AccessDenied`, `InvalidAccessKeyId`, `NoSuchBucket`, `SignatureDoesNotMatch`) é esquecido na hora,
+enquanto uma recusa que pode passar (`RequestTimeTooSkewed`, um throttle) é tentada de novo. Configure também uma regra de lifecycle
+`AbortIncompleteMultipartUpload` no bucket: um worker que para perde o que lembrava.
+
+**Posse.** Como no `HTTP`, a primeira chamada toma o contexto deferido em execução e todo outro
+caso é recusado com `LogicException` — fora de `defer()`:
+`S3 response resource must be used inside a live deferred context — call it from defer(), before handing off to SSE or a nested defer().`
+— ou enquanto outro contexto o possui. O client embarcado é privado: seus requests pendentes levam
+os headers assinados, e um dump do resource não mostra eles, o secret nem um token de sessão.
+
+**Nomes.** O host do endpoint é resolvido quando a primeira conexão abre, e essa consulta ainda
+bloqueia o worker; use um endpoint por IP ou um cache local de resolução quando isso importar.
+
+## Métodos do S3
+
+```php
+static provide (Storage $Storage, string $disk = '', int $part = 8388608, int $budget = 33554432, int $concurrency = 4, int|float $timeout = 30, int|float $connectTimeout = 10, int $maxResponseBytes = 16777216): Closure
+```
+
+Devolve a factory a registrar em `Response\Configs(Resources:)`. `$disk` nomeia um disco `s3` da
+camada (`''` = o disco default dela); os ajustes são os do construtor. Lança
+`InvalidArgumentException` quando o disco não está configurado, não é um disco S3, ou um ajuste
+está fora da faixa.
+
+```php
+__construct (Writer $Writer, int $part = 8388608, int $budget = 33554432, int $concurrency = 4, int|float $timeout = 30, int|float $connectTimeout = 10, int $maxResponseBytes = 16777216)
+```
+
+Constrói o resource sobre o compositor de requests do disco (`Storage\Drivers\S3\Writer`) e
+embarca o client dele no reactor do worker. `$part` é o tamanho de cada parte de um Multipart
+Upload (5 MiB a 5 GiB, no máximo `$budget`); `$budget` é o orçamento em voo do worker, em bytes;
+`$concurrency` é quantas partes de uma escrita viajam juntas (no mínimo `1`, e nunca a última parte
+do orçamento); `$timeout` e
+`$connectTimeout` são em segundos (maiores que `0`); `$maxResponseBytes` limita a resposta que
+`read()` bufferiza, cabeçalho incluído. Lança `InvalidArgumentException` para um limite fora da
+faixa e `RuntimeException` fora do reactor do servidor HTTP.
+
+```php
+write (string $path, mixed $source, array $options = []): bool
+```
+
+Envia um objeto a partir de uma string ou de um stream legível — um `PUT`, ou um Multipart Upload
+quando é maior que uma parte. Um stream precisa bloquear: uma leitura vazia antes do fim falha a
+escrita. `$options` recebe `type` (Content-Type) e `meta` (um mapa
+`x-amz-meta-*`). Lança `LogicException` fora de um contexto deferido vivo.
+
+```php
+read (string $path, int $offset = 0, null|int $length = null): string|false
+```
+
+Baixa um objeto, ou a janela de `$length` bytes a partir de `$offset`, bufferizado inteiro; `false`
+quando ele não existe, passa de `maxResponseBytes`, ou a resposta não é aquele objeto ou aquela
+janela. Lança `LogicException` fora de um contexto deferido vivo.
+
+```php
+check (string $path): bool
+```
+
+Se um objeto existe. `false` tanto quando não existe — nenhuma falha é registrada — quanto quando o
+store não soube dizer, com a falha em `$Failure`. Lança `LogicException` fora de um contexto
+deferido vivo.
+
+```php
+delete (string $path): bool
+```
+
+Apaga um objeto; uma chave que já não existe é sucesso. Lança `LogicException` fora de um contexto
+deferido vivo.
+
+```php
+schedule (Closure $Wait): static
+```
+
+Liga a ponte de espera da resposta; o framework a chama quando o resource é anexado a uma resposta.
+
+```php
+public private(set) Uploads $Uploads
+```
+
+O handle de Multipart Upload do disco, com os métodos e as recusas do driver; toda chamada exceto
+`sign()` (que não envia nada) estaciona o Fiber deferido.
+
+```php
+public private(set) null|Failure $Failure
+```
+
+A falha da última chamada — o primeiro request que falhou nela — ou `null` depois de um sucesso.
+
+```php
+public private(set) string $error
+```
+
+O motivo da última falha, em palavras; `''` depois de um sucesso.
+
 ## Resources mantidos além do job deferred
 
 Dentro do `defer()`, a `$Response` que o seu trabalho recebe é um clone privado da resposta do
@@ -976,6 +1220,6 @@ return $Response->defer(function (Response $Response): void {
 Resources não substituem `Response`. Mantenha status codes, headers e entrega de body na
 `Response`, e use resources apenas para capacidades focadas de resposta.
 
-`Database`, `KV` e `HTTP` são as pontes async desse conjunto: elas estacionam o Fiber deferido
+`Database`, `KV`, `HTTP` e `S3` são as pontes async desse conjunto: elas estacionam o Fiber deferido
 na prontidão (readiness) em vez de bloquear o worker, então o lugar delas é dentro do
 `defer()` — nunca no caminho síncrono da rota.

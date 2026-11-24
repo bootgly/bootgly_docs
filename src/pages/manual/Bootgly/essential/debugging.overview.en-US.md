@@ -657,7 +657,7 @@ The framework's own classes that store secrets use the trait, so a dump of them 
 - the credential header fields of requests and responses — on the server, the HTTP client and the WebSocket client — with the raw header blocks, the cookies, the `Set-Cookie` lines, the Basic password, the Bearer token and the session id;
 - the wire buffers of a connection — TCP server and client, UDP client, the HTTP client's response bytes and HTTP/2 session, the HTTP/2 server decoder and its HPACK table: what it read, what it is writing and what it holds back for the next read or write.
 
-The credential header fields are the names in `HTTP::SECRET_HEADERS`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-csrf-token`, `x-api-key` and `x-auth-token`. A credential under another header name is yours to mask. Request and response bodies, session data and log contexts hold application data and are not masked: keep a secret out of them, or out of their dump. The decoded header fields of an open HTTP/2 stream are not masked either.
+The credential header fields are the names in `HTTP::SECRET_HEADERS`: `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-csrf-token`, `x-api-key`, `x-auth-token` and `x-amz-security-token`. A credential under another header name is yours to mask. Request and response bodies, session data and log contexts hold application data and are not masked: keep a secret out of them, or out of their dump. The decoded header fields of an open HTTP/2 stream are not masked either.
 
 ### Rules of thumb
 

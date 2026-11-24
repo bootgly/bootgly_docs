@@ -557,8 +557,8 @@ export default {
       status: 'done',
       meta: {
         description: {
-          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View, Database, KV and HTTP.',
-          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View, Database, KV e HTTP.'
+          'en-US': 'Extend HTTP responses with built-in and project resources such as JSON, View, Database, KV, HTTP and S3.',
+          'pt-BR': 'Estenda respostas HTTP com resources built-in e de projeto, como JSON, View, Database, KV, HTTP e S3.'
         }
       },
       menu: {},

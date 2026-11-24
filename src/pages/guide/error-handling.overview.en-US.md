@@ -35,7 +35,7 @@ request with status `500` and the built-in debug page: a frame sidebar (click a 
 inspect it), a ±8-line source excerpt with the failing line marked, bounded argument previews,
 the chained `getPrevious()` throwables, and a **Context** section with the sanitized request
 data (the credential header values — `authorization`, `proxy-authorization`, `cookie`,
-`set-cookie`, `x-csrf-token`, `x-api-key`, `x-auth-token` — are masked). The page is a
+`set-cookie`, `x-csrf-token`, `x-api-key`, `x-auth-token`, `x-amz-security-token` — are masked). The page is a
 single self-contained HTML document — inline CSS/JS, no external assets.
 
 The argument previews show what PHP recorded for each frame, so a password passed down a call

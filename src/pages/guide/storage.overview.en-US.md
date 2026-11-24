@@ -273,6 +273,35 @@ The [S3 manual](/manual/ABI/Resources/Storage/Drivers/S3/overview/) has the whol
 presigned URL authorizes, the browser upload step by step, a part sent by the server, branching on a failure, and the notes for S3-compatible
 stores.
 
+#### S3 inside a request handler
+
+The driver blocks the worker while the store answers — fine in a command or a job, but inside an
+HTTP server every other connection of that worker waits with it. In a handler, register the
+[S3 response resource](/manual/WPI/HTTP/HTTP_Server_CLI/Response/Resources/#register-the-s3-resource)
+for the same disk and call it from `defer()`: it sends the same signed requests through the
+worker's reactor, so the deferred request parks and the worker keeps answering.
+
+```php
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Configs as ResponseConfigs;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response\Resources\S3;
+
+$HTTP_Server_CLI->configure(new ResponseConfigs(Resources: [
+   'S3' => S3::provide($Storage, 'cdn'),
+]));
+
+// in a route
+return $Response->defer(function (Response $Response) use ($bytes): void {
+   $saved = $Response->S3->write('logo.png', $bytes, ['type' => 'image/png']);
+
+   $Response->JSON->send(['saved' => $saved, 'code' => $Response->S3->Failure?->code]);
+});
+```
+
+It writes, reads, checks and deletes objects and has the same `Uploads` handle, and it fails the
+same way — `false`, `$error` and `$Failure`. Each worker bounds the bytes its writes have in flight
+(32 MiB by default): a write that does not fit is refused by name, never cut.
+
 ### Register your own driver
 
 ```php

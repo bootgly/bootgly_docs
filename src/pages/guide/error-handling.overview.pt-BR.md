@@ -37,7 +37,7 @@ em um frame para inspecioná-lo), um trecho de código-fonte de ±8 linhas com a
 marcada, previews limitados dos argumentos, os throwables encadeados de `getPrevious()`, e uma
 seção de **Contexto** com os dados sanitizados da requisição (os valores dos headers de
 credencial — `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-csrf-token`,
-`x-api-key`, `x-auth-token` — são mascarados). A página é um único documento HTML auto-contido —
+`x-api-key`, `x-auth-token`, `x-amz-security-token` — são mascarados). A página é um único documento HTML auto-contido —
 CSS/JS inline, sem assets externos.
 
 Os previews de argumentos mostram o que o PHP registrou para cada frame, então uma senha
