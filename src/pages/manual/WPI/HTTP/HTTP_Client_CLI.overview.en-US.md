@@ -588,6 +588,8 @@ return $Response->defer(function (Response $Response) {
 
 `request()` parks the deferred Fiber until the `Response` is complete. `batch()` + `drain()` park it until every batched request settles — `drain()` does not run a loop here, it parks.
 
+If a throw cuts that park — the deferral `Timeout`, say — `drain()` still ends batch mode on its way out, so a job that catches it can keep using the client. The interrupted batch's requests stay pending: the next `request()` or `drain()` waits for them too, unless `abort()` drops them first.
+
 The dial parks too: opening the connection parks on write readiness and the TLS handshake parks on read readiness, in 1-second slices bounded by the dial deadline. So an unreachable or silent upstream costs the worker nothing but a dialing socket — the reactor keeps ticking and the other connections keep being served.
 
 ### One Fiber owns one client

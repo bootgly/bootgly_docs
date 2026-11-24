@@ -588,6 +588,8 @@ return $Response->defer(function (Response $Response) {
 
 `request()` faz park da Fiber deferida até a `Response` estar completa. `batch()` + `drain()` fazem park dela até toda requisição em batch se resolver — aqui `drain()` não roda um loop, ele faz park.
 
+Se um throw interrompe esse park — o `Timeout` do deferral, por exemplo — `drain()` ainda encerra o modo batch na saída, então um job que o captura pode continuar usando o cliente. As requisições do batch interrompido continuam pendentes: o próximo `request()` ou `drain()` espera por elas também, a menos que `abort()` as descarte antes.
+
 A discagem também faz park: abrir a conexão faz park sobre readiness de escrita e o handshake TLS faz park sobre readiness de leitura, em fatias de 1 segundo limitadas pelo deadline de discagem. Assim, um upstream inalcançável ou silencioso não custa nada ao worker além de um socket discando — o reactor continua ticando e as outras conexões continuam sendo servidas.
 
 ### Uma Fiber é dona de um cliente
