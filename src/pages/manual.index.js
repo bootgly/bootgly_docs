@@ -491,6 +491,7 @@ export default {
       icon: 'bolt',
       status: 'done',
       version: 'v0.19.0',
+      updated: ['v1.0.0', 'v1.0.8'],
       meta: {
         description: {
           'en-US': 'Serve HTTP/2 natively — h2 over TLS (ALPN) and cleartext prior knowledge, HPACK, multiplexing, flow control and rapid-reset protection, dependency-free.',
@@ -663,6 +664,7 @@ export default {
       icon: 'smart_toy',
       status: 'done',
       version: 'v1.2.0',
+      updated: ['v1.3.1', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Serve an MCP server on a route over Streamable HTTP: sessions shared across workers and bound to the caller, protocol-version and Origin checks, JSON or event-stream answers, the GET listening stream and DELETE.',
@@ -784,6 +786,7 @@ export default {
       icon: 'sync_alt',
       status: 'done',
       version: 'v0.19.0',
+      updated: ['v1.0.0', 'v1.0.5', 'v1.0.8', 'v1.1.0', 'v1.3.0'],
       meta: {
         description: {
           'en-US': 'Run an event-driven WebSocket server in pure PHP — RFC 6455 framing, rooms, ping/pong heartbeat, compression and handshake auth.',
@@ -808,6 +811,7 @@ export default {
       icon: 'forum',
       status: 'done',
       version: 'v0.19.0',
+      updated: ['v1.0.8'],
       meta: {
         description: {
           'en-US': 'Group WebSocket sessions into rooms and broadcast to every member across workers.',
@@ -830,6 +834,7 @@ export default {
       icon: 'compress',
       status: 'done',
       version: 'v0.19.0',
+      updated: ['v1.0.0', 'v1.0.8'],
       meta: {
         description: {
           'en-US': 'Negotiate permessage-deflate (RFC 7692) to compress WebSocket messages with built-in zlib.',
@@ -855,6 +860,7 @@ export default {
       icon: 'shield',
       status: 'done',
       version: 'v0.19.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Authenticate the WebSocket handshake by reusing the HTTP Server CLI auth guards.',
@@ -881,6 +887,7 @@ export default {
       icon: 'cell_tower',
       status: 'done',
       version: 'v0.19.0',
+      updated: ['v0.20.0', 'v1.0.0', 'v1.0.8'],
       meta: {
         description: {
           'en-US': 'Talk to a WebSocket endpoint in pure PHP — RFC 6455 masked framing, fragmentation, ping/pong, permessage-deflate and wss://.',
@@ -1024,8 +1031,9 @@ export default {
   '/WPI/Events/Select': {
     config: {
       icon: 'sensors',
-      status: 'new',
-      version: 'v1.3.0',
+      status: 'done',
+      version: 'v0.0.1',
+      updated: ['v1.3.0'],
       meta: {
         description: {
           'en-US': 'Handle POSIX signals on the worker event loop: handlers run between callbacks, one per signal, restored on release, with failures reported instead of stopping the loop.',
@@ -1174,6 +1182,7 @@ export default {
       icon: 'smart_toy',
       status: 'done',
       version: 'v1.2.0',
+      updated: ['v1.3.1'],
       meta: {
         description: {
           'en-US': 'Serve an MCP server over stdio from a command: one JSON-RPC message per line on stdin, answers on stdout, every diagnostic — and whatever a tool prints — on stderr.',
@@ -1348,6 +1357,7 @@ export default {
       icon: 'short_text',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Drive single-line editing with a pure key/buffer engine — virtual cursor, masking and windowing.',
@@ -1496,6 +1506,7 @@ export default {
       icon: 'web_asset',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Compute the visible slice of scrollable lists — slide a window to follow the aimed row.',
@@ -1598,6 +1609,7 @@ export default {
       icon: 'data_object',
       status: 'done',
       version: 'v1.0.0',
+      updated: ['v1.4.0'],
       meta: {
         description: {
           'en-US': 'Dump any PHP value as colorized, structured terminal output — visibility sigils, cycles, caps and themes.',
@@ -1708,6 +1720,7 @@ export default {
       icon: 'animation',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Animate terminal text: typewriter, fade-in and a shimmering color wave.',
@@ -1877,6 +1890,7 @@ export default {
       icon: 'bar_chart',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Plot gradient-colored sparklines, bars, meters and live braille graphs in the terminal.',
@@ -1963,6 +1977,7 @@ export default {
       icon: 'article',
       status: 'done',
       version: 'v1.0.0',
+      updated: ['v1.0.12'],
       meta: {
         description: {
           'en-US': 'Render markdown in the terminal — headings, lists, tables, quotes and fenced code, styled with raw SGR.',
@@ -2005,6 +2020,7 @@ export default {
       icon: 'swap_vert',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Buffer content into a fixed screen band with its own scrollbar and scrolling.',
@@ -2049,6 +2065,7 @@ export default {
       icon: 'autorenew',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Animate an indeterminate activity indicator while your CLI code works.',
@@ -2091,6 +2108,7 @@ export default {
       icon: 'edit_note',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Edit multiline text in the terminal — Enter breaks lines, Ctrl+D submits.',
@@ -2113,6 +2131,7 @@ export default {
       icon: 'text_fields',
       status: 'done',
       version: 'v1.0.0',
+      updated: ['v1.1.0'],
       meta: {
         description: {
           'en-US': 'The single-line text input — validated answers, secret input, autocompletion and search in one component.',
@@ -2135,6 +2154,7 @@ export default {
       icon: 'timeline',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Guide multi-step CLI flows with per-step state: pending, active, done or failed.',
@@ -2179,6 +2199,7 @@ export default {
       icon: 'account_tree',
       status: 'done',
       version: 'v1.0.0',
+      updated: ['v1.0.12'],
       meta: {
         description: {
           'en-US': 'Hierarchical view with expand/collapse, lazy children, programmable Enter actions and an interactive picker.',
@@ -2263,6 +2284,7 @@ export default {
       icon: 'dynamic_form',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Ask a declarative list of fields sequentially, with revert and a summary + confirm loop.',
@@ -2285,6 +2307,7 @@ export default {
       icon: 'terminal',
       status: 'done',
       version: 'v0.20.0',
+      updated: ['v1.0.0'],
       meta: {
         description: {
           'en-US': 'Fix the input line at the bottom while buffered content scrolls above — REPL-style.',
@@ -2352,7 +2375,8 @@ export default {
     config: {
       icon: 'api',
       status: 'done',
-      version: 'v1.1.0',
+      version: 'v0.0.1',
+      updated: ['v1.1.0'],
       meta: {
         description: {
           'en-US': 'The application layer of Bootgly: projects, configuration, the environment, transport-independent security primitives and the RPC protocols — a JSON-RPC 2.0 dispatcher and an MCP server core.',
@@ -2415,6 +2439,7 @@ export default {
       icon: 'smart_toy',
       status: 'done',
       version: 'v1.1.0',
+      updated: ['v1.2.0'],
       meta: {
         description: {
           'en-US': 'The Model Context Protocol server core over JSON-RPC: revision negotiation, tools, resources and prompts from your closures, the Initializer for the session, the empty-result rule, and its HTTP and stdio transports.',
@@ -2441,7 +2466,8 @@ export default {
     config: {
       icon: 'data_array',
       status: 'done',
-      version: 'v0.16.0',
+      version: 'v0.0.1',
+      updated: ['v0.16.0', 'v1.0.12', 'v1.1.0', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'Store and check data in Bootgly: the SQL and KV (Redis) databases, connection pooling, Query and Schema Builders, migrations, seeders and the ORM Data Mapper, the in-memory Table dataset, and Validation with its built-in rules.',
@@ -2496,6 +2522,7 @@ export default {
       icon: 'hub',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v0.22.0', 'v1.0.0', 'v1.0.4', 'v1.0.5', 'v1.0.11', 'v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'The transport-agnostic DBAL core both facades extend: connection config, the connection pool, how an operation runs and fails, Operation states and Result fields.',
@@ -2523,6 +2550,7 @@ export default {
       icon: 'settings',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12', 'v1.0.13', 'v1.1.0', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'Connection config for every database driver: keys and defaults, driver names, the operation timeout, pool size, TLS (secure) rules and the configuration errors.',
@@ -2548,6 +2576,7 @@ export default {
       icon: 'device_hub',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'The database connection pool: sizing and co-location, synchronous waits, deadlines, cancellation, withdrawn work and session reset, and replica health.',
@@ -2573,6 +2602,7 @@ export default {
       icon: 'category',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'Database paradigm facades: SQL for relational databases and KV for Redis commands, where to open each one, and the Databases registry that creates a facade by name.',
@@ -2599,6 +2629,7 @@ export default {
       icon: 'dataset',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12', 'v1.0.13', 'v1.1.0', 'v1.3.0'],
       meta: {
         description: {
           'en-US': 'The SQL facade: open a database, its SQL config keys, run and await queries, read the outcome, read-after-write routing, builders, transactions and repositories, events and errors.',
@@ -2625,7 +2656,8 @@ export default {
     config: {
       icon: 'cable',
       status: 'done',
-      version: 'v0.22.0',
+      version: 'v0.16.0',
+      updated: ['v0.22.0', 'v1.0.0', 'v1.0.11', 'v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'Native SQL wire drivers: PostgreSQL, MySQL/MariaDB and SQLite — selection, capabilities, result differences, error codes, limits and pool notes.',
@@ -2650,7 +2682,8 @@ export default {
     config: {
       icon: 'dns',
       status: 'done',
-      version: 'v0.22.0',
+      version: 'v0.16.0',
+      updated: ['v0.22.0', 'v1.0.0', 'v1.0.3', 'v1.0.10', 'v1.0.11', 'v1.0.12', 'v1.0.13', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Native PostgreSQL Protocol 3.0 driver: SCRAM authentication, TLS, extended protocol and pipelining.',
@@ -2676,6 +2709,7 @@ export default {
       icon: 'bolt',
       status: 'done',
       version: 'v0.22.0',
+      updated: ['v1.0.0', 'v1.0.3', 'v1.0.11', 'v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'Native MySQL/MariaDB driver: caching_sha2 authentication, TLS, binary prepared statements and KILL QUERY.',
@@ -2701,6 +2735,7 @@ export default {
       icon: 'sd_storage',
       status: 'done',
       version: 'v0.22.0',
+      updated: ['v1.0.0', 'v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'Native SQLite driver over ext-sqlite3: zero-setup file and :memory: databases for tests and prototypes.',
@@ -2726,6 +2761,7 @@ export default {
       icon: 'data_object',
       status: 'done',
       version: 'v0.22.0',
+      updated: ['v1.0.12', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'How PostgreSQL, MySQL and SQLite bind PHP parameters and return column types, side by side, and what to normalize in PHP for portable code.',
@@ -2755,6 +2791,7 @@ export default {
       icon: 'sync_alt',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.0', 'v1.0.5', 'v1.0.11', 'v1.0.12', 'v1.0.13', 'v1.3.0'],
       meta: {
         description: {
           'en-US': 'SQL transactions on one pinned pooled connection: commit, rollback and abort, savepoints, refusals, repositories inside a transaction, read-after-write marks and lifecycle events.',
@@ -2780,6 +2817,7 @@ export default {
       icon: 'storage',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.4', 'v1.0.12'],
       meta: {
         description: {
           'en-US': 'Build parameterized SELECT, INSERT, UPDATE and DELETE statements through the SQL Query Builder.',
@@ -2805,6 +2843,7 @@ export default {
       icon: 'search',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.0', 'v1.0.3', 'v1.0.12'],
       meta: {
         description: {
           'en-US': 'Read rows with select, filters, text matching, joins, aliases, aggregates, grouping, order and locks.',
@@ -2830,6 +2869,7 @@ export default {
       icon: 'edit_note',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v0.22.0', 'v1.0.12'],
       meta: {
         description: {
           'en-US': 'Write rows with insert, multi-row set values, update/delete guards, RETURNING output and upsert handling.',
@@ -2855,6 +2895,7 @@ export default {
       icon: 'account_tree',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12'],
       meta: {
         description: {
           'en-US': 'Compose advanced query shapes with Identifier, Expression, nested filters, subqueries, derived tables and CTEs.',
@@ -2880,6 +2921,7 @@ export default {
       icon: 'compare_arrows',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v0.22.0', 'v1.0.12'],
       meta: {
         description: {
           'en-US': 'Compare Query Builder output across PostgreSQL, MySQL and SQLite: quotes, placeholders and capabilities.',
@@ -2909,6 +2951,7 @@ export default {
       icon: 'schema',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12'],
       meta: {
         description: {
           'en-US': 'Compile portable CREATE, ALTER, DROP, RENAME, index and constraint DDL into dialect-specific SQL.',
@@ -2934,6 +2977,7 @@ export default {
       icon: 'view_column',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.0', 'v1.0.12', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Define tables and columns fluently: types, modifiers, keys, references and auxiliary enums.',
@@ -2959,6 +3003,7 @@ export default {
       icon: 'history',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.12'],
       meta: {
         description: {
           'en-US': 'Version the schema with migration files, the Runner, batches, history, transactions and locking.',
@@ -2981,6 +3026,7 @@ export default {
       icon: 'compare_arrows',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v0.22.0', 'v1.0.4', 'v1.0.12', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'PostgreSQL, MySQL and SQLite compilation differences and capability checks.',
@@ -3007,6 +3053,7 @@ export default {
       icon: 'playlist_add',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.4', 'v1.0.12'],
       meta: {
         description: {
           'en-US': 'Create and run rerunnable SQL seeders with Query Builder, transactions, locks and deterministic fakers.',
@@ -3041,6 +3088,7 @@ export default {
       icon: 'label',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.13'],
       meta: {
         description: {
           'en-US': 'Map entity classes to tables: compiled and cached metadata, Model::reflect(), mapping rules and errors, property types and constructors, readonly and inherited properties, and dates per driver.',
@@ -3068,6 +3116,7 @@ export default {
       icon: 'sell',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.13'],
       meta: {
         description: {
           'en-US': 'Table, Key, Column and Relation attributes: generated and application-assigned keys, the insert, update, generated and nullable column flags, and relation kinds, keys, pivots, names and lazy wrappers.',
@@ -3093,6 +3142,7 @@ export default {
       icon: 'account_tree',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.0', 'v1.0.12', 'v1.0.13', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Run ORM Data Mapper operations with repositories, selections, hydration and local identity maps.',
@@ -3118,6 +3168,7 @@ export default {
       icon: 'last_page',
       status: 'done',
       version: 'v0.22.0',
+      updated: ['v1.0.13', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Paginate ORM repositories by page with a COUNT(*) total or by keyset cursor: REST bodies and headers in HTTP routes, cursor walks at the ADI layer and the order columns a cursor accepts.',
@@ -3143,6 +3194,7 @@ export default {
       icon: 'hub',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.0', 'v1.0.13'],
       meta: {
         description: {
           'en-US': 'Load ORM relations as deferred operations, eagerly through an await bridge or lazily through LazyCollection/LazyReference wrappers, for has-one, has-many, belongs-to and many-to-many data; relation properties are never persisted.',
@@ -3168,6 +3220,7 @@ export default {
       icon: 'filter_list',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.13', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Describe the rows an ORM repository reads: filters by property or column, OR, text matching, order, slices, row locks, relations to load and named scopes, with the call-order caveats.',
@@ -3193,6 +3246,7 @@ export default {
       icon: 'water_drop',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.13', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'Turn finished operations into entities: the mapped result, how rows are cast into typed properties, the identity map and reset(), saved entities on every driver and the current limitations.',
@@ -3218,6 +3272,7 @@ export default {
       icon: 'webhook',
       status: 'done',
       version: 'v0.16.0',
+      updated: ['v1.0.13', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Listen to the eight ORM repository lifecycle hooks: the arguments each receives, which calls emit it, why Saved runs before the write lands, and how listeners steer or refuse the work.',
@@ -3243,6 +3298,7 @@ export default {
       icon: 'key',
       status: 'done',
       version: 'v0.17.0',
+      updated: ['v1.0.13', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'The KV facade: open a Redis database, run commands and read their replies, pipeline them, timeouts, cancel and withdraw, errors, the kv config scope adapter and the limits of a shared, pipelined pool.',
@@ -3278,6 +3334,7 @@ export default {
       icon: 'memory',
       status: 'done',
       version: 'v0.17.0',
+      updated: ['v1.0.13'],
       meta: {
         description: {
           'en-US': 'Native Redis driver of the KV facade: non-blocking TCP dial, AUTH/SELECT preamble, implicit TLS and when prefer falls back to plaintext, RESP3 push frames, pipelining and cancellation.',
@@ -3303,7 +3360,8 @@ export default {
     config: {
       icon: 'table_rows',
       status: 'done',
-      version: 'v0.1.3',
+      version: 'v0.0.1',
+      updated: ['v1.1.0'],
       meta: {
         description: {
           'en-US': 'The Table dataset behind the CLI Table: header, body and footer rows, the array syntax to read and change them, sum, subtract, multiply, divide and find over a body column, and their current limits.',
@@ -3330,7 +3388,8 @@ export default {
     config: {
       icon: 'fact_check',
       status: 'done',
-      version: 'v0.23.0',
+      version: 'v0.15.0',
+      updated: ['v0.23.0', 'v0.24.0', 'v1.1.0', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'The validation engine: run rules against an array, read valid and errors, blank values and implicit rules, every rule runs and nothing is converted, how messages are built and translated, writing a custom rule, and the Condition contract.',
@@ -3357,7 +3416,8 @@ export default {
     config: {
       icon: 'checklist',
       status: 'done',
-      version: 'v0.23.0',
+      version: 'v0.15.0',
+      updated: ['v1.1.0', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'The 14 built-in validation rules: what each one accepts and rejects, its arguments, default message and placeholders, the caveats of numbers, text lengths, dates, links and uploads, and the errors their constructors throw.',
@@ -3384,7 +3444,8 @@ export default {
     config: {
       icon: 'bolt',
       status: 'done',
-      version: 'v1.0.0',
+      version: 'v0.0.1',
+      updated: ['v1.0.0', 'v1.3.0'],
       meta: {
         description: {
           'en-US': 'The base layer every other one stands on: code primitives, templates, IO, resources, events and debugging.',
@@ -3446,7 +3507,8 @@ export default {
     config: {
       icon: 'data_array',
       status: 'done',
-      version: 'v1.0.0',
+      version: 'v0.0.1',
+      updated: ['v1.0.0', 'v1.0.4'],
       meta: {
         description: {
           'en-US': 'Chain array operations in a single pass: map, filter, early-exit find/check and reusable pipelines.',
@@ -3478,7 +3540,8 @@ export default {
     config: {
       icon: 'straighten',
       status: 'done',
-      version: 'v1.1.0',
+      version: 'v0.0.1',
+      updated: ['v1.1.0'],
       meta: {
         description: {
           'en-US': 'Format byte counts as human-readable sizes and parse sizes such as "512M" or "1.5 GB" back into bytes.',
@@ -3511,6 +3574,7 @@ export default {
       icon: 'link',
       status: 'done',
       version: 'v1.0.6',
+      updated: ['v1.4.0'],
       meta: {
         description: {
           'en-US': 'Parse RFC 3986 URIs, resolve references — the one resolver behind every redirect Location — and redact URL credentials for display.',
@@ -3541,7 +3605,7 @@ export default {
   '/ABI/Events/Selector': {
     config: {
       icon: 'sensors',
-      status: 'new',
+      status: 'done',
       version: 'v1.3.0',
       meta: {
         description: {
@@ -3582,7 +3646,8 @@ export default {
     config: {
       icon: 'description',
       status: 'done',
-      version: 'v1.1.0',
+      version: 'v0.0.1',
+      updated: ['v1.1.0'],
       meta: {
         description: {
           'en-US': 'Replace a file atomically and durably, with its permissions set before the first byte, and serialize writers across processes with advisory locks.',
@@ -3629,8 +3694,9 @@ export default {
   '/ABI/Resources/Storage/Drivers/S3': {
     config: {
       icon: 'cloud_upload',
-      status: 'new',
-      version: 'v1.3.0',
+      status: 'done',
+      version: 'v0.18.0',
+      updated: ['v1.3.0', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Presign time-limited download and upload links, let a browser send a Multipart Upload straight to the bucket, and read a byte range of an object with the S3 Storage driver.',

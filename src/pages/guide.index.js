@@ -139,6 +139,7 @@ export default {
       icon: 'login',
       status: 'done',
       version: 'v1.0.0',
+      updated: ['v1.0.10', 'v1.1.0', 'v1.3.0'],
       meta: {
         description: {
           'en-US': 'Session/cookie authentication scaffolding: registration, e-mail verification, login + remember-me and password reset — argon2id + single-use selector/verifier tokens.',
@@ -219,6 +220,7 @@ export default {
       icon: 'key',
       status: 'done',
       version: 'v0.24.0',
+      updated: ['v1.0.10', 'v1.3.0', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Encrypt values with AES-256-GCM key rotation and hash passwords with argon2id rehash-on-verify in Bootgly.',
@@ -246,6 +248,7 @@ export default {
       icon: 'cached',
       status: 'done',
       version: 'v0.17.0',
+      updated: ['v0.19.0', 'v1.0.0', 'v1.0.3', 'v1.0.6', 'v1.0.10', 'v1.0.12', 'v1.0.13', 'v1.1.0', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Cache values with File, APCu, Shared-memory or Redis drivers — TTL, tags, atomic counters and the multi-worker rate-limit backend.',
@@ -273,6 +276,7 @@ export default {
       icon: 'folder',
       status: 'done',
       version: 'v0.18.0',
+      updated: ['v1.0.0', 'v1.0.6', 'v1.0.12', 'v1.3.0', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Store files through a native facade — Local, Memory and S3 drivers, named disks, streaming write/read (S3 multipart) and path jailing.',
@@ -299,7 +303,8 @@ export default {
     config: {
       icon: 'code',
       status: 'done',
-      version: 'v0.21.0',
+      version: 'v0.0.1',
+      updated: ['v0.21.0', 'v1.1.0'],
       meta: {
         description: {
           'en-US': 'Write @-directive templates compiled to cached PHP — inheritance (@extends/@section/@yield), includes, components with slots, escaped output and template-line error reporting.',
@@ -326,7 +331,8 @@ export default {
     config: {
       icon: 'web',
       status: 'done',
-      version: 'v0.21.0',
+      version: 'v0.16.0',
+      updated: ['v0.21.0', 'v1.0.0'],
       meta: {
         description: {
           'en-US': 'Render project views on top of the template engine — default layouts, views/layouts and views/partials conventions, and JSON/XML/HTML content negotiation driven by the Accept header.',
@@ -353,7 +359,8 @@ export default {
     config: {
       icon: 'palette',
       status: 'done',
-      version: 'v0.21.0',
+      version: 'v0.2.0',
+      updated: ['v0.21.0', 'v1.0.0'],
       meta: {
         description: {
           'en-US': 'Theme terminal output by semantic key — builtin dark/light/mono themes, NO_COLOR support, a swappable Theme::$Current that drives the CLI @:…: color tokens, and custom theme registration.',
@@ -381,6 +388,7 @@ export default {
       icon: 'language',
       status: 'done',
       version: 'v0.24.0',
+      updated: ['v1.1.0', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'Translate messages with natural-source keys — PHP array catalogs per locale/domain, {token} placeholders, pipe plurals, Accept-Language negotiation, localized validation messages, @translate templates and error pages.',
@@ -408,6 +416,7 @@ export default {
       icon: 'stream',
       status: 'done',
       version: 'v0.24.0',
+      updated: ['v1.3.0'],
       meta: {
         description: {
           'en-US': 'Push live events to browsers over plain HTTP with Server-Sent Events — the text/event-stream Response resource with heartbeat, retry and Last-Event-ID resume, on HTTP/1.1 and HTTP/2.',
@@ -435,6 +444,7 @@ export default {
       icon: 'queue',
       status: 'done',
       version: 'v0.17.0',
+      updated: ['v0.19.0', 'v1.0.0', 'v1.1.0', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Enqueue background jobs and run workers — File or Redis drivers, retry/backoff, dead-letter, the queue worker command and lifecycle events.',
@@ -462,6 +472,7 @@ export default {
       icon: 'schedule',
       status: 'done',
       version: 'v0.17.0',
+      updated: ['v0.19.0', 'v1.0.0'],
       meta: {
         description: {
           'en-US': 'Schedule cron-style jobs with repeat(), overlap locks, missed-run recovery, a worker command and lifecycle events.',
@@ -515,6 +526,7 @@ export default {
       icon: 'mail',
       status: 'done',
       version: 'v0.21.0',
+      updated: ['v1.4.0'],
       meta: {
         description: {
           'en-US': 'Send emails with the built-in, dependency-free Mail system — MIME Message builder with attachments/inline images/templates, SMTP over TLS with typed failures, and queued background delivery.',
@@ -542,6 +554,7 @@ export default {
       icon: 'bug_report',
       status: 'done',
       version: 'v0.23.0',
+      updated: ['v1.0.5', 'v1.3.0', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'Environment-aware error handling — built-in Whoops-style debug page in development (HTML or JSON), clean pages and views/errors overrides in production, plus exception reporting to log channels, Observability metrics and custom reporters.',
@@ -569,6 +582,7 @@ export default {
       icon: 'podcasts',
       status: 'done',
       version: 'v0.17.0',
+      updated: ['v1.0.0', 'v1.0.9', 'v1.0.12', 'v1.1.0', 'v1.3.0'],
       meta: {
         description: {
           'en-US': 'Listen to framework domain events — cache, SQL, HTTP, sessions, workers — on the zero-overhead ABI event bus.',
@@ -596,6 +610,7 @@ export default {
       icon: 'receipt_long',
       status: 'done',
       version: 'v0.18.0',
+      updated: ['v1.0.0', 'v1.0.3', 'v1.0.5', 'v1.0.6', 'v1.0.7', 'v1.3.0', 'v1.3.1'],
       meta: {
         description: {
           'en-US': 'Structured logging — channels, handlers (file/stream/syslog), formatters, processors, filters, rotation, and a real-time filterable log viewer in Monitor mode.',
@@ -650,6 +665,7 @@ export default {
       icon: 'system_update_alt',
       status: 'done',
       version: 'v1.0.0',
+      updated: ['v1.0.4', 'v1.0.10', 'v1.0.12', 'v1.4.0'],
       meta: {
         description: {
           'en-US': 'The kit CLI — `bootgly kit boot` lays down the resource directories; `upgrade`, `downgrade` and `list` move the Bootgly Kit between Bootgly Platform releases: tags fetched from the canonical kit, submodules following the pins, your projects untouched; cloned and template-generated kits alike.',
@@ -703,6 +719,7 @@ export default {
       icon: 'insights',
       status: 'done',
       version: 'v0.18.0',
+      updated: ['v0.24.0', 'v1.0.0'],
       meta: {
         description: {
           'en-US': 'Native metrics — counters, gauges, histograms, process & runtime health, JSON/Prometheus/OTLP exporters, and /health + /metrics endpoints (Prometheus scrape + OTLP push) with file-per-worker aggregation.',
@@ -759,7 +776,8 @@ export default {
     config: {
       icon: 'rule',
       status: 'done',
-      version: 'v0.23.0',
+      version: 'v0.15.0',
+      updated: ['v0.23.0', 'v1.0.0', 'v1.0.6', 'v1.0.12', 'v1.1.0', 'v1.2.0'],
       meta: {
         description: {
           'en-US': 'Standalone data validation with composable rule objects — the same rules validate HTTP requests, CLI input, jobs and seeders.',
