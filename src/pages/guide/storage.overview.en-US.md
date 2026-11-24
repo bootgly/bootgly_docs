@@ -239,8 +239,38 @@ $id = $S3->Uploads->create('videos/source.mp4', ['type' => 'video/mp4']);
 $S3->read('videos/source.mp4', $Sink, 0, 1024);                     // the first 1024 bytes
 ```
 
+A browser upload can also take a part from the server — one your application builds, such as
+a trailer written once the browser is done. The server opens the upload, the browser sends its
+parts through signed URLs, the server puts its own, and `complete()` joins what the store holds:
+
+```php
+$path = 'videos/source.mp4';
+$id = $S3->Uploads->create($path, ['type' => 'video/mp4']);
+
+// the browser PUTs parts 1..n-1 to the URLs of $S3->Uploads->sign($path, $id, $part, 900);
+// the server sends the last part itself — the only part allowed to be under 5 MiB
+$ETag = $S3->Uploads->put($path, $id, $last, $trailer);
+
+$Parts = $ETag !== false ? $S3->Uploads->list($path, $id) : false;
+if (
+   $Parts === false
+   || array_keys($Parts) !== range(1, $last)                // a part never arrived
+   || $S3->Uploads->complete($path, $id, $Parts) === false
+) {
+   // a call that failed left its reason on $S3->Failure: the store's code
+   // (EntityTooSmall, NoSuchUpload, …), the status and the kind
+   $S3->Uploads->abort($path, $id);
+}
+```
+
+Check every result: a part that failed is simply missing from `list()`, and `complete()` would
+join the others without it. Every part but the last must be at least 5 MiB, whoever sends it.
+When a call fails, `$S3->Failure` holds what went wrong as data — the status, the store's code,
+whether the store was unreachable or said no — so the code can retry or give up without parsing
+`error`.
+
 The [S3 manual](/manual/ABI/Resources/Storage/Drivers/S3/overview/) has the whole flow — what a
-presigned URL authorizes, the browser upload step by step, and the notes for S3-compatible
+presigned URL authorizes, the browser upload step by step, a part sent by the server, branching on a failure, and the notes for S3-compatible
 stores.
 
 ### Register your own driver
@@ -270,6 +300,11 @@ Emitter::$Instance->listen(Events::Read, function (Emission $Emission) {
 
 `Events::Written` carries `[path, written]`, `Events::Read` carries `[path, found]`, and
 `Events::Deleted` carries `[path, deleted]`.
+
+A listener may use the same disk — check the file it was told about, write an audit entry. Its
+calls do not touch what the caller reads afterwards: the facade runs the listeners through the
+disk's `preserve()`, so after `$Storage->write()` returns `false`, the disk's `error` (and an S3
+disk's `Failure`) still say why that write failed.
 
 ## Reference
 
@@ -383,6 +418,17 @@ public function clear (string $path = ''): bool
 Removes every entry under a directory, keeping the directory itself. With no argument it
 empties the whole disk.
 
+```php
+public function preserve (Closure $Work): void
+```
+
+Runs `$Work` — code that may call this disk again, such as the facade's event listeners — and
+then gives the disk back the outcome of the call made before it: `error` reads what it read
+before `$Work`, whatever the calls inside it left. A driver that keeps more of a call's outcome
+(the S3 driver's `Failure`) restores that too. `error` is one per disk, shared by every Fiber that
+uses it: code that shares a disk across Fibers reads the return value (or the S3 `Failure`, kept
+per Fiber).
+
 ### Layering
 
 - **Facade vs driver** — `Storage` exposes the `Drivers` registry
@@ -394,7 +440,7 @@ empties the whole disk.
 
 ## Next references
 
-- **[S3 driver](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — presigned URLs, browser uploads straight to the bucket, ranged reads.
+- **[S3 driver](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — presigned URLs, browser uploads straight to the bucket, server-sent parts, failures to branch on, ranged reads.
 - **[Cache](/guide/cache/overview/)** — the sibling ABI resource facade (TTL, tags, drivers).
 - **[Configuration](/guide/configuration/overview/)** — load scoped configs and `.env` values.
 - **[Docker](/guide/docker/overview/)** — persist `storage/` across containers with a volume.

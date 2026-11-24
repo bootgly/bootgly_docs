@@ -246,8 +246,39 @@ $id = $S3->Uploads->create('videos/source.mp4', ['type' => 'video/mp4']);
 $S3->read('videos/source.mp4', $Sink, 0, 1024);                     // os primeiros 1024 bytes
 ```
 
+Um upload pelo navegador também pode levar uma parte do servidor — uma que a sua aplicação monta,
+como um trailer escrito depois que o navegador termina. O servidor abre o upload, o navegador
+envia as partes dele por URLs assinadas, o servidor envia a sua, e o `complete()` junta o que o
+serviço guardou:
+
+```php
+$path = 'videos/source.mp4';
+$id = $S3->Uploads->create($path, ['type' => 'video/mp4']);
+
+// o navegador faz PUT das partes 1..n-1 nas URLs de $S3->Uploads->sign($path, $id, $part, 900);
+// o servidor envia a última parte por conta própria — a única que pode ter menos de 5 MiB
+$ETag = $S3->Uploads->put($path, $id, $last, $trailer);
+
+$Parts = $ETag !== false ? $S3->Uploads->list($path, $id) : false;
+if (
+   $Parts === false
+   || array_keys($Parts) !== range(1, $last)                // uma parte nunca chegou
+   || $S3->Uploads->complete($path, $id, $Parts) === false
+) {
+   // uma chamada que falhou deixou o motivo em $S3->Failure: o código do serviço
+   // (EntityTooSmall, NoSuchUpload, …), o status e o tipo
+   $S3->Uploads->abort($path, $id);
+}
+```
+
+Confira cada resultado: uma parte que falhou simplesmente não aparece no `list()`, e o
+`complete()` juntaria as outras sem ela. Toda parte, menos a última, precisa ter pelo menos
+5 MiB, seja quem for que a envia. Quando uma chamada falha, o `$S3->Failure` guarda o que deu
+errado como dado — o status, o código do serviço, se o serviço estava inacessível ou disse não —
+para o código tentar de novo ou desistir sem interpretar o `error`.
+
 O [manual do S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/) traz o fluxo inteiro — o que
-uma URL pré-assinada autoriza, o upload pelo navegador passo a passo, e as notas para serviços
+uma URL pré-assinada autoriza, o upload pelo navegador passo a passo, uma parte enviada pelo servidor, como decidir a partir de uma falha, e as notas para serviços
 compatíveis com S3.
 
 ### Registre seu próprio driver
@@ -277,6 +308,11 @@ Emitter::$Instance->listen(Events::Read, function (Emission $Emission) {
 
 `Events::Written` carrega `[path, written]`, `Events::Read` carrega `[path, found]` e
 `Events::Deleted` carrega `[path, deleted]`.
+
+Um listener pode usar o mesmo disk — conferir o arquivo de que foi avisado, gravar uma entrada de
+auditoria. As chamadas dele não mexem no que quem chamou lê depois: o facade roda os listeners
+pelo `preserve()` do disk, então depois que `$Storage->write()` retorna `false`, o `error` do disk
+(e o `Failure` de um disk S3) ainda dizem por que aquela escrita falhou.
 
 ## Referência
 
@@ -390,6 +426,17 @@ public function clear (string $path = ''): bool
 Remove toda entrada sob um diretório, mantendo o diretório em si. Sem argumento, esvazia o
 disk inteiro.
 
+```php
+public function preserve (Closure $Work): void
+```
+
+Roda `$Work` — código que pode chamar este disk de novo, como os listeners de eventos do facade —
+e depois devolve ao disk o resultado da chamada feita antes dele: o `error` lê o que lia antes do
+`$Work`, seja o que for que as chamadas dentro dele deixaram. Um driver que guarda mais do
+resultado de uma chamada (o `Failure` do driver S3) restaura isso também. O `error` é um por disk,
+compartilhado por todas as Fibers que o usam: código que divide um disk entre Fibers lê o valor de
+retorno (ou o `Failure` do S3, guardado por Fiber).
+
 ### Camadas
 
 - **Facade vs driver** — `Storage` expõe o registry `Drivers`
@@ -402,7 +449,7 @@ disk inteiro.
 
 ## Próximas referências
 
-- **[Driver S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — URLs pré-assinadas, uploads do navegador direto para o bucket, leituras por faixa.
+- **[Driver S3](/manual/ABI/Resources/Storage/Drivers/S3/overview/)** — URLs pré-assinadas, uploads do navegador direto para o bucket, partes enviadas pelo servidor, falhas para decidir, leituras por faixa.
 - **[Cache](/guide/cache/overview/)** — o facade de recurso ABI irmão (TTL, tags, drivers).
 - **[Configuração](/guide/configuration/overview/)** — carregue configs com escopo e valores `.env`.
 - **[Docker](/guide/docker/overview/)** — persista `storage/` entre containers com um volume.
