@@ -1034,7 +1034,8 @@ para a rota decidir sem interpretar palavras. Uma chamada que dá certo limpa os
 
 **O orçamento em voo.** `budget` são os bytes de corpo de request que todos os resources `S3` de um
 worker podem ter entregue aos seus clients ao mesmo tempo. Uma escrita reserva o que envia antes
-de ler um byte — uma escrita multipart reserva seu grupo de partes e o mantém até terminar —, então
+de ler um byte — uma escrita multipart reserva seu grupo de partes e o mantém até a última parte ser respondida,
+depois só o corpo da conclusão enquanto o store junta as partes —, então
 uma escrita que não cabe é recusada no início, pelo nome, e nunca truncada nem enviada pela metade.
 Uma escrita grande nunca toma a última parte do orçamento (nos padrões, uma escrita mantém três
 partes de 8 MiB), então uma escrita de uma parte ou menos sempre encontra espaço enquanto só

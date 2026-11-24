@@ -1023,8 +1023,8 @@ that succeeds clears both.
 ## S3 bounds and lifecycle
 
 **The in-flight budget.** `budget` is the request-body bytes all `S3` resources of one worker may
-have handed to their clients at once. A write reserves what it sends before it reads a byte — a
-multipart write reserves its group of parts and holds it until it ends — so a write that does not
+have handed to their clients at once. A write reserves what it sends before it reads a byte — a multipart write reserves its group of parts and holds it until its last part answered, then only
+the completion body while the store joins the parts — so a write that does not
 fit is refused at its start, by name, and never truncated or sent halfway. A large write never
 takes the last part of the budget (at the defaults, one write holds three parts of 8 MiB), so a
 write of one part or less always finds room while only large writes run — a stream too, whose size
