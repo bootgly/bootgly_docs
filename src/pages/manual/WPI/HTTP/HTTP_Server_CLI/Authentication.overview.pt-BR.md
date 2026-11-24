@@ -581,6 +581,80 @@ yield $Router->route('/api/private', $Handler, GET, middlewares: [new Authentica
 
 Neste exemplo, o Bootgly tenta JWT primeiro e depois o Bearer opaco. Se ambos falharem, o guard JWT define o challenge porque é o primeiro guard.
 
+## Guards que esperam por I/O
+
+Por padrão um guard roda de forma síncrona: o seu `Resolver` não pode esperar por um banco de dados
+sem bloquear o worker. Quando a consulta precisa esperar — um token guardado no banco de dados, uma
+linha de remember-me —, ligue o **modo deferred** com `deferred: true`:
+
+```php
+use const Bootgly\WPI;
+
+$Bearer = new Bearer(function (string $token, Request $Request): mixed {
+   // ! Dentro do deferral, WPI->Response é a Response deferred
+   $WPI = WPI;
+
+   return $WPI->Response->Database
+      ->fetch('SELECT user_id FROM access_tokens WHERE token = ?', [$token])
+      ->cell;
+});
+
+yield $Router->route('/api/orders', $Handler, GET, middlewares: [
+   new Authentication(new Authenticating($Bearer), deferred: true)
+]);
+```
+
+O que o modo faz com cada request:
+
+- **Sem credenciais** — nenhum guard reconhece credenciais no request (`Guard::detect()`, uma
+  checagem de header ou cookie sem I/O): o challenge (ou o `Fallback`) é respondido na hora, sem
+  defer e sem capturar o request.
+- **Com credenciais** — o request sofre defer uma vez; os guards e depois o seu handler rodam
+  dentro desse deferral, sobre o snapshot do `Request` dele. A query de um guard suspende o
+  deferral; o worker atende outros requests enquanto isso. O handler recebe o snapshot, com a
+  identity que o guard expôs, os seus campos e headers.
+- **Uma credencial recusada** — o challenge do guard (`401`, ou o `Fallback`) é escrito na Response
+  deferred.
+
+A cadeia de guards é limitada por `timeout` (segundos, padrão `5`; `0` desliga o limite): passado
+esse tempo, o request é respondido com `503`, mesmo quando um guard captura a interrupção e retorna.
+O handler não é limitado por ele — pode esperar o quanto o seu próprio trabalho permitir.
+
+Dentro do deferral, **responda na `$Response` que você recebe**. Um handler (ou um `Fallback`) que
+retorna outra `Response` é recusado: o request é respondido com o challenge `401` do primeiro guard
+e o modo registra um warning uma vez. Um `Fallback` que redireciona (3xx + `Location`) continua sendo
+devolvido como está quando responde a um request sem credenciais fora de um deferral — esse request
+nunca sofre defer.
+
+Os cookies que um guard emite enquanto autentica — o cookie de remember rotacionado e o novo cookie
+de sessão de um revival do `Remember` — chegam ao cliente em toda resposta desse request, um `500`
+ou um `503` inclusive, então um token rotacionado nunca se perde por causa de um erro.
+
+Um `Authentication` no modo alcançado dentro de um deferral que outro `Authentication` no modo abriu
+— um global empilhado com um de rota — roda os seus guards ali mesmo, sobre o mesmo snapshot. Atrás
+de qualquer outro middleware que fez defer, ele faz defer de novo: os seus guards rodam sobre um
+segundo snapshot do request.
+
+Os guards nativos respondem `detect()` a partir do head do request. Um **guard customizado** deve
+implementá-lo também; o padrão responde `true` ("pode trazer credenciais"), então um request sem
+credenciais ainda sofre defer antes de ser recusado:
+
+```php
+public function detect (object $Request): bool
+{
+   return $Request->Header->get('X-Api-Key') !== null;
+}
+```
+
+Um request com uma credencial falsa ainda sofre defer: o que ele custa é um snapshot, cobrado do
+orçamento de bodies do worker, por no máximo `timeout`. Sob esse orçamento, um request cujo snapshot
+não cabe é respondido com `503`.
+
+Um listener de `Session\Events::Regenerate` atrás de um modo com um guard `Remember` não deve
+esperar por I/O: um limite que expira durante essa espera responde `503` depois que a linha de
+remember foi rotacionada mas antes que o seu cookie fosse emitido, e passado o período de tolerância
+da rotação (5 segundos) o cookie antigo do cliente é lido como roubo.
+
 ## Protegendo um endpoint MCP
 
 Um servidor MCP exposto via Streamable HTTP é um recurso protegido OAuth: uma chamada sem autenticação deve responder `401` com um challenge que aponta para os metadados do recurso, um token sem scope suficiente deve responder `403 insufficient_scope`, e clientes de navegador precisam conseguir ler os headers de sessão e de challenge. Os três middlewares cobrem isso juntos:
@@ -630,7 +704,7 @@ Mantenha o `CORS` primeiro: assim as respostas `401`/`403` ainda carregam `Acces
 
 O guard `JWT` é um `Bearer`, então aceita o mesmo argumento `metadata:` e pode ser passado ao `Scope` do mesmo jeito. Veja a página [Authorization](/manual/WPI/HTTP/HTTP_Server_CLI/Authorization/) para o gate `Scope` e a página [Middlewares](/manual/WPI/HTTP/HTTP_Server_CLI/Middlewares/) para o `CORS`.
 
-Um guard roda de forma síncrona. Quando a busca do token precisa esperar por I/O — um token guardado no banco de dados —, envolva o mesmo `Authentication` em um middleware de rota que faz defer primeiro e o roda sobre o snapshot do `Request` do deferral: veja **[Autenticar com um token guardado no banco de dados](/manual/WPI/HTTP/HTTP_Server_CLI/MCP/overview/)** na página do MCP.
+Quando a busca do token precisa esperar por I/O — um token guardado no banco de dados —, use o modo deferred, `new Authentication(new Authenticating($Bearer), deferred: true)` (veja *Guards que esperam por I/O* acima): o transporte roda dentro do mesmo deferral, sobre o snapshot que o guard autenticou. Veja **[Autenticar com um token guardado no banco de dados](/manual/WPI/HTTP/HTTP_Server_CLI/MCP/overview/)** na página do MCP.
 
 ## Projeto demo
 
@@ -711,6 +785,46 @@ public function __construct (null|string|\Bootgly\ABI\Resources\Cache $storage =
 ```
 
 Cria o store de JWT num diretório (o driver `file`) ou num `Cache` pronto cujo driver é atômico. `$secret` (≥ 32 bytes) assina cada registro; sem ele, cada host deriva o seu em `{path}{prefix}.secret` — permitido só para os drivers locais ao host `file`, `memory` e `shared`. Lança `InvalidArgumentException` para um prefixo vazio ou com separador de diretório, um segredo curto, um driver não atômico (APCu), ou um backend injetado que outros hosts alcançam (`redis`, um driver customizado) sem segredo.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication
+
+```php
+public function __construct (Authenticating $Authenticating, null|Closure $Fallback = null, bool $deferred = false, int|float $timeout = 5)
+```
+
+Cria o middleware sobre uma estratégia ordenada de guards. `$Fallback` recebe `(Request $Request, Response $Response)` e renderiza um request negado; o seu resultado é normalizado para `401`, a menos que seja um redirect (3xx + `Location`). `$deferred` liga o modo deferred; `$timeout` limita a sua cadeia de guards, em segundos (`0` desliga o limite). Lança `InvalidArgumentException` para um `Authenticating` sem guards, e para um `$timeout` negativo, `NAN` ou infinito.
+
+```php
+public private(set) bool $deferred
+```
+
+Se os guards rodam dentro de um deferral do request (o modo deferred) em vez de rodar de forma síncrona.
+
+```php
+public private(set) int|float $timeout
+```
+
+O limite do modo deferred sobre a sua cadeia de guards, em segundos: passado esse tempo, o request é respondido com `503`. `0` o desliga. O handler nunca é limitado por ele.
+
+```php
+public function process (object $Request, object $Response, Closure $next): object
+```
+
+Roda os guards em ordem e `$next` quando um autentica, ou a negação (o `Fallback`, senão o challenge do primeiro guard). No modo deferred, um request que nenhum guard reconhece em `detect()` é negado na hora; qualquer outro sofre defer uma vez, com os guards e `$next` rodando sobre o snapshot do deferral, e a Response deferred é devolvida.
+
+```php
+public function seal (Request $Request, Response $Response): void
+```
+
+Chamado pelo servidor na resposta que um deferral produz: enfileira em `$Response` os valores de `Set-Cookie` que a cadeia de guards do modo deferred emitiu para este request e que ela ainda não carrega — uma resposta de erro é uma Response nova. Idempotente; não faz nada para um request que o modo não autenticou. Uma subclasse que o sobrescreve chama `parent::seal()`.
+
+### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating\Guard
+
+```php
+public function detect (object $Request): bool
+```
+
+Diz, só a partir do head do request — sem I/O, sem chamar o resolver —, se o request pode trazer credenciais para este guard. O modo deferred do `Authentication` responde a um request que nenhum guard reconhece com o challenge na hora. O padrão devolve `true`; `Bearer` e `JWT` checam um token Bearer, `Basic` credenciais Basic bem-formadas, `Session` uma identity em uma sessão carregada (ou um cookie de sessão quando a sessão ainda não foi carregada) e `Remember` um cookie de remember. Um guard customizado que já declara um método chamado `detect` precisa dar a ele esta assinatura e este significado.
 
 ### Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer
 

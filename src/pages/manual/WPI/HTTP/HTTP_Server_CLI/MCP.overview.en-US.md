@@ -162,8 +162,11 @@ yield $Router->route('/mcp', new MCP($Server), [GET, POST, DELETE], middlewares:
 ```
 
 The principal is compared by fingerprint (SHA-256): an `API\Security\Identity` by its `id`, a
-string or integer identity by its value, any other value by its serialized form, and no
-identity as the anonymous principal.
+string or integer identity by its value, and no identity (`null`) as the anonymous principal.
+Any other identity — an array, another object, an empty string, an `Identity` with an empty
+`id`, a float or a bool — is a wiring error: the request is answered `500` before a session
+opens. A guard that stores such a value (a `Session` guard over an array identity, say) maps it
+to its id first.
 
 Each call reaches your closures with the **`Request`** as its context — the last argument of
 the `Lister`, the `Caller` and the others — so a tool can read who is calling:
@@ -186,7 +189,9 @@ $Server = new RPC\MCP(
 
 The call runs as **[deferred work](/manual/WPI/HTTP/HTTP_Server_CLI/Response/overview/)**: a tool
 may await asynchronous I/O — a database pool, an HTTP client — without blocking the worker.
-The `Request` it receives is that work's snapshot.
+The `Request` it receives is that work's snapshot. Reached inside a deferral that is already
+running — behind a middleware that deferred, or from deferred work — the transport runs its
+work right there, on that deferral's snapshot, instead of deferring again.
 
 To let a browser client (or the MCP Inspector) read the session and challenge headers, add the
 `CORS` middleware with `Mcp-Session-Id` exposed, as in
@@ -194,16 +199,14 @@ To let a browser client (or the MCP Inspector) read the session and challenge he
 
 ### Authenticate with a token stored in a database
 
-A guard runs synchronously, before any deferred work, so the `Resolver` above cannot wait for a
-database. Defer first, in a route middleware, and run the unchanged `Authentication` middleware
-inside that deferral, on its **`Request` snapshot**:
+A guard that must wait for I/O — a token looked up in a database — runs in the **deferring
+mode** of `Authentication` (`deferred: true`): the middleware defers the request once and runs
+its guards inside that deferral, on its **`Request` snapshot**, so the query suspends the
+deferral instead of blocking the worker.
 
 ```php
-use Closure;
 use const Bootgly\WPI;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Request;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Response;
-use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middleware;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authenticating;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication;
 use Bootgly\WPI\Nodes\HTTP_Server_CLI\Router\Middlewares\Authentication\Bearer;
@@ -220,48 +223,35 @@ $Authentication = new Authentication(new Authenticating(
       },
       metadata: 'https://mcp.example.com/.well-known/oauth-protected-resource'
    )
-));
+), deferred: true);
 
-$Deferred = new class ($Authentication) implements Middleware {
-   public Authentication $Authentication;
-
-   public function __construct (Authentication $Authentication)
-   {
-      $this->Authentication = $Authentication;
-   }
-
-   public function process (object $Request, object $Response, Closure $next): object
-   {
-      $Authentication = $this->Authentication;
-
-      return $Response->defer(
-         fn (Response $Response, Request $Snapshot): object => $Authentication->process($Snapshot, $Response, $next)
-      );
-   }
-};
-
-yield $Router->route('/mcp', new MCP($Server), [GET, POST, DELETE], middlewares: [$Deferred]);
+yield $Router->route('/mcp', new MCP($Server), [GET, POST, DELETE], middlewares: [$Authentication]);
 ```
 
-The query suspends the deferral instead of blocking the worker. A request with no token gets the
-`401` challenge and an unknown token (`null`) the `401` with `error="invalid_token"` — both with
-`resource_metadata` when `metadata` is set — written by the guard onto the deferred Response.
-The identity the guard resolves is set on the snapshot, which is what the transport receives, so
-the session binds to it on `POST`, `GET` and `DELETE` alike: another user's token on that session
-is `404`.
+A request with no token gets the `401` challenge at once, without deferring; an unknown token
+(`null`) gets the `401` with `error="invalid_token"` from inside the deferral — both with
+`resource_metadata` when `metadata` is set. The identity the guard resolves is set on the
+snapshot, and the transport runs inside the same deferral on that snapshot, so the session binds
+to it on `POST`, `GET` and `DELETE` alike: another user's token on that session is `404`. The
+lookup is bounded by the mode's `timeout` (5 seconds by default): past it, the request is
+answered `503`. See **[Guards that wait for I/O](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/overview/)**
+on the Authentication page.
 
-Two rules keep it correct:
+#### Without the middleware
+
+The mode is the way to authenticate with a guard that waits. The variants below are lower
+level — for a handler that resolves the identity itself. Two rules keep them correct:
 
 - **Set the identity on the snapshot, never on the live `$Request`.** The middleware's `$Request`
   is the per-connection Request; the deferral already captured its snapshot, so an identity set
   on the live one afterwards never reaches the transport — the session would bind to the
   anonymous principal, and any client could drive it.
-- **Answer on the `$Response` you receive.** Behind a middleware that defers, the handler runs
-  inside the deferral, and a new `Response` it returns is not adopted (the client gets an empty
-  `200`). `Router\MCP` answers on the one it receives.
+- **Answer on the `$Response` you receive.** Inside a deferral, a new `Response` the handler
+  returns is not adopted (the client gets an empty `200`). `Router\MCP` answers on the one it
+  receives.
 
-To call a guard yourself instead of the middleware, `authenticate()` sets the identity on the
-snapshot and `challenge()` writes the `401` onto the deferred Response:
+To call a guard yourself, `authenticate()` sets the identity on the snapshot and `challenge()`
+writes the `401` onto the deferred Response:
 
 ```php
 return $Response->defer(function (Response $Response, Request $Snapshot) use ($Bearer, $next): void {
@@ -275,8 +265,8 @@ return $Response->defer(function (Response $Response, Request $Snapshot) use ($B
 });
 ```
 
-The handler can do it too, without a middleware: it defers, resolves the identity, sets it on the
-snapshot and invokes the transport from inside — the transport's own deferral nests in it:
+The handler can do it too: it defers, resolves the identity, sets it on the snapshot and invokes
+the transport from inside — the transport runs in that deferral:
 
 ```php
 $Transport = new MCP($Server);

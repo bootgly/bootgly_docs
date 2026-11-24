@@ -162,7 +162,7 @@ class Policy implements Middleware, Sealing
 }
 ```
 
-`Sealing` is a **capability, not a second door**: it deliberately does not extend `Middleware`, so the pipeline's one way in stays `implements Middleware` and a sealing middleware declares both. Parity between the two cycles stays the author's job — share the logic through a private method both call, or call `seal()` right after `$next()` as above. The shipped `ETag` and `Compression` implement `Sealing`, so a deferred route is tagged and compressed exactly like a synchronous one.
+`Sealing` is a **capability, not a second door**: it deliberately does not extend `Middleware`, so the pipeline's one way in stays `implements Middleware` and a sealing middleware declares both. Parity between the two cycles stays the author's job — share the logic through a private method both call, or call `seal()` right after `$next()` as above. The shipped `ETag`, `Compression` and `SecureHeaders` implement `Sealing`, so a deferred route is tagged, compressed and secured exactly like a synchronous one.
 
 **When the pass runs.** On the success path: after the work completed, before serialization, and **before** the deferred Session save point — so a Session written by a seal still persists with the generation. On the errored path it runs over the answer an error boundary or the built-in Catcher chose, so a seal always sees the status that goes on the wire, never the placeholder the onion returned with. Both passes walk in the order the synchronous unwind runs post-`$next()` code: the route's middleware snapshot **innermost first**, then the global `SAPI::$Middlewares` stack — the same visibility `Recovering` documents. A deferral started after the pipeline returned carries no route chain, so only the global stack is walked.
 
@@ -267,7 +267,7 @@ $Bearer = new Authenticating(
 yield $Router->route('/private', $Handler, GET, middlewares: [new Authentication($Bearer)]);
 ```
 
-See the [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) page for Bearer, JWT, Basic, Session, middleware-owned challenges, and demo routes.
+See the [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) page for Bearer, JWT, Basic, Session, middleware-owned challenges, and demo routes. When a guard must wait for I/O — a token stored in a database —, pass `deferred: true`: the guards and the handler then run inside a deferral of the request (see *Guards that wait for I/O* on that page).
 
 **Phase:** Pre-processing — rejects unauthenticated requests before the handler runs.
 
@@ -587,7 +587,7 @@ new SecureHeaders(
 );
 ```
 
-**Phase:** Post-processing — appends security headers to the response.
+**Phase:** Post-processing — appends security headers to the response. It implements [`Sealing`](#sealing-deferred-responses), so a deferred answer — the work's, an error boundary's or the Catcher's, including the answers of `Authentication` with `deferred: true` — carries them too.
 
 ---
 

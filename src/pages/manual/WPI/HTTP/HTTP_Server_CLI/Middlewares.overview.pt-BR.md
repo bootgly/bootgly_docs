@@ -162,7 +162,7 @@ class Policy implements Middleware, Sealing
 }
 ```
 
-`Sealing` é uma **capacidade, não uma segunda porta**: ele deliberadamente não estende `Middleware`, então a única entrada do pipeline continua sendo `implements Middleware` e um middleware de sealing declara os dois. A paridade entre os dois ciclos continua sendo trabalho do autor — compartilhe a lógica por um método privado que ambos chamam, ou chame `seal()` logo depois de `$next()` como acima. Os `ETag` e `Compression` que acompanham o framework implementam `Sealing`, então uma rota deferred recebe tag e compressão exatamente como uma síncrona.
+`Sealing` é uma **capacidade, não uma segunda porta**: ele deliberadamente não estende `Middleware`, então a única entrada do pipeline continua sendo `implements Middleware` e um middleware de sealing declara os dois. A paridade entre os dois ciclos continua sendo trabalho do autor — compartilhe a lógica por um método privado que ambos chamam, ou chame `seal()` logo depois de `$next()` como acima. Os `ETag`, `Compression` e `SecureHeaders` que acompanham o framework implementam `Sealing`, então uma rota deferred recebe tag, compressão e headers de segurança exatamente como uma síncrona.
 
 **Quando a passagem roda.** No caminho de sucesso: depois que o trabalho terminou, antes da serialização, e **antes** do ponto de save da Session deferred — então uma Session escrita por um seal ainda persiste com a geração. No caminho de erro ela roda sobre a resposta que uma fronteira de erro ou o Catcher built-in escolheu, então um seal sempre vê o status que vai para o fio, nunca o placeholder com que o onion retornou. As duas passagens caminham na ordem em que o desenrolar síncrono roda o código pós-`$next()`: o snapshot de middlewares da rota **do mais interno para o mais externo**, depois a pilha global `SAPI::$Middlewares` — a mesma visibilidade que `Recovering` documenta. Um deferral iniciado depois de o pipeline retornar não carrega a cadeia da rota, então só a pilha global é percorrida.
 
@@ -267,7 +267,7 @@ $Bearer = new Authenticating(
 yield $Router->route('/private', $Handler, GET, middlewares: [new Authentication($Bearer)]);
 ```
 
-Veja a página [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) para Bearer, JWT, Basic, Session, challenges pertencentes ao middleware e rotas demo.
+Veja a página [Authentication](/manual/WPI/HTTP/HTTP_Server_CLI/Authentication/) para Bearer, JWT, Basic, Session, challenges pertencentes ao middleware e rotas demo. Quando um guard precisa esperar por I/O — um token guardado no banco de dados —, passe `deferred: true`: os guards e o handler passam a rodar dentro de um deferral do request (veja *Guards que esperam por I/O* nessa página).
 
 **Fase:** Pré-processamento — rejeita requisições não autenticadas antes do handler executar.
 
@@ -588,7 +588,7 @@ new SecureHeaders(
 );
 ```
 
-**Fase:** Pós-processamento — adiciona headers de segurança à resposta.
+**Fase:** Pós-processamento — adiciona headers de segurança à resposta. Ele implementa [`Sealing`](#sealing-de-respostas-deferred), então uma resposta deferred — a do trabalho, a de uma fronteira de erro ou a do Catcher, incluindo as respostas do `Authentication` com `deferred: true` — também os carrega.
 
 ---
 
