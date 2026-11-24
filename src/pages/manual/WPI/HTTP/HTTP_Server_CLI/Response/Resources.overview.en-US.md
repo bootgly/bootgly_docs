@@ -1056,8 +1056,15 @@ completions end with the outcome unknown.
 non-blocking socket with nothing yet) fails the write as `source stream read error` — never a
 truncated object. A failed part or completion aborts the upload before `write()` returns. A
 deferral `Timeout` thrown into a waiting write aborts the upload before the throw leaves the write
-— except during the completion, when the store may already have made the object: then the outcome
-is unknown, and the object may stay at the key behind the `503`. An abort waits at most 3 s to
+— and `$Failure` then says what the throw left of the object, for a handler that catches it:
+`null` only when the object is stored. The write's budget, and the part bodies it held, are given back at once. A throw during the completion — or during the abort that
+follows a completion judged not done —, when the store may already have made the object, asks the
+store once more (`HeadObject`, bounded like the abort): the object these parts make, of the written
+size and headers, at the key means it is stored — the `503` only cut the store's answer; else the
+failure says nothing was stored (the store aborted the upload and shows no such object) or that the
+outcome is unknown (the store did not abort it, or will not show the object). A throw before the
+completion — while the call aborts uploads left open, too — means nothing was stored; a throw during
+a single `PUT` leaves its outcome unknown. A `LogicException` thrown before the call runs (the resource is owned by another deferred context, or called outside one) leaves `$Failure` as it was. An abort waits at most 3 s to
 connect and 3 s for its answer; an upload it could not abort, like the open upload of a request
 destroyed while it waits — its client left, its budget given back at once —, is left to the next
 deferral that uses a resource of the same disk in that worker, which aborts two of them at most

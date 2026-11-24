@@ -1067,8 +1067,15 @@ correspondência: as conclusões perdidas dele terminam com o desfecho desconhec
 fim (um socket não bloqueante ainda sem dados) falha a escrita como `source stream read error` —
 nunca um objeto truncado. Uma parte ou uma conclusão que falha aborta o upload antes de `write()`
 retornar. Um `Timeout` de deferral lançado numa escrita em espera aborta o upload antes de o throw
-sair da escrita — exceto durante a conclusão, quando o store pode já ter formado o objeto: então o
-desfecho é desconhecido, e o objeto pode ficar na chave por trás do `503`. Um abort espera no máximo
+sair da escrita — e `$Failure` diz então o que o throw deixou do objeto, para um handler que o captura: `null`
+só quando o objeto está gravado. O orçamento da escrita, e os corpos das partes que ela segurava, são devolvidos na hora. Um throw durante a conclusão — ou durante o abort que
+segue uma conclusão julgada não feita —, quando o store pode já ter formado o objeto, pergunta ao
+store mais uma vez (`HeadObject`, com os limites do abort): o objeto que essas partes formam, com o
+tamanho e os headers escritos, na chave quer dizer que ele está gravado — o `503` só cortou a
+resposta do store; senão a falha diz que nada foi gravado (o store abortou o upload e não mostra tal
+objeto) ou que o desfecho é desconhecido (o store não o abortou, ou não mostra o objeto). Um throw
+antes da conclusão — também enquanto a chamada aborta uploads deixados abertos — quer dizer que nada
+foi gravado; um throw durante um `PUT` único deixa o desfecho desconhecido. Uma `LogicException` lançada antes de a chamada rodar (o resource é de outro contexto deferido, ou chamado fora de um) deixa `$Failure` como estava. Um abort espera no máximo
 3 s para conectar e 3 s pela resposta; um upload que ele não conseguiu abortar, como o upload
 aberto de um request destruído enquanto espera — o client dele foi embora, o orçamento devolvido na
 hora —, fica para o próximo deferral que usar um resource do mesmo disco naquele worker, que aborta
