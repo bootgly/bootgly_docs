@@ -1046,7 +1046,9 @@ a request forever. The completion of a Multipart Upload waits at least 120 s, si
 every part before it answers; when its answer is lost — or is a `NoSuchUpload`, what the replay of a
 completion the store already handled gets — the resource asks the store: an upload still listed
 fails the write (and is aborted); otherwise an object at the key whose ETag is the one the parts
-make (and, for `write()`, of the written size and headers) is a success, and anything else fails
+make (and, for `write()`, of the written size and headers; for `Uploads->complete()`, of the
+headers `Uploads->create()` sent, when the upload was created through a resource of the same disk
+in the worker — the last 256 such uploads are remembered) is a success, and anything else fails
 with the outcome unknown — the object at the key is left as it is, and an upload the store would
 not list is aborted all the same, which leaves a completed object untouched. A store whose part
 ETags are not MD5s (SSE-KMS, SSE-C, some S3-compatible stores) never shows a match: its lost

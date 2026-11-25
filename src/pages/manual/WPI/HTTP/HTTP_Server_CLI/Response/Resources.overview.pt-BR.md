@@ -1058,7 +1058,9 @@ estaciona um request para sempre. A conclusão de um Multipart Upload espera pel
 que o store junta todas as partes antes de responder; quando a resposta dela se perde — ou é um
 `NoSuchUpload`, o que recebe o replay de uma conclusão que o store já tratou — o resource pergunta ao
 store: um upload ainda listado falha a escrita (e é abortado); senão, um objeto na chave cujo ETag é
-o que as partes formam (e, no `write()`, do tamanho e dos headers escritos) é um sucesso, e qualquer
+o que as partes formam (e, no `write()`, do tamanho e dos headers escritos; no
+`Uploads->complete()`, dos headers que o `Uploads->create()` enviou, quando o upload foi criado por
+um resource do mesmo disco no worker — os últimos 256 desses uploads ficam lembrados) é um sucesso, e qualquer
 outro caso falha com o desfecho desconhecido — o objeto na chave fica como está, e um upload que o
 store não quis listar é abortado mesmo assim, o que deixa intacto um objeto já concluído. Um store
 cujos ETags de parte não são MD5 (SSE-KMS, SSE-C, alguns stores compatíveis com S3) nunca mostra
