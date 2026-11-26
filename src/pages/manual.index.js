@@ -3666,6 +3666,30 @@ export default {
       }
     }
   },
+  '/ABI/IO/Resolver': {
+    config: {
+      icon: 'dns',
+      status: 'done',
+      version: 'v1.4.0',
+      meta: {
+        description: {
+          'en-US': 'Resolve a host name to its IP addresses through the system resolver, synchronously, and tell a name with no answer from a lookup with a bad one.',
+          'pt-BR': 'Resolva um nome de host para os seus endereços IP pelo resolvedor do sistema, de forma síncrona, e diferencie um nome sem resposta de uma consulta com resposta inválida.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.IO'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'Resolver'
+      }
+    }
+  },
   '/ABI/Resources': {
     config: null,
     data: {
