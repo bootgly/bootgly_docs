@@ -44,7 +44,8 @@ else if ($addresses === []) {
 
 - `[]` — nothing resolved. A host that no resolver should be asked about resolves to `[]`
   without a lookup: an empty name, a name longer than 253 characters, or one holding a NUL byte,
-  `%`, `[` or `]`.
+  `%`, `[` or `]`. So does `invalid` or any `*.invalid` name, which never resolves (RFC 6761) —
+  not even from the hosts file.
 - `null` — the lookup is void: one of the answers is not an IP address. None of the other
   answers is returned.
 
@@ -56,7 +57,10 @@ asks:
 
 1. the system's IPv4 answers (`gethostbynamel()`, the hosts file included), then
 2. the name's DNS AAAA records (`dns_get_record()`), asked for the absolute name — never for
-   `localhost` or a `*.localhost` name, which stay local.
+   `localhost` or a `*.localhost` name, which stay local. A `local` or `*.local` name is not asked
+   either when `/etc/nsswitch.conf` lists a multicast DNS source (`mdns*`, or `resolve`) before
+   `dns`: it belongs to multicast DNS, not to the unicast nameservers (RFC 6762). Without such a
+   source, it is a plain DNS name and its AAAA records are asked.
 
 ## Dial what you resolved
 
@@ -109,7 +113,7 @@ $Resolver = new Resolver(
 ## Reference
 
 ```php
-public function __construct (false|null|Closure $Lookup = null, null|Closure $List = null, null|Closure $Query = null)
+public function __construct (false|null|Closure $Lookup = null, null|Closure $List = null, null|Closure $Query = null, null|string $nsswitch = '/etc/nsswitch.conf')
 ```
 
 Creates a resolver of the system's resolver. Each argument replaces one source, `null` keeping
@@ -118,6 +122,8 @@ the real one: `$Lookup` stands in for `getaddrinfo()` — `fn (string $host): fa
 `gethostbynamel()` — `fn (string $host): false|array` of IPv4 strings; `$Query` for
 `dns_get_record($name, DNS_AAAA)` — `fn (string $name): false|array` of records. With `$Lookup`
 `null`, the real `getaddrinfo()` is used when ext-sockets is loaded, and the fallback otherwise.
+`$nsswitch` is the `nsswitch.conf` the fallback reads to tell whether a multicast DNS source
+answers `*.local` names; `null` reads none (they are plain DNS names).
 
 ```php
 public function resolve (string $host): null|array
@@ -126,8 +132,8 @@ public function resolve (string $host): null|array
 Resolves `$host` — a name, or an IP literal (IPv6 without brackets) — to its canonical IP
 addresses, blocking until the system answers. An IP literal is returned canonical without a
 lookup. Returns the addresses in resolver order, each once; `[]` when nothing resolves (or the
-host is empty, longer than 253 characters, or holds a NUL byte, `%`, `[` or `]`, refused without
-a lookup); `null` when an answer is not an IP address.
+host is empty, longer than 253 characters, holds a NUL byte, `%`, `[` or `]`, or is `invalid` or
+a `*.invalid` name, refused without a lookup); `null` when an answer is not an IP address.
 
 ```php
 public static function normalize (string $IP): null|string

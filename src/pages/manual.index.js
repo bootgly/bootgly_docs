@@ -1020,6 +1020,36 @@ export default {
       }
     }
   },
+  '/WPI/DNS': {
+    config: null,
+    data: {
+      '*': {
+        title: 'DNS'
+      }
+    }
+  },
+  '/WPI/DNS/DNS_Client_CLI': {
+    config: {
+      icon: 'public',
+      status: 'done',
+      version: 'v1.4.0',
+      meta: {
+        description: {
+          'en-US': 'Resolve host names and ask DNS for records without stopping a worker: lookups park on the event loop, share one query per name, and only checked answers are used and cached.',
+          'pt-BR': 'Resolva nomes de host e peça registros ao DNS sem parar um worker: as buscas estacionam no event loop, compartilham uma consulta por nome, e só respostas conferidas são usadas e cacheadas.'
+        }
+      },
+      menu: {},
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'DNS Client CLI'
+      }
+    }
+  },
   '/WPI/Events': {
     config: null,
     data: {

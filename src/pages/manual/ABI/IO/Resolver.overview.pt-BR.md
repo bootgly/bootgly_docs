@@ -46,7 +46,8 @@ else if ($addresses === []) {
 
 - `[]` — nada foi resolvido. Um host que nenhum resolvedor deveria receber resolve para `[]` sem
   consulta: um nome vazio, um nome com mais de 253 caracteres, ou um que contenha um byte NUL,
-  `%`, `[` ou `]`.
+  `%`, `[` ou `]`. O mesmo vale para `invalid` ou qualquer nome `*.invalid`, que nunca resolve
+  (RFC 6761) — nem pelo arquivo hosts.
 - `null` — a consulta é inválida: uma das respostas não é um endereço IP. Nenhuma das outras
   respostas é devolvida.
 
@@ -58,7 +59,10 @@ resposta dele é final — uma consulta que falha não é refeita de outro jeito
 
 1. as respostas IPv4 do sistema (`gethostbynamel()`, incluindo o arquivo hosts), e depois
 2. os registros DNS AAAA do nome (`dns_get_record()`), pedidos para o nome absoluto — nunca para
-   `localhost` ou um nome `*.localhost`, que ficam locais.
+   `localhost` ou um nome `*.localhost`, que ficam locais. Um nome `local` ou `*.local` também não
+   é pedido quando o `/etc/nsswitch.conf` lista uma fonte de DNS multicast (`mdns*`, ou `resolve`)
+   antes de `dns`: ele pertence ao DNS multicast, não aos nameservers unicast (RFC 6762). Sem essa
+   fonte, é um nome DNS comum e os registros AAAA dele são pedidos.
 
 ## Conectar ao que você resolveu
 
@@ -111,7 +115,7 @@ $Resolver = new Resolver(
 ## Referência
 
 ```php
-public function __construct (false|null|Closure $Lookup = null, null|Closure $List = null, null|Closure $Query = null)
+public function __construct (false|null|Closure $Lookup = null, null|Closure $List = null, null|Closure $Query = null, null|string $nsswitch = '/etc/nsswitch.conf')
 ```
 
 Cria um resolvedor do resolvedor do sistema. Cada argumento troca uma fonte, e `null` mantém a
@@ -120,7 +124,8 @@ real: `$Lookup` fica no lugar do `getaddrinfo()` — `fn (string $host): false|a
 `gethostbynamel()` — `fn (string $host): false|array` de strings IPv4; `$Query` no lugar do
 `dns_get_record($name, DNS_AAAA)` — `fn (string $name): false|array` de registros. Com `$Lookup`
 `null`, o `getaddrinfo()` real é usado quando a ext-sockets está carregada, e o caminho sem ela
-nos outros casos.
+nos outros casos. `$nsswitch` é o `nsswitch.conf` que o caminho sem ext-sockets lê para saber se
+uma fonte de DNS multicast responde nomes `*.local`; `null` não lê nenhum (são nomes DNS comuns).
 
 ```php
 public function resolve (string $host): null|array
@@ -129,8 +134,8 @@ public function resolve (string $host): null|array
 Resolve `$host` — um nome, ou um IP literal (IPv6 sem colchetes) — para os seus endereços IP
 canônicos, bloqueando até o sistema responder. Um IP literal volta na forma canônica sem consulta.
 Devolve os endereços na ordem do resolvedor, cada um uma vez só; `[]` quando nada resolve (ou o
-host é vazio, tem mais de 253 caracteres, ou contém um byte NUL, `%`, `[` ou `]`, recusado sem
-consulta); `null` quando uma resposta não é um endereço IP.
+host é vazio, tem mais de 253 caracteres, contém um byte NUL, `%`, `[` ou `]`, ou é `invalid` ou
+um nome `*.invalid`, recusado sem consulta); `null` quando uma resposta não é um endereço IP.
 
 ```php
 public static function normalize (string $IP): null|string
