@@ -3636,9 +3636,7 @@ export default {
           'pt-BR': 'Interprete URIs RFC 3986, resolva referências — o único resolvedor por trás de todo Location de redirect — e oculte credenciais de URLs para exibição.'
         }
       },
-      menu: {
-        subheader: '.ABI.Data'
-      },
+      menu: {},
       subpages: {
         showcase: false
       }
