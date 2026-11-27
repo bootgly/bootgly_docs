@@ -122,7 +122,7 @@ Passar duas instâncias da mesma classe de Configs em uma mesma chamada de `conf
 | `Redirection` | `null\|Closure` | `null` | Política de destino consultada em cada salto de redirect (veja Tratamento de Redirects). |
 | `crossOriginHeaders` | `array` | `['accept', 'accept-encoding', 'accept-language', 'user-agent']` | Headers da requisição que um redirect leva para outra origem. |
 | `allowInsecureRedirect` | `bool` | `false` | Seguir um redirect que rebaixa de `https` para `http`. |
-| `connectTimeout` | `int\|float` | `30` | Timeout de conexão em segundos, por tentativa de discagem. Em um reactor adotado, a discagem e o handshake TLS fazem park em vez de bloquear o loop do host (0 = sem timeout). |
+| `connectTimeout` | `int\|float` | `30` | Timeout de conexão em segundos, por tentativa de discagem — o lookup do nome, o connect a cada um dos seus endereços e o handshake TLS juntos. Em um reactor adotado, eles fazem park em vez de bloquear o loop do host (0 = sem timeout). |
 | `timeout` | `int\|float` | `30` | Timeout de resposta em segundos. |
 | `maxResponseBytes` | `int` | `16777216` | Máximo de bytes raw da resposta — headers + body (16 MiB; `0` = ilimitado). |
 | `maxControlBytes` | `int` | `1048576` | HTTP/2: máximo de bytes de respostas (confirmações) que um servidor pode fazer uma conexão lhe dever de uma vez (1 MiB; `0` = ilimitado). |
@@ -421,6 +421,29 @@ Um cliente fica ligado à origem que você passa em `configure()`, e as instânc
 
 O modo event-driven também é por instância, e é exclusivo com a adoção de reactor: um cliente que adotou o reactor de um host via `react()` não pode entrar no modo event-driven — `on()` recusa, e `start()` recusa rodar. O modo event-driven é dono de um loop; um cliente de reactor adotado apenas pega um emprestado. Escolha um modelo de posse por cliente.
 
+## Discando um nome
+
+O cliente disca um endereço, nunca um nome: ele resolve `host` pelo nó [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) e conecta ao que volta. O nome em si continua em todo o resto — o header `Host:` (`:authority` no HTTP/2), os redirects e o TLS: o nome de servidor enviado (SNI) e o nome que o certificado precisa ter são `host`, não o endereço. Um literal IP — `192.0.2.10`, `[2001:db8::1]` ou um `2001:db8::1` sem colchetes — é discado como foi dado, sem lookup.
+
+```php
+$Client->configure(new Configs(host: 'api.example.com', port: 443, secure: []));
+
+// Resolve api.example.com, disca o primeiro endereço, verifica o certificado para api.example.com
+$Response = $Client->request(method: 'GET', URI: '/status');
+```
+
+Quando o nome tem vários endereços, eles são tentados um de cada vez:
+
+- **Ordem** — a ordem do resolvedor (o destino que ele escolheria primeiro vem primeiro), com as famílias de endereço alternando: IPv6, IPv4, IPv6, …
+- **Fallback** — um endereço que recusa a conexão, não é alcançável ou fica em silêncio durante a sua fatia do orçamento é pulado, e o próximo é discado. Uma falha de TLS encerra a discagem: outro endereço mostraria o mesmo certificado.
+- **Memória** — um endereço que falhou é tentado por último nas discagens dos próximos 10 segundos (por processo, por endereço e porta), nunca pulado: um nome cujo único endereço falhou ainda o disca. Alcançá-lo o limpa.
+
+Um único `connectTimeout` cobre a discagem inteira, lookup incluído: ele é tomado antes do lookup, então um nameserver lento gasta o mesmo orçamento. O connect TCP de cada endereço recebe o tempo restante dividido pelos endereços restantes — no mínimo 2 segundos — para que um primeiro endereço silencioso não gaste tudo, e o handshake TLS recebe o que sobra.
+
+Num worker, dentro de `defer()`, o lookup faz park como o resto da discagem (veja [O que faz park](#o-que-faz-park)). Em qualquer outro lugar o lookup pergunta ao resolvedor do sistema — a resposta que a própria discagem do PHP teria — e bloqueia, como a discagem sempre fez. Fora de um worker, um nome que o resolvedor do sistema não resolveu é perguntado de novo na próxima discagem; num worker a falha dele é guardada por 5 segundos, para que um nome que não resolve não bloqueie toda requisição.
+
+O lookup é a closure `$Resolution` do cliente, herdada de [`TCP_Client_CLI`](/manual/WPI/TCP/TCP_Client_CLI/#discando-um-nome), onde o seu contrato é descrito. Defini-la como `null` disca o nome do jeito do PHP: um lookup bloqueante, e só o primeiro endereço.
+
 ## Timeouts
 
 ```php
@@ -443,7 +466,7 @@ O cliente não confia no framing de nenhum upstream. Uma resposta é `'Invalid R
 
 Respostas intermediárias (1xx) — `100 Continue`, `102 Processing`, `103 Early Hints` — são lidas e descartadas antes da resposta final. No HTTP/1.1, no máximo `HTTP_Client_CLI::INTERIM_LIMIT` (64) são aceitas por resposta; uma a mais falha a requisição com `'Invalid Response'`, para que um upstream não fique enviando respostas intermediárias em vez de responder. A contagem recomeça a cada perna de redirect e a cada retry. Respostas intermediárias do HTTP/2 não são contadas.
 
-Os dois timeouts limitam fases diferentes. `connectTimeout` limita cada **tentativa de discagem** — o connect TCP e o handshake TLS juntos; ele é gasto de novo a cada tentativa (um retry, uma perna de redirect, um replay). `timeout` arma apenas a **janela de resposta**, e só depois que a conexão está de pé e a requisição foi despachada.
+Os dois timeouts limitam fases diferentes. `connectTimeout` limita cada **tentativa de discagem** — o lookup do nome, o connect TCP e o handshake TLS juntos (veja [Discando um nome](#discando-um-nome)); ele é gasto de novo a cada tentativa (um retry, uma perna de redirect, um replay). `timeout` arma apenas a **janela de resposta**, e só depois que a conexão está de pé e a requisição foi despachada.
 
 Essa separação importa em um reactor adotado (veja [Modo Embedded](#modo-embedded)): um peer que aceita a conexão TCP mas nunca negocia mantém a Fiber deferida parkeada até `connectTimeout` expirar. Com `connectTimeout = 0` não há deadline de discagem nenhum, e a Fiber fica parkeada até a geração da deferral ser cancelada.
 
@@ -590,7 +613,7 @@ return $Response->defer(function (Response $Response) {
 
 Se um throw interrompe esse park — o `Timeout` do deferral, por exemplo — `drain()` ainda encerra o modo batch na saída, então um job que o captura pode continuar usando o cliente. As requisições do batch interrompido continuam pendentes: o próximo `request()` ou `drain()` espera por elas também, a menos que `abort()` as descarte antes.
 
-A discagem também faz park: abrir a conexão faz park sobre readiness de escrita e o handshake TLS faz park sobre readiness de leitura, em fatias de 1 segundo limitadas pelo deadline de discagem. Assim, um upstream inalcançável ou silencioso não custa nada ao worker além de um socket discando — o reactor continua ticando e as outras conexões continuam sendo servidas.
+A discagem também faz park, a partir do nome: o nome do host é resolvido pelo nó [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) no loop do worker, depois abrir a conexão faz park sobre readiness de escrita e o handshake TLS faz park sobre readiness de leitura, em fatias de 1 segundo limitadas pelo deadline de discagem. Assim, um nameserver lento, ou um upstream inalcançável ou silencioso, não custa nada ao worker além de uma consulta e um socket discando — o reactor continua ticando e as outras conexões continuam sendo servidas. Como os endereços do nome são tentados está em [Discando um nome](#discando-um-nome).
 
 ### Uma Fiber é dona de um cliente
 

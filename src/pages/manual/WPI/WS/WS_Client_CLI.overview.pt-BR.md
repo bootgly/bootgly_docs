@@ -237,7 +237,7 @@ O destino e a política por conexão. Apenas named arguments — o primeiro slot
 
 | Parâmetro | Tipo | Padrão | Descrição |
 |---|---|---|---|
-| `host` | `string` | — (obrigatório) | Host ou IP do endpoint WebSocket. |
+| `host` | `string` | — (obrigatório) | Host ou IP do endpoint WebSocket. Um nome é resolvido pelo [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) e os seus endereços são discados um de cada vez, enquanto `Host:` e o TLS mantêm o nome — veja [Discando um nome](/manual/WPI/TCP/TCP_Client_CLI/#discando-um-nome). |
 | `port` | `int` | — (obrigatório) | Porta remota. |
 | `workers` | `int` | `0` | Herdado do transporte e mantido por compatibilidade: o `connect()` abre uma única conexão bloqueante e nunca faz fork, então não tem efeito. |
 | `secure` | `null\|array` | `null` | Array de stream-context TLS para `wss://`. O `peer_name` assume o `host` por padrão. |

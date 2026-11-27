@@ -232,7 +232,7 @@ The target and the per-connection policy. Named arguments only — the construct
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `host` | `string` | — (required) | Host or IP of the WebSocket endpoint. |
+| `host` | `string` | — (required) | Host or IP of the WebSocket endpoint. A name is resolved through [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) and its addresses are dialed in turn, while `Host:` and TLS keep the name — see [Dialing a name](/manual/WPI/TCP/TCP_Client_CLI/#dialing-a-name). |
 | `port` | `int` | — (required) | Remote port. |
 | `workers` | `int` | `0` | Inherited from the transport and kept for compatibility: `connect()` opens a single blocking connection and never forks, so it has no effect. |
 | `secure` | `null\|array` | `null` | TLS stream-context array for `wss://`. `peer_name` defaults to `host`. |

@@ -122,7 +122,7 @@ Handing two instances of the same Configs class to one `configure()` call throws
 | `Redirection` | `null\|Closure` | `null` | Destination policy asked on every redirect hop (see Redirect Handling). |
 | `crossOriginHeaders` | `array` | `['accept', 'accept-encoding', 'accept-language', 'user-agent']` | Request headers a redirect carries to another origin. |
 | `allowInsecureRedirect` | `bool` | `false` | Follow a redirect that steps down from `https` to `http`. |
-| `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds, per dial attempt. On an adopted reactor the dial and the TLS handshake park instead of blocking the host loop (0 = no timeout). |
+| `connectTimeout` | `int\|float` | `30` | Connection timeout in seconds, per dial attempt — the name's lookup, the connect to each of its addresses and the TLS handshake together. On an adopted reactor they park instead of blocking the host loop (0 = no timeout). |
 | `timeout` | `int\|float` | `30` | Response timeout in seconds. |
 | `maxResponseBytes` | `int` | `16777216` | Maximum raw response bytes — headers + body (16 MiB; `0` = unbounded). |
 | `maxControlBytes` | `int` | `1048576` | HTTP/2: maximum bytes of answers (acknowledgements) a server may make one connection owe it at once (1 MiB; `0` = unbounded). |
@@ -421,6 +421,29 @@ A client is bound to the origin you give `configure()`, and instances do not int
 
 Event-driven mode is per instance too, and it is exclusive with reactor adoption: a client that adopted a host reactor through `react()` cannot enter event-driven mode — `on()` refuses it, and `start()` refuses to run. Event-driven mode owns a loop; an adopted-reactor client borrows one. Pick one ownership model per client.
 
+## Dialing a name
+
+The client dials an address, never a name: it resolves `host` through the [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) node and connects to what comes back. The name itself stays everywhere else — the `Host:` header (`:authority` on HTTP/2), redirects, and TLS: the server name sent (SNI) and the name the certificate must carry are `host`, not the address. An IP literal — `192.0.2.10`, `[2001:db8::1]` or a bare `2001:db8::1` — is dialed as given, with no lookup.
+
+```php
+$Client->configure(new Configs(host: 'api.example.com', port: 443, secure: []));
+
+// Resolves api.example.com, dials its first address, verifies the certificate for api.example.com
+$Response = $Client->request(method: 'GET', URI: '/status');
+```
+
+When the name has several addresses, they are tried in turn:
+
+- **Order** — the resolver's order (the destination it would pick first comes first), with the address families alternating: IPv6, IPv4, IPv6, …
+- **Fallback** — an address that refuses the connection, cannot be reached, or stays silent through its share of the budget is skipped, and the next one is dialed. A TLS failure ends the dial instead: another address would show the same certificate.
+- **Memory** — an address that failed is tried last on the dials of the next 10 seconds (per process, per address and port), never skipped: a name whose only address failed still dials it. Reaching it clears it.
+
+One `connectTimeout` covers the whole dial, lookup included: it is taken before the lookup, so a slow nameserver spends the same budget. Each address's TCP connect gets the time left divided by the addresses left — at least 2 seconds — so a silent first address cannot spend it all, and the TLS handshake gets what remains.
+
+On a worker, inside `defer()`, the lookup parks like the rest of the dial (see [What parks](#what-parks)). Anywhere else the lookup asks the system resolver — the answer PHP's own dial would get — and blocks, as the dial always did. Off a worker, a name the system resolver did not resolve is asked again on the next dial; on a worker its failure is kept for 5 seconds, so a name that does not resolve does not block every request.
+
+The lookup is the client's `$Resolution` closure, inherited from [`TCP_Client_CLI`](/manual/WPI/TCP/TCP_Client_CLI/#dialing-a-name), where its contract is described. Setting it to `null` dials the name the way PHP does: a blocking lookup, and only its first address.
+
 ## Timeouts
 
 ```php
@@ -443,7 +466,7 @@ The client trusts no upstream's framing. A response is `'Invalid Response'` when
 
 Interim (1xx) responses — `100 Continue`, `102 Processing`, `103 Early Hints` — are read and dropped before the final response. On HTTP/1.1, at most `HTTP_Client_CLI::INTERIM_LIMIT` (64) are accepted per response; one more fails the request with `'Invalid Response'`, so an upstream cannot keep streaming interims instead of answering. The count starts again on each redirect leg and each retry. HTTP/2 interims are not counted.
 
-The two timeouts bound different phases. `connectTimeout` bounds each **dial attempt** — the TCP connect and the TLS handshake together; it is spent again on every attempt (a retry, a redirect leg, a replay). `timeout` arms only the **response window**, and only once the connection is up and the request has been dispatched.
+The two timeouts bound different phases. `connectTimeout` bounds each **dial attempt** — the name's lookup, the TCP connect and the TLS handshake together (see [Dialing a name](#dialing-a-name)); it is spent again on every attempt (a retry, a redirect leg, a replay). `timeout` arms only the **response window**, and only once the connection is up and the request has been dispatched.
 
 That split matters on an adopted reactor (see [Embedded Mode](#embedded-mode)): a peer that accepts the TCP connection but never negotiates keeps the deferred Fiber parked until `connectTimeout` elapses. With `connectTimeout = 0` there is no dial deadline at all, and the Fiber stays parked until the deferral's generation is cancelled.
 
@@ -590,7 +613,7 @@ return $Response->defer(function (Response $Response) {
 
 If a throw cuts that park — the deferral `Timeout`, say — `drain()` still ends batch mode on its way out, so a job that catches it can keep using the client. The interrupted batch's requests stay pending: the next `request()` or `drain()` waits for them too, unless `abort()` drops them first.
 
-The dial parks too: opening the connection parks on write readiness and the TLS handshake parks on read readiness, in 1-second slices bounded by the dial deadline. So an unreachable or silent upstream costs the worker nothing but a dialing socket — the reactor keeps ticking and the other connections keep being served.
+The dial parks too, from the name on: the host name is resolved by the [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) node on the worker's loop, then opening the connection parks on write readiness and the TLS handshake parks on read readiness, in 1-second slices bounded by the dial deadline. So a slow nameserver, or an unreachable or silent upstream, costs the worker nothing but a query and a dialing socket — the reactor keeps ticking and the other connections keep being served. How the name's addresses are tried is under [Dialing a name](#dialing-a-name).
 
 ### One Fiber owns one client
 

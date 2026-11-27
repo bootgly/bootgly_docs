@@ -808,11 +808,14 @@ origem leva só os `crossOriginHeaders` do client — nunca `Authorization`, coo
 volta como o 3xx final, já que um batch nunca redisca.
 
 Toda perna do exchange estaciona o Fiber deferido em vez de girar um event loop privado: a espera
-pela resposta, a discagem que abre a conexão e o handshake TLS. O worker continua atendendo suas
-outras conexões o tempo todo, e um upstream inalcançável não custa a ele nada além do socket em
-discagem. Os dois deadlines se dividem de acordo: o `connectTimeout` sozinho limita a discagem
-**e** o handshake, enquanto o `timeout` arma apenas a janela de resposta, depois que a conexão
-está de pé. `connectTimeout: 0` significa nenhum deadline de conexão — um peer que aceita o TCP
+pela resposta, o lookup do nome do upstream (pelo
+[`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/)), a discagem que abre a conexão e o handshake
+TLS. O worker continua atendendo suas outras conexões o tempo todo, e um nameserver lento ou um
+upstream inalcançável não custa a ele nada além de uma consulta e do socket em discagem. O cliente
+disca os endereços do nome um de cada vez e continua verificando o TLS contra o nome — veja
+[Discando um nome](/manual/WPI/HTTP/HTTP_Client_CLI/#discando-um-nome). Os dois deadlines se
+dividem de acordo: o `connectTimeout` sozinho limita o lookup, a discagem **e** o handshake,
+enquanto o `timeout` arma apenas a janela de resposta, depois que a conexão está de pé. `connectTimeout: 0` significa nenhum deadline de conexão — um peer que aceita o TCP
 mas nunca negocia mantém o Fiber e o socket dele estacionados até a geração do próprio deferral
 ser cancelada.
 
@@ -875,7 +878,7 @@ host do upstream; `$port` tem default `80`, ou `443` quando `secure` está defin
 carrega opções de stream context TLS (`[]` liga o TLS com os defaults); `$pool` limita o pool de
 conexões dentro de um deferral (`['min' => N, 'max' => N]`); `$timeout` é o timeout de resposta em
 segundos (`0` = sem timeout); `$connectTimeout` é o timeout de conexão por tentativa de discagem e
-sozinho limita a discagem **e** o handshake TLS (`0` = sem timeout); `$maxRedirects` limita o
+sozinho limita o lookup do nome, a discagem **e** o handshake TLS (`0` = sem timeout); `$maxRedirects` limita o
 seguimento de redirects, que fica dentro da origem do upstream (`0` = desabilitado); `$maxRetries` limita as retentativas em falha de
 conexão/timeout (`0` = desabilitado); `$enableHTTP2` escolhe a negociação HTTP/2 (`null` = ALPN
 quando secure; `true` = também h2c; `false` = nunca); e `$maxResponseBytes` limita os bytes raw de
@@ -1051,7 +1054,7 @@ S3 write /big.bin: the worker's in-flight budget (33554432 bytes) cannot take on
 O orçamento conta corpos de request; `read()` bufferiza a resposta inteira, limitada por
 `maxResponseBytes` (16 MiB por padrão) — além disso a leitura falha como `Protocol`.
 
-**Prazos.** `connectTimeout` limita a discagem e o handshake TLS, e `timeout` limita um request do
+**Prazos.** `connectTimeout` limita o lookup do endpoint, a discagem e o handshake TLS, e `timeout` limita um request do
 seu envio até o último byte da resposta — uma parte de 8 MiB num link lento precisa de um `timeout`
 que cubra o upload dela. Os dois precisam ser maiores que `0`: um store que nunca responde nunca
 estaciona um request para sempre. A conclusão de um Multipart Upload espera pelo menos 120 s, já
@@ -1095,8 +1098,9 @@ caso é recusado com `LogicException` — fora de `defer()`:
 — ou enquanto outro contexto o possui. O client embarcado é privado: seus requests pendentes levam
 os headers assinados, e um dump do resource não mostra eles, o secret nem um token de sessão.
 
-**Nomes.** O host do endpoint é resolvido quando a primeira conexão abre, e essa consulta ainda
-bloqueia o worker; use um endpoint por IP ou um cache local de resolução quando isso importar.
+**Nomes.** O host do endpoint é resolvido quando uma conexão abre, pelo
+[`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/): o lookup faz park como o resto da discagem, e
+o `Host` assinado continua sendo o nome do endpoint.
 
 ## Métodos do S3
 

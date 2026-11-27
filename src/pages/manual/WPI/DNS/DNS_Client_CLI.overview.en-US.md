@@ -55,6 +55,10 @@ On a worker, a name is asked over DNS directly — A and AAAA at once — follow
 way glibc's `res_search()` does. A name that does not resolve over DNS is not asked again through
 the system resolver: that call would block the worker.
 
+You seldom call `resolve()` to dial: [`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/#dialing-a-name),
+`WS_Client_CLI` and the response resources built on them resolve their host through it, and their
+dial parks the same way.
+
 Creating an instance per request costs nothing. Every instance in a process shares one state per
 configuration — the cache, the queries in flight, the hosts table, the settings — and a forked
 process starts with its own.
@@ -79,6 +83,14 @@ Some names belong to the system resolver even on a worker, so they are asked the
 - Numeric host forms such as `127.1` or `0x7f.1`.
 
 These answers are kept for 5 seconds.
+
+Three behaviours differ from glibc's `getaddrinfo()`, which the client dials used before they
+resolved through this node:
+
+- the hosts file answers first whenever `files` is listed, even after `dns` (`hosts: dns files`);
+- a hosts file larger than 1 MiB is ignored, so a lookup that parks asks DNS for its names;
+- `::1` is always ranked reachable, so `localhost` puts it first even where IPv6 is disabled — a
+  dial then reaches `127.0.0.1` on its next address.
 
 ## The search list
 
@@ -185,9 +197,15 @@ replaces the search list. A search domain that is not a domain name (an empty la
 63 characters, a character outside letters, digits, `-` and `_`) is skipped. The options `use-vc`, `no-aaaa`, `single-request` and `sortlist`, and the
 `HOSTALIASES` variable, are ignored.
 
-Lookups share their state per configuration: equal values, and the same `Resolver` and `Probe`
-objects. Build a `Configs` carrying either of them once and reuse it — a new object per request
-is a new state per request.
+Lookups share their state per configuration: equal values, and seams that do the same thing. A
+`Probe` closure (or each source of a `Resolver`) counts by its code — where it is written, the `$this`
+it is bound to (or the class it was called on, for `static::`) and the values it captures — so a `Configs` rebuilt per request with a seam from the
+same line shares the state of the one before it. Captured scalars and arrays count by value,
+captured objects by identity. A seam whose behaviour code cannot pin down counts by its object, so a
+new one per request is a new state per request: one that captures by reference (`use (&$x)`) or
+holds a `static` variable, one written in `eval()`'d code or in a file changed in or after the
+second the process started, one that starts on the same line as another closure, or one that captures an array of more
+than 64 elements.
 
 ## Reference
 
@@ -198,14 +216,19 @@ public function configure (Configuring ...$Configs): self
 Applies one `DNS_Client_CLI\Configs` (`Configuring` is the `Bootgly\ABI\Configs` interface). Returns the node.
 
 ```php
-public function resolve (string $host, null|Closure $Wait = null): array
+public function resolve (string $host, null|Closure $Wait = null, null|int $deadline = null, null|(Events & Loops & Scheduler) $Reactor = null): array
 ```
 
 Resolves `$host` — a name (a trailing dot skips the search list) or an IP literal (IPv6 bare or
 in brackets) — to the canonical addresses a dialer should try, in order, at most 32 per family.
 With `$Wait` — the caller's wait bridge, `fn ($value = null) => $Response->wait($value)` —
-inside a Fiber on a server worker, the lookup parks instead of blocking. Returns `[]` when the name
-does not resolve or is refused.
+inside a Fiber on a server worker, the lookup parks instead of blocking. `$deadline` (monotonic,
+`hrtime(true)` nanoseconds) ends the lookup unresolved once it passes, even before the resolver's
+own timeout; a deadline already past asks nothing. `$Reactor` is the loop the caller runs on: a
+caller on another loop than the worker's goes to the system resolver instead of parking on a
+driver nobody would run. Off a worker, an unresolved name is asked again on the next call. Returns
+`[]` when the name does not resolve or is refused. This is the shape of the dial seam
+`TCP_Client_CLI::$Resolution`, which the HTTP and WebSocket clients set to this method.
 
 ```php
 public function query (string $name, int $type, null|Closure $Wait = null): Answer

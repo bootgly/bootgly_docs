@@ -56,6 +56,10 @@ Num worker, o nome é perguntado direto ao DNS — A e AAAA de uma vez — segui
 jeito que o `res_search()` da glibc faz. Um nome que não resolve pelo DNS não é perguntado de novo
 ao resolvedor do sistema: essa chamada bloquearia o worker.
 
+Você raramente chama `resolve()` para discar: [`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/#discando-um-nome),
+`WS_Client_CLI` e os response resources construídos sobre eles resolvem o seu host por ele, e a
+discagem deles estaciona do mesmo jeito.
+
 Criar uma instância por requisição não custa nada. Toda instância de um processo compartilha um
 estado por configuração — o cache, as consultas em voo, a tabela do hosts, as configurações — e um
 processo forkado começa com o seu próprio.
@@ -80,6 +84,16 @@ Alguns nomes pertencem ao resolvedor do sistema mesmo num worker, então são pe
 - Formas numéricas de host como `127.1` ou `0x7f.1`.
 
 Essas respostas são guardadas por 5 segundos.
+
+Três comportamentos diferem do `getaddrinfo()` do glibc, que as discagens dos clientes usavam antes de
+resolver por este node:
+
+- o arquivo hosts responde primeiro sempre que `files` está listado, mesmo depois de `dns`
+  (`hosts: dns files`);
+- um arquivo hosts maior que 1 MiB é ignorado, então um lookup que faz park pergunta seus nomes
+  ao DNS;
+- `::1` é sempre classificado como alcançável, então `localhost` o coloca primeiro mesmo onde o IPv6
+  está desligado — a discagem então chega a `127.0.0.1` no endereço seguinte.
 
 ## A lista de busca
 
@@ -187,9 +201,15 @@ busca. Um domínio de busca que não é um nome de domínio (um rótulo vazio, u
 caracteres, um caractere fora de letras, dígitos, `-` e `_`) é ignorado. As opções `use-vc`, `no-aaaa`, `single-request` e `sortlist`, e a variável `HOSTALIASES`,
 são ignoradas.
 
-As buscas compartilham o estado por configuração: valores iguais, e os mesmos objetos `Resolver` e
-`Probe`. Monte uma `Configs` que carregue qualquer um deles uma vez e reutilize — um objeto novo por
-requisição é um estado novo por requisição.
+As buscas compartilham o estado por configuração: valores iguais, e seams que fazem a mesma coisa. Uma
+closure `Probe` (ou cada fonte de um `Resolver`) conta pelo seu código — onde está escrita, o `$this`
+a que está ligada (ou a classe em que foi chamada, para `static::`) e os valores que captura —, então uma `Configs` montada de novo a cada requisição
+com um seam da mesma linha compartilha o estado da anterior. Escalares e arrays capturados contam
+pelo valor; objetos capturados, pela identidade. Um seam cujo comportamento o código não determina
+conta pelo objeto, então um novo por requisição é um estado novo por requisição: um que captura por
+referência (`use (&$x)`) ou guarda uma variável `static`, um escrito em código de `eval()` ou num
+arquivo alterado no segundo em que o processo começou ou depois, um que começa na mesma linha que outra closure, ou um
+que captura um array de mais de 64 elementos.
 
 ## Referência
 
@@ -200,14 +220,20 @@ public function configure (Configuring ...$Configs): self
 Aplica uma `DNS_Client_CLI\Configs` (`Configuring` é a interface `Bootgly\ABI\Configs`). Retorna o nó.
 
 ```php
-public function resolve (string $host, null|Closure $Wait = null): array
+public function resolve (string $host, null|Closure $Wait = null, null|int $deadline = null, null|(Events & Loops & Scheduler) $Reactor = null): array
 ```
 
 Resolve `$host` — um nome (um ponto final pula a lista de busca) ou um literal IP (IPv6 puro ou
 entre colchetes) — para os endereços canônicos que um discador deve tentar, em ordem, no máximo 32
 por família. Com `$Wait` — a ponte de espera de quem chama, `fn ($value = null) =>
 $Response->wait($value)` — dentro de uma Fiber num worker do servidor, a busca estaciona em vez de
-bloquear. Retorna `[]` quando o nome não resolve ou é recusado.
+bloquear. `$deadline` (monotônico, nanossegundos de `hrtime(true)`) encerra a busca sem resolver
+quando passa, mesmo antes do timeout do próprio resolvedor; um deadline já vencido não pergunta
+nada. `$Reactor` é o loop em que quem chama roda: quem chama de outro loop que não o do worker vai
+ao resolvedor do sistema em vez de estacionar num driver que ninguém rodaria. Fora de um worker, um
+nome não resolvido é perguntado de novo na próxima chamada. Retorna `[]` quando o nome não resolve
+ou é recusado. Esta é a forma do seam de discagem `TCP_Client_CLI::$Resolution`, que os clientes
+HTTP e WebSocket definem como este método.
 
 ```php
 public function query (string $name, int $type, null|Closure $Wait = null): Answer

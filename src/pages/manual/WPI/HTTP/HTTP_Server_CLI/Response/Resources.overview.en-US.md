@@ -799,10 +799,14 @@ the pin refuses the same hops; a same-origin hop that needs another connection c
 final 3xx, since a batch never re-dials.
 
 Every leg of the exchange parks the deferred Fiber instead of pumping a private event loop: the
-wait for the response, the dial that opens the connection, and the TLS handshake. The worker
-keeps serving its other connections throughout, and an unreachable upstream costs it nothing but
-the dialing socket. The two deadlines split accordingly: `connectTimeout` alone bounds the dial
-**and** the handshake, while `timeout` arms only the response window, after the connection is up.
+wait for the response, the lookup of the upstream's name (through
+[`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/)), the dial that opens the connection, and the
+TLS handshake. The worker keeps serving its other connections throughout, and a slow nameserver or
+an unreachable upstream costs it nothing but a query and the dialing socket. The client dials the
+name's addresses in turn and still checks TLS against the name — see
+[Dialing a name](/manual/WPI/HTTP/HTTP_Client_CLI/#dialing-a-name). The two deadlines split
+accordingly: `connectTimeout` alone bounds the lookup, the dial **and** the handshake, while
+`timeout` arms only the response window, after the connection is up.
 `connectTimeout: 0` means no connect deadline at all — a peer that accepts TCP but never
 negotiates keeps the Fiber and its socket parked until the deferral's own generation is cancelled.
 
@@ -865,7 +869,7 @@ the upstream host; `$port` defaults to `80`, or `443` when `secure` is set; `$se
 stream context options (`[]` enables TLS with the defaults); `$pool` bounds the connection pool
 inside one deferral (`['min' => N, 'max' => N]`); `$timeout` is the response timeout in seconds
 (`0` = no timeout); `$connectTimeout` is the connection timeout per dial attempt and alone bounds
-the dial **and** the TLS handshake (`0` = no timeout); `$maxRedirects` caps redirect following,
+the name's lookup, the dial **and** the TLS handshake (`0` = no timeout); `$maxRedirects` caps redirect following,
 which stays within the upstream origin (`0` = disabled); `$maxRetries` caps retries on connection/timeout failure (`0` = disabled); and
 `$enableHTTP2` selects HTTP/2 negotiation (`null` = ALPN when secure; `true` = also h2c;
 `false` = never); `$maxResponseBytes` caps the raw bytes of each upstream response (`null` = the
@@ -1039,7 +1043,7 @@ S3 write /big.bin: the worker's in-flight budget (33554432 bytes) cannot take on
 The budget counts request bodies; `read()` buffers its answer whole, bounded by
 `maxResponseBytes` (16 MiB by default) — past it the read fails as `Protocol`.
 
-**Deadlines.** `connectTimeout` bounds the dial and the TLS handshake, and `timeout` bounds one
+**Deadlines.** `connectTimeout` bounds the endpoint's lookup, the dial and the TLS handshake, and `timeout` bounds one
 request from its dispatch to its last answer byte — a part of 8 MiB on a slow link needs a
 `timeout` that covers its upload. Both must be above `0`: a store that never answers never parks
 a request forever. The completion of a Multipart Upload waits at least 120 s, since the store joins
@@ -1083,8 +1087,9 @@ case is refused with `LogicException` — outside `defer()`:
 — or while another context owns it. The embedded client is private: its pending requests carry
 the signed headers, and a dump of the resource shows neither them, the secret nor a session token.
 
-**Names.** The endpoint host is resolved when the first connection opens, and that lookup still
-blocks the worker; use an IP endpoint or a local resolver cache when it matters.
+**Names.** The endpoint host is resolved when a connection opens, through
+[`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/): the lookup parks like the rest of the dial,
+and the signed `Host` stays the endpoint's name.
 
 ## S3 methods
 

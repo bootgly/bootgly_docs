@@ -169,8 +169,9 @@ $Client->schedule(function (mixed $value = null): void {
 
 The bridge is a closure that receives a `Readiness` — or a raw resource, or `null` — and suspends the calling Fiber on it. The host is then responsible for resuming that Fiber once the readiness arrives, which on the reactor side is `schedule (Fiber $Fiber, mixed $value = null, int $flag = self::SCHEDULE_READ): bool`. It is the same contract the HTTP server's response resources use.
 
-With a bridge installed, and only while the call runs on a Fiber, the two blocking waits of a dial become parks:
+With a bridge installed, and only while the call runs on a Fiber, the blocking waits of a dial become parks:
 
+- **The name's lookup parks** when `$Resolution` is the [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) node and the client runs on a server worker's reactor: the queries go out and the Fiber waits on the worker's loop (see [Dialing a name](#dialing-a-name)).
 - **`connect()` parks on write readiness.** One non-blocking probe comes first, so a dial that resolved immediately never pays a reactor round trip. Then finite 1 s slices: every slice re-proves the dial deadline — `connectTimeout`, narrowed by `$deadline` and `$monotonicDeadline` when those are set — on both the wall and the monotonic clock, and every wake re-probes the socket without blocking.
 - **The TLS handshake parks on read readiness**, in the same 1 s slices against the same two deadlines, between `stream_socket_enable_crypto()` attempts.
 
@@ -251,6 +252,56 @@ Typical flow:
 5. close or continue the conversation
 
 The package layer tracks bytes read/written, read/write counts, transport errors and expiration state.
+
+## Dialing a name
+
+A raw client dials its `host` the way PHP does: `stream_socket_client()` resolves the name — blocking — and connects to its first address only. Give the client a resolver and it dials addresses instead:
+
+```php
+use Bootgly\WPI\Nodes\DNS_Client_CLI;
+
+
+$Client->Resolution = new DNS_Client_CLI()->resolve(...);
+```
+
+[`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/#dialing-a-name) and `WS_Client_CLI` install that resolver by default. With it, `connect()`:
+
+- dials an IP literal — `192.0.2.10`, `[2001:db8::1]`, a bare `2001:db8::1` — as given, without asking the resolver;
+- resolves a name and dials `tcp://{address}:{port}` (an IPv6 address in brackets), while TLS keeps checking the name: with `secure` set, `peer_name` defaults to `host`, so the server name sent (SNI) and the name the certificate must carry are the configured name, never the address;
+- tries the addresses in the resolver's order with the families alternating (IPv6, IPv4, IPv6, …), and moves to the next address when one refuses, cannot be reached or stays silent through its share of the budget; a TLS failure, a spent budget or a local fault (a bridge that stopped suspending, a reactor that refused the socket) ends the dial;
+- tries an address that failed last on the dials of the next 10 seconds (one memory per process, by address and port; a dial that reaches it clears it) — demoted, never skipped;
+- spends one budget on the whole dial: `connectTimeout` (narrowed by `$deadline` and `$monotonicDeadline`) is taken before the lookup, each address's TCP connect gets the time left divided by the addresses left, at least 2 seconds, and the TLS handshake gets what remains.
+
+An unresolved name, or a lookup that spent the budget, fails the dial without dialing; `Connections->errors['connection']` counts one failure per address tried (or one for the failed lookup). A socket the process could not create at all — out of file descriptors, say — moves on to the next address without demoting the one it failed on: the fault is the process's, not the address's.
+
+`$Resolution` takes any closure with the resolver's shape — a fixed table in a test, say:
+
+```php
+$Client->Resolution = static fn (string $host, null|Closure $Wait, null|int $deadline, object $Reactor): array
+	=> ['192.0.2.10'];
+```
+
+It receives the configured name; the wait bridge, only when the dial itself would park (an adopted reactor, a bridge installed by `schedule()`, a Fiber) and `null` otherwise; the dial's deadline on the monotonic clock (`hrtime(true)` nanoseconds, `null` = none); and the client's reactor. It returns the addresses to try, in order; anything in the answer that is not an IP literal is dropped, and duplicates are dialed once. An exception it throws — a deferral's `Timeout` delivered into a parked lookup — propagates out of `connect()`.
+
+When the name comes from someone you do not trust — a URL a user submitted — every address its DNS answers is dialed in turn, internal ones included, so one request can probe several hosts of your network. Filter the answer in your own `$Resolution` before it reaches the dial:
+
+```php
+use Bootgly\WPI\Nodes\DNS_Client_CLI;
+
+
+$DNS = new DNS_Client_CLI();
+$Client->Resolution = static fn (string $host, null|Closure $Wait, null|int $deadline, object $Reactor): array
+	=> array_values(array_filter(
+		$DNS->resolve($host, $Wait, $deadline, $Reactor),
+		static fn (string $address): bool => filter_var(
+			$address,
+			FILTER_VALIDATE_IP,
+			FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+		) !== false
+	));
+```
+
+The filter sees only names: an IP-literal `host` — `http://169.254.169.254/`, `http://[fd00::1]/` — is dialed as given and never reaches `$Resolution`, so check the host you configure with the same rule before `configure()`. Treat the flags as a starting point: they let through ranges that are internal on many networks, such as `100.64.0.0/10` (carrier-grade NAT), `198.18.0.0/15` and `64:ff9b::/96` (NAT64).
 
 ## SSL/TLS
 
@@ -376,6 +427,12 @@ public private(set) null|Closure $Wait = null;
 ```
 
 The parking bridge installed by `schedule()`, or `null` when none was installed. It is honored only on an adopted reactor, and only from inside a Fiber.
+
+```php
+public null|Closure $Resolution = null;
+```
+
+The lookup a dial by name goes through, or `null` to dial the name as PHP does (a blocking lookup, the first address only). Its shape is `Closure(string $host, null|Closure $Wait, null|int $deadline, object $Reactor): list<string>` — see [Dialing a name](#dialing-a-name). `null` on a raw client; `HTTP_Client_CLI` and `WS_Client_CLI` set it to `DNS_Client_CLI::resolve()`. IP literals never reach it.
 
 ```php
 public function configure (Bootgly\ABI\Configs ...$Configs): self

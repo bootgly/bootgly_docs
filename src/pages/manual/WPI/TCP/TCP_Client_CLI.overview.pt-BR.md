@@ -169,8 +169,9 @@ $Client->schedule(function (mixed $value = null): void {
 
 O bridge é uma closure que recebe um `Readiness` — ou um resource raw, ou `null` — e suspende a Fiber chamadora nele. Cabe ao hospedeiro retomar essa Fiber quando a readiness chegar, o que do lado do reactor é `schedule (Fiber $Fiber, mixed $value = null, int $flag = self::SCHEDULE_READ): bool`. É o mesmo contrato que os response resources do servidor HTTP usam.
 
-Com um bridge instalado, e apenas enquanto a chamada roda sobre uma Fiber, as duas esperas bloqueantes de um dial viram parks:
+Com um bridge instalado, e apenas enquanto a chamada roda sobre uma Fiber, as esperas bloqueantes de um dial viram parks:
 
+- **O lookup do nome faz park** quando `$Resolution` é o nó [`DNS_Client_CLI`](/manual/WPI/DNS/DNS_Client_CLI/) e o cliente roda sobre o reactor de um worker do servidor: as consultas saem e a Fiber espera no loop do worker (veja [Discando um nome](#discando-um-nome)).
 - **`connect()` faz park em write readiness.** Primeiro vem uma sondagem não bloqueante, para que um dial que já resolveu não pague uma ida e volta ao reactor. Depois, fatias finitas de 1 s: cada fatia reprova o deadline do dial — `connectTimeout`, estreitado por `$deadline` e `$monotonicDeadline` quando definidos — nos dois relógios, o de parede e o monotônico, e cada acordar ressonda o socket sem bloquear.
 - **O handshake TLS faz park em read readiness**, nas mesmas fatias de 1 s contra os mesmos dois deadlines, entre as tentativas de `stream_socket_enable_crypto()`.
 
@@ -251,6 +252,56 @@ Fluxo típico:
 5. fechar ou continuar a conversa
 
 A camada de pacotes acompanha bytes lidos/escritos, contagem de reads/writes, erros de transporte e estado de expiração.
+
+## Discando um nome
+
+Um cliente raw disca o seu `host` do jeito do PHP: `stream_socket_client()` resolve o nome — bloqueando — e conecta só ao seu primeiro endereço. Dê um resolvedor ao cliente e ele passa a discar endereços:
+
+```php
+use Bootgly\WPI\Nodes\DNS_Client_CLI;
+
+
+$Client->Resolution = new DNS_Client_CLI()->resolve(...);
+```
+
+[`HTTP_Client_CLI`](/manual/WPI/HTTP/HTTP_Client_CLI/#discando-um-nome) e `WS_Client_CLI` instalam esse resolvedor por padrão. Com ele, `connect()`:
+
+- disca um literal IP — `192.0.2.10`, `[2001:db8::1]`, um `2001:db8::1` sem colchetes — como foi dado, sem perguntar ao resolvedor;
+- resolve um nome e disca `tcp://{endereço}:{porta}` (um endereço IPv6 entre colchetes), enquanto o TLS continua verificando o nome: com `secure` definido, `peer_name` assume `host` por padrão, então o nome de servidor enviado (SNI) e o nome que o certificado precisa ter são o nome configurado, nunca o endereço;
+- tenta os endereços na ordem do resolvedor com as famílias alternando (IPv6, IPv4, IPv6, …), e passa ao próximo endereço quando um recusa, não é alcançável ou fica em silêncio durante a sua fatia do orçamento; uma falha de TLS, o orçamento esgotado ou uma falha local (um bridge que parou de suspender, um reactor que recusou o socket) encerra a discagem;
+- tenta por último, nas discagens dos próximos 10 segundos, um endereço que falhou (uma memória por processo, por endereço e porta; uma discagem que o alcança o limpa) — rebaixado, nunca pulado;
+- gasta um único orçamento na discagem inteira: `connectTimeout` (estreitado por `$deadline` e `$monotonicDeadline`) é tomado antes do lookup, o connect TCP de cada endereço recebe o tempo restante dividido pelos endereços restantes, no mínimo 2 segundos, e o handshake TLS recebe o que sobra.
+
+Um nome não resolvido, ou um lookup que gastou o orçamento, falha a discagem sem discar; `Connections->errors['connection']` conta uma falha por endereço tentado (ou uma pelo lookup que falhou). Um socket que o processo nem conseguiu criar — sem descritores de arquivo, por exemplo — passa ao próximo endereço sem rebaixar aquele em que falhou: a falha é do processo, não do endereço.
+
+`$Resolution` aceita qualquer closure com a forma do resolvedor — uma tabela fixa num teste, por exemplo:
+
+```php
+$Client->Resolution = static fn (string $host, null|Closure $Wait, null|int $deadline, object $Reactor): array
+	=> ['192.0.2.10'];
+```
+
+Ela recebe o nome configurado; o wait bridge, só quando a própria discagem faria park (um reactor adotado, um bridge instalado por `schedule()`, uma Fiber) e `null` caso contrário; o deadline da discagem no relógio monotônico (nanossegundos de `hrtime(true)`, `null` = nenhum); e o reactor do cliente. Ela devolve os endereços a tentar, em ordem; o que na resposta não for um literal IP é descartado, e duplicados são discados uma vez. Uma exceção que ela lança — o `Timeout` de um deferral entregue a um lookup em park — se propaga para fora de `connect()`.
+
+Quando o nome vem de alguém em quem você não confia — uma URL enviada por um usuário — cada endereço que o DNS dele responde é discado por vez, os internos incluídos, então uma única requisição pode sondar vários hosts da sua rede. Filtre a resposta na sua própria `$Resolution` antes que ela chegue à discagem:
+
+```php
+use Bootgly\WPI\Nodes\DNS_Client_CLI;
+
+
+$DNS = new DNS_Client_CLI();
+$Client->Resolution = static fn (string $host, null|Closure $Wait, null|int $deadline, object $Reactor): array
+	=> array_values(array_filter(
+		$DNS->resolve($host, $Wait, $deadline, $Reactor),
+		static fn (string $address): bool => filter_var(
+			$address,
+			FILTER_VALIDATE_IP,
+			FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+		) !== false
+	));
+```
+
+O filtro só vê nomes: um `host` que é um literal IP — `http://169.254.169.254/`, `http://[fd00::1]/` — é discado como foi dado e nunca chega à `$Resolution`, então confira o host que você configura com a mesma regra antes de `configure()`. Trate as flags como ponto de partida: elas deixam passar faixas que são internas em muitas redes, como `100.64.0.0/10` (NAT de operadora), `198.18.0.0/15` e `64:ff9b::/96` (NAT64).
 
 ## SSL/TLS
 
@@ -376,6 +427,12 @@ public private(set) null|Closure $Wait = null;
 ```
 
 O bridge de parking instalado por `schedule()`, ou `null` quando nenhum foi instalado. Só é honrado em um reactor adotado e apenas de dentro de uma Fiber.
+
+```php
+public null|Closure $Resolution = null;
+```
+
+O lookup pelo qual passa uma discagem por nome, ou `null` para discar o nome do jeito do PHP (um lookup bloqueante, só o primeiro endereço). Sua forma é `Closure(string $host, null|Closure $Wait, null|int $deadline, object $Reactor): list<string>` — veja [Discando um nome](#discando-um-nome). `null` num cliente raw; `HTTP_Client_CLI` e `WS_Client_CLI` a definem como `DNS_Client_CLI::resolve()`. Literais IP nunca chegam a ela.
 
 ```php
 public function configure (Bootgly\ABI\Configs ...$Configs): self
