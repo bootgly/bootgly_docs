@@ -3568,6 +3568,30 @@ export default {
       }
     }
   },
+  '/ABI/Data/DNS': {
+    config: {
+      icon: 'dns',
+      status: 'done',
+      version: 'v1.4.0',
+      meta: {
+        description: {
+          'en-US': 'Write DNS messages to bytes and read them back (RFC 1035), with EDNS(0), name compression and hostile-input bounds: a forged answer is refused, never half-read.',
+          'pt-BR': 'Escreva mensagens DNS em bytes e leia de volta (RFC 1035), com EDNS(0), compressão de nomes e limites contra entrada hostil: uma resposta forjada é recusada, nunca lida pela metade.'
+        }
+      },
+      menu: {
+        subheader: '.ABI.Data'
+      },
+      subpages: {
+        showcase: false
+      }
+    },
+    data: {
+      '*': {
+        title: 'DNS'
+      }
+    }
+  },
   '/ABI/Data/URI': {
     config: {
       icon: 'link',
