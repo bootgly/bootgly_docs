@@ -60,7 +60,8 @@ asks:
    `localhost` or a `*.localhost` name, which stay local. A `local` or `*.local` name is not asked
    either when `/etc/nsswitch.conf` lists a multicast DNS source (`mdns*`, or `resolve`) before
    `dns`: it belongs to multicast DNS, not to the unicast nameservers (RFC 6762). Without such a
-   source, it is a plain DNS name and its AAAA records are asked.
+   source, it is a plain DNS name and its AAAA records are asked. Without the file, macOS (which
+   has none, and answers `*.local` over multicast DNS) skips the query; other systems ask it.
 
 ## Dial what you resolved
 
@@ -123,7 +124,8 @@ the real one: `$Lookup` stands in for `getaddrinfo()` — `fn (string $host): fa
 `dns_get_record($name, DNS_AAAA)` — `fn (string $name): false|array` of records. With `$Lookup`
 `null`, the real `getaddrinfo()` is used when ext-sockets is loaded, and the fallback otherwise.
 `$nsswitch` is the `nsswitch.conf` the fallback reads to tell whether a multicast DNS source
-answers `*.local` names; `null` reads none (they are plain DNS names).
+answers `*.local` names; `null` reads none (they are plain DNS names). A missing file counts as
+one on macOS, as none elsewhere.
 
 ```php
 public function resolve (string $host): null|array

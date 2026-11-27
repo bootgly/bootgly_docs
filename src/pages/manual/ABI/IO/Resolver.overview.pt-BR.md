@@ -62,7 +62,8 @@ resposta dele é final — uma consulta que falha não é refeita de outro jeito
    `localhost` ou um nome `*.localhost`, que ficam locais. Um nome `local` ou `*.local` também não
    é pedido quando o `/etc/nsswitch.conf` lista uma fonte de DNS multicast (`mdns*`, ou `resolve`)
    antes de `dns`: ele pertence ao DNS multicast, não aos nameservers unicast (RFC 6762). Sem essa
-   fonte, é um nome DNS comum e os registros AAAA dele são pedidos.
+   fonte, é um nome DNS comum e os registros AAAA dele são pedidos. Sem o arquivo, o macOS (que
+   não tem um, e responde `*.local` por DNS multicast) pula a consulta; os outros sistemas a fazem.
 
 ## Conectar ao que você resolveu
 
@@ -126,6 +127,7 @@ real: `$Lookup` fica no lugar do `getaddrinfo()` — `fn (string $host): false|a
 `null`, o `getaddrinfo()` real é usado quando a ext-sockets está carregada, e o caminho sem ela
 nos outros casos. `$nsswitch` é o `nsswitch.conf` que o caminho sem ext-sockets lê para saber se
 uma fonte de DNS multicast responde nomes `*.local`; `null` não lê nenhum (são nomes DNS comuns).
+Um arquivo ausente conta como uma fonte no macOS, e como nenhuma nos outros sistemas.
 
 ```php
 public function resolve (string $host): null|array
