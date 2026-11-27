@@ -1039,7 +1039,9 @@ export default {
           'pt-BR': 'Resolva nomes de host e peça registros ao DNS sem parar um worker: as buscas estacionam no event loop, compartilham uma consulta por nome, e só respostas conferidas são usadas e cacheadas.'
         }
       },
-      menu: {},
+      menu: {
+        subheader: '.WPI.DNS'
+      },
       subpages: {
         showcase: false
       }
