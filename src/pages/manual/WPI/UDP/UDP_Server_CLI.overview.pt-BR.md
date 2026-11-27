@@ -128,6 +128,7 @@ O mesmo value object define fronteiras imutáveis de proteção de peers para o 
 | `maxConnectionsPerIP` | `int` | `256` | Máximo de peers retidos para um IP de origem canônico, por worker; `0` desativa o teto por IP. |
 | `connectionIdleTimeout` | `int` | `30` | Tempo de vida do peer ocioso em segundos; `0` desativa a expiração ociosa. |
 | `maxDatagramsPerTick` | `int` | `64` | Quantidade de datagramas tratados em um turno read-ready antes de ceder; deve ser pelo menos `1`. |
+| `collectors` | `bool` | `false` | Registra as métricas de transporte e de atraso do loop de eventos de cada worker em `Observability::$Instance`. Veja [Métricas](#metricas). |
 
 ```php
 use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
@@ -307,6 +308,35 @@ Se você vincular a uma porta privilegiada, pode iniciar como root e depois muda
 > [!WARNING]
 > `user` e `group` dependem de funções POSIX e só são úteis em sistemas compatíveis quando o processo inicia com privilégios suficientes.
 
+### Métricas
+
+`collectors: true` faz cada worker registrar suas métricas de transporte — conexões (peers) aceitas,
+fechadas, abertas e recusadas por motivo, bytes e datagramas recebidos e enviados — e o atraso do seu loop
+de eventos no registro de observabilidade (`Observability::$Instance`, criado no worker quando nenhum
+foi definido):
+
+```php
+use Bootgly\ACI\Observability;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
+
+
+Observability::$Instance = new Observability;   // antes do start(): todo worker o herda
+
+$Server->configure(
+	new Configs(
+		host: '0.0.0.0',
+		port: 5353,
+		workers: 4,
+		collectors: true
+	)
+);
+```
+
+As séries se chamam `server_*` com `transport="udp"`, mais `event_loop_lag_seconds`; cada worker
+mantém os próprios totais e `stats reset` nunca os zera. Com `collectors: false` (o padrão) nada é
+registrado e nenhum timer é armado. Veja [Colete métricas de transporte e de atraso do loop](/guide/observability/overview/#colete-metricas-de-transporte-e-de-atraso-do-loop)
+para todas as séries e motivos de recusa.
+
 ## Handler de Datagramas
 
 Registre o handler de recebimento com `on()`:
@@ -467,7 +497,8 @@ public function __construct (
    int $maxConnections = 1024,
    int $maxConnectionsPerIP = 256,
    int $connectionIdleTimeout = 30,
-   int $maxDatagramsPerTick = 64
+   int $maxDatagramsPerTick = 64,
+   bool $collectors = false
 )
 ```
 

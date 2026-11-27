@@ -171,8 +171,13 @@ public function repeat (float $interval, Closure $Callback, float $slack = 0.0):
 ```
 
 Registers `$Callback` to run every `$interval` seconds on the monotonic clock and returns its
-identifier. With a `$slack`, in seconds, the first run moves up to the next multiple of it on
-the loop's clock, so timers of the same slack share their wakeups. Throws
+identifier. Each run receives the instant it was due at — its grid point, in monotonic
+`hrtime(true)` nanoseconds — so `static function (int $due): void` can measure how late the loop
+reached it; a callback that does not need it declares no parameter (wrap a built-in function that
+takes no argument, such as `gc_collect_cycles`, in a closure; a loop that implements `Repeating`
+passes the instant to every run). With a `$slack`, in seconds,
+the first run moves up to the next multiple of it on the loop's clock, so timers of the same slack
+share their wakeups. Throws
 `InvalidArgumentException` for an interval that is zero, negative, not a number, infinite or
 longer than the loop's horizon, and for a slack that is negative, not a number or infinite.
 

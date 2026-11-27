@@ -136,7 +136,8 @@ viram séries distintas sob aquele nome.
 ## Colete saúde de processo & runtime
 
 `new Observability()` registra automaticamente dois **collectors**, então um snapshot já traz
-auto-saúde de fábrica (cada série é rotulada por `pid`, para que as séries dos workers permaneçam
+auto-saúde de fábrica (cada série é rotulada pelo `pid` do processo que a coleta — um registro
+criado antes do fork rotula cada worker com o seu —, para que as séries dos workers permaneçam
 distintas ao mesclar):
 
 | Collector | Métricas |
@@ -146,6 +147,70 @@ distintas ao mesclar):
 
 Eles leem apenas builtins do PHP e `/proc/self` — nunca classes de camadas superiores. Passe
 `new Observability(collectors: false)` para um registro puro, sem métricas de saúde.
+
+## Colete métricas de transporte e de atraso do loop
+
+Os servidores TCP e UDP contam o próprio tráfego. Transforme essas contagens em métricas com
+`collectors:` — todo servidor construído sobre eles o aceita (`TCP_Server_CLI`, `UDP_Server_CLI` e,
+via TCP, `HTTP_Server_CLI` e `WS_Server_CLI`):
+
+```php
+use Bootgly\ACI\Observability;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+// O registro para o qual os workers reportam — criado antes do start(), então todo worker o herda
+Observability::$Instance = new Observability;
+
+$HTTP_Server_CLI->configure(
+   new HTTP_Server_CLI\Configs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 4,
+      collectors: true   // ← métricas de transporte + atraso do loop em cada worker (false = o padrão)
+   )
+);
+```
+
+Cada worker registra estas séries em `Observability::$Instance` ao subir (e cria um registro quando
+nenhum foi definido):
+
+| Métrica | Tipo | O que conta |
+|---|---|---|
+| `server_connections_accepted_total` | counter | Conexões (UDP: peers) que o servidor admitiu |
+| `server_connections_closed_total` | counter | Conexões (peers) admitidas que foram fechadas |
+| `server_connections_active` | gauge | Conexões (peers) admitidas abertas agora |
+| `server_connections_refused_total{reason}` | counter | Conexões (UDP: datagramas de peers novos) recusadas, por `reason` |
+| `server_received_bytes_total` / `server_sent_bytes_total` | counter | Bytes recebidos / enviados |
+| `server_received_datagrams_total` / `server_sent_datagrams_total` | counter | Datagramas recebidos / enviados (só UDP) |
+| `event_loop_lag_seconds` | histogram | Quanto atrasado o loop de eventos do worker roda um timer devido a cada 0,1 s |
+
+Toda série leva `transport="tcp"` ou `transport="udp"` (o histograma de atraso não tem rótulo) e
+nenhum `pid`: cada uma é um total por worker que se soma no total da frota quando os snapshots dos
+workers são mesclados. Os motivos de recusa existem zerados desde o primeiro scrape:
+
+- **TCP** — `accept` (a chamada de accept falhou), `peer` (endereço do peer ilegível), `blacklist`,
+  `capacity` (`maxConnections`), `headroom` (a reserva de descritores), `ip`
+  (`maxConnectionsPerIP`), `handshakes` (handshakes TLS pendentes demais), `loop` (o loop de
+  eventos não tinha espaço para o socket).
+- **UDP** — `peer`, `blacklist`, `capacity`, `ip`, `rollback` (uma admissão desfeita antes de
+  terminar), `budget` (a admissão esgotou seu trabalho limitado).
+
+Uma conexão TCP conta como aceita assim que é registrada, então uma recusa `loop` também conta como
+aceita e fechada — `accepted − closed` é sempre igual a `active`. Um peer UDP conta como aceito só
+quando sua admissão é definitiva, e como fechado quando é esquecido (fechado e liberado, ou expirado).
+Os bytes contam o que uma escrita entregou, nunca o que ela tentou.
+
+Os totais vivem enquanto o worker vive: `stats reset` no console nunca os zera, e um worker
+substituído recomeça do zero, o que um consumidor ciente de contadores (o `rate()` do Prometheus) lê
+como um reset. Com `collectors: false` nenhum instrumento, registro ou timer é criado; o único custo
+que resta são dois incrementos inteiros por datagrama UDP recebido ou enviado, um por conexão
+aceita, fechada ou recusada, e uma entrada de weak map por peer UDP admitido.
+
+O histograma de atraso arma um timer recorrente no loop de eventos do worker, que entrega a cada
+execução o instante em que ela era devida. Cada execução observa o quanto passou desse instante: um
+callback, uma chamada bloqueante ou uma passada longa que segura o loop aparece como atraso. Uma
+parada de S segundos registra pelo menos S − 0,1 s; uma mais curta que 0,1 s só é registrada quando
+se sobrepõe a um ponto devido.
 
 ## Bridge dos contadores existentes do servidor
 
@@ -387,8 +452,32 @@ Prometheus.
 ```php
 Observability\Collector
 ```
-Fonte abstrata: `collect(): array`. Concretos `Collectors\Process` e `Collectors\Runtime`. A coleção
-`Collectors` expõe `push(Collector): self` e `collect(): array`.
+Fonte abstrata: `collect(): array`. Concretos `Collectors\Process` e `Collectors\Runtime`, cujas
+séries levam o `pid` do processo que as coleta. A coleção `Collectors` expõe
+`push(Collector): self` e `collect(): array`; duas fontes que reportam um mesmo nome de métrica com
+o mesmo tipo se mesclam em uma métrica com as séries de ambas (uma métrica homônima de outro tipo é
+descartada, e uma série cujos labels a métrica já tem mantém a primeira leitura). `gather()` mescla
+instrumentos e collectors do mesmo jeito, com o instrumento vencendo num conflito de tipo ou nos
+mesmos labels. O estático `Collectors::fold(array $metrics, array $incoming): array` é essa mescla,
+para métricas lidas em um processo.
+
+```php
+new Observability\Probes\Transport (Metrics $Metrics, Closure $Accepted, Closure $Closed, Closure $Active, Closure $Refused, array $reasons, Closure $Received, Closure $Sent, array $labels = [], null|Closure $Arrivals = null, null|Closure $Departures = null)
+```
+Registra as séries de transporte de um servidor em `$Metrics` como instrumentos observáveis: cada
+closure retorna o total atual do servidor e só é lida quando um snapshot é coletado.
+`$Refused(string $reason)` responde por todo nome em `$reasons`, uma série
+`server_connections_refused_total` para cada. `$Arrivals`/`$Departures` acrescentam as séries de
+datagramas. Os servidores o criam sozinhos quando `collectors:` está ligado.
+
+```php
+new Observability\Probes\Lag (Metrics $Metrics, Repeating $Loop, float $interval = Lag::INTERVAL, array $buckets = Lag::BUCKETS, array $labels = [])
+```
+Registra o histograma `event_loop_lag_seconds` e arma um timer recorrente em `$Loop` a cada
+`$interval` segundos (padrão `0.1`; no mínimo `0.001`, senão `InvalidArgumentException`). Cada
+execução observa `now − due`, onde `due` é o instante que o loop lhe entrega (veja
+`Repeating::repeat()`). `Lag::BUCKETS` vai de 1 ms a 10 s. A
+propriedade pública `$timer` é o id do timer, para `$Loop->cancel()`.
 
 ```php
 Observability\Data\Snapshot

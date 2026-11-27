@@ -146,6 +146,7 @@ O transporte vive em `TCP_Server_CLI\Configs`:
 | `maxRequests` | `int` | `0` (= desligado) | Despachos após os quais um worker é reciclado — neste servidor, conexões aceitas. Veja [Reciclagem de workers](#reciclagem-de-workers). |
 | `jitter` | `float` | `0.1` | Dispersão do limite próprio de cada worker em torno de `maxRequests`, uma fração de `0` a `1` (`0.1` = ±10%). |
 | `maxMemory` | `int\|string` | `0` (= desligado) | Memória real (`memory_get_usage(true)`) acima da qual um worker é reciclado: bytes, ou um tamanho em texto como `'512M'` (lido por `Bytes::parse()`). Precisa ficar abaixo do `memory_limit` — o `start()` recusa um que nenhum worker consegue respeitar (veja [Reciclagem de workers](#reciclagem-de-workers)). |
+| `collectors` | `bool` | `false` | Registra as métricas de transporte e de atraso do loop de eventos de cada worker em `Observability::$Instance`. Veja [Métricas](#metricas). |
 
 ```php
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
@@ -332,6 +333,35 @@ continua servindo com o seu teto de memória desligado e registra um erro dizend
 por despacho. E um worker cujo canal de aviso o master não conseguiu criar (faltaram descritores) não
 consegue avisar uma reciclagem, nem ouvir o aviso do master: ele registra um aviso e não recicla, em vez
 de drenar sem substituto.
+
+### Métricas
+
+`collectors: true` faz cada worker registrar suas métricas de transporte — conexões aceitas,
+fechadas, abertas e recusadas por motivo, bytes recebidos e enviados — e o atraso do seu loop
+de eventos no registro de observabilidade (`Observability::$Instance`, criado no worker quando nenhum
+foi definido):
+
+```php
+use Bootgly\ACI\Observability;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
+
+
+Observability::$Instance = new Observability;   // antes do start(): todo worker o herda
+
+$Server->configure(
+	new Configs(
+		host: '0.0.0.0',
+		port: 8080,
+		workers: 4,
+		collectors: true
+	)
+);
+```
+
+As séries se chamam `server_*` com `transport="tcp"`, mais `event_loop_lag_seconds`; cada worker
+mantém os próprios totais e `stats reset` nunca os zera. Com `collectors: false` (o padrão) nada é
+registrado e nenhum timer é armado. Veja [Colete métricas de transporte e de atraso do loop](/guide/observability/overview/#colete-metricas-de-transporte-e-de-atraso-do-loop)
+para todas as séries e motivos de recusa.
 
 ## Handler de Dados
 

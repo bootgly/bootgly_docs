@@ -135,7 +135,8 @@ that name.
 ## Collect process & runtime health
 
 `new Observability()` auto-registers two **collectors**, so a snapshot carries self-health out of
-the box (each series is labelled by `pid`, so worker series stay distinct when merged):
+the box (each series is labelled by the `pid` of the process that collects it — a registry built
+before the fork labels each worker with its own — so worker series stay distinct when merged):
 
 | Collector | Metrics |
 |---|---|
@@ -144,6 +145,69 @@ the box (each series is labelled by `pid`, so worker series stay distinct when m
 
 They read only PHP builtins and `/proc/self` — never higher-layer classes. Pass
 `new Observability(collectors: false)` for a bare registry with no health metrics.
+
+## Collect transport and loop-lag metrics
+
+The TCP and UDP servers count their own traffic. Turn the counts into metrics with `collectors:` —
+every server that builds on them takes it (`TCP_Server_CLI`, `UDP_Server_CLI`, and through TCP,
+`HTTP_Server_CLI` and `WS_Server_CLI`):
+
+```php
+use Bootgly\ACI\Observability;
+use Bootgly\WPI\Nodes\HTTP_Server_CLI;
+
+// The registry the workers report to — built before start(), so every worker inherits it
+Observability::$Instance = new Observability;
+
+$HTTP_Server_CLI->configure(
+   new HTTP_Server_CLI\Configs(
+      host: '0.0.0.0',
+      port: 8080,
+      workers: 4,
+      collectors: true   // ← transport + loop-lag metrics in each worker (false = the default)
+   )
+);
+```
+
+Each worker registers these series on `Observability::$Instance` when it boots (it builds one when
+none is set):
+
+| Metric | Type | What it counts |
+|---|---|---|
+| `server_connections_accepted_total` | counter | Connections (UDP: peers) the server admitted |
+| `server_connections_closed_total` | counter | Admitted connections (peers) closed |
+| `server_connections_active` | gauge | Admitted connections (peers) open now |
+| `server_connections_refused_total{reason}` | counter | Connections (UDP: new peers' datagrams) refused, by `reason` |
+| `server_received_bytes_total` / `server_sent_bytes_total` | counter | Bytes received / sent |
+| `server_received_datagrams_total` / `server_sent_datagrams_total` | counter | Datagrams received / sent (UDP only) |
+| `event_loop_lag_seconds` | histogram | How late the worker's event loop runs a timer due every 0.1 s |
+
+Every series carries `transport="tcp"` or `transport="udp"` (the lag histogram has no label) and no
+`pid`: each one is a per-worker total that sums into the fleet's when worker snapshots are merged.
+Refusal reasons exist at zero from the first scrape:
+
+- **TCP** — `accept` (the accept call failed), `peer` (unreadable peer address), `blacklist`,
+  `capacity` (`maxConnections`), `headroom` (the descriptor reserve), `ip`
+  (`maxConnectionsPerIP`), `handshakes` (too many pending TLS handshakes), `loop` (the event loop
+  had no room for the socket).
+- **UDP** — `peer`, `blacklist`, `capacity`, `ip`, `rollback` (an admission undone before it
+  completed), `budget` (the admission ran out of its bounded work).
+
+A TCP connection counts as accepted once it is registered, so a `loop` refusal also counts as accepted
+and closed — `accepted − closed` always equals `active`. A UDP peer counts as accepted only once its
+admission is final, and as closed when it is forgotten (closed and released, or expired). The bytes
+count what a write delivered, never what it attempted.
+
+The totals live as long as the worker: `stats reset` on the console never zeroes them, and a worker
+that is replaced starts again from zero, which a counter-aware consumer (Prometheus `rate()`) reads
+as a reset. With `collectors: false` no instrument, registry or timer is built; the only cost left is
+two integer increments per UDP datagram received or sent, one per connection accepted, closed or
+refused, and one weak-map entry per admitted UDP peer.
+
+The lag histogram arms one recurring timer on the worker's event loop, which hands each run the
+instant it was due at. Each run observes how far past that instant it ran: a callback, a blocking
+call or a long pass that holds the loop shows up as lag. A stall of S seconds records at least
+S − 0.1 s; one shorter than 0.1 s is recorded only when it overlaps a due point.
 
 ## Bridge existing server counters
 
@@ -381,8 +445,31 @@ Buckets observations. `observe(float): void`; `read()` returns cumulative `le =>
 ```php
 Observability\Collector
 ```
-Abstract source: `collect(): array`. Concretes `Collectors\Process` and `Collectors\Runtime`. The
-`Collectors` collection exposes `push(Collector): self` and `collect(): array`.
+Abstract source: `collect(): array`. Concretes `Collectors\Process` and `Collectors\Runtime`, whose
+series carry the `pid` of the process collecting them. The `Collectors` collection exposes
+`push(Collector): self` and `collect(): array`; two sources that report one metric name with the
+same type merge into one metric holding both series (a same-named metric of another type is
+dropped, and a series whose labels the metric already holds keeps its first reading). `gather()`
+merges instruments and collectors the same way, the instrument winning on a type conflict or on
+the same labels. The static `Collectors::fold(array $metrics, array $incoming): array` is that
+merge, for metrics read in one process.
+
+```php
+new Observability\Probes\Transport (Metrics $Metrics, Closure $Accepted, Closure $Closed, Closure $Active, Closure $Refused, array $reasons, Closure $Received, Closure $Sent, array $labels = [], null|Closure $Arrivals = null, null|Closure $Departures = null)
+```
+Registers a server's transport series on `$Metrics` as observable instruments: each closure returns
+the server's current total and is read only when a snapshot is gathered. `$Refused(string $reason)`
+answers for every name in `$reasons`, one `server_connections_refused_total` series each.
+`$Arrivals`/`$Departures` add the datagram series. The servers build it themselves when
+`collectors:` is on.
+
+```php
+new Observability\Probes\Lag (Metrics $Metrics, Repeating $Loop, float $interval = Lag::INTERVAL, array $buckets = Lag::BUCKETS, array $labels = [])
+```
+Registers the `event_loop_lag_seconds` histogram and arms one recurring timer on `$Loop` every
+`$interval` seconds (default `0.1`; at least `0.001`, else `InvalidArgumentException`). Each run
+observes `now − due`, where `due` is the instant the loop hands it (see `Repeating::repeat()`). `Lag::BUCKETS` runs from 1 ms to 10 s. Public
+`$timer` is the timer id, for `$Loop->cancel()`.
 
 ```php
 Observability\Data\Snapshot

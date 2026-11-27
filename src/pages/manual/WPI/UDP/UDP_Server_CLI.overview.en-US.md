@@ -128,6 +128,7 @@ The same value object defines immutable peer-protection boundaries for the confi
 | `maxConnectionsPerIP` | `int` | `256` | Maximum retained peers from one canonical source IP, per worker; `0` disables the per-IP ceiling. |
 | `connectionIdleTimeout` | `int` | `30` | Idle-peer lifetime in seconds; `0` disables idle expiry. |
 | `maxDatagramsPerTick` | `int` | `64` | Datagram count handled in one read-ready turn before yielding; must be at least `1`. |
+| `collectors` | `bool` | `false` | Register each worker's transport and event-loop lag metrics on `Observability::$Instance`. See [Metrics](#metrics). |
 
 ```php
 use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
@@ -300,6 +301,34 @@ If you bind to a privileged port, you can start as root and drop to a lower-priv
 > [!WARNING]
 > `user` and `group` rely on POSIX functions and are only useful on supported systems when the process starts with enough privileges.
 
+### Metrics
+
+`collectors: true` makes each worker register its transport metrics — connections (peers) accepted, closed,
+open and refused by reason, bytes and datagrams received and sent — and the lag of its event loop on the
+observability registry (`Observability::$Instance`, built in the worker when none is set):
+
+```php
+use Bootgly\ACI\Observability;
+use Bootgly\WPI\Interfaces\UDP_Server_CLI\Configs;
+
+
+Observability::$Instance = new Observability;   // before start(): every worker inherits it
+
+$Server->configure(
+	new Configs(
+		host: '0.0.0.0',
+		port: 5353,
+		workers: 4,
+		collectors: true
+	)
+);
+```
+
+The series are named `server_*` with `transport="udp"`, plus `event_loop_lag_seconds`; each worker
+keeps its own totals and `stats reset` never zeroes them. With `collectors: false` (the default) nothing
+is registered and no timer is armed. See [Collect transport and loop-lag metrics](/guide/observability/overview/#collect-transport-and-loop-lag-metrics)
+for every series and refusal reason.
+
 ## Datagram Handler
 
 Register the receive handler with `on()`:
@@ -458,7 +487,8 @@ public function __construct (
    int $maxConnections = 1024,
    int $maxConnectionsPerIP = 256,
    int $connectionIdleTimeout = 30,
-   int $maxDatagramsPerTick = 64
+   int $maxDatagramsPerTick = 64,
+   bool $collectors = false
 )
 ```
 

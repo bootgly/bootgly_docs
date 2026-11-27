@@ -175,9 +175,13 @@ public function repeat (float $interval, Closure $Callback, float $slack = 0.0):
 ```
 
 Registra `$Callback` para rodar a cada `$interval` segundos no relógio monotônico e retorna o
-seu identificador. Com um `$slack`, em segundos, a primeira execução sobe para o próximo
-múltiplo dele no relógio da loop, de modo que timers com o mesmo slack compartilham os
-despertares. Lança `InvalidArgumentException` para um intervalo zero, negativo, não numérico,
+seu identificador. Cada execução recebe o instante em que era devida — seu ponto da grade, em
+nanossegundos monotônicos de `hrtime(true)` — para que `static function (int $due): void` meça o
+quanto a loop a atrasou; um callback que não precisa dele não declara parâmetro (envolva numa
+closure uma função nativa que não recebe argumento, como `gc_collect_cycles`; uma loop que
+implementa `Repeating` entrega o instante a toda execução). Com um `$slack`,
+em segundos, a primeira execução sobe para o próximo múltiplo dele no relógio da loop, de modo que
+timers com o mesmo slack compartilham os despertares. Lança `InvalidArgumentException` para um intervalo zero, negativo, não numérico,
 infinito ou maior que o horizonte da loop, e para um slack negativo, não numérico ou infinito.
 
 ```php

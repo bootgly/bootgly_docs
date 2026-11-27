@@ -146,6 +146,7 @@ The transport lives in `TCP_Server_CLI\Configs`:
 | `maxRequests` | `int` | `0` (= off) | Dispatches after which a worker is recycled — for this server, accepted connections. See [Worker recycling](#worker-recycling). |
 | `jitter` | `float` | `0.1` | Spread of each worker's own limit around `maxRequests`, a fraction from `0` to `1` (`0.1` = ±10%). |
 | `maxMemory` | `int\|string` | `0` (= off) | Real memory (`memory_get_usage(true)`) past which a worker is recycled: bytes, or a size string such as `'512M'` (read by `Bytes::parse()`). It must stay below `memory_limit` — `start()` refuses one no worker can honor (see [Worker recycling](#worker-recycling)). |
+| `collectors` | `bool` | `false` | Register each worker's transport and event-loop lag metrics on `Observability::$Instance`. See [Metrics](#metrics). |
 
 ```php
 use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
@@ -327,6 +328,34 @@ listener, say — takes it past `maxMemory` serves on with its memory ceiling of
 saying so: never a fork per dispatch. And a worker whose announcement channel the master could not
 create (it ran out of descriptors) cannot announce a recycle, nor hear the master's go: it logs a
 warning and does not recycle, rather than drain with no replacement.
+
+### Metrics
+
+`collectors: true` makes each worker register its transport metrics — connections accepted, closed,
+open and refused by reason, bytes received and sent — and the lag of its event loop on the
+observability registry (`Observability::$Instance`, built in the worker when none is set):
+
+```php
+use Bootgly\ACI\Observability;
+use Bootgly\WPI\Interfaces\TCP_Server_CLI\Configs;
+
+
+Observability::$Instance = new Observability;   // before start(): every worker inherits it
+
+$Server->configure(
+	new Configs(
+		host: '0.0.0.0',
+		port: 8080,
+		workers: 4,
+		collectors: true
+	)
+);
+```
+
+The series are named `server_*` with `transport="tcp"`, plus `event_loop_lag_seconds`; each worker
+keeps its own totals and `stats reset` never zeroes them. With `collectors: false` (the default) nothing
+is registered and no timer is armed. See [Collect transport and loop-lag metrics](/guide/observability/overview/#collect-transport-and-loop-lag-metrics)
+for every series and refusal reason.
 
 ## Data Handler
 
